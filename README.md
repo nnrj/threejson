@@ -9,6 +9,10 @@
 
 **仓库**：[github.com/nnrj/threejson](https://github.com/nnrj/threejson) · **问题反馈**：[Issues](https://github.com/nnrj/threejson/issues)
 
+精确描述：
+
+ThreeJSON 是一个 JSON 驱动的 Three.js 声明式场景运行时。它将 3D 场景表示为可持久化、可修改、可扩展的数据，通过统一运行时完成场景装配、对象管理、动画、事件和动态变更，并为业务域、第三方扩展、编辑器以及 AI / Agent 场景生成与操作提供稳定接口。
+
 ## 开发环境
 
 在本仓库内运行测试、示例与外置工具（Agent bridge、MCP）需要 **Node.js 24+**。

@@ -9,6 +9,10 @@ JSON-driven [Three.js](https://threejs.org/) scene runtime: build 3D scenes from
 
 **Repository**: [github.com/nnrj/threejson](https://github.com/nnrj/threejson) · **Issues**: [GitHub Issues](https://github.com/nnrj/threejson/issues)
 
+Exact description:
+
+ThreeJSON is a JSON-driven declarative scene runtime for Three.js, designed for persistent, mutable and extensible 3D worlds — from human-authored scenes to AI and Agent-driven generation and control.
+
 ## Development environment
 
 To run tests, examples, and external tools (agent bridges, MCP) in this repo, use **Node.js 24+**.
