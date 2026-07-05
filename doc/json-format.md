@@ -668,6 +668,30 @@ runtime `threeJsonId`：`${hostThreeJsonId}@boxHelper`
 
 友好 JSON 与标准 JSON 均可写在 `sceneConfig.threeRevision`；也可写在 `worldInfo.threeRevision`（优先级低于 `sceneConfig`）。
 
+### `sceneConfig.assetsBase`（可选，静态资源基址）
+
+控制内置 domain 默认值与场景 JSON 中 **`/assets/...` 前缀**（如 `textureUrl`、`modelPath`）在加载时解析到的 HTTP 根路径。完整 `https://` / `data:` URL 不受影响。
+
+**npm 安装 `threejson` 后**，未覆盖时引擎默认使用 jsDelivr 上的 [`@threejson/assets`](https://www.npmjs.com/package/@threejson/assets)（版本见运行时 `ASSETS_PACKAGE_VERSION`，当前与 `@1.0.0` 对齐）。示例：
+
+`https://cdn.jsdelivr.net/npm/@threejson/assets@1.0.0/textures/device/cabinet/cabinet_left_door.png`
+
+**合并优先级（低 → 高）：** 引擎内置 CDN 默认 → 全局 `setAssetsBaseUrl()` → `sceneConfig.assetsBase` → `createJsonScene(..., { assetsBase })`。
+
+克隆仓库并在根目录起静态服务时，demo 通常传 `assetsBase: "/assets"` 或调用 `setAssetsBaseUrl("/assets")`，与仓库 [`assets/`](../assets/) 目录映射一致。JSON 内**无需**把 `/assets/textures/...` 改成完整 CDN URL。
+
+```json
+{
+  "sceneConfig": {
+    "assetsBase": "/assets"
+  }
+}
+```
+
+自托管或私有化部署时，可写完整 origin，例如 `https://static.example.com/threejson-assets`。
+
+详见 [`api.md` 静态资源 API](./api.md#静态资源coreutilassetsbasejs) 与 [`lab/assets-online-hosting-memo.md`](../lab/assets-online-hosting-memo.md)。
+
 ### `sceneConfig.deployScheduler`（可选，大场景分帧部署）
 
 控制 `createJsonScene` / `deployJsonScene` 在 **objectList 内容对象**（phase 2→3→4）上的部署节奏；runtime（相机、灯光等）仍同步配置，不受此项影响。

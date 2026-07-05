@@ -116,6 +116,28 @@ Notes:
 - **React**: keep the canvas in `useRef`, initialize inside `useEffect`, and call `stop()` / `dispose()` in the effect cleanup. With **StrictMode** enabled, the effect runs twice in development—if async work finishes after teardown, guard with an `alive` flag (see `examples/react-app/src/App.tsx`).
 - **Assets**: put JSON and textures under `public/` (the samples use `public/demo-assets/scene/` and `public/demo-assets/textures/` with root-absolute paths like `/demo-assets/...` inside the JSON). `server.fs.allow` in `vite.config.ts` is for resolving the linked `threejson` package from the repo root, not for loading demo textures from `assets/`.
 
+### Static assets and CDN (npm)
+
+When you use **`npm install threejson`**, built-in domains and `/assets/textures/...` paths in scene JSON **default** to jsDelivr [`@threejson/assets`](https://www.npmjs.com/package/@threejson/assets) (version pinned in `ASSETS_PACKAGE_VERSION`). You usually **do not** need a separate assets install.
+
+Override the base for local dev or self-hosting:
+
+```js
+import { createJsonScene, LOCAL_ASSETS_BASE, setAssetsBaseUrl } from "threejson";
+
+setAssetsBaseUrl(LOCAL_ASSETS_BASE);
+
+await createJsonScene(sceneData, {
+  canvas,
+  assetsBase: "/assets",
+  resetScene: true
+});
+```
+
+You can also set `sceneConfig.assetsBase` in JSON. See [Static assets in `api.md`](./api.md#static-assets-coreutilassetsbasejs) and [`sceneConfig.assetsBase` in json-format](./json-format.md#sceneconfigassetsbase-optional-static-asset-base-url).
+
+When running HTML demos from a cloned repo, pages pass `assetsBase: "/assets"`; serve from the **repo root**.
+
 ## 3. Minimal friendly JSON
 
 ```json

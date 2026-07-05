@@ -79,7 +79,7 @@
 | CSG 泛化与不规则体 | [csg-and-irregular-geometry-roadmap.md](./csg-and-irregular-geometry-roadmap.md) | `deferred` | joins/inters/holes 扩展 |
 | Native 通用对象 | [native-object-dispatch-memo.md](./native-object-dispatch-memo.md) | `partial` | `objType: native` / `parseMode` v1 |
 | 场景 Helpers | [scene-helpers-memo.md](./scene-helpers-memo.md) | `partial` | v1 grid/axes 单实例；多实例为 `deferred` |
-| 静态资源与在线托管 | [assets-online-hosting-memo.md](./assets-online-hosting-memo.md) | `deferred` | `assets` 重命名、jsDelivr |
+| 静态资源与在线托管 | [assets-online-hosting-memo.md](./assets-online-hosting-memo.md) | `done` | `@threejson/assets@1.0.0`、jsDelivr 默认基址 |
 | TJZ 流式 ingest | [tjz-streaming-ingest-memo.md](./tjz-streaming-ingest-memo.md) | `idea` | 分块载入 PoC 设计 |
 | 资源回收进阶 | [resource-reclaimer-advanced-memo.md](./resource-reclaimer-advanced-memo.md) | `deferred` | 可见性驱逐 / LOD 代理预研 |
 | html2canvas 并发正式化 | [archive/html-info-panel-html2canvas-concurrency-memo.md](./archive/html-info-panel-html2canvas-concurrency-memo.md) | `rejected` | Debug 内联队列保留 |

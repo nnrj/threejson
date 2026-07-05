@@ -223,6 +223,8 @@ The unified entry normalizes friendly or standard JSON into a standard `objectLi
 - `lowFps`: host default low-FPS mode switch.
 - `overrideSceneRenderLoop`: when `true`, explicitly overrides scene JSON `fps/lowFps`; when `false`, merges with “scene JSON first, missing items fall back to host settings”.
 
+**Static asset base (`options.assetsBase`, optional)**: per-load override for resolving `/assets/...` paths (see [`sceneConfig.assetsBase`](./json-format.md#sceneconfigassetsbase-optional-static-asset-base-url)). Takes priority over `sceneConfig.assetsBase` and global `setAssetsBaseUrl()`. Cloned-repo demos often use `assetsBase: "/assets"`; npm users omit it to use the default CDN.
+
 ### `deployJsonScene(target, payload, options?)`
 
 Deploys the same full JSON onto an existing `Scene` or runtime object; suitable when the page switches scene data and reuses the existing render container. Input shape is identical to `createJsonScene()`, and friendly JSON and standard `objectList` are both supported.
@@ -237,6 +239,42 @@ Synchronous deploy subset with the same constraints as `deployJsonScene`.
 
 - `options.strict === true`: **throws** when async background or native embed is required, instead of skipping with `console.warn`.
 - `options.onSceneReady`: if it returns a `Promise`, only warns and does not wait (use `createJsonScene` for full async bootstrap).
+
+## Static assets (`core/util/assetsBase.js`)
+
+Public base URL module for textures, models, fonts, and built-in domain defaults. Exported from `threejson/core` (re-exported from main entry `threejson`).
+
+| Symbol | Description |
+|--------|-------------|
+| `ASSETS_PACKAGE_VERSION` | Locked `@threejson/assets` version for jsDelivr (currently `"1.0.0"`) |
+| `DEFAULT_CDN_ASSETS_BASE` | Default CDN root URL |
+| `LOCAL_ASSETS_BASE` | Local static mount constant `"/assets"` |
+| `setAssetsBaseUrl(url)` / `getAssetsBaseUrl()` | App-level base switch |
+| `assetUrl(relativePath)` | Join segments like `textures/...` |
+| `resolvePublicAssetUrl(url)` | Rewrite `/assets/...` against active base; https unchanged |
+| `resolveAssetsBaseFromLoad(payload, options)` | Read `options.assetsBase` or `sceneConfig.assetsBase` |
+| `applyAssetsBaseForLoad(payload, options)` | Used in load pipeline; returns restore function |
+
+**Priority (low → high):** `DEFAULT_CDN_ASSETS_BASE` → `setAssetsBaseUrl()` → `sceneConfig.assetsBase` → `createJsonScene({ assetsBase })`.
+
+npm users usually do not need to install [`@threejson/assets`](https://www.npmjs.com/package/@threejson/assets) for CDN loading; alternatively install it and serve `node_modules/@threejson/assets` as static files with `setAssetsBaseUrl(...)`.
+
+```js
+import {
+  createJsonScene,
+  LOCAL_ASSETS_BASE,
+  setAssetsBaseUrl
+} from "threejson/core";
+
+setAssetsBaseUrl(LOCAL_ASSETS_BASE);
+
+await createJsonScene(payload, {
+  canvas,
+  assetsBase: "/assets"
+});
+```
+
+Publishing and CDN notes: [`lab/assets-online-hosting-memo.md`](../../lab/assets-online-hosting-memo.md).
 
 ### `sceneConfig.deployScheduler` (optional)
 

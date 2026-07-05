@@ -224,6 +224,8 @@ import {
 - `lowFps`：宿主默认低帧率模式开关。
 - `overrideSceneRenderLoop`：`true` 时显式覆盖场景 JSON 的 `fps/lowFps`；`false` 时按「场景 JSON 优先，缺失项回退宿主设置」合并。
 
+**静态资源基址（`options.assetsBase`，可选）**：单次加载时覆盖 `/assets/...` 路径解析根（见 [`sceneConfig.assetsBase`](./json-format.md#sceneconfigassetsbase-可选静态资源基址)）。优先级高于 `sceneConfig.assetsBase` 与全局 `setAssetsBaseUrl()`。克隆仓库 demo 常用 `assetsBase: "/assets"`；npm 用户省略时走默认 CDN。
+
 ### `deployJsonScene(target, payload, options?)`
 
 把同样的完整 JSON 部署到已有 `Scene` 或 runtime 对象上；适合页面切换场景数据后重用现有渲染容器。输入形态与 `createJsonScene()` 完全一致，也同样支持 friendly JSON 与标准 `objectList`。
@@ -238,6 +240,42 @@ import {
 
 - `options.strict === true`：遇到需异步背景或 native 嵌入时 **抛错**，而非跳过并 `console.warn`。
 - `options.onSceneReady`：若返回 `Promise`，仅告警，不等待（完整异步 bootstrap 请用 `createJsonScene`）。
+
+## 静态资源（`core/util/assetsBase.js`）
+
+纹理、模型、字体与内置 domain 默认 URL 的**公共基址**模块。自 `threejson/core` 导出（主入口 `threejson` re-export）。
+
+| 符号 | 说明 |
+|------|------|
+| `ASSETS_PACKAGE_VERSION` | 与 jsDelivr `@threejson/assets` 锁定版本（当前 `"1.0.0"`） |
+| `DEFAULT_CDN_ASSETS_BASE` | 默认 CDN 根 URL |
+| `LOCAL_ASSETS_BASE` | 本地静态映射常量 `"/assets"` |
+| `setAssetsBaseUrl(url)` / `getAssetsBaseUrl()` | 应用级切换基址 |
+| `assetUrl(relativePath)` | 拼接 `textures/...` 等相对段 |
+| `resolvePublicAssetUrl(url)` | 将 `/assets/...` 重写为当前 base；https 原样 |
+| `resolveAssetsBaseFromLoad(payload, options)` | 读取 `options.assetsBase` 或 `sceneConfig.assetsBase` |
+| `applyAssetsBaseForLoad(payload, options)` | 加载链内部使用；返回 restore 函数 |
+
+**优先级（低 → 高）：** `DEFAULT_CDN_ASSETS_BASE` → `setAssetsBaseUrl()` → `sceneConfig.assetsBase` → `createJsonScene({ assetsBase })`。
+
+npm 用户通常无需安装 [`@threejson/assets`](https://www.npmjs.com/package/@threejson/assets) 即可通过 CDN 加载；也可 `npm install @threejson/assets` 后将 `node_modules/@threejson/assets` 映射为静态目录并 `setAssetsBaseUrl(...)`。
+
+```js
+import {
+  createJsonScene,
+  LOCAL_ASSETS_BASE,
+  setAssetsBaseUrl
+} from "threejson/core";
+
+setAssetsBaseUrl(LOCAL_ASSETS_BASE);
+
+await createJsonScene(payload, {
+  canvas,
+  assetsBase: "/assets"
+});
+```
+
+发布与 CDN 说明见 [`lab/assets-online-hosting-memo.md`](../lab/assets-online-hosting-memo.md)。
 
 ### `sceneConfig.deployScheduler`（可选）
 

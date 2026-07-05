@@ -116,6 +116,28 @@ sceneRuntime.start();
 - **React**：用 `useRef` 持有 canvas；在 `useEffect` 中异步初始化；在 effect 清理函数中 `stop()` / `dispose()`。若开启 **StrictMode**，开发环境下 effect 会执行两次，异步完成时需用「已卸载」标志避免对已释放实例重复操作（示例见 `react-app/src/App.tsx`）。
 - **资源路径**：可将场景 JSON 放在应用的 `public/`（示例中 `public/demo-assets/scene/` 与 `public/demo-assets/textures/`，JSON 内使用以 `/` 开头的站点根路径如 `/demo-assets/...`）；`vite.config.ts` 中的 `server.fs.allow` 仍用于解析已链接到仓库根的 `threejson` 包，与演示资源是否放在 `public/` 无关。
 
+### 静态资源与 CDN（npm）
+
+通过 **`npm install threejson`** 使用时，内置 domain 与场景 JSON 中的 `/assets/textures/...` 等路径**默认**解析到 jsDelivr [`@threejson/assets`](https://www.npmjs.com/package/@threejson/assets)（版本见 `ASSETS_PACKAGE_VERSION`）。一般**无需**单独安装资源包。
+
+本地开发或自托管时覆盖基址：
+
+```js
+import { createJsonScene, LOCAL_ASSETS_BASE, setAssetsBaseUrl } from "threejson";
+
+setAssetsBaseUrl(LOCAL_ASSETS_BASE);
+
+await createJsonScene(sceneData, {
+  canvas,
+  assetsBase: "/assets",
+  resetScene: true
+});
+```
+
+亦可在 JSON 中写 `sceneConfig.assetsBase`。详见 [`api.md` 静态资源](./api.md#静态资源coreutilassetsbasejs)、[`json-format.md` 的 sceneConfig.assetsBase](./json-format.md#sceneconfigassetsbase-可选静态资源基址)。
+
+克隆本仓库跑 HTML demo 时，页面已传 `assetsBase: "/assets"`，需从**仓库根**起静态服务。
+
 ## 3. 友好 JSON 最小示例
 
 ```json

@@ -568,6 +568,30 @@ Declares target Three.js **revision** (integer, or `"184"` / `"r184"`). Used for
 
 Friendly and standard JSON may set `sceneConfig.threeRevision`; also `worldInfo.threeRevision` (lower priority than `sceneConfig`).
 
+### `sceneConfig.assetsBase` (optional, static asset base URL)
+
+Controls the HTTP root used when built-in domain defaults and scene JSON paths with the **`/assets/...` prefix** (e.g. `textureUrl`, `modelPath`) are resolved at load time. Full `https://` / `data:` URLs are unchanged.
+
+**After `npm install threejson`**, when nothing overrides it, the engine defaults to jsDelivr [`@threejson/assets`](https://www.npmjs.com/package/@threejson/assets) (version pinned in runtime `ASSETS_PACKAGE_VERSION`, currently aligned with `@1.0.0`). Example:
+
+`https://cdn.jsdelivr.net/npm/@threejson/assets@1.0.0/textures/device/cabinet/cabinet_left_door.png`
+
+**Merge priority (low → high):** built-in CDN default → global `setAssetsBaseUrl()` → `sceneConfig.assetsBase` → `createJsonScene(..., { assetsBase })`.
+
+When cloning the repo and serving from the root, demos usually pass `assetsBase: "/assets"` or call `setAssetsBaseUrl("/assets")`, matching the [`assets/`](../../assets/) directory. JSON may keep `/assets/textures/...` without rewriting to full CDN URLs.
+
+```json
+{
+  "sceneConfig": {
+    "assetsBase": "/assets"
+  }
+}
+```
+
+For self-hosted or private deployments, use a full origin, e.g. `https://static.example.com/threejson-assets`.
+
+See [Static assets API in `api.md`](./api.md#static-assets-coreutilassetsbasejs) and [`lab/assets-online-hosting-memo.md`](../../lab/assets-online-hosting-memo.md).
+
 ### `sceneConfig.deployScheduler` (optional, large-scene frame-spread deploy)
 
 Controls deploy pacing of **`objectList` content objects** (phase 2→3→4) in `createJsonScene` / `deployJsonScene`; runtime (camera, lights, etc.) still configures synchronously.

@@ -13,7 +13,7 @@ This handbook is written for library callers. It focuses on the scene pipeline u
 - [Info panels guide](./info-panels.md): infoPanel / css3dPanel selection, per-type examples, and demo index.
 - [Business Domains and `domains/`](./domains.md): `domainModelList`, `businessDomains`, domain registration, and custom domains.
 - [Optional extensions and `extensions/`](./extensions.md): PluginHost, JSON `extensions` containers, bundled references, and custom extension wiring.
-- [Core API](./api.md): the most commonly used runtime APIs for callers.
+- [Core API](./api.md): the most commonly used runtime APIs for callers (including [`createJsonScene`](./api.md#createjsonscenepayload-options) and [static asset base URLs](./api.md#static-assets-coreutilassetsbasejs)).
 - [Tools and host apps](./tools.md): `sysConfig` / `sceneConfig` boundaries (editor, player, etc.).
 - [Runtime object mutation quickref](./runtime-object-mutation-quickref.md): `applyObjectChange` / partial / snapshot / redeploy.
 - [Development](./development.md): Node version, tests, AI verification, sync/async API naming.
@@ -106,6 +106,7 @@ sceneRuntime.start();
 - Serve pages over a local static server instead of opening them with `file://`. ES modules, textures, and OBJ / GLTF loading usually require HTTP.
 - The engine uses bare module specifiers such as `three`, `@tweenjs/tween.js`, and `html2canvas-pro`. Without a bundler, add an `importmap` that maps them to a CDN. With Vite or Webpack, they will be resolved from `node_modules`.
 - Texture paths can use project-root paths such as `/assets/textures/...`. Pages inside `examples/html-demo/` usually import engine modules from `../../core/...`.
+- **With `npm install threejson`**: built-in domains and `/assets/...` paths in JSON default to jsDelivr [`@threejson/assets`](https://www.npmjs.com/package/@threejson/assets) (see [Static assets in `api.md`](./api.md#static-assets-coreutilassetsbasejs)). Cloned-repo demos need `assetsBase: "/assets"` or `setAssetsBaseUrl("/assets")`.
 - `rotationX`, `rotationY`, and `rotationZ` use radians, not degrees.
 - The engine stores the original JSON on `userData.objJson`, which is useful for later type checks, hiding, deletion, or business extensions.
 - Start with [`examples/html-demo/track-00-runtime/00-03-friendly-full-scene.html`](../examples/html-demo/track-00-runtime/00-03-friendly-full-scene.html) and `assets/json/sceneRuntimeBasic.json` for a modern example.
