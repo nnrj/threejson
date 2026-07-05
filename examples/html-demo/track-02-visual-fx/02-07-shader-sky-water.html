@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ThreeJSON Tutorial · Track 2 · Shader 天空与海�?/title>
+  <title>ThreeJSON Tutorial · Track 2 · Shader 天空与海面</title>
   <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
   <script type="importmap">
     {
@@ -36,9 +36,9 @@
 </head>
 <body>
 <div id="rootContainer">
-  <canvas id="canvasContainer">需�?WebGL</canvas>
-  <div id="loadingMask">加载中�?/div>
-  <div id="hint">【Track 2 · Shader 天空与海面�?code>domainModelList</code>�?code>domain: nature.sky / nature.water</code>�? core <code>shaderSurfaceList</code>（domain 自写 GLSL + registerShaderPreset�?/div>
+  <canvas id="canvasContainer">需要 WebGL</canvas>
+  <div id="loadingMask">加载中…</div>
+  <div id="hint">【Track 2 · Shader 天空与海面】<code>domainModelList</code>（<code>domain: nature.sky / nature.water</code>）+ core <code>shaderSurfaceList</code>（domain 自写 GLSL + registerShaderPreset）</div>
 </div>
 <script type="module">
   import { createJsonScene } from "threejson";
@@ -58,13 +58,17 @@
       const sceneData = await response.json();
       sceneData.canvasWidth = window.innerWidth;
       sceneData.canvasHeight = window.innerHeight;
-      sceneRuntime = await createJsonScene(sceneData, { canvas, resetScene: true, assetsBase: "/assets" });
+      sceneRuntime = await createJsonScene(sceneData, {
+    canvas,
+    assetsBase: "/assets",
+    resetScene: true
+  });
       window.addEventListener("resize", () => sceneRuntime?.resize?.(window.innerWidth, window.innerHeight));
       sceneRuntime.start();
       loadingMask.style.display = "none";
     } catch (err) {
       console.error(err);
-      loadingMask.textContent = "加载失败�? + err.message;
+      loadingMask.textContent = "加载失败：" + err.message;
     }
   }
 </script>

@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+ï»¿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ThreeJSON Tutorial ¡¤ Track 3 ¡¤ glTF º¬¼ô¼­ + AnimationMixer</title>
+  <title>ThreeJSON Tutorial Â· Track 3 Â· glTF å«å‰ªè¾‘ + AnimationMixer</title>
   <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
   <script type="importmap">
     
@@ -38,11 +38,11 @@
 </head>
 <body>
 <div id="rootContainer">
-  <canvas id="canvasContainer">ĞèÒª WebGL</canvas>
-  <div id="loadingMask">Track 3 ¡¤ glTF ¶¯»­¼ô¼­¼ÓÔØÖĞ¡­</div>
+  <canvas id="canvasContainer">éœ€è¦ WebGL</canvas>
+  <div id="loadingMask">Track 3 Â· glTF åŠ¨ç”»å‰ªè¾‘åŠ è½½ä¸­â€¦</div>
   <div id="hint">
-    ×ÊÔ´£º<code>/assets/json/tutorial/track-03/03-02-gltf-animation-mixer.json</code>£»glTF º¬ÏßĞÔ <strong>translation</strong> ¼ô¼­£¨Ô¼ 1s ÖÜÆÚÉÏÏÂÎ»ÒÆ£©£¬¼ÓÔØºóÓÉ core ×¢²á <code>AnimationMixer</code>¡£
-    ¿ÉÔÚ JSON ÉÏ¸Ä <code>animationMode</code> Îª <code>mixer</code> / <code>basic</code> ¹Û²ìÓëÉùÃ÷Ê½ <code>animations</code> µÄĞ­µ÷£¨±¾Ê¾ÀıÎ´ÅäÉùÃ÷Ê½ rotate£©¡£
+    èµ„æºï¼š<code>/assets/json/tutorial/track-03/03-02-gltf-animation-mixer.json</code>ï¼›glTF å«çº¿æ€§ <strong>translation</strong> å‰ªè¾‘ï¼ˆçº¦ 1s å‘¨æœŸä¸Šä¸‹ä½ç§»ï¼‰ï¼ŒåŠ è½½åç”± core æ³¨å†Œ <code>AnimationMixer</code>ã€‚
+    å¯åœ¨ JSON ä¸Šæ”¹ <code>animationMode</code> ä¸º <code>mixer</code> / <code>basic</code> è§‚å¯Ÿä¸å£°æ˜å¼ <code>animations</code> çš„åè°ƒï¼ˆæœ¬ç¤ºä¾‹æœªé…å£°æ˜å¼ rotateï¼‰ã€‚
   </div>
 </div>
 <script type="module">
@@ -64,7 +64,10 @@
       const sceneData = await response.json();
       sceneData.canvasWidth = window.innerWidth;
       sceneData.canvasHeight = window.innerHeight;
-      sceneRuntime = await createJsonScene(sceneData, { canvas: canvasContainer, assetsBase: "/assets" });
+      sceneRuntime = await createJsonScene(sceneData, {
+        canvas: canvasContainer,
+        assetsBase: "/assets"
+      });
       window.addEventListener("resize", () =>
         sceneRuntime?.resize?.(window.innerWidth, window.innerHeight)
       );
@@ -72,7 +75,7 @@
       loadingMask.style.display = "none";
     } catch (e) {
       console.error(e);
-      loadingMask.textContent = "¼ÓÔØÊ§°Ü£º" + (e && e.message ? e.message : String(e));
+      loadingMask.textContent = "åŠ è½½å¤±è´¥ï¼š" + (e && e.message ? e.message : String(e));
     }
   }
 </script>

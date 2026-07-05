@@ -38,9 +38,9 @@
 </head>
 <body>
 <div id="rootContainer">
-  <canvas id="canvasContainer">需�?WebGL</canvas>
-  <div id="loadingMask">加载中�?/div>
-  <div id="hint">【Track 6 · stat.chart】CSS3D 面板 + <code>extensions/stat-echarts</code> · import map �?<code>echarts</code></div>
+  <canvas id="canvasContainer">需要 WebGL</canvas>
+  <div id="loadingMask">加载中…</div>
+  <div id="hint">【Track 6 · stat.chart】CSS3D 面板 + <code>extensions/stat-echarts</code> · import map 含 <code>echarts</code></div>
 </div>
 <script type="module">
   import { createJsonScene } from "threejson";
@@ -77,7 +77,7 @@
       loadingMask.style.display = "none";
     } catch (err) {
       console.error(err);
-      loadingMask.textContent = "加载失败�? + err.message;
+      loadingMask.textContent = "加载失败：" + err.message;
     }
   }
 </script>

@@ -45,18 +45,18 @@
 </head>
 <body>
 <div id="rootContainer">
-  <canvas id="canvasContainer">需�?WebGL</canvas>
-  <div id="loadingMask">加载中�?/div>
+  <canvas id="canvasContainer">需要 WebGL</canvas>
+  <div id="loadingMask">加载中…</div>
   <div id="panel">
     <h2>textureQuality · 纹理采样档位</h2>
-    <div>JSON�?code>/assets/json/tutorial/track-02/02-11-texture-sampling-toggle.json</code></div>
+    <div>JSON：<code>/assets/json/tutorial/track-02/02-11-texture-sampling-toggle.json</code></div>
     <div class="row">
-      <button type="button" data-target="panel-low" data-tier="0">�?· �?0)</button>
-      <button type="button" data-target="panel-low" data-tier="3">�?· �?3)</button>
-      <button type="button" data-target="panel-high" data-tier="0">�?· �?0)</button>
-      <button type="button" data-target="panel-high" data-tier="3">�?· �?3)</button>
+      <button type="button" data-target="panel-low" data-tier="0">左 · 关(0)</button>
+      <button type="button" data-target="panel-low" data-tier="3">左 · 高(3)</button>
+      <button type="button" data-target="panel-high" data-tier="0">右 · 关(0)</button>
+      <button type="button" data-target="panel-high" data-tier="3">右 · 高(3)</button>
     </div>
-    <p>�?右初始为 0 �?3；中间继�?<code>sceneConfig.textureQuality: 2</code>。拉近观�?mipmap / 各向异性差异�?/p>
+    <p>左/右初始为 0 与 3；中间继承 <code>sceneConfig.textureQuality: 2</code>。拉近观察 mipmap / 各向异性差异。</p>
   </div>
 </div>
 <script type="module">
@@ -77,14 +77,18 @@
       const sceneData = await response.json();
       sceneData.canvasWidth = window.innerWidth;
       sceneData.canvasHeight = window.innerHeight;
-      sceneRuntime = await createJsonScene(sceneData, { canvas, resetScene: true, assetsBase: "/assets" });
+      sceneRuntime = await createJsonScene(sceneData, {
+    canvas,
+    assetsBase: "/assets",
+    resetScene: true
+  });
       window.addEventListener("resize", () => sceneRuntime?.resize?.(window.innerWidth, window.innerHeight));
       sceneRuntime.start();
       loadingMask.style.display = "none";
       bindControls();
     } catch (err) {
       console.error(err);
-      loadingMask.textContent = "加载失败�? + err.message;
+      loadingMask.textContent = "加载失败：" + err.message;
     }
   }
 

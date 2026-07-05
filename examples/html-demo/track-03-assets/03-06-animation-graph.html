@@ -46,16 +46,16 @@
 </head>
 <body>
 <div id="rootContainer">
-  <canvas id="canvasContainer">需�?WebGL</canvas>
-  <div id="loadingMask">加载中�?/div>
+  <canvas id="canvasContainer">需要 WebGL</canvas>
+  <div id="loadingMask">加载中…</div>
   <div id="panel">
     <div>animationGraph 参数</div>
     <button id="btnFast" type="button">切换 fast</button>
-    <button id="btnPulse" type="button">触发 pulse（单�?bobY�?/button>
+    <button id="btnPulse" type="button">触发 pulse（单次 bobY）</button>
   </div>
   <div id="hint">
-    【Track 3 · animationGraph�?code>/assets/json/tutorial/track-03/03-06-animation-graph.json</code><br>
-    �?graph 时仍 play all clips；本页含 graph �?状态机 + <code>setAnimationParameter</code>
+    【Track 3 · animationGraph】<code>/assets/json/tutorial/track-03/03-06-animation-graph.json</code><br>
+    无 graph 时仍 play all clips；本页含 graph → 状态机 + <code>setAnimationParameter</code>
   </div>
 </div>
 <script type="module">
@@ -77,14 +77,18 @@
       const sceneData = await response.json();
       sceneData.canvasWidth = window.innerWidth;
       sceneData.canvasHeight = window.innerHeight;
-      sceneRuntime = await createJsonScene(sceneData, { canvas, resetScene: true, assetsBase: "/assets" });
+      sceneRuntime = await createJsonScene(sceneData, {
+    canvas,
+    assetsBase: "/assets",
+    resetScene: true
+  });
       window.addEventListener("resize", () => sceneRuntime?.resize?.(window.innerWidth, window.innerHeight));
       sceneRuntime.start();
       loadingMask.style.display = "none";
       bindControls();
     } catch (err) {
       console.error(err);
-      loadingMask.textContent = "加载失败�? + err.message;
+      loadingMask.textContent = "加载失败：" + err.message;
     }
   }
 

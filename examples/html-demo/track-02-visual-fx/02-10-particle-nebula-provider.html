@@ -37,11 +37,11 @@
 </head>
 <body>
 <div id="rootContainer">
-  <canvas id="canvasContainer">需�?WebGL</canvas>
-  <div id="loadingMask">加载中�?/div>
+  <canvas id="canvasContainer">需要 WebGL</canvas>
+  <div id="loadingMask">加载中…</div>
   <div id="hint">
-    【Track 2 · 第三方粒子�?code>/assets/json/tutorial/track-02/02-10-particle-nebula-provider.json</code><br>
-    �?<code>threejson/core</code> �?<code>import "/extensions/particle-nebula/index.js"</code> · 左侧 core · 右侧 <code>provider: "nebula"</code>
+    【Track 2 · 第三方粒子】<code>/assets/json/tutorial/track-02/02-10-particle-nebula-provider.json</code><br>
+    先 <code>threejson/core</code> 再 <code>import "/extensions/particle-nebula/index.js"</code> · 左侧 core · 右侧 <code>provider: "nebula"</code>
   </div>
 </div>
 <script type="module">
@@ -62,13 +62,17 @@
       const sceneData = await response.json();
       sceneData.canvasWidth = window.innerWidth;
       sceneData.canvasHeight = window.innerHeight;
-      sceneRuntime = await createJsonScene(sceneData, { canvas, resetScene: true, assetsBase: "/assets" });
+      sceneRuntime = await createJsonScene(sceneData, {
+    canvas,
+    assetsBase: "/assets",
+    resetScene: true
+  });
       window.addEventListener("resize", () => sceneRuntime?.resize?.(window.innerWidth, window.innerHeight));
       sceneRuntime.start();
       loadingMask.style.display = "none";
     } catch (err) {
       console.error(err);
-      loadingMask.textContent = "加载失败�? + err.message;
+      loadingMask.textContent = "加载失败：" + err.message;
     }
   }
 

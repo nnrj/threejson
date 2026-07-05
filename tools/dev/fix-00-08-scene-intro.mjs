@@ -1,9 +1,22 @@
-<!DOCTYPE html>
+/**
+ * Write 00-08-scene-intro.html with correct UTF-8 Chinese (not in temp_old).
+ */
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const target = path.join(
+  ROOT,
+  "examples/html-demo/track-00-runtime/00-08-scene-intro.html"
+);
+
+const content = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ThreeJSON Tutorial · Track 2 · particleEmitter gpuCompute</title>
+  <title>ThreeJSON Tutorial \u00b7 Track 0 \u00b7 sceneConfig.intro</title>
   <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
   <script type="importmap">
     {
@@ -29,25 +42,22 @@
       color: #fff; background: rgba(0,0,0,0.55); font-size: 15px;
     }
     #hint {
-      position: absolute; left: 12px; bottom: 12px; z-index: 25; max-width: min(900px, 94vw);
-      padding: 8px 10px; border-radius: 4px; background: rgba(10,10,10,0.62); color: #e0e0e0; font-size: 12px; line-height: 1.5;
+      position: absolute; left: 12px; bottom: 12px; z-index: 25; max-width: min(760px, 92vw);
+      padding: 8px 10px; border-radius: 4px; background: rgba(10,10,10,0.55); color: #e0e0e0; font-size: 12px; line-height: 1.45;
     }
-    #hint code { color: #b8d4ff; font-size: 11px; }
+    code { color: #b8d4ff; }
   </style>
 </head>
 <body>
 <div id="rootContainer">
-  <canvas id="canvasContainer">需要 WebGL</canvas>
-  <div id="loadingMask">加载中…</div>
-  <div id="hint">
-    【Track 2 · particleEmitter】<code>/assets/json/tutorial/track-02/02-09-particle-emitter-gpu.json</code><br>
-    中央 <code>simulation: gpuCompute</code> 下落粒子 · 左侧 <code>simulation: cpu</code> twinkle 对比
-  </div>
+  <canvas id="canvasContainer">\u9700\u8981 WebGL</canvas>
+  <div id="loadingMask">\u52a0\u8f7d\u4e2d\u2026</div>
+  <div id="hint">\u3010Track 0 \u00b7 intro\u3011<code>sceneConfig.intro.postLoad</code> \u00b7 \u90e8\u7f72\u5b8c\u6210\u540e\u7247\u5934\uff08Logo + \u6587\u5b57\uff0c\u70b9\u51fb\u8df3\u8fc7\uff09\u00b7 \u6570\u636e\uff1a<code>/assets/json/tutorial/track-00/00-08-scene-intro.json</code></div>
 </div>
 <script type="module">
   import { createJsonScene } from "threejson/core";
 
-  const sceneJsonUrl = "/assets/json/tutorial/track-02/02-09-particle-emitter-gpu.json";
+  const sceneJsonUrl = "/assets/json/tutorial/track-00/00-08-scene-intro.json";
   const canvas = document.getElementById("canvasContainer");
   const loadingMask = document.getElementById("loadingMask");
   let sceneRuntime;
@@ -62,19 +72,23 @@
       const sceneData = await response.json();
       sceneData.canvasWidth = window.innerWidth;
       sceneData.canvasHeight = window.innerHeight;
-      sceneRuntime = await createJsonScene(sceneData, {
-    canvas,
-    assetsBase: "/assets",
-    resetScene: true
-  });
+      sceneRuntime = await createJsonScene(sceneData, { canvas, resetScene: true, assetsBase: "/assets" });
       window.addEventListener("resize", () => sceneRuntime?.resize?.(window.innerWidth, window.innerHeight));
       sceneRuntime.start();
       loadingMask.style.display = "none";
     } catch (err) {
       console.error(err);
-      loadingMask.textContent = "加载失败：" + err.message;
+      loadingMask.textContent = "\u52a0\u8f7d\u5931\u8d25\uff1a" + err.message;
     }
   }
 </script>
 </body>
 </html>
+`;
+
+fs.writeFileSync(target, content, "utf8");
+const verify = fs.readFileSync(target, "utf8");
+console.log("written:", target);
+console.log("需要 WebGL:", verify.includes("需要 WebGL"));
+console.log("FFFD:", verify.includes("\uFFFD"));
+console.log("assetsBase:", verify.includes("assetsBase"));

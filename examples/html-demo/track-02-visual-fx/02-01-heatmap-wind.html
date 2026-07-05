@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+ï»¿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ThreeJSON Tutorial ¡¤ Track 2 ¡¤ ÈÈÁ¦Óë·ç´ø</title>
+  <title>ThreeJSON Tutorial Â· Track 2 Â· çƒ­åŠ›ä¸é£å¸¦</title>
   <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
   <script type="importmap">
     {
@@ -36,9 +36,9 @@
 </head>
 <body>
 <div id="rootContainer">
-  <canvas id="canvasContainer">ĞèÒª WebGL</canvas>
-  <div id="loadingMask">¼ÓÔØÖĞ¡­</div>
-  <div id="hint">¡¾Track 2 ¡¤ ÈÈÁ¦Óë·ç´ø¡¿Êı¾İ£º<code>/assets/json/tutorial/track-02/02-01-heatmap-wind.json</code>¡£heatList + windList</div>
+  <canvas id="canvasContainer">éœ€è¦ WebGL</canvas>
+  <div id="loadingMask">åŠ è½½ä¸­â€¦</div>
+  <div id="hint">ã€Track 2 Â· çƒ­åŠ›ä¸é£å¸¦ã€‘æ•°æ®ï¼š<code>/assets/json/tutorial/track-02/02-01-heatmap-wind.json</code>ã€‚heatList + windList</div>
 </div>
 <script type="module">
   import { createJsonScene } from "threejson";
@@ -58,13 +58,17 @@
       const sceneData = await response.json();
       sceneData.canvasWidth = window.innerWidth;
       sceneData.canvasHeight = window.innerHeight;
-      sceneRuntime = await createJsonScene(sceneData, { canvas, resetScene: true, assetsBase: "/assets" });
+      sceneRuntime = await createJsonScene(sceneData, {
+    canvas,
+    assetsBase: "/assets",
+    resetScene: true
+  });
       window.addEventListener("resize", () => sceneRuntime?.resize?.(window.innerWidth, window.innerHeight));
       sceneRuntime.start();
       loadingMask.style.display = "none";
     } catch (err) {
       console.error(err);
-      loadingMask.textContent = "¼ÓÔØÊ§°Ü£º" + err.message;
+      loadingMask.textContent = "åŠ è½½å¤±è´¥ï¼š" + err.message;
     }
   }
 </script>

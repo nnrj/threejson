@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ThreeJSON Demo - CSS3D 可交互面�?/title>
+  <title>ThreeJSON Demo - CSS3D 可交互面板</title>
   <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
   <script type="importmap">
     {
@@ -35,10 +35,10 @@
 </head>
 <body>
 <div id="rootContainer">
-  <canvas id="canvasContainer">需�?WebGL</canvas>
-  <div id="loadingMask">加载 CSS3D 场景�?/div>
+  <canvas id="canvasContainer">需要 WebGL</canvas>
+  <div id="loadingMask">加载 CSS3D 场景…</div>
   <div id="hint">
-    数据�?code>/assets/json/tutorial/track-04/04-06-css3d-panel.json</code> · 左侧面板可点�?输入 · 右侧 iframe 需目标站允许嵌�?· 拖拽空白�?Orbit
+    数据：<code>/assets/json/tutorial/track-04/04-06-css3d-panel.json</code> · 左侧面板可点按/输入 · 右侧 iframe 需目标站允许嵌入 · 拖拽空白处 Orbit
   </div>
 </div>
 <script type="module">
@@ -67,7 +67,7 @@
     });
   } catch (e) {
     console.error(e);
-    loadingMask.textContent = "加载失败�? + (e?.message || String(e));
+    loadingMask.textContent = "加载失败：" + (e?.message || String(e));
   }
 
   window.addEventListener("beforeunload", () => sceneRuntime?.dispose());

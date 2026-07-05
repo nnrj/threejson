@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+ï»¿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ThreeJSON Demo 17 - µÚÒ»ÈË³Æ + Rapier Åö×²</title>
+  <title>ThreeJSON Demo 17 - ç¬¬ä¸€äººç§° + Rapier ç¢°æ’</title>
   <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
   <script type="importmap">
     {
@@ -36,12 +36,11 @@
 </head>
 <body>
 <div id="rootContainer">
-  <canvas id="canvasContainer">ĞèÒª WebGL Óë WASM</canvas>
-  <div id="loadingMask">ÕıÔÚ¼ÓÔØ Rapier WASM¡­</div>
+  <canvas id="canvasContainer">éœ€è¦ WebGL ä¸ WASM</canvas>
+  <div id="loadingMask">æ­£åœ¨åŠ è½½ Rapier WASMâ€¦</div>
   <div id="hint">
-    Êı¾İ£º<code>04-05-fps-rapier-collision.json</code> ¡¤
-    SCAR-H viewmodel ÒÑÎ¢µ÷£º¸üĞ¡¡¢¸üÔ¶¡¢ÂÔÑ¹µÍ ¡¤ WASD ¡¤ µã»÷Ëø¶¨Ö¸Õë<br>
-    First-person dual-hand viewmodel in this scene (<code>scar-h_first-person_fps_animated</code>) ¡ª model author requires the following attribution: This work is based on "Scar-H First-Person (FPS) Animated" (https://sketchfab.com/3d-models/scar-h-first-person-fps-animated-404b16a45a224163850df34a20391739) by Jainesh Pathak (https://sketchfab.com/spectraut2) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/).
+    æ•°æ®ï¼š<code>04-05-fps-rapier-collision.json</code> Â·
+    SCAR-H viewmodel å·²å¾®è°ƒï¼šæ›´å°ã€æ›´è¿œã€ç•¥å‹ä½ Â· WASD Â· ç‚¹å‡»é”å®šæŒ‡é’ˆ
   </div>
 </div>
 <script type="module">
@@ -57,7 +56,7 @@
   let sceneRuntime;
 
   try {
-    loadingMask.textContent = "ÕıÔÚ³õÊ¼»¯ Rapier WASM¡­";
+    loadingMask.textContent = "æ­£åœ¨åˆå§‹åŒ– Rapier WASMâ€¦";
     const RAPIER = (await import("@dimforge/rapier3d-compat")).default;
 
     const response = await fetch(sceneJsonUrl);
@@ -87,7 +86,7 @@
     });
   } catch (e) {
     console.error(e);
-    loadingMask.textContent = "¼ÓÔØÊ§°Ü£º" + (e?.message || String(e));
+    loadingMask.textContent = "åŠ è½½å¤±è´¥ï¼š" + (e?.message || String(e));
   }
 
   window.addEventListener("beforeunload", () => {

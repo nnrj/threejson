@@ -59,10 +59,13 @@
 </head>
 <body>
 <div id="rootContainer">
-  <canvas id="canvasContainer">需�?WebGL</canvas>
-  <div id="loadingMask">加载�?..</div>
+  <canvas id="canvasContainer">需要 WebGL</canvas>
+  <div id="loadingMask">加载中...</div>
   <div id="hint">
-    【Track 4 · Declarative actions】左侧灰色方块由 <code>scene.ready</code> 改成绿色�?    点击中间蓝色方块会先执行 <code>actions</code>（移动与改材质），再执行 <code>script</code>（短暂上移）�?    点击右侧红色方块会通过 <code>object.toggleVisible</code> 显隐左侧方块�?  </div>
+    【Track 4 · Declarative actions】左侧灰色方块由 <code>scene.ready</code> 改成绿色；
+    点击中间蓝色方块会先执行 <code>actions</code>（移动与改材质），再执行 <code>script</code>（短暂上移）；
+    点击右侧红色方块会通过 <code>object.toggleVisible</code> 显隐左侧方块。
+  </div>
 </div>
 <script type="module">
   import { createJsonScene } from "threejson";

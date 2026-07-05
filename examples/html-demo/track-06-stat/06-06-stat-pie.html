@@ -39,9 +39,9 @@
 </head>
 <body>
 <div id="rootContainer">
-  <canvas id="canvasContainer">需�?WebGL</canvas>
-  <div id="loadingMask">加载中�?/div>
-  <div id="hint">【Track 6 · stat.pie�?code>domain: "stat.pie"</code> · 圆柱扇形 + <code>statLabel</code> · 数据�?code>/assets/json/tutorial/track-06/06-06-stat-pie.json</code></div>
+  <canvas id="canvasContainer">需要 WebGL</canvas>
+  <div id="loadingMask">加载中…</div>
+  <div id="hint">【Track 6 · stat.pie】<code>domain: "stat.pie"</code> · 圆柱扇形 + <code>statLabel</code> · 数据：<code>/assets/json/tutorial/track-06/06-06-stat-pie.json</code></div>
 </div>
 <script type="module">
   import { createJsonScene } from "threejson";
@@ -61,13 +61,17 @@
       const sceneData = await response.json();
       sceneData.canvasWidth = window.innerWidth;
       sceneData.canvasHeight = window.innerHeight;
-      sceneRuntime = await createJsonScene(sceneData, { canvas, resetScene: true, assetsBase: "/assets" });
+      sceneRuntime = await createJsonScene(sceneData, {
+    canvas,
+    assetsBase: "/assets",
+    resetScene: true
+  });
       window.addEventListener("resize", () => sceneRuntime?.resize?.(window.innerWidth, window.innerHeight));
       sceneRuntime.start();
       loadingMask.style.display = "none";
     } catch (err) {
       console.error(err);
-      loadingMask.textContent = "加载失败�? + err.message;
+      loadingMask.textContent = "加载失败：" + err.message;
     }
   }
 </script>

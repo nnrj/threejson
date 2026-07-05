@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+ï»¿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ThreeJSON Demo 16 - µÚÒ»ÈË³Æ Player Rig</title>
+  <title>ThreeJSON Demo 16 - ç¬¬ä¸€äººç§° Player Rig</title>
   <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
   <script type="importmap">
     {
@@ -35,10 +35,10 @@
 </head>
 <body>
 <div id="rootContainer">
-  <canvas id="canvasContainer">ĞèÒª WebGL</canvas>
-  <div id="loadingMask">¼ÓÔØ Player Rig ³¡¾°¡­</div>
+  <canvas id="canvasContainer">éœ€è¦ WebGL</canvas>
+  <div id="loadingMask">åŠ è½½ Player Rig åœºæ™¯â€¦</div>
   <div id="hint">
-    Êı¾İ£º<code>/assets/json/tutorial/track-04/04-04-fps-player-rig.json</code> ¡¤ Ïà»ú <code>attachTo: "player"</code> ¡¤ WASD ÒÆ¶¯ Rig
+    æ•°æ®ï¼š<code>/assets/json/tutorial/track-04/04-04-fps-player-rig.json</code> Â· ç›¸æœº <code>attachTo: "player"</code> Â· WASD ç§»åŠ¨ Rig
   </div>
 </div>
 <script type="module">
@@ -74,7 +74,7 @@
     });
   } catch (e) {
     console.error(e);
-    loadingMask.textContent = "¼ÓÔØÊ§°Ü£º" + (e?.message || String(e));
+    loadingMask.textContent = "åŠ è½½å¤±è´¥ï¼š" + (e?.message || String(e));
   }
 
   window.addEventListener("beforeunload", () => sceneRuntime?.dispose());
