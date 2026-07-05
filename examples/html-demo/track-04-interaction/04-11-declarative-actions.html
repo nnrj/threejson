@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThreeJSON Tutorial · Track 4 · Declarative actions</title>
+  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <script type="importmap">
+    {
+      "imports": {
+        "threejson": "/builtins/full.js",
+        "threejson/core": "/core/index.js",
+        "three": "https://esm.sh/three@0.184.0",
+        "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
+        "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
+        "html2canvas-pro": "https://esm.sh/html2canvas-pro@2.0.4",
+        "gifuct-js": "https://esm.sh/gifuct-js@2.1.2",
+        "three-mesh-bvh": "https://esm.sh/three-mesh-bvh@0.9.10?deps=three@0.184.0",
+        "three-bvh-csg": "https://esm.sh/three-bvh-csg@0.0.18?deps=three@0.184.0,three-mesh-bvh@0.9.10"
+      }
+    }
+  </script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #1a1a1a;
+      --text-main: #f3f5f7;
+      --text-muted: rgba(232, 234, 237, 0.74);
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+      color: var(--text-main);
+    }
+    #rootContainer { position: relative; width: 100vw; height: 100vh; }
+    #canvasContainer { display: block; width: 100%; height: 100%; background: #222; cursor: pointer; }
+    #loadingMask {
+      position: absolute; inset: 0; z-index: 20;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0, 0, 0, 0.55);
+    }
+    #hint {
+      position: absolute; left: 12px; bottom: 12px; z-index: 10;
+      max-width: min(700px, calc(100vw - 24px));
+      padding: 10px 12px;
+      background: rgba(22, 26, 34, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    code { color: #b8d4ff; }
+  </style>
+</head>
+<body>
+<div id="rootContainer">
+  <canvas id="canvasContainer">需要 WebGL</canvas>
+  <div id="loadingMask">加载中...</div>
+  <div id="hint">
+    【Track 4 · Declarative actions】左侧灰色方块由 <code>scene.ready</code> 改成绿色；
+    点击中间蓝色方块会先执行 <code>actions</code>（移动与改材质），再执行 <code>script</code>（短暂上移）；
+    点击右侧红色方块会通过 <code>object.toggleVisible</code> 显隐左侧方块。
+  </div>
+</div>
+<script type="module">
+  import { createJsonScene } from "threejson";
+
+  const canvas = document.getElementById("canvasContainer");
+  const sceneData = await fetch("/assets/json/tutorial/track-04/04-11-declarative-actions.json")
+    .then((response) => response.json());
+  sceneData.canvasWidth = window.innerWidth;
+  sceneData.canvasHeight = window.innerHeight;
+
+  const runtime = await createJsonScene(sceneData, {
+    canvas,
+    resetScene: true
+  });
+  runtime.start();
+  window.addEventListener("resize", () => runtime?.resize?.(window.innerWidth, window.innerHeight));
+  document.getElementById("loadingMask").style.display = "none";
+</script>
+</body>
+</html>

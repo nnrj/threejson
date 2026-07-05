@@ -1,0 +1,96 @@
+{
+  "version": "next",
+  "name": "css3d-panel-demo",
+  "canvasWidth": 1280,
+  "canvasHeight": 720,
+  "sceneConfig": {
+    "extensions": {
+      "css3d": {
+        "pointerPolicy": "panel"
+      }
+    }
+  },
+  "objectList": [
+    {
+      "objType": "scene",
+      "background": "#1e2430"
+    },
+    {
+      "objType": "camera",
+      "fov": 55,
+      "near": 0.1,
+      "far": 2000,
+      "position": { "x": 120, "y": 90, "z": 160 }
+    },
+    {
+      "objType": "renderer",
+      "antialias": true,
+      "ratioRate": 1
+    },
+    {
+      "objType": "controls",
+      "enableDamping": true,
+      "dampingFactor": 0.08,
+      "target": { "x": 0, "y": 20, "z": 0 }
+    },
+    {
+      "objType": "light",
+      "type": "ambient",
+      "color": "#ffffff",
+      "intensity": 0.5
+    },
+    {
+      "objType": "light",
+      "type": "directional",
+      "color": "#ffffff",
+      "intensity": 0.85,
+      "position": { "x": 80, "y": 120, "z": 60 }
+    },
+    {
+      "objType": "renderLoop",
+      "autoResize": true
+    },
+    {
+      "name": "demo-floor",
+      "objType": "floor",
+      "geometry": { "width": 200, "height": 6, "depth": 160 },
+      "position": { "x": 0, "y": -3, "z": 0 },
+      "material": { "color": "#2d3a4a" }
+    },
+    {
+      "name": "demo-pedestal",
+      "objType": "box",
+      "geometry": { "width": 24, "height": 40, "depth": 24 },
+      "position": { "x": 0, "y": 20, "z": 0 },
+      "material": { "color": "#4a5d73" }
+    },
+    {
+      "name": "html-hud",
+      "objType": "css3dPanel",
+      "refName": "html-hud",
+      "width": 300,
+      "height": 180,
+      "panelWidth": 28,
+      "position": { "x": -36, "y": 52, "z": 0 },
+      "content": {
+        "type": "html",
+        "html": "<div style='padding:12px;line-height:1.5'><strong>CSS3D HTML</strong><p>可点击按钮与输入框。</p><button type='button'>点我</button><input placeholder='可输入' style='margin-left:8px;width:120px'/></div>"
+      }
+    },
+    {
+      "name": "url-panel",
+      "objType": "css3dPanel",
+      "refName": "url-panel",
+      "width": 360,
+      "height": 220,
+      "panelWidth": 34,
+      "position": { "x": 42, "y": 58, "z": 4 },
+      "rotation": { "rotationY": -18 },
+      "content": {
+        "type": "url",
+        "src": "https://example.com/"
+      }
+    }
+  ],
+  "threeJsonId": "04-06-css3d-panel"
+}

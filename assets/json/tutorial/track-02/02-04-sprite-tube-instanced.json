@@ -1,0 +1,195 @@
+{
+  "version": "next",
+  "name": "tutorial-sprite-tube-instanced",
+  "sceneConfig": {
+    "scene": {
+      "background": "#0c1018"
+    },
+    "camera": {
+      "fov": 50,
+      "position": {
+        "x": 15,
+        "y": 12,
+        "z": 22
+      },
+      "near": 0.1,
+      "far": 800
+    },
+    "renderer": {
+      "antialias": true,
+      "ratioRate": 1
+    },
+    "controls": {
+      "enableDamping": true,
+      "target": {
+        "x": 4,
+        "y": 2,
+        "z": 0
+      }
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "color": "#ffffff",
+        "intensity": 0.4
+      },
+      {
+        "type": "directional",
+        "color": "#ffffff",
+        "intensity": 0.85,
+        "position": {
+          "x": 8,
+          "y": 12,
+          "z": 6
+        }
+      }
+    ],
+    "renderLoop": {
+      "autoResize": true,
+      "firstAutoResize": true
+    }
+  },
+  "worldInfo": {
+    "spriteList": [
+      {
+        "name": "marker-pin",
+        "position": {
+          "x": 0,
+          "y": 3,
+          "z": 0
+        },
+        "material": {
+          "color": "#ffcc00",
+          "size": 3,
+          "transparent": true,
+          "opacity": 0.85
+        }
+      },
+      {
+        "name": "marker-end",
+        "position": {
+          "x": 8,
+          "y": 2,
+          "z": 2
+        },
+        "material": {
+          "color": "#66ccff",
+          "size": 2
+        }
+      }
+    ],
+    "tubeList": [
+      {
+        "name": "demo-pipe",
+        "path": {
+          "type": "catmullRom",
+          "points": [
+            {
+              "x": 0,
+              "y": 1,
+              "z": 0
+            },
+            {
+              "x": 3,
+              "y": 3,
+              "z": 0
+            },
+            {
+              "x": 6,
+              "y": 1,
+              "z": 1
+            },
+            {
+              "x": 9,
+              "y": 2,
+              "z": 2
+            }
+          ]
+        },
+        "geometry": {
+          "radius": 0.25,
+          "tubularSegments": 64,
+          "radialSegments": 10
+        },
+        "material": {
+          "type": "standard",
+          "color": "#67c23a",
+          "metalness": 0.15,
+          "roughness": 0.5
+        }
+      }
+    ],
+    "instancedList": [
+      {
+        "name": "pillar-grid",
+        "geometry": {
+          "width": 1,
+          "height": 2,
+          "depth": 1
+        },
+        "material": {
+          "type": "standard",
+          "color": "#409eff"
+        },
+        "transforms": [
+          {
+            "position": {
+              "x": 1,
+              "y": 1,
+              "z": -2
+            }
+          },
+          {
+            "position": {
+              "x": 3,
+              "y": 1,
+              "z": -2
+            }
+          },
+          {
+            "position": {
+              "x": 5,
+              "y": 1,
+              "z": -2
+            }
+          },
+          {
+            "position": {
+              "x": 7,
+              "y": 1,
+              "z": -2
+            }
+          }
+        ]
+      }
+    ],
+    "boxModelList": [
+      {
+        "name": "ground",
+        "objType": "box",
+        "geometry": {
+          "width": 20,
+          "height": 0.2,
+          "depth": 12
+        },
+        "position": {
+          "x": 4,
+          "y": -0.1,
+          "z": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "metalness": 0.05,
+          "roughness": 0.85,
+          "textureUrl": "/assets/textures/building/floor/wood_floor.webp",
+          "textureRepeat": {
+            "x": 2,
+            "y": 2
+          }
+        }
+      }
+    ]
+  },
+  "threeJsonId": "02-04-sprite-tube-instanced"
+}

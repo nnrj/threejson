@@ -1,0 +1,580 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThreeJSON Tutorial · Track 4 · 对象管理器</title>
+  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <script type="importmap">
+    
+    {
+      "imports": {
+        "threejson": "/builtins/full.js",
+        "threejson/core": "/core/index.js",
+        "three": "https://esm.sh/three@0.184.0",
+        "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
+        "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
+        "html2canvas-pro": "https://esm.sh/html2canvas-pro@2.0.4",
+        "gifuct-js": "https://esm.sh/gifuct-js@2.1.2",
+        "three-mesh-bvh": "https://esm.sh/three-mesh-bvh@0.9.10?deps=three@0.184.0",
+        "three-bvh-csg": "https://esm.sh/three-bvh-csg@0.0.18?deps=three@0.184.0,three-mesh-bvh@0.9.10"
+      }
+    }
+  
+  </script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #1a1a1a;
+      --panel-bg: rgba(22, 26, 34, 0.52);
+      --panel-border: rgba(255, 255, 255, 0.08);
+      --text-main: #f3f5f7;
+      --text-muted: rgba(232, 234, 237, 0.72);
+      --text-subtle: rgba(232, 234, 237, 0.5);
+      --accent: #409eff;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: var(--bg);
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+      color: var(--text-main);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    #rootContainer {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background: var(--bg);
+    }
+
+    #canvasContainer {
+      display: block;
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      margin: 0;
+      background: #222;
+      outline: none;
+    }
+
+    #loadingMask {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      background: rgba(47, 47, 47, 0.72);
+      font-size: 15px;
+    }
+
+    #messageBox {
+      position: absolute;
+      top: 18px;
+      left: 50%;
+      z-index: 30;
+      display: none;
+      max-width: 70vw;
+      padding: 8px 14px;
+      border-radius: 4px;
+      color: #fff;
+      background: rgba(20, 20, 20, 0.82);
+      font-size: 13px;
+      transform: translateX(-50%);
+    }
+
+    .demoInspector {
+      position: absolute;
+      top: 18px;
+      left: 18px;
+      z-index: 25;
+      width: min(320px, calc(100vw - 36px));
+      max-height: calc(100vh - 36px);
+      overflow: auto;
+      padding: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      background: var(--panel-bg);
+      color: var(--text-main);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+      -webkit-backdrop-filter: blur(22px) saturate(1.15);
+      backdrop-filter: blur(22px) saturate(1.15);
+    }
+
+    .demoInspector h2,
+    .demoInspector h3,
+    .demoInspector p {
+      margin: 0;
+    }
+
+    .demoInspector h2 {
+      font-size: 16px;
+      line-height: 1.35;
+      color: #eef3f8;
+    }
+
+    .demoInspector p {
+      margin-top: 8px;
+      color: var(--text-muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .demoInspector code {
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #9fd3ff;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 12px;
+    }
+
+    .demoInspectorSection {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid var(--panel-border);
+    }
+
+    .demoInspectorSection h3 {
+      font-size: 13px;
+      color: #eef3f8;
+    }
+
+    .demoInspectorAction {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.045);
+    }
+
+    .demoInspectorActionLabel {
+      color: var(--text-muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .demoInspectorAction button {
+      width: 100%;
+      margin-top: 8px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid rgba(64, 158, 255, 0.45);
+      background: rgba(64, 158, 255, 0.2);
+      color: var(--text-main);
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .demoInspectorAction button:hover {
+      background: rgba(64, 158, 255, 0.32);
+      border-color: rgba(64, 158, 255, 0.55);
+    }
+
+    .demoInspectorAction button.secondary {
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      background: #4a4c51;
+      color: #eef4fa;
+    }
+
+    .demoInspectorAction button.secondary:hover {
+      background: #55585f;
+      border-color: rgba(255, 255, 255, 0.28);
+    }
+  </style>
+</head>
+<body>
+<div id="rootContainer">
+  <canvas id="canvasContainer">抱歉，你的浏览器不支持 WebGL。</canvas>
+  <div id="loadingMask">ThreeJSON 对象管理器示例加载中...</div>
+  <div id="messageBox"></div>
+  <aside class="demoInspector">
+    <h2>对象管理器演示</h2>
+    <p>左侧按钮直接从运行时注册表取回对象，然后修改颜色、位置、缩放与显隐。</p>
+    <p>本页分别演示 <code>refName</code>、<code>threeJsonId</code>、<code>name</code> 三种取对象方式。</p>
+
+    <section class="demoInspectorSection">
+      <h3>1. 按 <code>refName</code> 取对象</h3>
+      <div class="demoInspectorAction">
+        <div class="demoInspectorActionLabel"><code>getObjectByRefName("mainBox")</code></div>
+        <button type="button" id="btnRefNameColor">切换立方体颜色</button>
+      </div>
+    </section>
+
+    <section class="demoInspectorSection">
+      <h3>2. 按 <code>threeJsonId</code> 取对象</h3>
+      <div class="demoInspectorAction">
+        <div class="demoInspectorActionLabel"><code>getObjectByThreeJsonId("demo-glass-box-001")</code></div>
+        <button type="button" id="btnThreeJsonIdMove">切换玻璃盒高度</button>
+      </div>
+    </section>
+
+    <section class="demoInspectorSection">
+      <h3>3. 按 <code>name</code> 取对象</h3>
+      <div class="demoInspectorAction">
+        <div class="demoInspectorActionLabel"><code>getObjectsByName("demo-sphere")[0]</code></div>
+        <button type="button" id="btnNameMove">切换地球位置与缩放</button>
+      </div>
+      <div class="demoInspectorAction">
+        <div class="demoInspectorActionLabel"><code>getObjectsByName("demo-floor")[0]</code></div>
+        <button type="button" id="btnToggleFloor">切换地板显隐</button>
+      </div>
+      <div class="demoInspectorAction">
+        <div class="demoInspectorActionLabel">恢复默认状态</div>
+        <button type="button" class="secondary" id="btnResetDemo">重置示例对象</button>
+      </div>
+    </section>
+  </aside>
+</div>
+
+<script type="module">
+  import {
+    createSceneRuntime,
+    deployMesh,
+    getObjectByRefName,
+    getObjectByThreeJsonId,
+    getObjectsByName,
+    rebuildObjectRegistryFromScene
+  } from "threejson/core";
+
+  const canvasContainer = document.getElementById("canvasContainer");
+  const loadingMask = document.getElementById("loadingMask");
+  const messageBox = document.getElementById("messageBox");
+  const btnRefNameColor = document.getElementById("btnRefNameColor");
+  const btnThreeJsonIdMove = document.getElementById("btnThreeJsonIdMove");
+  const btnNameMove = document.getElementById("btnNameMove");
+  const btnToggleFloor = document.getElementById("btnToggleFloor");
+  const btnResetDemo = document.getElementById("btnResetDemo");
+
+  let scene;
+  let camera;
+  let renderer;
+  let controls;
+  let sceneRuntime;
+  let renderLoop;
+
+  const demoState = {
+    boxColorChanged: false,
+    glassRaised: false,
+    sphereMoved: false,
+    floorHidden: false
+  };
+
+  const sceneConfig = {
+    canvasWidth: window.innerWidth,
+    canvasHeight: window.innerHeight,
+    scene: {
+      background: "#222222"
+    },
+    camera: {
+      fov: 60,
+      near: 0.1,
+      far: 2500,
+      position: { x: 230, y: 180, z: 260 }
+    },
+    renderer: {
+      antialias: true,
+      ratioRate: 1
+    },
+    controls: {
+      enableDamping: true,
+      dampingFactor: 0.08,
+      enableZoom: true,
+      autoRotate: false,
+      target: { x: 0, y: 40, z: 0 }
+    },
+    lights: [
+      { type: "ambient", color: "#ffffff", intensity: 0.45 },
+      { type: "directional", color: "#ffffff", intensity: 0.9, position: { x: 300, y: 400, z: 250 } }
+    ],
+    renderLoop: {
+      autoResize: true,
+      firstAutoResize: true
+    }
+  };
+
+  const demoObjects = {
+    floor: {
+      name: "demo-floor",
+      refName: "groundPlane",
+      threeJsonId: "demo-floor-001",
+      objType: "floor",
+      geometry: { width: 360, height: 8, depth: 260 },
+      position: { x: 0, y: -4, z: 0 },
+      rotation: { rotationX: 0, rotationY: 0, rotationZ: 0 },
+      scale: { scaleX: 1, scaleY: 1, scaleZ: 1 },
+      material: {
+        type: "standard",
+        color: "#ffffff",
+        metalness: 0.05,
+        roughness: 0.85,
+        textureUrl: "/assets/textures/building/floor/wood_floor.webp",
+        textureRepeat: { x: 2, y: 2 }
+      }
+    },
+    box: {
+      name: "demo-blue-box",
+      refName: "mainBox",
+      threeJsonId: "demo-box-001",
+      objType: "demoBox",
+      geometry: { width: 80, height: 80, depth: 80 },
+      position: { x: -70, y: 40, z: 0 },
+      rotation: { rotationX: 0, rotationY: 0, rotationZ: 0 },
+      scale: { scaleX: 1, scaleY: 1, scaleZ: 1 },
+      material: {
+        type: "standard",
+        color: "#409eff"
+      },
+      animations: [
+        { type: "rotate", axis: "y", speed: -0.6 }
+      ]
+    },
+    glassBox: {
+      name: "demo-glass-box",
+      refName: "glassTower",
+      threeJsonId: "demo-glass-box-001",
+      objType: "demoBox",
+      geometry: { width: 70, height: 110, depth: 70 },
+      position: { x: 70, y: 55, z: -35 },
+      rotation: { rotationX: 0, rotationY: 0.35, rotationZ: 0 },
+      scale: { scaleX: 1, scaleY: 1, scaleZ: 1 },
+      material: {
+        type: "standard",
+        color: "#67c23a",
+        transparent: true,
+        opacity: 0.45
+      }
+    },
+    sphere: {
+      name: "demo-sphere",
+      refName: "earthBall",
+      threeJsonId: "demo-sphere-001",
+      objType: "demoSphere",
+      boxType: "sphere",
+      geometry: { radius: 42, widthSegments: 32, heightSegments: 16 },
+      position: { x: 0, y: 48, z: 85 },
+      rotation: { rotationX: 0, rotationY: 0, rotationZ: 0 },
+      scale: { scaleX: 1, scaleY: 1, scaleZ: 1 },
+      material: {
+        type: "standard",
+        textureUrl: "/assets/textures/environment/nature/planet/earth.png"
+      },
+      animations: [
+        { type: "rotate", axis: "y", speed: 0.48 }
+      ]
+    }
+  };
+
+  window.addEventListener("DOMContentLoaded", initDemo);
+  window.addEventListener("beforeunload", wasteCleaner);
+
+  function initDemo() {
+    try {
+      initSceneRuntime();
+      initDemoObjects();
+      initEventListener();
+      renderLoop.start();
+      setLoading(false);
+    } catch (error) {
+      console.error(error);
+      setLoading(false);
+      showMessage("对象管理器示例初始化失败，请查看控制台错误。", "error");
+    }
+  }
+
+  function initSceneRuntime() {
+    sceneRuntime = createSceneRuntime({
+      canvas: canvasContainer,
+      config: sceneConfig
+    });
+    scene = sceneRuntime.scene;
+    camera = sceneRuntime.camera;
+    renderer = sceneRuntime.renderer;
+    controls = sceneRuntime.controls;
+    renderLoop = sceneRuntime.renderLoop;
+  }
+
+  function initDemoObjects() {
+    deployMesh(demoObjects.floor, scene);
+    deployMesh(demoObjects.box, scene);
+    deployMesh(demoObjects.glassBox, scene);
+    deployMesh(demoObjects.sphere, scene);
+  }
+
+  function initEventListener() {
+    window.addEventListener("resize", windowResize);
+    canvasContainer.addEventListener("contextmenu", rightClickHandler);
+    btnRefNameColor?.addEventListener("click", toggleBoxColorByRefName);
+    btnThreeJsonIdMove?.addEventListener("click", toggleGlassHeightByThreeJsonId);
+    btnNameMove?.addEventListener("click", toggleSphereByName);
+    btnToggleFloor?.addEventListener("click", toggleFloorByName);
+    btnResetDemo?.addEventListener("click", resetDemoObjects);
+  }
+
+  function windowResize() {
+    sceneConfig.canvasWidth = window.innerWidth;
+    sceneConfig.canvasHeight = window.innerHeight;
+    renderLoop?.resize({
+      width: sceneConfig.canvasWidth,
+      height: sceneConfig.canvasHeight
+    });
+  }
+
+  function rightClickHandler(event) {
+    event.preventDefault();
+  }
+
+  function resolveRegisteredObject(getter) {
+    let object = getter();
+    if (object) {
+      return object;
+    }
+    rebuildObjectRegistryFromScene(scene);
+    object = getter();
+    return object || null;
+  }
+
+  function setObjectColor(object, color) {
+    if (!object || !color) {
+      return;
+    }
+    object.traverse((node) => {
+      if (!node?.material) {
+        return;
+      }
+      const materials = Array.isArray(node.material) ? node.material : [node.material];
+      for (const material of materials) {
+        if (!material?.color) {
+          continue;
+        }
+        material.color.set(color);
+        material.needsUpdate = true;
+      }
+    });
+  }
+
+  function toggleBoxColorByRefName() {
+    const box = resolveRegisteredObject(() => getObjectByRefName("mainBox"));
+    if (!box) {
+      showMessage("未找到 refName 为 mainBox 的对象。", "error");
+      return;
+    }
+    demoState.boxColorChanged = !demoState.boxColorChanged;
+    setObjectColor(box, demoState.boxColorChanged ? "#ff7a45" : "#409eff");
+    showMessage(`已通过 refName 取到立方体，并把颜色切换为 ${demoState.boxColorChanged ? "橙色" : "蓝色"}。`);
+  }
+
+  function toggleGlassHeightByThreeJsonId() {
+    const glassBox = resolveRegisteredObject(() => getObjectByThreeJsonId("demo-glass-box-001"));
+    if (!glassBox) {
+      showMessage("未找到 threeJsonId 为 demo-glass-box-001 的对象。", "error");
+      return;
+    }
+    demoState.glassRaised = !demoState.glassRaised;
+    glassBox.position.y = demoState.glassRaised ? 88 : 55;
+    showMessage(`已通过 threeJsonId 取到玻璃盒，并把高度切换到 y=${glassBox.position.y}。`);
+  }
+
+  function toggleSphereByName() {
+    const sphere = resolveRegisteredObject(() => getObjectsByName("demo-sphere")[0] || null);
+    if (!sphere) {
+      showMessage("未通过 name 找到 demo-sphere。", "error");
+      return;
+    }
+    demoState.sphereMoved = !demoState.sphereMoved;
+    if (demoState.sphereMoved) {
+      sphere.position.set(110, 68, 120);
+      sphere.scale.set(1.35, 1.35, 1.35);
+    } else {
+      sphere.position.set(0, 48, 85);
+      sphere.scale.set(1, 1, 1);
+    }
+    showMessage(`已通过 name 取到地球，并${demoState.sphereMoved ? "移动/放大" : "恢复默认位置"}。`);
+  }
+
+  function toggleFloorByName() {
+    const floor = resolveRegisteredObject(() => getObjectsByName("demo-floor")[0] || null);
+    if (!floor) {
+      showMessage("未通过 name 找到 demo-floor。", "error");
+      return;
+    }
+    demoState.floorHidden = !demoState.floorHidden;
+    floor.visible = !demoState.floorHidden;
+    showMessage(`已通过 name 取到地板，并将其${demoState.floorHidden ? "隐藏" : "显示"}。`);
+  }
+
+  function resetDemoObjects() {
+    const box = resolveRegisteredObject(() => getObjectByRefName("mainBox"));
+    const glassBox = resolveRegisteredObject(() => getObjectByThreeJsonId("demo-glass-box-001"));
+    const sphere = resolveRegisteredObject(() => getObjectsByName("demo-sphere")[0] || null);
+    const floor = resolveRegisteredObject(() => getObjectsByName("demo-floor")[0] || null);
+
+    if (box) {
+      setObjectColor(box, "#409eff");
+    }
+    if (glassBox) {
+      glassBox.position.set(70, 55, -35);
+      setObjectColor(glassBox, "#67c23a");
+    }
+    if (sphere) {
+      sphere.position.set(0, 48, 85);
+      sphere.scale.set(1, 1, 1);
+    }
+    if (floor) {
+      floor.visible = true;
+    }
+
+    demoState.boxColorChanged = false;
+    demoState.glassRaised = false;
+    demoState.sphereMoved = false;
+    demoState.floorHidden = false;
+    showMessage("示例对象已恢复默认状态。");
+  }
+
+  function setLoading(flag) {
+    loadingMask.style.display = flag ? "flex" : "none";
+  }
+
+  function showMessage(message, type = "info") {
+    const colorMap = {
+      info: "rgba(20, 20, 20, 0.82)",
+      success: "rgba(46, 125, 50, 0.88)",
+      error: "rgba(180, 35, 24, 0.9)"
+    };
+    messageBox.textContent = message;
+    messageBox.style.background = colorMap[type] || colorMap.info;
+    messageBox.style.display = "block";
+    window.clearTimeout(showMessage.timer);
+    showMessage.timer = window.setTimeout(() => {
+      messageBox.style.display = "none";
+    }, 2600);
+  }
+
+  function wasteCleaner() {
+    sceneRuntime?.dispose();
+    window.removeEventListener("resize", windowResize);
+    canvasContainer.removeEventListener("contextmenu", rightClickHandler);
+    btnRefNameColor?.removeEventListener("click", toggleBoxColorByRefName);
+    btnThreeJsonIdMove?.removeEventListener("click", toggleGlassHeightByThreeJsonId);
+    btnNameMove?.removeEventListener("click", toggleSphereByName);
+    btnToggleFloor?.removeEventListener("click", toggleFloorByName);
+    btnResetDemo?.removeEventListener("click", resetDemoObjects);
+  }
+</script>
+</body>
+</html>

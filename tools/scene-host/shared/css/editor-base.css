@@ -1,0 +1,3198 @@
+html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #2f2f2f;
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+      color: #cfcfcf;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    /* 统一细滚动条（纵/横同风格，与场景树 #sceneTreeRoot 一致） */
+    .appThinScrollbar,
+    .editorSettingsNav,
+    .editorSettingsScroll,
+    .leftDockTabPanels,
+    .leftDockPanel,
+    .rightDockPanel,
+    .sidePanel,
+    .leftPanelAiStreamPreview,
+    .editorStartupRecentList,
+    #sceneTreeRoot,
+    .sceneTreePropScroll,
+    #meshList,
+    .sceneTreePropGrid,
+    .leftPanelAiField textarea,
+    #codeEditorHost .cm-scroller,
+    #codeEditorHost .cm-panels,
+    #codeEditorHost .cm-panel,
+    #recentScenesModalList,
+    #codeEditorFallbackTextarea {
+      scrollbar-width: thin;
+      scrollbar-color: #4d525a rgba(20, 22, 26, 0.55);
+    }
+
+    .appThinScrollbar::-webkit-scrollbar,
+    .editorSettingsNav::-webkit-scrollbar,
+    .editorSettingsScroll::-webkit-scrollbar,
+    .leftDockTabPanels::-webkit-scrollbar,
+    .leftDockPanel::-webkit-scrollbar,
+    .rightDockPanel::-webkit-scrollbar,
+    .sidePanel::-webkit-scrollbar,
+    .leftPanelAiStreamPreview::-webkit-scrollbar,
+    .editorStartupRecentList::-webkit-scrollbar,
+    #sceneTreeRoot::-webkit-scrollbar,
+    .sceneTreePropScroll::-webkit-scrollbar,
+    #meshList::-webkit-scrollbar,
+    .sceneTreePropGrid::-webkit-scrollbar,
+    .leftPanelAiField textarea::-webkit-scrollbar,
+    #codeEditorHost .cm-scroller::-webkit-scrollbar,
+    #codeEditorHost .cm-panels::-webkit-scrollbar,
+    #codeEditorHost .cm-panel::-webkit-scrollbar,
+    #recentScenesModalList::-webkit-scrollbar,
+    #codeEditorFallbackTextarea::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    .appThinScrollbar::-webkit-scrollbar-track,
+    .editorSettingsNav::-webkit-scrollbar-track,
+    .editorSettingsScroll::-webkit-scrollbar-track,
+    .leftDockTabPanels::-webkit-scrollbar-track,
+    .leftDockPanel::-webkit-scrollbar-track,
+    .rightDockPanel::-webkit-scrollbar-track,
+    .sidePanel::-webkit-scrollbar-track,
+    .leftPanelAiStreamPreview::-webkit-scrollbar-track,
+    .editorStartupRecentList::-webkit-scrollbar-track,
+    #sceneTreeRoot::-webkit-scrollbar-track,
+    .sceneTreePropScroll::-webkit-scrollbar-track,
+    #meshList::-webkit-scrollbar-track,
+    .sceneTreePropGrid::-webkit-scrollbar-track,
+    .leftPanelAiField textarea::-webkit-scrollbar-track,
+    #codeEditorHost .cm-scroller::-webkit-scrollbar-track,
+    #codeEditorHost .cm-panels::-webkit-scrollbar-track,
+    #codeEditorHost .cm-panel::-webkit-scrollbar-track,
+    #recentScenesModalList::-webkit-scrollbar-track,
+    #codeEditorFallbackTextarea::-webkit-scrollbar-track {
+      margin: 2px;
+      background: rgba(20, 22, 26, 0.5);
+      border-radius: 4px;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    }
+
+    .appThinScrollbar::-webkit-scrollbar-thumb,
+    .editorSettingsNav::-webkit-scrollbar-thumb,
+    .editorSettingsScroll::-webkit-scrollbar-thumb,
+    .leftDockTabPanels::-webkit-scrollbar-thumb,
+    .leftDockPanel::-webkit-scrollbar-thumb,
+    .rightDockPanel::-webkit-scrollbar-thumb,
+    .sidePanel::-webkit-scrollbar-thumb,
+    .leftPanelAiStreamPreview::-webkit-scrollbar-thumb,
+    .editorStartupRecentList::-webkit-scrollbar-thumb,
+    #sceneTreeRoot::-webkit-scrollbar-thumb,
+    .sceneTreePropScroll::-webkit-scrollbar-thumb,
+    #meshList::-webkit-scrollbar-thumb,
+    .sceneTreePropGrid::-webkit-scrollbar-thumb,
+    .leftPanelAiField textarea::-webkit-scrollbar-thumb,
+    #codeEditorHost .cm-scroller::-webkit-scrollbar-thumb,
+    #codeEditorHost .cm-panels::-webkit-scrollbar-thumb,
+    #codeEditorHost .cm-panel::-webkit-scrollbar-thumb,
+    #recentScenesModalList::-webkit-scrollbar-thumb,
+    #codeEditorFallbackTextarea::-webkit-scrollbar-thumb {
+      background: #4d525a;
+      border-radius: 4px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .appThinScrollbar::-webkit-scrollbar-thumb:hover,
+    .editorSettingsNav::-webkit-scrollbar-thumb:hover,
+    .editorSettingsScroll::-webkit-scrollbar-thumb:hover,
+    .leftDockTabPanels::-webkit-scrollbar-thumb:hover,
+    .leftDockPanel::-webkit-scrollbar-thumb:hover,
+    .rightDockPanel::-webkit-scrollbar-thumb:hover,
+    .sidePanel::-webkit-scrollbar-thumb:hover,
+    .leftPanelAiStreamPreview::-webkit-scrollbar-thumb:hover,
+    .editorStartupRecentList::-webkit-scrollbar-thumb:hover,
+    #sceneTreeRoot::-webkit-scrollbar-thumb:hover,
+    .sceneTreePropScroll::-webkit-scrollbar-thumb:hover,
+    #meshList::-webkit-scrollbar-thumb:hover,
+    .sceneTreePropGrid::-webkit-scrollbar-thumb:hover,
+    .leftPanelAiField textarea::-webkit-scrollbar-thumb:hover,
+    #codeEditorHost .cm-scroller::-webkit-scrollbar-thumb:hover,
+    #codeEditorHost .cm-panels::-webkit-scrollbar-thumb:hover,
+    #codeEditorHost .cm-panel::-webkit-scrollbar-thumb:hover,
+    #recentScenesModalList::-webkit-scrollbar-thumb:hover,
+    #codeEditorFallbackTextarea::-webkit-scrollbar-thumb:hover {
+      background: #5c6470;
+      background-clip: padding-box;
+    }
+
+    .appThinScrollbar::-webkit-scrollbar-thumb:active,
+    .editorSettingsNav::-webkit-scrollbar-thumb:active,
+    .editorSettingsScroll::-webkit-scrollbar-thumb:active,
+    .leftDockTabPanels::-webkit-scrollbar-thumb:active,
+    .leftDockPanel::-webkit-scrollbar-thumb:active,
+    .rightDockPanel::-webkit-scrollbar-thumb:active,
+    .sidePanel::-webkit-scrollbar-thumb:active,
+    .leftPanelAiStreamPreview::-webkit-scrollbar-thumb:active,
+    .editorStartupRecentList::-webkit-scrollbar-thumb:active,
+    #sceneTreeRoot::-webkit-scrollbar-thumb:active,
+    .sceneTreePropScroll::-webkit-scrollbar-thumb:active,
+    #meshList::-webkit-scrollbar-thumb:active,
+    .sceneTreePropGrid::-webkit-scrollbar-thumb:active,
+    .leftPanelAiField textarea::-webkit-scrollbar-thumb:active,
+    #codeEditorHost .cm-scroller::-webkit-scrollbar-thumb:active,
+    #codeEditorHost .cm-panels::-webkit-scrollbar-thumb:active,
+    #codeEditorHost .cm-panel::-webkit-scrollbar-thumb:active,
+    #recentScenesModalList::-webkit-scrollbar-thumb:active,
+    #codeEditorFallbackTextarea::-webkit-scrollbar-thumb:active {
+      background: #3d6d9e;
+      background-clip: padding-box;
+    }
+
+    #rootContainer {
+      position: relative;
+      width: 100%;
+      max-width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      background: #2f2f2f;
+      color-scheme: dark;
+      /* 顶/底悬浮栏占用高度 → 左右 dock 纵向留出空隙，避免与标题栏、状态栏互相遮挡 */
+      --dockInsetTop: 0px;
+      --dockInsetBottom: 0px;
+      --leftDockWidth: 300px;
+      --rightDockWidth: 238px;
+      --peekStripWidth: 14px;
+      --editor-field-bg: #1f242b;
+      --editor-field-border: rgba(255, 255, 255, 0.2);
+      --editor-field-border-focus: rgba(64, 158, 255, 0.55);
+      --editor-field-color: #e5e9ef;
+      --editor-field-radius: 4px;
+      --editor-field-padding: 6px 8px;
+      --editor-field-font-size: 11px;
+      --editor-checkbox-size: 14px;
+      --editor-checkbox-bg: #1a1e24;
+      --editor-checkbox-border: rgba(255, 255, 255, 0.32);
+      --editor-checkbox-checked: #409eff;
+    }
+
+    /* 编辑器内统一复选框（深色底 + 勾选标记，替代系统默认浅色块） */
+    #rootContainer input[type="checkbox"] {
+      -webkit-appearance: none;
+      appearance: none;
+      box-sizing: border-box;
+      width: var(--editor-checkbox-size);
+      height: var(--editor-checkbox-size);
+      min-width: var(--editor-checkbox-size);
+      margin: 0;
+      padding: 0;
+      border: 1px solid var(--editor-checkbox-border);
+      border-radius: 3px;
+      background: var(--editor-checkbox-bg);
+      cursor: pointer;
+      flex-shrink: 0;
+      vertical-align: middle;
+      position: relative;
+      transition: background-color 0.12s ease, border-color 0.12s ease;
+    }
+
+    #rootContainer input[type="checkbox"]:hover {
+      border-color: rgba(64, 158, 255, 0.65);
+    }
+
+    #rootContainer input[type="checkbox"]:checked {
+      background: var(--editor-checkbox-checked);
+      border-color: #3078c8;
+    }
+
+    #rootContainer input[type="checkbox"]:checked::after {
+      content: "";
+      position: absolute;
+      left: 4px;
+      top: 1px;
+      width: 4px;
+      height: 8px;
+      border: solid #fff;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+
+    #rootContainer input[type="checkbox"]:focus-visible {
+      outline: 2px solid rgba(64, 158, 255, 0.45);
+      outline-offset: 1px;
+    }
+
+    #rootContainer input[type="checkbox"]:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    /* 文本框 / 下拉：与场景 JSON 侧栏输入一致 */
+    #rootContainer .editorThemedField,
+    #rootContainer .assetLibraryForm input[type="text"],
+    #rootContainer .assetLibraryForm select,
+    #rootContainer .assetLibraryForm textarea,
+    #rootContainer .leftPanelAiField input:not([type="checkbox"]):not([type="color"]):not([type="range"]),
+    #rootContainer .leftPanelAiField select,
+    #rootContainer .leftPanelAiField textarea,
+    #rootContainer .sceneTreePropGrid input[type="text"],
+    #rootContainer .sceneTreePropGrid input[type="number"],
+    #rootContainer .sceneTreeMaterialSlotGrid input:not([type="checkbox"]):not([type="color"]),
+    #rootContainer .sceneTreeMaterialSlotGrid select,
+    #rootContainer .tjzExportRow select,
+    #rootContainer .captureRecordRow input,
+    #rootContainer .captureRecordRow select,
+    #rootContainer .editorSettingsField input:not([type="checkbox"]):not([type="color"]),
+    #rootContainer .editorSettingsField select,
+    #rootContainer .editorSettingsField textarea {
+      box-sizing: border-box;
+      border: 1px solid var(--editor-field-border);
+      border-radius: var(--editor-field-radius);
+      background: var(--editor-field-bg);
+      color: var(--editor-field-color);
+      outline: none;
+    }
+
+    #rootContainer .editorThemedField:focus,
+    #rootContainer .assetLibraryForm input[type="text"]:focus,
+    #rootContainer .assetLibraryForm select:focus,
+    #rootContainer .assetLibraryForm textarea:focus,
+    #rootContainer .leftPanelAiField input:not([type="checkbox"]):not([type="color"]):not([type="range"]):focus,
+    #rootContainer .leftPanelAiField select:focus,
+    #rootContainer .leftPanelAiField textarea:focus,
+    #rootContainer .sceneTreePropGrid input[type="text"]:focus,
+    #rootContainer .sceneTreePropGrid input[type="number"]:focus,
+    #rootContainer .sceneTreeMaterialSlotGrid input:not([type="checkbox"]):not([type="color"]):focus,
+    #rootContainer .sceneTreeMaterialSlotGrid select:focus,
+    #rootContainer .tjzExportRow select:focus,
+    #rootContainer .captureRecordRow input:focus,
+    #rootContainer .captureRecordRow select:focus,
+    #rootContainer .editorSettingsField input:not([type="checkbox"]):not([type="color"]):focus,
+    #rootContainer .editorSettingsField select:focus,
+    #rootContainer .editorSettingsField textarea:focus {
+      border-color: var(--editor-field-border-focus);
+    }
+
+    #rootContainer .assetLibraryForm select,
+    #rootContainer .leftPanelAiField select,
+    #rootContainer .sceneTreeMaterialSlotGrid select,
+    #rootContainer .tjzExportRow select,
+    #rootContainer .captureRecordRow select,
+    #rootContainer .editorSettingsField select {
+      cursor: pointer;
+    }
+
+    #rootContainer .assetLibraryForm select option,
+    #rootContainer .leftPanelAiField select option,
+    #rootContainer .tjzExportRow select option,
+    #rootContainer .captureRecordRow select option {
+      background: #1f242b;
+      color: #e5e9ef;
+    }
+
+    /* 标题栏 / 状态栏：fixed；peek 感应条绝对叠在边缘，不参与 flex 占位，避免唤出时与屏幕边出现缝隙 */
+    .topChromeWrap {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      pointer-events: none;
+      overflow: visible;
+    }
+
+    #rootContainer:not(.topBarPinned) .topChromeWrap {
+      min-height: 12px;
+    }
+
+    .topChromeWrap .chromePeekStripTop,
+    .topChromeWrap .topBar {
+      pointer-events: auto;
+    }
+
+    .chromePeekStrip {
+      pointer-events: none;
+      transition: height 0.18s ease;
+    }
+
+    .chromePeekStripTop {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 6;
+      height: 0;
+    }
+
+    #rootContainer:not(.topBarPinned) .chromePeekStripTop {
+      height: 12px;
+      pointer-events: auto;
+    }
+
+    #rootContainer.topBarPinned .chromePeekStripTop {
+      height: 0;
+      pointer-events: none;
+    }
+
+    .bottomChromeWrap {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      pointer-events: none;
+      overflow: visible;
+    }
+
+    #rootContainer:not(.bottomBarPinned) .bottomChromeWrap {
+      min-height: 12px;
+    }
+
+    .bottomChromeWrap .chromePeekStripBottom,
+    .bottomChromeWrap .bottomBar {
+      pointer-events: auto;
+    }
+
+    .chromePeekStripBottom {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 6;
+      height: 0;
+    }
+
+    #rootContainer:not(.bottomBarPinned) .chromePeekStripBottom {
+      height: 12px;
+      pointer-events: auto;
+    }
+
+    #rootContainer.bottomBarPinned .chromePeekStripBottom {
+      height: 0;
+      pointer-events: none;
+    }
+
+    /* 中间舞台：画布铺满；左右 dock 与顶/底栏均叠在画布之上 */
+    #stageShell {
+      flex: 1 1 auto;
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .flyoutHost {
+      position: absolute;
+      top: var(--dockInsetTop, 0px);
+      bottom: var(--dockInsetBottom, 0px);
+      z-index: 55;
+      pointer-events: none;
+    }
+
+    .flyoutHostLeft {
+      left: 0;
+      display: block;
+      overflow: hidden;
+      width: var(--peekStripWidth, 14px);
+      transition: width 0.2s ease;
+    }
+
+    #rootContainer.leftDockPinned .flyoutHostLeft,
+    #rootContainer.leftDockPeek .flyoutHostLeft {
+      width: var(--leftDockWidth, 300px);
+    }
+
+    /* 右栏 dock 贴屏幕右缘；感应条叠在最上层，不参与占位 */
+    .flyoutHostRight {
+      right: 0;
+      display: block;
+      overflow: hidden;
+      width: var(--peekStripWidth, 14px);
+      transition: width 0.2s ease;
+    }
+
+    #rootContainer.rightDockPinned .flyoutHostRight,
+    #rootContainer.rightDockPeek .flyoutHostRight {
+      width: var(--rightDockWidth, 238px);
+    }
+
+    .edgeHoverZone {
+      pointer-events: none;
+    }
+
+    .edgeHoverZoneLeft {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: var(--peekStripWidth, 14px);
+      z-index: 5;
+    }
+
+    .edgeHoverZoneRight {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: var(--peekStripWidth, 14px);
+      z-index: 5;
+    }
+
+    #rootContainer:not(.leftDockPinned) .flyoutHostLeft .edgeHoverZoneLeft {
+      pointer-events: auto;
+    }
+
+    #rootContainer:not(.rightDockPinned) .flyoutHostRight .edgeHoverZoneRight {
+      pointer-events: auto;
+    }
+
+    .sidePanelPinRow {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+      gap: 8px;
+      padding-bottom: 6px;
+      margin-bottom: 4px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .sidePanelPinRowLeft {
+      justify-content: flex-start;
+    }
+
+    .sidePanelPinRowRight {
+      justify-content: space-between;
+    }
+
+    .sidePanelChromeTitle {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: rgba(232, 232, 232, 0.42);
+      white-space: nowrap;
+      -webkit-user-select: none;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .sidePanelPinRowLeft .sidePanelChromeTitle {
+      flex: 1 1 auto;
+      min-width: 0;
+      text-align: right;
+    }
+
+    .sidePanelPinBtn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      padding: 0;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 4px;
+      background: #4a4c51;
+      color: #c8ccd2;
+      cursor: pointer;
+      flex-shrink: 0;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .sidePanelPinIcon {
+      display: block;
+      width: 14px;
+      height: 14px;
+      pointer-events: none;
+    }
+
+    .sidePanelPinBtn[aria-pressed="false"] .sidePanelPinIcon {
+      opacity: 0.55;
+    }
+
+    .sidePanelPinBtn[aria-pressed="true"] .sidePanelPinIcon {
+      opacity: 1;
+    }
+
+    .sidePanelPinBtn:hover {
+      background: #55585e;
+      border-color: rgba(255, 255, 255, 0.28);
+    }
+
+    .sidePanelPinBtn[aria-pressed="true"] {
+      background: rgba(64, 158, 255, 0.32);
+      border-color: rgba(64, 158, 255, 0.48);
+      color: #fff;
+    }
+
+    .topBar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 8px;
+      min-width: 0;
+      position: relative;
+      z-index: 2;
+      flex-shrink: 0;
+      height: 40px;
+      /* 必须为 visible：否则会裁切 .topDropdown（父级 overflow 覆盖子级 overflow:visible） */
+      overflow: visible;
+      background: #3c3c3c;
+      border-bottom: 1px solid #4d4d4d;
+      opacity: 1;
+      pointer-events: auto;
+      transition: height 0.18s ease, opacity 0.18s ease, padding 0.18s ease, border-width 0.18s ease;
+    }
+
+    #rootContainer:not(.topBarPinned):not(.topBarPeek) .topBar {
+      height: 0;
+      min-height: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      border-bottom-width: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #rootContainer:not(.topBarPinned).topBarPeek .topBar,
+    #rootContainer.topBarPinned .topBar {
+      height: 40px;
+      opacity: 1;
+      pointer-events: auto;
+      border-bottom-width: 1px;
+      padding: 0 8px;
+    }
+
+    .appIconSlot {
+      flex: 0 0 40px;
+      width: 40px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      color: #8ecbff;
+      background: rgba(0, 0, 0, 0.2);
+      font-size: 17px;
+      line-height: 1;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .topMenubar {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      flex: 0 1 auto;
+      min-width: 0;
+      /* 不可使用 overflow:hidden/auto：会裁切或干扰向下展开的下拉子菜单 */
+      overflow: visible;
+    }
+
+    .topMenu {
+      position: relative;
+    }
+
+    .topMenu > summary {
+      list-style: none;
+      height: 28px;
+      padding: 0 12px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      color: #e8e8e8;
+      background: transparent;
+      font-size: 13px;
+      line-height: 26px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .topMenu > summary:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .topMenu > summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .topMenu[open] > summary {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+
+    .topDropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      min-width: 168px;
+      padding: 6px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(36, 38, 42, 0.98);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+      z-index: 120;
+    }
+
+    .topDropdown button {
+      display: block;
+      width: 100%;
+      margin: 2px 0;
+      padding: 6px 10px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      color: #e6e8ec;
+      background: transparent;
+      font-size: 12px;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .topDropdown button:hover {
+      background: rgba(64, 158, 255, 0.28);
+      border-color: rgba(64, 158, 255, 0.35);
+    }
+
+    .topBarCenter {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      max-width: min(480px, 46vw);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: #e8e8e8;
+      font-size: 13px;
+      line-height: 1;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .topBarSpacer {
+      flex: 1 1 auto;
+      min-width: 4px;
+    }
+
+    .topBarTrailing {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+      margin-left: auto;
+    }
+
+    .toolGroup {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toolBtn {
+      height: 28px;
+      padding: 0 10px;
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      border-radius: 4px;
+      color: #fff;
+      background: #409eff;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .toolBtn:hover {
+      background: #66b1ff;
+    }
+
+    .toolBtn.secondary {
+      background: #606266;
+    }
+
+    .toolBtn.secondary:hover {
+      background: #7a7c80;
+    }
+
+    .toolBtn.linkLike {
+      border: none;
+      background: transparent;
+      color: #8fc4ff;
+      text-decoration: underline;
+      padding: 0 2px;
+    }
+
+    .toolBtn.linkLike:hover {
+      background: transparent;
+      color: #b6d9ff;
+    }
+
+    #leftPanel.sidePanel.leftDockPanel {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .sidePanelStack {
+      flex: 1 1 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .leftDockTabPanels {
+      flex: 1 1 0;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .rightDockTabPanels {
+      flex: 1 1 0;
+      min-height: 0;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidePanel {
+      overflow: auto;
+      padding: 6px 8px;
+      background: #2f2f2f;
+    }
+
+    /* 左侧 Dock：贴屏幕左缘；收起时整体滑出视口，感应条叠在左缘不参与占位 */
+    .leftDock {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      width: 300px;
+      max-width: 300px;
+      height: 100%;
+      min-height: 0;
+      overflow: hidden;
+      box-sizing: border-box;
+      pointer-events: none;
+      box-shadow: 6px 0 18px rgba(0, 0, 0, 0.35);
+      transition: transform 0.2s ease;
+      z-index: 1;
+    }
+
+    #rootContainer:not(.leftDockPinned):not(.leftDockPeek) .flyoutHostLeft .leftDock {
+      transform: translateX(-100%);
+    }
+
+    #rootContainer.leftDockPinned .leftDock,
+    #rootContainer.leftDockPeek .leftDock {
+      pointer-events: auto;
+    }
+
+    .leftDockPanel {
+      flex: 1 1 0;
+      min-width: 0;
+      min-height: 0;
+      width: 100%;
+      max-width: none;
+      overflow: auto;
+      border-right: 1px solid #414141;
+    }
+
+    .leftSubTabBar,
+    .rightSubTabBar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0;
+      row-gap: 0;
+      margin-bottom: 8px;
+      align-items: flex-end;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    .leftSubTab,
+    .rightSubTab {
+      flex: 0 1 auto;
+      margin: 0;
+      min-height: 28px;
+      padding: 6px 10px;
+      border: none;
+      border-radius: 0;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      background: transparent;
+      color: rgba(208, 211, 216, 0.72);
+      font-family: inherit;
+      font-size: 10px;
+      font-weight: 500;
+      line-height: 1.25;
+      cursor: pointer;
+      white-space: nowrap;
+      -webkit-appearance: none;
+      appearance: none;
+      box-sizing: border-box;
+      transition: color 0.12s ease, background-color 0.12s ease, border-color 0.12s ease;
+    }
+
+    .leftSubTab:not(:last-child),
+    .rightSubTab:not(:last-child) {
+      border-inline-end: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .leftSubTab:hover,
+    .rightSubTab:hover {
+      color: rgba(232, 232, 232, 0.95);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .leftSubTab:focus-visible,
+    .rightSubTab:focus-visible {
+      outline: 2px solid rgba(64, 158, 255, 0.65);
+      outline-offset: 1px;
+      z-index: 1;
+    }
+
+    .leftSubTab.leftSubTabSelected,
+    .rightSubTab.rightSubTabSelected {
+      color: #fff;
+      font-weight: 600;
+      background: transparent;
+      border-bottom-color: #409eff;
+    }
+
+    .leftSubTab.leftSubTabSelected:hover,
+    .rightSubTab.rightSubTabSelected:hover {
+      background: rgba(64, 158, 255, 0.08);
+    }
+
+    .leftPanelAiField {
+      margin-bottom: 6px;
+    }
+
+    .leftPanelAiField label,
+    .leftPanelAiLabel {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 11px;
+      color: #b8b8b8;
+      line-height: 1.3;
+    }
+
+    .leftPanelAiField input:not([type="checkbox"]):not([type="color"]):not([type="range"]),
+    .leftPanelAiField select,
+    .leftPanelAiField textarea {
+      width: 100%;
+      margin: 0;
+      padding: var(--editor-field-padding);
+      font-size: var(--editor-field-font-size);
+      font-family: inherit;
+    }
+
+    .leftPanelAiField textarea {
+      min-height: 72px;
+      resize: vertical;
+      line-height: 1.35;
+    }
+
+    .leftPanelAiActions {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .leftPanelAiActions .toolBtn {
+      width: 100%;
+    }
+
+    .leftPanelAiActionRow {
+      flex-direction: row;
+      align-items: stretch;
+    }
+
+    .leftPanelAiActionRow .toolBtn.primaryAction {
+      flex: 1 1 0;
+      min-width: 0;
+      width: auto;
+    }
+
+    .aiStopBtn {
+      flex: 0 0 36px;
+      width: 36px;
+      min-width: 36px;
+      padding: 0;
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .leftPanelAiActions .toolBtn.aiStopBtn {
+      width: 36px;
+    }
+
+    .aiStopBtn[hidden] {
+      display: none;
+    }
+
+    .leftPanelAiHint {
+      margin-top: 4px;
+      font-size: 10px;
+      color: #9a9a9a;
+      line-height: 1.35;
+    }
+
+    .leftPanelAiHintNoTopMargin {
+      margin-top: 0;
+    }
+
+    .leftPanelAiStreamPreview {
+      display: block;
+      box-sizing: border-box;
+      width: 100%;
+      min-height: 200px;
+      max-height: min(45vh, 400px);
+      overflow: auto;
+      overflow-anchor: none;
+      margin: 6px 0 0;
+      padding: 8px 10px;
+      font-size: 11px;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      word-break: break-all;
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 4px;
+    }
+
+    .leftPanelAiLastResultLabel {
+      display: block;
+      margin: 8px 0 4px;
+      font-size: 10px;
+      color: #9ab4d0;
+    }
+
+    .leftPanelAiLastResult {
+      min-height: 72px;
+      max-height: min(35vh, 280px);
+    }
+
+    .leftPanelAiHint code {
+      font-size: 9px;
+      padding: 0 3px;
+      border-radius: 3px;
+      background: rgba(0, 0, 0, 0.25);
+      color: #c8dcf8;
+    }
+
+    .leftPanelAiCheckboxLabel {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      font-size: 10px;
+      color: #b8b8b8;
+      margin: 6px 0 4px;
+      line-height: 1.35;
+      cursor: pointer;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .leftPanelAiCheckboxLabel input[type="checkbox"] {
+      width: auto;
+      margin: 2px 0 0;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    .aiSceneMessageWrap {
+      flex-shrink: 0;
+      margin-bottom: 8px;
+    }
+
+    /* 无文案时不占位，与「组件」页一致地紧贴标签栏 */
+    .aiSceneMessageWrap:not([hidden]):has(#aiSceneMessage:empty) {
+      display: none !important;
+      margin-bottom: 0;
+    }
+
+    .aiSceneMessageWrap[hidden] {
+      display: none !important;
+    }
+
+    #aiSceneMessage {
+      min-height: 0;
+      margin-bottom: 0;
+      font-size: 11px;
+      color: #8ecbff;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* 右侧栏：贴屏幕右缘 */
+    .rightDock {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      height: 100%;
+      min-height: 0;
+      width: 238px;
+      max-width: 238px;
+      overflow: hidden;
+      box-sizing: border-box;
+      pointer-events: none;
+      box-shadow: -6px 0 18px rgba(0, 0, 0, 0.35);
+      transition: transform 0.2s ease;
+      z-index: 1;
+    }
+
+    #rootContainer:not(.rightDockPinned):not(.rightDockPeek) .flyoutHostRight .rightDock {
+      transform: translateX(100%);
+    }
+
+    #rootContainer.rightDockPinned .rightDock,
+    #rootContainer.rightDockPeek .rightDock {
+      pointer-events: auto;
+    }
+
+    .rightDockPanel {
+      flex: 1 1 0;
+      min-width: 0;
+      min-height: 0;
+      width: 100%;
+      max-width: none;
+      overflow: auto;
+      border-left: 1px solid #414141;
+    }
+
+    /* 右栏整体纵向布局：标签栏固定，子面板占满剩余高度（便于 JSON 编辑区铺满） */
+    #rightPanel.sidePanel.rightDockPanel {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    #rightPanel .rightSubTabBar {
+      flex-shrink: 0;
+    }
+
+    #leftPanel .leftSubTabBar {
+      flex-shrink: 0;
+    }
+
+    .leftDockTabPanels .leftSubPanel[hidden] {
+      display: none !important;
+    }
+
+    /* hidden 子面板必须隐藏（否则 author 的 display:flex 会覆盖 [hidden]） */
+    #rightSubPanelSceneTree.rightSubPanel[hidden],
+    #rightSubPanelAssetLibrary.rightSubPanel[hidden],
+    #rightSubPanelSceneJson.rightSubPanel[hidden] {
+      display: none !important;
+    }
+
+    #rightSubPanelSceneJson.rightSubPanel {
+      flex: 1 1 0;
+      min-height: 0;
+      overflow: hidden;
+      padding-bottom: 4px;
+      box-sizing: border-box;
+    }
+
+    #rightSubPanelSceneJson.rightSubPanel:not([hidden]) {
+      display: flex;
+      flex-direction: column;
+    }
+
+    #rightSubPanelSceneJson .panelCard.rightSceneJsonPanelCard {
+      position: relative;
+    }
+
+    @keyframes rightSceneJsonSpin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    #rightSubPanelSceneJson .panelCard {
+      flex: 1 1 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      margin-bottom: 4px;
+    }
+
+    #rightSubPanelSceneJson .panelCard .panelTitle,
+    #rightSubPanelSceneJson .panelCard > .leftPanelAiLabel,
+    #rightSubPanelSceneJson .sceneManageApplyRow {
+      flex-shrink: 0;
+    }
+
+    .rightSceneManageUpper {
+      flex: 1 1 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .rightSceneManageUpper .sceneTreePropScroll {
+      flex: 1 1 0;
+      min-height: 0;
+      overflow: auto;
+    }
+
+    .sceneManageFieldStack {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 4px;
+      font-size: 11px;
+    }
+
+    .sceneManageFieldStack label {
+      color: #aaa;
+    }
+
+    .sceneManageFieldStack select {
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+      padding: 3px 5px;
+      font-size: 11px;
+      background: #2a2a2a;
+      border: 1px solid #555;
+      border-radius: 2px;
+      color: #e8e8e8;
+    }
+
+    .sceneManageSection details {
+      margin-bottom: 4px;
+    }
+
+    .sceneManageSection summary {
+      cursor: pointer;
+      font-size: 11px;
+      color: #c8c8c8;
+      padding: 2px 0;
+      user-select: none;
+    }
+
+    .sceneManageApplyRow {
+      padding-top: 4px;
+    }
+
+    .sceneManageHint {
+      font-size: 10px;
+      color: #999;
+      margin: 0 0 4px;
+      line-height: 1.35;
+    }
+
+    .panelCard {
+      margin-bottom: 8px;
+      padding: 6px;
+      background: #3d3d3d;
+      border-radius: 3px;
+    }
+
+    .panelTitle {
+      margin-bottom: 6px;
+      color: #c0c0c0;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .buttonGrid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .buttonGrid .toolBtn {
+      width: 100%;
+      min-width: 0;
+      background: #5f6368;
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .buttonGrid .toolBtn:hover {
+      background: #757a80;
+    }
+
+    .modelGroupList {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .modelGroup {
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.02);
+      overflow: hidden;
+    }
+
+    .modelGroupSummary {
+      padding: 8px 10px;
+      cursor: pointer;
+      color: #d3d9e1;
+      font-size: 12px;
+      user-select: none;
+    }
+
+    .modelGroup .buttonGrid {
+      padding: 0 8px 8px;
+    }
+
+    .toolBtn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    #canvasWrap {
+      position: absolute;
+      inset: 0;
+      min-width: 0;
+      min-height: 0;
+      z-index: 1;
+      /*background: #2f2f2f url("/assets/textures/environment/skybox/galaxy.jpg") center center / cover no-repeat;*/
+    }
+
+    #canvasContainer {
+      display: block;
+      width: 100%;
+      height: 100%;
+      outline: none;
+    }
+
+    .editorStartupEmptyState {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 25;
+      min-width: 360px;
+      max-width: min(560px, 88vw);
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: none;
+      background: transparent;
+      box-shadow: none;
+      backdrop-filter: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 9px;
+    }
+    .editorStartupEmptyState[hidden] {
+      display: none !important;
+    }
+
+    .editorStartupSampleBtn {
+      color: #9ecbff;
+      text-decoration: none;
+      border-bottom: 1px dashed rgba(158, 203, 255, 0.35);
+      padding-bottom: 1px;
+    }
+
+    .editorStartupSampleBtn:hover {
+      color: #c6e0ff;
+      border-bottom-color: rgba(198, 224, 255, 0.55);
+    }
+
+    .editorStartupRecentWrap {
+      width: 100%;
+      margin-top: 4px;
+      border-top: 1px solid rgba(255, 255, 255, 0.09);
+      padding-top: 10px;
+    }
+
+    .editorStartupRecentTitle {
+      font-size: 12px;
+      color: #95a3b8;
+      margin-bottom: 6px;
+      letter-spacing: 0.1px;
+    }
+
+    .editorStartupRecentList {
+      max-height: 220px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .editorStartupRecentItem {
+      width: 100%;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 4px;
+      background: rgba(54, 59, 66, 0.42);
+      color: #ced7e4;
+      padding: 6px 8px;
+      text-align: left;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+
+    .editorStartupRecentItem:hover {
+      background: rgba(74, 82, 92, 0.55);
+      border-color: rgba(143, 196, 255, 0.25);
+      color: #e6edf7;
+    }
+
+    .editorStartupRecentMeta {
+      opacity: 0.8;
+      font-size: 11px;
+      margin-top: 2px;
+    }
+
+    #menuRecentScenesList .editorStartupRecentItem {
+      display: block;
+      white-space: normal;
+    }
+
+    #menuRecentScenesList .editorStartupRecentMeta {
+      white-space: nowrap;
+    }
+
+    .topDropdownInfo {
+      margin: 2px 0;
+      padding: 6px 10px;
+      font-size: 12px;
+      color: #aeb6c3;
+    }
+
+    /* ── 模式切换：3D 图形编辑 / Code 代码编辑 ── */
+    .editModeToggle {
+      display: inline-flex;
+      align-items: center;
+      height: 28px;
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .editModeToggle[hidden] {
+      display: none;
+    }
+
+    .editModeSeg {
+      height: 100%;
+      padding: 0 12px;
+      border: none;
+      background: #3a3d42;
+      color: #c9c9c9;
+      cursor: pointer;
+      font-size: 12px;
+      line-height: 26px;
+    }
+
+    .editModeSeg + .editModeSeg {
+      border-left: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    .editModeSeg:hover {
+      background: #4a4e54;
+      color: #fff;
+    }
+
+    .editModeSeg.editModeSegActive {
+      background: #409eff;
+      color: #fff;
+    }
+
+    /* 切换 3D/Code 期间：禁止重复点击 + 居中转圈等待图标 */
+    .editModeToggle.editModeBusy {
+      position: relative;
+      pointer-events: none;
+    }
+
+    .editModeToggle.editModeBusy .editModeSeg {
+      color: transparent;
+    }
+
+    .editModeToggle.editModeBusy::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 14px;
+      height: 14px;
+      margin: -7px 0 0 -7px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      border-top-color: #fff;
+      animation: rightSceneJsonSpin 0.65s linear infinite;
+    }
+
+    /* Code 模式：中央舞台变 JSON 编辑器；3D 画布收为右上角 PiP */
+    /* 在顶/底悬浮栏与已钉住的左右面板之间留白，避免编辑器内容被遮挡 */
+    #codeEditorStage {
+      position: absolute;
+      top: var(--dockInsetTop, 0px);
+      bottom: var(--dockInsetBottom, 0px);
+      left: 0;
+      right: 0;
+      z-index: 5;
+      display: none;
+      flex-direction: column;
+      background: #1e1e1e;
+    }
+
+    #rootContainer.codeEditMode #codeEditorStage {
+      display: flex;
+    }
+
+    #rootContainer.codeEditMode.leftDockPinned #codeEditorStage {
+      left: 300px;
+    }
+
+    #rootContainer.codeEditMode.rightDockPinned #codeEditorStage {
+      right: 238px;
+    }
+
+    /* 模式切换遮罩：覆盖中央舞台，避免切换 3D/Code 时的卡顿被用户当成无响应 */
+    #modeSwitchMask {
+      position: absolute;
+      top: var(--dockInsetTop, 0px);
+      bottom: var(--dockInsetBottom, 0px);
+      left: 0;
+      right: 0;
+      z-index: 90;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: rgba(30, 30, 30, 0.78);
+      color: #fff;
+      font-size: 14px;
+    }
+
+    #modeSwitchMask[hidden] {
+      display: none;
+    }
+
+    #rootContainer.leftDockPinned #modeSwitchMask {
+      left: 300px;
+    }
+
+    #rootContainer.rightDockPinned #modeSwitchMask {
+      right: 238px;
+    }
+
+    .modeSwitchSpinner {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.25);
+      border-top-color: rgba(64, 158, 255, 0.95);
+      animation: rightSceneJsonSpin 0.65s linear infinite;
+    }
+
+    #codeEditorToolbar {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 12px;
+      background: #2b2b2b;
+      border-bottom: 1px solid #3c3c3c;
+    }
+
+    .codeEditorStageTitle {
+      font-size: 12px;
+      color: #d8d8d8;
+      font-weight: 600;
+    }
+
+    /* 3D 悬浮窗顶部的控制条：渲染按钮靠左，机位保持/自动渲染靠右 */
+    .pipControlBar {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      padding: 5px 10px;
+      background: rgba(0, 0, 0, 0.62);
+      z-index: 20;
+      cursor: move;
+      touch-action: none;
+    }
+
+    #rootContainer.codeEditMode .pipControlBar {
+      display: flex;
+    }
+
+    .pipControlBarRight {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .pipControlBar .codeEditorCheckboxLabel {
+      font-size: 11px;
+    }
+
+    /* 渲染按钮改为无边框纯文字，节省悬浮窗底部空间 */
+    #codeEditorRenderBtn.toolBtn {
+      height: auto;
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: #66b1ff;
+      font-size: 11px;
+    }
+
+    #codeEditorRenderBtn.toolBtn:hover {
+      background: transparent;
+      color: #8fc4ff;
+      text-decoration: underline;
+    }
+
+    .codeEditorCheckboxLabel {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      color: #c9c9c9;
+      cursor: pointer;
+    }
+
+    #codeEditorHost {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    #codeEditorHost .cm-editor {
+      height: 100%;
+    }
+
+    #codeEditorHost .cm-editor.cm-focused {
+      outline: none;
+    }
+
+    #codeEditorHost .cm-scroller {
+      font-family: Consolas, "SFMono-Regular", Menlo, monospace;
+      font-size: 13px;
+    }
+
+    #codeEditorFallbackTextarea {
+      flex: 1 1 auto;
+      min-height: 0;
+      width: 100%;
+      resize: none;
+      border: none;
+      outline: none;
+      padding: 10px 12px;
+      background: #1e1e1e;
+      color: #e6e6e6;
+      font-family: Consolas, "SFMono-Regular", Menlo, monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      overflow: auto;
+    }
+
+    #rootContainer.codeEditMode #codeEditorFallbackTextarea:not([hidden]) {
+      display: block;
+    }
+
+    /* Code 模式下，唯一画布收为右上角画中画小窗（复用同一渲染器） */
+    /* top 下移避开编辑器上方标题栏；right 偏移额外留出 CM6 纵向滚动条宽度 */
+    #rootContainer.codeEditMode #canvasWrap {
+      inset: auto;
+      top: calc(var(--dockInsetTop, 0px) + 48px);
+      right: 26px;
+      width: 320px;
+      height: 200px;
+      z-index: 6;
+      border: 1px solid #5a5a5a;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 6px 22px rgba(0, 0, 0, 0.55);
+    }
+
+    /* 右侧属性面板钉住时，PiP 右偏让位，避免被压住（右栏宽 238px） */
+    #rootContainer.codeEditMode.rightDockPinned #canvasWrap {
+      right: 262px;
+    }
+
+    /* PiP 缩放把手：仅 code 模式显示，四边 + 四角，类似系统窗口 */
+    #pipResizeHandles {
+      display: none;
+    }
+
+    #rootContainer.codeEditMode #pipResizeHandles {
+      display: block;
+    }
+
+    .pipResizeHandle {
+      position: absolute;
+      z-index: 21;
+      touch-action: none;
+    }
+
+    .pipResizeHandle-n {
+      top: -3px;
+      left: 8px;
+      right: 8px;
+      height: 8px;
+      cursor: ns-resize;
+    }
+
+    .pipResizeHandle-s {
+      bottom: -3px;
+      left: 8px;
+      right: 8px;
+      height: 8px;
+      cursor: ns-resize;
+    }
+
+    .pipResizeHandle-e {
+      top: 8px;
+      bottom: 8px;
+      right: -3px;
+      width: 8px;
+      cursor: ew-resize;
+    }
+
+    .pipResizeHandle-w {
+      top: 8px;
+      bottom: 8px;
+      left: -3px;
+      width: 8px;
+      cursor: ew-resize;
+    }
+
+    .pipResizeHandle-ne {
+      top: -3px;
+      right: -3px;
+      width: 12px;
+      height: 12px;
+      cursor: nesw-resize;
+    }
+
+    .pipResizeHandle-nw {
+      top: -3px;
+      left: -3px;
+      width: 12px;
+      height: 12px;
+      cursor: nwse-resize;
+    }
+
+    .pipResizeHandle-se {
+      bottom: -3px;
+      right: -3px;
+      width: 12px;
+      height: 12px;
+      cursor: nwse-resize;
+    }
+
+    .pipResizeHandle-sw {
+      bottom: -3px;
+      left: -3px;
+      width: 12px;
+      height: 12px;
+      cursor: nesw-resize;
+    }
+
+    #threeViewDebugLayer {
+      position: absolute;
+      inset: 0;
+      z-index: 16;
+      display: none;
+      pointer-events: none;
+    }
+
+    .viewportDebugBox {
+      position: absolute;
+      border: 1px solid rgba(140, 210, 255, 0.85);
+      background: rgba(15, 25, 35, 0.08);
+      overflow: hidden;
+    }
+
+    .viewportDebugBoxLabel {
+      position: absolute;
+      top: 2px;
+      left: 4px;
+      padding: 1px 5px;
+      border-radius: 3px;
+      color: #d6f1ff;
+      background: rgba(0, 0, 0, 0.45);
+      font-size: 10px;
+      line-height: 14px;
+      letter-spacing: 0.3px;
+    }
+
+    .topMenuNestedWrap {
+      position: relative;
+      margin: 2px 0;
+    }
+
+    .topNestedTrigger {
+      display: block;
+      width: 100%;
+      margin: 0;
+      padding: 6px 10px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      color: #e6e8ec;
+      background: transparent;
+      font-size: 12px;
+      text-align: left;
+      cursor: default;
+      font-family: inherit;
+    }
+
+    .topNestedTrigger:hover {
+      background: rgba(64, 158, 255, 0.28);
+      border-color: rgba(64, 158, 255, 0.35);
+    }
+
+    .topDropdownNested {
+      display: none;
+      position: absolute;
+      left: calc(100% + 4px);
+      top: -4px;
+      min-width: 188px;
+      padding: 6px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(36, 38, 42, 0.98);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+      z-index: 140;
+    }
+
+    .topMenuNestedWrap:hover > .topDropdownNested,
+    .topMenuNestedWrap:focus-within > .topDropdownNested {
+      display: block;
+    }
+
+    .topDropdownNested button {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      margin: 2px 0;
+      padding: 6px 10px;
+    }
+
+    .viewChromeCheck {
+      flex: 0 0 1.1em;
+      width: 1.1em;
+      font-size: 11px;
+      color: #8ecbff;
+      text-align: center;
+    }
+
+    .bottomBar {
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      flex-shrink: 0;
+      height: 20px;
+      overflow: hidden;
+      background: #3c3c3c;
+      border-top: 1px solid #4d4d4d;
+      color: #c9c9c9;
+      font-size: 12px;
+      opacity: 1;
+      pointer-events: auto;
+      position: relative;
+      z-index: 2;
+      transition: height 0.18s ease, opacity 0.18s ease, padding 0.18s ease, border-width 0.18s ease;
+    }
+
+    #rootContainer:not(.bottomBarPinned):not(.bottomBarPeek) .bottomBar {
+      height: 0;
+      min-height: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      border-top-width: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #rootContainer:not(.bottomBarPinned).bottomBarPeek .bottomBar,
+    #rootContainer.bottomBarPinned .bottomBar {
+      height: 20px;
+      opacity: 1;
+      pointer-events: auto;
+      border-top-width: 1px;
+      padding: 0 10px;
+    }
+
+    #rightSubPanelSceneTree.rightSubPanel {
+      flex: 1 1 0;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    #rightSubPanelSceneTree.rightSubPanel:not([hidden]) {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    #rightSubPanelSceneTree .sceneTreeCard {
+      flex: 0 1 36%;
+      min-height: 80px;
+      max-height: 42%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #rightSubPanelSceneTree .sceneTreePropCard {
+      flex: 1 1 64%;
+      min-height: 200px;
+      max-height: none;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #rightSubPanelAssetLibrary.rightSubPanel {
+      flex: 1 1 0;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    #rightSubPanelAssetLibrary.rightSubPanel:not([hidden]) {
+      display: flex;
+      flex-direction: column;
+    }
+
+    #rightSubPanelAssetLibrary .assetLibraryPanelCard {
+      flex: 1 1 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .assetLibraryToolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .assetLibraryList {
+      flex: 1 1 0;
+      min-height: 0;
+      overflow: auto;
+      font-size: 12px;
+    }
+
+    .assetLibraryRow {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 4px 8px;
+      padding: 6px 4px;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+
+    .assetLibraryRow:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .assetLibraryRow.assetLibraryRowSelected {
+      background: rgba(64, 158, 255, 0.18);
+      border-color: rgba(64, 158, 255, 0.4);
+    }
+
+    .assetLibraryRowMain {
+      min-width: 0;
+    }
+
+    .assetLibraryRowId {
+      font-weight: 600;
+      color: #e8e8e8;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .assetLibraryRowMeta {
+      color: #9a9a9a;
+      font-size: 11px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .assetLibraryBadgeRuntime {
+      font-size: 10px;
+      padding: 1px 5px;
+      border-radius: 3px;
+      background: rgba(255, 180, 64, 0.2);
+      color: #ffc878;
+      white-space: nowrap;
+    }
+
+    .assetLibraryForm {
+      flex-shrink: 0;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: grid;
+      gap: 6px;
+      font-size: 12px;
+    }
+
+    .assetLibraryForm label {
+      color: #b8b8b8;
+    }
+
+    .assetLibraryForm input[type="text"],
+    .assetLibraryForm select,
+    .assetLibraryForm textarea {
+      width: 100%;
+      margin: 0;
+      padding: var(--editor-field-padding);
+      font-size: var(--editor-field-font-size);
+      font-family: inherit;
+    }
+
+    .assetLibraryForm textarea {
+      min-height: 56px;
+      font-family: ui-monospace, Consolas, monospace;
+      line-height: 1.4;
+      resize: vertical;
+    }
+
+    .sceneTreeMaterialSlotGrid {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 4px 6px;
+      align-items: center;
+      margin-top: 4px;
+    }
+
+    .sceneTreeMaterialSlotGrid input:not([type="checkbox"]):not([type="color"]),
+    .sceneTreeMaterialSlotGrid select {
+      width: 100%;
+      min-width: 0;
+      padding: 3px 5px;
+      font-size: 11px;
+    }
+
+    .sceneTreeMatSamplingRow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      align-items: center;
+      grid-column: 2;
+    }
+
+    .sceneTreeMatSamplingRow select {
+      flex: 1 1 88px;
+      min-width: 0;
+    }
+
+    .sceneTreeMatSamplingAdvancedLink {
+      flex: 0 0 auto;
+      padding: 2px 6px;
+      border: none;
+      border-radius: 3px;
+      background: transparent;
+      color: #79b8ff;
+      font-size: 11px;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    .sceneTreeMatSamplingAdvancedLink:hover {
+      color: #a8d4ff;
+    }
+
+    .sceneTreeMatSamplingEffective {
+      grid-column: 1 / -1;
+      font-size: 10px;
+      line-height: 1.35;
+      color: rgba(232, 234, 237, 0.55);
+    }
+
+    #textureSamplingAdvancedModal {
+      position: absolute;
+      inset: 0;
+      z-index: 57;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(12, 12, 12, 0.62);
+    }
+
+    #textureSamplingAdvancedModal.visible {
+      display: flex;
+    }
+
+    #textureSamplingAdvancedModal .tjzExportBody label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 12px;
+    }
+
+    #textureSamplingAdvancedModal .tjzExportBody select,
+    #textureSamplingAdvancedModal .tjzExportBody input[type="number"] {
+      margin-left: 6px;
+    }
+
+    #sceneTreeRoot {
+      flex: 1 1 0;
+      min-height: 0;
+      overflow: auto;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .sceneTreeRowWrap {
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .sceneTreeRow {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 4px;
+      border-radius: 3px;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+
+    .sceneTreeRow:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .sceneTreeRow.sceneTreeRowSelected {
+      background: rgba(64, 158, 255, 0.22);
+      border-color: rgba(64, 158, 255, 0.45);
+    }
+
+    .sceneTreeExpandBtn {
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+      padding: 0;
+      margin: 0;
+      border: none;
+      border-radius: 2px;
+      color: #cfcfcf;
+      background: #4a4a4a;
+      font-size: 10px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .sceneTreeExpandBtn:hover {
+      background: #5a5a5a;
+    }
+
+    .sceneTreeExpandSpacer {
+      display: inline-block;
+      width: 18px;
+      flex-shrink: 0;
+    }
+
+    .sceneTreeLabel {
+      flex: 1 1 0;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: #e2e2e2;
+    }
+
+    .sceneTreeVisBtn {
+      width: 18px;
+      height: 18px;
+      border: none;
+      border-radius: 3px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      color: #b8cbe0;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .sceneTreeVisBtn:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .sceneTreeVisBtn svg {
+      width: 14px;
+      height: 14px;
+      display: block;
+    }
+
+    .sceneTreeChildren {
+      margin-left: 0;
+    }
+
+    #sceneTreeContextMenu {
+      position: fixed;
+      z-index: 80;
+      min-width: 146px;
+      display: none;
+      overflow: visible;
+      background: rgba(28, 30, 35, 0.98);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+      padding: 6px;
+      color: #e6e6e6;
+      font-size: 12px;
+      user-select: none;
+    }
+
+    #sceneTreeContextMenu.visible {
+      display: block;
+    }
+
+    .sceneTreeContextItem {
+      position: relative;
+    }
+
+    .sceneTreeContextItemLabel {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      border-radius: 4px;
+      padding: 6px 8px;
+      color: #e6e6e6;
+      background: transparent;
+      cursor: default;
+    }
+
+    .sceneTreeContextItem:hover > .sceneTreeContextItemLabel {
+      background: rgba(255, 255, 255, 0.09);
+    }
+
+    .sceneTreeContextSubmenu {
+      position: absolute;
+      top: 0;
+      left: calc(100% + 4px);
+      min-width: 140px;
+      display: none;
+      z-index: 1;
+      background: rgba(28, 30, 35, 0.98);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+      padding: 6px;
+    }
+
+    .sceneTreeContextItem:hover > .sceneTreeContextSubmenu {
+      display: block;
+    }
+
+    .sceneTreeContextItem.submenuFlipLeft > .sceneTreeContextSubmenu {
+      left: auto;
+      right: calc(100% + 4px);
+    }
+
+    .sceneTreeContextSubmenu button {
+      width: 100%;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 8px;
+      text-align: left;
+      background: transparent;
+      color: #e6e6e6;
+      cursor: pointer;
+    }
+
+    .sceneTreeContextSubmenu button:hover {
+      background: rgba(255, 255, 255, 0.09);
+    }
+
+    .sceneTreeContextActionBtn {
+      width: 100%;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 8px;
+      text-align: left;
+      background: transparent;
+      color: #e6e6e6;
+      font-size: 12px;
+      cursor: pointer;
+      margin-top: 2px;
+    }
+
+    .sceneTreeContextActionBtn:hover {
+      background: rgba(255, 255, 255, 0.09);
+    }
+
+    .sceneTreePropScroll {
+      flex: 1 1 0;
+      min-height: 0;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-right: 2px;
+    }
+
+    .sceneTreePropSection {
+      flex-shrink: 0;
+    }
+
+    .sceneTreePropSectionTitle {
+      font-size: 11px;
+      font-weight: 600;
+      color: #b8b8b8;
+      margin-bottom: 4px;
+    }
+
+    .sceneTreePropGrid {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 4px 8px;
+      align-items: center;
+      font-size: 11px;
+    }
+
+    .sceneTreePropGrid label {
+      color: #aaa;
+      white-space: nowrap;
+    }
+
+    .sceneTreePropGrid input[type="text"],
+    .sceneTreePropGrid input[type="number"] {
+      width: 100%;
+      min-width: 0;
+      padding: 3px 5px;
+      font-size: 11px;
+    }
+
+    .sceneTreePropGrid input[type="checkbox"] {
+      justify-self: start;
+      align-self: center;
+    }
+
+    .sceneTreePropGrid input[type="color"] {
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+      padding: 1px;
+      height: 26px;
+      border: 1px solid #555;
+      border-radius: 2px;
+      background: #2a2a2a;
+    }
+
+    .sceneTreePropVecInput {
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 11px;
+    }
+
+    .sceneTreePropActions {
+      flex-shrink: 0;
+      margin-top: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 6px;
+    }
+
+    #sceneTreePropApplyBtn {
+      align-self: flex-end;
+    }
+
+    .sceneTreePropSectionMaterial {
+      min-height: 0;
+    }
+
+    .sceneTreeMaterialTree {
+      margin-top: 0;
+      max-height: none;
+      overflow: visible;
+      font-size: 11px;
+      border: none;
+      border-radius: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .sceneTreeMaterialTree[hidden] {
+      display: none !important;
+    }
+
+    .sceneTreeMatSlotDetails {
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.15);
+      padding: 2px 6px 6px;
+    }
+
+    .sceneTreeMatSlotDetails > summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: #d8d8d8;
+      font-size: 11px;
+      padding: 4px 2px;
+      list-style: none;
+    }
+
+    .sceneTreeMatSlotDetails > summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .sceneTreeMatSlotDetails > summary::before {
+      content: "▸ ";
+      color: #888;
+    }
+
+    .sceneTreeMatSlotDetails[open] > summary::before {
+      content: "▾ ";
+    }
+
+    .sceneTreePropLegacyBlock[hidden] {
+      display: none !important;
+    }
+
+    .sceneTreeInlineTip {
+      margin: 0;
+      font-size: 10px;
+      color: #888;
+    }
+
+    #meshList {
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .meshRow {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 6px;
+      align-items: center;
+      padding: 4px 6px;
+      background: #303030;
+      border: 1px solid #4d4d4d;
+      border-radius: 3px;
+      font-size: 12px;
+    }
+
+    .meshName {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .meshActions {
+      display: flex;
+      gap: 4px;
+    }
+
+    .miniBtn {
+      min-width: 0;
+      padding: 2px 5px;
+      border: 1px solid #666;
+      border-radius: 3px;
+      color: #dcdcdc;
+      background: #4f4f4f;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .miniBtn:hover {
+      background: #666;
+    }
+
+    .propLine {
+      margin: 4px 0;
+      font-size: 12px;
+      word-break: break-all;
+      color: #b7b7b7;
+    }
+
+    #loadingMask {
+      position: absolute;
+      inset: 0;
+      z-index: 80;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      background: rgba(47, 47, 47, 0.72);
+      font-size: 15px;
+    }
+
+    .loadingMaskInner {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      max-width: min(90vw, 640px);
+      padding: 0 12px;
+      text-align: left;
+    }
+
+    .loadingMaskActivity {
+      display: inline-block;
+      flex-shrink: 0;
+      min-width: 1.2em;
+      font-family: ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace;
+      font-size: 1.15em;
+      line-height: 1;
+    }
+
+    .loadingMaskActivity[hidden] {
+      display: none;
+    }
+
+    #messageBox {
+      position: absolute;
+      /* 下移避开悬浮标题栏区域（--dockInsetTop 随标题栏显示高度更新） */
+      top: calc(10px + var(--dockInsetTop, 0px));
+      left: 50%;
+      z-index: 90;
+      display: none;
+      max-width: 70vw;
+      padding: 8px 14px;
+      border-radius: 4px;
+      color: #fff;
+      background: rgba(20, 20, 20, 0.82);
+      font-size: 13px;
+      transform: translateX(-50%);
+    }
+
+    #sceneJsonModal {
+      position: absolute;
+      inset: 0;
+      z-index: 50;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(12, 12, 12, 0.62);
+    }
+
+    #sceneJsonModal.visible {
+      display: flex;
+    }
+
+    #helpAboutModal {
+      position: absolute;
+      inset: 0;
+      z-index: 55;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(12, 12, 12, 0.62);
+    }
+
+    #helpAboutModal.visible {
+      display: flex;
+    }
+
+    #domainEditResolutionModal {
+      position: absolute;
+      inset: 0;
+      z-index: 56;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(12, 12, 12, 0.62);
+    }
+
+    #domainEditResolutionModal.visible {
+      display: flex;
+    }
+
+    #editorSettingsModal {
+      position: absolute;
+      inset: 0;
+      z-index: 59;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(12, 12, 12, 0.62);
+    }
+
+    #editorSettingsModal.visible {
+      display: flex;
+    }
+
+    .editorSettingsDialog {
+      width: min(92vw, 820px);
+      height: min(78vh, 640px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      background: #22272e;
+      color: #d7dce2;
+      box-shadow: 0 18px 32px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .editorSettingsHeader {
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+      background: #2d333b;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .editorSettingsBody {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+    }
+
+    .editorSettingsNav {
+      flex: 0 0 148px;
+      border-right: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 8px 0;
+      overflow-y: auto;
+      background: #1e2228;
+    }
+
+    .editorSettingsNavBtn {
+      display: block;
+      width: 100%;
+      padding: 8px 12px;
+      border: none;
+      background: transparent;
+      color: #aeb6c0;
+      font-size: 12px;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .editorSettingsNavBtn:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: #e8ecf0;
+    }
+
+    .editorSettingsNavBtn.active {
+      background: rgba(88, 166, 255, 0.15);
+      color: #79b8ff;
+      font-weight: 600;
+    }
+
+    .editorSettingsScroll {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow-y: auto;
+      padding: 12px 16px 16px;
+    }
+
+    .editorSettingsSection {
+      margin-bottom: 20px;
+      scroll-margin-top: 8px;
+    }
+
+    .editorSettingsSectionTitle {
+      margin: 0 0 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 13px;
+      font-weight: 700;
+      color: #e8ecf0;
+    }
+
+    .editorSettingsField {
+      display: grid;
+      grid-template-columns: minmax(140px, 42%) 1fr;
+      gap: 8px 12px;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 12px;
+    }
+
+    .editorSettingsField label {
+      color: #c5cad3;
+      line-height: 1.35;
+    }
+
+    .editorSettingsField input[type="text"],
+    .editorSettingsField input[type="number"],
+    .editorSettingsField input[type="password"],
+    .editorSettingsField select,
+    .editorSettingsField textarea {
+      width: 100%;
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: 12px;
+    }
+
+    .editorSettingsField input[type="color"] {
+      width: 100%;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 6px;
+      padding: 2px;
+      background: #1f242b;
+    }
+
+    .editorSettingsField textarea {
+      min-height: 52px;
+      resize: vertical;
+    }
+
+    .editorSettingsFieldCheck {
+      grid-template-columns: 1fr;
+    }
+
+    .editorSettingsFieldCheck label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .editorSettingsFieldWithHint {
+      row-gap: 4px;
+    }
+
+    .editorSettingsHint {
+      grid-column: 1 / -1;
+      font-size: 11px;
+      color: #8b949e;
+      line-height: 1.45;
+      margin: 0;
+    }
+
+    .editorSettingsFieldWithHint:not(.editorSettingsFieldCheck) .editorSettingsHint {
+      grid-column: 2;
+    }
+
+    .editorSettingsFooter {
+      flex-shrink: 0;
+      padding: 10px 14px 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.14);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      background: #2d333b;
+    }
+
+    #captureRecordModal {
+      position: absolute;
+      inset: 0;
+      z-index: 56;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(12, 12, 12, 0.62);
+    }
+
+    #captureRecordModal.visible {
+      display: flex;
+    }
+
+    #tjzExportModal {
+      position: absolute;
+      inset: 0;
+      z-index: 57;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(12, 12, 12, 0.62);
+    }
+
+    #tjzExportModal.visible {
+      display: flex;
+    }
+
+    #meshExportModal {
+      position: absolute;
+      inset: 0;
+      z-index: 57;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(12, 12, 12, 0.62);
+    }
+
+    #meshExportModal.visible {
+      display: flex;
+    }
+
+    #exportFilenameModal {
+      position: absolute;
+      inset: 0;
+      z-index: 57;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(12, 12, 12, 0.62);
+    }
+
+    #exportFilenameModal.visible {
+      display: flex;
+    }
+
+    #scenePresetNameModal {
+      position: absolute;
+      inset: 0;
+      z-index: 57;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(12, 12, 12, 0.62);
+    }
+
+    #scenePresetNameModal.visible {
+      display: flex;
+    }
+
+    #sceneSaveAsCopyModal {
+      position: absolute;
+      inset: 0;
+      z-index: 57;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(12, 12, 12, 0.62);
+    }
+
+    #sceneSaveAsCopyModal.visible {
+      display: flex;
+    }
+
+    #sceneSaveAsCopyMessage {
+      margin: 0 0 10px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #c9d1d9;
+    }
+
+    #sceneSaveAsCopyNameInput {
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 6px;
+      padding: 6px 8px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 4px;
+      background: #1c2128;
+      color: #e6edf3;
+      font-size: 13px;
+    }
+
+    #scenePresetNameInput {
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 6px;
+      padding: 6px 8px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 4px;
+      background: #1c2128;
+      color: #e6edf3;
+      font-size: 13px;
+    }
+
+    #presetSceneContextMenu {
+      position: fixed;
+      z-index: 80;
+      min-width: 120px;
+      display: none;
+      overflow: visible;
+      background: rgba(28, 30, 35, 0.98);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+      padding: 6px;
+      color: #e6e6e6;
+      font-size: 12px;
+      user-select: none;
+    }
+
+    #presetSceneContextMenu.visible {
+      display: block;
+    }
+
+    .presetSceneContextActionBtn {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      border: 0;
+      border-radius: 4px;
+      padding: 6px 8px;
+      text-align: left;
+      background: transparent;
+      color: #e6e6e6;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .presetSceneContextActionBtn:hover {
+      background: rgba(255, 255, 255, 0.09);
+    }
+
+    .presetSceneBtnUser {
+      font-style: italic;
+    }
+
+    #exportFilenameInput {
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 6px;
+      padding: 6px 8px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 4px;
+      background: #1c2128;
+      color: #e6edf3;
+      font-size: 13px;
+    }
+
+    #tjzImportModeModal {
+      position: absolute;
+      inset: 0;
+      z-index: 58;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(12, 12, 12, 0.62);
+    }
+
+    #tjzImportModeModal.visible {
+      display: flex;
+    }
+
+    #fullSceneLoadPromptModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 12000;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.45);
+    }
+
+    #fullSceneLoadPromptModal.visible {
+      display: flex;
+    }
+
+    .captureRecordDialog {
+      width: min(90vw, 520px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      background: #22272e;
+      color: #d7dce2;
+      box-shadow: 0 18px 32px rgba(0, 0, 0, 0.4);
+      overflow: hidden;
+    }
+
+    .captureRecordHeader {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+      background: #2d333b;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .captureRecordBody {
+      padding: 14px 14px 10px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      font-size: 12px;
+      color: #c5cad3;
+    }
+
+    .captureRecordRow {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .captureRecordRow label {
+      color: #c5cad3;
+    }
+
+    .captureRecordRow input,
+    .captureRecordRow select {
+      width: 100%;
+      border-radius: 6px;
+      padding: 6px 8px;
+      font-size: 12px;
+    }
+
+    .captureRecordHint {
+      font-size: 12px;
+      line-height: 1.5;
+      color: #9aa3ad;
+    }
+
+    .captureRecordFooter {
+      padding: 10px 12px 12px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    #recordStopFloatingBtn {
+      position: absolute;
+      right: 12px;
+      bottom: calc(12px + var(--dockInsetBottom, 0px));
+      z-index: 70;
+      display: none;
+      padding: 6px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 999px;
+      background: rgba(160, 40, 40, 0.9);
+      color: #fff;
+      cursor: pointer;
+      font-size: 12px;
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.35);
+    }
+
+    #recordStopFloatingBtn:hover {
+      background: rgba(190, 55, 55, 0.95);
+    }
+
+    #recordStopFloatingBtn.visible {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .helpAboutDialog {
+      width: min(88vw, 400px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      background: #22272e;
+      color: #d7dce2;
+      box-shadow: 0 18px 32px rgba(0, 0, 0, 0.4);
+      overflow: hidden;
+    }
+
+    .helpAboutHeader {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+      background: #2d333b;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .helpAboutBody {
+      padding: 16px 14px;
+      font-size: 13px;
+      line-height: 1.65;
+      color: #c5cad3;
+      white-space: pre-line;
+    }
+
+    .helpAboutFooter {
+      padding: 8px 12px 12px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .helpAboutFooter .miniBtn {
+      min-width: 72px;
+    }
+
+    .tjzExportDialog {
+      width: min(92vw, 520px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      background: #22272e;
+      color: #d7dce2;
+      box-shadow: 0 18px 32px rgba(0, 0, 0, 0.4);
+      overflow: hidden;
+    }
+
+    .tjzExportHeader {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+      background: #2d333b;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .tjzExportBody {
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .tjzExportRow {
+      display: grid;
+      gap: 6px;
+      font-size: 12px;
+    }
+
+    .tjzExportRow label {
+      color: #c9d1d9;
+    }
+
+    .tjzExportRow select {
+      width: 100%;
+      padding: 6px 8px;
+      font-size: 12px;
+    }
+
+    .tjzExportRow input[type="checkbox"] {
+      font-size: 12px;
+    }
+
+    .tjzExportHint {
+      font-size: 12px;
+      color: #a9b4c0;
+      line-height: 1.55;
+      white-space: pre-line;
+      background: #1f242b;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      padding: 8px 10px;
+    }
+
+    .topMenuDivider {
+      border: none;
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+      margin: 6px 8px;
+    }
+
+    .tjzExportRowCheck {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #c9d1d9;
+    }
+
+    #editorOverwriteModal,
+    #editorBootRestoreModal,
+    #recentScenesModal,
+    #clearCacheModal,
+    #scenePresetNameModal,
+    #sceneSaveAsCopyModal {
+      position: fixed;
+      inset: 0;
+      z-index: 12000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(12, 12, 12, 0.62);
+    }
+
+    #editorOverwriteModal.visible,
+    #editorBootRestoreModal.visible,
+    #recentScenesModal.visible,
+    #clearCacheModal.visible,
+    #scenePresetNameModal.visible,
+    #sceneSaveAsCopyModal.visible {
+      display: flex;
+    }
+
+    #sceneSaveAsCopyMessage {
+      margin: 0 0 10px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #c9d1d9;
+    }
+
+    #sceneSaveAsCopyNameInput,
+    #scenePresetNameInput {
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 6px;
+      padding: 6px 8px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 4px;
+      background: #1c2128;
+      color: #e6edf3;
+      font-size: 13px;
+    }
+
+    .editorConfirmMessage {
+      font-size: 12px;
+      line-height: 1.55;
+      color: #c5cad3;
+      white-space: pre-line;
+    }
+
+    .tjzExportFooter {
+      padding: 10px 12px 12px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .sceneJsonDialog {
+      width: min(92vw, 980px);
+      max-height: 84vh;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      background: #22272e;
+      color: #d7dce2;
+      box-shadow: 0 18px 32px rgba(0, 0, 0, 0.4);
+      overflow: hidden;
+    }
+
+    .sceneJsonDialogHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+      background: #2d333b;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .sceneJsonDialogActions {
+      display: flex;
+      gap: 8px;
+    }
+
+    #sceneJsonContent {
+      width: 100%;
+      min-height: 360px;
+      max-height: 72vh;
+      border: 0;
+      padding: 10px 12px;
+      color: #e5e9ef;
+      background: #1f242b;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 12px;
+      line-height: 1.45;
+      resize: vertical;
+      outline: none;
+    }

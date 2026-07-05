@@ -1,0 +1,638 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThreeJSON Demo 10 - 简易物理（重力 / Rapier 碰撞）</title>
+  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <script type="importmap">
+    
+    {
+      "imports": {
+        "threejson": "/builtins/full.js",
+        "threejson/core": "/core/index.js",
+        "three": "https://esm.sh/three@0.184.0",
+        "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
+        "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
+        "html2canvas-pro": "https://esm.sh/html2canvas-pro@2.0.4",
+        "gifuct-js": "https://esm.sh/gifuct-js@2.1.2",
+        "@dimforge/rapier3d-compat": "https://esm.sh/@dimforge/rapier3d-compat@0.19.3",
+        "three-mesh-bvh": "https://esm.sh/three-mesh-bvh@0.9.10?deps=three@0.184.0",
+        "three-bvh-csg": "https://esm.sh/three-bvh-csg@0.0.18?deps=three@0.184.0,three-mesh-bvh@0.9.10"
+      }
+    }
+  
+  </script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0a0a12;
+      --panel-bg: rgba(22, 26, 34, 0.52);
+      --panel-border: rgba(255, 255, 255, 0.08);
+      --text-main: #f3f5f7;
+      --text-muted: rgba(232, 234, 237, 0.72);
+      --text-subtle: rgba(232, 234, 237, 0.5);
+      --accent: #409eff;
+      --dock-width: 300px;
+      --peek-width: 14px;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: var(--bg);
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+      color: var(--text-main);
+    }
+
+    * { box-sizing: border-box; }
+    button, input, textarea, select { font: inherit; }
+
+    #rootContainer {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    #rootContainer.panelsInline.layoutRightDockShown #contentShell {
+      right: var(--dock-width);
+    }
+
+    #stageShell { position: relative; width: 100%; height: 100%; overflow: hidden; }
+    #contentShell { position: absolute; inset: 0; transition: right 0.2s ease; }
+
+    #canvasContainer {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: #252525;
+      outline: none;
+    }
+
+    #loadingMask {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #eee;
+      background: rgba(0, 0, 0, 0.6);
+      font-size: 15px;
+      text-align: center;
+      padding: 16px;
+    }
+
+    #hint {
+      position: absolute;
+      left: 12px;
+      bottom: 12px;
+      z-index: 25;
+      max-width: min(520px, 88vw);
+      padding: 8px 10px;
+      border-radius: 4px;
+      background: rgba(10, 10, 10, 0.6);
+      color: #e0e0e0;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    #hint code { font-size: 10px; color: #b8d4ff; }
+
+    .flyoutHost { position: absolute; top: 0; bottom: 0; z-index: 40; }
+    .flyoutHostRight {
+      right: 0;
+      display: block;
+      overflow: hidden;
+      width: var(--peek-width);
+      transition: width 0.2s ease;
+    }
+
+    #rootContainer.rightDockPinned .flyoutHostRight,
+    #rootContainer.rightDockPeek .flyoutHostRight {
+      width: var(--dock-width);
+    }
+
+    .rightDock {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      width: var(--dock-width);
+      max-width: var(--dock-width);
+      height: 100%;
+      min-height: 0;
+      overflow: hidden;
+      pointer-events: none;
+      box-shadow: -8px 0 24px rgba(0, 0, 0, 0.28);
+      transition: transform 0.2s ease;
+    }
+
+    #rootContainer:not(.rightDockPinned):not(.rightDockPeek) .flyoutHostRight .rightDock {
+      transform: translateX(100%);
+    }
+
+    #rootContainer.rightDockPinned .rightDock,
+    #rootContainer.rightDockPeek .rightDock {
+      pointer-events: auto;
+    }
+
+    .rightDockPanel {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-width: 0;
+      min-height: 0;
+      gap: 10px;
+      padding: 8px 10px 14px;
+      background: var(--panel-bg);
+      border-left: 1px solid rgba(255, 255, 255, 0.12);
+      -webkit-backdrop-filter: blur(22px) saturate(1.15);
+      backdrop-filter: blur(22px) saturate(1.15);
+    }
+
+    .sidePanelPinRow {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      flex-shrink: 0;
+      padding: 4px 0 10px;
+      margin-bottom: 4px;
+      border-bottom: 1px solid var(--panel-border);
+    }
+
+    .sidePanelPinBtn {
+      min-width: 44px;
+      height: 28px;
+      padding: 0 10px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 6px;
+      background: #4a4c51;
+      color: #eef4fa;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      flex-shrink: 0;
+    }
+
+    .sidePanelPinBtn:hover { background: #55585f; }
+
+    .sidePanelPinBtn[aria-pressed="true"] {
+      background: rgba(64, 158, 255, 0.28);
+      border-color: rgba(64, 158, 255, 0.45);
+      color: #fff;
+    }
+
+    .sidePanelChromeTitle {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-subtle);
+    }
+
+    .sidePanelChromeSubtitle {
+      margin-top: 3px;
+      font-size: 11px;
+      line-height: 1.4;
+      color: var(--text-subtle);
+    }
+
+    .edgeHoverZoneRight {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: var(--peek-width);
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    #rootContainer:not(.rightDockPinned) .flyoutHostRight .edgeHoverZoneRight {
+      pointer-events: auto;
+    }
+
+    .panelCard {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      padding: 10px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.045);
+    }
+
+    .panelCardTitle {
+      font-size: 12px;
+      font-weight: 700;
+      color: #eef3f8;
+      margin-bottom: 8px;
+    }
+
+    .btnRow { display: flex; flex-direction: column; gap: 6px; }
+
+    .btnRow button {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-main);
+      cursor: pointer;
+      font-size: 12px;
+      text-align: left;
+    }
+
+    .btnRow button:hover { background: rgba(255, 255, 255, 0.1); }
+
+    .btnRow button.primary {
+      border-color: rgba(64, 158, 255, 0.45);
+      background: rgba(64, 158, 255, 0.22);
+    }
+
+    .btnRow button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .introScroll {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: auto;
+      font-size: 12px;
+      line-height: 1.55;
+      color: var(--text-muted);
+    }
+
+    .introScroll h3 { margin: 0 0 6px; font-size: 13px; color: var(--text-main); }
+    .introScroll p { margin: 0 0 8px; }
+    .introScroll p:last-child { margin-bottom: 0; }
+    .introScroll code { font-size: 11px; color: #b8d4ff; }
+  </style>
+</head>
+<body>
+<div id="rootContainer" class="panelsInline rightDockPinned layoutRightDockShown">
+  <main id="stageShell">
+    <div id="contentShell">
+      <canvas id="canvasContainer">需要 WebGL</canvas>
+      <div id="loadingMask">场景加载中…</div>
+      <div id="hint">
+        【简易物理】右栏切换：<strong>重力演示</strong>（欧拉 y 钳制，非真实碰撞）与 <strong>碰撞检测</strong>（Rapier WASM）。请从<strong>仓库根</strong>静态服务打开。
+      </div>
+    </div>
+
+    <div id="rightFlyoutHost" class="flyoutHost flyoutHostRight">
+      <div id="rightDock" class="rightDock">
+        <aside id="rightPanel" class="rightDockPanel" aria-label="物理演示控制">
+          <div class="sidePanelPinRow">
+            <div>
+              <div class="sidePanelChromeTitle">Simple physics</div>
+              <div class="sidePanelChromeSubtitle">钉住 / 靠右边缘唤出（同 Demo 12）</div>
+            </div>
+            <button type="button" id="rightPanelPinBtn" class="sidePanelPinBtn" aria-pressed="true" aria-label="切换右侧栏钉住">PIN</button>
+          </div>
+
+          <section class="panelCard" style="flex: 0 0 auto">
+            <div class="panelCardTitle">物理模式</div>
+            <div class="btnRow">
+              <button type="button" id="btnModeGravity" class="primary" data-mode="gravity">重力演示</button>
+              <button type="button" id="btnModeCollision" data-mode="collision">碰撞检测</button>
+            </div>
+          </section>
+
+          <section class="panelCard" style="flex: 1 1 auto; min-height: 140px">
+            <div id="introTitle" class="panelCardTitle">场景说明</div>
+            <div id="introBody" class="introScroll"></div>
+          </section>
+        </aside>
+      </div>
+      <div class="edgeHoverZoneRight" aria-hidden="true"></div>
+    </div>
+  </main>
+</div>
+
+<script type="module">
+  import * as THREE from "three";
+  import { createJsonScene } from "threejson";
+  import { createPluginHost } from "../../../core/plugin/pluginHost.js";
+  import { getObjectsByName } from "../../../core/handler/objectRegistry.js";
+  import { createSimpleGravityPlugin } from "../../../extensions/simple-gravity/plugin.js";
+  import { createRapierBoxDropPlugin } from "../../../extensions/physics-rapier/rapierPlugin.js";
+  import { bootstrapPhysicsRapierFromScene } from "../../../extensions/physics-rapier/bootstrapFromScene.js";
+
+  const VIEW_CHROME_KEY = "demo10_physics_rightDockPinned_v1";
+  const BOX_NAME = "physics-demo-box";
+  const FLOOR_NAME = "physics-demo-floor";
+  const BOX_INITIAL = { x: 0, y: 20, z: 0, rotationY: 0.2 };
+
+  const MODE_INTROS = {
+    gravity: {
+      title: "重力演示",
+      hint: "模式：<code>simple-gravity</code> — 仅对 mesh 中心点做竖直欧拉积分 + <code>floorY</code> 钳制，大盒子仍可能视觉上穿入地板。",
+      html: `
+        <h3>重力演示</h3>
+        <p>扩展 <code>extensions/simple-gravity/plugin.js</code>，通过 <code>pluginHost.register</code> 注册，生命周期总线自动调度 <code>beforePhysics</code>。</p>
+        <p>注册：<code>createSimpleGravityPlugin({ mesh, floorY, gravity })</code>。与 Rapier 模式<strong>互斥</strong>（同一 mesh 只由一个插件写 <code>position</code>）。</p>
+        <p>空间查询（AABB / 射线）见 core <code>spatialQuery.js</code>，与物理插件无关。</p>
+      `
+    },
+    collision: {
+      title: "碰撞检测",
+      hint: "模式：<code>physics-rapier</code> — Rapier 刚体 + collider，落至地板后稳定。需网络加载 WASM（esm.sh）。",
+      html: `
+        <h3>碰撞检测（Rapier）</h3>
+        <p>扩展 <code>extensions/physics-rapier/rapierPlugin.js</code>：从地板与立方体 mesh 的 <code>Box3</code> 生成 <code>ColliderDesc.cuboid</code>，<code>world.step()</code> 后写回 <code>mesh.position</code>。</p>
+        <p>优先 <code>bootstrapPhysicsRapierFromScene({ scene, sceneJson, pluginHost, RAPIER })</code> 读取 JSON <code>extensions["physics-rapier"]</code>；亦可手写 <code>createRapierBoxDropPlugin</code>。</p>
+        <p>示例 JSON：<code>resources/json/tutorial/track-04/04-02-plugin-physics.json</code>。import map 需 <code>@dimforge/rapier3d-compat</code>。</p>
+      `
+    }
+  };
+
+  const canvas = document.getElementById("canvasContainer");
+  const loadingMask = document.getElementById("loadingMask");
+  const hintEl = document.getElementById("hint");
+  const rootContainer = document.getElementById("rootContainer");
+  const rightFlyoutHost = document.getElementById("rightFlyoutHost");
+  const rightPanelPinBtn = document.getElementById("rightPanelPinBtn");
+  const introTitle = document.getElementById("introTitle");
+  const introBody = document.getElementById("introBody");
+  const modeButtons = [
+    document.getElementById("btnModeGravity"),
+    document.getElementById("btnModeCollision")
+  ];
+
+  const pluginHost = createPluginHost();
+  const clock = new THREE.Clock();
+  let runtimeRef = null;
+  let currentMode = null;
+  let rightDockPinned = true;
+  let rightDockPeek = false;
+  let rapierModule = null;
+  let modeSwitching = false;
+
+  const scenePayload = {
+    version: "next",
+    name: "simple-physics-demo",
+    sceneConfig: {
+      canvasWidth: window.innerWidth,
+      canvasHeight: window.innerHeight,
+      scene: { background: "#252525" },
+      camera: {
+        fov: 50,
+        near: 0.1,
+        far: 2500,
+        position: { x: 90, y: 55, z: 95 }
+      },
+      renderer: { antialias: true, ratioRate: 1 },
+      controls: {
+        enableDamping: true,
+        dampingFactor: 0.08,
+        enableZoom: true,
+        target: { x: 0, y: 4, z: 0 }
+      },
+      lights: [
+        { type: "ambient", color: "#ffffff", intensity: 0.5 },
+        { type: "directional", color: "#ffffff", intensity: 0.85, position: { x: 40, y: 80, z: 50 } }
+      ],
+      renderLoop: { autoResize: true, firstAutoResize: true },
+      extensions: {
+        "physics-rapier": {
+          enabled: true,
+          gravity: { x: 0, y: -12, z: 0 }
+        }
+      }
+    },
+    worldInfo: {
+      boxModelList: [
+        {
+          name: FLOOR_NAME,
+          objType: "floor",
+          geometry: { width: 200, height: 6, depth: 160 },
+          position: { x: 0, y: -3, z: 0 },
+          rotation: { rotationX: 0, rotationY: 0, rotationZ: 0 },
+          scale: { scaleX: 1, scaleY: 1, scaleZ: 1 },
+          material: { type: "standard", color: "#666666", metalness: 0.05, roughness: 0.85 },
+          extensions: {
+            "physics-rapier": { rigidBody: "fixed", collider: { type: "box" } }
+          }
+        },
+        {
+          name: BOX_NAME,
+          objType: "box",
+          geometry: { width: 22, height: 22, depth: 22 },
+          position: { x: BOX_INITIAL.x, y: BOX_INITIAL.y, z: BOX_INITIAL.z },
+          rotation: { rotationX: 0, rotationY: BOX_INITIAL.rotationY, rotationZ: 0 },
+          scale: { scaleX: 1, scaleY: 1, scaleZ: 1 },
+          material: { type: "standard", color: "#67c23a" },
+          extensions: {
+            "physics-rapier": { rigidBody: "dynamic", collider: { type: "box" } }
+          }
+        }
+      ]
+    }
+  };
+
+  function getBoxMesh() {
+    return getObjectsByName(BOX_NAME)[0] || null;
+  }
+
+  function getFloorMesh() {
+    return getObjectsByName(FLOOR_NAME)[0] || null;
+  }
+
+  function resetBoxTransform() {
+    const mesh = getBoxMesh();
+    if (!mesh) return;
+    mesh.position.set(BOX_INITIAL.x, BOX_INITIAL.y, BOX_INITIAL.z);
+    mesh.rotation.set(0, BOX_INITIAL.rotationY, 0);
+  }
+
+  function resizeSceneRuntime() {
+    runtimeRef?.resize?.({
+      width: canvas.clientWidth || window.innerWidth,
+      height: canvas.clientHeight || window.innerHeight
+    });
+  }
+
+  function applyRightDockChrome() {
+    rootContainer.classList.toggle("rightDockPinned", rightDockPinned);
+    rootContainer.classList.toggle("rightDockPeek", rightDockPeek);
+    rootContainer.classList.toggle("layoutRightDockShown", rightDockPinned || rightDockPeek);
+    rightPanelPinBtn.setAttribute("aria-pressed", rightDockPinned ? "true" : "false");
+    rightPanelPinBtn.textContent = rightDockPinned ? "PIN" : "AUTO";
+    rightPanelPinBtn.title = rightDockPinned ? "已钉住：鼠标移开仍显示" : "未钉住：移到屏幕右边缘唤出";
+    requestAnimationFrame(resizeSceneRuntime);
+  }
+
+  function saveRightDockPinned() {
+    try {
+      localStorage.setItem(VIEW_CHROME_KEY, JSON.stringify({ rightDockPinned }));
+    } catch (_) { /* ignore */ }
+  }
+
+  function loadRightDockPinned() {
+    try {
+      const raw = localStorage.getItem(VIEW_CHROME_KEY);
+      if (!raw) return;
+      const o = JSON.parse(raw);
+      if (typeof o.rightDockPinned === "boolean") {
+        rightDockPinned = o.rightDockPinned;
+      }
+    } catch (_) { /* ignore */ }
+  }
+
+  function setupRightDockUi() {
+    loadRightDockPinned();
+    applyRightDockChrome();
+
+    rightPanelPinBtn.addEventListener("click", () => {
+      rightDockPinned = !rightDockPinned;
+      rightDockPeek = rightDockPinned;
+      saveRightDockPinned();
+      applyRightDockChrome();
+    });
+
+    rightFlyoutHost.addEventListener("mouseenter", () => {
+      if (!rightDockPinned) {
+        rightDockPeek = true;
+        applyRightDockChrome();
+      }
+    });
+
+    rightFlyoutHost.addEventListener("mouseleave", () => {
+      if (!rightDockPinned) {
+        rightDockPeek = false;
+        applyRightDockChrome();
+      }
+    });
+
+    document.addEventListener("mousemove", (event) => {
+      if (rightDockPinned) return;
+      if (event.clientX >= window.innerWidth - 18) {
+        rightDockPeek = true;
+        applyRightDockChrome();
+      }
+    });
+  }
+
+  function updateIntroUi(mode) {
+    const intro = MODE_INTROS[mode];
+    introTitle.textContent = intro.title;
+    introBody.innerHTML = intro.html;
+    hintEl.innerHTML = `【简易物理】${intro.hint} 请从<strong>仓库根</strong>静态服务打开。`;
+    for (const btn of modeButtons) {
+      const active = btn.dataset.mode === mode;
+      btn.classList.toggle("primary", active);
+      btn.disabled = modeSwitching;
+    }
+  }
+
+  async function activateGravityMode() {
+    const mesh = getBoxMesh();
+    if (!mesh) throw new Error(`未找到 ${BOX_NAME}`);
+    pluginHost.dispose();
+    resetBoxTransform();
+    const floorMesh = getFloorMesh();
+    pluginHost.register(createSimpleGravityPlugin({
+      mesh,
+      floorMesh,
+      floorY: 0,
+      gravity: -28
+    }));
+  }
+
+  async function activateCollisionMode() {
+    if (!rapierModule) {
+      rapierModule = (await import("@dimforge/rapier3d-compat")).default;
+    }
+    pluginHost.dispose();
+    resetBoxTransform();
+    const booted = await bootstrapPhysicsRapierFromScene({
+      scene: runtimeRef?.scene,
+      sceneJson: scenePayload,
+      pluginHost,
+      RAPIER: rapierModule
+    });
+    if (!booted) {
+      const mesh = getBoxMesh();
+      const floorMesh = getFloorMesh();
+      if (!mesh) throw new Error(`未找到 ${BOX_NAME}`);
+      const rapierPlugin = await createRapierBoxDropPlugin({
+        mesh,
+        floorMesh,
+        RAPIER: rapierModule,
+        gravity: { x: 0, y: -12, z: 0 }
+      });
+      pluginHost.register(rapierPlugin);
+    }
+  }
+
+  async function setMode(mode) {
+    if (mode !== "gravity" && mode !== "collision") return;
+    if (mode === currentMode && !modeSwitching) return;
+    modeSwitching = true;
+    updateIntroUi(mode);
+    try {
+      if (mode === "gravity") {
+        await activateGravityMode();
+      } else {
+        await activateCollisionMode();
+      }
+      currentMode = mode;
+    } catch (err) {
+      console.error(err);
+      hintEl.textContent = `模式切换失败：${err?.message || String(err)}`;
+    } finally {
+      modeSwitching = false;
+      updateIntroUi(currentMode);
+    }
+  }
+
+  function setupModeButtons() {
+    for (const btn of modeButtons) {
+      btn.addEventListener("click", () => {
+        void setMode(btn.dataset.mode);
+      });
+    }
+  }
+
+  async function init() {
+    const rt = await createJsonScene(scenePayload, {
+      canvas,
+      pluginHost
+    });
+    runtimeRef = rt;
+    resizeSceneRuntime();
+    clock.getDelta();
+    await setMode("gravity");
+    rt.start?.();
+    loadingMask.style.display = "none";
+  }
+
+  window.addEventListener("DOMContentLoaded", () => {
+    setupRightDockUi();
+    setupModeButtons();
+    void init().catch((err) => {
+      console.error(err);
+      loadingMask.textContent = `加载失败：${err?.message || String(err)}`;
+    });
+  });
+  window.addEventListener("resize", resizeSceneRuntime);
+  window.addEventListener("beforeunload", () => {
+    pluginHost.dispose();
+    runtimeRef?.dispose?.();
+  });
+</script>
+</body>
+</html>

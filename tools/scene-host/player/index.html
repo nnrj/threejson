@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>场景播放器</title>
+  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <script type="importmap">
+    {
+      "imports": {
+        "threejson": "/builtins/full.js",
+        "threejson/core": "/core/index.js",
+        "three": "https://esm.sh/three@0.184.0",
+        "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
+        "fflate": "https://esm.sh/fflate@0.8.3",
+        "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
+        "html2canvas-pro": "https://esm.sh/html2canvas-pro@2.0.4",
+        "gifuct-js": "https://esm.sh/gifuct-js@2.1.2",
+        "three-mesh-bvh": "https://esm.sh/three-mesh-bvh@0.9.10?deps=three@0.184.0",
+        "three-bvh-csg": "https://esm.sh/three-bvh-csg@0.0.18?deps=three@0.184.0,three-mesh-bvh@0.9.10",
+        "troika-three-text": "https://esm.sh/troika-three-text@0.52.4?deps=three@0.184.0"
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="./css/player-shell.css">
+</head>
+<body>
+  <div id="rootContainer" class="rightPanelOpen">
+    <header class="topBar" id="topBar">
+      <div class="appIconSlot" title="ScenePlayer" aria-hidden="true">▶</div>
+      <nav class="topMenubar" data-i18n-aria="player.shell.topMenubar" aria-label="主菜单">
+        <details class="topMenu">
+          <summary data-i18n="player.menu.file">文件</summary>
+          <div class="topDropdown">
+            <button type="button" id="menuOpenSceneJson" data-i18n="player.shell.menuOpenSceneJson">打开</button>
+            <button type="button" id="menuLoadSceneJson" data-i18n="player.shell.menuLoadSceneJson">加载 ThreeJSON</button>
+            <button type="button" id="menuLoadNativeThreeJson" data-i18n="player.shell.menuLoadNativeThreeJson">加载原生 JSON</button>
+            <button type="button" id="menuLoadTjzArchive" data-i18n="player.shell.menuLoadTjzArchive">加载 .tjz 包</button>
+          </div>
+        </details>
+        <details class="topMenu">
+          <summary data-i18n="player.menu.view">查看</summary>
+          <div class="topDropdown">
+            <button type="button" id="menuViewSceneJson" data-i18n="player.shell.menuViewSceneJson">查看场景 JSON</button>
+            <button type="button" id="menuFitView" data-i18n="player.shell.menuFitView">自适应</button>
+            <button type="button" id="menuFullscreenToggle" data-i18n="player.shell.menuFullscreenToggle">全屏</button>
+          </div>
+        </details>
+        <details class="topMenu">
+          <summary data-i18n="player.menu.settings">设置</summary>
+          <div class="topDropdown">
+            <button type="button" id="menuOpenPlayerSettings" data-i18n="player.shell.menuOpenPlayerSettings">播放器设置…</button>
+          </div>
+        </details>
+        <details class="topMenu">
+          <summary data-i18n="player.menu.help">帮助</summary>
+          <div class="topDropdown">
+            <button type="button" id="menuHelpUserManual" data-i18n="player.shell.menuHelpUserManual">用户手册</button>
+            <button type="button" id="menuClearPlayerSettingsCache" data-i18n="player.shell.menuClearPlayerSettingsCache">清除设置缓存</button>
+            <button type="button" id="menuHelpAbout" data-i18n="player.shell.menuHelpAbout">关于</button>
+          </div>
+        </details>
+      </nav>
+      <div class="topBarCenter" id="topBarSceneTitle" data-i18n="player.shell.topBarSceneTitle">场景播放器</div>
+      <div class="topBarSpacer"></div>
+      <div class="topBarTrailing">
+        <input id="sceneJsonFileInput" type="file" accept=".json,.threejson,.tjson,.tjz,application/json" hidden>
+        <input id="nativeThreeJsonFileInput" type="file" accept=".json,application/json" hidden>
+        <input id="tjzArchiveFileInput" type="file" accept=".tjz" hidden>
+        <input id="playlistAddSingleFileInput" type="file" accept=".json,.threejson,.tjson,application/json" hidden>
+        <input id="playlistAddTjzFileInput" type="file" accept=".tjz" hidden>
+        <input id="playlistFolderInput" type="file" accept=".json,.threejson,.tjson,.tjz,application/json" webkitdirectory hidden>
+        <button class="toolBtn secondary" id="playlistOpenBtn" type="button" title="选择 JSON 或 .tjz 并打开播放" data-i18n="player.shell.playlistOpenBtn" data-i18n-title="player.shell.playlistOpenBtn.title">打开</button>
+        <details class="playlistAddMenu" id="playlistAddMenu">
+          <summary class="toolBtn secondary playlistAddSummary" data-i18n="player.shell.playlistAddSummary">添加</summary>
+          <div class="playlistAddDropdown">
+            <button type="button" id="playlistAddJsonFileBtn" data-i18n="player.shell.playlistAddJsonFileBtn">添加 JSON 文件…</button>
+            <button type="button" id="playlistAddTjzFileBtn" data-i18n="player.shell.playlistAddTjzFileBtn">添加 .tjz 包…</button>
+            <button type="button" id="playlistAddFolderBtn" data-i18n="player.shell.playlistAddFolderBtn">添加文件夹…</button>
+          </div>
+        </details>
+        <button class="toolBtn secondary" id="toolbarResetViewBtn" type="button" title="根据当前网格自适应相机（同「查看 → 自适应」）" data-i18n="player.shell.toolbarResetViewBtn" data-i18n-title="player.shell.toolbarResetViewBtn.title">复位</button>
+        <button class="toolBtn secondary" id="fullscreenBtn" type="button" data-i18n="player.shell.fullscreenBtn">全屏</button>
+      </div>
+    </header>
+
+    <div class="centerWorkspace" id="centerWorkspace">
+      <main id="canvasWrap">
+        <canvas id="canvasContainer">抱歉，你的浏览器不支持 WebGL。</canvas>
+        <div id="loadingMask" aria-live="polite" data-i18n="player.shell.loadingMask">3D 场景加载中...</div>
+        <div id="messageBox" role="status" aria-live="polite"></div>
+        <div id="canvasIdleOverlay" class="canvasIdleOverlay" aria-hidden="true">
+          <button type="button" class="toolBtn secondary" id="idleOpenSceneBtn" data-i18n="player.shell.idleOpenSceneBtn">打开</button>
+          <button type="button" class="playerStartupSampleBtn" id="idleOpenDefaultSceneBtn" data-i18n="player.shell.idleOpenDefaultSceneBtn">打开示例场景</button>
+          <input id="idleOpenSceneInput" type="file" accept=".json,.threejson,.tjson,.tjz,application/json" hidden>
+        </div>
+      </main>
+
+      <div id="rightDock" class="rightDock">
+        <aside id="rightPanel" class="sidePanel rightDockPanel">
+          <div class="panelCard playlistPanelCard">
+            <div class="playlistPanelHeader">
+              <div class="panelTitle" data-i18n="player.shell.playlistPanelTitle">播放列表</div>
+              <button type="button" class="miniBtn" id="playlistClearBtn" title="清空列表并停止播放" data-i18n="player.shell.playlistClearBtn" data-i18n-title="player.shell.playlistClearBtn.title">清空</button>
+            </div>
+            <div id="playlistList" class="playlistList" aria-label="场景播放列表" data-i18n="player.shell.playlistList" data-i18n-aria="player.shell.playlistList"></div>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <footer class="bottomBar" id="bottomBar">
+      <div class="bottomBarTransport">
+        <button type="button" class="transportBtn secondary" id="bottomBtnPrev" title="上一个" data-i18n-title="player.shell.bottomBtnPrev.title">⏮</button>
+        <button type="button" class="transportBtn" id="bottomBtnPlayPause" title="暂停" data-i18n-title="player.shell.bottomBtnPlayPause.title">⏸</button>
+        <button type="button" class="transportBtn secondary" id="bottomBtnNext" title="下一个" data-i18n-title="player.shell.bottomBtnNext.title">⏭</button>
+        <button type="button" class="transportBtn secondary" id="bottomBtnStop" title="停止并移除场景" data-i18n-title="player.shell.bottomBtnStop.title">⏹</button>
+        <button type="button" class="transportBtn secondary" id="bottomBtnOpen" title="打开 JSON 或 .tjz" data-i18n-title="player.shell.bottomBtnOpen.title">⊕</button>
+        <button type="button" class="transportBtn secondary" id="bottomBtnFullscreen" title="全屏" data-i18n-title="player.shell.bottomBtnFullscreen.title">⛶</button>
+      </div>
+      <div class="bottomBarTrailing">
+        <div class="volumeControl">
+          <button type="button" class="transportBtn secondary volumeBtn" id="playerVolumeMuteBtn" title="静音" aria-label="静音" data-i18n-title="player.shell.playerVolumeMuteBtn.title" data-i18n-aria="player.shell.playerVolumeMuteBtn.aria">🔊</button>
+          <input type="range" id="playerVolumeSlider" min="0" max="100" value="100" title="音量" aria-label="音量" data-i18n-title="player.shell.playerVolumeSlider.title" data-i18n-aria="player.shell.playerVolumeSlider.aria">
+        </div>
+        <button type="button" class="transportBtn secondary" id="bottomBarPlaylistToggle" aria-controls="rightPanel" aria-expanded="true" title="折叠播放列表" data-i18n-title="player.shell.bottomBarPlaylistToggle.title">☰</button>
+      </div>
+    </footer>
+
+    <div id="immersiveTopEdgeStrip" class="immersiveEdgeStrip immersiveTopEdgeStrip" aria-hidden="true"></div>
+    <div id="immersiveBottomEdgeStrip" class="immersiveEdgeStrip immersiveBottomEdgeStrip" aria-hidden="true"></div>
+    <div id="immersiveRightEdgeStrip" class="immersiveRightEdgeStrip" aria-hidden="true"></div>
+  </div>
+
+  <div id="sceneJsonModal" role="dialog" aria-modal="true" aria-label="场景 JSON 查看器" data-i18n-aria="player.shell.sceneJsonModal.aria">
+    <div class="sceneJsonDialog">
+      <div class="sceneJsonDialogHeader">
+        <span data-i18n="player.shell.sceneJsonDialogTitle">当前场景 JSON</span>
+        <div class="sceneJsonDialogActions">
+          <button class="miniBtn" id="copyJsonBtn" type="button" data-i18n="player.shell.copyJsonBtn">复制</button>
+          <button class="miniBtn" id="closeJsonBtn" type="button" data-i18n="player.shell.closeJsonBtn">关闭</button>
+        </div>
+      </div>
+      <textarea id="sceneJsonContent" spellcheck="false" readonly></textarea>
+    </div>
+  </div>
+
+  <div id="helpAboutModal" role="dialog" aria-modal="true" aria-labelledby="helpAboutTitle">
+    <div class="helpAboutDialog">
+      <div class="helpAboutHeader" id="helpAboutTitle" data-i18n="player.shell.helpAboutTitle">关于</div>
+      <div class="helpAboutBody" id="helpAboutBodyText">ScenePlayer 1.0.0
+Powered by ThreeJSON and Three.js</div>
+      <div class="helpAboutFooter">
+        <button class="miniBtn" id="helpAboutCloseBtn" type="button" data-i18n="player.shell.helpAboutCloseBtn">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="playerSettingsModal" role="dialog" aria-modal="true" aria-labelledby="playerSettingsTitle" hidden>
+    <div class="playerSettingsDialog">
+      <div class="playerSettingsHeader" id="playerSettingsTitle">播放器设置</div>
+      <div class="playerSettingsBody">
+        <nav class="playerSettingsNav" id="playerSettingsNav" aria-label="设置分类"></nav>
+        <div class="playerSettingsScroll" id="playerSettingsScroll"></div>
+      </div>
+      <div class="playerSettingsFooter">
+        <button class="miniBtn" id="playerSettingsResetBtn" type="button">恢复默认</button>
+        <button class="miniBtn" id="playerSettingsSaveBtn" type="button">保存并应用</button>
+        <button class="miniBtn" id="playerSettingsCancelBtn" type="button">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="playlistContextMenu" role="menu" aria-label="播放列表菜单" data-i18n-aria="player.shell.playlistContextMenu.aria">
+    <button type="button" id="playlistContextPlayBtn" role="menuitem" data-i18n="player.shell.playlistContextPlayBtn">播放</button>
+    <button type="button" id="playlistContextReloadBtn" role="menuitem" data-i18n="player.shell.playlistContextReloadBtn">重新加载</button>
+    <div class="playlistContextItem" id="playlistContextCopyItem" role="none">
+      <div class="playlistContextItemLabel" role="menuitem" tabindex="-1">
+        <span data-i18n="player.shell.playlistContextCopyLabel">复制</span>
+        <span class="playlistContextArrow" aria-hidden="true">▸</span>
+      </div>
+      <div class="playlistContextSubmenu" role="menu" aria-label="复制">
+        <button type="button" id="playlistContextCopyPathBtn" role="menuitem" data-i18n="player.shell.playlistContextCopyPathBtn">复制路径</button>
+        <button type="button" id="playlistContextCopyNameBtn" role="menuitem" data-i18n="player.shell.playlistContextCopyNameBtn">复制名称</button>
+      </div>
+    </div>
+    <button type="button" id="playlistContextRemoveBtn" role="menuitem" data-i18n="player.shell.playlistContextRemoveBtn">移除</button>
+  </div>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>

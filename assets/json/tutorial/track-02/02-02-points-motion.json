@@ -1,0 +1,157 @@
+{
+  "version": "next",
+  "name": "tutorial-points-motion",
+  "sceneConfig": {
+    "scene": {
+      "background": "#0a0a14"
+    },
+    "camera": {
+      "fov": 55,
+      "position": {
+        "x": 0,
+        "y": 120,
+        "z": 280
+      },
+      "near": 0.1,
+      "far": 5000
+    },
+    "renderer": {
+      "antialias": true,
+      "ratioRate": 1
+    },
+    "controls": {
+      "enableDamping": true,
+      "target": {
+        "x": 0,
+        "y": 40,
+        "z": 0
+      }
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "color": "#ffffff",
+        "intensity": 0.35
+      }
+    ],
+    "renderLoop": {
+      "autoResize": true,
+      "firstAutoResize": true,
+      "updateAnimations": true
+    }
+  },
+  "worldInfo": {
+    "particleList": [
+      {
+        "name": "points-static",
+        "objType": "points",
+        "count": 2200,
+        "bounds": {
+          "width": 360,
+          "height": 160,
+          "depth": 360
+        },
+        "position": {
+          "x": 0,
+          "y": 70,
+          "z": 0
+        },
+        "visible": true,
+        "material": {
+          "color": "#a8c8ff",
+          "size": 2.5,
+          "sizeAttenuation": true,
+          "transparent": true,
+          "opacity": 0.85,
+          "blending": "additive",
+          "depthWrite": false
+        }
+      },
+      {
+        "name": "points-fall",
+        "objType": "points",
+        "count": 700,
+        "bounds": {
+          "width": 280,
+          "height": 90,
+          "depth": 280
+        },
+        "position": {
+          "x": 0,
+          "y": 52,
+          "z": 0
+        },
+        "visible": false,
+        "motion": {
+          "type": "drift",
+          "speed": 16,
+          "direction": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "wrap": true
+        },
+        "material": {
+          "color": "#9ec8ff",
+          "size": 2,
+          "blending": "additive",
+          "depthWrite": false
+        }
+      },
+      {
+        "name": "points-rise",
+        "objType": "points",
+        "count": 420,
+        "bounds": {
+          "width": 140,
+          "height": 100,
+          "depth": 140
+        },
+        "position": {
+          "x": 0,
+          "y": 32,
+          "z": 0
+        },
+        "visible": false,
+        "motion": {
+          "type": "drift",
+          "speed": 7,
+          "direction": {
+            "x": 0.05,
+            "y": 1,
+            "z": 0.08
+          },
+          "wrap": true
+        },
+        "material": {
+          "color": "#ffaa66",
+          "size": 3.5,
+          "blending": "additive",
+          "depthWrite": false
+        }
+      }
+    ],
+    "boxModelList": [
+      {
+        "name": "floor-ref",
+        "objType": "box",
+        "geometry": {
+          "width": 320,
+          "height": 4,
+          "depth": 320
+        },
+        "position": {
+          "x": 0,
+          "y": -2,
+          "z": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#1a2030"
+        }
+      }
+    ]
+  },
+  "threeJsonId": "02-02-points-motion"
+}

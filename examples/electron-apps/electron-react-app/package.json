@@ -1,0 +1,36 @@
+{
+  "name": "electron-react-app",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "main": "electron/main.mjs",
+  "scripts": {
+    "dev": "concurrently -k -n vite,electron -c blue,green \"vite\" \"wait-on http://localhost:5175 && cross-env VITE_DEV_SERVER_URL=http://localhost:5175 electron ./electron/main.mjs\"",
+    "build": "tsc -b && vite build",
+    "start": "electron ./electron/main.mjs",
+    "preview": "npm run build && electron ./electron/main.mjs"
+  },
+  "dependencies": {
+    "@tweenjs/tween.js": "^25.0.0",
+    "html2canvas-pro": "^2.0.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "three": "^0.184.0",
+    "threejson": "file:../../.."
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.0.1",
+    "@types/react-dom": "^19.0.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^42.0.0",
+    "typescript": "~5.6.3",
+    "vite": "^6.0.0",
+    "wait-on": "^8.0.1"
+  }
+}

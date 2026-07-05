@@ -1,0 +1,134 @@
+{
+  "version": "next",
+  "name": "tutorial-shader-sky-water",
+  "sceneConfig": {
+    "scene": {
+      "background": "#0b0e14"
+    },
+    "camera": {
+      "fov": 55,
+      "near": 0.5,
+      "far": 800,
+      "position": {
+        "x": 0,
+        "y": 1.2,
+        "z": 5
+      }
+    },
+    "renderer": {
+      "antialias": true,
+      "ratioRate": 1
+    },
+    "controls": {
+      "enableDamping": true,
+      "dampingFactor": 0.08,
+      "target": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "color": "#ffffff",
+        "intensity": 0.35
+      }
+    ],
+    "renderLoop": {
+      "autoResize": true,
+      "firstAutoResize": true,
+      "fps": 60
+    }
+  },
+  "worldInfo": {
+    "domainModelList": [
+      {
+        "name": "demo-sunset-sky",
+        "domain": "nature.sky",
+        "handler": "sunset",
+        "geometry": {
+          "radius": 350
+        },
+        "uniforms": {
+          "sunDirection": [
+            -0.62,
+            0.32,
+            -0.68
+          ]
+        }
+      },
+      {
+        "name": "demo-ocean",
+        "domain": "nature.water",
+        "handler": "ocean",
+        "quality": "high",
+        "geometry": {
+          "width": 280,
+          "height": 280
+        },
+        "position": {
+          "x": 0,
+          "y": -0.1,
+          "z": 0
+        },
+        "uniforms": {
+          "waveSpeed": 1.4,
+          "waveHeight": 0.4,
+          "sunDirection": [
+            -0.62,
+            0.32,
+            -0.68
+          ],
+          "horizonColor": "#ff8c42",
+          "zenithColor": "#2a1a4a"
+        }
+      }
+    ],
+    "shaderSurfaceList": [
+      {
+        "name": "demo-solid-marker",
+        "objType": "shaderSurface",
+        "shaderPreset": "solidColor",
+        "surface": "plane",
+        "geometry": {
+          "width": 0.8,
+          "height": 0.3
+        },
+        "position": {
+          "x": -1.8,
+          "y": 0.4,
+          "z": -0.8
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0.4,
+          "rotationZ": 0
+        },
+        "uniforms": {
+          "color": "#00cec9",
+          "opacity": 0.75
+        }
+      }
+    ],
+    "boxModelList": [
+      {
+        "name": "dock-pier",
+        "geometry": {
+          "width": 2.8,
+          "height": 0.2,
+          "depth": 1
+        },
+        "position": {
+          "x": 0,
+          "y": 0.1,
+          "z": -1.6
+        },
+        "material": {
+          "type": "standard",
+          "color": "#636e72"
+        }
+      }
+    ]
+  }
+}

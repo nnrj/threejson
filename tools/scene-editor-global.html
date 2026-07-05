@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scene Editor</title>
+  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <script>
+    (function () {
+      const target = new URL("./scene-host/editor/index.html", window.location.href);
+      target.search = window.location.search;
+      target.hash = window.location.hash;
+      window.location.replace(target.href);
+    })();
+  </script>
+  <meta http-equiv="refresh" content="0; url=./scene-host/editor/index.html">
+</head>
+<body>
+  <p>正在跳转到场景编辑器… <a href="./scene-host/editor/index.html">scene-host/editor/index.html</a></p>
+</body>
+</html>

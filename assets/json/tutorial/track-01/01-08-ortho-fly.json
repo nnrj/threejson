@@ -1,0 +1,78 @@
+{
+  "version": "next",
+  "name": "track-01-08-ortho-fly",
+  "objectList": [
+    {
+      "objType": "scene",
+      "background": "#1b1f28"
+    },
+    {
+      "objType": "camera",
+      "type": "orthographic",
+      "left": -70,
+      "right": 70,
+      "top": 40,
+      "bottom": -40,
+      "near": 0.1,
+      "far": 2000,
+      "position": { "x": 55, "y": 42, "z": 72 },
+      "lookAt": { "x": 0, "y": 2, "z": 0 }
+    },
+    {
+      "objType": "renderer",
+      "antialias": true,
+      "ratioRate": 1
+    },
+    {
+      "objType": "controls",
+      "type": "fly",
+      "movementSpeed": 12,
+      "rollSpeed": 0.5,
+      "dragToLook": true
+    },
+    {
+      "objType": "light",
+      "type": "ambient",
+      "intensity": 0.45
+    },
+    {
+      "objType": "light",
+      "type": "directional",
+      "intensity": 0.95,
+      "position": { "x": 30, "y": 50, "z": 20 }
+    },
+    {
+      "objType": "renderLoop",
+      "autoResize": true,
+      "firstAutoResize": true
+    },
+    {
+      "objType": "box",
+      "name": "floor",
+      "geometry": { "width": 120, "height": 1, "depth": 90 },
+      "material": { "type": "MeshStandardMaterial", "color": "#3a404c", "roughness": 0.95 },
+      "position": { "x": 0, "y": -0.5, "z": 0 }
+    },
+    {
+      "objType": "box",
+      "name": "marker-left",
+      "geometry": { "width": 4, "height": 2.5, "depth": 4 },
+      "material": { "type": "MeshStandardMaterial", "color": "#6d8fae", "roughness": 0.55 },
+      "position": { "x": -14, "y": 1.25, "z": 0 }
+    },
+    {
+      "objType": "box",
+      "name": "marker-center",
+      "geometry": { "width": 3, "height": 3, "depth": 3 },
+      "material": { "type": "MeshStandardMaterial", "color": "#b8c0cc", "metalness": 0.85, "roughness": 0.2 },
+      "position": { "x": 0, "y": 1.5, "z": 0 }
+    },
+    {
+      "objType": "box",
+      "name": "marker-right",
+      "geometry": { "width": 2.2, "height": 3.5, "depth": 2.2 },
+      "material": { "type": "MeshStandardMaterial", "color": "#d4a574", "roughness": 0.45 },
+      "position": { "x": 14, "y": 1.75, "z": 0 }
+    }
+  ]
+}

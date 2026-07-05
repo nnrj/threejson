@@ -1,0 +1,209 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThreeJSON Tutorial · Track 3 · 原生 Three JSON 域</title>
+  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <script type="importmap">
+    
+    {
+      "imports": {
+        "threejson": "/builtins/full.js",
+        "threejson/core": "/core/index.js",
+        "three": "https://esm.sh/three@0.184.0",
+        "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
+        "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
+        "html2canvas-pro": "https://esm.sh/html2canvas-pro@2.0.4",
+        "gifuct-js": "https://esm.sh/gifuct-js@2.1.2",
+        "three-mesh-bvh": "https://esm.sh/three-mesh-bvh@0.9.10?deps=three@0.184.0",
+        "three-bvh-csg": "https://esm.sh/three-bvh-csg@0.0.18?deps=three@0.184.0,three-mesh-bvh@0.9.10"
+      }
+    }
+  
+  </script>
+  <style>
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #2f2f2f;
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    #rootContainer {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background: #2f2f2f;
+    }
+
+    #canvasContainer {
+      display: block;
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      margin: 0;
+      background: #222;
+      outline: none;
+    }
+
+    #loadingMask {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      background: rgba(47, 47, 47, 0.72);
+      font-size: 15px;
+      text-align: center;
+      padding: 16px;
+    }
+
+    #messageBox {
+      position: absolute;
+      top: 18px;
+      left: 50%;
+      z-index: 30;
+      display: none;
+      max-width: 76vw;
+      padding: 8px 14px;
+      border-radius: 4px;
+      color: #fff;
+      background: rgba(20, 20, 20, 0.82);
+      font-size: 13px;
+      transform: translateX(-50%);
+    }
+
+    #hint {
+      position: absolute;
+      left: 12px;
+      bottom: 12px;
+      z-index: 25;
+      max-width: min(560px, 92vw);
+      padding: 8px 10px;
+      border-radius: 4px;
+      background: rgba(10, 10, 10, 0.55);
+      color: #e0e0e0;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+  </style>
+</head>
+<body>
+<div id="rootContainer">
+  <canvas id="canvasContainer">抱歉，你的浏览器不支持 WebGL。</canvas>
+  <div id="loadingMask">Track 3 · 原生 Three JSON 域加载中…</div>
+  <div id="messageBox"></div>
+  <div id="hint">
+    【原生JSON加载示例】数据文件：<code>/assets/json/tutorial/track-03/03-03-native-three-domain.json</code>（内含 <code>worldInfo.domainModelList</code> 的 <code>nativeThree</code>，经 ObjectLoader 加载独立子图 <code>/assets/json/three_native.json</code>）；另有一条 <code>domain: &quot;box&quot;</code> 作对照。请用项目根目录静态服务打开本页。
+  </div>
+</div>
+
+<script type="module">
+  import {
+    applyDomainModelsFromWorldInfo,
+    createSceneRuntime,
+    deployMesh
+  } from "threejson";
+
+  const canvasContainer = document.getElementById("canvasContainer");
+  const loadingMask = document.getElementById("loadingMask");
+  const messageBox = document.getElementById("messageBox");
+  const sceneJsonUrl = "/assets/json/tutorial/track-03/03-03-native-three-domain.json";
+
+  let sceneRuntime;
+  let sceneConfig = {};
+
+  window.addEventListener("DOMContentLoaded", initDemo);
+  window.addEventListener("beforeunload", wasteCleaner);
+
+  async function initDemo() {
+    try {
+      const response = await fetch(sceneJsonUrl);
+      if (!response.ok) {
+        throw new Error(`加载场景 JSON 失败：${response.status}`);
+      }
+      const sceneData = await response.json();
+      const worldInfo = sceneData?.worldInfo;
+      if (!worldInfo) {
+        throw new Error("JSON 缺少 worldInfo。");
+      }
+      sceneConfig = sceneData?.sceneConfig || {};
+      sceneConfig.canvasWidth = window.innerWidth;
+      sceneConfig.canvasHeight = window.innerHeight;
+
+      sceneRuntime = createSceneRuntime({
+        canvas: canvasContainer,
+        config: sceneConfig
+      });
+
+      const boxModelList = Array.isArray(worldInfo.boxModelList) ? worldInfo.boxModelList : [];
+      const scene = sceneRuntime.scene;
+      boxModelList.forEach((item) => deployMesh(item, scene));
+
+      applyDomainModelsFromWorldInfo(scene, worldInfo, { sceneJsonRoot: sceneData });
+
+      initEventListener();
+      sceneRuntime.start();
+      setLoading(false);
+    } catch (error) {
+      console.error(error);
+      setLoading(false);
+      showMessage(`Track 3 · 原生 Three JSON 域初始化失败：${error.message}`, "error");
+    }
+  }
+
+  function initEventListener() {
+    window.addEventListener("resize", windowResize);
+    canvasContainer.addEventListener("contextmenu", rightClickHandler);
+  }
+
+  function windowResize() {
+    sceneConfig.canvasWidth = window.innerWidth;
+    sceneConfig.canvasHeight = window.innerHeight;
+    sceneRuntime?.resize({
+      width: sceneConfig.canvasWidth,
+      height: sceneConfig.canvasHeight
+    });
+  }
+
+  function rightClickHandler(event) {
+    event.preventDefault();
+  }
+
+  function setLoading(flag) {
+    loadingMask.style.display = flag ? "flex" : "none";
+  }
+
+  function showMessage(message, type = "info") {
+    const colorMap = {
+      info: "rgba(20, 20, 20, 0.82)",
+      error: "rgba(180, 35, 24, 0.9)"
+    };
+    messageBox.textContent = message;
+    messageBox.style.background = colorMap[type] || colorMap.info;
+    messageBox.style.display = "block";
+    window.clearTimeout(showMessage.timer);
+    showMessage.timer = window.setTimeout(() => {
+      messageBox.style.display = "none";
+    }, 3400);
+  }
+
+  function wasteCleaner() {
+    sceneRuntime?.dispose();
+    window.removeEventListener("resize", windowResize);
+    canvasContainer.removeEventListener("contextmenu", rightClickHandler);
+  }
+</script>
+</body>
+</html>

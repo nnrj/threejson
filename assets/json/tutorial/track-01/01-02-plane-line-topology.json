@@ -1,0 +1,152 @@
+{
+  "version": "next",
+  "name": "tutorial-plane-line-topology",
+  "sceneConfig": {
+    "scene": {
+      "background": "#1a1a28"
+    },
+    "camera": {
+      "fov": 50,
+      "position": {
+        "x": 17,
+        "y": 12,
+        "z": 22
+      },
+      "near": 0.1,
+      "far": 300
+    },
+    "renderer": {
+      "antialias": true
+    },
+    "controls": {
+      "enableDamping": true,
+      "target": {
+        "x": 0,
+        "y": 2,
+        "z": 0
+      }
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "color": "#ffffff",
+        "intensity": 0.5
+      }
+    ],
+    "renderLoop": {
+      "autoResize": true,
+      "firstAutoResize": true
+    }
+  },
+  "worldInfo": {
+    "planeList": [
+      {
+        "name": "ground-plane",
+        "geometry": {
+          "width": 20,
+          "height": 20
+        },
+        "position": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "rotation": {
+          "rotationX": -1.5708,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "material": {
+          "color": "#2a3548",
+          "transparent": false,
+          "side": "double"
+        }
+      }
+    ],
+    "lineList": [
+      {
+        "name": "polyline",
+        "topology": "line",
+        "points": [
+          {
+            "x": -5,
+            "y": 1,
+            "z": -4
+          },
+          {
+            "x": 0,
+            "y": 1,
+            "z": 0
+          },
+          {
+            "x": 5,
+            "y": 1,
+            "z": 4
+          }
+        ],
+        "material": {
+          "color": "#409eff"
+        }
+      },
+      {
+        "name": "segment-pair",
+        "topology": "lineSegments",
+        "points": [
+          {
+            "x": -3,
+            "y": 1,
+            "z": -2
+          },
+          {
+            "x": -1,
+            "y": 1,
+            "z": -2
+          },
+          {
+            "x": 1,
+            "y": 1,
+            "z": 2
+          },
+          {
+            "x": 3,
+            "y": 1,
+            "z": 2
+          }
+        ],
+        "material": {
+          "color": "#67c23a"
+        }
+      },
+      {
+        "name": "closed-loop",
+        "topology": "lineLoop",
+        "points": [
+          {
+            "x": -2,
+            "y": 3,
+            "z": -1
+          },
+          {
+            "x": 2,
+            "y": 3,
+            "z": -1
+          },
+          {
+            "x": 2,
+            "y": 3,
+            "z": 2
+          },
+          {
+            "x": -2,
+            "y": 3,
+            "z": 2
+          }
+        ],
+        "material": {
+          "color": "#e6a23c"
+        }
+      }
+    ]
+  },
+  "threeJsonId": "01-02-plane-line-topology"
+}

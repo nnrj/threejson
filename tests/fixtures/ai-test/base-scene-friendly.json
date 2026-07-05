@@ -1,0 +1,108 @@
+{
+  "version": "next",
+  "name": "ai-test-base-friendly",
+  "sceneConfig": {
+    "canvasWidth": 1280,
+    "canvasHeight": 720,
+    "scene": {
+      "background": "#1a1a2e"
+    },
+    "camera": {
+      "fov": 55,
+      "near": 0.1,
+      "far": 2000,
+      "position": {
+        "x": 120,
+        "y": 90,
+        "z": 140
+      }
+    },
+    "renderer": {
+      "antialias": true
+    },
+    "controls": {
+      "enableDamping": true,
+      "target": {
+        "x": 0,
+        "y": 20,
+        "z": 0
+      }
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "color": "#ffffff",
+        "intensity": 0.5
+      },
+      {
+        "type": "directional",
+        "color": "#ffffff",
+        "intensity": 0.85,
+        "position": {
+          "x": 200,
+          "y": 300,
+          "z": 150
+        }
+      }
+    ]
+  },
+  "worldInfo": {
+    "boxModelList": [
+      {
+        "name": "ai-test-box-a",
+        "objType": "box",
+        "geometry": {
+          "width": 24,
+          "height": 24,
+          "depth": 24
+        },
+        "position": {
+          "x": -30,
+          "y": 12,
+          "z": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#4a90d9"
+        }
+      },
+      {
+        "name": "ai-test-box-b",
+        "objType": "box",
+        "geometry": {
+          "width": 18,
+          "height": 36,
+          "depth": 18
+        },
+        "position": {
+          "x": 28,
+          "y": 18,
+          "z": 12
+        },
+        "material": {
+          "type": "standard",
+          "color": "#e8a838"
+        }
+      },
+      {
+        "name": "ai-test-box-c",
+        "objType": "box",
+        "geometry": {
+          "width": 40,
+          "height": 8,
+          "depth": 40
+        },
+        "position": {
+          "x": 0,
+          "y": 4,
+          "z": -20
+        },
+        "material": {
+          "type": "standard",
+          "color": "#6b7280"
+        }
+      }
+    ]
+  },
+  "threeJsonId": "base-scene-friendly"
+}

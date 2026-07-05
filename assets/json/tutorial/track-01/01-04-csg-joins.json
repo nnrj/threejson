@@ -1,0 +1,128 @@
+{
+  "version": "next",
+  "name": "tutorial-csg-joins",
+  "sceneConfig": {
+    "scene": {
+      "background": "#252830"
+    },
+    "camera": {
+      "fov": 50,
+      "position": {
+        "x": 20,
+        "y": 11,
+        "z": 25
+      },
+      "near": 0.1,
+      "far": 300
+    },
+    "renderer": {
+      "antialias": true
+    },
+    "controls": {
+      "enableDamping": true,
+      "target": {
+        "x": 0,
+        "y": 5,
+        "z": 0
+      }
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "color": "#ffffff",
+        "intensity": 0.55
+      },
+      {
+        "type": "directional",
+        "color": "#ffffff",
+        "intensity": 0.8,
+        "position": {
+          "x": 8,
+          "y": 16,
+          "z": 10
+        }
+      }
+    ],
+    "renderLoop": {
+      "autoResize": true,
+      "firstAutoResize": true
+    }
+  },
+  "worldInfo": {
+    "boxModelList": [
+      {
+        "name": "wall-with-hole",
+        "objType": "wall",
+        "geometry": {
+          "width": 22,
+          "height": 12,
+          "depth": 2
+        },
+        "position": {
+          "x": -5,
+          "y": 6,
+          "z": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#dcdfe6"
+        },
+        "holes": [
+          {
+            "geometry": {
+              "width": 8,
+              "height": 6,
+              "depth": 3
+            },
+            "position": {
+              "x": 0,
+              "y": 6,
+              "z": 0
+            },
+            "material": {
+              "type": "standard",
+              "color": "#ffffff"
+            }
+          }
+        ]
+      },
+      {
+        "name": "merged-block",
+        "objType": "box",
+        "geometry": {
+          "width": 6,
+          "height": 6,
+          "depth": 6
+        },
+        "position": {
+          "x": 8,
+          "y": 3,
+          "z": -3
+        },
+        "material": {
+          "type": "standard",
+          "color": "#409eff"
+        },
+        "joins": [
+          {
+            "geometry": {
+              "width": 4,
+              "height": 8,
+              "depth": 4
+            },
+            "position": {
+              "x": 5,
+              "y": 4,
+              "z": 0
+            },
+            "material": {
+              "type": "standard",
+              "color": "#67c23a"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "threeJsonId": "01-04-csg-joins"
+}

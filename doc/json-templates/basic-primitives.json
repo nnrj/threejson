@@ -1,0 +1,36 @@
+{
+  "templates": [
+    {
+      "name": "box-basic",
+      "objType": "box",
+      "threeJsonId": "tmpl-box-001",
+      "position": { "x": 0, "y": 0, "z": 0 },
+      "rotation": { "rotationX": 0, "rotationY": 0, "rotationZ": 0 },
+      "scale": { "scaleX": 1, "scaleY": 1, "scaleZ": 1 }
+    },
+    {
+      "name": "sphere-basic",
+      "objType": "sphere",
+      "threeJsonId": "tmpl-sphere-001",
+      "position": { "x": 0, "y": 0, "z": 0 },
+      "rotation": { "rotationX": 0, "rotationY": 0, "rotationZ": 0 },
+      "scale": { "scaleX": 1, "scaleY": 1, "scaleZ": 1 }
+    },
+    {
+      "name": "plane-basic",
+      "objType": "plane",
+      "threeJsonId": "tmpl-plane-001",
+      "position": { "x": 0, "y": 0, "z": 0 },
+      "rotation": { "rotationX": 0, "rotationY": 0, "rotationZ": 0 },
+      "scale": { "scaleX": 1, "scaleY": 1, "scaleZ": 1 }
+    },
+    {
+      "name": "line-basic",
+      "objType": "line",
+      "threeJsonId": "tmpl-line-001",
+      "position": { "x": 0, "y": 0, "z": 0 },
+      "rotation": { "rotationX": 0, "rotationY": 0, "rotationZ": 0 },
+      "scale": { "scaleX": 1, "scaleY": 1, "scaleZ": 1 }
+    }
+  ]
+}

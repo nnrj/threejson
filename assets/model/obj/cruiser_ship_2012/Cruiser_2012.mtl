@@ -1,0 +1,78 @@
+newmtl default
+d 1
+Ns 1
+Ni 0
+Ka 0 0 0
+Kd 1 1 1
+Ks 1 1 1
+Km 0
+map_Kd /Maps/cs1.jpg
+
+newmtl default_glass
+d 0.7
+Ns 1
+Ni 0
+Ka 0 0 0
+Kd 0 0 0
+Ks 1 1 1
+Km 0
+
+newmtl default_roofs
+d 1
+Ns 0.75
+Ni 0
+Ka 0 0 0
+Kd 0.419608 0.419608 0.501961
+Ks 1 1 1
+Km 0
+map_Kd /Maps/ang1.jpg
+
+newmtl default_towers
+d 1
+Ns 0.75
+Ni 0
+Ka 0 0 0
+Kd 0.419608 0.419608 0.501961
+Ks 1 1 1
+Km 0
+map_Kd /Maps/angar_bo4ka_09_01_01_02.jpg
+
+newmtl default_floors
+d 1
+Ns 0.75
+Ni 0
+Ka 0 0 0
+Kd 1 1 1
+Ks 1 1 1
+Km 0
+map_Kd /Maps/dk1b.jpg
+
+newmtl default_rear_windows
+d 1
+Ns 0.75
+Ni 0
+Ka 0 0 0
+Kd 1 1 1
+Ks 1 1 1
+Km 0
+map_Kd /Maps/cs2b.jpg
+
+newmtl default_pods_windows
+d 0.8
+Ns 1
+Ni 0
+Ka 0 0 0
+Kd 0 0 0
+Ks 1 1 1
+Km 0
+
+newmtl default_emergency_boats
+d 1
+Ns 0.75
+Ni 0
+Ka 0 0 0
+Kd 1 1 1
+Ks 1 1 1
+Km 0
+map_Kd /Maps/dr3.jpg
+

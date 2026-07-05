@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThreeJSON Tutorial · Track 0 · 单对象手写部署（选修）</title>
+  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <script type="importmap">
+    {
+      "imports": {
+        "threejson": "/builtins/full.js",
+        "threejson/core": "/core/index.js",
+        "three": "https://esm.sh/three@0.184.0",
+        "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
+        "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
+        "html2canvas-pro": "https://esm.sh/html2canvas-pro@2.0.4",
+        "gifuct-js": "https://esm.sh/gifuct-js@2.1.2",
+        "three-mesh-bvh": "https://esm.sh/three-mesh-bvh@0.9.10?deps=three@0.184.0",
+        "three-bvh-csg": "https://esm.sh/three-bvh-csg@0.0.18?deps=three@0.184.0,three-mesh-bvh@0.9.10"
+      }
+    }
+  </script>
+  <style>
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #222; font-family: Arial, "Microsoft YaHei", sans-serif; }
+    #rootContainer { position: relative; width: 100vw; height: 100vh; }
+    #canvasContainer { display: block; width: 100%; height: 100%; background: #111; }
+    #loadingMask {
+      position: absolute; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
+      color: #fff; background: rgba(0,0,0,0.55); font-size: 15px;
+    }
+    #hint {
+      position: absolute; left: 12px; bottom: 12px; z-index: 25; max-width: min(720px, 92vw);
+      padding: 8px 10px; border-radius: 4px; background: rgba(10,10,10,0.55); color: #e0e0e0; font-size: 12px; line-height: 1.45;
+    }
+  </style>
+</head>
+<body>
+<div id="rootContainer">
+  <canvas id="canvasContainer">需要 WebGL</canvas>
+  <div id="loadingMask">加载中…</div>
+  <div id="hint">【Track 0 · 选修】先学完 t00-01。本页演示 <code>createSceneRuntime</code> + 单条 box JSON + <code>deployMesh</code>（对照 <code>doc/README.md</code> 最小示例）；主线仍推荐 <code>createJsonScene</code></div>
+</div>
+<script type="module">
+  import { createSceneRuntime, deployMesh } from "threejson/core";
+
+  const canvas = document.getElementById("canvasContainer");
+  const loadingMask = document.getElementById("loadingMask");
+  let sceneRuntime;
+
+  const boxJson = {
+    name: "demo-box",
+    objType: "box",
+    geometry: { width: 8, height: 8, depth: 8 },
+    position: { x: 0, y: 4, z: 0 },
+    rotation: { rotationX: 0, rotationY: 0, rotationZ: 0 },
+    scale: { scaleX: 1, scaleY: 1, scaleZ: 1 },
+    material: { type: "standard", color: "#409eff" },
+    animations: [{ type: "rotate", axis: "y", speed: -0.6 }]
+  };
+
+  function init() {
+    try {
+      sceneRuntime = createSceneRuntime({
+        canvas,
+        config: {
+          canvasWidth: window.innerWidth,
+          canvasHeight: window.innerHeight,
+          scene: { background: "#222222" },
+          camera: {
+            fov: 60,
+            near: 0.1,
+            far: 250,
+            position: { x: 28, y: 18, z: 32 }
+          },
+          renderer: { antialias: true, ratioRate: 1 },
+          controls: {
+            enableDamping: true,
+            dampingFactor: 0.08,
+            target: { x: 0, y: 4, z: 0 }
+          },
+          lights: [
+            { type: "ambient", color: "#ffffff", intensity: 0.58 },
+            { type: "directional", color: "#ffffff", intensity: 1.05, position: { x: 30, y: 40, z: 25 } }
+          ],
+          renderLoop: { autoResize: true, firstAutoResize: true }
+        }
+      });
+      deployMesh(boxJson, sceneRuntime.scene);
+      sceneRuntime.start();
+      loadingMask.style.display = "none";
+    } catch (err) {
+      console.error(err);
+      loadingMask.textContent = "加载失败：" + err.message;
+    }
+  }
+
+  function onResize() {
+    sceneRuntime?.resize?.({ width: window.innerWidth, height: window.innerHeight });
+  }
+
+  window.addEventListener("DOMContentLoaded", init);
+  window.addEventListener("resize", onResize);
+  window.addEventListener("beforeunload", () => {
+    window.removeEventListener("resize", onResize);
+    sceneRuntime?.dispose?.();
+  });
+</script>
+</body>
+</html>

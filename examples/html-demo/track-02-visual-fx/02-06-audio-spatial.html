@@ -1,0 +1,416 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThreeJSON Tutorial · Track 2 · 空间音频</title>
+  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <script type="importmap">
+    {
+      "imports": {
+        "threejson": "/builtins/full.js",
+        "threejson/core": "/core/index.js",
+        "three": "https://esm.sh/three@0.184.0",
+        "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
+        "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
+        "html2canvas-pro": "https://esm.sh/html2canvas-pro@2.0.4",
+        "gifuct-js": "https://esm.sh/gifuct-js@2.1.2",
+        "three-mesh-bvh": "https://esm.sh/three-mesh-bvh@0.9.10?deps=three@0.184.0",
+        "three-bvh-csg": "https://esm.sh/three-bvh-csg@0.0.18?deps=three@0.184.0,three-mesh-bvh@0.9.10"
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --text-main: #f3f5f7;
+    }
+
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #222; font-family: Arial, "Microsoft YaHei", sans-serif; }
+    #rootContainer { position: relative; width: 100vw; height: 100vh; }
+    #canvasContainer { display: block; width: 100%; height: 100%; background: #111; }
+    #loadingMask {
+      position: absolute; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
+      color: #fff; background: rgba(0,0,0,0.55); font-size: 15px;
+    }
+    #hint {
+      position: absolute; left: 12px; bottom: 12px; z-index: 25; max-width: min(720px, 92vw);
+      padding: 8px 10px; border-radius: 4px; background: rgba(10,10,10,0.55); color: #e0e0e0; font-size: 12px; line-height: 1.45;
+    }
+
+    .gameHud {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      z-index: 12;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transform: translateY(-50%);
+      pointer-events: none;
+    }
+
+    .gameHud button {
+      min-width: 52px;
+      height: 52px;
+      padding: 6px 10px;
+      border: 2px solid rgba(255, 255, 255, 0.22);
+      border-radius: 12px;
+      color: var(--text-main);
+      background: rgba(22, 28, 38, 0.78);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+      font-size: 12px;
+      line-height: 1.2;
+      cursor: pointer;
+      pointer-events: auto;
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+    }
+
+    .gameHud button:hover {
+      background: rgba(64, 158, 255, 0.28);
+      border-color: rgba(64, 158, 255, 0.55);
+    }
+
+    .gameHud button:active {
+      transform: scale(0.96);
+    }
+
+    .speakerVolumePanel {
+      position: absolute;
+      right: 16px;
+      bottom: 12px;
+      z-index: 25;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 200px;
+      max-width: min(280px, 92vw);
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(10, 14, 22, 0.82);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+      color: #e8ecf2;
+      font-size: 12px;
+      line-height: 1.35;
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      pointer-events: auto;
+    }
+
+    .speakerVolumePanelTitle {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: #b8c4d4;
+      text-transform: uppercase;
+    }
+
+    .speakerVolumeRow {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      grid-template-rows: auto auto;
+      gap: 4px 8px;
+      align-items: center;
+    }
+
+    .speakerVolumeLabel {
+      grid-column: 1 / -1;
+      color: #f3f5f7;
+    }
+
+    .speakerVolumeRow input[type="range"] {
+      width: 100%;
+      margin: 0;
+      accent-color: #409eff;
+      cursor: pointer;
+    }
+
+    .speakerVolumeValue {
+      min-width: 36px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      color: #9fb0c8;
+    }
+  </style>
+</head>
+<body>
+<div id="rootContainer">
+  <canvas id="canvasContainer">需要 WebGL</canvas>
+  <div id="loadingMask">加载中…</div>
+  <div id="hint">【Track 2 · 空间音频】点击画面开始播放；右侧按钮可靠近/远离音箱，右下角调节<strong>空间音箱</strong>音量（不含环境音）</div>
+  <div class="gameHud" aria-label="相机快捷操作">
+    <button type="button" id="moveCloserBtn" title="沿当前视角向音箱靠近">靠近<br>音箱</button>
+    <button type="button" id="moveFartherBtn" title="沿当前视角远离音箱">远离<br>音箱</button>
+    <button type="button" id="resetViewBtn" title="恢复页面加载时的相机视角">重置<br>视角</button>
+  </div>
+  <div id="speakerVolumePanel" class="speakerVolumePanel" aria-label="空间音箱音量" hidden>
+    <div class="speakerVolumePanelTitle">空间音箱音量</div>
+  </div>
+</div>
+<script type="module">
+  import * as THREE from "three";
+  import {
+    bindThreeJsonSceneAudioUnlock,
+    createJsonScene,
+    forEachThreeJsonSceneAudioNode,
+    getThreeJsonSceneAudioRoots
+  } from "threejson";
+
+  const sceneJsonUrl = "/assets/json/tutorial/track-02/02-06-audio-spatial.json";
+  const SPEAKER_POSITION = new THREE.Vector3(50, 25, 0);
+  const CAMERA_MOVE_STEP = 24;
+  const MIN_SPEAKER_DISTANCE = 12;
+  const MAX_SPEAKER_DISTANCE = 260;
+
+  const tunedSpeakerNodeIds = new Set();
+
+  const canvas = document.getElementById("canvasContainer");
+  const loadingMask = document.getElementById("loadingMask");
+  const moveCloserBtn = document.getElementById("moveCloserBtn");
+  const moveFartherBtn = document.getElementById("moveFartherBtn");
+  const resetViewBtn = document.getElementById("resetViewBtn");
+  const speakerVolumePanel = document.getElementById("speakerVolumePanel");
+
+  let sceneRuntime;
+  let initialCameraView = null;
+  /** @type {Map<string, { slider: HTMLInputElement, valueEl: HTMLElement, defaultVolume: number }>} */
+  const speakerVolumeControls = new Map();
+  /** @type {Map<string, object>} */
+  const positionalAudioEntries = new Map();
+
+  window.addEventListener("DOMContentLoaded", init);
+  window.addEventListener("beforeunload", () => sceneRuntime?.dispose?.());
+
+  function captureCameraView(camera, controls) {
+    return {
+      position: {
+        x: camera.position.x,
+        y: camera.position.y,
+        z: camera.position.z
+      },
+      target: {
+        x: controls.target.x,
+        y: controls.target.y,
+        z: controls.target.z
+      }
+    };
+  }
+
+  function applyCameraView(camera, controls, view) {
+    if (!camera || !controls || !view) {
+      return;
+    }
+    camera.position.set(view.position.x, view.position.y, view.position.z);
+    controls.target.set(view.target.x, view.target.y, view.target.z);
+    controls.update();
+  }
+
+  function moveCameraRelativeToSpeaker(sign) {
+    const camera = sceneRuntime?.camera;
+    const controls = sceneRuntime?.controls;
+    if (!camera || !controls) {
+      return;
+    }
+
+    const offset = SPEAKER_POSITION.clone().sub(camera.position);
+    const distance = offset.length();
+    if (distance < 1e-5) {
+      return;
+    }
+
+    const direction = offset.normalize();
+    const nextDistance = THREE.MathUtils.clamp(
+      distance - sign * CAMERA_MOVE_STEP,
+      MIN_SPEAKER_DISTANCE,
+      MAX_SPEAKER_DISTANCE
+    );
+    const nextPosition = SPEAKER_POSITION.clone().addScaledVector(direction, -nextDistance);
+
+    camera.position.copy(nextPosition);
+    controls.update();
+  }
+
+  function resetCameraView() {
+    applyCameraView(sceneRuntime?.camera, sceneRuntime?.controls, initialCameraView);
+  }
+
+  function bindCameraHud() {
+    moveCloserBtn?.addEventListener("click", () => moveCameraRelativeToSpeaker(1));
+    moveFartherBtn?.addEventListener("click", () => moveCameraRelativeToSpeaker(-1));
+    resetViewBtn?.addEventListener("click", resetCameraView);
+  }
+
+  function isPositionalAudioEntry(entry) {
+    const mode = typeof entry?.mode === "string" ? entry.mode.trim().toLowerCase() : "positional";
+    return mode !== "ambient" && mode !== "bgm" && mode !== "global";
+  }
+
+  function getPositionalAudioEntries(sceneData) {
+    const list = sceneData?.worldInfo?.audioList;
+    if (!Array.isArray(list)) {
+      return [];
+    }
+    return list.filter(isPositionalAudioEntry);
+  }
+
+  function formatSpeakerLabel(entry) {
+    if (typeof entry?.label === "string" && entry.label.trim()) {
+      return entry.label.trim();
+    }
+    if (typeof entry?.name === "string" && entry.name.trim()) {
+      return entry.name.trim();
+    }
+    return "空间音箱";
+  }
+
+  function findPositionalAudioNode(name) {
+    if (!name || !sceneRuntime) {
+      return null;
+    }
+    let found = null;
+    const { camera, scene } = getThreeJsonSceneAudioRoots(sceneRuntime);
+    forEachThreeJsonSceneAudioNode(camera, scene, (node) => {
+      if (node?.type === "PositionalAudio" && node.name === name) {
+        found = node;
+      }
+    });
+    return found;
+  }
+
+  function applySpeakerVolume(name, volume) {
+    const node = findPositionalAudioNode(name);
+    if (node && typeof node.setVolume === "function") {
+      node.setVolume(volume);
+    }
+  }
+
+  function tunePositionalSpeakerNode(node, entry) {
+    if (!node || node.type !== "PositionalAudio" || tunedSpeakerNodeIds.has(node.uuid)) {
+      return;
+    }
+    tunedSpeakerNodeIds.add(node.uuid);
+    const volume = Number.isFinite(entry?.volume) ? Number(entry.volume) : 1;
+    const refDistance = Number.isFinite(entry?.refDistance) ? Number(entry.refDistance) : 25;
+    const rolloffFactor = Number.isFinite(entry?.rolloffFactor) ? Number(entry.rolloffFactor) : 0.35;
+    node.setVolume(volume);
+    node.setRefDistance(refDistance);
+    node.setRolloffFactor(rolloffFactor);
+    if (Number.isFinite(entry?.maxDistance)) {
+      node.setMaxDistance(Number(entry.maxDistance));
+    }
+  }
+
+  function updateSpeakerVolumeDisplay(name, volume) {
+    const pct = Math.round(volume * 100);
+    const control = speakerVolumeControls.get(name);
+    if (!control) {
+      return;
+    }
+    control.slider.value = String(pct);
+    control.valueEl.textContent = `${pct}%`;
+  }
+
+  function buildSpeakerVolumePanel(sceneData) {
+    const entries = getPositionalAudioEntries(sceneData);
+    if (!speakerVolumePanel || !entries.length) {
+      return;
+    }
+
+    speakerVolumeControls.clear();
+    speakerVolumePanel.querySelectorAll(".speakerVolumeRow").forEach((row) => row.remove());
+
+    for (const entry of entries) {
+      const name = entry.name || `speaker-${speakerVolumeControls.size + 1}`;
+      const defaultVolume = Number.isFinite(entry.volume) ? Number(entry.volume) : 1;
+      positionalAudioEntries.set(name, entry);
+
+      const row = document.createElement("label");
+      row.className = "speakerVolumeRow";
+
+      const label = document.createElement("span");
+      label.className = "speakerVolumeLabel";
+      label.textContent = formatSpeakerLabel(entry);
+
+      const slider = document.createElement("input");
+      slider.type = "range";
+      slider.min = "0";
+      slider.max = "100";
+      slider.step = "1";
+      slider.value = String(Math.round(defaultVolume * 100));
+      slider.setAttribute("aria-label", `${formatSpeakerLabel(entry)} 音量`);
+
+      const valueEl = document.createElement("span");
+      valueEl.className = "speakerVolumeValue";
+      valueEl.textContent = `${Math.round(defaultVolume * 100)}%`;
+
+      slider.addEventListener("input", () => {
+        const volume = Number(slider.value) / 100;
+        valueEl.textContent = `${slider.value}%`;
+        applySpeakerVolume(name, volume);
+      });
+
+      row.appendChild(label);
+      row.appendChild(slider);
+      row.appendChild(valueEl);
+      speakerVolumePanel.appendChild(row);
+      speakerVolumeControls.set(name, { slider, valueEl, defaultVolume });
+    }
+
+    speakerVolumePanel.hidden = false;
+  }
+
+  function syncSpeakerVolumeControls() {
+    for (const [name, control] of speakerVolumeControls) {
+      const node = findPositionalAudioNode(name);
+      if (!node || typeof node.getVolume !== "function") {
+        continue;
+      }
+      tunePositionalSpeakerNode(node, positionalAudioEntries.get(name));
+      const liveVolume = node.getVolume();
+      if (Number.isFinite(liveVolume)) {
+        updateSpeakerVolumeDisplay(name, liveVolume);
+      } else {
+        applySpeakerVolume(name, control.defaultVolume);
+        updateSpeakerVolumeDisplay(name, control.defaultVolume);
+      }
+    }
+  }
+
+  function waitForSpeakerAudioNodes(maxAttempts = 40, intervalMs = 250) {
+    let attempts = 0;
+    const timer = window.setInterval(() => {
+      attempts += 1;
+      syncSpeakerVolumeControls();
+      const ready = [...speakerVolumeControls.keys()].some((name) => findPositionalAudioNode(name));
+      if (ready || attempts >= maxAttempts) {
+        window.clearInterval(timer);
+      }
+    }, intervalMs);
+  }
+
+  async function init() {
+    try {
+      const response = await fetch(sceneJsonUrl);
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      const sceneData = await response.json();
+      sceneData.canvasWidth = window.innerWidth;
+      sceneData.canvasHeight = window.innerHeight;
+      sceneRuntime = await createJsonScene(sceneData, { canvas, resetScene: true });
+      initialCameraView = captureCameraView(sceneRuntime.camera, sceneRuntime.controls);
+      buildSpeakerVolumePanel(sceneData);
+      bindThreeJsonSceneAudioUnlock(canvas, () => sceneRuntime);
+      bindCameraHud();
+      waitForSpeakerAudioNodes();
+      window.addEventListener("resize", () => sceneRuntime?.resize?.(window.innerWidth, window.innerHeight));
+      sceneRuntime.start();
+      loadingMask.style.display = "none";
+    } catch (err) {
+      console.error(err);
+      loadingMask.textContent = "加载失败：" + err.message;
+    }
+  }
+</script>
+</body>
+</html>

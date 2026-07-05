@@ -1,0 +1,996 @@
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #2f2f2f;
+  font-family: Arial, "Microsoft YaHei", sans-serif;
+  color: #cfcfcf;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+#rootContainer {
+  display: grid;
+  grid-template-rows: 40px 1fr 36px;
+  grid-template-areas:
+    "top"
+    "workspace"
+    "bottom";
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  background: #2f2f2f;
+  position: relative;
+}
+
+#rootContainer.immersiveFullscreen {
+  grid-template-rows: 1fr;
+  grid-template-areas: "workspace";
+}
+
+#rootContainer.immersiveFullscreen .topBar,
+#rootContainer.immersiveFullscreen #bottomBar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 120;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+#rootContainer.immersiveFullscreen .topBar {
+  top: 0;
+}
+
+#rootContainer.immersiveFullscreen #bottomBar {
+  bottom: 0;
+}
+
+#rootContainer.immersiveFullscreen .topBar.immersiveChromeVisible,
+#rootContainer.immersiveFullscreen #bottomBar.immersiveChromeVisible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.centerWorkspace {
+  grid-area: workspace;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  grid-template-rows: 1fr;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+}
+
+#rootContainer.immersiveFullscreen .centerWorkspace {
+  display: block;
+  position: relative;
+  height: 100%;
+  min-height: 0;
+}
+
+#rootContainer.immersiveFullscreen #canvasWrap {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+#rootContainer.immersiveFullscreen #rightDock {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  height: 100dvh;
+  z-index: 288;
+  transform: translateX(100%);
+  transition: transform 0.22s ease;
+  grid-area: unset;
+}
+
+#rootContainer.immersiveFullscreen #rightDock.immersiveDockVisible {
+  transform: translateX(0);
+}
+
+.immersiveRightEdgeStrip {
+  display: none;
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 22px;
+  z-index: 115;
+}
+
+#rootContainer.immersiveFullscreen .immersiveRightEdgeStrip {
+  display: block;
+}
+
+.immersiveEdgeStrip {
+  display: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: 10px;
+  z-index: 115;
+}
+
+#rootContainer.immersiveFullscreen .immersiveEdgeStrip {
+  display: block;
+}
+
+.immersiveTopEdgeStrip {
+  top: 0;
+}
+
+.immersiveBottomEdgeStrip {
+  bottom: 0;
+}
+
+#rootContainer .topBar {
+  grid-area: top;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px;
+  min-width: 0;
+  position: relative;
+  z-index: 200;
+  background: #3c3c3c;
+  border-bottom: 1px solid #4d4d4d;
+}
+
+.appIconSlot {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: #8ecbff;
+  background: rgba(0, 0, 0, 0.2);
+  font-size: 17px;
+  line-height: 1;
+  user-select: none;
+}
+
+.topMenubar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.topMenu {
+  position: relative;
+}
+
+.topMenu > summary {
+  list-style: none;
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #e8e8e8;
+  background: transparent;
+  font-size: 13px;
+  line-height: 26px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.topMenu > summary:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.topMenu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.topMenu[open] > summary {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.topDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 168px;
+  padding: 6px;
+  border-radius: 6px;
+  background: rgba(28, 30, 35, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+  z-index: 300;
+}
+
+.topDropdown button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #e6e6e6;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.topDropdown button:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.topBarCenter {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topBarSpacer {
+  flex: 0 0 8px;
+}
+
+.topBarTrailing {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.toolBtn {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #4a4d52;
+  color: #e8e8e8;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.toolBtn.secondary:hover {
+  background: #5a5d62;
+}
+
+#sceneJsonModal,
+#helpAboutModal {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(12, 12, 12, 0.62);
+}
+
+#sceneJsonModal.visible,
+#helpAboutModal.visible {
+  display: flex;
+}
+
+.sceneJsonDialog {
+  width: min(92vw, 980px);
+  max-height: 84vh;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  background: #22272e;
+  color: #d7dce2;
+  display: flex;
+  flex-direction: column;
+}
+
+.sceneJsonDialogHeader {
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sceneJsonDialogActions {
+  display: flex;
+  gap: 6px;
+}
+
+#sceneJsonContent {
+  flex: 1 1 auto;
+  min-height: 280px;
+  margin: 0;
+  padding: 10px 12px;
+  border: none;
+  background: #1c2128;
+  color: #e6edf3;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.helpAboutDialog {
+  width: min(92vw, 420px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  background: #22272e;
+  color: #d7dce2;
+  box-shadow: 0 18px 32px rgba(0, 0, 0, 0.4);
+}
+
+.helpAboutHeader {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  background: #2d333b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.helpAboutFooter {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.miniBtn {
+  padding: 5px 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #353a42;
+  color: #e8e8e8;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+#rootContainer .topBar h1 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topBarBtn {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #353a42;
+  color: #e8e8e8;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.rightDock {
+  grid-column: 2;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: flex-end;
+  height: 100%;
+  min-height: 0;
+  width: 0;
+  min-width: 0;
+  max-width: 238px;
+  overflow: hidden;
+  transition: width 0.18s ease, min-width 0.18s ease;
+}
+
+#rootContainer.immersiveFullscreen .rightDock {
+  max-width: 238px;
+}
+
+#rootContainer.rightPanelOpen .rightDock {
+  width: 238px;
+  min-width: 238px;
+}
+
+.rightDockPanel {
+  flex: 1 1 220px;
+  min-width: 0;
+  max-width: 220px;
+  overflow: hidden;
+  border-left: 1px solid #414141;
+}
+
+#rightPanel.sidePanel.rightDockPanel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+#rootContainer:not(.rightPanelOpen) .rightDockPanel {
+  flex: 0 0 0;
+  max-width: 0;
+  padding-left: 0;
+  padding-right: 0;
+  overflow: hidden;
+  border-left-width: 0;
+  visibility: hidden;
+}
+
+.sidePanel {
+  overflow: auto;
+  padding: 6px 8px;
+  background: #2f2f2f;
+}
+
+.panelCard {
+  margin-bottom: 8px;
+  padding: 6px;
+  background: #3d3d3d;
+  border-radius: 3px;
+}
+
+.playlistPanelCard {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  margin-bottom: 0;
+}
+
+.playlistPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+
+.playlistPanelHeader .panelTitle {
+  margin: 0;
+}
+
+#playlistClearBtn {
+  flex-shrink: 0;
+}
+
+#canvasWrap {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  background: #1a1c20;
+}
+
+#canvasContainer {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+#rightPanel {
+  display: none;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: #2a2e34;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#rootContainer.rightPanelOpen #rightPanel {
+  display: flex;
+}
+
+.panelTitle {
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.playlistList,
+#playlistList {
+  flex: 1 1 0;
+  min-height: 120px;
+  max-height: 48vh;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.playlistRow {
+  display: block;
+  width: 100%;
+  text-align: left;
+  margin: 0 0 4px;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: #32373f;
+  color: #ddd;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.playlistRow:hover {
+  background: #3b414b;
+}
+
+.playlistRowActive {
+  border-color: rgba(64, 158, 255, 0.55);
+  background: rgba(64, 158, 255, 0.22);
+  color: #fff;
+}
+
+.playlistEmpty {
+  padding: 12px;
+  color: #888;
+  font-size: 12px;
+}
+
+.bottomBar {
+  grid-area: bottom;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 0 10px;
+  gap: 10px;
+  background: #3c3c3c;
+  border-top: 1px solid #4d4d4d;
+  flex-shrink: 0;
+  min-height: 36px;
+}
+
+.bottomBarTransport {
+  grid-column: 2;
+  justify-self: center;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bottomBarTrailing {
+  grid-column: 3;
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.volumeControl {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.volumeControl .volumeBtn {
+  min-width: 32px;
+  padding: 0 8px;
+}
+
+.volumeControl input[type="range"] {
+  width: 88px;
+  height: 4px;
+  margin: 0;
+  accent-color: #409eff;
+  cursor: pointer;
+}
+
+.transportBtn {
+  min-width: 36px;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 4px;
+  color: #fff;
+  background: #409eff;
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  font-family: "Segoe UI Symbol", "Noto Sans Symbols2", "Apple Symbols", sans-serif;
+}
+
+.transportBtn:hover {
+  background: #66b1ff;
+}
+
+.transportBtn.secondary {
+  background: #606266;
+}
+
+.transportBtn.secondary:hover {
+  background: #7a7c80;
+}
+
+.transportBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.playlistAddMenu {
+  position: relative;
+}
+
+.topBarTrailing .playlistAddMenu {
+  margin-top: 0;
+}
+
+.playlistAddSummary {
+  list-style: none;
+  box-sizing: border-box;
+}
+
+.topBarTrailing .playlistAddSummary {
+  width: auto;
+  min-width: 52px;
+  height: 28px;
+  line-height: 26px;
+  margin: 0;
+}
+
+.playlistAddSummary::-webkit-details-marker {
+  display: none;
+}
+
+.playlistAddDropdown {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.topBarTrailing .playlistAddDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  left: auto;
+  margin-top: 0;
+  min-width: 172px;
+  padding: 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(36, 38, 42, 0.98);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+  z-index: 130;
+}
+
+.playlistAddDropdown button {
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 4px;
+  background: #4a4c51;
+  color: #e0e4ea;
+  font-size: 11px;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.playlistAddDropdown button:hover {
+  background: #55585e;
+}
+
+#playerSettingsModal {
+  position: fixed;
+  inset: 0;
+  z-index: 330;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(12, 12, 12, 0.62);
+}
+
+#playerSettingsModal.visible {
+  display: flex;
+}
+
+.playerSettingsDialog {
+  width: min(92vw, 820px);
+  height: min(78vh, 640px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  background: #22272e;
+  color: #d7dce2;
+  box-shadow: 0 18px 32px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.playerSettingsHeader {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  background: #2d333b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.playerSettingsBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+
+.playerSettingsNav {
+  flex: 0 0 148px;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px 0;
+  overflow-y: auto;
+  background: #1e2228;
+}
+
+.playerSettingsNavBtn {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: #aeb6c0;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.playerSettingsNavBtn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #e8ecf0;
+}
+
+.playerSettingsNavBtn.active {
+  background: rgba(88, 166, 255, 0.15);
+  color: #79b8ff;
+  font-weight: 600;
+}
+
+.playerSettingsScroll {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 12px 16px 16px;
+}
+
+.playerSettingsSection {
+  margin-bottom: 20px;
+  scroll-margin-top: 8px;
+}
+
+.playerSettingsSectionTitle {
+  margin: 0 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 13px;
+  font-weight: 700;
+  color: #e8ecf0;
+}
+
+.playerSettingsField {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 8px 12px;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 12px;
+}
+
+.playerSettingsFieldCheck {
+  grid-template-columns: 1fr;
+}
+
+.playerSettingsField input[type="text"],
+.playerSettingsField input[type="number"],
+.playerSettingsField select {
+  width: 100%;
+  padding: 5px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: #1a1f26;
+  color: #e8ecf0;
+}
+
+.playerSettingsHint {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  color: #8b949e;
+  line-height: 1.4;
+}
+
+.playerSettingsFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  background: #2a3038;
+}
+
+.miniBtn {
+  font-size: 12px;
+  padding: 5px 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #3a414b;
+  color: #e8ecf0;
+  cursor: pointer;
+}
+
+#loadingMask {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
+  background: rgba(20, 22, 26, 0.72);
+  z-index: 20;
+  pointer-events: none;
+}
+
+#messageBox {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  z-index: 40;
+  display: none;
+  max-width: 70vw;
+  padding: 8px 14px;
+  border-radius: 4px;
+  color: #fff;
+  background: rgba(20, 20, 20, 0.82);
+  font-size: 13px;
+  transform: translateX(-50%);
+}
+
+.canvasIdleOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  background: rgba(47, 47, 47, 0.58);
+  pointer-events: none;
+}
+
+.canvasIdleOverlay.isVisible {
+  display: flex;
+  pointer-events: auto;
+}
+
+.playerStartupSampleBtn {
+  color: #9ecbff;
+  text-decoration: none;
+  border: none;
+  background: transparent;
+  border-bottom: 1px dashed rgba(158, 203, 255, 0.35);
+  padding: 4px 2px 5px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.playerStartupSampleBtn:hover {
+  color: #c6e0ff;
+  border-bottom-color: rgba(198, 224, 255, 0.55);
+}
+
+#playlistList,
+#rightPanel {
+  scrollbar-width: thin;
+  scrollbar-color: #4d525a rgba(20, 22, 26, 0.55);
+}
+
+#playlistContextMenu {
+  position: fixed;
+  z-index: 80;
+  min-width: 146px;
+  display: none;
+  overflow: visible;
+  background: rgba(28, 30, 35, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+  padding: 6px;
+  color: #e6e6e6;
+  font-size: 12px;
+  user-select: none;
+}
+
+#playlistContextMenu.visible {
+  display: block;
+}
+
+#playlistContextMenu button {
+  width: 100%;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 10px;
+  text-align: left;
+  background: transparent;
+  color: #e6e6e6;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+#playlistContextMenu button:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+#playlistContextMenu > button + button,
+#playlistContextMenu > button + .playlistContextItem,
+#playlistContextMenu > .playlistContextItem + button {
+  margin-top: 2px;
+}
+
+.playlistContextItem {
+  position: relative;
+}
+
+.playlistContextItemLabel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-radius: 4px;
+  padding: 6px 10px;
+  color: #e6e6e6;
+  background: transparent;
+  cursor: default;
+}
+
+.playlistContextItem:hover > .playlistContextItemLabel {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.playlistContextSubmenu {
+  display: none;
+  position: absolute;
+  left: calc(100% + 4px);
+  top: 0;
+  min-width: 120px;
+  padding: 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(28, 30, 35, 0.98);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+}
+
+.playlistContextItem:hover > .playlistContextSubmenu {
+  display: block;
+}
+
+.playlistContextItem.submenuFlipLeft > .playlistContextSubmenu {
+  left: auto;
+  right: calc(100% + 4px);
+}
+
+.playlistContextSubmenu button {
+  width: 100%;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 10px;
+  text-align: left;
+  background: transparent;
+  color: #e6e6e6;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.playlistContextSubmenu button:hover {
+  background: rgba(255, 255, 255, 0.09);
+}

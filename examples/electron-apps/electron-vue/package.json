@@ -1,0 +1,35 @@
+{
+  "name": "electron-vue",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "main": "electron/main.mjs",
+  "scripts": {
+    "dev": "concurrently -k -n vite,electron -c blue,green \"vite\" \"wait-on http://localhost:5174 && cross-env VITE_DEV_SERVER_URL=http://localhost:5174 electron ./electron/main.mjs\"",
+    "build": "vue-tsc -b && vite build",
+    "start": "electron ./electron/main.mjs",
+    "preview": "npm run build && electron ./electron/main.mjs"
+  },
+  "dependencies": {
+    "@tweenjs/tween.js": "^25.0.0",
+    "html2canvas-pro": "^2.0.0",
+    "three": "^0.184.0",
+    "threejson": "file:../../..",
+    "vue": "^3.5.34"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "@vue/tsconfig": "^0.9.1",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^42.0.0",
+    "typescript": "~5.8.3",
+    "vite": "^6.0.0",
+    "vue-tsc": "^2.1.10",
+    "wait-on": "^8.0.1"
+  }
+}

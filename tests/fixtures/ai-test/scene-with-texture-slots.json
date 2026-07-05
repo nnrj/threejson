@@ -1,0 +1,96 @@
+{
+  "version": "next",
+  "name": "ai-test-texture-slots",
+  "sceneConfig": {
+    "canvasWidth": 1280,
+    "canvasHeight": 720,
+    "scene": {
+      "background": "#222"
+    },
+    "camera": {
+      "fov": 55,
+      "near": 0.1,
+      "far": 2000,
+      "position": {
+        "x": 100,
+        "y": 80,
+        "z": 120
+      }
+    },
+    "renderer": {
+      "antialias": true
+    },
+    "controls": {
+      "enableDamping": true,
+      "target": {
+        "x": 0,
+        "y": 10,
+        "z": 0
+      }
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "color": "#ffffff",
+        "intensity": 0.45
+      },
+      {
+        "type": "directional",
+        "color": "#ffffff",
+        "intensity": 0.9,
+        "position": {
+          "x": 150,
+          "y": 200,
+          "z": 100
+        }
+      }
+    ]
+  },
+  "worldInfo": {
+    "boxModelList": [
+      {
+        "name": "ai-test-floor-plane",
+        "objType": "box",
+        "geometry": {
+          "width": 80,
+          "height": 4,
+          "depth": 80
+        },
+        "position": {
+          "x": 0,
+          "y": -2,
+          "z": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#cccccc",
+          "textureUrl": "",
+          "textureRepeat": {
+            "x": 2,
+            "y": 2
+          }
+        }
+      },
+      {
+        "name": "ai-test-wall",
+        "objType": "box",
+        "geometry": {
+          "width": 60,
+          "height": 30,
+          "depth": 4
+        },
+        "position": {
+          "x": 0,
+          "y": 15,
+          "z": -30
+        },
+        "material": {
+          "type": "standard",
+          "color": "#eeeeee",
+          "textureUrl": ""
+        }
+      }
+    ]
+  },
+  "threeJsonId": "scene-with-texture-slots"
+}

@@ -1,0 +1,77 @@
+# OS generated files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor and IDE files
+.idea/*
+!.idea/.gitignore
+!.idea/UniappTool.xml
+!.idea/vcs.xml
+.vscode/
+.vs/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Local dependencies and package-manager caches
+node_modules/
+.npm/
+.pnpm-store/
+.yarn/
+.cursor/
+
+# Build and generated output
+/dist/
+tools/scene-host/desktop/.pack/
+tools/scene-host/desktop/dist/
+tools/scene-host/desktop/dist-build/
+tools/scene-host/desktop/dist-installer/
+examples/**/dist/
+# Vite sample apps under examples/ (also listed in each app's .gitignore; explicit here if those files change)
+examples/vue-app/node_modules/
+examples/react-app/node_modules/
+examples/electron-apps/electron-app/node_modules/
+examples/electron-apps/electron-vue/node_modules/
+examples/electron-apps/electron-react-app/node_modules/
+examples/electron-apps/electron-vue-app/node_modules/
+
+/build/
+/out/
+/.cache/
+/.vite/
+
+# Logs and runtime diagnostics
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+selenium-debug.log
+
+# Test output
+coverage/
+test-results/
+playwright-report/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local environment and machine-specific config
+.env
+.env.*
+!.env.example
+*.local
+setting.json
+/tools/threejson-agent/setting.json
+/tools/mcp-threejson/setting.json
+
+
+# Temporary files
+/tmp/
+/temp/
+tools/threejson-agent/shell/py/tmp
+/tests/fixtures/ai-test/out/

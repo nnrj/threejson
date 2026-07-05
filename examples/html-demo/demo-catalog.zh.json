@@ -1,0 +1,1927 @@
+[
+  {
+    "id": "t00-01",
+    "track": "00",
+    "order": "01",
+    "path": "./examples/html-demo/track-00-runtime/00-01-minimal-mesh.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-00/00-01-minimal-mesh.json"
+      }
+    ],
+    "prerequisites": [],
+    "status": "stable",
+    "group": "Track 0 · 运行时与 JSON 契约",
+    "title": "最小场景",
+    "summary": "从单盒子与声明式 rotate 入手，用 createJsonScene 走通最小友好 JSON 管线。",
+    "navSummary": "单 box + 声明式旋转。",
+    "highlights": [
+      "createJsonScene() 统一加载 sceneConfig + worldInfo。",
+      "boxModelList 单条记录 + animations.rotate。",
+      "无手写 requestAnimationFrame。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/quick-start.md",
+        "label": "快速开始"
+      },
+      {
+        "href": "./doc/json-format.md#盒子-box",
+        "label": "JSON：盒子 box"
+      },
+      {
+        "href": "./doc/json-format.md#声明式动画-animations",
+        "label": "声明式动画"
+      }
+    ]
+  },
+  {
+    "id": "t00-02",
+    "track": "00",
+    "order": "02",
+    "path": "./examples/html-demo/track-00-runtime/00-02-primitives-materials.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-00/00-02-primitives.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-01"
+    ],
+    "status": "stable",
+    "group": "Track 0 · 运行时与 JSON 契约",
+    "title": "基础几何与材质",
+    "summary": "展示 box/sphere/cylinder/cone/ring/torus/capsule、纹理地板、玻璃与 PBR 字段。",
+    "navSummary": "多 primitive + 纹理 + PBR。",
+    "highlights": [
+      "sphereModelList 与 modelList 承载不同几何类型。",
+      "floor / glass 语义 objType。",
+      "metalness / roughness 用于 standard 材质。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md#其他基础几何体-primitive",
+        "label": "JSON：其他基础几何"
+      },
+      {
+        "href": "./doc/json-format.md#球体-sphere",
+        "label": "JSON：球体"
+      }
+    ]
+  },
+  {
+    "id": "t00-03",
+    "track": "00",
+    "order": "03",
+    "path": "./examples/html-demo/track-00-runtime/00-03-friendly-full-scene.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-00/00-03-friendly-full-scene.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-02"
+    ],
+    "status": "stable",
+    "group": "Track 0 · 运行时与 JSON 契约",
+    "title": "友好 JSON 全场景",
+    "summary": "sceneConfig + 多分组列表 + friendlyMap，理解友好形态如何归一化为 objectList。",
+    "navSummary": "sceneConfig + typed lists。",
+    "highlights": [
+      "sceneRuntimeBasic 教程副本。",
+      "friendlyMap 为列表项补默认 objType。",
+      "animations 由 core 帧循环驱动。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md#人类友好-json",
+        "label": "人类友好 JSON"
+      },
+      {
+        "href": "./doc/json-format.md#friendlymap",
+        "label": "friendlyMap"
+      }
+    ]
+  },
+  {
+    "id": "t00-04",
+    "track": "00",
+    "order": "04",
+    "path": "./examples/html-demo/track-00-runtime/00-04-standard-objectlist.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-00/00-04-standard-objectlist.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-03"
+    ],
+    "status": "stable",
+    "group": "Track 0 · 运行时与 JSON 契约",
+    "title": "标准 JSON 全场景",
+    "summary": "标准 IR：runtime 与内容对象并列于 objectList，适合程序生成与 AI 输出调试。",
+    "navSummary": "objectList 单列全场景。",
+    "highlights": [
+      "scene/camera/renderer/controls/light 与 mesh 同列表。",
+      "与友好 JSON 对照理解映射关系。",
+      "统一 sceneLoadHandler 分阶段 deploy。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md#标准-json",
+        "label": "标准 JSON"
+      },
+      {
+        "href": "./doc/json-format.md#objectlist-分发规则",
+        "label": "objectList 分发"
+      }
+    ]
+  },
+  {
+    "id": "t00-05",
+    "track": "00",
+    "order": "05",
+    "path": "./examples/html-demo/track-00-runtime/00-05-import-paths.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-00/00-03-friendly-full-scene.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-01"
+    ],
+    "status": "stable",
+    "group": "Track 0 · 运行时与 JSON 契约",
+    "title": "导入路径（拆开 vs import map）",
+    "summary": "克隆仓库：相对路径 core + builtins/register；其他 demo 用 import map 映射为 threejson / threejson/core（与 npm 一致）。",
+    "navSummary": "拆开导入与 import map 对照。",
+    "highlights": [
+      "core/index.js 不含内置 domain 注册。",
+      "builtins/register.js 注册清单内全部内置域。",
+      "见 examples/html-demo/README.md 标准 import map。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/domains.md",
+        "label": "业务域"
+      },
+      {
+        "href": "./examples/html-demo/README.md",
+        "label": "html-demo README"
+      }
+    ]
+  },
+  {
+    "id": "t00-06",
+    "track": "00",
+    "order": "06",
+    "path": "./examples/html-demo/track-00-runtime/00-06-resource-reclaimer.html",
+    "jsonFiles": [],
+    "prerequisites": [
+      "t00-01"
+    ],
+    "status": "stable",
+    "group": "Track 0 · 运行时与 JSON 契约",
+    "title": "资源回收（默认自动 + 可选手动）",
+    "summary": "零接入也可运行：createJsonScene + runtime.dispose()；可选手动按 threeJsonId 调用 disposeByThreeJsonId 删除对象。",
+    "navSummary": "dispose / disposeByThreeJsonId。",
+    "highlights": [
+      "不调用回收 API 时场景仍可正常渲染与销毁。",
+      "disposeByThreeJsonId(scene, id) 按业务 id 移除单对象。",
+      "runtime.dispose() 整页卸载时释放 GPU/监听器。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/api.md#disposebythreejsonidscene-threejsonid-options--detachbythreejsonid",
+        "label": "disposeByThreeJsonId"
+      },
+      {
+        "href": "./examples/html-demo/README.md",
+        "label": "html-demo README"
+      }
+    ]
+  },
+  {
+    "id": "t00-07",
+    "track": "00",
+    "order": "07",
+    "path": "./examples/html-demo/track-00-runtime/00-07-manual-deploy-mesh.html",
+    "jsonFiles": [],
+    "prerequisites": [
+      "t00-01"
+    ],
+    "status": "stable",
+    "group": "Track 0 · 运行时与 JSON 契约",
+    "title": "单对象手写部署（选修）",
+    "summary": "进阶选修：createSceneRuntime + deployMesh 部署单条 box JSON，对照 doc/README 手写路径；主线仍用 createJsonScene。",
+    "navSummary": "选修 · deployMesh 单 box。",
+    "highlights": [
+      "学完 t00-01 后再看；与 createJsonScene 对照理解底层部署。",
+      "单条 objType: box + deployMesh，无需 domain 全量入口。",
+      "动态拼场景、调试单对象时可用此路径。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/README.md",
+        "label": "调用者手册"
+      },
+      {
+        "href": "./doc/json-format.md#盒子-box",
+        "label": "JSON：盒子 box"
+      }
+    ]
+  },
+  {
+    "id": "t00-08",
+    "track": "00",
+    "order": "08",
+    "path": "./examples/html-demo/track-00-runtime/00-08-scene-intro.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-00/00-08-scene-intro.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-01"
+    ],
+    "status": "stable",
+    "group": "Track 0 · 运行时与 JSON 契约",
+    "title": "sceneConfig.intro 片头",
+    "summary": "postLoad DOM 片头：Logo + 文字、固定时长、点击跳过；部署完成后 onSceneReady 前展示。",
+    "navSummary": "intro.postLoad 片头。",
+    "highlights": [
+      "sceneConfig.intro.postLoad.slides（image / text）。",
+      "excludeFromLoadWait：不阻塞 loadingMask / onSceneReady；联动默认 blockInteraction: false。",
+      "blockInteraction: false 时 overlay 点击穿透；skipOnClick 仅内容区可跳过。",
+      "createJsonSceneSimple 跳过 intro 并 warn。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md#sceneconfigintro-可选加载完成后片头",
+        "label": "JSON：sceneConfig.intro"
+      },
+      {
+        "href": "./doc/scene-load-lifecycle.md",
+        "label": "场景加载生命周期"
+      }
+    ]
+  },
+  {
+    "id": "t01-01",
+    "track": "01",
+    "order": "01",
+    "path": "./examples/html-demo/track-01-geometry/01-01-group-line-panel.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-01/01-01-group-line-panel.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-03"
+    ],
+    "status": "stable",
+    "group": "Track 1 · 场景对象与几何",
+    "title": "组合、线条与面板",
+    "summary": "命令式 API 与 JSON 对照：createGroup、createLine2、infoPanel，以及按 objType 批量显隐。",
+    "navSummary": "group / line / infoPanel API。",
+    "highlights": [
+      "createGroup() 嵌套 boxModelList。",
+      "createLine2() 宽线折线。",
+      "setObjectsVisibleByObjType / destroyObjectsByObjType。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md#组合-group",
+        "label": "组合 group"
+      },
+      {
+        "href": "./doc/json-format.md#线条-line",
+        "label": "线条 line"
+      },
+      {
+        "href": "./doc/json-format.md#信息面板-infopanel",
+        "label": "信息面板"
+      },
+      {
+        "href": "./doc/info-panels.md",
+        "label": "信息面板专题"
+      }
+    ]
+  },
+  {
+    "id": "t01-02",
+    "track": "01",
+    "order": "02",
+    "path": "./examples/html-demo/track-01-geometry/01-02-plane-line-topology.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-01/01-02-plane-line-topology.json"
+      }
+    ],
+    "prerequisites": [
+      "t01-01"
+    ],
+    "status": "stable",
+    "group": "Track 1 · 场景对象与几何",
+    "title": "平面与线拓扑",
+    "summary": "planeList 贴地平面与 line 的 line / lineSegments / lineLoop 三种 topology。",
+    "navSummary": "plane + line 拓扑。",
+    "highlights": [
+      "plane 用 rotation 贴地。",
+      "topology 控制 Line / LineSegments / LineLoop。",
+      "数据外置 tutorial JSON。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md#plane贴图纯色平面",
+        "label": "plane"
+      },
+      {
+        "href": "./doc/json-format.md#line-拓扑-topology",
+        "label": "line 拓扑"
+      }
+    ]
+  },
+  {
+    "id": "t01-03",
+    "track": "01",
+    "order": "03",
+    "path": "./examples/html-demo/track-01-geometry/01-03-preset-objtypes.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-01/01-03-preset-objtypes.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-03"
+    ],
+    "status": "stable",
+    "group": "Track 1 · 场景对象与几何",
+    "title": "预设 objType",
+    "summary": "wallList / floorList / glassList 配合 friendlyMap 默认值，减少重复字段。",
+    "navSummary": "wall / floor / glass。",
+    "highlights": [
+      "friendlyMap 注入默认 material。",
+      "glassKind 区分玻璃样式。",
+      "列表项可省略 per-item objType。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md#预设-objtypewallglass-等",
+        "label": "预设 objType"
+      }
+    ]
+  },
+  {
+    "id": "t01-04",
+    "track": "01",
+    "order": "04",
+    "path": "./examples/html-demo/track-01-geometry/01-04-csg-joins.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-01/01-04-csg-joins.json"
+      }
+    ],
+    "prerequisites": [
+      "t01-03"
+    ],
+    "status": "stable",
+    "group": "Track 1 · 场景对象与几何",
+    "title": "CSG 合并与挖洞",
+    "summary": "joins / holes 在 boxModelList 项上声明布尔运算（three-bvh-csg）。",
+    "navSummary": "joins / holes。",
+    "highlights": [
+      "holes 在墙体上开窗。",
+      "joins 合并相邻体块。",
+      "CSG 较重，宜少量使用。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md#csg合并相交挖洞",
+        "label": "CSG"
+      }
+    ]
+  },
+  {
+    "id": "t01-05",
+    "track": "01",
+    "order": "05",
+    "path": "./examples/html-demo/track-01-geometry/01-05-helpers-irregular-geometry.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-01/01-05-helpers-irregular.json"
+      }
+    ],
+    "prerequisites": [
+      "t01-02"
+    ],
+    "status": "stable",
+    "group": "Track 1 · 场景对象与几何",
+    "title": "Helpers 与不规则几何",
+    "summary": "sceneConfig.helpers（Grid + Axes）、irregularPlane / shapeExtrude / bufferMesh 与 parallelTo 快捷朝向。",
+    "navSummary": "helpers + 不规则平面/体。",
+    "highlights": [
+      "helpers.grid / helpers.axes 半 runtime 参考线。",
+      "irregularPlane.planeKind: shape + parallelTo: xz。",
+      "shapeExtrude 与 bufferMesh 三角网格示例。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md#sceneconfighelpersgrid--axes-辅助线",
+        "label": "sceneConfig.helpers"
+      },
+      {
+        "href": "./doc/json-format.md#shapeplane--irregularplane不规则平面",
+        "label": "irregularPlane"
+      },
+      {
+        "href": "./doc/json-format.md#shapeextrude--irregulargeometry不规则几何体",
+        "label": "shapeExtrude"
+      }
+    ]
+  },
+  {
+    "id": "t01-06",
+    "track": "01",
+    "order": "06",
+    "path": "./examples/html-demo/track-01-geometry/01-06-native-object-dispatch.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-01/01-06-native-objects.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-04",
+      "t01-02"
+    ],
+    "status": "stable",
+    "group": "Track 1 · 场景对象与几何",
+    "title": "Native 类型自动推断",
+    "summary": "parseMode / objType native：ThreeJSON 尚未定义但 Three.js 支持的原生 objType（如 TorusKnot、Lathe、Dodecahedron），允许使用。可经 ObjectLoader 自动推断并创建；含层级 Group 与 parseMode:native 双轨。",
+    "navSummary": "任意 Three.js 类型自动推断。",
+    "highlights": [
+      "torusKnot / latheVase / dodecahedronGem 非 core objType，auto 走 native。",
+      "objType:native + children 层级灯模型。",
+      "parseMode:native 强制绕过 box 专用解析器。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md#objtype-native通用-threejs-对象",
+        "label": "objType: native"
+      },
+      {
+        "href": "./lab/native-object-dispatch-memo.md",
+        "label": "lab 备忘"
+      }
+    ]
+  },
+  {
+    "id": "t01-07",
+    "track": "01",
+    "order": "07",
+    "path": "./examples/html-demo/track-01-geometry/01-07-jsm-geometries.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-01/01-07-jsm-geometries.json"
+      }
+    ],
+    "prerequisites": [
+      "t01-06"
+    ],
+    "status": "stable",
+    "group": "Track 1 · 场景对象与几何",
+    "title": "jsm 几何与资源引用",
+    "summary": "RoundedBoxGeometry（roundedBox 别名）、geometryRef/materialPreset、native Line2；透视 Orbit 便于浏览（正交/fly 见 json-format）。",
+    "navSummary": "jsm 几何 + 资源库引用。",
+    "highlights": [
+      "assetLibrary geometryPreset / materialPreset + lib:// 引用。",
+      "sceneConfig.extensions.nativeGeometries 按需 register。",
+      "roundedBox 别名与 preset-ref 圆角盒、native Line2 折线。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md#objtype-native通用-threejs-对象",
+        "label": "objType: native"
+      },
+      {
+        "href": "./doc/json-format.md",
+        "label": "assetLibrary"
+      }
+    ]
+  },
+  {
+    "id": "t01-08",
+    "track": "01",
+    "order": "08",
+    "path": "./examples/html-demo/track-01-geometry/01-08-ortho-fly.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-01/01-08-ortho-fly.json"
+      }
+    ],
+    "prerequisites": [
+      "t01-07"
+    ],
+    "status": "stable",
+    "group": "Track 1 · 场景对象与几何",
+    "title": "正交相机 + Fly 漫游",
+    "summary": "OrthographicCamera + lookAt + FlyControls；验证正交视锥 resize 与 fly 初始化后朝向。",
+    "navSummary": "正交相机 + Fly 漫游。",
+    "highlights": [
+      "camera.type orthographic + lookAt 对准场景。",
+      "controls.type fly：dragToLook + WASD/QE。",
+      "autoResize / firstAutoResize 下正交视锥保持世界高度。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md",
+        "label": "相机 type"
+      },
+      {
+        "href": "./doc/json-format.md",
+        "label": "controls fly"
+      }
+    ]
+  },
+  {
+    "id": "t02-01",
+    "track": "02",
+    "order": "01",
+    "path": "./examples/html-demo/track-02-visual-fx/02-01-heatmap-wind.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-02/02-01-heatmap-wind.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-03"
+    ],
+    "status": "stable",
+    "group": "Track 2 · 可视化与特效",
+    "title": "热力图与风带",
+    "summary": "heatList 平面/体热力与 windList 动态纹理条带。",
+    "navSummary": "heatMap + wind。",
+    "highlights": [
+      "heatMap 温度点驱动颜色。",
+      "wind 纹理流动由 TWEEN 驱动。",
+      "geometry.depth 区分平面与体热力。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md#热力图-heatmap",
+        "label": "热力图"
+      },
+      {
+        "href": "./doc/json-format.md#动态平面-wind",
+        "label": "动态平面 wind"
+      }
+    ]
+  },
+  {
+    "id": "t02-02",
+    "track": "02",
+    "order": "02",
+    "path": "./examples/html-demo/track-02-visual-fx/02-02-points-motion.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-02/02-02-points-motion.json"
+      }
+    ],
+    "prerequisites": [
+      "t02-01"
+    ],
+    "status": "stable",
+    "group": "Track 2 · 可视化与特效",
+    "title": "点云与 motion",
+    "summary": "particleList（points）三种 motion 模式：静态、下落、上升漂移。",
+    "navSummary": "points + motion 三模式。",
+    "highlights": [
+      "右栏切换 static / fall / rise。",
+      "motion.drift 每帧更新顶点。",
+      "additive blending 粒子观感。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md#point点云-粒子",
+        "label": "points"
+      }
+    ]
+  },
+  {
+    "id": "t02-03",
+    "track": "02",
+    "order": "03",
+    "path": "./examples/html-demo/track-02-visual-fx/02-03-weather-domain.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-02/02-03-weather-domain.json"
+      }
+    ],
+    "prerequisites": [
+      "t02-02"
+    ],
+    "status": "stable",
+    "group": "Track 2 · 可视化与特效",
+    "title": "天气域模型",
+    "summary": "domainModelList 中 domain: weather 的 rain / snow 预设粒子。",
+    "navSummary": "weather rain/snow。",
+    "highlights": [
+      "handler: rain | snow | sparkles | embers。",
+      "内部经 particleEmitterBuilder（默认 simulation: cpu）。",
+      "可覆盖 count / bounds / simulation。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md#domain-weather天气粒子预设",
+        "label": "weather 域"
+      },
+      {
+        "href": "./doc/domains.md",
+        "label": "domains.md"
+      }
+    ]
+  },
+  {
+    "id": "t02-04",
+    "track": "02",
+    "order": "04",
+    "path": "./examples/html-demo/track-02-visual-fx/02-04-sprite-tube-instanced.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-02/02-04-sprite-tube-instanced.json"
+      }
+    ],
+    "prerequisites": [
+      "t02-01"
+    ],
+    "status": "stable",
+    "group": "Track 2 · 可视化与特效",
+    "title": "Sprite / Tube / Instanced",
+    "summary": "spriteList 标记、tubeList 管道路径、instancedList 柱网实例化。",
+    "navSummary": "sprite / tube / instanced。",
+    "highlights": [
+      "tube path catmullRom。",
+      "instancedList transforms 数组。",
+      "sprite material.size 控制尺寸。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md#sprite图标-标记",
+        "label": "sprite"
+      },
+      {
+        "href": "./doc/json-format.md#tube管道路径",
+        "label": "tube"
+      },
+      {
+        "href": "./doc/json-format.md#instanced显式-instancedmesh",
+        "label": "instanced"
+      }
+    ]
+  },
+  {
+    "id": "t02-05",
+    "track": "02",
+    "order": "05",
+    "path": "./examples/html-demo/track-02-visual-fx/02-05-scene-background.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-02/02-05-scene-background.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-04"
+    ],
+    "status": "stable",
+    "group": "Track 2 · 可视化与特效",
+    "title": "场景背景与全景",
+    "summary": "scene.background equirect 全景与太阳系 sphereModelList（需 createSceneRuntimeAsync）。",
+    "navSummary": "equirect + 太阳系。",
+    "highlights": [
+      "background.type: equirect。",
+      "异步贴图加载。",
+      "sphereModelList 行星占位贴图。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md#sceneconfigscenebackground-与-environment",
+        "label": "background / environment"
+      }
+    ]
+  },
+  {
+    "id": "t02-06",
+    "track": "02",
+    "order": "06",
+    "path": "./examples/html-demo/track-02-visual-fx/02-06-audio-spatial.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-02/02-06-audio-spatial.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-03"
+    ],
+    "status": "stable",
+    "group": "Track 2 · 可视化与特效",
+    "title": "空间音频",
+    "summary": "audioList 的 ambient 与 positional 模式（需用户手势触发播放）。",
+    "navSummary": "audioList 双模式。",
+    "highlights": [
+      "mode: ambient | positional。",
+      "refDistance / maxDistance 衰减。",
+      "autoplay 受浏览器策略限制。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md#audio",
+        "label": "audio"
+      }
+    ]
+  },
+  {
+    "id": "t02-09",
+    "track": "02",
+    "order": "09",
+    "path": "./examples/html-demo/track-02-visual-fx/02-09-particle-emitter-gpu.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-02/02-09-particle-emitter-gpu.json"
+      }
+    ],
+    "prerequisites": [
+      "t02-02"
+    ],
+    "status": "stable",
+    "group": "Track 2 · 可视化与特效",
+    "title": "particleEmitter gpuCompute",
+    "summary": "objType particleEmitter：gpuCompute（GPUComputationRenderer）与 cpu twinkle 对比。",
+    "navSummary": "particleEmitter gpu/cpu。",
+    "highlights": [
+      "simulation: gpuCompute + compute.textureSize。",
+      "GPU 位置纹理 + ShaderMaterial Points。",
+      "无 WebGL2 时自动回退 cpu。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md#particleemitter统一粒子发射器",
+        "label": "particleEmitter"
+      }
+    ]
+  },
+  {
+    "id": "t02-10",
+    "track": "02",
+    "order": "10",
+    "path": "./examples/html-demo/track-02-visual-fx/02-10-particle-nebula-provider.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-02/02-10-particle-nebula-provider.json"
+      }
+    ],
+    "prerequisites": [
+      "t02-09"
+    ],
+    "status": "stable",
+    "group": "Track 2 · 可视化与特效",
+    "title": "particleEmitter 第三方 provider",
+    "summary": "extensions/particle-nebula：provider: nebula 注册第三方粒子适配器，与 core 并排对比。",
+    "navSummary": "第三方粒子 provider。",
+    "highlights": [
+      "先 threejson/core，再 import extensions/particle-nebula 注册 provider。",
+      "JSON provider: nebula → adapter 略调 material 后委托 core。",
+      "未 import 扩展时 warn 并回退 core。"
+    ],
+    "docLinks": [
+      {
+        "href": "./extensions/particle-nebula/README.md",
+        "label": "particle-nebula README"
+      },
+      {
+        "href": "./doc/json-format.md#particleemitter统一粒子发射器",
+        "label": "particleEmitter"
+      }
+    ]
+  },
+  {
+    "id": "t02-11",
+    "track": "02",
+    "order": "11",
+    "path": "./examples/html-demo/track-02-visual-fx/02-11-texture-sampling-toggle.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-02/02-11-texture-sampling-toggle.json"
+      }
+    ],
+    "prerequisites": [
+      "t02-06"
+    ],
+    "status": "stable",
+    "group": "Track 2 · 可视化与特效",
+    "title": "textureQuality 纹理采样档位",
+    "summary": "sceneConfig / material.textureQuality 0–3 与 A 路径 preset 合并；运行时 applyObjectChange 热切换。",
+    "navSummary": "纹理采样档位切换。",
+    "highlights": [
+      "sceneConfig.textureQuality 为场景默认档位(S)。",
+      "material.textureQuality 覆盖场景默认；0 为 opt-out。",
+      "显式 generateMipmaps / minFilter / anisotropy 等(C) 优先于档位。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md#纹理采样-texturequality",
+        "label": "纹理采样 textureQuality"
+      },
+      {
+        "href": "./doc/api.md#coreutiltexturesamplingjs",
+        "label": "textureSampling API"
+      }
+    ]
+  },
+  {
+    "id": "t02-sky",
+    "track": "02",
+    "order": "07",
+    "path": "./examples/html-demo/track-02-visual-fx/02-08-shader-sky-cycle.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-02/02-08-shader-sky-cycle.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-03"
+    ],
+    "status": "stable",
+    "group": "Track 2 · 可视化与特效",
+    "title": "Shader 天空与海",
+    "summary": "nature.sky / nature.water + shaderSurface：静态 preset 与 handler: cycle 昼夜循环。",
+    "navSummary": "天空与海 · 两课。",
+    "highlights": [
+      "子目录：静态 sky/water 与动态 cycle。",
+      "domainModelList + shaderSurfaceList。",
+      "cycle：timeOfDay / autoCycle / syncBackground。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md#shadersurfacecore-通用-shader-面",
+        "label": "shaderSurface / nature.sky"
+      },
+      {
+        "href": "./lab/shader-preset-architecture.md",
+        "label": "Shader 架构契约"
+      }
+    ],
+    "steps": [
+      {
+        "id": "t02-07",
+        "order": "A",
+        "path": "./examples/html-demo/track-02-visual-fx/02-07-shader-sky-water.html",
+        "jsonFiles": [
+          {
+            "json": "/assets/json/tutorial/track-02/02-07-shader-sky-water.json"
+          }
+        ],
+        "prerequisites": [
+          "t00-03"
+        ],
+        "parentId": "t02-sky",
+        "group": "",
+        "title": "静态天空与海面",
+        "summary": "domainModelList（nature.sky / nature.water）+ shaderSurfaceList 演示 Shader 预设与 domain 语义封装。",
+        "navSummary": "sunset + ocean 静态 preset",
+        "highlights": [
+          "handler: sunset / ocean 静态 preset。",
+          "quality: low | medium | high | ultra 控制水面逼真度。",
+          "shaderSurface solidColor 标记面。"
+        ],
+        "docLinks": []
+      },
+      {
+        "id": "t02-08",
+        "order": "B",
+        "path": "./examples/html-demo/track-02-visual-fx/02-08-shader-sky-cycle.html",
+        "jsonFiles": [
+          {
+            "json": "/assets/json/tutorial/track-02/02-08-shader-sky-cycle.json"
+          }
+        ],
+        "prerequisites": [
+          "t02-07"
+        ],
+        "parentId": "t02-sky",
+        "group": "",
+        "title": "天空昼夜循环",
+        "summary": "nature.sky handler: cycle 关键帧插值 + 自动 24h 循环；可选 syncBackground 同步纯色背景。",
+        "navSummary": "handler: cycle + autoCycle",
+        "highlights": [
+          "timeOfDay / cycleDuration / autoCycle。",
+          "syncBackground 仅对纯色 scene.background 生效。",
+          "静态 dawn/noon/night 仍可用 handler 切换。"
+        ],
+        "docLinks": []
+      }
+    ]
+  },
+  {
+    "id": "t03-01",
+    "track": "03",
+    "order": "01",
+    "path": "./examples/html-demo/track-03-assets/03-01-external-gltf.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-03/03-01-external-gltf.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-04"
+    ],
+    "status": "stable",
+    "group": "Track 3 · 外部资产与域模型",
+    "title": "glTF 外部模型",
+    "summary": "externalModelList 加载仓库内 glTF，与地板 box 同场。",
+    "navSummary": "externalModel + glTF。",
+    "highlights": [
+      "modelFileType 选择加载器。",
+      "列表可省略 per-item objType。",
+      "资源路径以 /assets/ 为根。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md#externalmodel",
+        "label": "externalModel"
+      }
+    ]
+  },
+  {
+    "id": "t03-02",
+    "track": "03",
+    "order": "02",
+    "path": "./examples/html-demo/track-03-assets/03-02-gltf-animation-mixer.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-03/03-02-gltf-animation-mixer.json"
+      }
+    ],
+    "prerequisites": [
+      "t03-01"
+    ],
+    "status": "stable",
+    "group": "Track 3 · 外部资产与域模型",
+    "title": "glTF 动画剪辑",
+    "summary": "含 translation 剪辑的 glTF，验证 AnimationMixer 与 animationMode。",
+    "navSummary": "glTF Mixer。",
+    "highlights": [
+      "Mixer LoopRepeat。",
+      "可与声明式 rotate 协调。",
+      "03-02-gltf-animation-mixer.json。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md#animationmode-可选",
+        "label": "animationMode"
+      }
+    ]
+  },
+  {
+    "id": "t03-03",
+    "track": "03",
+    "order": "03",
+    "path": "./examples/html-demo/track-03-assets/03-03-native-three-domain.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-03/03-03-native-three-domain.json"
+      }
+    ],
+    "prerequisites": [
+      "t03-01"
+    ],
+    "status": "stable",
+    "group": "Track 3 · 外部资产与域模型",
+    "title": "原生 Three JSON 域",
+    "summary": "domainModelList nativeThree 加载 three_native.json 子图。",
+    "navSummary": "nativeThree domain。",
+    "highlights": [
+      "applyDomainModelsFromWorldInfo。",
+      "独立 three_native.json。",
+      "domain: box 对照条。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md#外部模型-objgltfglbthreejson",
+        "label": "外部模型与原生 JSON"
+      }
+    ]
+  },
+  {
+    "id": "t03-04",
+    "track": "03",
+    "order": "04",
+    "path": "./examples/html-demo/track-03-assets/03-04-obj-maps-fallback.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-03/03-04-obj-maps-fallback.json"
+      }
+    ],
+    "prerequisites": [
+      "t03-01"
+    ],
+    "status": "stable",
+    "group": "Track 3 · 外部资产与域模型",
+    "title": "OBJ 与 maps 回退",
+    "summary": "objModelList 加载 maps_fallback/alpaca.obj，演示同目录 maps/ 材质回退。",
+    "navSummary": "OBJ 加载。",
+    "highlights": [
+      "modelPath 指向 .obj（objModelList）。",
+      "MTL/maps 自动探测。",
+      "最小地板参照场景。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md#obj-同目录-maps-回退",
+        "label": "OBJ maps 回退"
+      }
+    ]
+  },
+  {
+    "id": "t03-06",
+    "track": "03",
+    "order": "06",
+    "path": "./examples/html-demo/track-03-assets/03-06-animation-graph.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-03/03-06-animation-graph.json"
+      }
+    ],
+    "prerequisites": [
+      "t03-02"
+    ],
+    "status": "stable",
+    "group": "Track 3 · 外部资产与域模型",
+    "title": "animationGraph 状态机",
+    "summary": "glTF + animationGraph：参数驱动状态切换与 clipFinished 回退；无 graph 时仍 play all clips。",
+    "navSummary": "animationGraph 状态机。",
+    "highlights": [
+      "setAnimationParameter / fireAnimationEvent API。",
+      "slow ↔ fast crossFade；pulse 单次剪辑。",
+      "仅 opt-in graph 启用，兼容旧 JSON。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md#animationgraph可选gltf-动画状态机",
+        "label": "animationGraph"
+      }
+    ]
+  },
+  {
+    "id": "t04-01",
+    "track": "04",
+    "order": "01",
+    "path": "./examples/html-demo/track-04-interaction/04-01-object-registry.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-04/04-01-object-registry.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-02"
+    ],
+    "status": "stable",
+    "group": "Track 4 · 运行时交互与扩展",
+    "title": "对象管理器",
+    "summary": "refName / threeJsonId / name 查询运行时对象并修改变换与材质。",
+    "navSummary": "objectRegistry API。",
+    "highlights": [
+      "getObjectByRefName。",
+      "getObjectByThreeJsonId。",
+      "rebuildObjectRegistryFromScene 兜底。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md#运行时对象查询",
+        "label": "运行时对象查询"
+      }
+    ]
+  },
+  {
+    "id": "t04-02",
+    "track": "04",
+    "order": "02",
+    "path": "./examples/html-demo/track-04-interaction/04-02-plugin-physics.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-04/04-02-plugin-physics.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-04"
+    ],
+    "status": "lab",
+    "group": "Track 4 · 运行时交互与扩展",
+    "title": "PluginHost 与物理",
+    "summary": "页内切换 simple-gravity 与 physics-rapier（WASM），挂在 PluginHost.beforePhysics。",
+    "navSummary": "重力 / Rapier 二合一。",
+    "highlights": [
+      "extensions/simple-gravity。",
+      "extensions/physics-rapier + esm.sh WASM。",
+      "04-02-plugin-physics.json extensions。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/scope.md",
+        "label": "scope.md"
+      },
+      {
+        "href": "./extensions/physics-rapier/README.md",
+        "label": "physics-rapier README"
+      }
+    ]
+  },
+  {
+    "id": "t04-fps",
+    "track": "04",
+    "order": "03",
+    "path": "./examples/html-demo/track-04-interaction/04-05-fps-rapier-collision.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-04/04-05-fps-rapier-collision.json"
+      }
+    ],
+    "prerequisites": [
+      "t04-02"
+    ],
+    "status": "lab",
+    "group": "Track 4 · 运行时交互与扩展",
+    "title": "第一人称漫游",
+    "summary": "由浅入深：PointerLock 漫游 → Player Rig → Rapier 胶囊碰撞（完整版为默认预览）。",
+    "navSummary": "FPS 渐进三课。",
+    "highlights": [
+      "子目录切换不同 HTML 场景。",
+      "controls.type firstPerson + fps-walk。",
+      "Rapier CharacterController 完整示例见默认页。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md#objtype-controls视口控制器",
+        "label": "controls"
+      },
+      {
+        "href": "./extensions/fps-walk/README.md",
+        "label": "fps-walk"
+      },
+      {
+        "href": "./lab/first-person-integration.md",
+        "label": "first-person-integration"
+      }
+    ],
+    "steps": [
+      {
+        "id": "t04-03",
+        "order": "A",
+        "path": "./examples/html-demo/track-04-interaction/04-03-fps-walk.html",
+        "jsonFiles": [
+          {
+            "json": "/assets/json/tutorial/track-04/04-03-fps-walk.json"
+          }
+        ],
+        "prerequisites": [
+          "t00-04"
+        ],
+        "parentId": "t04-fps",
+        "group": "",
+        "title": "基础漫游",
+        "summary": "controls.type firstPerson + 可选 extensions fps-walk 贴地。",
+        "navSummary": "PointerLock + fps-walk",
+        "highlights": [
+          "标准 objectList 室内盒。",
+          "bootstrapFpsWalkFromScene。",
+          "scene-player 亦支持。"
+        ],
+        "docLinks": []
+      },
+      {
+        "id": "t04-04",
+        "order": "B",
+        "path": "./examples/html-demo/track-04-interaction/04-04-fps-player-rig.html",
+        "jsonFiles": [
+          {
+            "json": "/assets/json/tutorial/track-04/04-04-fps-player-rig.json"
+          }
+        ],
+        "prerequisites": [
+          "t04-03"
+        ],
+        "parentId": "t04-fps",
+        "group": "",
+        "title": "Player Rig",
+        "summary": "camera.attachTo 将相机挂到 refName: player 的 group，WASD 移动 Rig。",
+        "navSummary": "attachTo player rig",
+        "highlights": [
+          "group refName player。",
+          "attachCameraToPlayerRig。",
+          "与 fps-walk 贴地配合。"
+        ],
+        "docLinks": []
+      },
+      {
+        "id": "t04-05",
+        "order": "C",
+        "path": "./examples/html-demo/track-04-interaction/04-05-fps-rapier-collision.html",
+        "jsonFiles": [
+          {
+            "json": "/assets/json/tutorial/track-04/04-05-fps-rapier-collision.json"
+          }
+        ],
+        "prerequisites": [
+          "t04-02",
+          "t04-03"
+        ],
+        "parentId": "t04-fps",
+        "group": "",
+        "title": "Rapier 碰撞",
+        "summary": "controls.collision.provider rapier + CharacterController 胶囊碰撞。",
+        "navSummary": "Rapier 第一人称",
+        "highlights": [
+          "墙体 physics-rapier fixed。",
+          "需 @dimforge/rapier3d-compat。",
+          "lab/first-person-integration。"
+        ],
+        "docLinks": []
+      }
+    ]
+  },
+  {
+    "id": "t04-09",
+    "track": "04",
+    "order": "09",
+    "path": "./examples/html-demo/track-04-interaction/04-09-event-mechanism.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-04/04-09-event-mechanism.json"
+      }
+    ],
+    "prerequisites": [
+      "t04-01",
+      "t00-04"
+    ],
+    "status": "stable",
+    "group": "Track 4 · 运行时交互与扩展",
+    "title": "Core 事件机制（EventScript）",
+    "summary": "plain Box + events.click.script + await wait；双击编辑脚本侧栏 Apply rebind。",
+    "navSummary": "事件机制 EventScript",
+    "highlights": [
+      "bindSceneEventRuntime 接线 ELM + JSON binding。",
+      "单击立方体：左移 → wait → 回移。",
+      "双击打开脚本侧栏，Apply 后 rebind 即时验证。",
+      "一期 plain 主线；domain 接入为可选扩展。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/event-mechanism.md#一事件机制使用方法",
+        "label": "事件机制"
+      },
+      {
+        "href": "./doc/event-mechanism.md#二eventscript-语法",
+        "label": "EventScript 语法"
+      },
+      {
+        "href": "./doc/json-format.md",
+        "label": "JSON events"
+      }
+    ]
+  },
+  {
+    "id": "t04-10",
+    "track": "04",
+    "order": "10",
+    "path": "./examples/html-demo/track-04-interaction/04-10-object-lifecycle.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-04/04-10-object-lifecycle.json"
+      }
+    ],
+    "prerequisites": [
+      "t04-09"
+    ],
+    "status": "stable",
+    "group": "Track 4 · 运行时交互与扩展",
+    "title": "单对象 lifecycle（ready / dispose）",
+    "summary": "object.ready 在 deploy 完成后执行；object.dispose 在显式 async 删除前执行；批量 load 时 ready 在 ELM bind 后 replay。",
+    "navSummary": "单对象 lifecycle",
+    "highlights": [
+      "JSON events.object.ready / object.dispose（content denylist）。",
+      "createJsonScene 批量 load：宿主 hook 在 deploy 阶段，JSON ready script 在 bind 后 replay。",
+      "按 D 动态 deployJsonObjectAsync；按 R 通过 removeObjectByIdAsync 触发 object.dispose。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/event-mechanism.md#131-单对象-lifecycle-与场景-load-的区别",
+        "label": "object lifecycle"
+      }
+    ]
+  },
+  {
+    "id": "t04-11",
+    "track": "04",
+    "order": "11",
+    "path": "./examples/html-demo/track-04-interaction/04-11-declarative-actions.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-04/04-11-declarative-actions.json"
+      }
+    ],
+    "prerequisites": [
+      "t04-09"
+    ],
+    "status": "stable",
+    "group": "Track 4 · 运行时交互与扩展",
+    "title": "声明式 actions",
+    "summary": "用 action/actions 描述点击后的移动、显隐和 patch；action 与 script 可共存且 action 先执行。",
+    "navSummary": "JSON action/actions",
+    "highlights": [
+      "action 单条写法与 actions 多条写法。",
+      "object.patch 默认同步/defer，不强迫交互链路 await 贴图。",
+      "scene.ready 可绑定到 scene record。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/event-mechanism.md#12-jsonevents-块",
+        "label": "JSON actions"
+      }
+    ]
+  },
+  {
+    "id": "t04-08",
+    "track": "04",
+    "order": "03",
+    "path": "./examples/html-demo/track-04-interaction/04-08-info-panel-gallery.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-04/04-08-info-panel-gallery.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-04"
+    ],
+    "status": "stable",
+    "group": "Track 4 · 运行时交互与扩展",
+    "title": "信息面板类型一览",
+    "summary": "infoPanelList 静态类型 Gallery：box/sprite × text/html/img；fix:false 双击关闭演示。",
+    "navSummary": "infoPanel 类型 Gallery",
+    "highlights": [
+      "6 块面板：盒体/精灵 × 文字/HTML/图片。",
+      "textFace full、borderRadius 示例。",
+      "橙色面板设 fix:false，双击隐藏（core 事件机制）。",
+      "可交互 DOM 见 t04-06 css3dPanel。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/info-panels.md",
+        "label": "信息面板专题"
+      },
+      {
+        "href": "./doc/json-format.md#信息面板-infopanel",
+        "label": "infoPanel JSON"
+      }
+    ]
+  },
+  {
+    "id": "t04-06",
+    "track": "04",
+    "order": "04",
+    "path": "./examples/html-demo/track-04-interaction/04-06-css3d-panel.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-04/04-06-css3d-panel.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-04"
+    ],
+    "status": "stable",
+    "group": "Track 4 · 运行时交互与扩展",
+    "title": "CSS3D 可交互面板",
+    "summary": "css3dPanelList 可交互 DOM / iframe 面板（与 infoPanel 静态贴图分工）。",
+    "navSummary": "css3dPanel 基础。",
+    "highlights": [
+      "左侧面板可点按/输入。",
+      "右侧 iframe 需目标站允许嵌入。",
+      "双 pass WebGL + CSS3DRenderer。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md#可交互-css3d-面板-css3dpanelcore",
+        "label": "css3dPanel"
+      }
+    ],
+    "steps": [
+      {
+        "id": "t04-07",
+        "order": "B",
+        "path": "./examples/html-demo/track-04-interaction/04-07-css3d-curved-browser.html",
+        "jsonFiles": [
+          {
+            "json": "/assets/json/tutorial/track-04/04-07-css3d-curved-google.json"
+          }
+        ],
+        "prerequisites": [],
+        "parentId": "t04-06",
+        "group": "",
+        "title": "曲面屏浏览器",
+        "summary": "VR 悬空曲面屏挂载 threejs.org，滚轮缩放；进阶于基础 css3dPanel。",
+        "navSummary": "曲面 CSS3D 大屏",
+        "highlights": [
+          "04-07-css3d-curved-google.json。",
+          "曲面 transform + iframe 嵌入。",
+          "基础用法见 04-06。"
+        ],
+        "docLinks": []
+      }
+    ]
+  },
+  {
+    "id": "t05-01",
+    "track": "05",
+    "order": "01",
+    "path": "./examples/html-demo/track-05-tooling/05-01-ai-scene.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-05/05-01-ai-scene.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-04"
+    ],
+    "status": "lab",
+    "group": "Track 5 · 工具链",
+    "title": "AI 场景生成",
+    "summary": "ChatGPT/DeepSeek 生成与调整场景 JSON，renderSceneByJsonString 统一渲染。",
+    "navSummary": "AI 生成 / 调整 / 看图。",
+    "highlights": [
+      "createSceneAiClient + runSceneAgent。",
+      "JSON 全量 / RFC6902 增量 / 自动调整模式。",
+      "Agent 多轮、阶段自动载入、流式预览与中止。",
+      "机位保持与每轮自适应取景。"
+    ],
+    "docLinks": [
+      {
+        "href": "./core/ai/README.md",
+        "label": "AI README"
+      },
+      {
+        "href": "./doc/mcp-cursor.md",
+        "label": "mcp-cursor"
+      }
+    ]
+  },
+  {
+    "id": "t05-02a",
+    "track": "05",
+    "order": "02",
+    "path": "./examples/html-demo/track-05-tooling/05-02-nested-domain.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-05/05-02-nested-domain.json"
+      }
+    ],
+    "prerequisites": [
+      "t02-03"
+    ],
+    "status": "stable",
+    "group": "Track 5 · 工具链",
+    "title": "嵌套子域（weather.rain / weather.wind）",
+    "summary": "点分 qualified id 调度子域：weather.rain / weather.wind 与根 weather 并存；businessDomains 链式导航。",
+    "navSummary": "nested domain + Proxy API。",
+    "highlights": [
+      "domainModelList 使用 domain: weather.rain | weather.wind。",
+      "根域 weather 仍处理 snow 等 handler。",
+      "businessDomains.weather.rain.deployRain 与 bracket 访问。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/domains.md",
+        "label": "domains.md"
+      },
+      {
+        "href": "./doc/json-format.md#domain-weather天气粒子预设",
+        "label": "weather 域"
+      }
+    ]
+  },
+  {
+    "id": "t05-02",
+    "track": "05",
+    "order": "01",
+    "path": "./room-show.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/roomShow.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-04"
+    ],
+    "status": "stable",
+    "group": "Track 5 · 宿主应用样例",
+    "title": "核心网络机房 A 区",
+    "summary": "企业级模块化机房业务大屏：冷热通道、UPS 分区、18 机柜、热力图/通道气流、first-person 漫游与运维菜单。",
+    "navSummary": "roomShow.json · 机房运维大屏",
+    "highlights": [
+      "worldInfo 友好列表 + deployScheduler 分阶段部署。",
+      "通道气流/热力图/容量与环境监控菜单。",
+      "sceneConfig.extensions fps-walk 与入口走廊。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md#world-业务场景-json扩展",
+        "label": "World 业务 JSON"
+      }
+    ]
+  },
+  {
+    "id": "t05-05",
+    "track": "05",
+    "order": "02",
+    "path": "./port-show.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/portShow.json"
+      }
+    ],
+    "prerequisites": [
+      "t05-02"
+    ],
+    "status": "stable",
+    "group": "Track 5 · 宿主应用样例",
+    "title": "智慧港口",
+    "summary": "港口业务大屏，默认 portShow.json。",
+    "navSummary": "港口 world 样例。",
+    "highlights": [
+      "与 room-show 同管线。",
+      "复杂 wind/heatmap 业务数据。",
+      "非教程必修。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/demos.md",
+        "label": "演示说明"
+      }
+    ]
+  },
+  {
+    "id": "t05-03",
+    "track": "05",
+    "order": "03",
+    "path": "./scene-editor.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/portShow.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-04"
+    ],
+    "status": "stable",
+    "group": "Track 5 · 宿主应用样例",
+    "title": "场景编辑器",
+    "summary": "通用编辑器：加载本地 JSON、导出、自适应与 AI Agent 配置。",
+    "navSummary": "scene-editor 工具页。",
+    "highlights": [
+      "portShow.json 基线。",
+      "window.sceneEditor 调试入口。",
+      "原生 Three JSON 导出。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/demos.md",
+        "label": "演示说明"
+      }
+    ]
+  },
+  {
+    "id": "t05-04",
+    "track": "05",
+    "order": "04",
+    "path": "./scene-player.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/portShow.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-04"
+    ],
+    "status": "stable",
+    "group": "Track 5 · 宿主应用样例",
+    "title": "场景播放器",
+    "summary": "播放列表、文件夹导入、firstPerson 与 fps-walk 自动引导。",
+    "navSummary": "scene-player 巡检播放。",
+    "highlights": [
+      "?scene= / ?url= 查询参数。",
+      "全屏边缘唤出 UI。",
+      "标准 JSON + firstPerson。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/demos.md",
+        "label": "演示说明"
+      }
+    ]
+  },
+  {
+    "id": "t06-stat",
+    "track": "06",
+    "order": "01",
+    "path": "./examples/html-demo/track-06-stat/06-02-stat-grid.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-06/06-02-stat-grid.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-04"
+    ],
+    "status": "stable",
+    "group": "Track 6 · 统计与可视化（stat domain）",
+    "title": "stat 统计域",
+    "summary": "stat 子域渐进：透明方柱 → 柱阵列 → Canvas 看板 → ECharts（默认预览为 stat.grid 柱阵列）。",
+    "navSummary": "stat 域四课。",
+    "highlights": [
+      "domainModelList + stat.bar / grid / panel / chart。",
+      "子目录切换不同 HTML 场景。",
+      "stat.chart 需 css3dPanel 与 extensions/stat-echarts。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/domains.md",
+        "label": "业务域"
+      },
+      {
+        "href": "./extensions/stat-echarts/README.md",
+        "label": "stat-echarts README"
+      }
+    ],
+    "steps": [
+      {
+        "id": "t06-01",
+        "order": "A",
+        "path": "./examples/html-demo/track-06-stat/06-01-stat-bar.html",
+        "jsonFiles": [
+          {
+            "json": "/assets/json/tutorial/track-06/06-01-stat-bar.json"
+          }
+        ],
+        "prerequisites": [
+          "t00-04"
+        ],
+        "parentId": "t06-stat",
+        "group": "",
+        "title": "stat.bar 透明方柱",
+        "summary": "通用 stat.bar 子域：domainModelList 声明 value/max，透明利用率方柱与 statLabel 贴图。",
+        "navSummary": "stat.bar 单柱",
+        "highlights": [
+          "domain: stat.bar · handler: createStatBars",
+          "objType statBar / statBarGroup",
+          "mapUtilizationRateToColor 色带"
+        ],
+        "docLinks": []
+      },
+      {
+        "id": "t06-02",
+        "order": "B",
+        "path": "./examples/html-demo/track-06-stat/06-02-stat-grid.html",
+        "jsonFiles": [
+          {
+            "json": "/assets/json/tutorial/track-06/06-02-stat-grid.json"
+          }
+        ],
+        "prerequisites": [
+          "t06-01"
+        ],
+        "parentId": "t06-stat",
+        "group": "",
+        "title": "stat.grid 柱阵列",
+        "summary": "stat.grid 多柱 layout：spacingX/Z、columns、origin。",
+        "navSummary": "stat.grid 阵列",
+        "highlights": [
+          "items[] 批量柱",
+          "options.columns 网格布局",
+          "纯 Three.js，无 ECharts"
+        ],
+        "docLinks": []
+      },
+      {
+        "id": "t06-03",
+        "order": "C",
+        "path": "./examples/html-demo/track-06-stat/06-03-stat-panel.html",
+        "jsonFiles": [
+          {
+            "json": "/assets/json/tutorial/track-06/06-03-stat-panel.json"
+          }
+        ],
+        "prerequisites": [
+          "t06-02"
+        ],
+        "parentId": "t06-stat",
+        "group": "",
+        "title": "stat.panel 看板",
+        "summary": "stat.panel：3D 平面 + Canvas 多行 KPI 摘要（非 ECharts）。",
+        "navSummary": "stat.panel Canvas",
+        "highlights": [
+          "lines[] 多行文案",
+          "businessInfo.statLabel 契约",
+          "与 stat.bar 同场景组合"
+        ],
+        "docLinks": []
+      },
+      {
+        "id": "t06-04",
+        "order": "D",
+        "path": "./examples/html-demo/track-06-stat/06-04-stat-chart-echarts.html",
+        "jsonFiles": [
+          {
+            "json": "/assets/json/tutorial/track-06/06-04-stat-chart-echarts.json"
+          }
+        ],
+        "prerequisites": [
+          "t06-03",
+          "t04-06"
+        ],
+        "parentId": "t06-stat",
+        "group": "",
+        "title": "stat.chart + ECharts",
+        "summary": "stat.chart 薄子域 + extensions/stat-echarts：CSS3D 面板挂载 ECharts（optional peer）。",
+        "navSummary": "ECharts 进场景",
+        "highlights": [
+          "css3dPanelList + domain stat.chart",
+          "onSceneReady bootstrapStatChartsFromScene",
+          "import map 增加 echarts"
+        ],
+        "docLinks": [
+          {
+            "href": "./extensions/stat-echarts/README.md",
+            "label": "stat-echarts README"
+          },
+          {
+            "href": "./doc/json-format.md#可交互-css3d-面板-css3dpanelcore",
+            "label": "CSS3D 面板"
+          }
+        ]
+      },
+      {
+        "id": "t06-05",
+        "order": "E",
+        "path": "./examples/html-demo/track-06-stat/06-05-stat-line.html",
+        "jsonFiles": [
+          {
+            "json": "/assets/json/tutorial/track-06/06-05-stat-line.json"
+          }
+        ],
+        "prerequisites": [
+          "t06-04"
+        ],
+        "parentId": "t06-stat",
+        "group": "",
+        "title": "stat.line 立体折线",
+        "summary": "stat.line：Line2 折线 + 可选 dropLine / 球体 marker / 顶点 statLabel。",
+        "navSummary": "立体折线图",
+        "highlights": [
+          "domain stat.line + createStatLine",
+          "Line2 linewidth + subScene dropLine/marker",
+          "series[] 多序列"
+        ],
+        "docLinks": []
+      },
+      {
+        "id": "t06-06",
+        "order": "F",
+        "path": "./examples/html-demo/track-06-stat/06-06-stat-pie.html",
+        "jsonFiles": [
+          {
+            "json": "/assets/json/tutorial/track-06/06-06-stat-pie.json"
+          }
+        ],
+        "prerequisites": [
+          "t06-05"
+        ],
+        "parentId": "t06-stat",
+        "group": "",
+        "title": "stat.pie 立体饼图",
+        "summary": "stat.pie：圆柱扇形 + statLabel 贴图（≤8 扇区）。",
+        "navSummary": "立体饼图",
+        "highlights": [
+          "domain stat.pie + createStatPie",
+          "thetaStart / thetaLength 扇区",
+          "扇区角平分线 statLabel"
+        ],
+        "docLinks": []
+      },
+      {
+        "id": "t06-07",
+        "order": "G",
+        "path": "./examples/html-demo/track-06-stat/06-07-stat-pie-ring.html",
+        "jsonFiles": [
+          {
+            "json": "/assets/json/tutorial/track-06/06-07-stat-pie-ring.json"
+          }
+        ],
+        "prerequisites": [
+          "t06-06"
+        ],
+        "parentId": "t06-stat",
+        "group": "",
+        "title": "stat.pie vs stat.ring",
+        "summary": "同场景对比：左实心饼图、右 CSG 圆环；import map 需 three-bvh-csg。",
+        "navSummary": "饼图 + 圆环对比",
+        "highlights": [
+          "stat.pie + stat.ring 左右并列",
+          "ring 使用 holes[] CSG 内圆柱挖洞",
+          "ring demo ≤6 扇区"
+        ],
+        "docLinks": []
+      }
+    ]
+  },
+  {
+    "id": "t07-text",
+    "track": "07",
+    "order": "01",
+    "path": "./examples/html-demo/track-07-text/07-02-text-mesh.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-07/07-02-text-mesh.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-04"
+    ],
+    "status": "stable",
+    "group": "Track 7 · 场景文字（objType: text）",
+    "title": "text 对象（sdf / texture / mesh）",
+    "summary": "objType:text 三模式：默认 SDF（troika）、Canvas texture 兜底、TextGeometry 立体字。",
+    "navSummary": "text 域两课。",
+    "highlights": [
+      "mode: sdf | texture | mesh",
+      "sceneConfig.textFont 场景级字体与 Unicode 回退",
+      "mesh 需 mesh.fontJsonUrl（示例 Helvetiker）"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/json-format.md",
+        "label": "text 对象"
+      },
+      {
+        "href": "./assets/json/tutorial/track-07/07-01-text-modes.json",
+        "label": "JSON 示例"
+      }
+    ],
+    "steps": [
+      {
+        "id": "t07-01",
+        "order": "A",
+        "path": "./examples/html-demo/track-07-text/07-01-text-modes.html",
+        "jsonFiles": [
+          {
+            "json": "/assets/json/tutorial/track-07/07-01-text-modes.json"
+          }
+        ],
+        "prerequisites": [
+          "t00-04"
+        ],
+        "parentId": "t07-text",
+        "group": "",
+        "title": "sdf 与 texture 对比",
+        "summary": "同屏对比 troika SDF 中文标签、Canvas texture 与英文 SDF。",
+        "navSummary": "sdf / texture",
+        "highlights": [
+          "默认 sdf + unicode 回退（无需整库字体）",
+          "billboard 朝向相机",
+          "import map 需 troika-three-text"
+        ],
+        "docLinks": []
+      },
+      {
+        "id": "t07-02",
+        "order": "B",
+        "path": "./examples/html-demo/track-07-text/07-02-text-mesh.html",
+        "jsonFiles": [
+          {
+            "json": "/assets/json/tutorial/track-07/07-02-text-mesh.json"
+          }
+        ],
+        "prerequisites": [
+          "t07-01"
+        ],
+        "parentId": "t07-text",
+        "group": "",
+        "title": "mesh 立体标题字",
+        "summary": "mode:mesh + FontLoader typeface.json；本地字体 assets/fonts/helvetiker_bold.typeface.json。",
+        "navSummary": "TextGeometry mesh",
+        "highlights": [
+          "mesh.fontJsonUrl 必填",
+          "bevelEnabled 倒角挤出",
+          "中文需自备字体 JSON"
+        ],
+        "docLinks": []
+      }
+    ]
+  }
+]

@@ -1,0 +1,173 @@
+{
+  "version": "next",
+  "name": "tutorial-animation-graph",
+  "threeJsonId": "03-06-animation-graph",
+  "sceneConfig": {
+    "scene": {
+      "background": "#1a1f28"
+    },
+    "camera": {
+      "fov": 55,
+      "near": 0.1,
+      "far": 250,
+      "position": {
+        "x": 24,
+        "y": 16,
+        "z": 30
+      }
+    },
+    "renderer": {
+      "antialias": true,
+      "ratioRate": 1
+    },
+    "controls": {
+      "enableDamping": true,
+      "target": {
+        "x": 0,
+        "y": 2.4,
+        "z": 1
+      }
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "intensity": 0.65
+      },
+      {
+        "type": "directional",
+        "intensity": 0.95,
+        "position": {
+          "x": 18,
+          "y": 28,
+          "z": 14
+        }
+      }
+    ],
+    "renderLoop": {
+      "autoResize": true,
+      "firstAutoResize": true,
+      "updateAnimations": true
+    }
+  },
+  "objectList": [
+    {
+      "objType": "floor",
+      "name": "room-floor",
+      "geometry": {
+        "width": 32,
+        "height": 0.8,
+        "depth": 24
+      },
+      "position": {
+        "x": 0,
+        "y": -0.4,
+        "z": 0
+      },
+      "material": {
+        "type": "standard",
+        "color": "#3a4554",
+        "roughness": 0.9
+      }
+    },
+    {
+      "objType": "externalModel",
+      "name": "graph-pyramid",
+      "threeJsonId": "graph-pyramid",
+      "modelPath": "/assets/model/gltf/threejson_bobbing_pyramid.gltf",
+      "modelFileType": "gltf",
+      "animationMode": "mixer",
+      "position": {
+        "x": 0,
+        "y": 1.6,
+        "z": 2.4
+      },
+      "rotation": {
+        "rotationY": 0.55
+      },
+      "scale": {
+        "scaleX": 3.2,
+        "scaleY": 3.2,
+        "scaleZ": 3.2
+      },
+      "animationGraph": {
+        "defaultState": "slow",
+        "parameters": {
+          "fast": {
+            "type": "bool",
+            "default": false
+          },
+          "pulse": {
+            "type": "bool",
+            "default": false
+          }
+        },
+        "states": {
+          "slow": {
+            "clips": [
+              {
+                "name": "bobY",
+                "loop": true
+              }
+            ],
+            "speed": 0.7
+          },
+          "fast": {
+            "clips": [
+              {
+                "name": "bobY",
+                "loop": true
+              }
+            ],
+            "speed": 2.4
+          },
+          "pulse": {
+            "clips": [
+              {
+                "name": "bobY",
+                "loop": false
+              }
+            ],
+            "speed": 1.4
+          }
+        },
+        "transitions": [
+          {
+            "from": "slow",
+            "to": "fast",
+            "when": {
+              "param": "fast",
+              "eq": true
+            },
+            "crossFade": 0.25
+          },
+          {
+            "from": "fast",
+            "to": "slow",
+            "when": {
+              "param": "fast",
+              "eq": false
+            },
+            "crossFade": 0.25
+          },
+          {
+            "from": "*",
+            "to": "pulse",
+            "when": {
+              "param": "pulse",
+              "eq": true
+            },
+            "crossFade": 0.08
+          },
+          {
+            "from": "pulse",
+            "to": "slow",
+            "when": {
+              "event": "clipFinished"
+            },
+            "crossFade": 0.2
+          }
+        ]
+      }
+    }
+  ]
+}

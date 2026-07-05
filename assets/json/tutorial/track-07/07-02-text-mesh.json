@@ -1,0 +1,96 @@
+{
+  "version": "next",
+  "name": "tutorial-text-mesh",
+  "sceneConfig": {
+    "scene": {
+      "background": "#121820"
+    },
+    "camera": {
+      "fov": 48,
+      "position": { "x": -28, "y": 20, "z": 48 },
+      "near": 0.1,
+      "far": 1200
+    },
+    "renderer": {
+      "antialias": true
+    },
+    "controls": {
+      "enableDamping": true,
+      "target": { "x": 0, "y": 8, "z": 0 }
+    },
+    "lights": [
+      { "type": "ambient", "color": "#404858", "intensity": 0.65 },
+      {
+        "type": "directional",
+        "color": "#ffffff",
+        "intensity": 1.1,
+        "position": { "x": -36, "y": 54, "z": 24 }
+      },
+      {
+        "type": "directional",
+        "color": "#88aaff",
+        "intensity": 0.35,
+        "position": { "x": 30, "y": 12, "z": -18 }
+      }
+    ],
+    "renderLoop": {
+      "autoResize": true,
+      "firstAutoResize": true
+    }
+  },
+  "objectList": [
+    {
+      "name": "floor",
+      "objType": "floor",
+      "geometry": { "width": 96, "height": 2, "depth": 48 },
+      "position": { "x": 0, "y": -1, "z": 0 },
+      "material": { "color": "#2a3544", "roughness": 0.85, "metalness": 0.05 }
+    },
+    {
+      "name": "title-mesh",
+      "objType": "text",
+      "threeJsonId": "title-mesh",
+      "content": "ThreeJSON",
+      "mode": "mesh",
+      "fontSize": 3.6,
+      "color": "#ffd04b",
+      "align": "center",
+      "anchor": { "x": 0.5, "y": 0.5 },
+      "position": { "x": 0, "y": 9, "z": 0 },
+      "rotation": { "rotationX": -0.28, "rotationY": 0.12, "rotationZ": 0 },
+      "mesh": {
+        "fontJsonUrl": "/assets/fonts/helvetiker_bold.typeface.json",
+        "depth": 0.75,
+        "bevelEnabled": true,
+        "bevelThickness": 0.06,
+        "bevelSize": 0.03,
+        "metalness": 0.35,
+        "roughness": 0.42
+      }
+    },
+    {
+      "name": "subtitle-sdf",
+      "objType": "text",
+      "threeJsonId": "subtitle-sdf",
+      "content": "mode: mesh · TextGeometry",
+      "mode": "sdf",
+      "fontSize": 0.58,
+      "color": "#c8d0dc",
+      "align": "center",
+      "anchor": { "x": 0.5, "y": 0.5 },
+      "position": { "x": 0, "y": 4.2, "z": 1.2 }
+    },
+    {
+      "name": "hint-sdf",
+      "objType": "text",
+      "threeJsonId": "hint-sdf",
+      "content": "中文 mesh 需自备 typeface.json",
+      "mode": "sdf",
+      "fontSize": 0.48,
+      "color": "#78B83E",
+      "align": "center",
+      "billboard": true,
+      "position": { "x": 0, "y": 2, "z": 0 }
+    }
+  ]
+}

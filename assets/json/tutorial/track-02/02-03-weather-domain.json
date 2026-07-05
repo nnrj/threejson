@@ -1,0 +1,91 @@
+{
+  "version": "next",
+  "name": "tutorial-weather-domain",
+  "sceneConfig": {
+    "scene": {
+      "background": "#0c1018"
+    },
+    "camera": {
+      "fov": 55,
+      "position": {
+        "x": 11,
+        "y": 12,
+        "z": 31
+      },
+      "near": 0.1,
+      "far": 400
+    },
+    "renderer": {
+      "antialias": true
+    },
+    "controls": {
+      "enableDamping": true,
+      "target": {
+        "x": 0,
+        "y": 5,
+        "z": 0
+      }
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "color": "#8899aa",
+        "intensity": 0.6
+      }
+    ],
+    "renderLoop": {
+      "autoResize": true,
+      "firstAutoResize": true,
+      "updateAnimations": true
+    }
+  },
+  "worldInfo": {
+    "domainModelList": [
+      {
+        "objType": "domain",
+        "domain": "weather",
+        "handler": "rain",
+        "name": "rain-zone",
+        "position": {
+          "x": -6,
+          "y": 8,
+          "z": 0
+        },
+        "count": 1200
+      },
+      {
+        "objType": "domain",
+        "domain": "weather",
+        "handler": "snow",
+        "name": "snow-zone",
+        "position": {
+          "x": 6,
+          "y": 7,
+          "z": 2
+        },
+        "count": 800
+      }
+    ],
+    "boxModelList": [
+      {
+        "name": "ground",
+        "objType": "box",
+        "geometry": {
+          "width": 40,
+          "height": 0.4,
+          "depth": 40
+        },
+        "position": {
+          "x": 0,
+          "y": -0.2,
+          "z": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#1a2430"
+        }
+      }
+    ]
+  },
+  "threeJsonId": "02-03-weather-domain"
+}

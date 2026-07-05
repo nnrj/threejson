@@ -1,0 +1,294 @@
+{
+  "version": "next",
+  "name": "tutorial-primitives",
+  "sceneConfig": {
+    "scene": {
+      "background": "#222222"
+    },
+    "camera": {
+      "fov": 60,
+      "near": 0.1,
+      "far": 250,
+      "position": {
+        "x": 45,
+        "y": 28,
+        "z": 50
+      }
+    },
+    "renderer": {
+      "antialias": true,
+      "ratioRate": 1
+    },
+    "controls": {
+      "enableDamping": true,
+      "dampingFactor": 0.08,
+      "target": {
+        "x": 0,
+        "y": 6,
+        "z": 0
+      }
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "color": "#ffffff",
+        "intensity": 0.58
+      },
+      {
+        "type": "directional",
+        "color": "#ffffff",
+        "intensity": 1.05,
+        "position": {
+          "x": 30,
+          "y": 40,
+          "z": 25
+        }
+      }
+    ],
+    "renderLoop": {
+      "autoResize": true,
+      "firstAutoResize": true
+    }
+  },
+  "worldInfo": {
+    "sphereModelList": [
+      {
+        "name": "demo-sphere",
+        "geometry": {
+          "radius": 4,
+          "widthSegments": 32,
+          "heightSegments": 16
+        },
+        "position": {
+          "x": 0,
+          "y": 5,
+          "z": 11
+        },
+        "material": {
+          "type": "standard",
+          "textureUrl": "/assets/textures/environment/nature/planet/earth.png"
+        },
+        "animations": [
+          {
+            "type": "rotate",
+            "axis": "y",
+            "speed": 0.48
+          }
+        ]
+      }
+    ],
+    "modelList": [
+      {
+        "name": "demo-cylinder",
+        "objType": "cylinder",
+        "geometry": {
+          "radiusTop": 3,
+          "radiusBottom": 3,
+          "height": 12,
+          "radialSegments": 32
+        },
+        "position": {
+          "x": -21,
+          "y": 6,
+          "z": 10
+        },
+        "material": {
+          "type": "lambert",
+          "color": "#e6a23c"
+        }
+      },
+      {
+        "name": "demo-cone",
+        "objType": "cone",
+        "geometry": {
+          "radius": 3,
+          "height": 11,
+          "radialSegments": 32
+        },
+        "position": {
+          "x": -6,
+          "y": 6,
+          "z": -11
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0.4,
+          "rotationZ": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#f56c6c",
+          "metalness": 0.1,
+          "roughness": 0.65
+        }
+      },
+      {
+        "name": "demo-torus",
+        "objType": "torus",
+        "geometry": {
+          "radius": 3,
+          "tube": 1.2,
+          "radialSegments": 18,
+          "tubularSegments": 72
+        },
+        "position": {
+          "x": 7,
+          "y": 8,
+          "z": -13
+        },
+        "rotation": {
+          "rotationX": 1.5708,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#67c23a",
+          "metalness": 0.15,
+          "roughness": 0.5
+        },
+        "animations": [
+          {
+            "type": "rotate",
+            "axis": "z",
+            "speed": 0.4
+          }
+        ]
+      },
+      {
+        "name": "demo-ring",
+        "objType": "ring",
+        "geometry": {
+          "innerRadius": 2,
+          "outerRadius": 4,
+          "thetaSegments": 48
+        },
+        "position": {
+          "x": 20,
+          "y": 9,
+          "z": 4
+        },
+        "rotation": {
+          "rotationX": 1.5708,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "material": {
+          "type": "basic",
+          "color": "#1AD4D4",
+          "transparent": true,
+          "opacity": 0.85,
+          "side": "double"
+        }
+      },
+      {
+        "name": "demo-capsule",
+        "objType": "capsule",
+        "geometry": {
+          "radius": 2,
+          "length": 7,
+          "capSegments": 8,
+          "radialSegments": 16
+        },
+        "position": {
+          "x": 24,
+          "y": 6,
+          "z": 14
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": -0.25,
+          "rotationZ": 0.28
+        },
+        "material": {
+          "type": "standard",
+          "color": "#909399",
+          "metalness": 0.08,
+          "roughness": 0.72
+        }
+      }
+    ],
+    "boxModelList": [
+      {
+        "name": "room-floor",
+        "objType": "floor",
+        "geometry": {
+          "width": 36,
+          "height": 0.8,
+          "depth": 26
+        },
+        "position": {
+          "x": 0,
+          "y": -0.4,
+          "z": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "metalness": 0.05,
+          "roughness": 0.85,
+          "textureUrl": "/assets/textures/building/floor/wood_floor.webp",
+          "textureRepeat": {
+            "x": 2,
+            "y": 2
+          }
+        },
+        "label": "demo-floor"
+      },
+      {
+        "name": "demo-blue-box",
+        "objType": "box",
+        "geometry": {
+          "width": 8,
+          "height": 8,
+          "depth": 8
+        },
+        "position": {
+          "x": -13,
+          "y": 4,
+          "z": -2
+        },
+        "material": {
+          "type": "standard",
+          "color": "#409eff",
+          "metalness": 0.2,
+          "roughness": 0.5
+        },
+        "animations": [
+          {
+            "type": "rotate",
+            "axis": "y",
+            "speed": -0.6
+          }
+        ]
+      },
+      {
+        "name": "demo-glass",
+        "objType": "glass",
+        "glassKind": "tinted",
+        "geometry": {
+          "width": 7,
+          "height": 11,
+          "depth": 7
+        },
+        "position": {
+          "x": 14,
+          "y": 6,
+          "z": -4
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0.35,
+          "rotationZ": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#67c23a",
+          "transparent": true,
+          "opacity": 0.45
+        }
+      }
+    ]
+  },
+  "threeJsonId": "00-02-primitives"
+}

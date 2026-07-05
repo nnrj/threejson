@@ -1,0 +1,133 @@
+{
+  "version": "next",
+  "name": "first-person-player-rig",
+  "canvasWidth": 1280,
+  "canvasHeight": 720,
+  "extensions": {
+    "fps-walk": {
+      "enabled": true,
+      "floorMeshRef": "floor"
+    }
+  },
+  "objectList": [
+    {
+      "objType": "scene",
+      "background": "#1a2030"
+    },
+    {
+      "objType": "camera",
+      "attachTo": "player",
+      "fov": 70,
+      "near": 0.1,
+      "far": 500,
+      "eyeHeight": 1.6,
+      "position": {
+        "x": 0,
+        "y": 1.6,
+        "z": 0
+      }
+    },
+    {
+      "objType": "renderer",
+      "antialias": true,
+      "ratioRate": 1
+    },
+    {
+      "objType": "controls",
+      "type": "firstPerson",
+      "moveSpeed": 5,
+      "eyeHeight": 1.6,
+      "lookSensitivity": 0.001,
+      "lookSmoothing": 0.18,
+      "pointerLock": true,
+      "floorSnap": true
+    },
+    {
+      "objType": "light",
+      "type": "ambient",
+      "color": "#ffffff",
+      "intensity": 0.55
+    },
+    {
+      "objType": "light",
+      "type": "directional",
+      "color": "#ffffff",
+      "intensity": 0.85,
+      "position": {
+        "x": 40,
+        "y": 80,
+        "z": 30
+      }
+    },
+    {
+      "objType": "renderLoop",
+      "autoResize": true,
+      "firstAutoResize": true
+    },
+    {
+      "objType": "group",
+      "refName": "player",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 12
+      }
+    },
+    {
+      "objType": "box",
+      "name": "floor",
+      "refName": "floor",
+      "geometry": {
+        "width": 120,
+        "height": 1,
+        "depth": 120
+      },
+      "position": {
+        "x": 0,
+        "y": -0.5,
+        "z": 0
+      },
+      "material": {
+        "type": "standard",
+        "color": "#3d4a5c"
+      }
+    },
+    {
+      "objType": "box",
+      "name": "wall-n",
+      "geometry": {
+        "width": 120,
+        "height": 16,
+        "depth": 2
+      },
+      "position": {
+        "x": 0,
+        "y": 8,
+        "z": -60
+      },
+      "material": {
+        "type": "standard",
+        "color": "#5a6a7a"
+      }
+    },
+    {
+      "objType": "box",
+      "name": "pillar-a",
+      "geometry": {
+        "width": 4,
+        "height": 12,
+        "depth": 4
+      },
+      "position": {
+        "x": -20,
+        "y": 6,
+        "z": -15
+      },
+      "material": {
+        "type": "standard",
+        "color": "#7a8a9a"
+      }
+    }
+  ],
+  "threeJsonId": "04-04-fps-player-rig"
+}

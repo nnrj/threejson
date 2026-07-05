@@ -1,0 +1,4289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>场景播放器</title>
+  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <script type="importmap">
+    
+    {
+      "imports": {
+        "threejson": "/builtins/full.js",
+        "threejson/core": "/core/index.js",
+        "three": "https://esm.sh/three@0.184.0",
+        "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
+        "fflate": "https://esm.sh/fflate@0.8.3",
+        "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
+        "html2canvas-pro": "https://esm.sh/html2canvas-pro@2.0.4",
+        "gifuct-js": "https://esm.sh/gifuct-js@2.1.2",
+        "three-mesh-bvh": "https://esm.sh/three-mesh-bvh@0.9.10?deps=three@0.184.0",
+        "three-bvh-csg": "https://esm.sh/three-bvh-csg@0.0.18?deps=three@0.184.0,three-mesh-bvh@0.9.10",
+        "troika-three-text": "https://esm.sh/troika-three-text@0.52.4?deps=three@0.184.0"
+      }
+    }
+  
+  </script>
+  <style>
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #2f2f2f;
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+      color: #cfcfcf;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    /* 统一细滚动条（纵/横同风格，与编辑器属性面板一致） */
+    .appThinScrollbar,
+    .playerSettingsNav,
+    .playerSettingsScroll,
+    .sidePanel,
+    .playlistList {
+      scrollbar-width: thin;
+      scrollbar-color: #4d525a rgba(20, 22, 26, 0.55);
+    }
+
+    .appThinScrollbar::-webkit-scrollbar,
+    .playerSettingsNav::-webkit-scrollbar,
+    .playerSettingsScroll::-webkit-scrollbar,
+    .sidePanel::-webkit-scrollbar,
+    .playlistList::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    .appThinScrollbar::-webkit-scrollbar-track,
+    .playerSettingsNav::-webkit-scrollbar-track,
+    .playerSettingsScroll::-webkit-scrollbar-track,
+    .sidePanel::-webkit-scrollbar-track,
+    .playlistList::-webkit-scrollbar-track {
+      margin: 2px;
+      background: rgba(20, 22, 26, 0.5);
+      border-radius: 4px;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    }
+
+    .appThinScrollbar::-webkit-scrollbar-thumb,
+    .playerSettingsNav::-webkit-scrollbar-thumb,
+    .playerSettingsScroll::-webkit-scrollbar-thumb,
+    .sidePanel::-webkit-scrollbar-thumb,
+    .playlistList::-webkit-scrollbar-thumb {
+      background: #4d525a;
+      border-radius: 4px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .appThinScrollbar::-webkit-scrollbar-thumb:hover,
+    .playerSettingsNav::-webkit-scrollbar-thumb:hover,
+    .playerSettingsScroll::-webkit-scrollbar-thumb:hover,
+    .sidePanel::-webkit-scrollbar-thumb:hover,
+    .playlistList::-webkit-scrollbar-thumb:hover {
+      background: #5c6470;
+      background-clip: padding-box;
+    }
+
+    .appThinScrollbar::-webkit-scrollbar-thumb:active,
+    .playerSettingsNav::-webkit-scrollbar-thumb:active,
+    .playerSettingsScroll::-webkit-scrollbar-thumb:active,
+    .sidePanel::-webkit-scrollbar-thumb:active,
+    .playlistList::-webkit-scrollbar-thumb:active {
+      background: #3d6d9e;
+      background-clip: padding-box;
+    }
+
+    #rootContainer {
+      position: relative;
+      width: 100%;
+      max-width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: 40px 1fr 36px;
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        "top"
+        "workspace"
+        "bottom";
+      background: #2f2f2f;
+      color-scheme: dark;
+      --editor-field-bg: #1f242b;
+      --editor-field-border: rgba(255, 255, 255, 0.2);
+      --editor-field-border-focus: rgba(64, 158, 255, 0.55);
+      --editor-field-color: #e5e9ef;
+      --editor-field-radius: 4px;
+      --editor-field-padding: 6px 8px;
+      --editor-field-font-size: 11px;
+      --editor-checkbox-size: 14px;
+      --editor-checkbox-bg: #1a1e24;
+      --editor-checkbox-border: rgba(255, 255, 255, 0.32);
+      --editor-checkbox-checked: #409eff;
+    }
+
+    /* 与 scene-editor 一致的深色复选框 */
+    #rootContainer input[type="checkbox"] {
+      -webkit-appearance: none;
+      appearance: none;
+      box-sizing: border-box;
+      width: var(--editor-checkbox-size);
+      height: var(--editor-checkbox-size);
+      min-width: var(--editor-checkbox-size);
+      margin: 0;
+      padding: 0;
+      border: 1px solid var(--editor-checkbox-border);
+      border-radius: 3px;
+      background: var(--editor-checkbox-bg);
+      cursor: pointer;
+      flex-shrink: 0;
+      vertical-align: middle;
+      position: relative;
+      transition: background-color 0.12s ease, border-color 0.12s ease;
+    }
+
+    #rootContainer input[type="checkbox"]:hover {
+      border-color: rgba(64, 158, 255, 0.65);
+    }
+
+    #rootContainer input[type="checkbox"]:checked {
+      background: var(--editor-checkbox-checked);
+      border-color: #3078c8;
+    }
+
+    #rootContainer input[type="checkbox"]:checked::after {
+      content: "";
+      position: absolute;
+      left: 4px;
+      top: 1px;
+      width: 4px;
+      height: 8px;
+      border: solid #fff;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+
+    #rootContainer input[type="checkbox"]:focus-visible {
+      outline: 2px solid rgba(64, 158, 255, 0.45);
+      outline-offset: 1px;
+    }
+
+    #rootContainer input[type="checkbox"]:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    /* 文本框 / 下拉：与编辑器场景 JSON 侧栏一致 */
+    #rootContainer #sceneJsonContent,
+    #rootContainer .playerSettingsField input:not([type="checkbox"]):not([type="color"]),
+    #rootContainer .playerSettingsField select,
+    #rootContainer .playerSettingsField textarea {
+      box-sizing: border-box;
+      border: 1px solid var(--editor-field-border);
+      border-radius: var(--editor-field-radius);
+      background: var(--editor-field-bg);
+      color: var(--editor-field-color);
+      outline: none;
+    }
+
+    #rootContainer #sceneJsonContent:focus,
+    #rootContainer .playerSettingsField input:not([type="checkbox"]):not([type="color"]):focus,
+    #rootContainer .playerSettingsField select:focus,
+    #rootContainer .playerSettingsField textarea:focus {
+      border-color: var(--editor-field-border-focus);
+    }
+
+    #rootContainer .playerSettingsField select {
+      cursor: pointer;
+    }
+
+    #rootContainer .playerSettingsField select option {
+      background: #1f242b;
+      color: #e5e9ef;
+    }
+
+    #rootContainer.immersiveFullscreen {
+      grid-template-rows: 1fr;
+      grid-template-areas: "workspace";
+    }
+
+    #rootContainer.immersiveFullscreen .topBar,
+    #rootContainer.immersiveFullscreen .bottomBar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      z-index: 290;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.16s ease, transform 0.2s ease;
+    }
+
+    #rootContainer.immersiveFullscreen .topBar {
+      display: flex !important;
+      top: 0;
+      bottom: auto;
+      transform: translateY(-100%);
+    }
+
+    #rootContainer.immersiveFullscreen .bottomBar {
+      display: grid !important;
+      bottom: 0;
+      top: auto;
+      transform: translateY(100%);
+    }
+
+    #rootContainer.immersiveFullscreen .topBar.immersiveChromeVisible,
+    #rootContainer.immersiveFullscreen .bottomBar.immersiveChromeVisible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .centerWorkspace {
+      grid-area: workspace;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) max-content;
+      grid-template-rows: 1fr;
+      min-width: 0;
+      min-height: 0;
+      position: relative;
+    }
+
+    #rootContainer.immersiveFullscreen .centerWorkspace {
+      display: block;
+      position: relative;
+      height: 100%;
+      min-height: 0;
+    }
+
+    #rootContainer.immersiveFullscreen #canvasWrap {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    #rootContainer.immersiveFullscreen #rightDock {
+      position: fixed;
+      top: 0;
+      right: 0;
+      height: 100vh;
+      height: 100dvh;
+      z-index: 288;
+      transform: translateX(100%);
+      transition: transform 0.22s ease;
+      grid-area: unset;
+    }
+
+    #rootContainer.immersiveFullscreen #rightDock.immersiveDockVisible {
+      transform: translateX(0);
+    }
+
+    .immersiveRightEdgeStrip {
+      display: none;
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 22px;
+      height: 100vh;
+      height: 100dvh;
+      z-index: 287;
+      background: transparent;
+      pointer-events: auto;
+    }
+
+    #rootContainer.immersiveFullscreen .immersiveRightEdgeStrip {
+      display: block;
+    }
+
+    .immersiveEdgeStrip {
+      display: none;
+      position: fixed;
+      left: 0;
+      right: 0;
+      z-index: 287;
+      background: transparent;
+      pointer-events: auto;
+    }
+
+    #rootContainer.immersiveFullscreen .immersiveEdgeStrip {
+      display: block;
+    }
+
+    .immersiveTopEdgeStrip {
+      top: 0;
+      height: 16px;
+    }
+
+    .immersiveBottomEdgeStrip {
+      bottom: 0;
+      height: 16px;
+    }
+
+    .bottomBar {
+      grid-area: bottom;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      padding: 0 10px;
+      gap: 10px;
+      background: #3c3c3c;
+      border-top: 1px solid #4d4d4d;
+      flex-shrink: 0;
+      min-height: 36px;
+    }
+
+    .bottomBarTransport {
+      grid-column: 2;
+      justify-self: center;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .bottomBarTrailing {
+      grid-column: 3;
+      justify-self: end;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .volumeControl {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .volumeControl .volumeBtn {
+      min-width: 32px;
+      padding: 0 8px;
+    }
+
+    .volumeControl input[type="range"] {
+      width: 88px;
+      height: 4px;
+      margin: 0;
+      accent-color: #409eff;
+      cursor: pointer;
+    }
+
+    .transportBtn {
+      min-width: 36px;
+      height: 30px;
+      padding: 0 10px;
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      border-radius: 4px;
+      color: #fff;
+      background: #409eff;
+      cursor: pointer;
+      font-size: 15px;
+      line-height: 1;
+      font-family: "Segoe UI Symbol", "Noto Sans Symbols2", "Apple Symbols", sans-serif;
+    }
+
+    .transportBtn:hover {
+      background: #66b1ff;
+    }
+
+    .transportBtn.secondary {
+      background: #606266;
+    }
+
+    .transportBtn.secondary:hover {
+      background: #7a7c80;
+    }
+
+    .transportBtn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .topBar {
+      grid-area: top;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 8px;
+      min-width: 0;
+      position: relative;
+      z-index: 200;
+      background: #3c3c3c;
+      border-bottom: 1px solid #4d4d4d;
+    }
+
+    .appIconSlot {
+      flex: 0 0 40px;
+      width: 40px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      color: #8ecbff;
+      background: rgba(0, 0, 0, 0.2);
+      font-size: 17px;
+      line-height: 1;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .topMenubar {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      flex: 0 1 auto;
+      min-width: 0;
+      overflow: visible;
+    }
+
+    .topMenu {
+      position: relative;
+    }
+
+    .topMenu > summary {
+      list-style: none;
+      height: 28px;
+      padding: 0 12px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      color: #e8e8e8;
+      background: transparent;
+      font-size: 13px;
+      line-height: 26px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .topMenu > summary:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .topMenu > summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .topMenu[open] > summary {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+
+    .topDropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      min-width: 168px;
+      padding: 6px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(36, 38, 42, 0.98);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+      z-index: 120;
+    }
+
+    .topDropdown button {
+      display: block;
+      width: 100%;
+      margin: 2px 0;
+      padding: 6px 10px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      color: #e6e8ec;
+      background: transparent;
+      font-size: 12px;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .topDropdown button:hover {
+      background: rgba(64, 158, 255, 0.28);
+      border-color: rgba(64, 158, 255, 0.35);
+    }
+
+    .topBarCenter {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      max-width: min(480px, 46vw);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: #e8e8e8;
+      font-size: 13px;
+      line-height: 1;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .topBarSpacer {
+      flex: 1 1 auto;
+      min-width: 4px;
+    }
+
+    .topBarTrailing {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+      margin-left: auto;
+    }
+
+    .toolBtn {
+      height: 28px;
+      padding: 0 10px;
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      border-radius: 4px;
+      color: #fff;
+      background: #409eff;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .toolBtn:hover {
+      background: #66b1ff;
+    }
+
+    .toolBtn.secondary {
+      background: #606266;
+    }
+
+    .toolBtn.secondary:hover {
+      background: #7a7c80;
+    }
+
+    #canvasWrap {
+      grid-column: 1;
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      height: 100%;
+      /*background: #2f2f2f url("/assets/textures/environment/skybox/galaxy.jpg") center center / cover no-repeat;*/
+    }
+
+    #rootContainer.immersiveFullscreen #canvasWrap {
+      grid-column: unset;
+    }
+
+    #canvasContainer {
+      display: block;
+      width: 100%;
+      height: 100%;
+      outline: none;
+    }
+
+    .sidePanel {
+      overflow: auto;
+      padding: 6px 8px;
+      background: #2f2f2f;
+    }
+
+    .rightDock {
+      grid-column: 2;
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      justify-content: flex-end;
+      height: 100%;
+      min-height: 0;
+      width: 0;
+      min-width: 0;
+      max-width: 238px;
+      overflow: hidden;
+      transition: width 0.18s ease, min-width 0.18s ease;
+    }
+
+    #rootContainer.immersiveFullscreen .rightDock {
+      max-width: 238px;
+    }
+
+    #rootContainer.rightPanelOpen .rightDock {
+      width: 238px;
+      min-width: 238px;
+    }
+
+    .rightDockPanel {
+      flex: 1 1 220px;
+      min-width: 0;
+      max-width: 220px;
+      overflow: hidden;
+      border-left: 1px solid #414141;
+    }
+
+    #rightPanel.sidePanel.rightDockPanel {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    #rootContainer:not(.rightPanelOpen) .rightDockPanel {
+      flex: 0 0 0;
+      max-width: 0;
+      padding-left: 0;
+      padding-right: 0;
+      overflow: hidden;
+      border-left-width: 0;
+      visibility: hidden;
+    }
+
+    .panelCard {
+      margin-bottom: 8px;
+      padding: 6px;
+      background: #3d3d3d;
+      border-radius: 3px;
+    }
+
+    .playlistPanelCard {
+      flex: 1 1 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      margin-bottom: 0;
+    }
+
+    .playlistPanelHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+      flex-shrink: 0;
+    }
+
+    .playlistPanelHeader .panelTitle {
+      margin: 0;
+    }
+
+    #playlistClearBtn {
+      flex-shrink: 0;
+    }
+
+    .playlistList {
+      flex: 1 1 0;
+      min-height: 120px;
+      max-height: 48vh;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .playlistRow {
+      display: block;
+      width: 100%;
+      padding: 7px 8px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 4px;
+      background: #33363c;
+      color: #d8dde8;
+      font-size: 12px;
+      text-align: left;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .playlistRow:hover {
+      background: #3e4450;
+    }
+
+    .playlistRowActive {
+      border-color: rgba(64, 158, 255, 0.55);
+      background: rgba(64, 158, 255, 0.22);
+      color: #fff;
+    }
+
+    #playlistContextMenu {
+      position: fixed;
+      z-index: 80;
+      min-width: 146px;
+      display: none;
+      overflow: visible;
+      background: rgba(28, 30, 35, 0.98);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+      padding: 6px;
+      color: #e6e6e6;
+      font-size: 12px;
+      user-select: none;
+    }
+
+    #playlistContextMenu.visible {
+      display: block;
+    }
+
+    #playlistContextMenu button {
+      width: 100%;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 10px;
+      text-align: left;
+      background: transparent;
+      color: #e6e6e6;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    #playlistContextMenu button:hover {
+      background: rgba(255, 255, 255, 0.09);
+    }
+
+    #playlistContextMenu > button + button,
+    #playlistContextMenu > button + .playlistContextItem,
+    #playlistContextMenu > .playlistContextItem + button {
+      margin-top: 2px;
+    }
+
+    .playlistContextItem {
+      position: relative;
+    }
+
+    .playlistContextItemLabel {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      border-radius: 4px;
+      padding: 6px 10px;
+      color: #e6e6e6;
+      background: transparent;
+      cursor: default;
+    }
+
+    .playlistContextItem:hover > .playlistContextItemLabel {
+      background: rgba(255, 255, 255, 0.09);
+    }
+
+    .playlistContextSubmenu {
+      position: absolute;
+      top: 0;
+      left: calc(100% + 4px);
+      min-width: 132px;
+      display: none;
+      z-index: 1;
+      background: rgba(28, 30, 35, 0.98);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+      padding: 6px;
+    }
+
+    .playlistContextItem:hover > .playlistContextSubmenu {
+      display: block;
+    }
+
+    .playlistContextItem.submenuFlipLeft > .playlistContextSubmenu {
+      left: auto;
+      right: calc(100% + 4px);
+    }
+
+    .playlistContextSubmenu button {
+      width: 100%;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 10px;
+      text-align: left;
+      background: transparent;
+      color: #e6e6e6;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .playlistContextSubmenu button:hover {
+      background: rgba(255, 255, 255, 0.09);
+    }
+
+    .playlistAddMenu {
+      position: relative;
+    }
+
+    .topBarTrailing .playlistAddMenu {
+      margin-top: 0;
+    }
+
+    .playlistAddSummary {
+      list-style: none;
+      box-sizing: border-box;
+    }
+
+    .topBarTrailing .playlistAddSummary {
+      width: auto;
+      min-width: 52px;
+      height: 28px;
+      line-height: 26px;
+      margin: 0;
+    }
+
+    .playlistAddSummary::-webkit-details-marker {
+      display: none;
+    }
+
+    .playlistAddDropdown {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .topBarTrailing .playlistAddDropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      left: auto;
+      margin-top: 0;
+      min-width: 172px;
+      padding: 6px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(36, 38, 42, 0.98);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+      z-index: 130;
+    }
+
+    .playlistAddDropdown button {
+      display: block;
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 4px;
+      background: #4a4c51;
+      color: #e0e4ea;
+      font-size: 11px;
+      text-align: left;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .playlistAddDropdown button:hover {
+      background: #55585e;
+    }
+
+    #loadingMask {
+      position: absolute;
+      inset: 0;
+      z-index: 30;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      background: rgba(47, 47, 47, 0.72);
+      font-size: 15px;
+    }
+
+    #messageBox {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      z-index: 40;
+      display: none;
+      max-width: 70vw;
+      padding: 8px 14px;
+      border-radius: 4px;
+      color: #fff;
+      background: rgba(20, 20, 20, 0.82);
+      font-size: 13px;
+      transform: translateX(-50%);
+    }
+
+    .canvasIdleOverlay {
+      position: absolute;
+      inset: 0;
+      z-index: 25;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      background: rgba(47, 47, 47, 0.58);
+      pointer-events: none;
+    }
+
+    .canvasIdleOverlay.isVisible {
+      display: flex;
+      pointer-events: auto;
+    }
+
+    .playerStartupSampleBtn {
+      color: #9ecbff;
+      text-decoration: none;
+      border: none;
+      background: transparent;
+      border-bottom: 1px dashed rgba(158, 203, 255, 0.35);
+      padding: 4px 2px 5px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .playerStartupSampleBtn:hover {
+      color: #c6e0ff;
+      border-bottom-color: rgba(198, 224, 255, 0.55);
+    }
+
+    #sceneJsonModal {
+      position: absolute;
+      inset: 0;
+      z-index: 320;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(12, 12, 12, 0.62);
+    }
+
+    #sceneJsonModal.visible {
+      display: flex;
+    }
+
+    #helpAboutModal {
+      position: absolute;
+      inset: 0;
+      z-index: 325;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(12, 12, 12, 0.62);
+    }
+
+    #helpAboutModal.visible {
+      display: flex;
+    }
+
+    #playerSettingsModal {
+      position: absolute;
+      inset: 0;
+      z-index: 330;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(12, 12, 12, 0.62);
+    }
+
+    #playerSettingsModal.visible {
+      display: flex;
+    }
+
+    .playerSettingsDialog {
+      width: min(92vw, 820px);
+      height: min(78vh, 640px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      background: #22272e;
+      color: #d7dce2;
+      box-shadow: 0 18px 32px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .playerSettingsHeader {
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+      background: #2d333b;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .playerSettingsBody {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+    }
+
+    .playerSettingsNav {
+      flex: 0 0 148px;
+      border-right: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 8px 0;
+      overflow-y: auto;
+      background: #1e2228;
+    }
+
+    .playerSettingsNavBtn {
+      display: block;
+      width: 100%;
+      padding: 8px 12px;
+      border: none;
+      background: transparent;
+      color: #aeb6c0;
+      font-size: 12px;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .playerSettingsNavBtn:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: #e8ecf0;
+    }
+
+    .playerSettingsNavBtn.active {
+      background: rgba(88, 166, 255, 0.15);
+      color: #79b8ff;
+      font-weight: 600;
+    }
+
+    .playerSettingsScroll {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow-y: auto;
+      padding: 12px 16px 16px;
+    }
+
+    .playerSettingsSection {
+      margin-bottom: 20px;
+      scroll-margin-top: 8px;
+    }
+
+    .playerSettingsSectionTitle {
+      margin: 0 0 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 13px;
+      font-weight: 700;
+      color: #e8ecf0;
+    }
+
+    .playerSettingsField {
+      display: grid;
+      grid-template-columns: minmax(140px, 42%) 1fr;
+      gap: 8px 12px;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 12px;
+    }
+
+    .playerSettingsField label {
+      color: #c5cad3;
+      line-height: 1.35;
+    }
+
+    .playerSettingsField input:not([type="checkbox"]):not([type="color"]),
+    .playerSettingsField select,
+    .playerSettingsField textarea {
+      width: 100%;
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: 12px;
+    }
+
+    .playerSettingsField input[type="color"] {
+      width: 100%;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 6px;
+      padding: 2px;
+      background: #1f242b;
+    }
+
+    .playerSettingsFieldCheck {
+      grid-template-columns: 1fr;
+    }
+
+    .playerSettingsFieldCheck label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .playerSettingsFieldWithHint {
+      row-gap: 4px;
+    }
+
+    .playerSettingsHint {
+      grid-column: 1 / -1;
+      font-size: 11px;
+      color: #8b949e;
+      line-height: 1.45;
+      margin: 0;
+    }
+
+    .playerSettingsFieldWithHint:not(.playerSettingsFieldCheck) .playerSettingsHint {
+      grid-column: 2;
+    }
+
+    .playerSettingsFooter {
+      flex-shrink: 0;
+      padding: 10px 14px 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.14);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      background: #2d333b;
+    }
+
+    .helpAboutDialog {
+      width: min(88vw, 400px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      background: #22272e;
+      color: #d7dce2;
+      box-shadow: 0 18px 32px rgba(0, 0, 0, 0.4);
+      overflow: hidden;
+    }
+
+    .helpAboutHeader {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+      background: #2d333b;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .helpAboutBody {
+      padding: 16px 14px;
+      font-size: 13px;
+      line-height: 1.65;
+      color: #c5cad3;
+      white-space: pre-line;
+    }
+
+    .helpAboutFooter {
+      padding: 8px 12px 12px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .helpAboutFooter .miniBtn {
+      min-width: 72px;
+    }
+
+    .miniBtn {
+      min-width: 0;
+      padding: 2px 5px;
+      border: 1px solid #666;
+      border-radius: 3px;
+      color: #dcdcdc;
+      background: #4f4f4f;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .miniBtn:hover {
+      background: #666;
+    }
+
+    .sceneJsonDialog {
+      width: min(92vw, 980px);
+      max-height: 84vh;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      background: #22272e;
+      color: #d7dce2;
+      box-shadow: 0 18px 32px rgba(0, 0, 0, 0.4);
+      overflow: hidden;
+    }
+
+    .sceneJsonDialogHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+      background: #2d333b;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .sceneJsonDialogActions {
+      display: flex;
+      gap: 8px;
+    }
+
+    #sceneJsonContent {
+      width: 100%;
+      min-height: 360px;
+      max-height: 72vh;
+      margin: 0;
+      padding: 10px 12px;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 12px;
+      line-height: 1.45;
+      resize: vertical;
+    }
+  </style>
+</head>
+<body>
+<div id="rootContainer" class="rightPanelOpen">
+  <header class="topBar" id="topBar">
+    <div class="appIconSlot" title="ScenePlayer" aria-hidden="true">▶</div>
+    <nav class="topMenubar" aria-label="主菜单">
+      <details class="topMenu">
+        <summary>文件</summary>
+        <div class="topDropdown">
+          <button type="button" id="menuOpenSceneJson">打开</button>
+          <button type="button" id="menuLoadSceneJson">加载 ThreeJSON</button>
+          <button type="button" id="menuLoadNativeThreeJson">加载原生 JSON</button>
+          <button type="button" id="menuLoadTjzArchive">加载 .tjz 包</button>
+        </div>
+      </details>
+      <details class="topMenu">
+        <summary>查看</summary>
+        <div class="topDropdown">
+          <button type="button" id="menuViewSceneJson">查看场景 JSON</button>
+          <button type="button" id="menuFitView">自适应</button>
+          <button type="button" id="menuFullscreenToggle">全屏</button>
+        </div>
+      </details>
+      <details class="topMenu">
+        <summary>设置</summary>
+        <div class="topDropdown">
+          <button type="button" id="menuOpenPlayerSettings">播放器设置…</button>
+        </div>
+      </details>
+      <details class="topMenu">
+        <summary>帮助</summary>
+        <div class="topDropdown">
+          <button type="button" id="menuHelpUserManual">用户手册</button>
+          <button type="button" id="menuClearPlayerSettingsCache">清除设置缓存</button>
+          <button type="button" id="menuHelpAbout">关于</button>
+        </div>
+      </details>
+    </nav>
+    <div class="topBarCenter" id="topBarSceneTitle">场景播放器</div>
+    <div class="topBarSpacer"></div>
+    <div class="topBarTrailing">
+      <input id="sceneJsonFileInput" type="file" accept=".json,.threejson,.tjson,.tjz,application/json" hidden>
+      <input id="nativeThreeJsonFileInput" type="file" accept=".json,application/json" hidden>
+      <input id="tjzArchiveFileInput" type="file" accept=".tjz" hidden>
+      <input id="playlistAddSingleFileInput" type="file" accept=".json,.threejson,.tjson,application/json" hidden>
+      <input id="playlistAddTjzFileInput" type="file" accept=".tjz" hidden>
+      <input id="playlistFolderInput" type="file" accept=".json,.threejson,.tjson,.tjz,application/json" webkitdirectory hidden>
+      <button class="toolBtn secondary" id="playlistOpenBtn" type="button" title="选择 JSON 或 .tjz 并打开播放">打开</button>
+      <details class="playlistAddMenu" id="playlistAddMenu">
+        <summary class="toolBtn secondary playlistAddSummary">添加</summary>
+        <div class="playlistAddDropdown">
+          <button type="button" id="playlistAddJsonFileBtn">添加 JSON 文件…</button>
+          <button type="button" id="playlistAddTjzFileBtn">添加 .tjz 包…</button>
+          <button type="button" id="playlistAddFolderBtn">添加文件夹…</button>
+        </div>
+      </details>
+      <button class="toolBtn secondary" id="toolbarResetViewBtn" type="button" title="根据当前网格自适应相机（同「查看 → 自适应」）">复位</button>
+      <button class="toolBtn secondary" id="fullscreenBtn" type="button">全屏</button>
+    </div>
+  </header>
+
+  <div class="centerWorkspace" id="centerWorkspace">
+    <main id="canvasWrap">
+      <canvas id="canvasContainer">抱歉，你的浏览器不支持 WebGL。</canvas>
+      <div id="loadingMask">3D 场景加载中...</div>
+      <div id="messageBox"></div>
+      <div id="canvasIdleOverlay" class="canvasIdleOverlay" aria-hidden="true">
+        <button type="button" class="toolBtn secondary" id="idleOpenSceneBtn">打开</button>
+        <button type="button" class="playerStartupSampleBtn" id="idleOpenDefaultSceneBtn">打开示例场景</button>
+        <input id="idleOpenSceneInput" type="file" accept=".json,.threejson,.tjson,.tjz,application/json" hidden>
+      </div>
+    </main>
+
+    <div id="rightDock" class="rightDock">
+      <aside id="rightPanel" class="sidePanel rightDockPanel">
+        <div class="panelCard playlistPanelCard">
+          <div class="playlistPanelHeader">
+            <div class="panelTitle">播放列表</div>
+            <button type="button" class="miniBtn" id="playlistClearBtn" title="清空列表并停止播放">清空</button>
+          </div>
+          <div id="playlistList" class="playlistList" aria-label="场景播放列表"></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <footer class="bottomBar" id="bottomBar">
+    <div class="bottomBarTransport">
+      <button type="button" class="transportBtn secondary" id="bottomBtnPrev" title="上一个">⏮</button>
+      <button type="button" class="transportBtn" id="bottomBtnPlayPause" title="暂停">⏸</button>
+      <button type="button" class="transportBtn secondary" id="bottomBtnNext" title="下一个">⏭</button>
+      <button type="button" class="transportBtn secondary" id="bottomBtnStop" title="停止并移除场景">⏹</button>
+      <button type="button" class="transportBtn secondary" id="bottomBtnOpen" title="打开 JSON 或 .tjz">⊕</button>
+      <button type="button" class="transportBtn secondary" id="bottomBtnFullscreen" title="全屏">⛶</button>
+    </div>
+    <div class="bottomBarTrailing">
+      <div class="volumeControl">
+        <button type="button" class="transportBtn secondary volumeBtn" id="playerVolumeMuteBtn" title="静音"
+          aria-label="静音">&#128266;</button>
+        <input type="range" id="playerVolumeSlider" min="0" max="100" value="100" title="音量" aria-label="音量">
+      </div>
+      <button type="button" class="transportBtn secondary" id="bottomBarPlaylistToggle" aria-controls="rightPanel"
+        aria-expanded="true" title="折叠播放列表">&#9776;</button>
+    </div>
+  </footer>
+
+  <div id="immersiveTopEdgeStrip" class="immersiveEdgeStrip immersiveTopEdgeStrip" aria-hidden="true"></div>
+  <div id="immersiveBottomEdgeStrip" class="immersiveEdgeStrip immersiveBottomEdgeStrip" aria-hidden="true"></div>
+  <div id="immersiveRightEdgeStrip" class="immersiveRightEdgeStrip" aria-hidden="true"></div>
+
+  <div id="sceneJsonModal" role="dialog" aria-modal="true" aria-label="场景 JSON 查看器">
+    <div class="sceneJsonDialog">
+      <div class="sceneJsonDialogHeader">
+        <span>当前场景 JSON</span>
+        <div class="sceneJsonDialogActions">
+          <button class="miniBtn" id="copyJsonBtn" type="button">复制</button>
+          <button class="miniBtn" id="closeJsonBtn" type="button">关闭</button>
+        </div>
+      </div>
+      <textarea id="sceneJsonContent" spellcheck="false" readonly></textarea>
+    </div>
+  </div>
+
+  <div id="helpAboutModal" role="dialog" aria-modal="true" aria-labelledby="helpAboutTitle">
+    <div class="helpAboutDialog">
+      <div class="helpAboutHeader" id="helpAboutTitle">关于</div>
+      <div class="helpAboutBody" id="helpAboutBodyText">ScenePlayer 1.0.0
+Powered by ThreeJSON and Three.js</div>
+      <div class="helpAboutFooter">
+        <button class="miniBtn" id="helpAboutCloseBtn" type="button">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="playerSettingsModal" role="dialog" aria-modal="true" aria-labelledby="playerSettingsTitle" hidden>
+    <div class="playerSettingsDialog">
+      <div class="playerSettingsHeader" id="playerSettingsTitle">播放器设置</div>
+      <div class="playerSettingsBody">
+        <nav class="playerSettingsNav" id="playerSettingsNav" aria-label="设置分类"></nav>
+        <div class="playerSettingsScroll" id="playerSettingsScroll"></div>
+      </div>
+      <div class="playerSettingsFooter">
+        <button class="miniBtn" id="playerSettingsResetBtn" type="button">恢复默认</button>
+        <button class="miniBtn" id="playerSettingsSaveBtn" type="button">保存并应用</button>
+        <button class="miniBtn" id="playerSettingsCancelBtn" type="button">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="playlistContextMenu" role="menu" aria-label="播放列表菜单">
+    <button type="button" id="playlistContextPlayBtn" role="menuitem">播放</button>
+    <button type="button" id="playlistContextReloadBtn" role="menuitem">重新加载</button>
+    <div class="playlistContextItem" id="playlistContextCopyItem" role="none">
+      <div class="playlistContextItemLabel" role="menuitem" tabindex="-1">
+        <span>复制</span>
+        <span class="playlistContextArrow" aria-hidden="true">▸</span>
+      </div>
+      <div class="playlistContextSubmenu" role="menu" aria-label="复制">
+        <button type="button" id="playlistContextCopyPathBtn" role="menuitem">复制路径</button>
+        <button type="button" id="playlistContextCopyNameBtn" role="menuitem">复制名称</button>
+      </div>
+    </div>
+    <button type="button" id="playlistContextRemoveBtn" role="menuitem">移除</button>
+  </div>
+</div>
+
+<script type="module">
+  import * as THREE from "three";
+  import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+  import { isLoadableScenePayload } from "./core/handler/sceneFriendlyNormalizer.js";
+
+  import {
+    bindProgressElement,
+    buildAdaptiveContentBoundingBoxTHREE,
+    sceneHighlight,
+    cancelActiveDeployScheduler,
+    createJsonScene,
+    createJsonSceneFromArchive,
+    inspectJsonSceneArchiveEntry,
+    fitPerspectiveCameraToContentBoundsTHREE,
+    hasValue,
+    ensureThreeJsonIdsOnScenePayload,
+    attachHostedContainerDoorDblclick,
+    listOr,
+    openOrCloseProgressManager,
+    clearObjectRegistry,
+    disposeTrackedResources,
+    trackDisposableResource,
+    showProgressMessage,
+    valueOr,
+    buildMinimalWorldJsonForNativeThreeInline,
+    isThreeJsObjectExportJson,
+    resolveScenePayloadForLoad,
+    isCanonicalScenePayload,
+    ensureThreeJsonAudioListener,
+    bindThreeJsonSceneAudioUnlock,
+    resumeThreeJsonAudioContextFromCamera,
+    setThreeJsonSceneAudioPlaybackPolicy,
+    setThreeJsonSceneAudioPaused,
+    teardownThreeJsonSceneAudioFromRuntime,
+    ensureDefaultSceneLightsInScene,
+    resolveRenderLoopFpsPolicy
+  } from "threejson";
+
+  // ===== Player Settings =====
+  const PLAYER_SETTINGS_STORAGE_KEY = "scenePlayer_settings_v1";
+  const PLAYER_SETTINGS_JSON_URL = "/assets/json/other/scene-player/setting.json";
+
+  const PLAYER_SETTINGS_DEFAULTS = {
+    version: 1,
+    app: "scene-player",
+    general: {
+      baseTitle: "场景播放器",
+      defaultSceneUrl: "/assets/json/portShow.json",
+      loadingMaskText: "3D 场景加载中...",
+      messageToastDurationMs: 2600,
+      progressOverlayEnabled: true,
+      sceneLoadDoneDelayMs: 300
+    },
+    layout: { rightPanelOpenByDefault: true, playlistListMinHeightPx: 120 },
+    audio: { defaultVolumePercent: 100, defaultMuted: false, rememberVolume: true },
+    playback: { restorePlaylistOnStartup: true, preferUrlQueryScene: true, sceneAutoRotate: false },
+    render: {
+      antialias: true,
+      targetFps: 60,
+      lowFpsMode: false,
+      overrideSceneRenderLoop: false,
+      earlyRenderWhileLoading: true
+    },
+    immersive: { chromeHideDelayMs: 420, rightEdgeStripWidthPx: 22 },
+    highlight: {
+      channels: { info: "#FFFFFF", locate: "#E6A800", alarm: "#DC3A2F" }
+    }
+  };
+
+  const PLAYER_SETTINGS_SECTIONS = [
+    { id: "general", title: "常规" },
+    { id: "layout", title: "界面布局" },
+    { id: "audio", title: "音频" },
+    { id: "playback", title: "播放" },
+    { id: "render", title: "渲染" },
+    { id: "immersive", title: "沉浸全屏" },
+    { id: "highlight", title: "高亮" }
+  ];
+
+  const PLAYER_SETTINGS_FIELDS = [
+    { section: "general", path: "general.baseTitle", type: "text", label: "窗口标题前缀" },
+    { section: "general", path: "general.defaultSceneUrl", type: "text", label: "默认场景 URL" },
+    { section: "general", path: "general.loadingMaskText", type: "text", label: "加载遮罩文案" },
+    {
+      section: "general",
+      path: "general.messageToastDurationMs",
+      type: "number",
+      label: "消息提示时长 (ms)",
+      min: 500,
+      max: 15000
+    },
+    {
+      section: "general",
+      path: "general.progressOverlayEnabled",
+      type: "checkbox",
+      label: "显示加载进度遮罩"
+    },
+    {
+      section: "general",
+      path: "general.sceneLoadDoneDelayMs",
+      type: "number",
+      label: "加载完成收起延迟 (ms)",
+      min: 0,
+      max: 3000,
+      hint: "场景加载完成后，遮罩再停留的时长。设为 0 则立即收起。"
+    },
+    {
+      section: "layout",
+      path: "layout.rightPanelOpenByDefault",
+      type: "checkbox",
+      label: "默认展开右侧播放列表"
+    },
+    {
+      section: "layout",
+      path: "layout.playlistListMinHeightPx",
+      type: "number",
+      label: "播放列表最小高度 (px)",
+      min: 80,
+      max: 400
+    },
+    {
+      section: "audio",
+      path: "audio.defaultVolumePercent",
+      type: "number",
+      label: "默认主音量 (%)",
+      min: 0,
+      max: 100
+    },
+    { section: "audio", path: "audio.defaultMuted", type: "checkbox", label: "默认静音" },
+    {
+      section: "audio",
+      path: "audio.rememberVolume",
+      type: "checkbox",
+      label: "记住音量与静音状态"
+    },
+    {
+      section: "playback",
+      path: "playback.restorePlaylistOnStartup",
+      type: "checkbox",
+      label: "启动时恢复播放列表"
+    },
+    {
+      section: "playback",
+      path: "playback.preferUrlQueryScene",
+      type: "checkbox",
+      label: "URL 参数 ?scene= / ?url= 优先于默认场景",
+      hint: "无播放列表恢复且未指定 URL 参数时使用默认场景 URL。"
+    },
+    {
+      section: "playback",
+      path: "playback.sceneAutoRotate",
+      type: "checkbox",
+      label: "场景自动旋转（可被场景 JSON 覆盖）"
+    },
+    { section: "render", path: "render.antialias", type: "checkbox", label: "抗锯齿" },
+    {
+      section: "render",
+      path: "render.targetFps",
+      type: "number",
+      label: "目标帧率",
+      min: 15,
+      max: 120,
+      hint: "仅当开启低帧率模式时生效。"
+    },
+    { section: "render", path: "render.lowFpsMode", type: "checkbox", label: "低帧率模式" },
+    {
+      section: "render",
+      path: "render.overrideSceneRenderLoop",
+      type: "checkbox",
+      label: "覆盖场景配置（fps / lowFps）",
+      hint: "启用后使用当前播放器设置覆盖场景 JSON 中的 fps / lowFps。"
+    },
+    {
+      section: "render",
+      path: "render.earlyRenderWhileLoading",
+      type: "checkbox",
+      label: "加载中提前渲染",
+      hint: "启用后在场景加载阶段提前启动渲染循环，遮罩期间也可看到画面。"
+    },
+    {
+      section: "immersive",
+      path: "immersive.chromeHideDelayMs",
+      type: "number",
+      label: "全屏时顶/底栏与侧栏隐藏延迟 (ms)",
+      min: 100,
+      max: 3000
+    },
+    {
+      section: "immersive",
+      path: "immersive.rightEdgeStripWidthPx",
+      type: "number",
+      label: "全屏右侧感应条宽度 (px)",
+      min: 12,
+      max: 48
+    },
+    { section: "highlight", path: "highlight.channels.info", type: "color", label: "info 通道颜色" },
+    { section: "highlight", path: "highlight.channels.locate", type: "color", label: "locate 通道颜色" },
+    { section: "highlight", path: "highlight.channels.alarm", type: "color", label: "alarm 通道颜色" }
+  ];
+
+  let playerSettings = null;
+  let playerSettingsFileDefaults = null;
+  let playerSettingsModalDraft = null;
+  let playerSettingsScrollObserver = null;
+
+  const playerSettingsModal = document.getElementById("playerSettingsModal");
+  const playerSettingsNav = document.getElementById("playerSettingsNav");
+  const playerSettingsScroll = document.getElementById("playerSettingsScroll");
+  const playerSettingsSaveBtn = document.getElementById("playerSettingsSaveBtn");
+  const playerSettingsCancelBtn = document.getElementById("playerSettingsCancelBtn");
+  const playerSettingsResetBtn = document.getElementById("playerSettingsResetBtn");
+
+  function clonePlayerSettings(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function isPlainPlayerSettingsObject(value) {
+    return value && typeof value === "object" && !Array.isArray(value);
+  }
+
+  function deepMergePlayerSettings(base, overlay) {
+    if (!isPlainPlayerSettingsObject(base)) {
+      return clonePlayerSettings(overlay || {});
+    }
+    const out = clonePlayerSettings(base);
+    if (!isPlainPlayerSettingsObject(overlay)) {
+      return out;
+    }
+    for (const key of Object.keys(overlay)) {
+      const next = overlay[key];
+      if (isPlainPlayerSettingsObject(next) && isPlainPlayerSettingsObject(out[key])) {
+        out[key] = deepMergePlayerSettings(out[key], next);
+      } else {
+        out[key] = next;
+      }
+    }
+    return out;
+  }
+
+  function splitPlayerSettingsPath(path) {
+    return String(path || "").split(".").filter(Boolean);
+  }
+
+  function getPlayerSettingByPath(obj, path) {
+    let cur = obj;
+    for (const part of splitPlayerSettingsPath(path)) {
+      if (cur == null) return undefined;
+      cur = cur[part];
+    }
+    return cur;
+  }
+
+  function setPlayerSettingByPath(obj, path, value) {
+    const parts = splitPlayerSettingsPath(path);
+    if (!parts.length) return;
+    let cur = obj;
+    for (let i = 0; i < parts.length - 1; i++) {
+      if (!isPlainPlayerSettingsObject(cur[parts[i]])) cur[parts[i]] = {};
+      cur = cur[parts[i]];
+    }
+    cur[parts[parts.length - 1]] = value;
+  }
+
+  async function fetchPlayerSettingsFileDefaults() {
+    try {
+      const response = await fetch(PLAYER_SETTINGS_JSON_URL, { cache: "no-cache" });
+      if (!response.ok) return clonePlayerSettings(PLAYER_SETTINGS_DEFAULTS);
+      return deepMergePlayerSettings(PLAYER_SETTINGS_DEFAULTS, await response.json());
+    } catch (err) {
+      console.warn("[player-settings] fetch failed:", err);
+      return clonePlayerSettings(PLAYER_SETTINGS_DEFAULTS);
+    }
+  }
+
+  function readPlayerSettingsCache() {
+    try {
+      const raw = localStorage.getItem(PLAYER_SETTINGS_STORAGE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return isPlainPlayerSettingsObject(parsed) ? parsed : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function savePlayerSettingsCache(settings) {
+    try {
+      localStorage.setItem(PLAYER_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+    } catch (err) {
+      console.warn("[player-settings] save failed:", err);
+    }
+  }
+
+  function clearPlayerSettingsCache() {
+    try {
+      localStorage.removeItem(PLAYER_SETTINGS_STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  async function loadPlayerSettings() {
+    playerSettingsFileDefaults = await fetchPlayerSettingsFileDefaults();
+    playerSettings = deepMergePlayerSettings(playerSettingsFileDefaults, readPlayerSettingsCache() || {});
+    return playerSettings;
+  }
+
+  async function reloadPlayerSettingsToFileDefaults() {
+    playerSettingsFileDefaults = await fetchPlayerSettingsFileDefaults();
+    playerSettings = clonePlayerSettings(playerSettingsFileDefaults);
+    clearPlayerSettingsCache();
+    applyPlayerSettings({ initial: true });
+    return playerSettings;
+  }
+
+  function syncAudioIntoPlayerSettings() {
+    if (!playerSettings?.audio) return;
+    playerSettings.audio.defaultVolumePercent = Math.round(playerVolume * 100);
+    playerSettings.audio.defaultMuted = playerVolumeMuted;
+  }
+
+  function persistPlayerSettingsFromRuntime() {
+    if (!playerSettings) return;
+    if (playerSettings.audio?.rememberVolume) {
+      syncAudioIntoPlayerSettings();
+    }
+    savePlayerSettingsCache(clonePlayerSettings(playerSettings));
+  }
+
+  function getPlayerDefaultSceneUrl() {
+    return playerSettings?.general?.defaultSceneUrl || PLAYER_SETTINGS_DEFAULTS.general.defaultSceneUrl;
+  }
+
+  function getPlayerMessageToastDurationMs() {
+    return playerSettings?.general?.messageToastDurationMs ?? PLAYER_SETTINGS_DEFAULTS.general.messageToastDurationMs;
+  }
+
+  function getSceneLoadDoneDelayMs() {
+    const n = Number(playerSettings?.general?.sceneLoadDoneDelayMs);
+    if (!Number.isFinite(n)) {
+      return PLAYER_SETTINGS_DEFAULTS.general.sceneLoadDoneDelayMs;
+    }
+    return Math.min(3000, Math.max(0, Math.round(n)));
+  }
+
+  function getImmersiveChromeHideDelayMs() {
+    return playerSettings?.immersive?.chromeHideDelayMs ?? PLAYER_SETTINGS_DEFAULTS.immersive.chromeHideDelayMs;
+  }
+
+  function getPlayerHighlightChannelOptions() {
+    const ch = playerSettings?.highlight?.channels || {};
+    const mk = (hex) => ({ visibleEdgeColor: hex, hiddenEdgeColor: hex });
+    return {
+      info: mk(ch.info || "#ffffff"),
+      locate: mk(ch.locate || "#E6A800"),
+      alarm: mk(ch.alarm || "#DC3A2F")
+    };
+  }
+
+  function applyPlayerSettingsToSysConfig() {
+    if (!playerSettings) return;
+    sysConfig.antialias = playerSettings.render?.antialias ?? sysConfig.antialias;
+    sysConfig.fps = playerSettings.render?.targetFps ?? sysConfig.fps;
+    sysConfig.lowFps = playerSettings.render?.lowFpsMode ?? sysConfig.lowFps;
+    sysConfig.sceneAutoRotate = playerSettings.playback?.sceneAutoRotate ?? sysConfig.sceneAutoRotate;
+    sysConfig.progressFlag = playerSettings.general?.progressOverlayEnabled ?? sysConfig.progressFlag;
+  }
+
+  function applyPlayerAudioFromSettings() {
+    const audio = playerSettings?.audio;
+    if (!audio) return;
+    playerVolume = Math.min(1, Math.max(0, (audio.defaultVolumePercent ?? 100) / 100));
+    playerVolumeMuted = Boolean(audio.defaultMuted);
+    syncPlayerVolumeUi();
+  }
+
+  function applyPlayerSettingsLayout() {
+    const layout = playerSettings?.layout;
+    if (!layout || !rootContainer) return;
+    rootContainer.classList.toggle("rightPanelOpen", layout.rightPanelOpenByDefault !== false);
+    if (Number.isFinite(layout.playlistListMinHeightPx) && playlistListEl) {
+      playlistListEl.style.minHeight = `${layout.playlistListMinHeightPx}px`;
+    }
+    const stripPx = playerSettings?.immersive?.rightEdgeStripWidthPx;
+    const stripEl = document.getElementById("immersiveRightEdgeStrip");
+    if (Number.isFinite(stripPx) && stripEl) {
+      stripEl.style.width = `${stripPx}px`;
+    }
+    if (loadingMask && playerSettings?.general?.loadingMaskText) {
+      loadingMask.textContent = playerSettings.general.loadingMaskText;
+    }
+    syncRightDockToggleUi();
+  }
+
+  function applyPlayerSettings(options = {}) {
+    if (!playerSettings) return;
+    applyPlayerSettingsToSysConfig();
+    applyPlayerSettingsLayout();
+    applyPlayerAudioFromSettings();
+    if (!options.initial && typeof openOrCloseProgressManager === "function") {
+      openOrCloseProgressManager(sysConfig.progressFlag);
+    }
+  }
+
+  function readPlayerSettingsFieldValue(field, inputEl) {
+    if (!inputEl) return undefined;
+    if (field.type === "checkbox") return Boolean(inputEl.checked);
+    if (field.type === "number") {
+      const n = Number(inputEl.value);
+      return Number.isFinite(n) ? n : undefined;
+    }
+    return inputEl.value;
+  }
+
+  function writePlayerSettingsFieldValue(field, inputEl, value) {
+    if (!inputEl) return;
+    if (field.type === "checkbox") {
+      inputEl.checked = Boolean(value);
+      return;
+    }
+    if (field.type === "number") {
+      inputEl.value = value != null ? String(value) : "";
+      return;
+    }
+    inputEl.value = value != null ? String(value) : "";
+  }
+
+  function renderPlayerSettingsModalBody() {
+    if (!playerSettingsScroll || !playerSettingsNav) return;
+    playerSettingsNav.innerHTML = "";
+    playerSettingsScroll.innerHTML = "";
+    for (const section of PLAYER_SETTINGS_SECTIONS) {
+      const navBtn = document.createElement("button");
+      navBtn.type = "button";
+      navBtn.className = "playerSettingsNavBtn";
+      navBtn.dataset.sectionId = section.id;
+      navBtn.textContent = section.title;
+      playerSettingsNav.appendChild(navBtn);
+
+      const sectionEl = document.createElement("section");
+      sectionEl.className = "playerSettingsSection";
+      sectionEl.id = `playerSettingsSection-${section.id}`;
+      sectionEl.dataset.sectionId = section.id;
+      const title = document.createElement("h3");
+      title.className = "playerSettingsSectionTitle";
+      title.textContent = section.title;
+      sectionEl.appendChild(title);
+
+      for (const field of PLAYER_SETTINGS_FIELDS.filter((f) => f.section === section.id)) {
+        const row = document.createElement("div");
+        row.className =
+          field.type === "checkbox" ? "playerSettingsField playerSettingsFieldCheck" : "playerSettingsField";
+        const inputId = `playerSettingsField-${field.path.replace(/\./g, "-")}`;
+        const label = document.createElement("label");
+        label.setAttribute("for", inputId);
+        let inputEl;
+        if (field.type === "checkbox") {
+          inputEl = document.createElement("input");
+          inputEl.type = "checkbox";
+          inputEl.id = inputId;
+          inputEl.dataset.settingsPath = field.path;
+          label.appendChild(inputEl);
+          label.appendChild(document.createTextNode(field.label));
+        } else if (field.type === "select") {
+          label.textContent = field.label;
+          inputEl = document.createElement("select");
+          inputEl.id = inputId;
+          inputEl.dataset.settingsPath = field.path;
+          for (const opt of field.options || []) {
+            const option = document.createElement("option");
+            option.value = opt.value;
+            option.textContent = opt.label;
+            inputEl.appendChild(option);
+          }
+        } else {
+          label.textContent = field.label;
+          inputEl = document.createElement("input");
+          inputEl.type = field.type === "color" ? "color" : field.type === "number" ? "number" : "text";
+          inputEl.id = inputId;
+          inputEl.dataset.settingsPath = field.path;
+          if (field.min != null) inputEl.min = String(field.min);
+          if (field.max != null) inputEl.max = String(field.max);
+        }
+        if (field.type !== "checkbox") {
+          row.appendChild(label);
+          row.appendChild(inputEl);
+        } else {
+          row.appendChild(label);
+        }
+        if (field.hint) {
+          row.classList.add("playerSettingsFieldWithHint");
+          const hint = document.createElement("div");
+          hint.className = "playerSettingsHint";
+          hint.textContent = field.hint;
+          row.appendChild(hint);
+        }
+        sectionEl.appendChild(row);
+      }
+      playerSettingsScroll.appendChild(sectionEl);
+    }
+  }
+
+  function populatePlayerSettingsModalForm(source) {
+    for (const field of PLAYER_SETTINGS_FIELDS) {
+      const inputEl = playerSettingsScroll?.querySelector(`[data-settings-path="${field.path}"]`);
+      writePlayerSettingsFieldValue(field, inputEl, getPlayerSettingByPath(source, field.path));
+    }
+  }
+
+  function readPlayerSettingsModalFormInto(target) {
+    for (const field of PLAYER_SETTINGS_FIELDS) {
+      const inputEl = playerSettingsScroll?.querySelector(`[data-settings-path="${field.path}"]`);
+      const value = readPlayerSettingsFieldValue(field, inputEl);
+      if (value !== undefined) setPlayerSettingByPath(target, field.path, value);
+    }
+  }
+
+  function bindPlayerSettingsScrollSpy() {
+    playerSettingsScrollObserver?.disconnect();
+    const sectionEls = playerSettingsScroll?.querySelectorAll(".playerSettingsSection");
+    if (!sectionEls?.length) return;
+    playerSettingsScrollObserver = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (!visible?.target?.dataset?.sectionId) return;
+        const id = visible.target.dataset.sectionId;
+        playerSettingsNav?.querySelectorAll(".playerSettingsNavBtn").forEach((btn) => {
+          btn.classList.toggle("active", btn.dataset.sectionId === id);
+        });
+      },
+      { root: playerSettingsScroll, rootMargin: "-20% 0px -55% 0px", threshold: [0, 0.15, 0.4, 0.7] }
+    );
+    sectionEls.forEach((el) => playerSettingsScrollObserver.observe(el));
+  }
+
+  function openPlayerSettingsModal() {
+    if (!playerSettingsModal) return;
+    playerSettingsModalDraft = clonePlayerSettings(playerSettings);
+    populatePlayerSettingsModalForm(playerSettingsModalDraft);
+    playerSettingsModal.hidden = false;
+    playerSettingsModal.classList.add("visible");
+    bindPlayerSettingsScrollSpy();
+    closeAllTopMenus?.();
+  }
+
+  function closePlayerSettingsModal() {
+    if (!playerSettingsModal) return;
+    playerSettingsModal.classList.remove("visible");
+    playerSettingsModal.hidden = true;
+    playerSettingsModalDraft = null;
+    playerSettingsScrollObserver?.disconnect();
+  }
+
+  async function onPlayerSettingsSaveClick() {
+    if (!playerSettingsModalDraft) return;
+    readPlayerSettingsModalFormInto(playerSettingsModalDraft);
+    playerSettings = deepMergePlayerSettings(playerSettingsFileDefaults, playerSettingsModalDraft);
+    persistPlayerSettingsFromRuntime();
+    applyPlayerSettings();
+    closePlayerSettingsModal();
+    showMessage("设置已保存并应用。", "success");
+  }
+
+  async function onPlayerSettingsResetClick() {
+    await reloadPlayerSettingsToFileDefaults();
+    populatePlayerSettingsModalForm(playerSettings);
+    showMessage("已恢复为 setting.json 默认。", "info");
+  }
+
+  function initPlayerSettingsModal() {
+    renderPlayerSettingsModalBody();
+    playerSettingsNav?.addEventListener("click", (event) => {
+      const btn = event.target.closest(".playerSettingsNavBtn");
+      if (!btn?.dataset?.sectionId) return;
+      document.getElementById(`playerSettingsSection-${btn.dataset.sectionId}`)?.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    });
+    playerSettingsSaveBtn?.addEventListener("click", () => void onPlayerSettingsSaveClick());
+    playerSettingsCancelBtn?.addEventListener("click", closePlayerSettingsModal);
+    playerSettingsResetBtn?.addEventListener("click", () => void onPlayerSettingsResetClick());
+    playerSettingsModal?.addEventListener("click", (event) => {
+      if (event.target === playerSettingsModal) closePlayerSettingsModal();
+    });
+    document.getElementById("menuOpenPlayerSettings")?.addEventListener("click", () => {
+      openPlayerSettingsModal();
+      closeAllTopMenus?.();
+    });
+    document.getElementById("menuClearPlayerSettingsCache")?.addEventListener("click", async () => {
+      clearPlayerSettingsCache();
+      await reloadPlayerSettingsToFileDefaults();
+      closeAllTopMenus?.();
+      showMessage("已清除播放器设置缓存并恢复默认。", "info");
+    });
+  }
+
+  // ===== Player Settings: end =====
+
+  const canvasContainer = document.getElementById("canvasContainer");
+  const loadingMask = document.getElementById("loadingMask");
+  const messageBox = document.getElementById("messageBox");
+  const rootContainer = document.getElementById("rootContainer");
+  const canvasWrap = document.getElementById("canvasWrap");
+  const rightDockDom = document.getElementById("rightDock");
+  const rightPanelDom = document.getElementById("rightPanel");
+  const topBarEl = document.getElementById("topBar");
+  const bottomBarEl = document.getElementById("bottomBar");
+  const playlistListEl = document.getElementById("playlistList");
+  const playlistAddMenuEl = document.getElementById("playlistAddMenu");
+  const sceneJsonModal = document.getElementById("sceneJsonModal");
+  const sceneJsonContent = document.getElementById("sceneJsonContent");
+  const helpAboutModal = document.getElementById("helpAboutModal");
+  const helpAboutCloseBtn = document.getElementById("helpAboutCloseBtn");
+  const sceneJsonFileInput = document.getElementById("sceneJsonFileInput");
+  const nativeThreeJsonFileInput = document.getElementById("nativeThreeJsonFileInput");
+  const tjzArchiveFileInput = document.getElementById("tjzArchiveFileInput");
+  const playlistOpenBtn = document.getElementById("playlistOpenBtn");
+  const playlistAddSingleFileInput = document.getElementById("playlistAddSingleFileInput");
+  const playlistAddTjzFileInput = document.getElementById("playlistAddTjzFileInput");
+  const playlistFolderInput = document.getElementById("playlistFolderInput");
+  const playlistClearBtn = document.getElementById("playlistClearBtn");
+  const playlistContextMenu = document.getElementById("playlistContextMenu");
+  const playlistContextPlayBtn = document.getElementById("playlistContextPlayBtn");
+  const playlistContextReloadBtn = document.getElementById("playlistContextReloadBtn");
+  const playlistContextCopyPathBtn = document.getElementById("playlistContextCopyPathBtn");
+  const playlistContextCopyNameBtn = document.getElementById("playlistContextCopyNameBtn");
+  const playlistContextRemoveBtn = document.getElementById("playlistContextRemoveBtn");
+  const closeJsonBtn = document.getElementById("closeJsonBtn");
+  const copyJsonBtn = document.getElementById("copyJsonBtn");
+  const canvasIdleOverlay = document.getElementById("canvasIdleOverlay");
+  const idleOpenSceneBtn = document.getElementById("idleOpenSceneBtn");
+  const idleOpenDefaultSceneBtn = document.getElementById("idleOpenDefaultSceneBtn");
+  const idleOpenSceneInput = document.getElementById("idleOpenSceneInput");
+  const playerVolumeMuteBtn = document.getElementById("playerVolumeMuteBtn");
+  const playerVolumeSlider = document.getElementById("playerVolumeSlider");
+
+  const LS_PLAYLIST_MANIFEST_KEY = "threejson.scenePlayer.playlistManifest";
+  const LS_PLAYLIST_CURRENT_ID_KEY = "threejson.scenePlayer.currentPlaylistId";
+  const IDB_NAME = "threejson-scene-player";
+  const IDB_STORE = "playlistFileBlobs";
+  const IDB_VERSION = 1;
+  let playerVolume = 1;
+  let playerVolumeMuted = false;
+
+  /** @type {{ id: string, kind: "url"|"file", label: string, url?: string, file?: File }[]} */
+  const playlist = [];
+  let playlistIdSeq = 0;
+  let currentPlaylistIndex = -1;
+  let loadedSceneJsonText = "";
+  let sceneSwitchLocked = false;
+  let playerEventsBound = false;
+  /** @type {(() => void)|null} */
+  let detachHostedContainerDoorDblclick = null;
+  let playbackRenderPaused = false;
+  let immersiveDockHideTimer = null;
+  let immersivePlaylistPinned = false;
+  let immersiveTopBarHideTimer = null;
+  let immersiveBottomBarHideTimer = null;
+  let playlistContextTargetIndex = -1;
+
+  function loadPlayerVolumePrefs() {
+    applyPlayerAudioFromSettings();
+  }
+
+  function savePlayerVolumePrefs() {
+    if (playerSettings?.audio?.rememberVolume === false) {
+      return;
+    }
+    syncAudioIntoPlayerSettings();
+    persistPlayerSettingsFromRuntime();
+  }
+
+  function applyPlayerMasterVolume() {
+    setThreeJsonSceneAudioPlaybackPolicy({
+      paused: playerVolumeMuted,
+      masterVolume: playerVolumeMuted ? 0 : playerVolume
+    });
+    if (!camera) {
+      return;
+    }
+    const listener = ensureThreeJsonAudioListener(camera);
+    if (!listener || typeof listener.setMasterVolume !== "function") {
+      return;
+    }
+    listener.setMasterVolume(playerVolumeMuted ? 0 : playerVolume);
+  }
+
+  function syncPlayerVolumeUi() {
+    if (playerVolumeMuteBtn) {
+      playerVolumeMuteBtn.textContent = playerVolumeMuted ? "\u{1F507}" : "\u{1F50A}";
+      playerVolumeMuteBtn.title = playerVolumeMuted ? "\u53D6\u6D88\u9759\u97F3" : "\u9759\u97F3";
+      playerVolumeMuteBtn.setAttribute(
+        "aria-label",
+        playerVolumeMuted ? "\u53D6\u6D88\u9759\u97F3" : "\u9759\u97F3"
+      );
+    }
+    if (playerVolumeSlider && document.activeElement !== playerVolumeSlider) {
+      playerVolumeSlider.value = String(Math.round(playerVolume * 100));
+    }
+    applyPlayerMasterVolume();
+    if (sceneRuntime) {
+      setThreeJsonSceneAudioPaused(sceneRuntime, playerVolumeMuted);
+    }
+  }
+
+  function togglePlayerVolumeMute() {
+    playerVolumeMuted = !playerVolumeMuted;
+    savePlayerVolumePrefs();
+    syncPlayerVolumeUi();
+  }
+
+  function onPlayerVolumeSliderInput() {
+    if (!playerVolumeSlider) {
+      return;
+    }
+    const n = Number(playerVolumeSlider.value);
+    playerVolume = Number.isFinite(n) ? Math.min(1, Math.max(0, n / 100)) : playerVolume;
+    if (playerVolume > 0 && playerVolumeMuted) {
+      playerVolumeMuted = false;
+    }
+    savePlayerVolumePrefs();
+    syncPlayerVolumeUi();
+  }
+
+  function resolveUrlQuerySceneUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const fromQuery = params.get("scene") || params.get("url");
+    if (!fromQuery || playerSettings?.playback?.preferUrlQueryScene === false) {
+      return null;
+    }
+    try {
+      return decodeURIComponent(fromQuery);
+    } catch {
+      return fromQuery;
+    }
+  }
+
+  function showPlayerStartupEmptyState() {
+    playlist.length = 0;
+    currentPlaylistIndex = -1;
+    renderPlaylistUi();
+    updatePlayerTopBarSceneTitle();
+    syncTransportBar();
+    setLoading(false);
+    openOrCloseProgressManager(false);
+    setCanvasIdleOverlayVisible(true);
+  }
+
+  async function openDefaultExampleScene() {
+    const url = getPlayerDefaultSceneUrl();
+    playlist.length = 0;
+    currentPlaylistIndex = -1;
+    const idx = appendUrlToPlaylist(url, "portShow.json");
+    await activatePlaylistIndex(idx);
+  }
+
+  function nextPlaylistId() {
+    playlistIdSeq += 1;
+    return `pl-${playlistIdSeq}`;
+  }
+
+  function syncPlaylistIdSeqFromEntries() {
+    let max = 0;
+    for (const entry of playlist) {
+      const m = /^pl-(\d+)$/.exec(entry.id || "");
+      if (m) {
+        max = Math.max(max, Number(m[1]));
+      }
+    }
+    playlistIdSeq = max;
+  }
+
+  function openPlaylistIdb() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(IDB_NAME, IDB_VERSION);
+      req.onerror = () => reject(req.error || new Error("IndexedDB open failed"));
+      req.onsuccess = () => resolve(req.result);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(IDB_STORE)) {
+          db.createObjectStore(IDB_STORE);
+        }
+      };
+    });
+  }
+
+  async function idbPutFileBlob(id, blob) {
+    const db = await openPlaylistIdb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE, "readwrite");
+      tx.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+      tx.onerror = () => {
+        db.close();
+        reject(tx.error);
+      };
+      tx.objectStore(IDB_STORE).put(blob, id);
+    });
+  }
+
+  async function idbGetFileBlob(id) {
+    const db = await openPlaylistIdb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE, "readonly");
+      tx.oncomplete = () => db.close();
+      tx.onerror = () => {
+        db.close();
+        reject(tx.error);
+      };
+      const getReq = tx.objectStore(IDB_STORE).get(id);
+      getReq.onsuccess = () => resolve(getReq.result ?? null);
+      getReq.onerror = () => reject(getReq.error);
+    });
+  }
+
+  async function idbDeleteFileBlob(id) {
+    const db = await openPlaylistIdb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE, "readwrite");
+      tx.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+      tx.onerror = () => {
+        db.close();
+        reject(tx.error);
+      };
+      tx.objectStore(IDB_STORE).delete(id);
+    });
+  }
+
+  async function idbClearAllBlobs() {
+    const db = await openPlaylistIdb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE, "readwrite");
+      tx.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+      tx.onerror = () => {
+        db.close();
+        reject(tx.error);
+      };
+      tx.objectStore(IDB_STORE).clear();
+    });
+  }
+
+  function playlistManifestEntry(entry) {
+    if (!entry) {
+      return null;
+    }
+    if (entry.kind === "url") {
+      return {
+        id: entry.id,
+        kind: "url",
+        url: entry.url,
+        label: entry.label
+      };
+    }
+    if (entry.kind === "file") {
+      return {
+        id: entry.id,
+        kind: "file",
+        label: entry.label,
+        fileName: entry.file?.name || entry.label,
+        fileSize: entry.file?.size,
+        fileLastModified: entry.file?.lastModified
+      };
+    }
+    return null;
+  }
+
+  function savePlaylistState() {
+    try {
+      const manifest = playlist.map(playlistManifestEntry).filter(Boolean);
+      localStorage.setItem(LS_PLAYLIST_MANIFEST_KEY, JSON.stringify(manifest));
+      const current = playlist[currentPlaylistIndex];
+      if (current?.id) {
+        localStorage.setItem(LS_PLAYLIST_CURRENT_ID_KEY, current.id);
+      } else {
+        localStorage.removeItem(LS_PLAYLIST_CURRENT_ID_KEY);
+      }
+    } catch (err) {
+      console.warn("[ScenePlayer] savePlaylistState", err);
+    }
+  }
+
+  async function restorePlaylistFromStorage() {
+    let manifest;
+    try {
+      const raw = localStorage.getItem(LS_PLAYLIST_MANIFEST_KEY);
+      if (!raw) {
+        return false;
+      }
+      manifest = JSON.parse(raw);
+      if (!Array.isArray(manifest) || !manifest.length) {
+        return false;
+      }
+    } catch {
+      return false;
+    }
+
+    playlist.length = 0;
+    currentPlaylistIndex = -1;
+
+    for (const item of manifest) {
+      if (!item || typeof item !== "object" || !item.id) {
+        continue;
+      }
+      if (item.kind === "url" && item.url) {
+        playlist.push({
+          id: item.id,
+          kind: "url",
+          url: item.url,
+          label: item.label || fileNameFromUrl(item.url)
+        });
+        continue;
+      }
+      if (item.kind === "file") {
+        const blob = await idbGetFileBlob(item.id);
+        if (!blob) {
+          continue;
+        }
+        const file = new File([blob], item.fileName || item.label || "scene.json", {
+          type: "application/json",
+          lastModified: item.fileLastModified || Date.now()
+        });
+        playlist.push({
+          id: item.id,
+          kind: "file",
+          file,
+          label: item.label || file.name
+        });
+      }
+    }
+
+    if (!playlist.length) {
+      return false;
+    }
+
+    syncPlaylistIdSeqFromEntries();
+    renderPlaylistUi();
+
+    const savedId = localStorage.getItem(LS_PLAYLIST_CURRENT_ID_KEY);
+    let idx = savedId ? playlist.findIndex((e) => e.id === savedId) : -1;
+    if (idx < 0) {
+      idx = 0;
+    }
+    await activatePlaylistIndex(idx);
+    return true;
+  }
+
+  async function clearPlaylistAndStop() {
+    playlist.length = 0;
+    currentPlaylistIndex = -1;
+    try {
+      localStorage.removeItem(LS_PLAYLIST_MANIFEST_KEY);
+      localStorage.removeItem(LS_PLAYLIST_CURRENT_ID_KEY);
+      await idbClearAllBlobs();
+    } catch (err) {
+      console.warn("[ScenePlayer] clearPlaylist storage", err);
+    }
+    stopPlayerAndClearScene();
+    showMessage("已清空播放列表并停止播放。", "info");
+  }
+
+  function fileNameFromUrl(url) {
+    try {
+      const u = new URL(url, window.location.href);
+      const seg = u.pathname.split("/").filter(Boolean);
+      return seg.length ? seg[seg.length - 1] : url;
+    } catch {
+      const cleaned = String(url).split("?")[0];
+      const seg = cleaned.split(/[/\\]/).filter(Boolean);
+      return seg.length ? seg[seg.length - 1] : cleaned;
+    }
+  }
+
+  function playlistEntryJsonFileName(entry) {
+    if (!entry) {
+      return "";
+    }
+    if (entry.kind === "file" && entry.file?.name) {
+      return String(entry.file.name).trim();
+    }
+    if (entry.kind === "url" && entry.url) {
+      return String(fileNameFromUrl(entry.url) || "").trim();
+    }
+    return "";
+  }
+
+  function updatePlayerTopBarSceneTitle() {
+    const el = document.getElementById("topBarSceneTitle");
+    if (!el) {
+      return;
+    }
+    const entry = playlist[currentPlaylistIndex];
+    const fn = playlistEntryJsonFileName(entry);
+    el.textContent = fn ? `场景播放器 - ${fn}` : "场景播放器";
+  }
+
+  let scene;
+  let camera;
+  let renderer;
+  let controls;
+  let composer;
+  let sceneRuntime;
+  let previewBindSceneEventsOverride = undefined;
+  let renderScene;
+  let outlinePass;
+  let warnningPass;
+  let alarmPass;
+  let highlightPageSetup = null;
+  let selectionVisual = null;
+  let renderLoop;
+  let keyDownHandlerFn = null;
+
+  const sysConfig = {
+    canvasWidth: window.innerWidth,
+    canvasHeight: window.innerHeight,
+    axesShow: false,
+    gridShow: false,
+    screenFullFlag: true,
+    sceneLocked: true,
+    dragLocked: true,
+    rightClickedFlag: false,
+    sceneAutoRotate: false,
+    antialias: true,
+    ratioRate: 1,
+    autoResize: true,
+    fps: 60,
+    lowFps: false,
+    progressFlag: true,
+    optimizeJson: true,
+    windowSizeNow: {
+      width: window.innerWidth,
+      height: window.innerHeight
+    },
+    firstAutoResize: true,
+    meshObjects: [],
+    jsonData: {},
+    callFlags: {
+      refreshInterval: 15,
+      errorCount: {
+        infoPanelErrorCount: 0,
+        heatMapErrorCount: 0
+      }
+    },
+    initFlags: {
+      boxInitFlag: false,
+      groupInitFlag: false,
+      domainModelInitFlag: false,
+      infoPanelInitFlag: false,
+      lineInitFlag: false,
+      heatMapInitFlag: false,
+      highLightInitFlag: false,
+      sphereInitFlag: false
+    },
+    clickHighLightFlag: false
+  };
+
+  function resetInitFlags() {
+    for (const key of Object.keys(sysConfig.initFlags)) {
+      sysConfig.initFlags[key] = false;
+    }
+  }
+
+  function unbindPlayerEventListeners() {
+    if (!playerEventsBound) {
+      return;
+    }
+    window.removeEventListener("resize", windowResize);
+    detachHostedContainerDoorDblclick?.();
+    detachHostedContainerDoorDblclick = null;
+    document.removeEventListener("dblclick", mouseDbClickHandler);
+    canvasContainer.removeEventListener("contextmenu", rightClickHandler);
+    if (keyDownHandlerFn) {
+      document.removeEventListener("keydown", keyDownHandlerFn);
+      keyDownHandlerFn = null;
+    }
+    playerEventsBound = false;
+  }
+
+  function disposePlayerPostProcessing() {
+    try {
+      selectionVisual?.clearAll?.();
+      selectionVisual?.dispose?.();
+      highlightPageSetup = null;
+      selectionVisual = null;
+      renderLoop?.setComposer?.(null);
+    } catch {
+      /* ignore */
+    }
+    for (const pass of [composer, alarmPass, warnningPass, outlinePass, renderScene]) {
+      if (!pass) {
+        continue;
+      }
+      try {
+        pass.dispose?.();
+      } catch (error) {
+        console.warn("[ScenePlayer] post-processing dispose skipped", error);
+      }
+    }
+    composer = null;
+    renderScene = null;
+    outlinePass = null;
+    warnningPass = null;
+    alarmPass = null;
+  }
+
+  function teardownPlayerScene() {
+    unbindPlayerEventListeners();
+    renderLoop?.stop?.();
+    cancelActiveDeployScheduler();
+    disposePlayerPostProcessing();
+    const canvasEl = canvasContainer;
+    try {
+      teardownThreeJsonSceneAudioFromRuntime(sceneRuntime);
+    } catch {
+      /* ignore */
+    }
+    try {
+      disposeTrackedResources();
+    } catch (error) {
+      console.warn("[ScenePlayer] resourceClear", error);
+      clearObjectRegistry();
+    }
+    try {
+      sceneRuntime?.dispose?.();
+    } catch {
+      /* ignore */
+    }
+    try {
+      if (renderer && canvasEl && typeof renderer.getContext === "function") {
+        const gl = renderer.getContext();
+        if (gl) {
+          gl.clearColor(47 / 255, 47 / 255, 47 / 255, 1);
+          gl.viewport(0, 0, canvasEl.width, canvasEl.height);
+          gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+        }
+      }
+    } catch {
+      /* WebGL 可能已失效，忽略 */
+    }
+    try {
+      if (canvasEl) {
+        const w = canvasEl.width;
+        canvasEl.width = w;
+      }
+    } catch {
+      /* ignore */
+    }
+    scene = null;
+    camera = null;
+    renderer = null;
+    controls = null;
+    composer = null;
+    renderScene = null;
+    outlinePass = null;
+    warnningPass = null;
+    alarmPass = null;
+    sceneRuntime = null;
+    renderLoop = null;
+    resetInitFlags();
+    sysConfig.meshObjects = [];
+  }
+
+  function syncRightDockToggleUi() {
+    const open = rootContainer.classList.contains("rightPanelOpen");
+    const toggleBtn = document.getElementById("bottomBarPlaylistToggle");
+    if (toggleBtn) {
+      toggleBtn.setAttribute("aria-expanded", open ? "true" : "false");
+      toggleBtn.title = open ? "折叠播放列表" : "展开播放列表";
+    }
+  }
+
+  function setCanvasIdleOverlayVisible(visible) {
+    if (!canvasIdleOverlay) {
+      return;
+    }
+    const on = Boolean(visible);
+    canvasIdleOverlay.classList.toggle("isVisible", on);
+    canvasIdleOverlay.setAttribute("aria-hidden", on ? "false" : "true");
+  }
+
+  function syncTransportBar() {
+    const pp = document.getElementById("bottomBtnPlayPause");
+    const noScene = !renderLoop;
+    if (pp) {
+      if (noScene) {
+        pp.disabled = true;
+        pp.textContent = "▶";
+        pp.title = "播放";
+      } else {
+        pp.disabled = false;
+        const running = Boolean(renderLoop?.isRunning?.());
+        pp.textContent = running ? "⏸" : "▶";
+        pp.title = running ? "暂停" : "播放";
+      }
+    }
+    const prev = document.getElementById("bottomBtnPrev");
+    const next = document.getElementById("bottomBtnNext");
+    if (prev) {
+      prev.disabled = currentPlaylistIndex <= 0;
+    }
+    if (next) {
+      next.disabled =
+        currentPlaylistIndex < 0 || currentPlaylistIndex >= playlist.length - 1;
+    }
+  }
+
+  function stopPlayerAndClearScene() {
+    setLoading(false);
+    openOrCloseProgressManager(false);
+    teardownPlayerScene();
+    currentPlaylistIndex = -1;
+    loadedSceneJsonText = "";
+    sysConfig.jsonData = null;
+    playbackRenderPaused = false;
+    renderPlaylistUi();
+    updatePlayerTopBarSceneTitle();
+    syncTransportBar();
+    setCanvasIdleOverlayVisible(true);
+    savePlaylistState();
+  }
+
+  function togglePlaybackRender() {
+    if (!renderLoop) {
+      return;
+    }
+    if (renderLoop.isRunning()) {
+      playbackRenderPaused = true;
+      renderLoop.stop();
+      if (sceneRuntime) {
+        setThreeJsonSceneAudioPaused(sceneRuntime, true);
+      }
+    } else {
+      playbackRenderPaused = false;
+      renderLoop.start();
+      if (sceneRuntime && !playerVolumeMuted) {
+        setThreeJsonSceneAudioPaused(sceneRuntime, false);
+      }
+    }
+    syncTransportBar();
+  }
+
+  function stopPlaybackRender() {
+    if (!renderLoop) {
+      return;
+    }
+    playbackRenderPaused = true;
+    renderLoop.stop();
+    if (sceneRuntime) {
+      setThreeJsonSceneAudioPaused(sceneRuntime, true);
+    }
+    syncTransportBar();
+  }
+
+
+  function showImmersiveTopBar() {
+    if (!rootContainer.classList.contains("immersiveFullscreen")) {
+      return;
+    }
+    if (immersiveTopBarHideTimer) {
+      window.clearTimeout(immersiveTopBarHideTimer);
+      immersiveTopBarHideTimer = null;
+    }
+    topBarEl?.classList.add("immersiveChromeVisible");
+  }
+
+  function scheduleHideImmersiveTopBar() {
+    if (!rootContainer.classList.contains("immersiveFullscreen")) {
+      return;
+    }
+    if (immersiveTopBarHideTimer) {
+      window.clearTimeout(immersiveTopBarHideTimer);
+    }
+    immersiveTopBarHideTimer = window.setTimeout(() => {
+      immersiveTopBarHideTimer = null;
+      topBarEl?.classList.remove("immersiveChromeVisible");
+    }, getImmersiveChromeHideDelayMs());
+  }
+
+  function showImmersiveBottomBar() {
+    if (!rootContainer.classList.contains("immersiveFullscreen")) {
+      return;
+    }
+    if (immersiveBottomBarHideTimer) {
+      window.clearTimeout(immersiveBottomBarHideTimer);
+      immersiveBottomBarHideTimer = null;
+    }
+    bottomBarEl?.classList.add("immersiveChromeVisible");
+  }
+
+  function scheduleHideImmersiveBottomBar() {
+    if (!rootContainer.classList.contains("immersiveFullscreen")) {
+      return;
+    }
+    if (immersiveBottomBarHideTimer) {
+      window.clearTimeout(immersiveBottomBarHideTimer);
+    }
+    immersiveBottomBarHideTimer = window.setTimeout(() => {
+      immersiveBottomBarHideTimer = null;
+      bottomBarEl?.classList.remove("immersiveChromeVisible");
+    }, getImmersiveChromeHideDelayMs());
+  }
+
+  function showImmersiveDock() {
+    if (!rootContainer.classList.contains("immersiveFullscreen")) {
+      return;
+    }
+    if (immersiveDockHideTimer) {
+      window.clearTimeout(immersiveDockHideTimer);
+      immersiveDockHideTimer = null;
+    }
+    rootContainer.classList.add("rightPanelOpen");
+    syncRightDockToggleUi();
+    rightDockDom?.classList.add("immersiveDockVisible");
+  }
+
+  function scheduleHideImmersiveDock() {
+    if (!rootContainer.classList.contains("immersiveFullscreen")) {
+      return;
+    }
+    if (immersivePlaylistPinned) {
+      return;
+    }
+    if (immersiveDockHideTimer) {
+      window.clearTimeout(immersiveDockHideTimer);
+    }
+    immersiveDockHideTimer = window.setTimeout(() => {
+      immersiveDockHideTimer = null;
+      rightDockDom?.classList.remove("immersiveDockVisible");
+    }, getImmersiveChromeHideDelayMs());
+  }
+
+  function updateImmersiveFullscreenChrome() {
+    const immersive = document.fullscreenElement === rootContainer;
+    rootContainer.classList.toggle("immersiveFullscreen", immersive);
+    if (!immersive) {
+      immersivePlaylistPinned = false;
+      topBarEl?.classList.remove("immersiveChromeVisible");
+      bottomBarEl?.classList.remove("immersiveChromeVisible");
+      if (immersiveTopBarHideTimer) {
+        window.clearTimeout(immersiveTopBarHideTimer);
+        immersiveTopBarHideTimer = null;
+      }
+      if (immersiveBottomBarHideTimer) {
+        window.clearTimeout(immersiveBottomBarHideTimer);
+        immersiveBottomBarHideTimer = null;
+      }
+      rightDockDom?.classList.remove("immersiveDockVisible");
+      if (immersiveDockHideTimer) {
+        window.clearTimeout(immersiveDockHideTimer);
+        immersiveDockHideTimer = null;
+      }
+    }
+    windowResize();
+    requestAnimationFrame(() => requestAnimationFrame(windowResize));
+  }
+
+  function closePlaylistContextMenu() {
+    playlistContextMenu?.classList.remove("visible");
+    playlistContextTargetIndex = -1;
+    const copyItem = document.getElementById("playlistContextCopyItem");
+    copyItem?.classList.remove("submenuFlipLeft");
+    updatePlaylistContextSubmenuArrow(copyItem);
+  }
+
+  function updatePlaylistContextSubmenuArrow(item) {
+    const arrow = item?.querySelector(".playlistContextArrow");
+    if (!arrow) {
+      return;
+    }
+    arrow.textContent = item.classList.contains("submenuFlipLeft") ? "◂" : "▸";
+  }
+
+  function syncPlaylistContextSubmenuFlip() {
+    const item = document.getElementById("playlistContextCopyItem");
+    const submenu = item?.querySelector(".playlistContextSubmenu");
+    if (!item || !submenu || !playlistContextMenu?.classList.contains("visible")) {
+      return;
+    }
+    const gap = 4;
+    const prevDisplay = submenu.style.display;
+    const prevVisibility = submenu.style.visibility;
+    const prevPointerEvents = submenu.style.pointerEvents;
+    submenu.style.visibility = "hidden";
+    submenu.style.display = "block";
+    submenu.style.pointerEvents = "none";
+    const submenuWidth = submenu.offsetWidth + 8;
+    submenu.style.display = prevDisplay;
+    submenu.style.visibility = prevVisibility;
+    submenu.style.pointerEvents = prevPointerEvents;
+
+    const itemRect = item.getBoundingClientRect();
+    const needsFlip = itemRect.right + submenuWidth + gap > window.innerWidth;
+    item.classList.toggle("submenuFlipLeft", needsFlip);
+    updatePlaylistContextSubmenuArrow(item);
+  }
+
+  function openPlaylistContextMenu(clientX, clientY, index) {
+    if (!playlistContextMenu || index < 0 || index >= playlist.length) {
+      return;
+    }
+    playlistContextTargetIndex = index;
+    const copyItem = document.getElementById("playlistContextCopyItem");
+    copyItem?.classList.remove("submenuFlipLeft");
+    updatePlaylistContextSubmenuArrow(copyItem);
+    playlistContextMenu.classList.add("visible");
+    playlistContextMenu.style.left = "0px";
+    playlistContextMenu.style.top = "0px";
+    const menuRect = playlistContextMenu.getBoundingClientRect();
+    const maxLeft = Math.max(8, window.innerWidth - menuRect.width - 8);
+    const maxTop = Math.max(8, window.innerHeight - menuRect.height - 8);
+    const left = Math.min(Math.max(8, clientX), maxLeft);
+    const top = Math.min(Math.max(8, clientY), maxTop);
+    playlistContextMenu.style.left = `${left}px`;
+    playlistContextMenu.style.top = `${top}px`;
+    requestAnimationFrame(() => {
+      syncPlaylistContextSubmenuFlip();
+      requestAnimationFrame(syncPlaylistContextSubmenuFlip);
+    });
+  }
+
+  function resolvePlaylistContextTargetIndex() {
+    const idx = playlistContextTargetIndex;
+    return Number.isFinite(idx) && idx >= 0 && idx < playlist.length ? idx : -1;
+  }
+
+  function getPlaylistEntryAtContextTarget() {
+    const idx = resolvePlaylistContextTargetIndex();
+    return idx >= 0 ? playlist[idx] : null;
+  }
+
+  function getPlaylistEntryDisplayName(entry) {
+    if (!entry) {
+      return "";
+    }
+    if (entry.kind === "url" && entry.url) {
+      return entry.label || fileNameFromUrl(entry.url);
+    }
+    if (entry.kind === "file" && entry.file) {
+      return entry.label || entry.file.name || "";
+    }
+    return entry.label || "";
+  }
+
+  function getPlaylistEntryPathText(entry) {
+    if (!entry) {
+      return "";
+    }
+    if (entry.kind === "url" && entry.url) {
+      return entry.url;
+    }
+    if (entry.kind === "file" && entry.file) {
+      const rel = entry.file.webkitRelativePath;
+      if (rel) {
+        return rel;
+      }
+      return entry.file.name || entry.label || "";
+    }
+    return entry.label || "";
+  }
+
+  async function copyTextToClipboard(text) {
+    const value = String(text || "").trim();
+    if (!value) {
+      showMessage("没有可复制的内容。", "warning");
+      return false;
+    }
+    try {
+      await navigator.clipboard.writeText(value);
+      showMessage("已复制到剪贴板。", "success");
+      return true;
+    } catch (err) {
+      console.warn("[ScenePlayer] clipboard", err);
+      showMessage("复制失败，请手动复制。", "warning");
+      return false;
+    }
+  }
+
+  async function playPlaylistContextTarget() {
+    const idx = resolvePlaylistContextTargetIndex();
+    if (idx < 0) {
+      showMessage("未定位到播放列表条目。", "warning");
+      return;
+    }
+    playbackRenderPaused = false;
+    await activatePlaylistIndex(idx);
+  }
+
+  async function reloadPlaylistContextTarget() {
+    const idx = resolvePlaylistContextTargetIndex();
+    if (idx < 0) {
+      showMessage("未定位到播放列表条目。", "warning");
+      return;
+    }
+    playbackRenderPaused = false;
+    await activatePlaylistIndex(idx);
+  }
+
+  async function copyPlaylistContextPath() {
+    const entry = getPlaylistEntryAtContextTarget();
+    await copyTextToClipboard(getPlaylistEntryPathText(entry));
+  }
+
+  async function copyPlaylistContextName() {
+    const entry = getPlaylistEntryAtContextTarget();
+    await copyTextToClipboard(getPlaylistEntryDisplayName(entry));
+  }
+
+  async function removePlaylistEntryAt(index) {
+    if (index < 0 || index >= playlist.length) {
+      return;
+    }
+    const entry = playlist[index];
+    const label = entry.label || `条目 ${index + 1}`;
+    const wasCurrent = index === currentPlaylistIndex;
+    playlist.splice(index, 1);
+    if (entry.kind === "file" && entry.id) {
+      try {
+        await idbDeleteFileBlob(entry.id);
+      } catch (err) {
+        console.warn("[ScenePlayer] idbDeleteFileBlob", err);
+      }
+    }
+    if (!playlist.length) {
+      currentPlaylistIndex = -1;
+      renderPlaylistUi();
+      savePlaylistState();
+      if (wasCurrent) {
+        stopPlayerAndClearScene();
+      }
+      showMessage(`已从播放列表移除「${label}」。`, "info");
+      return;
+    }
+    if (currentPlaylistIndex > index) {
+      currentPlaylistIndex -= 1;
+    }
+    renderPlaylistUi();
+    savePlaylistState();
+    if (wasCurrent) {
+      const nextIdx = Math.min(index, playlist.length - 1);
+      playbackRenderPaused = false;
+      await activatePlaylistIndex(nextIdx);
+    }
+    showMessage(`已从播放列表移除「${label}」。`, "info");
+  }
+
+  async function removePlaylistContextTarget() {
+    const idx = resolvePlaylistContextTargetIndex();
+    if (idx < 0) {
+      showMessage("未定位到播放列表条目。", "warning");
+      return;
+    }
+    await removePlaylistEntryAt(idx);
+  }
+
+  function renderPlaylistUi() {
+    if (!playlistListEl) {
+      return;
+    }
+    closePlaylistContextMenu();
+    playlistListEl.replaceChildren();
+    playlist.forEach((entry, idx) => {
+      const row = document.createElement("button");
+      row.type = "button";
+      row.className = `playlistRow${idx === currentPlaylistIndex ? " playlistRowActive" : ""}`;
+      row.dataset.playlistIndex = String(idx);
+      row.textContent = entry.label || `条目 ${idx + 1}`;
+      row.title = entry.kind === "url" ? entry.url : entry.file?.name || "";
+      row.addEventListener("click", () => {
+        void activatePlaylistIndex(idx);
+      });
+      row.addEventListener("contextmenu", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        openPlaylistContextMenu(event.clientX, event.clientY, idx);
+      });
+      playlistListEl.appendChild(row);
+    });
+    syncTransportBar();
+  }
+
+  function appendUrlToPlaylist(url, label) {
+    const entry = {
+      id: nextPlaylistId(),
+      kind: "url",
+      url,
+      label: label || fileNameFromUrl(url)
+    };
+    playlist.push(entry);
+    renderPlaylistUi();
+    savePlaylistState();
+    return playlist.length - 1;
+  }
+
+  async function appendFileToPlaylist(file) {
+    const id = nextPlaylistId();
+    try {
+      await idbPutFileBlob(id, file);
+    } catch (err) {
+      console.warn("[ScenePlayer] idbPutFileBlob", err);
+    }
+    const entry = {
+      id,
+      kind: "file",
+      file,
+      label: file.name
+    };
+    playlist.push(entry);
+    renderPlaylistUi();
+    savePlaylistState();
+    return playlist.length - 1;
+  }
+
+  function isTjzSceneFileName(name = "") {
+    return /\.tjz$/i.test(String(name || "").trim());
+  }
+
+  function isJsonSceneFileName(name = "") {
+    return /\.(json|threejson|tjson)$/i.test(String(name || "").trim());
+  }
+
+  function isSupportedSceneFileName(name = "") {
+    return isTjzSceneFileName(name) || isJsonSceneFileName(name);
+  }
+
+  async function appendFilesToPlaylistOnly(files) {
+    const sceneFiles = files.filter((f) => isSupportedSceneFileName(f.name));
+    if (!sceneFiles.length) {
+      showMessage("未找到可添加的 JSON 或 .tjz 场景文件。", "warning");
+      return 0;
+    }
+    sceneFiles.sort((a, b) => {
+      const pa = a.webkitRelativePath || a.name;
+      const pb = b.webkitRelativePath || b.name;
+      return pa.localeCompare(pb, undefined, { sensitivity: "base" });
+    });
+    for (const f of sceneFiles) {
+      await appendFileToPlaylist(f);
+    }
+    showMessage(`已添加 ${sceneFiles.length} 个场景到播放列表。`, "success");
+    return sceneFiles.length;
+  }
+
+  function hasAnySceneLight(rootScene) {
+    if (!rootScene?.traverse) {
+      return false;
+    }
+    let hit = false;
+    rootScene.traverse((obj) => {
+      if (hit) {
+        return;
+      }
+      if (obj?.isLight === true) {
+        hit = true;
+      }
+    });
+    return hit;
+  }
+
+  function ensureDefaultSceneLights(rootScene) {
+    return ensureDefaultSceneLightsInScene(rootScene, { autoFillLights: true });
+  }
+
+  function assignPlayerSceneRuntime(runtime) {
+    if (!runtime || typeof runtime !== "object") {
+      return;
+    }
+    sceneRuntime = runtime;
+    scene = runtime.scene ?? scene;
+    camera = runtime.camera ?? camera;
+    renderer = runtime.renderer ?? renderer;
+    controls = runtime.controls ?? controls;
+    renderLoop = runtime.renderLoop ?? renderLoop;
+  }
+
+  function startPlayerRenderLoopEarly() {
+    if (!renderLoop || playbackRenderPaused) {
+      return;
+    }
+    renderLoop.setComposer(composer ?? null);
+    renderLoop.start();
+    syncTransportBar();
+  }
+
+  async function applyTjzArchiveToPlayer(bytes, hintLabel = "") {
+    const inspection = await inspectJsonSceneArchiveEntry(bytes);
+    const entryKind = inspection?.entryKind || "unknown";
+    teardownPlayerScene();
+    const loadedRuntime = await createJsonSceneFromArchive(bytes, {
+      canvas: canvasContainer,
+      autoFillLights: true,
+      autoFillCamera: true,
+      sceneAutoRotate: sysConfig.sceneAutoRotate,
+      missingAssetPolicy: "warn",
+      onWarning: (msg) => console.warn("[tjz-load]", msg),
+      async onRuntimeReady(ctx) {
+        assignPlayerSceneRuntime(ctx?.runtime);
+        windowResize();
+        if (playerSettings?.render?.earlyRenderWhileLoading !== false) {
+          startPlayerRenderLoopEarly();
+        }
+      },
+      async onSceneReady(ctx) {
+        try {
+          const { bootstrapFirstPersonExtensionsFromScene } = await import(
+            "./extensions/fps-walk/bootstrapFirstPersonExtensions.js"
+          );
+          await bootstrapFirstPersonExtensionsFromScene(ctx);
+        } catch (err) {
+          console.warn("[ScenePlayer] firstPerson extensions bootstrap skipped", err);
+        }
+      }
+    });
+    assignPlayerSceneRuntime(loadedRuntime);
+    const normalized = loadedRuntime?.normalizedPayload;
+    if (normalized && typeof normalized === "object") {
+      sysConfig.jsonData = normalized;
+      applyJsonToSysConfigLists();
+      loadedSceneJsonText = JSON.stringify(normalized, null, 2);
+    } else {
+      sysConfig.jsonData = null;
+      loadedSceneJsonText = "";
+    }
+    markPlayerSceneLoaded();
+    trackDisposableResource(scene);
+    windowResize();
+    bindThreeJsonSceneAudioUnlock(canvasContainer, () => sceneRuntime);
+    applyPlayerMasterVolume();
+    void resumeThreeJsonAudioContextFromCamera(camera);
+    if (sceneRuntime) {
+      setThreeJsonSceneAudioPaused(sceneRuntime, playerVolumeMuted);
+    }
+    initEventListener();
+    initHighLight();
+    superAnimate();
+    finishSceneLoad();
+    updatePlayerTopBarSceneTitle(hintLabel);
+  }
+
+  async function handleOpenSceneFile(file, { activate = false } = {}) {
+    if (!file) {
+      return;
+    }
+    if (!isSupportedSceneFileName(file.name)) {
+      showMessage("请选择 JSON 或 .tjz 场景文件。", "warning");
+      return;
+    }
+    if (activate) {
+      playbackRenderPaused = false;
+    }
+    const idx = await appendFileToPlaylist(file);
+    if (activate) {
+      await activatePlaylistIndex(idx);
+      return;
+    }
+    showMessage(`已添加 ${file.name} 到播放列表。`, "success");
+  }
+
+  function applyJsonToSysConfigLists() {
+    // boxModelList 的 instanceCode 合并由 createJsonScene → normalizeScenePayload 统一执行；
+    // 此处若再 coalesceBoxModelList，会破坏已合并的 transforms（如 roomShow 中间空调实例）。
+  }
+
+  async function applyParsedSceneToPlayer(data) {
+    const payload = resolveScenePayloadForLoad(data);
+    if (!validateLoadedScenePayload(payload)) {
+      throw new Error("JSON 格式无效（需要 worldInfo 或标准 objectList）");
+    }
+    ensureThreeJsonIdsOnScenePayload(payload);
+    loadedSceneJsonText = JSON.stringify(payload, null, 2);
+    teardownPlayerScene();
+    sysConfig.jsonData = payload;
+    applyJsonToSysConfigLists();
+    await initWorld();
+    updatePlayerTopBarSceneTitle();
+  }
+
+  async function applyPreviewPayloadFromEditor(payload, options = {}) {
+    previewBindSceneEventsOverride = options.bindSceneEvents;
+    try {
+      await applyParsedSceneToPlayer(payload);
+    } finally {
+      previewBindSceneEventsOverride = undefined;
+    }
+  }
+
+  const SCENE_PREVIEW_CHANNEL = "threejson:scene-preview";
+  const SCENE_PREVIEW_VERSION = 1;
+
+  function isEditorPreviewUrl() {
+    return new URLSearchParams(window.location.search).get("editorPreview") === "1";
+  }
+
+  function isScenePreviewMessageEvent(event) {
+    if (!event || typeof event.data !== "object" || event.data === null) {
+      return false;
+    }
+    if (event.origin && event.origin !== window.location.origin) {
+      return false;
+    }
+    return event.data.channel === SCENE_PREVIEW_CHANNEL && event.data.version === SCENE_PREVIEW_VERSION;
+  }
+
+  function postScenePreviewMessage(target, message) {
+    if (!target || target.closed) {
+      return false;
+    }
+    target.postMessage(
+      { channel: SCENE_PREVIEW_CHANNEL, version: SCENE_PREVIEW_VERSION, ...message },
+      window.location.origin
+    );
+    return true;
+  }
+
+  let editorPreviewLoadGeneration = 0;
+
+  function notifyEditorPreviewReady() {
+    if (!window.opener || window.opener.closed) {
+      return;
+    }
+    postScenePreviewMessage(window.opener, { action: "ready" });
+  }
+
+  function notifyEditorPreviewLoaded(ok, errorMessage = "") {
+    if (!window.opener || window.opener.closed) {
+      return;
+    }
+    postScenePreviewMessage(window.opener, {
+      action: "loaded",
+      ok: Boolean(ok),
+      error: errorMessage || undefined
+    });
+  }
+
+  function installEditorPreviewMessageListener() {
+    window.addEventListener("message", (event) => {
+      if (!isScenePreviewMessageEvent(event)) {
+        return;
+      }
+      if (window.opener && event.source !== window.opener) {
+        return;
+      }
+      if (event.data?.action !== "load") {
+        return;
+      }
+      void (async () => {
+        const gen = ++editorPreviewLoadGeneration;
+        setCanvasIdleOverlayVisible(false);
+        setLoading(true);
+        setLoadingMessage("正在加载编辑器预览场景...");
+        try {
+          const payload = event.data.payload;
+          if (!payload || typeof payload !== "object") {
+            throw new Error("预览消息缺少有效 payload。");
+          }
+          await applyPreviewPayloadFromEditor(payload, {
+            bindSceneEvents: event.data.bindSceneEvents,
+            label: event.data.label
+          });
+          if (gen !== editorPreviewLoadGeneration) {
+            return;
+          }
+          notifyEditorPreviewLoaded(true);
+          showMessage("已加载编辑器预览场景。", "success");
+        } catch (error) {
+          if (gen !== editorPreviewLoadGeneration) {
+            return;
+          }
+          const message = String(error.message || error);
+          notifyEditorPreviewLoaded(false, message);
+          showMessage(message, "error");
+          console.warn("[scene-player preview]", error);
+        } finally {
+          if (gen === editorPreviewLoadGeneration) {
+            setLoading(false);
+          }
+        }
+      })();
+    });
+  }
+
+  function bootstrapEditorPreviewFromOpener() {
+    if (!isEditorPreviewUrl()) {
+      return false;
+    }
+    installEditorPreviewMessageListener();
+    setLoadingMessage("等待编辑器推送场景…");
+    setLoading(true);
+    window.setTimeout(notifyEditorPreviewReady, 0);
+    window.setTimeout(notifyEditorPreviewReady, 250);
+    return true;
+  }
+
+  async function activatePlaylistIndex(index) {
+    if (sceneSwitchLocked || index < 0 || index >= playlist.length) {
+      return;
+    }
+    sceneSwitchLocked = true;
+    currentPlaylistIndex = index;
+    renderPlaylistUi();
+    savePlaylistState();
+    setCanvasIdleOverlayVisible(false);
+    const entry = playlist[index];
+    try {
+      setLoadingMessage("正在读取场景...");
+      openOrCloseProgressManager(sysConfig.progressFlag);
+      if (entry.kind === "url" && entry.url) {
+        if (isTjzSceneFileName(entry.url)) {
+          const response = await fetch(entry.url);
+          if (!response.ok) {
+            throw new Error(`加载场景失败：${response.status}`);
+          }
+          const bytes = new Uint8Array(await response.arrayBuffer());
+          await applyTjzArchiveToPlayer(bytes, entry.label || fileNameFromUrl(entry.url));
+        } else {
+          const response = await fetch(entry.url);
+          if (!response.ok) {
+            throw new Error(`加载场景失败：${response.status}`);
+          }
+          const rawText = await response.text();
+          const data = JSON.parse(rawText);
+          await applyParsedSceneToPlayer(data);
+        }
+      } else if (entry.kind === "file" && entry.file) {
+        if (isTjzSceneFileName(entry.file.name)) {
+          const bytes = new Uint8Array(await entry.file.arrayBuffer());
+          await applyTjzArchiveToPlayer(bytes, entry.file.name);
+        } else {
+          const rawText = await entry.file.text();
+          const data = JSON.parse(rawText);
+          const wasNative = isThreeJsObjectExportJson(data);
+          await applyParsedSceneToPlayer(data);
+          if (wasNative) {
+            showMessage(
+              `已识别为 Three.js 原生 JSON 并载入 ${entry.file.name}（与「加载原生 JSON」等效）`,
+              "info"
+            );
+          }
+        }
+      } else {
+        throw new Error("播放列表条目无效");
+      }
+    } catch (err) {
+      setLoading(false);
+      openOrCloseProgressManager(false);
+      showMessage(`加载场景失败：${err.message}`, "error");
+      console.error(err);
+      if (!renderLoop) {
+        setCanvasIdleOverlayVisible(true);
+      }
+    } finally {
+      sceneSwitchLocked = false;
+      syncTransportBar();
+    }
+  }
+
+  async function handleLoadNativeThreeJsonPlayerFile(file) {
+    if (!file || sceneSwitchLocked) {
+      return;
+    }
+    sceneSwitchLocked = true;
+    setCanvasIdleOverlayVisible(false);
+    try {
+      setLoadingMessage("正在读取原生 Three JSON...");
+      openOrCloseProgressManager(sysConfig.progressFlag);
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      const wrapped = buildMinimalWorldJsonForNativeThreeInline(parsed, { label: file.name });
+      await applyParsedSceneToPlayer(wrapped);
+      showMessage(`已按原生 JSON 载入 ${file.name}`, "success");
+    } catch (err) {
+      setLoading(false);
+      openOrCloseProgressManager(false);
+      showMessage(`加载原生 JSON 失败：${err.message}`, "error");
+      console.error(err);
+      if (!renderLoop) {
+        setCanvasIdleOverlayVisible(true);
+      }
+    } finally {
+      sceneSwitchLocked = false;
+      syncTransportBar();
+    }
+  }
+
+  function validateLoadedScenePayload(data) {
+    return isLoadableScenePayload(data);
+  }
+
+  function mergeSceneHelpersFromSysConfig(existingHelpers, sysConfig) {
+    const out =
+      existingHelpers && typeof existingHelpers === "object"
+        ? JSON.parse(JSON.stringify(existingHelpers))
+        : {};
+    if (!out.grid || typeof out.grid !== "object") {
+      if (sysConfig.gridShow === true) {
+        out.grid = { visible: true };
+      }
+    } else if (!hasValue(out.grid.visible) && sysConfig.gridShow === true) {
+      out.grid.visible = true;
+    }
+    if (!out.axes || typeof out.axes !== "object") {
+      if (sysConfig.axesShow === true) {
+        out.axes = { visible: true };
+      }
+    } else if (!hasValue(out.axes.visible) && sysConfig.axesShow === true) {
+      out.axes.visible = true;
+    }
+    return Object.keys(out).length > 0 ? out : null;
+  }
+
+  function buildPlayerRuntimeConfig(baseSceneConfig = {}) {
+    const existing = baseSceneConfig && typeof baseSceneConfig === "object" ? baseSceneConfig : {};
+    const cameraConfig = existing.camera && typeof existing.camera === "object" ? existing.camera : {};
+    const rendererConfig = existing.renderer && typeof existing.renderer === "object" ? existing.renderer : {};
+    const controlsConfig = existing.controls && typeof existing.controls === "object" ? existing.controls : {};
+    const renderLoopConfig = existing.renderLoop && typeof existing.renderLoop === "object" ? existing.renderLoop : {};
+    const sceneHints = existing.scene && typeof existing.scene === "object" ? existing.scene : {};
+    const cameraBlock = {
+      fov: valueOr(cameraConfig.fov, 50),
+      near: valueOr(cameraConfig.near, 0.15),
+      far: valueOr(cameraConfig.far, 3500)
+    };
+    if (cameraConfig.position) {
+      cameraBlock.position = cameraConfig.position;
+    }
+
+    return {
+      ...existing,
+      canvasWidth: valueOr(existing.canvasWidth, sysConfig.canvasWidth),
+      canvasHeight: valueOr(existing.canvasHeight, sysConfig.canvasHeight),
+      scene: { ...sceneHints },
+      camera: cameraBlock,
+      renderer: {
+        antialias: valueOr(rendererConfig.antialias, sysConfig.antialias),
+        ratioRate: valueOr(rendererConfig.ratioRate, sysConfig.ratioRate),
+        precision: valueOr(rendererConfig.precision, "highp"),
+        preserveDrawingBuffer: valueOr(rendererConfig.preserveDrawingBuffer, true),
+        stencil: valueOr(rendererConfig.stencil, true),
+        alpha: valueOr(rendererConfig.alpha, true),
+        shadowMapEnabled: valueOr(rendererConfig.shadowMapEnabled, true),
+        clearAlpha: valueOr(rendererConfig.clearAlpha, 0.1)
+      },
+      controls: (() => {
+        const typeRaw = controlsConfig.type || "";
+        if (String(typeRaw).toLowerCase() === "firstperson") {
+          return {
+            ...controlsConfig,
+            type: "firstPerson",
+            moveSpeed: valueOr(controlsConfig.moveSpeed, 5),
+            eyeHeight: valueOr(controlsConfig.eyeHeight, 1.6),
+            lookSensitivity: valueOr(controlsConfig.lookSensitivity, 0.001),
+            pointerLock: controlsConfig.pointerLock !== false,
+            floorSnap: controlsConfig.floorSnap !== false
+          };
+        }
+        return {
+          ...controlsConfig,
+          listenToKeyEvents: valueOr(controlsConfig.listenToKeyEvents, true),
+          enableDamping: valueOr(controlsConfig.enableDamping, true),
+          dampingFactor: valueOr(controlsConfig.dampingFactor, 0.35),
+          enableZoom: valueOr(controlsConfig.enableZoom, true),
+          autoRotate: valueOr(controlsConfig.autoRotate, sysConfig.sceneAutoRotate),
+          minDistance: valueOr(controlsConfig.minDistance, 5),
+          maxDistance: valueOr(controlsConfig.maxDistance, 2600),
+          maxPolarAngle: valueOr(controlsConfig.maxPolarAngle, Math.PI / 1.9),
+          enablePan: valueOr(controlsConfig.enablePan, true),
+          target: controlsConfig.target
+        };
+      })(),
+      renderLoop: (() => {
+        const fpsPolicy = resolveRenderLoopFpsPolicy(renderLoopConfig, {
+          fps: sysConfig.fps,
+          lowFps: sysConfig.lowFps,
+          overrideSceneRenderLoop: playerSettings?.render?.overrideSceneRenderLoop === true
+        });
+        const loop = {
+          autoResize: valueOr(renderLoopConfig.autoResize, sysConfig.autoResize),
+          firstAutoResize: valueOr(renderLoopConfig.firstAutoResize, sysConfig.firstAutoResize),
+          fps: fpsPolicy.fps,
+          lowFps: fpsPolicy.lowFps
+        };
+        const renderMode = valueOr(renderLoopConfig.renderMode, sysConfig.renderMode);
+        if (hasValue(renderMode)) {
+          loop.renderMode = renderMode;
+        }
+        return loop;
+      })(),
+      ...(function () {
+        const mergedHelpers = mergeSceneHelpersFromSysConfig(existing.helpers, sysConfig);
+        return mergedHelpers ? { helpers: mergedHelpers } : {};
+      })()
+    };
+  }
+
+  function buildPlayerScenePayload() {
+    const payload = JSON.parse(JSON.stringify(sysConfig.jsonData || {}));
+    // 标准 JSON（仅 objectList）：直接交给 createJsonScene 归一化，避免注入 sceneConfig 破坏 canonical 判定
+    if (isCanonicalScenePayload(payload)) {
+      return payload;
+    }
+    payload.sceneConfig = buildPlayerRuntimeConfig(payload.sceneConfig);
+    return payload;
+  }
+
+  function markPlayerSceneLoaded() {
+    for (const key of Object.keys(sysConfig.initFlags)) {
+      if (key !== "highLightInitFlag") {
+        sysConfig.initFlags[key] = true;
+      }
+    }
+  }
+
+  function showMessage(message, type = "info") {
+    const colorMap = {
+      info: "rgba(20, 20, 20, 0.82)",
+      success: "rgba(46, 125, 50, 0.88)",
+      warning: "rgba(176, 118, 0, 0.9)",
+      error: "rgba(180, 35, 24, 0.9)"
+    };
+    messageBox.textContent = message;
+    messageBox.style.background = colorMap[type] || colorMap.info;
+    messageBox.style.display = "block";
+    window.clearTimeout(showMessage.timer);
+    showMessage.timer = window.setTimeout(() => {
+      messageBox.style.display = "none";
+    }, getPlayerMessageToastDurationMs());
+  }
+
+  function setLoading(flag) {
+    loadingMask.style.display = flag ? "flex" : "none";
+  }
+
+  function setLoadingMessage(message) {
+    setLoading(true);
+    showProgressMessage("loadingMask", message);
+  }
+
+  function fitViewToSceneBounds() {
+    if (!camera || !controls || !scene) {
+      return false;
+    }
+    const bounds = buildAdaptiveContentBoundingBoxTHREE(scene, { ignoreHelper: null });
+    if (!bounds) {
+      return false;
+    }
+    return fitPerspectiveCameraToContentBoundsTHREE(camera, controls, bounds, {
+      aspectHints: {
+        rendererDomElement: renderer?.domElement,
+        threeViewActive: false,
+        mainViewRect: {
+          x: 0,
+          y: 0,
+          width: sysConfig.canvasWidth,
+          height: sysConfig.canvasHeight
+        },
+        canvasWrap: canvasWrap || rootContainer
+      }
+    });
+  }
+
+  function scheduleSceneFitPasses() {
+    fitViewToSceneBounds();
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        fitViewToSceneBounds();
+      });
+    });
+    window.setTimeout(() => {
+      fitViewToSceneBounds();
+    }, 1200);
+  }
+
+  function closeAllTopMenus() {
+    document.querySelectorAll(".topMenubar details[open]").forEach((el) => {
+      el.removeAttribute("open");
+    });
+  }
+
+  function initTopMenubarExclusiveOpen() {
+    document.querySelectorAll(".topMenubar > .topMenu").forEach((details) => {
+      details.addEventListener("toggle", () => {
+        if (!details.open) {
+          return;
+        }
+        document.querySelectorAll(".topMenubar > .topMenu[open]").forEach((other) => {
+          if (other !== details) {
+            other.removeAttribute("open");
+          }
+        });
+        closePlaylistAddMenu();
+      });
+    });
+  }
+
+  function closePlaylistAddMenu() {
+    playlistAddMenuEl?.removeAttribute("open");
+  }
+
+  function openSceneJsonModal() {
+    sceneJsonContent.value = loadedSceneJsonText || "";
+    sceneJsonModal.classList.add("visible");
+  }
+
+  function closeSceneJsonModal() {
+    sceneJsonModal.classList.remove("visible");
+  }
+
+  function openHelpAboutModal() {
+    helpAboutModal?.classList.add("visible");
+  }
+
+  function closeHelpAboutModal() {
+    helpAboutModal?.classList.remove("visible");
+  }
+
+  function onMenuFitView() {
+    if (!camera || !controls || !scene) {
+      showMessage("场景尚未就绪，无法自适应。", "warning");
+      return;
+    }
+    const bounds = buildAdaptiveContentBoundingBoxTHREE(scene, { ignoreHelper: null });
+    if (!bounds) {
+      showMessage("场景中缺少可用网格，无法进行自适应。", "warning");
+      return;
+    }
+    const ok = fitPerspectiveCameraToContentBoundsTHREE(camera, controls, bounds, {
+      aspectHints: {
+        rendererDomElement: renderer?.domElement,
+        threeViewActive: false,
+        mainViewRect: {
+          x: 0,
+          y: 0,
+          width: sysConfig.canvasWidth,
+          height: sysConfig.canvasHeight
+        },
+        canvasWrap: canvasWrap || rootContainer
+      }
+    });
+    if (!ok) {
+      showMessage("包围盒为空，无法进行自适应。", "warning");
+      return;
+    }
+    showMessage("已根据当前网格自适应相机与缩放范围。", "success");
+  }
+
+  async function copySceneJsonToClipboard() {
+    const content = sceneJsonContent.value || "";
+    if (!content) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(content);
+      showMessage("JSON 已复制到剪贴板。", "success");
+    } catch (error) {
+      console.error(error);
+      showMessage("复制失败，请手动复制。", "warning");
+    }
+  }
+
+  function syncFullscreenToggleLabels() {
+    const full = !!document.fullscreenElement;
+    const txt = full ? "退出全屏" : "全屏";
+    const toolbarBtn = document.getElementById("fullscreenBtn");
+    if (toolbarBtn) {
+      toolbarBtn.textContent = txt;
+    }
+    const menuBtn = document.getElementById("menuFullscreenToggle");
+    if (menuBtn) {
+      menuBtn.textContent = txt;
+    }
+    const bottomFs = document.getElementById("bottomBtnFullscreen");
+    if (bottomFs) {
+      bottomFs.textContent = "⛶";
+      bottomFs.title = full ? "退出全屏 (Esc)" : "全屏";
+    }
+  }
+
+  async function fullScreen() {
+    try {
+      if (!document.fullscreenElement) {
+        await rootContainer.requestFullscreen();
+        showMessage(
+          "全屏：指针移到上/下/右屏幕边缘可分别唤出标题栏、底栏与播放列表；按 ESC 退出。",
+          "info"
+        );
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch (err) {
+      console.error(err);
+      showMessage("全屏操作失败。", "warning");
+    }
+    syncFullscreenToggleLabels();
+  }
+
+  function initPlayerChrome() {
+    initTopMenubarExclusiveOpen();
+    document.addEventListener(
+      "pointerdown",
+      (event) => {
+        if (!event.target.closest(".topMenubar")) {
+          closeAllTopMenus();
+        }
+        if (!event.target.closest(".playlistAddMenu")) {
+          closePlaylistAddMenu();
+        }
+      },
+      true
+    );
+
+    function openSceneJsonPicker() {
+      closeAllTopMenus();
+      closePlaylistAddMenu();
+      sceneJsonFileInput?.click();
+    }
+
+    document.getElementById("menuOpenSceneJson")?.addEventListener("click", openSceneJsonPicker);
+    document.getElementById("menuLoadSceneJson")?.addEventListener("click", () => {
+      sceneJsonFileInput?.click();
+      closeAllTopMenus();
+    });
+    document.getElementById("menuLoadNativeThreeJson")?.addEventListener("click", () => {
+      nativeThreeJsonFileInput?.click();
+      closeAllTopMenus();
+    });
+    document.getElementById("menuLoadTjzArchive")?.addEventListener("click", () => {
+      tjzArchiveFileInput?.click();
+      closeAllTopMenus();
+    });
+    sceneJsonFileInput?.addEventListener("change", async (event) => {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      if (!file) {
+        return;
+      }
+      await handleOpenSceneFile(file, { activate: true });
+    });
+    tjzArchiveFileInput?.addEventListener("change", async (event) => {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      if (!file) {
+        return;
+      }
+      if (!isTjzSceneFileName(file.name)) {
+        showMessage("请选择 .tjz 场景包。", "warning");
+        return;
+      }
+      await handleOpenSceneFile(file, { activate: true });
+    });
+
+    playlistOpenBtn?.addEventListener("click", openSceneJsonPicker);
+    nativeThreeJsonFileInput?.addEventListener("change", async (event) => {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      if (!file) {
+        return;
+      }
+      await handleLoadNativeThreeJsonPlayerFile(file);
+    });
+
+    document.getElementById("menuViewSceneJson")?.addEventListener("click", () => {
+      openSceneJsonModal();
+      closeAllTopMenus();
+    });
+    document.getElementById("menuFitView")?.addEventListener("click", () => {
+      onMenuFitView();
+      closeAllTopMenus();
+    });
+    document.getElementById("menuFullscreenToggle")?.addEventListener("click", () => {
+      void fullScreen();
+      closeAllTopMenus();
+    });
+    document.getElementById("menuHelpUserManual")?.addEventListener("click", () => {
+      closeAllTopMenus();
+      showMessage("正在建设中的功能，敬请期待。", "info");
+    });
+    document.getElementById("menuHelpAbout")?.addEventListener("click", () => {
+      closeAllTopMenus();
+      openHelpAboutModal();
+    });
+    document.getElementById("toolbarResetViewBtn")?.addEventListener("click", () => {
+      onMenuFitView();
+    });
+    document.getElementById("fullscreenBtn")?.addEventListener("click", () => {
+      void fullScreen();
+    });
+    document.addEventListener("fullscreenchange", () => {
+      updateImmersiveFullscreenChrome();
+      syncFullscreenToggleLabels();
+    });
+    syncFullscreenToggleLabels();
+
+    closeJsonBtn?.addEventListener("click", closeSceneJsonModal);
+    copyJsonBtn?.addEventListener("click", () => {
+      void copySceneJsonToClipboard();
+    });
+    sceneJsonModal?.addEventListener("click", (event) => {
+      if (event.target === sceneJsonModal) {
+        closeSceneJsonModal();
+      }
+    });
+    helpAboutCloseBtn?.addEventListener("click", closeHelpAboutModal);
+    helpAboutModal?.addEventListener("click", (event) => {
+      if (event.target === helpAboutModal) {
+        closeHelpAboutModal();
+      }
+    });
+
+    function onBottomBarPlaylistToggleClick() {
+      if (!rootContainer.classList.contains("immersiveFullscreen")) {
+        rootContainer.classList.toggle("rightPanelOpen");
+        syncRightDockToggleUi();
+        windowResize();
+        requestAnimationFrame(() => requestAnimationFrame(windowResize));
+        return;
+      }
+      if (immersivePlaylistPinned) {
+        immersivePlaylistPinned = false;
+        rightDockDom?.classList.remove("immersiveDockVisible");
+        rootContainer.classList.remove("rightPanelOpen");
+        if (immersiveDockHideTimer) {
+          window.clearTimeout(immersiveDockHideTimer);
+          immersiveDockHideTimer = null;
+        }
+      } else {
+        immersivePlaylistPinned = true;
+        rootContainer.classList.add("rightPanelOpen");
+        rightDockDom?.classList.add("immersiveDockVisible");
+        if (immersiveDockHideTimer) {
+          window.clearTimeout(immersiveDockHideTimer);
+          immersiveDockHideTimer = null;
+        }
+      }
+      syncRightDockToggleUi();
+      windowResize();
+      requestAnimationFrame(() => requestAnimationFrame(windowResize));
+    }
+
+    document.getElementById("bottomBarPlaylistToggle")?.addEventListener("click", onBottomBarPlaylistToggleClick);
+    rightDockDom?.addEventListener("transitionend", (event) => {
+      if (event.target !== rightDockDom) {
+        return;
+      }
+      if (event.propertyName !== "width" && event.propertyName !== "min-width") {
+        return;
+      }
+      windowResize();
+    });
+    syncRightDockToggleUi();
+
+    document.getElementById("bottomBtnPrev")?.addEventListener("click", async () => {
+      if (currentPlaylistIndex > 0) {
+        await activatePlaylistIndex(currentPlaylistIndex - 1);
+      }
+    });
+    document.getElementById("bottomBtnNext")?.addEventListener("click", async () => {
+      if (currentPlaylistIndex < playlist.length - 1) {
+        await activatePlaylistIndex(currentPlaylistIndex + 1);
+      }
+    });
+    document.getElementById("bottomBtnPlayPause")?.addEventListener("click", () => {
+      togglePlaybackRender();
+    });
+    document.getElementById("bottomBtnStop")?.addEventListener("click", () => {
+      stopPlayerAndClearScene();
+    });
+    document.getElementById("bottomBtnOpen")?.addEventListener("click", openSceneJsonPicker);
+
+    idleOpenSceneBtn?.addEventListener("click", () => {
+      idleOpenSceneInput?.click();
+    });
+    idleOpenDefaultSceneBtn?.addEventListener("click", () => {
+      void openDefaultExampleScene();
+    });
+    idleOpenSceneInput?.addEventListener("change", async (event) => {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      if (!file) {
+        return;
+      }
+      await handleOpenSceneFile(file, { activate: true });
+    });
+    document.getElementById("bottomBtnFullscreen")?.addEventListener("click", () => {
+      void fullScreen();
+    });
+
+    const immersiveRightEdgeStrip = document.getElementById("immersiveRightEdgeStrip");
+    const immersiveTopEdgeStrip = document.getElementById("immersiveTopEdgeStrip");
+    const immersiveBottomEdgeStrip = document.getElementById("immersiveBottomEdgeStrip");
+    immersiveTopEdgeStrip?.addEventListener("pointerenter", showImmersiveTopBar);
+    immersiveTopEdgeStrip?.addEventListener("pointermove", showImmersiveTopBar);
+    immersiveTopEdgeStrip?.addEventListener("pointerleave", scheduleHideImmersiveTopBar);
+    immersiveBottomEdgeStrip?.addEventListener("pointerenter", showImmersiveBottomBar);
+    immersiveBottomEdgeStrip?.addEventListener("pointermove", showImmersiveBottomBar);
+    immersiveBottomEdgeStrip?.addEventListener("pointerleave", scheduleHideImmersiveBottomBar);
+
+    topBarEl?.addEventListener("pointerenter", () => {
+      if (rootContainer.classList.contains("immersiveFullscreen")) {
+        showImmersiveTopBar();
+      }
+    });
+    topBarEl?.addEventListener("pointerleave", (event) => {
+      if (!rootContainer.classList.contains("immersiveFullscreen")) {
+        return;
+      }
+      const rel = event.relatedTarget;
+      if (rel && topBarEl?.contains(rel)) {
+        return;
+      }
+      if (
+        rel &&
+        immersiveTopEdgeStrip &&
+        (rel === immersiveTopEdgeStrip || immersiveTopEdgeStrip.contains(rel))
+      ) {
+        return;
+      }
+      scheduleHideImmersiveTopBar();
+    });
+
+    bottomBarEl?.addEventListener("pointerenter", () => {
+      if (rootContainer.classList.contains("immersiveFullscreen")) {
+        showImmersiveBottomBar();
+      }
+    });
+    bottomBarEl?.addEventListener("pointerleave", (event) => {
+      if (!rootContainer.classList.contains("immersiveFullscreen")) {
+        return;
+      }
+      const rel = event.relatedTarget;
+      if (rel && bottomBarEl?.contains(rel)) {
+        return;
+      }
+      if (
+        rel &&
+        immersiveBottomEdgeStrip &&
+        (rel === immersiveBottomEdgeStrip || immersiveBottomEdgeStrip.contains(rel))
+      ) {
+        return;
+      }
+      scheduleHideImmersiveBottomBar();
+    });
+
+    immersiveRightEdgeStrip?.addEventListener("pointerenter", showImmersiveDock);
+    immersiveRightEdgeStrip?.addEventListener("pointermove", showImmersiveDock);
+    rightDockDom?.addEventListener("pointerenter", () => {
+      if (rootContainer.classList.contains("immersiveFullscreen")) {
+        if (immersiveDockHideTimer) {
+          window.clearTimeout(immersiveDockHideTimer);
+          immersiveDockHideTimer = null;
+        }
+      }
+    });
+    rightDockDom?.addEventListener("pointerleave", () => {
+      scheduleHideImmersiveDock();
+    });
+
+    document.getElementById("playlistAddJsonFileBtn")?.addEventListener("click", () => {
+      playlistAddSingleFileInput?.click();
+      closePlaylistAddMenu();
+    });
+    document.getElementById("playlistAddTjzFileBtn")?.addEventListener("click", () => {
+      playlistAddTjzFileInput?.click();
+      closePlaylistAddMenu();
+    });
+    document.getElementById("playlistAddFolderBtn")?.addEventListener("click", () => {
+      playlistFolderInput?.click();
+      closePlaylistAddMenu();
+    });
+    playlistAddSingleFileInput?.addEventListener("change", async (e) => {
+      const file = e.target.files?.[0];
+      e.target.value = "";
+      if (!file) {
+        return;
+      }
+      if (!isJsonSceneFileName(file.name)) {
+        showMessage("请选择 JSON 场景文件。", "warning");
+        return;
+      }
+      await handleOpenSceneFile(file, { activate: false });
+    });
+    playlistAddTjzFileInput?.addEventListener("change", async (e) => {
+      const file = e.target.files?.[0];
+      e.target.value = "";
+      if (!file) {
+        return;
+      }
+      if (!isTjzSceneFileName(file.name)) {
+        showMessage("请选择 .tjz 场景包。", "warning");
+        return;
+      }
+      await handleOpenSceneFile(file, { activate: false });
+    });
+    playlistFolderInput?.addEventListener("change", async (e) => {
+      const files = Array.from(e.target.files || []);
+      e.target.value = "";
+      await appendFilesToPlaylistOnly(files);
+    });
+    playlistClearBtn?.addEventListener("click", () => {
+      void clearPlaylistAndStop();
+    });
+    document.getElementById("playlistContextCopyItem")?.addEventListener("pointerenter", () => {
+      syncPlaylistContextSubmenuFlip();
+    });
+    playlistContextPlayBtn?.addEventListener("click", () => {
+      void playPlaylistContextTarget();
+      closePlaylistContextMenu();
+    });
+    playlistContextReloadBtn?.addEventListener("click", () => {
+      void reloadPlaylistContextTarget();
+      closePlaylistContextMenu();
+    });
+    playlistContextCopyPathBtn?.addEventListener("click", () => {
+      void copyPlaylistContextPath();
+      closePlaylistContextMenu();
+    });
+    playlistContextCopyNameBtn?.addEventListener("click", () => {
+      void copyPlaylistContextName();
+      closePlaylistContextMenu();
+    });
+    playlistContextRemoveBtn?.addEventListener("click", () => {
+      void removePlaylistContextTarget();
+      closePlaylistContextMenu();
+    });
+    playlistContextMenu?.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+    });
+    document.addEventListener("click", (event) => {
+      if (!playlistContextMenu?.classList.contains("visible")) {
+        return;
+      }
+      if (playlistContextMenu.contains(event.target)) {
+        return;
+      }
+      closePlaylistContextMenu();
+    });
+    document.addEventListener("contextmenu", (event) => {
+      if (!playlistContextMenu?.classList.contains("visible")) {
+        return;
+      }
+      const target = event.target;
+      if (playlistContextMenu.contains(target)) {
+        return;
+      }
+      if (target?.closest?.(".playlistRow")) {
+        return;
+      }
+      closePlaylistContextMenu();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        closePlaylistContextMenu();
+      }
+    });
+    window.addEventListener("resize", closePlaylistContextMenu);
+    playlistListEl?.addEventListener("scroll", closePlaylistContextMenu, { passive: true });
+  }
+
+  window.addEventListener("DOMContentLoaded", async () => {
+    await loadPlayerSettings();
+    applyPlayerSettings({ initial: true });
+    initPlayerSettingsModal();
+    loadPlayerVolumePrefs();
+    playerVolumeMuteBtn?.addEventListener("click", () => {
+      togglePlayerVolumeMute();
+    });
+    playerVolumeSlider?.addEventListener("input", onPlayerVolumeSliderInput);
+    initPlayerChrome();
+    bindProgressElement(loadingMask);
+    openOrCloseProgressManager(false);
+    const editorPreviewActive = bootstrapEditorPreviewFromOpener();
+    const restored =
+      !editorPreviewActive &&
+      playerSettings?.playback?.restorePlaylistOnStartup !== false
+        ? await restorePlaylistFromStorage()
+        : false;
+    if (!restored && !editorPreviewActive) {
+      const queryUrl = resolveUrlQuerySceneUrl();
+      if (queryUrl) {
+        playlist.length = 0;
+        currentPlaylistIndex = -1;
+        appendUrlToPlaylist(queryUrl);
+        await activatePlaylistIndex(0);
+      } else {
+        showPlayerStartupEmptyState();
+      }
+    }
+  });
+
+  window.addEventListener("beforeunload", wasteCleaner);
+
+  async function initWorld() {
+    setLoadingMessage("正在加载场景 JSON...");
+    await initSceneRuntime();
+    initEventListener();
+    initHighLight();
+    superAnimate();
+    finishSceneLoad();
+  }
+
+  function finishSceneLoad() {
+    setLoadingMessage("3D 场景加载完成。");
+    const doneDelayMs = getSceneLoadDoneDelayMs();
+    if (doneDelayMs > 0) {
+      window.setTimeout(() => setLoading(false), doneDelayMs);
+    } else {
+      setLoading(false);
+    }
+    openOrCloseProgressManager(false);
+    scheduleSceneFitPasses();
+    syncTransportBar();
+  }
+
+  function initEventListener() {
+    unbindPlayerEventListeners();
+    window.addEventListener("resize", windowResize);
+    detachHostedContainerDoorDblclick = attachHostedContainerDoorDblclick({
+      getScene: () => scene,
+      getCamera: () => camera,
+      getCanvas: () => renderer?.domElement ?? canvasContainer
+    });
+    document.addEventListener("dblclick", mouseDbClickHandler);
+    canvasContainer.addEventListener("contextmenu", rightClickHandler);
+    keyDownHandler();
+    playerEventsBound = true;
+  }
+
+  async function initSceneRuntime() {
+    const renderLoopUserPolicy = {
+      fps: sysConfig.fps,
+      lowFps: sysConfig.lowFps,
+      overrideSceneRenderLoop: playerSettings?.render?.overrideSceneRenderLoop === true
+    };
+    sceneRuntime = await createJsonScene(buildPlayerScenePayload(), {
+      canvas: canvasContainer,
+      autoFillLights: true,
+      autoFillCamera: true,
+      sceneAutoRotate: sysConfig.sceneAutoRotate,
+      renderLoopUserPolicy,
+      ...(previewBindSceneEventsOverride !== undefined
+        ? { bindSceneEvents: previewBindSceneEventsOverride }
+        : {}),
+      async onRuntimeReady(ctx) {
+        assignPlayerSceneRuntime(ctx?.runtime);
+        windowResize();
+        if (playerSettings?.render?.earlyRenderWhileLoading !== false) {
+          startPlayerRenderLoopEarly();
+        }
+      },
+      async onSceneReady(ctx) {
+        try {
+          const { bootstrapFirstPersonExtensionsFromScene } = await import(
+            "./extensions/fps-walk/bootstrapFirstPersonExtensions.js"
+          );
+          await bootstrapFirstPersonExtensionsFromScene(ctx);
+        } catch (err) {
+          console.warn("[ScenePlayer] firstPerson extensions bootstrap skipped", err);
+        }
+      }
+    });
+    assignPlayerSceneRuntime(sceneRuntime);
+    markPlayerSceneLoaded();
+    trackDisposableResource(scene);
+    windowResize();
+    bindThreeJsonSceneAudioUnlock(canvasContainer, () => sceneRuntime);
+    applyPlayerMasterVolume();
+    void resumeThreeJsonAudioContextFromCamera(camera);
+    if (sceneRuntime) {
+      setThreeJsonSceneAudioPaused(sceneRuntime, playerVolumeMuted);
+    }
+  }
+
+  function superAnimate() {
+    if (!renderLoop) {
+      return;
+    }
+    renderLoop.setComposer(composer);
+    if (playbackRenderPaused) {
+      renderLoop.stop();
+    } else {
+      renderLoop.start();
+    }
+    syncTransportBar();
+  }
+
+  function initHighLight() {
+    composer = new EffectComposer(renderer);
+    trackDisposableResource(composer);
+    highlightPageSetup = sceneHighlight.createPageHighlightSetup(scene, camera, {
+      composer,
+      renderer,
+      channelOptions: getPlayerHighlightChannelOptions()
+    });
+    selectionVisual = highlightPageSetup.controller;
+    renderScene = highlightPageSetup.renderPass;
+    outlinePass = highlightPageSetup.infoPass;
+    warnningPass = highlightPageSetup.locatePass;
+    alarmPass = highlightPageSetup.alarmPass;
+    sysConfig.initFlags.highLightInitFlag = true;
+  }
+
+  function rightClickHandler(event) {
+    event.preventDefault();
+    sysConfig.rightClickedFlag = true;
+  }
+
+  function windowResize() {
+    const myWidth = Math.max(
+      80,
+      canvasWrap?.clientWidth || canvasContainer.clientWidth || window.innerWidth
+    );
+    const myHeight = Math.max(
+      80,
+      canvasWrap?.clientHeight || canvasContainer.clientHeight || window.innerHeight
+    );
+    sysConfig.windowSizeNow.width = myWidth;
+    sysConfig.windowSizeNow.height = myHeight;
+    sysConfig.canvasWidth = myWidth;
+    sysConfig.canvasHeight = myHeight;
+    renderLoop?.resize({
+      width: sysConfig.canvasWidth,
+      height: sysConfig.canvasHeight
+    });
+  }
+
+  function keyDownHandler() {
+    keyDownHandlerFn = (event) => {
+      if (event.key === "Escape" && document.fullscreenElement) {
+        document.exitFullscreen();
+      }
+    };
+    document.addEventListener("keydown", keyDownHandlerFn);
+  }
+
+  function mouseClickObj(event) {
+    event.preventDefault();
+    const rect = canvasContainer.getBoundingClientRect();
+    const nx = rect.width > 0 ? (event.clientX - rect.left) / rect.width : 0.5;
+    const ny = rect.height > 0 ? (event.clientY - rect.top) / rect.height : 0.5;
+    const vector = new THREE.Vector3(nx * 2 - 1, -(ny * 2) + 1, 0.5);
+    vector.unproject(camera);
+    const raycaster = new THREE.Raycaster(camera.position, vector.sub(camera.position).normalize());
+    raycaster.camera = camera;
+    const intersects = raycaster.intersectObjects(scene.children, true);
+    return intersects.length > 0 ? intersects[0].object : null;
+  }
+
+  function mouseDbClickHandler(event) {
+    if (!sysConfig.clickHighLightFlag) {
+      return;
+    }
+    const currObj = mouseClickObj(event);
+    if (currObj) {
+      objHighlight(currObj);
+    }
+  }
+
+  function objHighlight(obj) {
+    selectionVisual?.setInfoHighlight?.(obj);
+  }
+
+  function highlightModel(model, lightType) {
+    if (model) {
+      highlightModelList([model], lightType);
+    }
+  }
+
+  function highlightModelList(modelList, lightType = "info") {
+    if (!modelList?.length || !selectionVisual) {
+      return;
+    }
+    if (lightType === "warn") {
+      selectionVisual.addLocateObjects(modelList);
+    } else if (lightType === "alarm") {
+      selectionVisual.addAlarmObjects(modelList);
+    } else if (outlinePass) {
+      outlinePass.selectedObjects = modelList.slice();
+      selectionVisual.syncPassActivity();
+    }
+  }
+
+  function wasteCleaner() {
+    teardownPlayerScene();
+  }
+
+  window.scenePlayer = {
+    scene: () => scene,
+    camera: () => camera,
+    renderer: () => renderer,
+    controls: () => controls,
+    sysConfig,
+    wasteCleaner,
+    fitViewToSceneBounds,
+    openSceneJsonModal,
+    activatePlaylistIndex,
+    getPlaylist: () => playlist,
+    appendUrlToPlaylist,
+    appendFileToPlaylist
+  };
+
+  window.roomshow = window.scenePlayer;
+</script>
+</body>
+</html>

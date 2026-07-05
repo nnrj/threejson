@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>核心网络机房 A 区</title>
+  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <script type="importmap">
+    
+    {
+      "imports": {
+        "threejson": "/builtins/full.js",
+        "threejson/core": "/core/index.js",
+        "three": "https://esm.sh/three@0.184.0",
+        "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
+        "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
+        "html2canvas-pro": "https://esm.sh/html2canvas-pro@2.0.4",
+        "gifuct-js": "https://esm.sh/gifuct-js@2.1.2",
+        "three-mesh-bvh": "https://esm.sh/three-mesh-bvh@0.9.10?deps=three@0.184.0",
+        "three-bvh-csg": "https://esm.sh/three-bvh-csg@0.0.18?deps=three@0.184.0,three-mesh-bvh@0.9.10"
+      }
+    }
+  
+  </script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --text-main: #f3f5f7;
+      --text-muted: rgba(232, 234, 237, 0.85);
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #2f2f2f;
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    button,
+    summary {
+      font: inherit;
+    }
+
+    #rootContainer {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background: #2f2f2f;
+    }
+
+    #canvasContainer {
+      display: block;
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      margin: 0;
+      background: #2f2f2f url("/assets/textures/environment/skybox/galaxy.jpg") center center / cover no-repeat;
+      outline: none;
+    }
+
+    .menuClass {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: calc(100vh - 120px);
+      padding: 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(16, 20, 28, 0.78);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.38);
+      -webkit-backdrop-filter: blur(20px) saturate(1.15);
+      backdrop-filter: blur(20px) saturate(1.15);
+      transform: translateY(-50%);
+      pointer-events: none;
+      overflow-y: auto;
+    }
+
+    .menuClass button,
+    .menuClass summary {
+      min-width: 74px;
+      height: 30px;
+      padding: 0 12px;
+      border: 1px solid rgba(64, 158, 255, 0.45);
+      border-radius: 6px;
+      color: var(--text-main);
+      background: rgba(64, 158, 255, 0.2);
+      font-size: 13px;
+      line-height: 28px;
+      cursor: pointer;
+      pointer-events: auto;
+      text-align: left;
+    }
+
+    .menuClass .menuSectionLabel {
+      padding: 4px 6px 2px;
+      color: rgba(180, 190, 205, 0.75);
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      pointer-events: none;
+    }
+
+    .menuClass .menuDivider {
+      height: 1px;
+      margin: 4px 2px;
+      background: rgba(255, 255, 255, 0.08);
+      pointer-events: none;
+    }
+
+    .menuClass button:hover,
+    .menuClass summary:hover {
+      background: rgba(64, 158, 255, 0.32);
+      border-color: rgba(64, 158, 255, 0.55);
+    }
+
+    .menuClass button.is-paused,
+    .menuClass button:disabled {
+      background: rgba(80, 88, 98, 0.45);
+      border-color: rgba(140, 150, 165, 0.35);
+      color: rgba(220, 224, 230, 0.75);
+      cursor: default;
+    }
+
+    .menuClass button.is-paused:hover,
+    .menuClass button:disabled:hover {
+      background: rgba(80, 88, 98, 0.45);
+      border-color: rgba(140, 150, 165, 0.35);
+    }
+
+    .menuClass details {
+      position: relative;
+      pointer-events: auto;
+    }
+
+    .menuClass summary {
+      list-style: none;
+    }
+
+    .menuClass summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .menuClass details[open] summary {
+      background: rgba(64, 158, 255, 0.34);
+      border-color: rgba(64, 158, 255, 0.6);
+    }
+
+    .dropdownMenu {
+      position: absolute;
+      left: calc(100% + 8px);
+      top: 0;
+      display: grid;
+      min-width: 128px;
+      padding: 6px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(22, 26, 34, 0.92);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+      -webkit-backdrop-filter: blur(18px) saturate(1.1);
+      backdrop-filter: blur(18px) saturate(1.1);
+      transform: none;
+    }
+
+    .dropdownMenu button {
+      width: 100%;
+      min-height: 28px;
+      padding: 4px 8px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-muted);
+      text-align: left;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .dropdownMenu button:hover {
+      background: rgba(64, 158, 255, 0.22);
+      color: var(--text-main);
+    }
+
+    #loadingMask {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      background: rgba(47, 47, 47, 0.72);
+      font-size: 15px;
+    }
+
+    #messageBox {
+      position: absolute;
+      top: 18px;
+      left: 50%;
+      z-index: 30;
+      display: none;
+      max-width: 70vw;
+      padding: 8px 14px;
+      border-radius: 4px;
+      color: #fff;
+      background: rgba(20, 20, 20, 0.82);
+      font-size: 13px;
+      transform: translateX(-50%);
+    }
+
+    .sceneHeader {
+      position: absolute;
+      top: 14px;
+      left: 16px;
+      right: 16px;
+      z-index: 11;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+
+    .sceneHeader .titleBlock {
+      padding: 10px 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(16, 20, 28, 0.72);
+      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px);
+      pointer-events: auto;
+    }
+
+    .sceneHeader h1 {
+      margin: 0;
+      color: var(--text-main);
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .sceneHeader p {
+      margin: 4px 0 0;
+      color: rgba(200, 210, 220, 0.72);
+      font-size: 12px;
+    }
+
+    .sceneHeader .statusPill {
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(76, 175, 80, 0.45);
+      color: #a5d6a7;
+      background: rgba(27, 94, 32, 0.35);
+      font-size: 12px;
+      pointer-events: auto;
+    }
+
+    .gameHud {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      z-index: 12;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transform: translateY(-50%);
+      pointer-events: none;
+    }
+
+    .gameHud button {
+      min-width: 52px;
+      height: 52px;
+      padding: 6px 10px;
+      border: 2px solid rgba(64, 158, 255, 0.45);
+      border-radius: 12px;
+      color: var(--text-main);
+      background: rgba(64, 158, 255, 0.2);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+      font-size: 12px;
+      line-height: 1.2;
+      cursor: pointer;
+      pointer-events: auto;
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+    }
+
+    .gameHud button:hover {
+      background: rgba(64, 158, 255, 0.32);
+      border-color: rgba(64, 158, 255, 0.55);
+    }
+
+    .gameHud button:active {
+      transform: scale(0.96);
+    }
+
+    .gameHud button.is-active {
+      background: rgba(64, 158, 255, 0.34);
+      border-color: rgba(64, 158, 255, 0.6);
+      box-shadow: 0 0 0 1px rgba(64, 158, 255, 0.35), 0 4px 14px rgba(0, 0, 0, 0.35);
+    }
+
+    #gameToastStack {
+      position: absolute;
+      right: 16px;
+      bottom: 22px;
+      z-index: 25;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+      max-width: min(360px, 44vw);
+      max-height: min(42vh, 320px);
+      overflow-x: hidden;
+      overflow-y: auto;
+      pointer-events: none;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+    }
+
+    #gameToastStack::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    #gameToastStack::-webkit-scrollbar-thumb {
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.22);
+    }
+
+    .gameToast {
+      width: 100%;
+      padding: 10px 14px 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-left-width: 3px;
+      color: #f2f4f8;
+      background: rgba(16, 20, 28, 0.9);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.38);
+      font-size: 13px;
+      line-height: 1.45;
+      pointer-events: auto;
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+      transform: translateX(110%);
+      opacity: 0;
+      transition:
+        transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 0.28s ease,
+        max-height 0.28s ease,
+        margin 0.28s ease,
+        padding 0.28s ease;
+      max-height: 120px;
+      overflow: hidden;
+    }
+
+    .gameToast.is-visible {
+      transform: translateX(0);
+      opacity: 1;
+    }
+
+    .gameToast.is-leaving {
+      transform: translateX(105%);
+      opacity: 0;
+      max-height: 0;
+      margin-top: 0;
+      margin-bottom: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      border-width: 0;
+    }
+
+    .gameToast--info {
+      border-left-color: #64b5f6;
+    }
+
+    .gameToast--success {
+      border-left-color: #66bb6a;
+    }
+
+    .gameToast--warning {
+      border-left-color: #ffb74d;
+    }
+
+    .gameToast--error {
+      border-left-color: #ef5350;
+    }
+  </style>
+</head>
+<body>
+<div id="rootContainer">
+  <canvas id="canvasContainer">抱歉，你的浏览器不支持 WebGL。</canvas>
+  <div id="loadingMask">3D 场景加载中...</div>
+  <div id="messageBox"></div>
+
+  <header class="sceneHeader">
+    <div class="titleBlock">
+      <h1>核心网络机房 A 区</h1>
+      <p>冷热通道 · UPS 分区 · 18 机柜 · 双路供电</p>
+    </div>
+    <div class="statusPill" id="roomStatusPill">运行正常</div>
+  </header>
+
+  <nav class="menuClass" aria-label="机房运维菜单">
+    <span class="menuSectionLabel">视图</span>
+    <button type="button" data-menu="roomShow">恢复默认</button>
+    <button type="button" data-menu="capacity">容量统计</button>
+    <button type="button" data-menu="hotAndColdCloud">通道气流</button>
+
+    <div class="menuDivider"></div>
+    <span class="menuSectionLabel">环境</span>
+    <button type="button" data-menu="airCondition">环境信息</button>
+    <button type="button" data-menu="tempCloud">热力图</button>
+    <button type="button" data-menu="leakLine">漏水感应绳</button>
+
+    <div class="menuDivider"></div>
+    <span class="menuSectionLabel">操作</span>
+    <button type="button" data-menu="toggleMainDoor" id="toggleMainDoorBtn">开启正门</button>
+    <button type="button" data-menu="toggleSideDoor" id="toggleSideDoorBtn">开启侧门</button>
+    <button type="button" data-menu="toggleCeilingLight" id="toggleCeilingLightBtn">关灯</button>
+  </nav>
+
+  <div class="gameHud" aria-label="场景快捷操作">
+    <button type="button" id="toggleRoofBtn" title="显示或隐藏屋顶、吊顶与天花设备">显示<br>屋顶</button>
+    <button type="button" id="toggleWallsBtn" title="显示或隐藏外墙、隔断与门窗">显示<br>墙体</button>
+    <button type="button" id="resetViewBtn" title="重置相机到默认视角">重置<br>视角</button>
+    <button type="button" id="pauseAlarmBtn" title="清除当前告警高亮，刷新页面前不再显示">暂停<br>告警</button>
+  </div>
+
+  <div id="gameToastStack" aria-live="polite" aria-label="告警与运维消息"></div>
+</div>
+
+<script type="module">
+  import * as THREE from "three";
+  import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+
+  import {
+    bindProgressElement,
+    device,
+    door,
+    cancelActiveDeployScheduler,
+    checkComplete,
+    sceneHighlight,
+    createJsonScene,
+    getObjectByThreeJsonId,
+    getObjectsByName,
+    setObjectsVisibleByObjType,
+    setObjectsVisibleByName,
+    setObjectsVisibleByNames,
+    applyInfoPanelList,
+    ensureThreeJsonIdsOnScenePayload,
+    attachHostedContainerDoorDblclick,
+    openOrCloseProgressManager,
+    disposeTrackedResources,
+    trackDisposableResource,
+    showProgressMessage
+  } from "threejson";
+
+  const canvasContainer = document.getElementById("canvasContainer");
+  const loadingMask = document.getElementById("loadingMask");
+  const messageBox = document.getElementById("messageBox");
+  const gameToastStack = document.getElementById("gameToastStack");
+  const sceneJsonUrl = "/assets/json/roomShow.json";
+
+  let scene;
+  let camera;
+  let renderer;
+  let controls;
+  const roomFillLights = {
+    directional: null,
+    ambient: null,
+    point: null
+  };
+  const ROOM_FILL_LIGHT_LEVELS = {
+    on: { directional: 12, ambient: 0.4, point: 1200 },
+    off: { directional: 5.5, ambient: 0.16, point: 320 }
+  };
+  let composer;
+  let sceneRuntime;
+  let selectionVisual = null;
+  let roomShowPresentationFinalized = false;
+  let renderLoop;
+  let roofVisible = false;
+  let windLayerVisible = false;
+  let wallsVisible = true;
+  /** 本会话内暂停告警/预警高亮（刷新页面前有效） */
+  let alarmHighlightPaused = false;
+  const ALARM_MOCK_IDS = {
+    A: "room-cabinet-13",
+    B: "room-head-cabinet-a"
+  };
+  const ALARM_MOCK_STEP_MS = 3000;
+  let ceilingLightsOn = true;
+  let doorLabelSyncTimer = 0;
+  /** @type {(() => void)|null} */
+  let detachHostedContainerDoorDblclick = null;
+
+  const toggleRoofBtn = document.getElementById("toggleRoofBtn");
+  const toggleWallsBtn = document.getElementById("toggleWallsBtn");
+  const resetViewBtn = document.getElementById("resetViewBtn");
+  const pauseAlarmBtn = document.getElementById("pauseAlarmBtn");
+  const toggleMainDoorBtn = document.getElementById("toggleMainDoorBtn");
+  const toggleSideDoorBtn = document.getElementById("toggleSideDoorBtn");
+  const toggleCeilingLightBtn = document.getElementById("toggleCeilingLightBtn");
+  const MAIN_DOOR_CODES = ["entryDoorLeft", "entryDoorRight"];
+  const SIDE_DOOR_CODES = ["eastEmergencyLeft", "eastEmergencyRight"];
+  const CEILING_LIGHT_NAME = "ceiling-light";
+  const CEILING_OBJECT_NAMES = new Set(["吊顶", "冷通道封闭顶板"]);
+  const DEFAULT_CAMERA = { x: 88, y: 62, z: -72 };
+  const DEFAULT_TARGET = { x: 0, y: 8, z: -5 };
+
+  const sysConfig = {
+    canvasWidth: window.innerWidth,
+    canvasHeight: window.innerHeight,
+    progressFlag: true,
+    windowSizeNow: {
+      width: window.innerWidth,
+      height: window.innerHeight
+    },
+    jsonData: {},
+    lineList: [],
+    initFlags: {
+      highLightInitFlag: false
+    }
+  };
+
+  const GAME_TOAST_MAX = 6;
+  const GAME_TOAST_DURATION_MS = 4800;
+
+  function showMessage(message, type = "info") {
+    const colorMap = {
+      info: "rgba(20, 20, 20, 0.82)",
+      success: "rgba(46, 125, 50, 0.88)",
+      warning: "rgba(176, 118, 0, 0.9)",
+      error: "rgba(180, 35, 24, 0.9)"
+    };
+    messageBox.textContent = message;
+    messageBox.style.background = colorMap[type] || colorMap.info;
+    messageBox.style.display = "block";
+    window.clearTimeout(showMessage.timer);
+    showMessage.timer = window.setTimeout(() => {
+      messageBox.style.display = "none";
+    }, 2600);
+  }
+
+  function resolveAlarmToastType(message, explicitType) {
+    if (explicitType) {
+      return explicitType;
+    }
+    const text = String(message || "");
+    if (/解除|恢复|正常/.test(text)) {
+      return "success";
+    }
+    if (/维护|转/.test(text)) {
+      return "info";
+    }
+    if (/故障|告警/.test(text)) {
+      return "warning";
+    }
+    return "warning";
+  }
+
+  function pushGameToast(message, type) {
+    if (!message || !gameToastStack) {
+      return;
+    }
+    const toastType = resolveAlarmToastType(message, type);
+    const toast = document.createElement("div");
+    toast.className = `gameToast gameToast--${toastType}`;
+    toast.textContent = message;
+    gameToastStack.appendChild(toast);
+    while (gameToastStack.children.length > GAME_TOAST_MAX) {
+      gameToastStack.firstElementChild?.remove();
+    }
+    gameToastStack.scrollTop = gameToastStack.scrollHeight;
+    requestAnimationFrame(() => {
+      toast.classList.add("is-visible");
+    });
+    const dismiss = () => {
+      if (!toast.isConnected) {
+        return;
+      }
+      toast.classList.add("is-leaving");
+      const removeToast = () => toast.remove();
+      toast.addEventListener("transitionend", removeToast, { once: true });
+      window.setTimeout(removeToast, 400);
+    };
+    window.setTimeout(dismiss, GAME_TOAST_DURATION_MS);
+  }
+
+  function closeAllDropdowns() {
+    document.querySelectorAll(".menuClass details[open]").forEach((item) => {
+      item.removeAttribute("open");
+    });
+  }
+
+  function resetCameraView() {
+    if (!camera || !controls) {
+      return;
+    }
+    camera.position.set(DEFAULT_CAMERA.x, DEFAULT_CAMERA.y, DEFAULT_CAMERA.z);
+    controls.target.set(DEFAULT_TARGET.x, DEFAULT_TARGET.y, DEFAULT_TARGET.z);
+    controls.update();
+    showMessage("已重置到默认视角。", "info");
+  }
+
+  function bindGameHud() {
+    toggleRoofBtn?.addEventListener("click", () => {
+      setRoofVisible(!roofVisible);
+    });
+    toggleWallsBtn?.addEventListener("click", () => {
+      setWallsVisible(!wallsVisible);
+    });
+    resetViewBtn?.addEventListener("click", resetCameraView);
+    pauseAlarmBtn?.addEventListener("click", pauseAlarmHighlight);
+  }
+
+  function updateWallsButtonLabel() {
+    if (!toggleWallsBtn) {
+      return;
+    }
+    toggleWallsBtn.innerHTML = wallsVisible ? "隐藏<br>墙体" : "显示<br>墙体";
+    toggleWallsBtn.classList.toggle("is-active", !wallsVisible);
+    toggleWallsBtn.title = wallsVisible ? "点击隐藏外墙与门窗" : "点击恢复外墙与门窗";
+  }
+
+  function setWallsVisible(visible) {
+    if (!scene) {
+      return;
+    }
+    wallsVisible = Boolean(visible);
+    setObjectsVisibleByNames(["room-wall", "room-door", "room-glass"], wallsVisible);
+    updateWallsButtonLabel();
+  }
+
+  function collectDoorsByCodes(codes) {
+    const codeSet = new Set(codes);
+    const doors = [];
+    const seenHinges = new Set();
+    if (!scene) {
+      return doors;
+    }
+    scene.traverse((obj) => {
+      const json = obj?.userData?.objJson;
+      if (!json || json.objType !== "door" || !codeSet.has(json.code)) {
+        return;
+      }
+      const resolved = door.resolveDoorForAnimation(obj);
+      if (!resolved) {
+        return;
+      }
+      const hingeKey = resolved.hinge.uuid;
+      if (seenHinges.has(hingeKey)) {
+        return;
+      }
+      seenHinges.add(hingeKey);
+      doors.push(obj);
+    });
+    return doors;
+  }
+
+  function isDoorOpen(node) {
+    const resolved = door.resolveDoorForAnimation(node);
+    if (!resolved?.hinge) {
+      return false;
+    }
+    return Math.abs(resolved.hinge.rotation.y) > 1e-3;
+  }
+
+  function isAnyDoorOpen(doorNodes) {
+    return doorNodes.some(isDoorOpen);
+  }
+
+  function setDoorGroupOpen(doorNodes, shouldOpen) {
+    for (const node of doorNodes) {
+      if (isDoorOpen(node) !== shouldOpen) {
+        door.openOrCloseDoor(node);
+      }
+    }
+  }
+
+  function toggleDoorGroup(codes) {
+    const doorNodes = collectDoorsByCodes(codes);
+    if (!doorNodes.length) {
+      return;
+    }
+    const shouldOpen = !isAnyDoorOpen(doorNodes);
+    setDoorGroupOpen(doorNodes, shouldOpen);
+    if (codes === MAIN_DOOR_CODES && toggleMainDoorBtn) {
+      toggleMainDoorBtn.textContent = shouldOpen ? "关闭正门" : "开启正门";
+    } else if (codes === SIDE_DOOR_CODES && toggleSideDoorBtn) {
+      toggleSideDoorBtn.textContent = shouldOpen ? "关闭侧门" : "开启侧门";
+    }
+  }
+
+  function updateMainDoorButtonLabel() {
+    if (!toggleMainDoorBtn) {
+      return;
+    }
+    const open = isAnyDoorOpen(collectDoorsByCodes(MAIN_DOOR_CODES));
+    toggleMainDoorBtn.textContent = open ? "关闭正门" : "开启正门";
+  }
+
+  function updateSideDoorButtonLabel() {
+    if (!toggleSideDoorBtn) {
+      return;
+    }
+    const open = isAnyDoorOpen(collectDoorsByCodes(SIDE_DOOR_CODES));
+    toggleSideDoorBtn.textContent = open ? "关闭侧门" : "开启侧门";
+  }
+
+  function syncOperationDoorButtonLabels() {
+    updateMainDoorButtonLabel();
+    updateSideDoorButtonLabel();
+  }
+
+  function isRoomCeilingPickBlocker(obj) {
+    if (!obj) {
+      return false;
+    }
+    if (CEILING_OBJECT_NAMES.has(obj.name)) {
+      return true;
+    }
+    const objName = obj.userData?.objJson?.name;
+    return objName === "room-ceiling" || objName === CEILING_LIGHT_NAME;
+  }
+
+  function bindHostedContainerDoorPick() {
+    detachHostedContainerDoorDblclick?.();
+    detachHostedContainerDoorDblclick = attachHostedContainerDoorDblclick({
+      getScene: () => scene,
+      getCamera: () => camera,
+      getCanvas: () => renderer?.domElement ?? canvasContainer,
+      isPickBlocker: (obj) => !roofVisible && isRoomCeilingPickBlocker(obj),
+      onDoorToggled: scheduleSyncOperationDoorButtonLabels
+    });
+  }
+
+  function scheduleSyncOperationDoorButtonLabels() {
+    window.clearTimeout(doorLabelSyncTimer);
+    doorLabelSyncTimer = window.setTimeout(syncOperationDoorButtonLabels, 1600);
+  }
+
+  function applyRoomFillLightLevel(on) {
+    const levels = on ? ROOM_FILL_LIGHT_LEVELS.on : ROOM_FILL_LIGHT_LEVELS.off;
+    if (roomFillLights.directional) {
+      roomFillLights.directional.intensity = levels.directional;
+    }
+    if (roomFillLights.ambient) {
+      roomFillLights.ambient.intensity = levels.ambient;
+    }
+    if (roomFillLights.point) {
+      roomFillLights.point.intensity = levels.point;
+    }
+  }
+
+  function applyCeilingLightVisibility() {
+    setObjectsVisibleByName(CEILING_LIGHT_NAME, ceilingLightsOn && roofVisible);
+    applyRoomFillLightLevel(ceilingLightsOn);
+  }
+
+  function updateCeilingLightButtonLabel() {
+    if (!toggleCeilingLightBtn) {
+      return;
+    }
+    toggleCeilingLightBtn.textContent = ceilingLightsOn ? "关灯" : "开灯";
+  }
+
+  function setCeilingLightsOn(on) {
+    ceilingLightsOn = Boolean(on);
+    applyCeilingLightVisibility();
+    updateCeilingLightButtonLabel();
+  }
+
+  function syncOperationButtonLabels() {
+    syncOperationDoorButtonLabels();
+    updateCeilingLightButtonLabel();
+  }
+
+  function updateRoofButtonLabel() {
+    if (!toggleRoofBtn) {
+      return;
+    }
+    toggleRoofBtn.innerHTML = roofVisible ? "隐藏<br>屋顶" : "显示<br>屋顶";
+    toggleRoofBtn.classList.toggle("is-active", roofVisible);
+    toggleRoofBtn.title = roofVisible ? "点击隐藏屋顶与吊顶" : "点击显示屋顶与吊顶";
+  }
+
+  function setRoofVisible(visible) {
+    if (!scene) {
+      return;
+    }
+    roofVisible = Boolean(visible);
+    setObjectsVisibleByName("room-ceiling", roofVisible);
+    applyCeilingLightVisibility();
+    syncCeilingDuctVisibility();
+    updateRoofButtonLabel();
+  }
+
+  function bindMenu() {
+    document.querySelector(".menuClass").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-menu]");
+      if (!button) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      dispatchMenuAction(button.dataset.menu);
+      closeAllDropdowns();
+    });
+
+    document.addEventListener("click", (event) => {
+      if (!event.target.closest(".menuClass")) {
+        closeAllDropdowns();
+      }
+    });
+  }
+
+  function setLoading(flag) {
+    loadingMask.style.display = flag ? "flex" : "none";
+  }
+
+  function setLoadingMessage(message) {
+    setLoading(true);
+    showProgressMessage("loadingMask", message);
+  }
+
+  window.addEventListener("DOMContentLoaded", async () => {
+    bindMenu();
+    bindGameHud();
+    bindProgressElement(loadingMask, {
+      onUpdate: () => setLoading(true),
+      onComplete: () => tryFinalizeRoomShowAfterHostInit()
+    });
+    openOrCloseProgressManager(sysConfig.progressFlag);
+    await loadScene();
+  });
+
+  window.addEventListener("beforeunload", wasteCleaner);
+
+  async function loadScene() {
+    try {
+      setLoadingMessage("正在读取机房配置...");
+      const response = await fetch(sceneJsonUrl);
+      if (!response.ok) {
+        throw new Error(`加载机房场景失败：${response.status}`);
+      }
+      const sceneJson = await response.json();
+      ensureThreeJsonIdsOnScenePayload(sceneJson);
+      sysConfig.jsonData = sceneJson;
+      sysConfig.lineList = sceneJson.worldInfo?.lineList || [];
+      await initWorld();
+    } catch (error) {
+      setLoading(false);
+      openOrCloseProgressManager(false);
+      showMessage(`加载场景失败：${error.message}`, "error");
+      console.error(error);
+    }
+  }
+
+  async function initWorld() {
+    setLoadingMessage("正在创建 3D 场景...");
+    sceneRuntime = await createJsonScene(sysConfig.jsonData, {
+      canvas: canvasContainer,
+      context: {
+        jsonData: sysConfig.jsonData,
+        sceneJsonRoot: sysConfig.jsonData
+      },
+      onDeployProgress: (ctx) => {
+        const { done, total } = ctx.deploy || {};
+        setLoadingMessage(`正在部署对象 ${done}/${total}...`);
+      }
+    });
+    scene = sceneRuntime.scene;
+    camera = sceneRuntime.camera;
+    renderer = sceneRuntime.renderer;
+    controls = sceneRuntime.controls;
+    renderLoop = sceneRuntime.renderLoop;
+    const glCanvas = renderer?.domElement;
+    if (glCanvas) {
+      glCanvas.addEventListener("webglcontextlost", (event) => {
+        event.preventDefault();
+      }, false);
+      glCanvas.addEventListener("webglcontextrestored", () => {
+        windowResize();
+      }, false);
+    }
+    trackDisposableResource(scene);
+    windowResize();
+
+    initLight();
+    initEventListener();
+    initHighLight();
+    superAnimate();
+    initAlarmMockDemo();
+    tryFinalizeRoomShowAfterHostInit();
+    syncOperationButtonLabels();
+  }
+
+  /** 宿主扩展（灯光、高亮、渲染循环）就绪且资源加载完成后，应用首屏显隐并关闭 loading。 */
+  function finalizeRoomShowAfterHostInit() {
+    if (roomShowPresentationFinalized) {
+      return;
+    }
+    roomShowPresentationFinalized = true;
+    setLoadingMessage("3D 场景加载完成。");
+    setRoofVisible(false);
+    applyCeilingLightVisibility();
+    setWallsVisible(true);
+    window.setTimeout(() => setLoading(false), 300);
+    openOrCloseProgressManager(false);
+  }
+
+  function tryFinalizeRoomShowAfterHostInit() {
+    if (
+      roomShowPresentationFinalized ||
+      !sceneRuntime ||
+      !sysConfig.initFlags.highLightInitFlag ||
+      !checkComplete()
+    ) {
+      return;
+    }
+    finalizeRoomShowAfterHostInit();
+  }
+
+  function initEventListener() {
+    window.addEventListener("resize", windowResize);
+    bindHostedContainerDoorPick();
+    document.addEventListener(door.DOOR_TOGGLED_EVENT, scheduleSyncOperationDoorButtonLabels);
+    canvasContainer.addEventListener("contextmenu", rightClickHandler);
+    keyDownHandler();
+  }
+
+  function initLight() {
+    roomFillLights.directional = addLightWithShadow("directional", "#ffffff", 12, [64, 10.5, -35], true);
+    roomFillLights.ambient = addLightWithShadow("ambient", "#cccccc", 0.4, [0, 0, 0], false);
+    roomFillLights.point = addLightWithShadow("point", "#cccccc", 1200, [0, 35, 0], true, { decay: 2 });
+    applyRoomFillLightLevel(ceilingLightsOn);
+  }
+
+  function addLightWithShadow(type, color, intensity, position = [], shadow, extra = {}) {
+    const types = {
+      ambient: THREE.AmbientLight,
+      directional: THREE.DirectionalLight,
+      point: THREE.PointLight
+    };
+    const createdLight =
+      type === "point"
+        ? new THREE.PointLight(
+            color,
+            intensity,
+            Number.isFinite(extra.distance) ? extra.distance : 0,
+            Number.isFinite(extra.decay) ? extra.decay : 2
+          )
+        : new types[type](color, intensity);
+    trackDisposableResource(createdLight);
+    if (position.length) {
+      createdLight.position.set(position[0], position[1], position[2]);
+    }
+    if (shadow && createdLight.shadow) {
+      createdLight.shadow.camera.near = 0.1;
+      createdLight.shadow.camera.far = 500;
+      createdLight.castShadow = true;
+    }
+    createdLight.userData = {
+      objJson: {
+        objType: "light"
+      }
+    };
+    scene.add(createdLight);
+    return createdLight;
+  }
+
+  /** 热力图（createJsonScene 已部署，仅切换可见性） */
+  function setHeatMapLayerVisible(visible) {
+    setObjectsVisibleByObjType(scene, "heatMap", visible);
+  }
+
+  /** 吊顶冷水管道（tubeList）；通道气流或显示屋顶时可见 */
+  function syncCeilingDuctVisibility() {
+    if (!scene) {
+      return;
+    }
+    setObjectsVisibleByObjType(scene, "tube", windLayerVisible || roofVisible);
+  }
+
+  /** 通道气流条带（createJsonScene 已部署，仅切换可见性） */
+  function setWindLayerVisible(visible) {
+    windLayerVisible = Boolean(visible);
+    setObjectsVisibleByObjType(scene, "wind", windLayerVisible);
+    syncCeilingDuctVisibility();
+  }
+
+  function superAnimate() {
+    renderLoop.setComposer(composer);
+    renderLoop.start();
+  }
+
+  const PAGE_CHANNEL_STYLES = {
+    info: { visibleEdgeColor: "#fff", hiddenEdgeColor: "#fff" },
+    locate: { visibleEdgeColor: "#E6A800", hiddenEdgeColor: "#E6A800" },
+    alarm: { visibleEdgeColor: "#DC3A2F", hiddenEdgeColor: "#DC3A2F" }
+  };
+
+  function initHighLight() {
+    composer = new EffectComposer(renderer);
+    trackDisposableResource(composer);
+    selectionVisual = sceneHighlight.createPageHighlightSetup(scene, camera, {
+      composer,
+      renderer,
+      channelOptions: PAGE_CHANNEL_STYLES
+    }).controller;
+    sysConfig.initFlags.highLightInitFlag = true;
+  }
+
+  function createLeakLine() {
+    if (!sysConfig.lineList.length) {
+      return;
+    }
+    setObjectsVisibleByName("cabinet", false);
+    setObjectsVisibleByName("air-conditioning", false);
+    setObjectsVisibleByName("head-cabinet", false);
+    setObjectsVisibleByName("leak-line", true);
+  }
+
+  function rightClickHandler(event) {
+    event.preventDefault();
+    // 中文说明：原 Vue 页面里的右键逻辑用于 3D 编辑器 TransformControls，本 HTML 版本未引入编辑器控件，仅保留阻止浏览器右键菜单。
+  }
+
+  function windowResize() {
+    const myWidth = window.innerWidth;
+    const myHeight = window.innerHeight;
+    sysConfig.windowSizeNow.width = myWidth;
+    sysConfig.windowSizeNow.height = myHeight;
+    sysConfig.canvasWidth = myWidth;
+    sysConfig.canvasHeight = myHeight;
+    renderLoop?.resize({
+      width: sysConfig.canvasWidth,
+      height: sysConfig.canvasHeight
+    });
+  }
+
+  function keyDownHandler() {
+    document.onkeydown = (event) => {
+      if (event.key === "Escape") {
+        showMessage("HTML 独立页面已全屏铺满窗口，无需恢复父页面布局。");
+      }
+    };
+  }
+
+  /** 视图类菜单：先 clearView，再执行对应动作（roomShow 仅恢复默认）。 */
+  const MENU_VIEW_ACTIONS = {
+    roomShow: () => {},
+    tempCloud: requestHeatMap,
+    hotAndColdCloud: () => setWindLayerVisible(true),
+    capacity: capacityStatistics,
+    airCondition: requestAllEnvInfoPanels,
+    leakLine: createLeakLine
+  };
+
+  /** 操作类菜单：不重置当前视图叠加层。 */
+  const MENU_OPERATION_ACTIONS = {
+    toggleMainDoor: () => toggleDoorGroup(MAIN_DOOR_CODES),
+    toggleSideDoor: () => toggleDoorGroup(SIDE_DOOR_CODES),
+    toggleCeilingLight: () => setCeilingLightsOn(!ceilingLightsOn)
+  };
+
+  function dispatchMenuAction(menuId) {
+    const viewAction = MENU_VIEW_ACTIONS[menuId];
+    if (viewAction) {
+      clearView();
+      viewAction();
+      return;
+    }
+    const operationAction = MENU_OPERATION_ACTIONS[menuId];
+    if (operationAction) {
+      operationAction();
+      return;
+    }
+    showMessage("正在建设中的功能，敬请期待...", "warning");
+  }
+
+  function capacityStatistics() {
+    const cabinets = getObjectsByName("cabinet");
+    if (!cabinets?.length) {
+      return;
+    }
+    for (const cabinetRoot of cabinets) {
+      device.cabinet.showCapacityStats(cabinetRoot, scene, { animate: true });
+    }
+  }
+
+  /** infoPanelList 条目与设备内嵌 devicePanel 统一显隐键 */
+  const INFO_PANEL_OBJECT_NAMES = ["infoPanel", "devicePanel"];
+
+  function setAllInfoPanelsVisible(visible) {
+    setObjectsVisibleByNames(INFO_PANEL_OBJECT_NAMES, visible);
+  }
+
+  function clearView() {
+    setAllInfoPanelsVisible(false);
+    setWindLayerVisible(false);
+    setHeatMapLayerVisible(false);
+    setObjectsVisibleByName("leak-line", false);
+    for (const cabinetRoot of getObjectsByName("cabinet") || []) {
+      device.cabinet.clearCabinetStatView(cabinetRoot, scene);
+    }
+    selectionVisual?.clearInfoHighlight?.();
+    setObjectsVisibleByName("cabinet", true);
+    setObjectsVisibleByName("air-conditioning", true);
+    setObjectsVisibleByName("head-cabinet", true);
+  }
+
+  function normalizeAlarmIdList(list) {
+    return Array.isArray(list)
+      ? list.map((id) => String(id ?? "").trim()).filter(Boolean)
+      : [];
+  }
+
+  function resolveAlarmObject(threeJsonId) {
+    const obj = getObjectByThreeJsonId(threeJsonId);
+    if (!obj) {
+      console.warn(`[room-show] alarm target not found: ${threeJsonId}`);
+    }
+    return obj;
+  }
+
+  function applyAlarmPush(payload) {
+    if (alarmHighlightPaused || !payload || !selectionVisual) {
+      return;
+    }
+    const fault = normalizeAlarmIdList(payload.fault);
+    const maintenance = normalizeAlarmIdList(payload.maintenance);
+    const cleared = normalizeAlarmIdList(payload.cleared);
+    if (payload.message) {
+      pushGameToast(payload.message, payload.toastType);
+    }
+    for (const id of fault) {
+      const obj = resolveAlarmObject(id);
+      if (!obj) {
+        continue;
+      }
+      selectionVisual.removeLocateObject(obj);
+      selectionVisual.addAlarmObjects([obj]);
+    }
+    for (const id of maintenance) {
+      const obj = resolveAlarmObject(id);
+      if (!obj) {
+        continue;
+      }
+      selectionVisual.removeAlarmObject(obj);
+      selectionVisual.addLocateObjects([obj]);
+    }
+    for (const id of cleared) {
+      const obj = resolveAlarmObject(id);
+      if (!obj) {
+        continue;
+      }
+      selectionVisual.removeAlarmObject(obj);
+      selectionVisual.removeLocateObject(obj);
+    }
+  }
+
+  function startAlarmMockDemo() {
+    if (alarmHighlightPaused) {
+      return;
+    }
+    const { A, B } = ALARM_MOCK_IDS;
+    const step = ALARM_MOCK_STEP_MS;
+    applyAlarmPush({
+      fault: [A, B],
+      maintenance: [],
+      cleared: [],
+      message: "故障告警：2 台设备"
+    });
+    window.setTimeout(
+      () =>
+        applyAlarmPush({
+          fault: [B],
+          maintenance: [A],
+          cleared: [],
+          message: "配电柜 A 转维护中"
+        }),
+      step
+    );
+    window.setTimeout(
+      () =>
+        applyAlarmPush({
+          fault: [],
+          maintenance: [A, B],
+          cleared: [],
+          message: "机柜 13 转维护中"
+        }),
+      step * 2
+    );
+    window.setTimeout(
+      () =>
+        applyAlarmPush({
+          fault: [],
+          maintenance: [B],
+          cleared: [A],
+          message: "配电柜 A 告警解除"
+        }),
+      step * 3
+    );
+    window.setTimeout(
+      () =>
+        applyAlarmPush({
+          fault: [],
+          maintenance: [],
+          cleared: [B],
+          message: "机柜 13 告警解除"
+        }),
+      step * 4
+    );
+  }
+
+  function initAlarmMockDemo() {
+    window.setTimeout(() => startAlarmMockDemo(), ALARM_MOCK_STEP_MS);
+  }
+
+  async function requestAllEnvInfoPanels() {
+    const infoPanelList = sysConfig.jsonData?.worldInfo?.infoPanelList || [];
+    if (infoPanelList.length > 0) {
+      await applyInfoPanelList(
+        scene,
+        infoPanelList.map((panel) => ({ ...panel, visible: true }))
+      );
+      setAllInfoPanelsVisible(true);
+      showMessage("已使用本地 JSON 中的信息面板数据。", "info");
+    } else {
+      showMessage("暂无环境信息面板数据。", "warning");
+    }
+  }
+
+  function requestHeatMap() {
+    const heatList = sysConfig.jsonData?.worldInfo?.heatList || [];
+    if (heatList.length > 0) {
+      setHeatMapLayerVisible(true);
+    } else {
+      showMessage("暂无本地热力图数据。", "warning");
+    }
+  }
+
+  function clearAllAlarmHighlights() {
+    selectionVisual?.clearLocateHighlights?.();
+    selectionVisual?.clearAlarmHighlights?.();
+  }
+
+  function updatePauseAlarmButton() {
+    if (!pauseAlarmBtn) {
+      return;
+    }
+    if (alarmHighlightPaused) {
+      pauseAlarmBtn.innerHTML = "告警<br>已停";
+      pauseAlarmBtn.classList.add("is-active");
+      pauseAlarmBtn.title = "告警高亮已暂停，刷新页面后恢复";
+    } else {
+      pauseAlarmBtn.innerHTML = "暂停<br>告警";
+      pauseAlarmBtn.classList.remove("is-active");
+      pauseAlarmBtn.title = "清除当前告警高亮，刷新页面前不再显示";
+    }
+  }
+
+  function pauseAlarmHighlight() {
+    if (alarmHighlightPaused) {
+      return;
+    }
+    alarmHighlightPaused = true;
+    clearAllAlarmHighlights();
+    updatePauseAlarmButton();
+    showMessage("已暂停告警高亮，刷新页面前不再显示。", "success");
+  }
+
+  function wasteCleaner() {
+    renderLoop?.stop();
+    cancelActiveDeployScheduler();
+    try {
+      sceneRuntime?.dispose?.();
+    } catch {
+      /* ignore */
+    }
+    window.removeEventListener("resize", windowResize);
+    detachHostedContainerDoorDblclick?.();
+    detachHostedContainerDoorDblclick = null;
+    document.removeEventListener(door.DOOR_TOGGLED_EVENT, scheduleSyncOperationDoorButtonLabels);
+    canvasContainer.removeEventListener("contextmenu", rightClickHandler);
+    disposeTrackedResources();
+  }
+
+  // 方便浏览器控制台调试和外部页面集成。
+  window.roomshow = {
+    scene: () => scene,
+    camera: () => camera,
+    renderer: () => renderer,
+    controls: () => controls,
+    sysConfig,
+    dispatchMenuAction,
+    menuSwitchHandler: dispatchMenuAction,
+    alarmSocket: applyAlarmPush,
+    pushGameToast,
+    pauseAlarmHighlight,
+    isAlarmHighlightPaused: () => alarmHighlightPaused,
+    wasteCleaner,
+    resetCameraView,
+    setRoofVisible,
+    setWallsVisible,
+    wallsVisible: () => wallsVisible,
+    roofVisible: () => roofVisible
+  };
+</script>
+</body>
+</html>

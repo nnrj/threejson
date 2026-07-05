@@ -1,0 +1,21 @@
+{
+  "_doc": "mcp-threejson (Cursor MCP) only. Copy to setting.json in this directory. Repo root: env THREEJSON_ROOT, else auto-detect from server.mjs location. Independent from tools/threejson-agent/setting.json.",
+  "llm": {
+    "provider": "chatgpt",
+    "apiKey": "",
+    "baseUrl": "",
+    "model": "",
+    "imageModel": "dall-e-3",
+    "temperature": 0.2,
+    "maxTokens": 4000
+  },
+  "agent": {
+    "enabled": false,
+    "depth": "medium"
+  },
+  "texture": {
+    "localOutputDir": "assets/textures/ai-generated",
+    "overwriteExisting": false,
+    "concurrency": 2
+  }
+}

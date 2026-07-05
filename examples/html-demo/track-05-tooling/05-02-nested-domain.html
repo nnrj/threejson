@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThreeJSON Tutorial · Track 5 · 嵌套子域</title>
+  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <script type="importmap">
+    {
+      "imports": {
+        "threejson": "/builtins/full.js",
+        "threejson/core": "/core/index.js",
+        "three": "https://esm.sh/three@0.184.0",
+        "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
+        "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
+        "html2canvas-pro": "https://esm.sh/html2canvas-pro@2.0.4",
+        "gifuct-js": "https://esm.sh/gifuct-js@2.1.2",
+        "three-mesh-bvh": "https://esm.sh/three-mesh-bvh@0.9.10?deps=three@0.184.0",
+        "three-bvh-csg": "https://esm.sh/three-bvh-csg@0.0.18?deps=three@0.184.0,three-mesh-bvh@0.9.10"
+      }
+    }
+  </script>
+  <style>
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #222; font-family: Arial, "Microsoft YaHei", sans-serif; }
+    #rootContainer { position: relative; width: 100vw; height: 100vh; }
+    #canvasContainer { display: block; width: 100%; height: 100%; background: #111; }
+    #loadingMask {
+      position: absolute; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
+      color: #fff; background: rgba(0,0,0,0.55); font-size: 15px;
+    }
+    #toolbar {
+      position: absolute; top: 12px; left: 12px; z-index: 25; display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    #toolbar button {
+      padding: 6px 12px; border: 1px solid #4a6080; border-radius: 4px;
+      background: rgba(20,28,40,0.85); color: #e8f0ff; font-size: 12px; cursor: pointer;
+    }
+    #toolbar button:hover { background: rgba(40,56,80,0.95); }
+    #hint {
+      position: absolute; left: 12px; bottom: 12px; z-index: 25; max-width: min(760px, 92vw);
+      padding: 8px 10px; border-radius: 4px; background: rgba(10,10,10,0.55); color: #e0e0e0; font-size: 12px; line-height: 1.45;
+    }
+    code { color: #b8d4ff; }
+  </style>
+</head>
+<body>
+<div id="rootContainer">
+  <canvas id="canvasContainer">需要 WebGL</canvas>
+  <div id="loadingMask">加载中…</div>
+  <div id="toolbar" hidden>
+    <button type="button" data-mode="rain">weather.rain</button>
+    <button type="button" data-mode="wind">weather.wind</button>
+    <button type="button" data-mode="snow">weather + snow</button>
+    <button type="button" data-mode="diag">控制台诊断</button>
+  </div>
+  <div id="hint">
+    【Track 5 · 嵌套子域】JSON 已加载 rain/wind/snow；按钮可追加 <code>invokeDomainModel</code>。
+    中间节点 <code>weather.particle</code> 仅命名空间，不可调度。
+  </div>
+</div>
+<script type="module">
+  import {
+    createJsonScene,
+    getDomain,
+    invokeDomainModel,
+    businessDomains
+  } from "threejson";
+
+  const sceneJsonUrl = "/assets/json/tutorial/track-05/05-02-nested-domain.json";
+  const canvas = document.getElementById("canvasContainer");
+  const loadingMask = document.getElementById("loadingMask");
+  const toolbar = document.getElementById("toolbar");
+  let sceneRuntime;
+  let invokeOffset = 0;
+
+  window.addEventListener("DOMContentLoaded", init);
+  window.addEventListener("beforeunload", () => sceneRuntime?.dispose?.());
+
+  function logRegistryDiag() {
+    console.group("[nested-domain] registry diag");
+    console.log("getDomain('rain')", getDomain("rain"));
+    console.log("getDomain('weather.rain')", getDomain("weather.rain")?.id);
+    console.log("getDomain('weather.particle')", getDomain("weather.particle")?.id);
+    console.log("deployRain fn", typeof businessDomains.weather?.rain?.deployRain);
+    console.log("deployWind fn", typeof businessDomains["weather.wind"]?.deployWind);
+  }
+
+  function invokeSample(mode) {
+    const scene = sceneRuntime?.scene;
+    if (!scene) return;
+    invokeOffset += 40;
+    const x = -70 + invokeOffset;
+    if (mode === "rain") {
+      invokeDomainModel(scene, {
+        objType: "domain",
+        domain: "weather.rain",
+        name: `invoke-rain-${invokeOffset}`,
+        position: { x, y: 90, z: -40 },
+        count: 800
+      });
+      return;
+    }
+    if (mode === "wind") {
+      invokeDomainModel(scene, {
+        objType: "domain",
+        domain: "weather.wind",
+        handler: "hotWind",
+        name: `invoke-wind-${invokeOffset}`,
+        position: { x, y: 25, z: 30 },
+        geometry: { width: 100, height: 6, depth: 100 }
+      });
+      return;
+    }
+    if (mode === "snow") {
+      invokeDomainModel(scene, {
+        objType: "domain",
+        domain: "weather",
+        handler: "snow",
+        name: `invoke-snow-${invokeOffset}`,
+        position: { x, y: 75, z: 60 },
+        count: 500
+      });
+    }
+  }
+
+  async function init() {
+    try {
+      const response = await fetch(sceneJsonUrl);
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      const sceneData = await response.json();
+      sceneData.canvasWidth = window.innerWidth;
+      sceneData.canvasHeight = window.innerHeight;
+      sceneRuntime = await createJsonScene(sceneData, { canvas, resetScene: true });
+      window.addEventListener("resize", () => sceneRuntime?.resize?.(window.innerWidth, window.innerHeight));
+      sceneRuntime.start();
+      loadingMask.style.display = "none";
+      toolbar.hidden = false;
+      logRegistryDiag();
+      toolbar.addEventListener("click", (ev) => {
+        const btn = ev.target.closest("button[data-mode]");
+        if (!btn) return;
+        const mode = btn.getAttribute("data-mode");
+        if (mode === "diag") {
+          logRegistryDiag();
+          invokeDomainModel(sceneRuntime.scene, {
+            objType: "domain",
+            domain: "weather.particle"
+          });
+          return;
+        }
+        invokeSample(mode);
+      });
+    } catch (err) {
+      console.error(err);
+      loadingMask.textContent = "加载失败：" + err.message;
+    }
+  }
+</script>
+</body>
+</html>

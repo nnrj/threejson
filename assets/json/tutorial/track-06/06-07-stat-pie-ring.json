@@ -1,0 +1,91 @@
+{
+  "version": "next",
+  "name": "tutorial-stat-pie-ring",
+  "sceneConfig": {
+    "scene": { "background": "#101820" },
+    "textFont": {
+      "preloadCharacters": "NorthEastSouthWest+"
+    },
+    "camera": {
+      "fov": 52,
+      "position": { "x": 0, "y": 90, "z": 150 },
+      "near": 0.1,
+      "far": 4000
+    },
+    "renderer": { "antialias": true },
+    "controls": {
+      "enableDamping": true,
+      "target": { "x": 0, "y": 8, "z": 0 }
+    },
+    "lights": [
+      { "type": "ambient", "color": "#9fb4c8", "intensity": 0.95 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1.2, "position": { "x": 72, "y": 130, "z": 96 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "worldInfo": {
+    "boxModelList": [
+      {
+        "name": "floor",
+        "objType": "floor",
+        "geometry": { "width": 260, "height": 1, "depth": 120 },
+        "position": { "x": 0, "y": 0, "z": 0 },
+        "material": { "color": "#2a3038" }
+      }
+    ],
+    "domainModelList": [
+      {
+        "objType": "domain",
+        "domain": "stat.pie",
+        "handler": "createStatPie",
+        "name": "compare-pie",
+        "position": { "x": -58, "y": 0, "z": 0 },
+        "options": {
+          "radius": 34,
+          "height": 14,
+          "radialSegments": 32,
+          "labelStyle": {
+            "labelMode": "sdf",
+            "fontSize": 3,
+            "sdf": {
+              "outlineWidth": 0.1,
+              "outlineColor": "#1a2030"
+            }
+          }
+        },
+        "slices": [
+          { "value": 30, "label": "North", "color": "#42a5f5" },
+          { "value": 20, "label": "East", "color": "#66bb6a" },
+          { "value": 25, "label": "South", "color": "#ffa726" },
+          { "value": 25, "label": "West", "color": "#ef5350" }
+        ]
+      },
+      {
+        "objType": "domain",
+        "domain": "stat.ring",
+        "handler": "createStatRing",
+        "name": "compare-ring",
+        "position": { "x": 58, "y": 0, "z": 0 },
+        "options": {
+          "outerRadius": 38,
+          "innerRadius": 20,
+          "height": 14,
+          "radialSegments": 48,
+          "labelStyle": {
+            "labelMode": "sdf",
+            "fontSize": 3,
+            "sdf": {
+              "outlineWidth": 0.1,
+              "outlineColor": "#1a2030"
+            }
+          }
+        },
+        "slices": [
+          { "value": 30, "label": "North", "color": "#42a5f5" },
+          { "value": 20, "label": "East", "color": "#66bb6a" },
+          { "value": 50, "label": "South+West", "color": "#ffa726" }
+        ]
+      }
+    ]
+  }
+}

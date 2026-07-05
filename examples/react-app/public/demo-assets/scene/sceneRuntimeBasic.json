@@ -1,0 +1,280 @@
+{
+  "version": "next",
+  "name": "runtime-basic-friendly",
+  "friendlyMap": {
+    "floorList": {
+      "objType": "floor",
+      "defaults": {
+        "material": {
+          "type": "standard",
+          "metalness": 0.05,
+          "roughness": 0.85
+        },
+        "businessInfo": {
+          "businessName": "floor"
+        }
+      }
+    },
+    "glassList": {
+      "objType": "box",
+      "defaults": {
+        "material": {
+          "type": "glass",
+          "transparent": true,
+          "opacity": 0.45
+        }
+      }
+    }
+  },
+  "sceneConfig": {
+    "canvasWidth": 1920,
+    "canvasHeight": 1080,
+    "scene": {
+      "background": "#222222"
+    },
+    "camera": {
+      "fov": 60,
+      "near": 0.1,
+      "far": 2500,
+      "position": {
+        "x": 230,
+        "y": 180,
+        "z": 260
+      }
+    },
+    "renderer": {
+      "antialias": true,
+      "ratioRate": 1
+    },
+    "controls": {
+      "enableDamping": true,
+      "dampingFactor": 0.08,
+      "enableZoom": true,
+      "target": {
+        "x": 0,
+        "y": 40,
+        "z": 0
+      }
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "color": "#ffffff",
+        "intensity": 0.45
+      },
+      {
+        "type": "directional",
+        "color": "#ffffff",
+        "intensity": 0.9,
+        "position": {
+          "x": 300,
+          "y": 400,
+          "z": 250
+        }
+      }
+    ],
+    "renderLoop": {
+      "autoResize": true,
+      "firstAutoResize": true
+    }
+  },
+  "worldInfo": {
+    "floorList": [
+      {
+        "name": "runtime-floor",
+        "geometry": {
+          "width": 360,
+          "height": 8,
+          "depth": 260
+        },
+        "position": {
+          "x": 0,
+          "y": -4,
+          "z": 0
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 1,
+          "scaleY": 1,
+          "scaleZ": 1
+        },
+        "material": {
+          "color": "#ffffff",
+          "textureUrl": "/demo-assets/textures/building/floor/wood_floor.webp",
+          "textureRepeat": {
+            "x": 2,
+            "y": 2
+          }
+        }
+      }
+    ],
+    "boxModelList": [
+      {
+        "name": "runtime-blue-box",
+        "objType": "box",
+        "geometry": {
+          "width": 80,
+          "height": 80,
+          "depth": 80
+        },
+        "position": {
+          "x": -70,
+          "y": 40,
+          "z": 0
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 1,
+          "scaleY": 1,
+          "scaleZ": 1
+        },
+        "material": {
+          "type": "wall",
+          "color": "#409eff"
+        },
+        "animations": [
+          {
+            "type": "rotate",
+            "axis": "y",
+            "speed": -0.6
+          }
+        ]
+      }
+    ],
+    "glassList": [
+      {
+        "name": "runtime-glass-box",
+        "geometry": {
+          "width": 70,
+          "height": 110,
+          "depth": 70
+        },
+        "position": {
+          "x": 70,
+          "y": 55,
+          "z": -35
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0.35,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 1,
+          "scaleY": 1,
+          "scaleZ": 1
+        },
+        "material": {
+          "color": "#67c23a"
+        }
+      }
+    ],
+    "sphereModelList": [
+      {
+        "name": "runtime-earth-sphere",
+        "geometry": {
+          "radius": 42,
+          "widthSegments": 32,
+          "heightSegments": 16
+        },
+        "position": {
+          "x": 55,
+          "y": 48,
+          "z": 70
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 1,
+          "scaleY": 1,
+          "scaleZ": 1
+        },
+        "material": {
+          "type": "standard",
+          "textureUrl": "/demo-assets/textures/pano/earth.png"
+        },
+        "animations": [
+          {
+            "type": "rotate",
+            "axis": "y",
+            "speed": 0.48
+          }
+        ]
+      }
+    ],
+    "lineList": [
+      {
+        "name": "runtime-link-line",
+        "material": {
+          "color": "#1AD4D4",
+          "transparent": true,
+          "opacity": 0.85,
+          "linewidth": 4
+        },
+        "points": [
+          { "x": -70, "y": 85, "z": 0 },
+          { "x": 0, "y": 118, "z": 28 },
+          { "x": 55, "y": 90, "z": 70 }
+        ]
+      }
+    ],
+    "infoPanelList": [
+      {
+        "text": "friendly JSON\nsceneConfig\n+ typed lists\n+ friendlyMap",
+        "type": "text",
+        "panelBoxType": "sprite",
+        "visible": true,
+        "color": "#ffffff",
+        "backColor": "#303133",
+        "panelWidth": 220,
+        "panelHeight": 104,
+        "panelDepth": 2,
+        "transparent": true,
+        "opacity": 0.85,
+        "font": "18px Microsoft YaHei",
+        "textStyle": {
+          "padding": 10,
+          "lineHeight": 24
+        },
+        "panel": {
+          "geometry": {
+            "width": 220,
+            "height": 104,
+            "depth": 2
+          },
+          "position": {
+            "x": 0,
+            "y": 150,
+            "z": 0
+          },
+          "material": {
+            "color": "#303133",
+            "transparent": true,
+            "opacity": 0.92
+          },
+          "rotation": {
+            "rotationX": 0,
+            "rotationY": 0,
+            "rotationZ": 0
+          },
+          "scale": {
+            "scaleX": 1,
+            "scaleY": 1,
+            "scaleZ": 1
+          }
+        }
+      }
+    ]
+  }
+}

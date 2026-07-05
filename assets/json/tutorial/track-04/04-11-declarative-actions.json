@@ -1,0 +1,113 @@
+{
+  "version": "next",
+  "threeJsonId": "04-11-declarative-actions",
+  "name": "tutorial-declarative-actions",
+  "canvasWidth": 1920,
+  "canvasHeight": 1080,
+  "objectList": [
+    {
+      "threeJsonId": "actions-scene",
+      "objType": "scene",
+      "background": "#222222",
+      "events": {
+        "scene.ready": {
+          "action": {
+            "type": "object.patch",
+            "target": "status-box",
+            "partial": {
+              "material": { "type": "standard", "color": "#67c23a" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "objType": "camera",
+      "fov": 60,
+      "near": 0.1,
+      "far": 250,
+      "position": { "x": 18, "y": 14, "z": 24 },
+      "target": { "x": 0, "y": 3, "z": 0 }
+    },
+    {
+      "objType": "renderer",
+      "antialias": true,
+      "ratioRate": 1
+    },
+    {
+      "objType": "controls",
+      "enableDamping": true,
+      "dampingFactor": 0.08,
+      "target": { "x": 0, "y": 3, "z": 0 }
+    },
+    {
+      "objType": "light",
+      "type": "ambient",
+      "color": "#ffffff",
+      "intensity": 0.5
+    },
+    {
+      "objType": "light",
+      "type": "directional",
+      "color": "#ffffff",
+      "intensity": 0.9,
+      "position": { "x": 18, "y": 28, "z": 16 }
+    },
+    {
+      "objType": "renderLoop",
+      "autoResize": true,
+      "firstAutoResize": true
+    },
+    {
+      "threeJsonId": "actions-floor",
+      "name": "actions-floor",
+      "objType": "floor",
+      "geometry": { "width": 34, "height": 0.8, "depth": 22 },
+      "position": { "x": 0, "y": -0.4, "z": 0 },
+      "material": { "type": "standard", "color": "#30343c" }
+    },
+    {
+      "threeJsonId": "status-box",
+      "name": "status-box",
+      "objType": "box",
+      "geometry": { "width": 3, "height": 3, "depth": 3 },
+      "position": { "x": -8, "y": 1.5, "z": 0 },
+      "material": { "type": "standard", "color": "#909399" }
+    },
+    {
+      "threeJsonId": "move-box",
+      "name": "move-box",
+      "objType": "box",
+      "geometry": { "width": 3, "height": 3, "depth": 3 },
+      "position": { "x": 0, "y": 1.5, "z": 0 },
+      "material": { "type": "standard", "color": "#409eff" },
+      "events": {
+        "click": {
+          "actions": [
+            { "type": "object.moveBy", "delta": { "x": 1, "y": 0, "z": 0 } },
+            {
+              "type": "object.patch",
+              "partial": {
+                "material": { "type": "standard", "color": "#e6a23c" }
+              }
+            }
+          ],
+          "script": "await wait(200)\nself.moveBy(0, 0.5, 0)"
+        }
+      }
+    },
+    {
+      "threeJsonId": "toggle-box",
+      "name": "toggle-box",
+      "objType": "box",
+      "geometry": { "width": 3, "height": 3, "depth": 3 },
+      "position": { "x": 8, "y": 1.5, "z": 0 },
+      "material": { "type": "standard", "color": "#f56c6c" },
+      "events": {
+        "click": {
+          "action": { "type": "object.toggleVisible", "target": "status-box" }
+        }
+      }
+    }
+  ]
+}

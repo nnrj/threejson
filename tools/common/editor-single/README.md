@@ -1,0 +1,28 @@
+# editor-single（单文件正本编辑器依赖）
+
+[`scene-editor.html`](../../../scene-editor.html) 位于仓库根目录，是本仓库的**单文件正本编辑器**；本目录为其 **import 依赖**（`command/`、`ai/`、`domainEditSession.js`），**不是**模块化拆分版。
+
+拆分重构版在 [`tools/scene-host/editor/`](../../scene-host/editor/)（绿场），二者勿混淆。
+
+## 接线
+
+```javascript
+import { createCommandRegistry, executeCommands } from "./core/command/index.js";
+import { registerEditorCommands } from "./tools/common/editor-single/command/index.js";
+
+const registry = createCommandRegistry();
+registerEditorCommands(registry, editorApi);
+```
+
+编辑器内 AI 应优先使用 `editor.exec` / `editor.ingest`，而非裸 `object.add`（否则不进撤销栈）。
+
+命令支持 **双格式**（可混用）：
+
+- **JSONL**：`{"op":"object.patch","args":{"id":"x","partial":{...}}}`
+- **微 DSL**：`object.patch id=x partial={"position":{"x":1}}`
+
+侧栏 AI 若返回上述脚本（可包在 ` ```command ` 代码块内），将自动走 `runEditorCommands` 而非整段 JSON 载入。
+
+## 与 scene-host 的关系
+
+绿场 [`tools/scene-host/editor/lib/`](../../scene-host/editor/lib/) 由本目录 **复制**生成（见 `tools/scene-host/scripts/copy-scene-editor-lib.mjs`）。运行时 scene-host **不 import** 本目录，避免与正本耦合。

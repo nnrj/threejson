@@ -1,0 +1,11 @@
+Model Information:
+* title:	Scar-H First-Person (FPS) Animated
+* source:	https://sketchfab.com/3d-models/scar-h-first-person-fps-animated-404b16a45a224163850df34a20391739
+* author:	Jainesh Pathak (https://sketchfab.com/spectraut2)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Scar-H First-Person (FPS) Animated" (https://sketchfab.com/3d-models/scar-h-first-person-fps-animated-404b16a45a224163850df34a20391739) by Jainesh Pathak (https://sketchfab.com/spectraut2) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

@@ -1,0 +1,116 @@
+{
+  "version": "next",
+  "name": "tutorial-audio-spatial",
+  "sceneConfig": {
+    "scene": {
+      "background": "#1a1a22"
+    },
+    "camera": {
+      "fov": 55,
+      "position": {
+        "x": 0,
+        "y": 80,
+        "z": 180
+      },
+      "near": 0.1,
+      "far": 3000
+    },
+    "renderer": {
+      "antialias": true
+    },
+    "controls": {
+      "enableDamping": true,
+      "target": {
+        "x": 0,
+        "y": 30,
+        "z": 0
+      }
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "color": "#ffffff",
+        "intensity": 0.5
+      }
+    ],
+    "renderLoop": {
+      "autoResize": true,
+      "firstAutoResize": true
+    }
+  },
+  "worldInfo": {
+    "audioList": [
+      {
+        "name": "ambient-bed",
+        "objType": "audio",
+        "mode": "ambient",
+        "audioUrl": "/assets/audio/rainynight.mp3",
+        "volume": 0.25,
+        "loop": true,
+        "autoplay": true
+      },
+      {
+        "name": "positional-beacon",
+        "label": "音箱 · farewell",
+        "objType": "audio",
+        "mode": "positional",
+        "audioUrl": "/assets/audio/farewell.mp3",
+        "position": {
+          "x": 50,
+          "y": 25,
+          "z": 0
+        },
+        "volume": 1,
+        "loop": true,
+        "refDistance": 25,
+        "rolloffFactor": 0.35,
+        "maxDistance": 280,
+        "autoplay": true
+      }
+    ],
+    "boxModelList": [
+      {
+        "name": "floor",
+        "objType": "floor",
+        "geometry": {
+          "width": 200,
+          "height": 6,
+          "depth": 200
+        },
+        "position": {
+          "x": 0,
+          "y": -3,
+          "z": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "textureUrl": "/assets/textures/building/floor/wood_floor.webp"
+        }
+      },
+      {
+        "name": "speaker-marker",
+        "objType": "cylinder",
+        "geometry": {
+          "radiusTop": 10,
+          "radiusBottom": 10,
+          "height": 40,
+          "radialSegments": 48
+        },
+        "position": {
+          "x": 50,
+          "y": 20,
+          "z": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "metalness": 0.15,
+          "roughness": 0.55,
+          "textureUrl": "/assets/textures/device/speaker.webp"
+        }
+      }
+    ]
+  },
+  "threeJsonId": "02-06-audio-spatial"
+}

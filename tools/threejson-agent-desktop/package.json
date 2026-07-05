@@ -1,0 +1,25 @@
+{
+  "name": "threejson-agent-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Electron shell for ThreeJSON scene editor with project texture writes",
+  "main": "electron-main.mjs",
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir"
+  },
+  "devDependencies": {
+    "electron": "^42.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.threejson.editor",
+    "productName": "ThreeJSON Editor",
+    "directories": { "output": "dist" },
+    "files": ["electron-main.mjs", "preload.mjs", "README.md"]
+  }
+}

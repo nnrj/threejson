@@ -1,0 +1,2549 @@
+{
+  "worldInfo": {
+    "sphereModelList": [
+      {
+        "name": "port-alarm-sphere",
+        "objType": "sphere",
+        "boxType": "sphere",
+        "geometry": {
+          "radius": 18,
+          "widthSegments": 32,
+          "heightSegments": 16
+        },
+        "position": {
+          "x": -80,
+          "y": 172,
+          "z": -250
+        },
+        "material": {
+          "color": "#ffffff",
+          "opacity": 0.3,
+          "transparent": true,
+          "type": "standard",
+          "metalness": 0.06,
+          "roughness": 0.28
+        },
+        "label": "告警球-岸桥1"
+      },
+      {
+        "name": "port-alarm-sphere",
+        "objType": "sphere",
+        "boxType": "sphere",
+        "geometry": {
+          "radius": 14,
+          "widthSegments": 24,
+          "heightSegments": 16
+        },
+        "position": {
+          "x": 520,
+          "y": 128,
+          "z": -20
+        },
+        "material": {
+          "color": "#ffffff",
+          "opacity": 0.3,
+          "transparent": true,
+          "type": "standard",
+          "metalness": 0.06,
+          "roughness": 0.28
+        },
+        "label": "告警球-电力"
+      },
+      {
+        "name": "port-alarm-sphere",
+        "objType": "sphere",
+        "boxType": "sphere",
+        "geometry": {
+          "radius": 15,
+          "widthSegments": 24,
+          "heightSegments": 16
+        },
+        "position": {
+          "x": -260,
+          "y": 166,
+          "z": -255
+        },
+        "material": {
+          "color": "#ffffff",
+          "opacity": 0.3,
+          "transparent": true,
+          "type": "standard",
+          "metalness": 0.06,
+          "roughness": 0.28
+        },
+        "label": "告警球-岸桥3"
+      },
+      {
+        "name": "port-status-sphere",
+        "objType": "sphere",
+        "boxType": "sphere",
+        "geometry": {
+          "radius": 11,
+          "widthSegments": 22,
+          "heightSegments": 14
+        },
+        "position": {
+          "x": 240,
+          "y": 72,
+          "z": 5
+        },
+        "material": {
+          "color": "#ffffff",
+          "opacity": 0.46,
+          "transparent": true,
+          "type": "standard",
+          "textureUrl": "/assets/textures/building/floor/wood_floor.webp",
+          "metalness": 0.06,
+          "roughness": 0.28,
+          "textureRepeat": {
+            "x": 10,
+            "y": 5
+          }
+        },
+        "label": "状态球-场桥RTG"
+      }
+    ],
+    "groupList": [
+      {
+        "name": "port-patrol-vehicle",
+        "objType": "group",
+        "position": {
+          "x": -40,
+          "y": 0,
+          "z": 200
+        },
+        "subScene": [
+          {
+            "name": "port-vehicle-body",
+            "objType": "box",
+            "geometry": {
+              "width": 56,
+              "length": 30,
+              "height": 18,
+              "depth": 30
+            },
+            "position": {
+              "x": 0,
+              "y": 14,
+              "z": 0
+            },
+            "material": {
+              "type": "standard",
+              "color": "#ffffff",
+              "textureUrl": "/assets/textures/building/floor/wood_floor.webp",
+              "textureRepeat": {
+                "x": 4,
+                "y": 4
+              },
+              "metalness": 0.52,
+              "roughness": 0.44
+            },
+            "label": "车体"
+          },
+          {
+            "name": "port-vehicle-cabin",
+            "objType": "box",
+            "geometry": {
+              "width": 32,
+              "length": 24,
+              "height": 14,
+              "depth": 24
+            },
+            "position": {
+              "x": 0,
+              "y": 30,
+              "z": 0
+            },
+            "material": {
+              "type": "standard",
+              "color": "#ffffff",
+              "textureUrl": "/assets/textures/building/floor/wood_floor.webp",
+              "textureRepeat": {
+                "x": 4,
+                "y": 4
+              },
+              "opacity": 0.9,
+              "transparent": true,
+              "metalness": 0.52,
+              "roughness": 0.44
+            },
+            "label": "驾驶舱"
+          }
+        ],
+        "label": "巡逻车组"
+      },
+      {
+        "name": "port-gate-station",
+        "objType": "group",
+        "position": {
+          "x": -180,
+          "y": 0,
+          "z": 280
+        },
+        "subScene": [
+          {
+            "name": "port-gate-booth",
+            "objType": "box",
+            "geometry": {
+              "width": 36,
+              "length": 28,
+              "height": 22,
+              "depth": 28
+            },
+            "position": {
+              "x": -12,
+              "y": 11,
+              "z": 0
+            },
+            "material": {
+              "type": "standard",
+              "color": "#ffffff",
+              "textureUrl": "/assets/textures/building/floor/wood_floor.webp",
+              "textureRepeat": {
+                "x": 4,
+                "y": 4
+              },
+              "metalness": 0,
+              "roughness": 0.8
+            },
+            "label": "收费亭"
+          },
+          {
+            "name": "port-gate-barrier",
+            "objType": "box",
+            "geometry": {
+              "width": 32,
+              "length": 3,
+              "height": 4,
+              "depth": 3
+            },
+            "position": {
+              "x": 16,
+              "y": 8,
+              "z": 10
+            },
+            "rotation": {
+              "rotationX": 0,
+              "rotationY": 0.35,
+              "rotationZ": 0
+            },
+            "material": {
+              "type": "standard",
+              "color": "#ffffff",
+              "textureUrl": "/assets/textures/building/metal/stainless_steel.webp",
+              "textureRepeat": {
+                "x": 5,
+                "y": 1.2
+              },
+              "metalness": 0.9,
+              "roughness": 0.38
+            },
+            "label": "栏杆"
+          }
+        ],
+        "label": "闸口检查站"
+      },
+      {
+        "name": "port-emergency-patrol",
+        "objType": "group",
+        "position": {
+          "x": 410,
+          "y": 0,
+          "z": -60
+        },
+        "subScene": [
+          {
+            "name": "port-vehicle-body",
+            "objType": "box",
+            "geometry": {
+              "width": 52,
+              "length": 28,
+              "height": 17,
+              "depth": 28
+            },
+            "position": {
+              "x": 0,
+              "y": 13.5,
+              "z": 0
+            },
+            "material": {
+              "type": "standard",
+              "color": "#ffffff",
+              "textureUrl": "/assets/textures/building/floor/wood_floor.webp",
+              "textureRepeat": {
+                "x": 4,
+                "y": 4
+              },
+              "metalness": 0.52,
+              "roughness": 0.44
+            },
+            "label": "车体"
+          },
+          {
+            "name": "port-emergency-light-bar",
+            "objType": "box",
+            "geometry": {
+              "width": 40,
+              "length": 8,
+              "height": 5,
+              "depth": 8
+            },
+            "position": {
+              "x": 0,
+              "y": 28,
+              "z": 0
+            },
+            "material": {
+              "type": "standard",
+              "color": "#ffffff",
+              "textureUrl": "/assets/textures/building/metal/stainless_steel.webp",
+              "textureRepeat": {
+                "x": 2,
+                "y": 2
+              },
+              "metalness": 0.93,
+              "roughness": 0.36
+            },
+            "label": "警灯条"
+          }
+        ],
+        "label": "应急巡逻二组"
+      }
+    ],
+    "lineList": [
+      {
+        "name": "port-logistics-line",
+        "type": "line",
+        "objType": "line",
+        "material": {
+          "color": "#2a8df6",
+          "linewidth": 4,
+          "opacity": 0.82,
+          "transparent": true
+        },
+        "points": [
+          {
+            "x": -540,
+            "y": 8,
+            "z": -320
+          },
+          {
+            "x": -300,
+            "y": 10,
+            "z": -300
+          },
+          {
+            "x": -40,
+            "y": 12,
+            "z": -280
+          },
+          {
+            "x": 220,
+            "y": 9,
+            "z": -260
+          },
+          {
+            "x": 460,
+            "y": 8,
+            "z": -240
+          }
+        ],
+        "businessInfo": {
+          "deviceTypeCode": "logistics",
+          "deviceId": 9001
+        },
+        "label": "航道流线-01"
+      },
+      {
+        "name": "port-logistics-line",
+        "type": "line",
+        "objType": "line",
+        "material": {
+          "color": "#67d47c",
+          "linewidth": 3,
+          "opacity": 0.78,
+          "transparent": true
+        },
+        "points": [
+          {
+            "x": -240,
+            "y": 4,
+            "z": 190
+          },
+          {
+            "x": -60,
+            "y": 4,
+            "z": 170
+          },
+          {
+            "x": 120,
+            "y": 4,
+            "z": 152
+          },
+          {
+            "x": 280,
+            "y": 4,
+            "z": 140
+          }
+        ],
+        "businessInfo": {
+          "deviceTypeCode": "logistics",
+          "deviceId": 9002
+        },
+        "label": "物流路径-无人车"
+      },
+      {
+        "name": "port-logistics-line",
+        "type": "line",
+        "objType": "line",
+        "material": {
+          "color": "#a88cf0",
+          "linewidth": 3,
+          "opacity": 0.75,
+          "transparent": true
+        },
+        "points": [
+          {
+            "x": 180,
+            "y": 5,
+            "z": -80
+          },
+          {
+            "x": 240,
+            "y": 5,
+            "z": -20
+          },
+          {
+            "x": 360,
+            "y": 6,
+            "z": 90
+          },
+          {
+            "x": 480,
+            "y": 6,
+            "z": 170
+          }
+        ],
+        "businessInfo": {
+          "deviceTypeCode": "logistics",
+          "deviceId": 9003
+        },
+        "label": "集卡疏港线路"
+      },
+      {
+        "name": "port-yard-patrol-line",
+        "type": "line",
+        "objType": "line",
+        "material": {
+          "color": "#53cddb",
+          "linewidth": 2,
+          "opacity": 0.72,
+          "transparent": true
+        },
+        "points": [
+          {
+            "x": 40,
+            "y": 4,
+            "z": -30
+          },
+          {
+            "x": 180,
+            "y": 4,
+            "z": -55
+          },
+          {
+            "x": 380,
+            "y": 5,
+            "z": -20
+          },
+          {
+            "x": 420,
+            "y": 5,
+            "z": 110
+          },
+          {
+            "x": 220,
+            "y": 6,
+            "z": 150
+          },
+          {
+            "x": 40,
+            "y": 4,
+            "z": 90
+          },
+          {
+            "x": 40,
+            "y": 4,
+            "z": -30
+          }
+        ],
+        "label": "堆场巡检环线"
+      },
+      {
+        "name": "port-approach-line",
+        "type": "line",
+        "objType": "line",
+        "material": {
+          "color": "#f2a65a",
+          "linewidth": 2,
+          "opacity": 0.68,
+          "transparent": true
+        },
+        "points": [
+          {
+            "x": -360,
+            "y": 7,
+            "z": -400
+          },
+          {
+            "x": -120,
+            "y": 8,
+            "z": -380
+          },
+          {
+            "x": 160,
+            "y": 8,
+            "z": -370
+          }
+        ],
+        "label": "引桥辅助线"
+      }
+    ],
+    "heatList": [
+      {
+        "objType": "heatMap",
+        "visible": false,
+        "geometry": {
+          "width": 1400,
+          "height": 980
+        },
+        "position": {
+          "x": 0,
+          "y": 10,
+          "z": 0
+        },
+        "rotation": {
+          "rotationX": -1.5707963267948966,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "material": {
+          "transparent": true,
+          "opacity": 0.85,
+          "roughness": 0.85
+        },
+        "heatMap": [
+          {
+            "x": 60,
+            "y": 65,
+            "temperature": 26
+          },
+          {
+            "x": 165,
+            "y": 120,
+            "temperature": 29
+          },
+          {
+            "x": 280,
+            "y": 200,
+            "temperature": 31
+          },
+          {
+            "x": 420,
+            "y": 95,
+            "temperature": 27
+          },
+          {
+            "x": 530,
+            "y": 320,
+            "temperature": 24
+          },
+          {
+            "x": 640,
+            "y": 175,
+            "temperature": 30
+          },
+          {
+            "x": 765,
+            "y": 420,
+            "temperature": 22
+          },
+          {
+            "x": 860,
+            "y": 285,
+            "temperature": 28
+          },
+          {
+            "x": 980,
+            "y": 150,
+            "temperature": 32
+          },
+          {
+            "x": 1105,
+            "y": 480,
+            "temperature": 25
+          },
+          {
+            "x": 1200,
+            "y": 360,
+            "temperature": 27
+          },
+          {
+            "x": 1340,
+            "y": 220,
+            "temperature": 33
+          },
+          {
+            "x": 200,
+            "y": 480,
+            "temperature": 23
+          },
+          {
+            "x": 350,
+            "y": 600,
+            "temperature": 29
+          },
+          {
+            "x": 495,
+            "y": 720,
+            "temperature": 26
+          },
+          {
+            "x": 700,
+            "y": 580,
+            "temperature": 30
+          },
+          {
+            "x": 880,
+            "y": 750,
+            "temperature": 34
+          },
+          {
+            "x": 1030,
+            "y": 650,
+            "temperature": 27
+          },
+          {
+            "x": 1170,
+            "y": 820,
+            "temperature": 25
+          },
+          {
+            "x": 1300,
+            "y": 900,
+            "temperature": 28
+          },
+          {
+            "x": 75,
+            "y": 900,
+            "temperature": 31
+          },
+          {
+            "x": 1380,
+            "y": 70,
+            "temperature": 29
+          },
+          {
+            "x": 575,
+            "y": 500,
+            "temperature": 32
+          },
+          {
+            "x": 920,
+            "y": 90,
+            "temperature": 24
+          }
+        ]
+      }
+    ],
+    "objModelList": [
+      {
+        "name": "port-vessel",
+        "modelPath": "/assets/model/obj/cruiser_ship_2012/Cruiser 2012.obj",
+        "mtlPath": "/assets/model/obj/cruiser_ship_2012/Cruiser_2012.mtl",
+        "fileType": "obj",
+        "position": {
+          "x": -101,
+          "y": 10,
+          "z": -467
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": -1.5707963267948966,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 0.36,
+          "scaleY": 0.36,
+          "scaleZ": 0.36
+        },
+        "businessInfo": {
+          "deviceTypeCode": "vessel",
+          "portStatistic": true,
+          "portStatMenu": "throughput",
+          "usedTeu": 4850,
+          "totalTeu": 8400
+        },
+        "label": "巡洋舰-泊1",
+        "remark": "Uses third-party model cruiser_ship_2012; author Herminio Nieves (2012)."
+      },
+      {
+        "name": "port-vessel",
+        "modelPath": "/assets/model/obj/cruiser_ship_2012/Cruiser 2012.obj",
+        "mtlPath": "/assets/model/obj/cruiser_ship_2012/Cruiser_2012.mtl",
+        "fileType": "obj",
+        "position": {
+          "x": 148,
+          "y": 10,
+          "z": -473
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": -1.5707963267948966,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 0.32,
+          "scaleY": 0.32,
+          "scaleZ": 0.32
+        },
+        "businessInfo": {
+          "deviceTypeCode": "vessel",
+          "portStatistic": true,
+          "portStatMenu": "throughput",
+          "usedTeu": 3120,
+          "totalTeu": 6800
+        },
+        "label": "巡洋舰-泊2",
+        "remark": "Uses third-party model cruiser_ship_2012; author Herminio Nieves (2012)."
+      },
+      {
+        "name": "port-vessel",
+        "modelPath": "/assets/model/obj/cruiser_ship_2012/Cruiser 2012.obj",
+        "mtlPath": "/assets/model/obj/cruiser_ship_2012/Cruiser_2012.mtl",
+        "fileType": "obj",
+        "position": {
+          "x": 18,
+          "y": 10,
+          "z": -683
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": -1.5707963267948966,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 0.32,
+          "scaleY": 0.32,
+          "scaleZ": 0.32
+        },
+        "label": "巡洋舰-外海",
+        "remark": "Uses third-party model cruiser_ship_2012; author Herminio Nieves (2012)."
+      }
+    ],
+    "windList": [
+      {
+        "objType": "wind",
+        "visible": false,
+        "visualScale": 3.5,
+        "speed": -1,
+        "geometry": {
+          "width": 50,
+          "height": 180
+        },
+        "position": {
+          "x": -80,
+          "y": 150,
+          "z": -268
+        },
+        "rotation": {
+          "rotationX": 1.0471975511965976,
+          "rotationY": 3.141592653589793,
+          "rotationZ": 4.71238898038469
+        },
+        "material": {
+          "textureUrl": "/assets/textures/environment/nature/weather/wind_cold_left.png",
+          "textureRepeat": {
+            "x": 1,
+            "y": 130
+          },
+          "opacity": 0.85,
+          "transparent": true,
+          "side": "double"
+        }
+      },
+      {
+        "objType": "wind",
+        "visible": false,
+        "visualScale": 3.5,
+        "speed": -1,
+        "geometry": {
+          "width": 50,
+          "height": 180
+        },
+        "position": {
+          "x": 170,
+          "y": 150,
+          "z": -268
+        },
+        "rotation": {
+          "rotationX": 1.0471975511965976,
+          "rotationY": 3.141592653589793,
+          "rotationZ": 4.71238898038469
+        },
+        "material": {
+          "textureUrl": "/assets/textures/environment/nature/weather/wind_cold_left.png",
+          "textureRepeat": {
+            "x": 1,
+            "y": 130
+          },
+          "opacity": 0.85,
+          "transparent": true,
+          "side": "double"
+        }
+      },
+      {
+        "objType": "wind",
+        "visible": false,
+        "visualScale": 3.5,
+        "speed": -1,
+        "geometry": {
+          "width": 50,
+          "height": 180
+        },
+        "position": {
+          "x": -260,
+          "y": 150,
+          "z": -273
+        },
+        "rotation": {
+          "rotationX": 1.0471975511965976,
+          "rotationY": 3.141592653589793,
+          "rotationZ": 4.71238898038469
+        },
+        "material": {
+          "textureUrl": "/assets/textures/environment/nature/weather/wind_cold_left.png",
+          "textureRepeat": {
+            "x": 1,
+            "y": 130
+          },
+          "opacity": 0.85,
+          "transparent": true,
+          "side": "double"
+        }
+      },
+      {
+        "objType": "wind",
+        "visible": false,
+        "visualScale": 3.5,
+        "speed": -1,
+        "geometry": {
+          "width": 50,
+          "height": 180
+        },
+        "position": {
+          "x": 420,
+          "y": 150,
+          "z": -266
+        },
+        "rotation": {
+          "rotationX": 1.0471975511965976,
+          "rotationY": 3.141592653589793,
+          "rotationZ": 4.71238898038469
+        },
+        "material": {
+          "textureUrl": "/assets/textures/environment/nature/weather/wind_cold_left.png",
+          "textureRepeat": {
+            "x": 1,
+            "y": 130
+          },
+          "opacity": 0.85,
+          "transparent": true,
+          "side": "double"
+        }
+      },
+      {
+        "objType": "wind",
+        "visible": false,
+        "visualScale": 3.5,
+        "speed": -1,
+        "geometry": {
+          "width": 50,
+          "height": 180
+        },
+        "position": {
+          "x": 260,
+          "y": 120,
+          "z": -330
+        },
+        "rotation": {
+          "rotationX": 1.0471975511965976,
+          "rotationY": 3.141592653589793,
+          "rotationZ": 4.71238898038469
+        },
+        "material": {
+          "textureUrl": "/assets/textures/environment/nature/weather/wind_cold_left.png",
+          "textureRepeat": {
+            "x": 1,
+            "y": 130
+          },
+          "opacity": 0.85,
+          "transparent": true,
+          "side": "double"
+        }
+      }
+    ],
+    "domainModelList": [
+      {
+        "objType": "domain",
+        "domain": "port",
+        "handler": "portLampPost",
+        "name": "port-lamp-post",
+        "geometry": {
+          "width": 9,
+          "length": 9,
+          "height": 102,
+          "depth": 9
+        },
+        "position": {
+          "x": -420,
+          "y": 0,
+          "z": -160
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "textureUrl": "/assets/textures/building/metal/stainless_steel.webp",
+          "textureRepeat": {
+            "x": 2.5,
+            "y": 6
+          },
+          "metalness": 0.92,
+          "roughness": 0.42
+        },
+        "label": "岸线灯杆1"
+      },
+      {
+        "objType": "domain",
+        "domain": "port",
+        "handler": "portLampPost",
+        "name": "port-lamp-post",
+        "geometry": {
+          "width": 9,
+          "length": 9,
+          "height": 102,
+          "depth": 9
+        },
+        "position": {
+          "x": -220,
+          "y": 0,
+          "z": -160
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "textureUrl": "/assets/textures/building/metal/stainless_steel.webp",
+          "textureRepeat": {
+            "x": 2.5,
+            "y": 6
+          },
+          "metalness": 0.92,
+          "roughness": 0.42
+        },
+        "label": "岸线灯杆2"
+      },
+      {
+        "objType": "domain",
+        "domain": "port",
+        "handler": "portLampPost",
+        "name": "port-lamp-post",
+        "geometry": {
+          "width": 9,
+          "length": 9,
+          "height": 92,
+          "depth": 9
+        },
+        "position": {
+          "x": 40,
+          "y": 0,
+          "z": -150
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "textureUrl": "/assets/textures/building/metal/stainless_steel.webp",
+          "textureRepeat": {
+            "x": 2.5,
+            "y": 6
+          },
+          "metalness": 0.92,
+          "roughness": 0.42
+        },
+        "label": "岸线灯杆3"
+      },
+      {
+        "objType": "domain",
+        "domain": "port",
+        "handler": "portLampPost",
+        "name": "port-lamp-post",
+        "geometry": {
+          "width": 9,
+          "length": 9,
+          "height": 92,
+          "depth": 9
+        },
+        "position": {
+          "x": 300,
+          "y": 0,
+          "z": -150
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "textureUrl": "/assets/textures/building/metal/stainless_steel.webp",
+          "textureRepeat": {
+            "x": 2.5,
+            "y": 6
+          },
+          "metalness": 0.92,
+          "roughness": 0.42
+        },
+        "label": "岸线灯杆4"
+      },
+      {
+        "objType": "domain",
+        "domain": "port",
+        "handler": "rtgCrane",
+        "name": "rtg-crane",
+        "geometry": {
+          "width": 66,
+          "length": 50,
+          "height": 74,
+          "depth": 50
+        },
+        "position": {
+          "x": 240,
+          "y": 1,
+          "z": 5
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "textureUrl": "/assets/textures/building/metal/iron_frame.webp",
+          "textureRepeat": {
+            "x": 4,
+            "y": 4
+          },
+          "metalness": 0.72,
+          "roughness": 0.4
+        },
+        "businessInfo": {
+          "deviceTypeCode": "rtg",
+          "portStatistic": true,
+          "portStatMenu": "load",
+          "usedLoad": 420,
+          "totalLoad": 650,
+          "deviceId": 7501
+        },
+        "label": "场桥RTG-01"
+      },
+      {
+        "objType": "domain",
+        "domain": "port",
+        "handler": "rtgCrane",
+        "name": "rtg-crane",
+        "geometry": {
+          "width": 64,
+          "length": 48,
+          "height": 71,
+          "depth": 48
+        },
+        "position": {
+          "x": -80,
+          "y": 1,
+          "z": 60
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "textureUrl": "/assets/textures/building/metal/iron_frame.webp",
+          "textureRepeat": {
+            "x": 4,
+            "y": 4
+          },
+          "metalness": 0.72,
+          "roughness": 0.4
+        },
+        "label": "场桥RTG-02"
+      },
+      {
+        "objType": "domain",
+        "domain": "port",
+        "handler": "dockCrane",
+        "name": "dock-crane",
+        "threeJsonId": "port-dock-crane-1",
+        "geometry": {
+          "width": 70,
+          "length": 90,
+          "height": 280,
+          "depth": 90
+        },
+        "position": {
+          "x": -80,
+          "y": 2,
+          "z": -250
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "textureUrl": "/assets/textures/building/metal/iron_frame.webp",
+          "textureRepeat": {
+            "x": 4,
+            "y": 14
+          },
+          "metalness": 0.74,
+          "roughness": 0.38
+        },
+        "businessInfo": {
+          "deviceTypeCode": "crane",
+          "portStatistic": true,
+          "portStatMenu": "load",
+          "usedLoad": 628,
+          "totalLoad": 900
+        },
+        "label": "岸桥1"
+      },
+      {
+        "objType": "domain",
+        "domain": "port",
+        "handler": "dockCrane",
+        "name": "dock-crane",
+        "geometry": {
+          "width": 70,
+          "length": 90,
+          "height": 278,
+          "depth": 90
+        },
+        "position": {
+          "x": 170,
+          "y": 2,
+          "z": -250
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "textureUrl": "/assets/textures/building/metal/iron_frame.webp",
+          "textureRepeat": {
+            "x": 4,
+            "y": 14
+          },
+          "metalness": 0.74,
+          "roughness": 0.38
+        },
+        "businessInfo": {
+          "deviceTypeCode": "crane",
+          "portStatistic": true,
+          "portStatMenu": "load",
+          "usedLoad": 774,
+          "totalLoad": 900,
+          "deviceId": 7002
+        },
+        "label": "岸桥2"
+      },
+      {
+        "objType": "domain",
+        "domain": "port",
+        "handler": "dockCrane",
+        "name": "dock-crane",
+        "geometry": {
+          "width": 68,
+          "length": 86,
+          "height": 272,
+          "depth": 86
+        },
+        "position": {
+          "x": -260,
+          "y": 2,
+          "z": -255
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "textureUrl": "/assets/textures/building/metal/iron_frame.webp",
+          "textureRepeat": {
+            "x": 4,
+            "y": 14
+          },
+          "metalness": 0.74,
+          "roughness": 0.38
+        },
+        "businessInfo": {
+          "deviceTypeCode": "crane",
+          "portStatistic": true,
+          "portStatMenu": "load",
+          "usedLoad": 512,
+          "totalLoad": 900,
+          "deviceId": 7003
+        },
+        "label": "岸桥3"
+      },
+      {
+        "objType": "domain",
+        "domain": "port",
+        "handler": "dockCrane",
+        "name": "dock-crane",
+        "geometry": {
+          "width": 66,
+          "length": 84,
+          "height": 268,
+          "depth": 84
+        },
+        "position": {
+          "x": 420,
+          "y": 2,
+          "z": -248
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "textureUrl": "/assets/textures/building/metal/iron_frame.webp",
+          "textureRepeat": {
+            "x": 4,
+            "y": 13
+          },
+          "metalness": 0.74,
+          "roughness": 0.38
+        },
+        "label": "岸桥4"
+      }
+    ],
+    "audioList": [
+      {
+        "name": "farewell-bgm",
+        "mode": "ambient",
+        "audioUrl": "/assets/audio/farewell.mp3",
+        "volume": 0.42,
+        "loop": true,
+        "autoplay": true,
+        "label": "farewell-bgm"
+      }
+    ],
+    "boxModelList": [
+      {
+        "name": "port-ground",
+        "objType": "box",
+        "geometry": {
+          "width": 1400,
+          "length": 980,
+          "depth": 980,
+          "height": 6
+        },
+        "position": {
+          "x": 0,
+          "y": -3,
+          "z": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "textureUrl": "/assets/textures/building/floor/cement.png",
+          "textureRepeat": {
+            "x": 4,
+            "y": 64
+          },
+          "opacity": 1,
+          "transparent": false,
+          "metalness": 0,
+          "roughness": 0.9
+        },
+        "label": "港口地面"
+      },
+      {
+        "name": "port-near-sea",
+        "objType": "box",
+        "geometry": {
+          "width": 2200,
+          "height": 2.5,
+          "depth": 1800
+        },
+        "position": {
+          "x": 0,
+          "y": -3.25,
+          "z": -640
+        },
+        "material": {
+          "type": "standard",
+          "color": "#1e6b8c",
+          "textureUrl": "/assets/textures/environment/nature/landform/sea.jpg",
+          "textureRepeat": {
+            "x": 32,
+            "y": 32
+          },
+          "transparent": true,
+          "opacity": 0.38,
+          "metalness": 0,
+          "roughness": 0.12
+        },
+        "label": "近岸海面"
+      },
+      {
+        "name": "port-deep-sea",
+        "objType": "box",
+        "geometry": {
+          "width": 2600,
+          "height": 1.8,
+          "depth": 2200
+        },
+        "position": {
+          "x": 40,
+          "y": -5.4,
+          "z": -880
+        },
+        "material": {
+          "type": "standard",
+          "color": "#0f4a63",
+          "textureUrl": "/assets/textures/environment/nature/landform/sea.jpg",
+          "transparent": true,
+          "opacity": 0.45,
+          "metalness": 0,
+          "roughness": 0.12,
+          "textureRepeat": {
+            "x": 10,
+            "y": 5
+          }
+        },
+        "label": "外海深水区"
+      },
+      {
+        "name": "port-shoal",
+        "objType": "box",
+        "geometry": {
+          "width": 1500,
+          "height": 1.2,
+          "depth": 95
+        },
+        "position": {
+          "x": 0,
+          "y": -2.4,
+          "z": -355
+        },
+        "material": {
+          "type": "standard",
+          "color": "#3d7a8f",
+          "transparent": true,
+          "opacity": 0.28,
+          "metalness": 0,
+          "roughness": 0.2
+        },
+        "label": "海岸浅滩带"
+      },
+      {
+        "name": "port-berth-zone",
+        "objType": "box",
+        "geometry": {
+          "width": 1280,
+          "length": 220,
+          "height": 4,
+          "depth": 220
+        },
+        "position": {
+          "x": 0,
+          "y": 0,
+          "z": -320
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "textureUrl": "/assets/textures/building/floor/wood_floor.webp",
+          "textureRepeat": {
+            "x": 58,
+            "y": 4
+          },
+          "opacity": 0.95,
+          "transparent": true,
+          "metalness": 0,
+          "roughness": 0.8
+        },
+        "label": "港口泊位区"
+      },
+      {
+        "name": "port-wood-deck",
+        "objType": "box",
+        "geometry": {
+          "width": 560,
+          "length": 400,
+          "height": 1.6,
+          "depth": 400
+        },
+        "position": {
+          "x": 200,
+          "y": 1.1,
+          "z": 42
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "textureUrl": "/assets/textures/building/floor/wood_floor.webp",
+          "textureRepeat": {
+            "x": 25,
+            "y": 4
+          },
+          "metalness": 0,
+          "roughness": 0.8
+        },
+        "label": "港区木地板层"
+      },
+      {
+        "name": "port-ferry-platform",
+        "objType": "box",
+        "geometry": {
+          "width": 240,
+          "length": 105,
+          "height": 3.5,
+          "depth": 105
+        },
+        "position": {
+          "x": 0,
+          "y": 5,
+          "z": -268
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "textureUrl": "/assets/textures/building/floor/wood_floor.webp",
+          "textureRepeat": {
+            "x": 11,
+            "y": 4
+          },
+          "metalness": 0,
+          "roughness": 0.8
+        },
+        "label": "渡口登船平台"
+      },
+      {
+        "name": "port-seawall",
+        "objType": "box",
+        "geometry": {
+          "width": 1220,
+          "length": 36,
+          "height": 7,
+          "depth": 36
+        },
+        "position": {
+          "x": 0,
+          "y": 5,
+          "z": -412
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "textureUrl": "/assets/textures/building/floor/wood_floor.webp",
+          "textureRepeat": {
+            "x": 55,
+            "y": 4
+          },
+          "opacity": 0.96,
+          "transparent": true,
+          "metalness": 0,
+          "roughness": 0.8
+        },
+        "label": "海侧堤岸护面"
+      },
+      {
+        "name": "port-warehouse",
+        "objType": "box",
+        "geometry": {
+          "width": 420,
+          "length": 240,
+          "height": 140,
+          "depth": 240
+        },
+        "position": {
+          "x": -320,
+          "y": 70,
+          "z": 120
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "textureUrl": "/assets/textures/building/wall/red_brick.webp",
+          "opacity": 1,
+          "transparent": false,
+          "metalness": 0,
+          "roughness": 0.88
+        },
+        "label": "主仓库"
+      },
+      {
+        "name": "port-warehouse-roof",
+        "objType": "box",
+        "geometry": {
+          "width": 450,
+          "length": 270,
+          "height": 14,
+          "depth": 270
+        },
+        "position": {
+          "x": -320,
+          "y": 147,
+          "z": 120
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "textureUrl": "/assets/textures/building/floor/cement.png",
+          "textureRepeat": {
+            "x": 20,
+            "y": 4
+          },
+          "opacity": 1,
+          "transparent": false,
+          "metalness": 0,
+          "roughness": 0.9
+        },
+        "label": "仓库屋顶"
+      },
+      {
+        "name": "port-dispatch-center",
+        "threeJsonId": "port-dispatch-center",
+        "objType": "box",
+        "geometry": {
+          "width": 180,
+          "length": 180,
+          "height": 110,
+          "depth": 180
+        },
+        "position": {
+          "x": 320,
+          "y": 55,
+          "z": 200
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "textureUrl": "/assets/textures/building/wall/red_brick.webp",
+          "metalness": 0,
+          "roughness": 0.88
+        },
+        "businessInfo": {
+          "portStatistic": true,
+          "portStatMenu": "throughput",
+          "usedTeu": 38200,
+          "totalTeu": 56000
+        },
+        "panelShowTrigger": "dblclick",
+        "panelHideTrigger": "dblclick",
+        "infoPanel": {
+          "text": "<div style='padding:6px;line-height:1.5'><b>调度中心</b><br/>船只排班：12条<br/>车辆派单：34台</div>",
+          "type": "html",
+          "boxType": "sprite",
+          "panelWidth": 200,
+          "panelHeight": 110,
+          "transparent": true,
+          "opacity": 0.85,
+          "fix": false,
+          "topDistance": 90,
+          "panel": {
+            "geometry": {
+              "width": 200,
+              "height": 110,
+              "depth": 1
+            },
+            "position": {
+              "x": 320,
+              "y": 190,
+              "z": 200
+            },
+            "material": {
+              "color": "#183146",
+              "transparent": true,
+              "opacity": 0.85,
+              "metalness": 0.04,
+              "roughness": 0.88
+            },
+            "rotation": {
+              "rotationX": 0,
+              "rotationY": 0,
+              "rotationZ": 0
+            },
+            "scale": {
+              "scaleX": 1,
+              "scaleY": 1,
+              "scaleZ": 1
+            }
+          }
+        },
+        "label": "调度中心"
+      },
+      {
+        "name": "port-power-station",
+        "threeJsonId": "port-power-station",
+        "objType": "box",
+        "geometry": {
+          "width": 120,
+          "length": 90,
+          "height": 80,
+          "depth": 90
+        },
+        "position": {
+          "x": 520,
+          "y": 40,
+          "z": -20
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "textureUrl": "/assets/textures/building/floor/wood_floor.webp",
+          "textureRepeat": {
+            "x": 5,
+            "y": 4
+          },
+          "metalness": 0,
+          "roughness": 0.8
+        },
+        "businessInfo": {
+          "deviceTypeCode": "power",
+          "portStatistic": true,
+          "portStatMenu": "load",
+          "usedLoad": 1870,
+          "totalLoad": 2600,
+          "deviceId": 4001
+        },
+        "panelShowTrigger": "dblclick",
+        "panelHideTrigger": "dblclick",
+        "infoPanel": {
+          "text": "配电站A\n总负载: 72%\n备用: 正常",
+          "type": "text",
+          "boxType": "plane",
+          "color": "#ffffff",
+          "backColor": "#2c4f67",
+          "font": "24px SimHei",
+          "panelWidth": 150,
+          "panelHeight": 88,
+          "transparent": true,
+          "opacity": 0.85,
+          "fix": false,
+          "topDistance": 75,
+          "panel": {
+            "geometry": {
+              "width": 150,
+              "height": 88,
+              "depth": 1
+            },
+            "position": {
+              "x": 520,
+              "y": 130,
+              "z": -20
+            },
+            "material": {
+              "color": "#2c4f67",
+              "transparent": true,
+              "opacity": 0.85,
+              "metalness": 0.04,
+              "roughness": 0.88
+            }
+          }
+        },
+        "label": "配电站A"
+      },
+      {
+        "name": "port-weather-tower",
+        "threeJsonId": "port-weather-tower",
+        "objType": "box",
+        "geometry": {
+          "width": 42,
+          "length": 42,
+          "height": 200,
+          "depth": 42
+        },
+        "position": {
+          "x": 610,
+          "y": 100,
+          "z": 210
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "textureUrl": "/assets/textures/building/floor/cement.png",
+          "textureRepeat": {
+            "x": 4,
+            "y": 10
+          },
+          "metalness": 0,
+          "roughness": 0.8
+        },
+        "businessInfo": {
+          "deviceTypeCode": "weather"
+        },
+        "panelShowTrigger": "dblclick",
+        "panelHideTrigger": "dblclick",
+        "infoPanel": {
+          "text": "<div style='padding:5px'><b>气象观测</b><br/>风速: 6.1m/s<br/>湿度: 62%</div>",
+          "type": "html",
+          "boxType": "plane",
+          "panelWidth": 160,
+          "panelHeight": 96,
+          "transparent": true,
+          "opacity": 0.85,
+          "fix": false,
+          "topDistance": 88,
+          "panel": {
+            "geometry": {
+              "width": 160,
+              "height": 96,
+              "depth": 1
+            },
+            "position": {
+              "x": 610,
+              "y": 210,
+              "z": 210
+            },
+            "material": {
+              "color": "#27415b",
+              "transparent": true,
+              "opacity": 0.85,
+              "metalness": 0.04,
+              "roughness": 0.88
+            }
+          }
+        },
+        "label": "环境塔"
+      },
+      {
+        "name": "port-camera-tower",
+        "objType": "box",
+        "geometry": {
+          "width": 28,
+          "length": 28,
+          "height": 160,
+          "depth": 28
+        },
+        "position": {
+          "x": 170,
+          "y": 80,
+          "z": -170
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "textureUrl": "/assets/textures/building/metal/stainless_steel.webp",
+          "textureRepeat": {
+            "x": 2,
+            "y": 12
+          },
+          "metalness": 0.92,
+          "roughness": 0.4
+        },
+        "businessInfo": {
+          "deviceTypeCode": "camera",
+          "deviceId": 6101
+        },
+        "label": "巡检摄像头塔"
+      },
+      {
+        "name": "port-yard-zone",
+        "objType": "box",
+        "geometry": {
+          "width": 470,
+          "length": 260,
+          "height": 2,
+          "depth": 260
+        },
+        "position": {
+          "x": 230,
+          "y": 1,
+          "z": 30
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "textureUrl": "/assets/textures/building/floor/wood_floor.webp",
+          "textureRepeat": {
+            "x": 21,
+            "y": 4
+          },
+          "metalness": 0,
+          "roughness": 0.8
+        },
+        "businessInfo": {
+          "deviceTypeCode": "yard",
+          "portStatistic": true,
+          "portStatMenu": "stack",
+          "filledCells": 1840,
+          "totalCells": 2600,
+          "deviceId": 3101
+        },
+        "label": "堆场分区A"
+      },
+      {
+        "name": "port-yard-zone",
+        "objType": "box",
+        "geometry": {
+          "width": 380,
+          "length": 200,
+          "height": 2,
+          "depth": 200
+        },
+        "position": {
+          "x": -180,
+          "y": 1,
+          "z": -40
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "textureUrl": "/assets/textures/building/floor/wood_floor.webp",
+          "textureRepeat": {
+            "x": 17,
+            "y": 4
+          },
+          "metalness": 0,
+          "roughness": 0.8
+        },
+        "businessInfo": {
+          "deviceTypeCode": "yard",
+          "portStatistic": true,
+          "portStatMenu": "stack",
+          "filledCells": 920,
+          "totalCells": 1800,
+          "deviceId": 3102
+        },
+        "label": "堆场分区B"
+      },
+      {
+        "name": "port-container",
+        "objType": "box",
+        "geometry": {
+          "width": 80,
+          "length": 40,
+          "height": 38,
+          "depth": 40
+        },
+        "position": {
+          "x": 70,
+          "y": 19,
+          "z": 80
+        },
+        "materials": [
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_left.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_right.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_top.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_bottom.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_front.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_back.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          }
+        ],
+        "label": "集装箱A1"
+      },
+      {
+        "name": "port-container",
+        "objType": "box",
+        "geometry": {
+          "width": 80,
+          "length": 40,
+          "height": 38,
+          "depth": 40
+        },
+        "position": {
+          "x": 70,
+          "y": 57,
+          "z": 80
+        },
+        "materials": [
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_left.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_right.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_top.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_bottom.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_front.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_back.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          }
+        ],
+        "label": "集装箱A2"
+      },
+      {
+        "name": "port-container",
+        "objType": "box",
+        "geometry": {
+          "width": 80,
+          "length": 40,
+          "height": 38,
+          "depth": 40
+        },
+        "position": {
+          "x": 170,
+          "y": 19,
+          "z": 80
+        },
+        "materials": [
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_left.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_right.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_top.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_bottom.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_front.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_back.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          }
+        ],
+        "label": "集装箱A3"
+      },
+      {
+        "name": "port-container",
+        "objType": "box",
+        "geometry": {
+          "width": 80,
+          "length": 40,
+          "height": 38,
+          "depth": 40
+        },
+        "position": {
+          "x": 170,
+          "y": 57,
+          "z": 80
+        },
+        "materials": [
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_left.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_right.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_top.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_bottom.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_front.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_back.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          }
+        ],
+        "label": "集装箱A4"
+      },
+      {
+        "name": "port-container",
+        "objType": "box",
+        "geometry": {
+          "width": 80,
+          "length": 40,
+          "height": 38,
+          "depth": 40
+        },
+        "position": {
+          "x": 320,
+          "y": 19,
+          "z": 40
+        },
+        "materials": [
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_left.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_right.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_top.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_bottom.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_front.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_back.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          }
+        ],
+        "label": "集装箱B1"
+      },
+      {
+        "name": "port-container",
+        "objType": "box",
+        "geometry": {
+          "width": 80,
+          "length": 40,
+          "height": 38,
+          "depth": 40
+        },
+        "position": {
+          "x": 320,
+          "y": 57,
+          "z": 40
+        },
+        "materials": [
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_left.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_right.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_top.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_bottom.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_front.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_back.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          }
+        ],
+        "label": "集装箱B2"
+      },
+      {
+        "name": "port-container",
+        "objType": "box",
+        "geometry": {
+          "width": 80,
+          "length": 40,
+          "height": 38,
+          "depth": 40
+        },
+        "position": {
+          "x": 420,
+          "y": 19,
+          "z": 40
+        },
+        "materials": [
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_left.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_right.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_top.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_bottom.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_front.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_back.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          }
+        ],
+        "label": "集装箱B3"
+      },
+      {
+        "name": "port-container",
+        "objType": "box",
+        "geometry": {
+          "width": 80,
+          "length": 40,
+          "height": 38,
+          "depth": 40
+        },
+        "position": {
+          "x": 120,
+          "y": 19,
+          "z": -120
+        },
+        "materials": [
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_left.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_right.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_top.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_bottom.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_front.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          },
+          {
+            "type": "standard",
+            "color": "#ffffff",
+            "textureUrl": "/assets/textures/device/container/container_back.png",
+            "metalness": 0.44,
+            "roughness": 0.55
+          }
+        ],
+        "label": "集装箱C1"
+      },
+      {
+        "name": "port-road-marking",
+        "objType": "box",
+        "geometry": {
+          "width": 8,
+          "length": 720,
+          "height": 0.8,
+          "depth": 720
+        },
+        "position": {
+          "x": 40,
+          "y": 0.6,
+          "z": 100
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "textureUrl": "/assets/textures/building/floor/wood_floor.webp",
+          "textureRepeat": {
+            "x": 33,
+            "y": 4
+          },
+          "opacity": 0.85,
+          "transparent": true,
+          "metalness": 0,
+          "roughness": 0.8
+        },
+        "label": "主干道标线"
+      },
+      {
+        "name": "port-breakwater-bump",
+        "objType": "box",
+        "geometry": {
+          "width": 1240,
+          "length": 16,
+          "height": 3.5,
+          "depth": 16
+        },
+        "position": {
+          "x": 0,
+          "y": 2.2,
+          "z": -420
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "textureUrl": "/assets/textures/building/floor/wood_floor.webp",
+          "textureRepeat": {
+            "x": 56,
+            "y": 4
+          },
+          "opacity": 0.82,
+          "transparent": true,
+          "metalness": 0,
+          "roughness": 0.8
+        },
+        "label": "岸边防波凸起"
+      }
+    ],
+    "infoPanelList": [
+      {
+        "boxType": "sprite",
+        "type": "html",
+        "text": "<div><div style='height:20px;color:#fff;background: #7F7F7F;font-size: 14px;font-weight: bold'>智慧港口调度中心</div><div style='background: #fff;color:#00f;'>今日进港: 14艘<br/>吞吐量: 38,200 TEU</div></div>",
+        "visible": true,
+        "fix": true,
+        "panelWidth": 230,
+        "panelHeight": 118,
+        "panel": {
+          "geometry": {
+            "width": 230,
+            "height": 118,
+            "depth": 1
+          },
+          "position": {
+            "x": 0,
+            "y": 300,
+            "z": 260
+          },
+          "material": {
+            "color": "#ffffff",
+            "transparent": true,
+            "opacity": 0.8,
+            "textureUrl": "/assets/textures/building/metal/stainless_steel.webp",
+            "textureRepeat": {
+              "x": 2,
+              "y": 2
+            },
+            "metalness": 0.04,
+            "roughness": 0.88
+          },
+          "rotation": {
+            "rotationX": 0,
+            "rotationY": 0,
+            "rotationZ": 0
+          },
+          "scale": {
+            "scaleX": 1,
+            "scaleY": 1,
+            "scaleZ": 1
+          }
+        },
+        "name": "infoPanel",
+        "threeJsonId": "port-info-panel-dispatch",
+        "label": "infoPanel"
+      },
+      {
+        "boxType": "plane",
+        "type": "text",
+        "text": "天气预警: 海面阵风增强\n建议岸桥作业降速至80%",
+        "color": "#ffffff",
+        "backColor": "#BB9B4C",
+        "font": "24px SimHei",
+        "visible": true,
+        "fix": true,
+        "panelWidth": 200,
+        "panelHeight": 90,
+        "panel": {
+          "geometry": {
+            "width": 200,
+            "height": 90,
+            "depth": 1
+          },
+          "position": {
+            "x": 480,
+            "y": 220,
+            "z": 220
+          },
+          "material": {
+            "color": "#ffffff",
+            "transparent": true,
+            "opacity": 0.86,
+            "textureRepeat": {
+              "x": 2,
+              "y": 2
+            },
+            "metalness": 0.04,
+            "roughness": 0.88
+          },
+          "rotation": {
+            "rotationX": 0,
+            "rotationY": -0.2,
+            "rotationZ": 0
+          },
+          "scale": {
+            "scaleX": 1,
+            "scaleY": 1,
+            "scaleZ": 1
+          }
+        },
+        "name": "infoPanel",
+        "threeJsonId": "port-info-panel-weather",
+        "label": "infoPanel"
+      },
+      {
+        "boxType": "sprite",
+        "type": "img",
+        "text": "/assets/textures/building/port/port.webp",
+        "visible": true,
+        "fix": false,
+        "panelWidth": 220,
+        "panelHeight": 120,
+        "panel": {
+          "geometry": {
+            "width": 220,
+            "height": 120,
+            "depth": 1
+          },
+          "position": {
+            "x": -260,
+            "y": 240,
+            "z": 220
+          },
+          "material": {
+            "color": "#ffffff",
+            "transparent": true,
+            "opacity": 0.85,
+            "textureUrl": "/assets/textures/building/floor/wood_floor.webp",
+            "textureRepeat": {
+              "x": 2,
+              "y": 2
+            },
+            "metalness": 0.04,
+            "roughness": 0.88
+          },
+          "rotation": {
+            "rotationX": 0,
+            "rotationY": 0.3,
+            "rotationZ": 0
+          },
+          "scale": {
+            "scaleX": 1,
+            "scaleY": 1,
+            "scaleZ": 1
+          }
+        },
+        "name": "infoPanel",
+        "threeJsonId": "port-info-panel-gallery",
+        "label": "infoPanel"
+      }
+    ]
+  },
+  "remark": "智慧港口调度中心示例场景",
+  "threeJsonId": "portShow",
+  "label": "Smart Port Scene",
+  "sceneConfig": {
+    "scene": {
+      "background": {
+        "type": "equirect",
+        "url": "/assets/textures/environment/skybox/port360.webp",
+        "crossOrigin": "anonymous",
+        "colorSpace": "srgb"
+      }
+    },
+    "controls": {
+      "autoRotate": false
+    },
+    "helpers": {
+      "grid": {
+        "visible": false
+      },
+      "axes": {
+        "visible": false
+      }
+    },
+    "camera": {
+      "position": {
+        "x": 420,
+        "y": 460,
+        "z": 920
+      }
+    },
+    "intro": {
+      "enabled": true,
+      "backgroundColor": "transparent",
+      "postLoad": {
+        "slides": [
+          {
+            "type": "text",
+            "content": "The three vessel models in this scene: Uses third-party model cruiser_ship_2012; author Herminio Nieves (2012).",
+            "durationMs": 5000,
+            "textStyle": {
+              "fontSizePx": 18,
+              "color": "#e8eaed"
+            }
+          }
+        ],
+        "fadeInMs": 350,
+        "fadeOutMs": 500,
+        "skipOnClick": true,
+        "excludeFromLoadWait": true
+      }
+    }
+  },
+  "version": "next",
+  "name": "portShow-enterprise-port"
+}

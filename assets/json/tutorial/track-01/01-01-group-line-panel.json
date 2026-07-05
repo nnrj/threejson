@@ -1,0 +1,185 @@
+{
+  "version": "next",
+  "name": "tutorial-group-line-panel",
+  "sceneConfig": {
+    "scene": {
+      "background": "#222222"
+    },
+    "camera": {
+      "fov": 60,
+      "near": 0.1,
+      "far": 250,
+      "position": {
+        "x": 36,
+        "y": 24,
+        "z": 42
+      }
+    },
+    "renderer": {
+      "antialias": true,
+      "ratioRate": 1
+    },
+    "controls": {
+      "enableDamping": true,
+      "dampingFactor": 0.08,
+      "target": {
+        "x": 0,
+        "y": 6,
+        "z": 0
+      }
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "color": "#ffffff",
+        "intensity": 0.45
+      },
+      {
+        "type": "directional",
+        "color": "#ffffff",
+        "intensity": 0.9,
+        "position": {
+          "x": 30,
+          "y": 40,
+          "z": 25
+        }
+      }
+    ],
+    "renderLoop": {
+      "autoResize": true,
+      "firstAutoResize": true
+    }
+  },
+  "worldInfo": {
+    "groupList": [
+      {
+        "name": "demo-group",
+        "objType": "group",
+        "position": {
+          "x": -4,
+          "y": 3,
+          "z": 0
+        },
+        "subScene": [
+          {
+            "name": "group-box-a",
+            "objType": "box",
+            "geometry": {
+              "width": 5,
+              "height": 5,
+              "depth": 5
+            },
+            "position": {
+              "x": -3,
+              "y": 3,
+              "z": 0
+            },
+            "material": {
+              "type": "standard",
+              "color": "#409eff"
+            }
+          },
+          {
+            "name": "group-box-b",
+            "objType": "box",
+            "geometry": {
+              "width": 4,
+              "height": 7,
+              "depth": 4
+            },
+            "position": {
+              "x": 4,
+              "y": 4,
+              "z": 2
+            },
+            "material": {
+              "type": "standard",
+              "color": "#e6a23c"
+            }
+          }
+        ]
+      }
+    ],
+    "lineList": [
+      {
+        "name": "demo-line",
+        "points": [
+          {
+            "x": 6,
+            "y": 1,
+            "z": -6
+          },
+          {
+            "x": 12,
+            "y": 4,
+            "z": 0
+          },
+          {
+            "x": 18,
+            "y": 1,
+            "z": 7
+          }
+        ],
+        "material": {
+          "color": "#67c23a",
+          "linewidth": 2
+        }
+      }
+    ],
+    "boxModelList": [
+      {
+        "name": "demo-floor",
+        "objType": "floor",
+        "geometry": {
+          "width": 32,
+          "height": 0.8,
+          "depth": 24
+        },
+        "position": {
+          "x": 0,
+          "y": -0.4,
+          "z": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#3a3f44"
+        }
+      }
+    ],
+    "infoPanelList": [
+      {
+        "text": "ThreeJSON 信息面板  圆角",
+        "type": "text",
+        "panelBoxType": "sprite",
+        "backColor": "#303133",
+        "color": "#ffffff",
+        "borderRadius": 8,
+        "panelWidth": 20,
+        "panelHeight": 8,
+        "textureWidth": 200,
+        "textureHeight": 80,
+        "transparent": true,
+        "opacity": 0.72,
+        "textStyle": {
+          "fontSizePx": 14,
+          "fontFamily": "Microsoft YaHei, sans-serif",
+          "padding": 10,
+          "lineHeight": 28
+        },
+        "panel": {
+          "position": {
+            "x": 0,
+            "y": 14,
+            "z": 0
+          },
+          "geometry": {
+            "width": 20,
+            "height": 8,
+            "depth": 1
+          }
+        }
+      }
+    ]
+  },
+  "threeJsonId": "01-01-group-line-panel"
+}

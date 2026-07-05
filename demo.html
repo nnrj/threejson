@@ -1,0 +1,2487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThreeJSON Demo</title>
+  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #202327;
+      --panel-bg: rgba(32, 35, 39, 0.96);
+      --panel-bg-secondary: #282c31;
+      --panel-border: rgba(255, 255, 255, 0.08);
+      --panel-border-strong: rgba(255, 255, 255, 0.14);
+      --text-main: #f3f5f7;
+      --text-muted: rgba(232, 234, 237, 0.72);
+      --text-subtle: rgba(232, 234, 237, 0.5);
+      --accent: #409eff;
+      --accent-soft: rgba(64, 158, 255, 0.18);
+      --shadow: 0 14px 36px rgba(0, 0, 0, 0.35);
+      --dock-width: 340px;
+      --peek-width: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text-main);
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+    }
+
+    body {
+      min-width: 0;
+      min-height: 0;
+    }
+
+    a {
+      color: #8ecbff;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    #rootContainer {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at top right, rgba(64, 158, 255, 0.12), transparent 28%),
+        linear-gradient(180deg, #23272d 0%, #1a1d21 100%);
+    }
+
+    #stageShell {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    #contentShell {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      transition: left 0.2s ease, right 0.2s ease;
+    }
+
+    #rootContainer.panelsInline.layoutLeftDockShown #contentShell {
+      left: var(--dock-width);
+    }
+
+    #rootContainer.panelsInline.layoutRightDockShown #contentShell {
+      right: var(--dock-width);
+    }
+
+    .contentHeader {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 18px 22px 16px 30px;
+      min-height: 76px;
+      border-bottom: 1px solid var(--panel-border);
+      background: rgba(17, 19, 22, 0.66);
+      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px);
+    }
+
+    #rootContainer.layoutAnyDock .contentHeader {
+      padding: 16px 18px 14px 20px;
+    }
+
+    #rootContainer.layoutDualDock .contentHeader {
+      gap: 12px;
+      min-height: 64px;
+      padding: 12px 14px 10px 16px;
+    }
+
+    .contentHeaderMain {
+      min-width: 0;
+    }
+
+    .contentEyebrowRow {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 6px;
+      min-width: 0;
+    }
+
+    .contentEyebrow {
+      flex: 0 0 auto;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-subtle);
+    }
+
+    .contentNavTrail {
+      flex: 1 1 auto;
+      min-width: 0;
+      display: flex;
+      align-items: baseline;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 4px 6px;
+      margin: 0;
+      padding: 0;
+      font-size: 11px;
+      line-height: 1.35;
+      color: rgba(232, 234, 237, 0.62);
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .contentNavTrailSegment {
+      max-width: 14em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .contentNavTrailSegment:last-child {
+      color: rgba(200, 220, 255, 0.88);
+      font-weight: 600;
+      max-width: 18em;
+    }
+
+    .contentNavTrailSep {
+      flex: 0 0 auto;
+      color: rgba(232, 234, 237, 0.28);
+      font-weight: 400;
+    }
+
+    .contentTitleRow {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .contentTitle {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.2;
+      color: var(--text-main);
+    }
+
+    #rootContainer.layoutDualDock .contentTitle {
+      font-size: 21px;
+    }
+
+    .demoLabBadge {
+      flex: 0 0 auto;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: #ffd28a;
+      background: rgba(230, 162, 60, 0.22);
+      border: 1px solid rgba(230, 162, 60, 0.35);
+    }
+
+    .demoNavTitleRow {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .demoNavTitleRow .demoNavTitle {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .demoNavTitleRow .demoLabBadge {
+      flex-shrink: 0;
+    }
+
+    .groupBadge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      color: #d5e9ff;
+      background: rgba(64, 158, 255, 0.16);
+      border: 1px solid rgba(64, 158, 255, 0.28);
+      white-space: nowrap;
+    }
+
+    .contentSummary {
+      margin: 10px 0 0;
+      max-width: 940px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text-muted);
+    }
+
+    #rootContainer.layoutDualDock .contentSummary {
+      margin-top: 6px;
+      max-width: 640px;
+      font-size: 12px;
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      overflow: hidden;
+    }
+
+    .contentHeaderActions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+      padding-top: 2px;
+    }
+
+    #rootContainer.layoutDualDock .contentHeaderActions {
+      gap: 8px;
+      padding-top: 0;
+    }
+
+    .headerToggleLabel {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+      padding: 0 12px;
+      border-radius: 999px;
+      border: 1px solid var(--panel-border);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-muted);
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .headerToggleLabel:hover {
+      border-color: rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .headerToggleLabel input[type="checkbox"] {
+      margin: 0;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    #rootContainer.layoutDualDock .headerToggleLabel {
+      min-height: 30px;
+      padding: 0 10px;
+      font-size: 11px;
+      gap: 6px;
+    }
+
+    .langSwitchBtn {
+      flex-shrink: 0;
+      border: 1px solid var(--panel-border-strong);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-main);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 12px;
+      line-height: 1;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .langSwitchBtn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.22);
+    }
+
+    .metaPill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      max-width: 360px;
+      min-height: 34px;
+      padding: 0 12px;
+      border-radius: 999px;
+      border: 1px solid var(--panel-border);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-muted);
+      font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #rootContainer.layoutDualDock .metaPill {
+      max-width: 220px;
+      min-height: 30px;
+      padding: 0 10px;
+      font-size: 11px;
+    }
+
+    .actionLink {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 34px;
+      padding: 0 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(64, 158, 255, 0.28);
+      background: rgba(64, 158, 255, 0.12);
+      color: #d9edff;
+      font-size: 12px;
+      white-space: nowrap;
+      transition: background-color 0.16s ease, border-color 0.16s ease;
+    }
+
+    #rootContainer.layoutDualDock .actionLink {
+      min-height: 30px;
+      padding: 0 12px;
+      font-size: 11px;
+    }
+
+    .actionLink:hover {
+      text-decoration: none;
+      background: rgba(64, 158, 255, 0.22);
+      border-color: rgba(64, 158, 255, 0.4);
+    }
+
+    #iframeStage {
+      position: relative;
+      flex: 1 1 auto;
+      min-height: 0;
+      min-width: 0;
+      padding: 18px 18px 18px 22px;
+    }
+
+    #rootContainer.layoutAnyDock #iframeStage {
+      padding: 16px;
+    }
+
+    #rootContainer.layoutDualDock #iframeStage {
+      padding: 12px;
+    }
+
+    #iframeWrap {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      min-width: 0;
+      overflow: hidden;
+      border-radius: 14px;
+      border: 1px solid var(--panel-border);
+      box-shadow: var(--shadow);
+      background: #111418;
+    }
+
+    #demoFrame {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: #111418;
+    }
+
+    #frameLoadingMask {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background:
+        linear-gradient(180deg, rgba(12, 13, 15, 0.82), rgba(12, 13, 15, 0.72)),
+        radial-gradient(circle at center, rgba(64, 158, 255, 0.14), transparent 50%);
+      color: var(--text-main);
+      font-size: 14px;
+      letter-spacing: 0.02em;
+      transition: opacity 0.18s ease, visibility 0.18s ease;
+      z-index: 2;
+    }
+
+    #frameLoadingMask[hidden] {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .flyoutHost {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      z-index: 30;
+      pointer-events: none;
+    }
+
+    .flyoutHostLeft {
+      left: 0;
+      display: block;
+      overflow: hidden;
+      width: var(--peek-width);
+      transition: width 0.2s ease;
+    }
+
+    .flyoutHostRight {
+      right: 0;
+      display: block;
+      overflow: hidden;
+      width: var(--peek-width);
+      transition: width 0.2s ease;
+    }
+
+    #rootContainer.leftDockPinned .flyoutHostLeft,
+    #rootContainer.leftDockPeek .flyoutHostLeft {
+      width: var(--dock-width);
+    }
+
+    #rootContainer.rightDockPinned .flyoutHostRight,
+    #rootContainer.rightDockPeek .flyoutHostRight {
+      width: var(--dock-width);
+    }
+
+    .leftDock {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      width: var(--dock-width);
+      max-width: var(--dock-width);
+      height: 100%;
+      min-height: 0;
+      overflow: hidden;
+      pointer-events: none;
+      box-shadow: 8px 0 24px rgba(0, 0, 0, 0.28);
+      transition: transform 0.2s ease;
+      z-index: 1;
+    }
+
+    .rightDock {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      width: var(--dock-width);
+      max-width: var(--dock-width);
+      height: 100%;
+      min-height: 0;
+      overflow: hidden;
+      pointer-events: none;
+      box-shadow: -8px 0 24px rgba(0, 0, 0, 0.28);
+      transition: transform 0.2s ease;
+      z-index: 1;
+    }
+
+    #rootContainer:not(.leftDockPinned):not(.leftDockPeek) .flyoutHostLeft .leftDock {
+      transform: translateX(-100%);
+    }
+
+    #rootContainer:not(.rightDockPinned):not(.rightDockPeek) .flyoutHostRight .rightDock {
+      transform: translateX(100%);
+    }
+
+    #rootContainer.leftDockPinned .leftDock,
+    #rootContainer.leftDockPeek .leftDock {
+      pointer-events: auto;
+    }
+
+    #rootContainer.rightDockPinned .rightDock,
+    #rootContainer.rightDockPeek .rightDock {
+      pointer-events: auto;
+    }
+
+    .leftDockPanel {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-width: 0;
+      min-height: 0;
+      padding: 8px 10px 10px;
+      background: var(--panel-bg);
+      border-right: 1px solid var(--panel-border);
+      -webkit-backdrop-filter: blur(18px);
+      backdrop-filter: blur(18px);
+    }
+
+    .rightDockPanel {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-width: 0;
+      min-height: 0;
+      gap: 10px;
+      padding: 8px 10px 16px;
+      background: var(--panel-bg);
+      border-left: 1px solid var(--panel-border);
+      -webkit-backdrop-filter: blur(18px);
+      backdrop-filter: blur(18px);
+    }
+
+    .sidePanelPinRow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+      padding: 4px 0 10px;
+      margin-bottom: 8px;
+      border-bottom: 1px solid var(--panel-border);
+    }
+
+    .sidePanelPinRowRight {
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .sidePanelPinBtn {
+      min-width: 44px;
+      height: 28px;
+      padding: 0 10px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 6px;
+      background: #4a4c51;
+      color: #eef4fa;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      flex-shrink: 0;
+      transition: background-color 0.12s ease, border-color 0.12s ease;
+    }
+
+    .sidePanelPinBtn:hover {
+      background: #55585f;
+      border-color: rgba(255, 255, 255, 0.28);
+    }
+
+    .sidePanelPinBtn[aria-pressed="true"] {
+      background: rgba(64, 158, 255, 0.28);
+      border-color: rgba(64, 158, 255, 0.45);
+      color: #ffffff;
+    }
+
+    .sidePanelChromeTitleWrap {
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+
+    .sidePanelChromeTitle {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: rgba(232, 232, 232, 0.46);
+    }
+
+    .sidePanelChromeSubtitle {
+      margin-top: 3px;
+      font-size: 11px;
+      line-height: 1.4;
+      color: var(--text-subtle);
+    }
+
+    .sidebarGrid {
+      display: grid;
+      grid-template-rows: minmax(0, 2fr) minmax(220px, 1fr);
+      gap: 10px;
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+
+    .panelCard {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      padding: 12px;
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    }
+
+    .leftDockPanel > .panelCard {
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+
+    .rightDockPanel > .panelCard:first-of-type {
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+
+    .rightDockPanel > .panelCard:last-of-type.frameworkHint {
+      flex: 0 0 auto;
+      flex-shrink: 0;
+    }
+
+    .panelCard.frameworkHint {
+      overflow: visible;
+    }
+
+    .frameworkHintNote {
+      margin: 0 0 10px;
+      font-size: 13px;
+      line-height: 1.45;
+      color: rgba(232, 234, 237, 0.72);
+    }
+
+    .frameworkHintList {
+      margin: 0;
+      padding-left: 18px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #8ecbff;
+      word-break: break-word;
+    }
+
+    .frameworkHintList code {
+      font-size: 12px;
+    }
+
+    .panelCardHeader {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .panelCardHeaderTight {
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .panelCardTitle {
+      font-size: 13px;
+      font-weight: 700;
+      color: #eef3f8;
+    }
+
+    .panelCardMeta {
+      font-size: 11px;
+      color: var(--text-subtle);
+      white-space: nowrap;
+    }
+
+    #demoNav {
+      flex: 1 1 auto;
+      min-height: 0;
+      height: auto;
+      overflow: auto;
+      padding-right: 2px;
+      scrollbar-width: thin;
+      scrollbar-color: #4d525a rgba(20, 22, 26, 0.55);
+    }
+
+    #demoNav::-webkit-scrollbar,
+    .detailScroll::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #demoNav::-webkit-scrollbar-track,
+    .detailScroll::-webkit-scrollbar-track {
+      background: rgba(20, 22, 26, 0.45);
+      border-radius: 6px;
+    }
+
+    #demoNav::-webkit-scrollbar-thumb,
+    .detailScroll::-webkit-scrollbar-thumb {
+      background: #4d525a;
+      border-radius: 6px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+
+    .demoGroup + .demoGroup {
+      margin-top: 14px;
+    }
+
+    .demoGroupTitle {
+      margin: 0 0 8px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: rgba(232, 234, 237, 0.48);
+    }
+
+    .demoList {
+      display: grid;
+      gap: 8px;
+    }
+
+    .demoNavItem {
+      width: 100%;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 10px;
+      align-items: start;
+      padding: 10px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.02);
+      color: inherit;
+      cursor: pointer;
+      text-align: left;
+      transition:
+        border-color 0.14s ease,
+        background-color 0.14s ease,
+        transform 0.14s ease;
+    }
+
+    .demoNavItem:hover {
+      transform: translateX(2px);
+      border-color: rgba(64, 158, 255, 0.22);
+      background: rgba(64, 158, 255, 0.07);
+    }
+
+    .demoNavItem.isActive {
+      border-color: rgba(64, 158, 255, 0.42);
+      background: linear-gradient(180deg, rgba(64, 158, 255, 0.18), rgba(64, 158, 255, 0.08));
+      box-shadow: inset 0 0 0 1px rgba(64, 158, 255, 0.18);
+    }
+
+    .demoOrder {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 32px;
+      height: 24px;
+      padding: 0 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .demoNavItem.isActive .demoOrder {
+      background: rgba(64, 158, 255, 0.22);
+      color: #ffffff;
+    }
+
+    .demoNavText {
+      min-width: 0;
+    }
+
+    .demoNavTitle {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      color: #eef3f8;
+      line-height: 1.4;
+    }
+
+    .demoNavDesc {
+      display: block;
+      margin-top: 4px;
+      font-size: 11px;
+      line-height: 1.45;
+      color: var(--text-subtle);
+    }
+
+    .demoNavBlock {
+      display: grid;
+      gap: 0;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.02);
+      overflow: hidden;
+      transition:
+        border-color 0.14s ease,
+        background-color 0.14s ease,
+        box-shadow 0.14s ease,
+        transform 0.14s ease;
+    }
+
+    .demoNavBlock:not(.isExpanded):hover {
+      transform: translateX(2px);
+      border-color: rgba(64, 158, 255, 0.22);
+      background: rgba(64, 158, 255, 0.07);
+    }
+
+    .demoNavBlock:not(.isExpanded):has(.demoNavItem.isActive),
+    .demoNavBlock:not(.isExpanded):has(.demoNavItem.isActiveParent) {
+      border-color: rgba(64, 158, 255, 0.42);
+      background: linear-gradient(180deg, rgba(64, 158, 255, 0.18), rgba(64, 158, 255, 0.08));
+      box-shadow: inset 0 0 0 1px rgba(64, 158, 255, 0.18);
+    }
+
+    .demoNavBlock.isExpanded {
+      border-color: rgba(64, 158, 255, 0.28);
+      background: rgba(64, 158, 255, 0.05);
+      box-shadow: inset 3px 0 0 rgba(64, 158, 255, 0.55);
+      border-radius: 12px;
+    }
+
+    .demoNavBlock .demoNavItem.hasSteps {
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .demoNavBlock:not(.isExpanded) .demoNavItem.hasSteps:hover {
+      transform: none;
+      border-color: transparent;
+      background: transparent;
+    }
+
+    .demoNavBlock:not(.isExpanded) .demoNavItem.hasSteps.isActive,
+    .demoNavBlock:not(.isExpanded) .demoNavItem.hasSteps.isActiveParent {
+      border-color: transparent;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .demoNavBlock .demoNavItem.hasSteps:hover {
+      transform: none;
+    }
+
+    .demoNavBlock.isExpanded .demoNavItem.hasSteps {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      background: rgba(255, 255, 255, 0.035);
+    }
+
+    .demoNavBlock.isExpanded .demoNavItem.hasSteps.isActive,
+    .demoNavBlock.isExpanded .demoNavItem.hasSteps.isActiveParent {
+      background: linear-gradient(180deg, rgba(64, 158, 255, 0.16), rgba(64, 158, 255, 0.07));
+    }
+
+    .demoNavBlock.isExpanded .demoNavExpandIcon {
+      transform: rotate(90deg);
+      border-color: rgba(64, 158, 255, 0.45);
+      background: rgba(64, 158, 255, 0.18);
+      color: #ffffff;
+    }
+
+    .demoNavItem.hasSteps {
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+    }
+
+    .demoNavItem.hasSteps .demoNavTitle {
+      font-size: 13px;
+      font-weight: 700;
+      color: #f5f8fc;
+    }
+
+    .demoNavItem.hasSteps .demoNavDesc {
+      color: rgba(200, 214, 232, 0.62);
+    }
+
+    .demoNavStepBadge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 18px;
+      margin-left: 6px;
+      padding: 0 6px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: rgba(200, 220, 255, 0.92);
+      background: rgba(64, 158, 255, 0.14);
+      border: 1px solid rgba(64, 158, 255, 0.24);
+      vertical-align: middle;
+    }
+
+    .demoNavExpandIcon {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(190, 210, 240, 0.95);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      transition:
+        transform 0.16s ease,
+        border-color 0.14s ease,
+        background-color 0.14s ease,
+        color 0.14s ease;
+    }
+
+    .demoNavExpandIcon::before {
+      content: "";
+      display: block;
+      width: 7px;
+      height: 7px;
+      border-right: 2.5px solid currentColor;
+      border-bottom: 2.5px solid currentColor;
+      transform: rotate(-45deg) translate(-1px, -1px);
+    }
+
+    .demoNavItem.hasSteps:hover .demoNavExpandIcon,
+    .demoNavItem.hasSteps:focus-visible .demoNavExpandIcon {
+      border-color: rgba(64, 158, 255, 0.42);
+      background: rgba(64, 158, 255, 0.14);
+      color: #ffffff;
+    }
+
+    .demoNavItem.isActiveParent {
+      border-color: rgba(64, 158, 255, 0.28);
+      background: rgba(64, 158, 255, 0.05);
+    }
+
+    .demoNavItem.isActiveParent .demoOrder {
+      background: rgba(64, 158, 255, 0.14);
+      color: #d8e8ff;
+    }
+
+    .demoSubList {
+      display: grid;
+      gap: 5px;
+      margin: 0;
+      padding: 8px 8px 10px 10px;
+      border-left: none;
+      background: rgba(0, 0, 0, 0.22);
+    }
+
+    .demoSubList[hidden] {
+      display: none;
+    }
+
+    .demoSubNavItem {
+      position: relative;
+      width: 100%;
+      display: block;
+      padding: 7px 10px 7px 28px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.02);
+      color: inherit;
+      cursor: pointer;
+      text-align: left;
+      transition:
+        border-color 0.14s ease,
+        background-color 0.14s ease,
+        transform 0.14s ease;
+    }
+
+    .demoSubNavItem::before {
+      content: "";
+      position: absolute;
+      left: 11px;
+      top: 50%;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: rgba(140, 170, 210, 0.45);
+      transform: translateY(-50%);
+      box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.08);
+    }
+
+    .demoSubNavItem:hover {
+      transform: translateX(2px);
+      border-color: rgba(64, 158, 255, 0.2);
+      background: rgba(64, 158, 255, 0.07);
+    }
+
+    .demoSubNavItem:hover::before {
+      background: rgba(120, 180, 255, 0.85);
+    }
+
+    .demoSubNavItem.isActive {
+      border-color: rgba(64, 158, 255, 0.38);
+      background: linear-gradient(180deg, rgba(64, 158, 255, 0.12), rgba(64, 158, 255, 0.05));
+      box-shadow: inset 0 0 0 1px rgba(64, 158, 255, 0.12);
+    }
+
+    .demoSubNavItem.isActive::before {
+      background: #79b8ff;
+      box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.22);
+    }
+
+    .demoSubNavItem .demoNavTitle {
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(232, 238, 246, 0.88);
+    }
+
+    .demoSubNavItem .demoNavDesc {
+      font-size: 10px;
+      margin-top: 2px;
+      color: rgba(180, 192, 210, 0.55);
+    }
+
+    .detailScroll {
+      flex: 1 1 auto;
+      min-height: 0;
+      height: auto;
+      overflow: auto;
+      padding-right: 2px;
+      scrollbar-width: thin;
+      scrollbar-color: #4d525a rgba(20, 22, 26, 0.55);
+    }
+
+    .detailHeader {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .detailTitleWrap {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .detailTitle {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.3;
+      color: #ffffff;
+    }
+
+    .detailHeader .groupBadge {
+      align-self: flex-start;
+      max-width: 100%;
+      white-space: normal;
+      line-height: 1.35;
+    }
+
+    .detailPath {
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--text-subtle);
+      overflow-wrap: anywhere;
+      word-break: normal;
+    }
+
+    .detailMetaLine {
+      margin: 0 0 12px;
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--text-muted);
+      overflow-wrap: anywhere;
+      word-break: normal;
+    }
+
+    .detailMetaLine code {
+      font-size: 11px;
+      color: #9ec8ff;
+    }
+
+    .detailSummary {
+      margin: 0 0 14px;
+      font-size: 12px;
+      line-height: 1.7;
+      color: var(--text-muted);
+    }
+
+    .detailSection + .detailSection {
+      margin-top: 14px;
+    }
+
+    .detailSectionTitle {
+      margin: 0 0 8px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: rgba(232, 234, 237, 0.5);
+    }
+
+    .detailModeToggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .detailModeBtn {
+      min-height: 24px;
+      padding: 0 10px;
+      border: none;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--text-subtle);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 700;
+      transition: background-color 0.14s ease, color 0.14s ease;
+    }
+
+    .detailModeBtn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .detailModeBtn[aria-pressed="true"] {
+      background: rgba(64, 158, 255, 0.2);
+      color: #ffffff;
+    }
+
+    #rootContainer.detailModeHighlights .detailSummary,
+    #rootContainer.detailModeHighlights #detailPath,
+    #rootContainer.detailModeHighlights #detailDocsSection {
+      display: none;
+    }
+
+    #rootContainer.detailModeHighlights .detailHeader {
+      margin-bottom: 6px;
+    }
+
+    #rootContainer.detailModeHighlights .detailFooter {
+      margin-top: 12px;
+    }
+
+    .highlightList,
+    .docLinkList {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .highlightList li,
+    .docLinkList li {
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--text-muted);
+    }
+
+    .docLinkList li + li,
+    .highlightList li + li {
+      margin-top: 6px;
+    }
+
+    .detailFooter {
+      margin-top: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .detailJsonLinks {
+      display: contents;
+    }
+
+    .edgeHoverZone {
+      pointer-events: none;
+    }
+
+    .edgeHoverZoneLeft {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: var(--peek-width);
+      z-index: 5;
+    }
+
+    .edgeHoverZoneRight {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: var(--peek-width);
+      z-index: 5;
+    }
+
+    #rootContainer:not(.leftDockPinned) .flyoutHostLeft .edgeHoverZoneLeft {
+      pointer-events: auto;
+    }
+
+    #rootContainer:not(.rightDockPinned) .flyoutHostRight .edgeHoverZoneRight {
+      pointer-events: auto;
+    }
+
+    @media (max-width: 900px) {
+      :root {
+        --dock-width: min(86vw, 340px);
+      }
+
+      .contentHeader {
+        flex-direction: column;
+        align-items: stretch;
+        padding-right: 18px;
+      }
+
+      .contentHeaderActions {
+        justify-content: space-between;
+      }
+
+      #iframeStage {
+        padding: 14px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .contentTitle {
+        font-size: 20px;
+      }
+
+      .metaPill {
+        max-width: none;
+      }
+    }
+  </style>
+</head>
+<body>
+<div id="rootContainer" class="leftDockPinned">
+  <main id="stageShell">
+    <div id="contentShell">
+      <header class="contentHeader">
+        <div class="contentHeaderMain">
+          <div class="contentEyebrowRow">
+            <div class="contentEyebrow">ThreeJSON Demo Index</div>
+            <nav id="contentNavTrail" class="contentNavTrail" aria-label="当前演示位置"></nav>
+          </div>
+          <div class="contentTitleRow">
+            <h1 id="contentTitle" class="contentTitle">Demo</h1>
+            <span id="contentGroupBadge" class="groupBadge">示例</span>
+          </div>
+          <p id="contentSummary" class="contentSummary"></p>
+        </div>
+        <div class="contentHeaderActions">
+          <button type="button" id="langSwitchBtn" class="langSwitchBtn">English</button>
+          <div id="contentPath" class="metaPill">examples/html-demo/track-00-runtime/00-01-minimal-mesh.html</div>
+          <label class="headerToggleLabel" title="勾选：左右栏全部钉住（鼠标移开仍显示）；取消勾选：全部取消钉住（靠左右边缘悬停唤出）。两侧状态不一致时显示为部分选中。">
+            <input id="pinPanelsCheckbox" type="checkbox" checked>
+            <span>钉住面板</span>
+          </label>
+          <a id="openDemoLink" class="actionLink" href="./examples/html-demo/track-00-runtime/00-01-minimal-mesh.html" target="_blank" rel="noreferrer">新标签打开</a>
+        </div>
+      </header>
+
+      <section id="iframeStage" aria-label="演示预览区域">
+        <div id="iframeWrap">
+          <div id="frameLoadingMask" aria-live="polite">正在加载演示页面...</div>
+          <iframe id="demoFrame" title="ThreeJSON Demo 预览" allowfullscreen></iframe>
+        </div>
+      </section>
+    </div>
+
+    <div id="leftFlyoutHost" class="flyoutHost flyoutHostLeft">
+      <div id="leftDock" class="leftDock">
+        <aside id="leftPanel" class="leftDockPanel" aria-label="演示索引侧栏">
+          <div class="sidePanelPinRow">
+            <button type="button" id="leftPanelPinBtn" class="sidePanelPinBtn" aria-pressed="true" aria-label="切换侧栏钉住状态">PIN</button>
+            <div class="sidePanelChromeTitleWrap">
+              <div class="sidePanelChromeTitle">Demo Navigator</div>
+              <div class="sidePanelChromeSubtitle">支持钉住、隐藏和靠左悬停唤出</div>
+            </div>
+          </div>
+
+          <section class="panelCard" aria-labelledby="demoNavTitle">
+            <div class="panelCardHeader">
+              <div id="demoNavTitle" class="panelCardTitle">学习路径</div>
+              <div id="demoCount" class="panelCardMeta">0 个页面</div>
+            </div>
+            <nav id="demoNav" aria-label="演示页面目录"></nav>
+          </section>
+        </aside>
+      </div>
+      <div class="edgeHoverZone edgeHoverZoneLeft" aria-hidden="true"></div>
+    </div>
+
+    <div id="rightFlyoutHost" class="flyoutHost flyoutHostRight">
+      <div id="rightDock" class="rightDock">
+        <aside id="rightPanel" class="rightDockPanel" aria-label="演示说明侧栏">
+          <div class="sidePanelPinRow sidePanelPinRowRight">
+            <div class="sidePanelChromeTitleWrap">
+              <div class="sidePanelChromeTitle">Demo Detail</div>
+              <div class="sidePanelChromeSubtitle">当前示例说明、要点与文档链接</div>
+            </div>
+            <button type="button" id="rightPanelPinBtn" class="sidePanelPinBtn" aria-pressed="true" aria-label="切换右侧栏钉住状态">PIN</button>
+          </div>
+
+          <section class="panelCard" aria-labelledby="detailTitle">
+            <div class="panelCardHeader panelCardHeaderTight">
+              <div class="panelCardTitle">页面说明</div>
+              <div class="detailModeToggle" role="group" aria-label="说明显示模式">
+                <button type="button" class="detailModeBtn" data-detail-mode="full" aria-pressed="true">全部</button>
+                <button type="button" class="detailModeBtn" data-detail-mode="highlights" aria-pressed="false">仅要点</button>
+              </div>
+            </div>
+            <div class="detailScroll">
+              <div class="detailHeader">
+                <span id="detailGroupBadge" class="groupBadge"></span>
+                <div class="detailTitleWrap">
+                  <h2 id="detailTitle" class="detailTitle"></h2>
+                  <div id="detailPath" class="detailPath"></div>
+                </div>
+              </div>
+              <p id="detailSummary" class="detailSummary"></p>
+              <p id="detailJsonPath" class="detailMetaLine" hidden></p>
+              <section id="detailPrereqSection" class="detailSection" hidden>
+                <h3 class="detailSectionTitle">先修课程</h3>
+                <ul id="detailPrereqList" class="docLinkList"></ul>
+              </section>
+
+              <section class="detailSection">
+                <h3 class="detailSectionTitle">演示要点</h3>
+                <ul id="highlightList" class="highlightList"></ul>
+              </section>
+
+              <section id="detailDocsSection" class="detailSection">
+                <h3 class="detailSectionTitle">相关文档</h3>
+                <ul id="docLinkList" class="docLinkList"></ul>
+              </section>
+
+              <div class="detailFooter">
+                <a id="detailOpenLink" class="actionLink" href="./examples/html-demo/track-00-runtime/00-01-minimal-mesh.html" target="_blank" rel="noreferrer">单独打开</a>
+                <a id="detailSourceLink" class="actionLink" href="./doc/reader/reader.html?src=/examples/html-demo/track-00-runtime/00-01-minimal-mesh.html" target="_blank" rel="noreferrer">查看源码</a>
+                <div id="detailJsonLinks" class="detailJsonLinks" hidden></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="panelCard frameworkHint" aria-labelledby="frameworkDemosTitle">
+            <div class="panelCardHeader">
+              <div id="frameworkDemosTitle" class="panelCardTitle">关于 Vue / React 示例</div>
+            </div>
+            <p class="frameworkHintNote">
+              需在终端进入子目录安装依赖并启动开发服务器；中央 iframe 无法嵌套运行独立 Vite 应用。
+            </p>
+            <ul class="frameworkHintList">
+              <li><a href="./examples/vue-app/README.md" target="_blank" rel="noreferrer">examples/vue-app</a>：<code>npm i</code> → <code>npm run dev</code></li>
+              <li><a href="./examples/react-app/README.md" target="_blank" rel="noreferrer">examples/react-app</a>：<code>npm i</code> → <code>npm run dev</code></li>
+            </ul>
+          </section>
+        </aside>
+      </div>
+      <div class="edgeHoverZone edgeHoverZoneRight" aria-hidden="true"></div>
+    </div>
+  </main>
+</div>
+
+<script src="./examples/html-demo/demo-i18n.js"></script>
+<script>
+  let DEMOS = [];
+  let ui = {};
+  let currentLocale = "zh-CN";
+  let demoMap = new Map();
+
+  function tx(key, params) {
+    return DemoIndexI18n.t(ui, key, params);
+  }
+
+  const rootContainer = document.getElementById("rootContainer");
+  const leftFlyoutHost = document.getElementById("leftFlyoutHost");
+  const leftPanel = document.getElementById("leftPanel");
+  const leftPanelPinBtn = document.getElementById("leftPanelPinBtn");
+  const rightFlyoutHost = document.getElementById("rightFlyoutHost");
+  const rightPanel = document.getElementById("rightPanel");
+  const rightPanelPinBtn = document.getElementById("rightPanelPinBtn");
+  const demoNav = document.getElementById("demoNav");
+  const demoCount = document.getElementById("demoCount");
+  const detailTitle = document.getElementById("detailTitle");
+  const detailPath = document.getElementById("detailPath");
+  const detailSummary = document.getElementById("detailSummary");
+  const detailJsonPath = document.getElementById("detailJsonPath");
+  const detailPrereqSection = document.getElementById("detailPrereqSection");
+  const detailPrereqList = document.getElementById("detailPrereqList");
+  const detailGroupBadge = document.getElementById("detailGroupBadge");
+  const highlightList = document.getElementById("highlightList");
+  const docLinkList = document.getElementById("docLinkList");
+  const detailOpenLink = document.getElementById("detailOpenLink");
+  const detailSourceLink = document.getElementById("detailSourceLink");
+  const detailJsonLinks = document.getElementById("detailJsonLinks");
+  const detailModeButtons = Array.from(document.querySelectorAll("[data-detail-mode]"));
+  const contentTitle = document.getElementById("contentTitle");
+  const contentSummary = document.getElementById("contentSummary");
+  const contentPath = document.getElementById("contentPath");
+  const contentGroupBadge = document.getElementById("contentGroupBadge");
+  const contentNavTrail = document.getElementById("contentNavTrail");
+  const pinPanelsCheckbox = document.getElementById("pinPanelsCheckbox");
+  const openDemoLink = document.getElementById("openDemoLink");
+  const langSwitchBtn = document.getElementById("langSwitchBtn");
+  const demoFrame = document.getElementById("demoFrame");
+  const frameLoadingMask = document.getElementById("frameLoadingMask");
+  const demoNavTitle = document.getElementById("demoNavTitle");
+  const frameworkDemosTitle = document.getElementById("frameworkDemosTitle");
+
+  const FLYOUT_PEEK_HIDE_DELAY_MS = 280;
+  const VIEW_CHROME_STORAGE_KEY = "demoIndex_viewChrome_v1";
+  const CURRENT_DEMO_STORAGE_KEY = "demoIndex_currentDemo_v1";
+  const DETAIL_MODE_STORAGE_KEY = "demoIndex_detailMode_v1";
+  const EXPANDED_PARENTS_STORAGE_KEY = "demoIndex_expandedParents_v1";
+  let leftDockPinned = true;
+  let leftDockPeek = false;
+  let rightDockPinned = true;
+  let rightDockPeek = false;
+  let leftPeekHideTimer = null;
+  let rightPeekHideTimer = null;
+  let currentDemoId = null;
+  let detailMode = "full";
+  let expandedParentIds = new Set();
+
+  function mergeStepWithParent(step, parent) {
+    const { steps: _omitSteps, ...parentRest } = parent;
+    return {
+      ...parentRest,
+      ...step,
+      group: parent.group,
+      path: step.path ?? parent.path,
+      summary: step.summary ?? parent.summary,
+      navSummary: step.navSummary ?? step.title,
+      highlights: step.highlights ?? parent.highlights ?? [],
+      docLinks: step.docLinks ?? parent.docLinks ?? [],
+      parentId: step.parentId ?? parent.id,
+      navLevel: 2
+    };
+  }
+
+  function buildDemoRegistry(demos) {
+    const map = new Map();
+    for (const demo of demos) {
+      map.set(demo.id, { ...demo, navLevel: 1 });
+      for (const step of demo.steps ?? []) {
+        map.set(step.id, mergeStepWithParent(step, demo));
+      }
+    }
+    return map;
+  }
+
+  function getTopLevelDemo(entry) {
+    if (entry?.navLevel === 2 && entry.parentId) {
+      return demoMap.get(entry.parentId) ?? DEMOS.find((demo) => demo.id === entry.parentId) ?? entry;
+    }
+    return entry;
+  }
+
+  function parseExpandedParentIds(raw) {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    return parsed.filter((id) => typeof id === "string" && id.length > 0);
+  }
+
+  function readExpandedParentIds() {
+    try {
+      const sessionRaw = sessionStorage.getItem(EXPANDED_PARENTS_STORAGE_KEY);
+      if (sessionRaw !== null) {
+        return parseExpandedParentIds(sessionRaw);
+      }
+    } catch (_) {
+      /* ignore */
+    }
+
+    try {
+      const localRaw = localStorage.getItem(EXPANDED_PARENTS_STORAGE_KEY);
+      if (localRaw !== null) {
+        const localIds = parseExpandedParentIds(localRaw);
+        try {
+          sessionStorage.setItem(EXPANDED_PARENTS_STORAGE_KEY, JSON.stringify(localIds));
+        } catch (_) {
+          /* ignore */
+        }
+        return localIds;
+      }
+    } catch (_) {
+      /* ignore */
+    }
+
+    return [];
+  }
+
+  function persistExpandedParentIds() {
+    const payload = JSON.stringify([...expandedParentIds]);
+    try {
+      sessionStorage.setItem(EXPANDED_PARENTS_STORAGE_KEY, payload);
+    } catch (_) {
+      /* ignore */
+    }
+  }
+
+  function syncExpandedDom(parentId) {
+    const block = demoNav.querySelector('.demoNavBlock[data-parent-id="' + parentId + '"]');
+    if (!block) {
+      return;
+    }
+    const expanded = expandedParentIds.has(parentId);
+    block.classList.toggle("isExpanded", expanded);
+    const topButton = block.querySelector(".demoNavItem");
+    const subList = block.querySelector(".demoSubList");
+    if (topButton) {
+      topButton.classList.toggle("isExpanded", expanded);
+      topButton.setAttribute("aria-expanded", expanded ? "true" : "false");
+    }
+    if (subList) {
+      subList.hidden = !expanded;
+    }
+  }
+
+  function toggleExpanded(parentId) {
+    if (expandedParentIds.has(parentId)) {
+      expandedParentIds.delete(parentId);
+    } else {
+      expandedParentIds.add(parentId);
+    }
+    persistExpandedParentIds();
+    syncExpandedDom(parentId);
+  }
+
+  function ensureExpanded(parentId) {
+    if (expandedParentIds.has(parentId)) {
+      syncExpandedDom(parentId);
+      return;
+    }
+    expandedParentIds.add(parentId);
+    persistExpandedParentIds();
+    syncExpandedDom(parentId);
+  }
+
+  function persistViewChromeCache() {
+    try {
+      localStorage.setItem(
+        VIEW_CHROME_STORAGE_KEY,
+        JSON.stringify({
+          leftDockPinned: leftDockPinned,
+          rightDockPinned: rightDockPinned
+        })
+      );
+    } catch (_) {
+      /* ignore */
+    }
+  }
+
+  function mergeViewChromeFromStorage() {
+    try {
+      const raw = localStorage.getItem(VIEW_CHROME_STORAGE_KEY);
+      if (!raw) {
+        return;
+      }
+      const cache = JSON.parse(raw);
+      if (typeof cache.leftDockPinned === "boolean") {
+        leftDockPinned = cache.leftDockPinned;
+      }
+      if (typeof cache.rightDockPinned === "boolean") {
+        rightDockPinned = cache.rightDockPinned;
+      }
+    } catch (_) {
+      /* ignore */
+    }
+  }
+
+  function persistCurrentDemo(demoId) {
+    try {
+      localStorage.setItem(CURRENT_DEMO_STORAGE_KEY, demoId);
+    } catch (_) {
+      /* ignore */
+    }
+  }
+
+  function readStoredDemoId() {
+    try {
+      return localStorage.getItem(CURRENT_DEMO_STORAGE_KEY);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function persistDetailMode() {
+    try {
+      localStorage.setItem(DETAIL_MODE_STORAGE_KEY, detailMode);
+    } catch (_) {
+      /* ignore */
+    }
+  }
+
+  function mergeDetailModeFromStorage() {
+    try {
+      const stored = localStorage.getItem(DETAIL_MODE_STORAGE_KEY);
+      if (stored === "full" || stored === "highlights") {
+        detailMode = stored;
+      }
+    } catch (_) {
+      /* ignore */
+    }
+  }
+
+  function syncDetailModeUi(options = {}) {
+    const persist = options.persist !== false;
+    rootContainer.classList.toggle("detailModeHighlights", detailMode === "highlights");
+    detailModeButtons.forEach((button) => {
+      const active = button.dataset.detailMode === detailMode;
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+    if (persist) {
+      persistDetailMode();
+    }
+  }
+
+  function readDemoIdFromHash() {
+    const hash = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : "";
+    if (!hash) {
+      return null;
+    }
+    const params = new URLSearchParams(hash);
+    const demoId = params.get("demo");
+    return demoMap.has(demoId) ? demoId : null;
+  }
+
+  function writeDemoIdToHash(demoId) {
+    const nextHash = "#demo=" + encodeURIComponent(demoId);
+    if (window.location.hash !== nextHash) {
+      history.replaceState(null, "", nextHash);
+    }
+  }
+
+  function syncDockPeekClasses(options = {}) {
+    const persist = options.persist !== false;
+    rootContainer.classList.toggle("leftDockPinned", leftDockPinned);
+    rootContainer.classList.toggle("leftDockPeek", leftDockPeek);
+    rootContainer.classList.toggle("rightDockPinned", rightDockPinned);
+    rootContainer.classList.toggle("rightDockPeek", rightDockPeek);
+
+    const leftShown = leftDockPinned || leftDockPeek;
+    const rightShown = rightDockPinned || rightDockPeek;
+    leftPanel.setAttribute("aria-hidden", leftShown ? "false" : "true");
+    rightPanel.setAttribute("aria-hidden", rightShown ? "false" : "true");
+    rootContainer.classList.toggle("layoutLeftDockShown", leftShown);
+    rootContainer.classList.toggle("layoutRightDockShown", rightShown);
+    rootContainer.classList.toggle("layoutAnyDock", leftShown || rightShown);
+    rootContainer.classList.toggle("layoutDualDock", leftShown && rightShown);
+
+    leftPanelPinBtn.setAttribute("aria-pressed", leftDockPinned ? "true" : "false");
+    leftPanelPinBtn.textContent = leftDockPinned ? "PIN" : "AUTO";
+    leftPanelPinBtn.title = leftDockPinned ? tx("leftPinPinned") : tx("leftPinUnpinned");
+    rightPanelPinBtn.setAttribute("aria-pressed", rightDockPinned ? "true" : "false");
+    rightPanelPinBtn.textContent = rightDockPinned ? "PIN" : "AUTO";
+    rightPanelPinBtn.title = rightDockPinned ? tx("rightPinPinned") : tx("rightPinUnpinned");
+
+    const bothPanelsPinned = leftDockPinned && rightDockPinned;
+    const bothPanelsUnpinned = !leftDockPinned && !rightDockPinned;
+    const usePanelsOverlayLayout = bothPanelsUnpinned;
+    rootContainer.classList.toggle("panelsOverlay", usePanelsOverlayLayout);
+    rootContainer.classList.toggle("panelsInline", !usePanelsOverlayLayout);
+
+    if (pinPanelsCheckbox) {
+      const mixedPins = !bothPanelsPinned && !bothPanelsUnpinned;
+      pinPanelsCheckbox.checked = bothPanelsPinned;
+      pinPanelsCheckbox.indeterminate = mixedPins;
+    }
+
+    if (persist) {
+      persistViewChromeCache();
+    }
+  }
+
+  function scheduleLeftPeekHide() {
+    clearTimeout(leftPeekHideTimer);
+    leftPeekHideTimer = setTimeout(() => {
+      leftDockPeek = false;
+      syncDockPeekClasses();
+    }, FLYOUT_PEEK_HIDE_DELAY_MS);
+  }
+
+  function scheduleRightPeekHide() {
+    clearTimeout(rightPeekHideTimer);
+    rightPeekHideTimer = setTimeout(() => {
+      rightDockPeek = false;
+      syncDockPeekClasses();
+    }, FLYOUT_PEEK_HIDE_DELAY_MS);
+  }
+
+  function initDockFlyouts() {
+    mergeViewChromeFromStorage();
+
+    leftFlyoutHost.addEventListener("mouseenter", () => {
+      clearTimeout(leftPeekHideTimer);
+      leftDockPeek = true;
+      syncDockPeekClasses();
+    });
+
+    leftFlyoutHost.addEventListener("mouseleave", () => {
+      if (!leftDockPinned) {
+        scheduleLeftPeekHide();
+      }
+    });
+
+    rightFlyoutHost.addEventListener("mouseenter", () => {
+      clearTimeout(rightPeekHideTimer);
+      rightDockPeek = true;
+      syncDockPeekClasses();
+    });
+
+    rightFlyoutHost.addEventListener("mouseleave", () => {
+      if (!rightDockPinned) {
+        scheduleRightPeekHide();
+      }
+    });
+
+    document.addEventListener(
+      "pointerdown",
+      (event) => {
+        if (!leftDockPinned && !leftFlyoutHost.contains(event.target)) {
+          leftDockPeek = false;
+          clearTimeout(leftPeekHideTimer);
+        }
+        if (!rightDockPinned && !rightFlyoutHost.contains(event.target)) {
+          rightDockPeek = false;
+          clearTimeout(rightPeekHideTimer);
+        }
+        syncDockPeekClasses();
+      },
+      true
+    );
+
+    leftPanelPinBtn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      leftDockPinned = !leftDockPinned;
+      if (leftDockPinned) {
+        leftDockPeek = true;
+        clearTimeout(leftPeekHideTimer);
+      } else if (!leftFlyoutHost.matches(":hover")) {
+        leftDockPeek = false;
+      }
+      syncDockPeekClasses();
+    });
+
+    rightPanelPinBtn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      rightDockPinned = !rightDockPinned;
+      if (rightDockPinned) {
+        rightDockPeek = true;
+        clearTimeout(rightPeekHideTimer);
+      } else if (!rightFlyoutHost.matches(":hover")) {
+        rightDockPeek = false;
+      }
+      syncDockPeekClasses();
+    });
+
+    syncDockPeekClasses();
+  }
+
+  function initDetailModeToggle() {
+    mergeDetailModeFromStorage();
+    detailModeButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const nextMode = button.dataset.detailMode;
+        if (nextMode !== "full" && nextMode !== "highlights") {
+          return;
+        }
+        detailMode = nextMode;
+        syncDetailModeUi();
+      });
+    });
+    syncDetailModeUi({ persist: false });
+  }
+
+  function initPinPanelsCheckbox() {
+    pinPanelsCheckbox?.addEventListener("change", () => {
+      pinPanelsCheckbox.indeterminate = false;
+      if (pinPanelsCheckbox.checked) {
+        leftDockPinned = true;
+        rightDockPinned = true;
+        leftDockPeek = true;
+        rightDockPeek = true;
+        clearTimeout(leftPeekHideTimer);
+        clearTimeout(rightPeekHideTimer);
+      } else {
+        leftDockPinned = false;
+        rightDockPinned = false;
+        if (!leftFlyoutHost.matches(":hover")) {
+          leftDockPeek = false;
+        }
+        if (!rightFlyoutHost.matches(":hover")) {
+          rightDockPeek = false;
+        }
+      }
+      syncDockPeekClasses();
+    });
+  }
+
+  function sortDemosForNav(items) {
+    return [...items].sort((a, b) => {
+      const trackA = a.track ?? "99";
+      const trackB = b.track ?? "99";
+      if (trackA !== trackB) {
+        return trackA.localeCompare(trackB);
+      }
+      return String(a.order).localeCompare(String(b.order), undefined, { numeric: true });
+    });
+  }
+
+  function createGroupMap(items) {
+    const groups = new Map();
+    for (const item of items) {
+      if (!groups.has(item.group)) {
+        groups.set(item.group, []);
+      }
+      groups.get(item.group).push(item);
+    }
+    return groups;
+  }
+
+  function createDemoNavButton(entry, options = {}) {
+    const isSub = options.isSub === true;
+    const hasSteps = options.hasSteps === true;
+    const stepCount = Number.isFinite(options.stepCount) ? options.stepCount : 0;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = isSub ? "demoSubNavItem" : "demoNavItem";
+    if (!isSub && hasSteps) {
+      button.classList.add("hasSteps");
+    }
+    button.dataset.demoId = entry.id;
+    button.setAttribute("aria-pressed", "false");
+
+    if (!isSub) {
+      const order = document.createElement("span");
+      order.className = "demoOrder";
+      order.textContent = entry.order;
+      button.appendChild(order);
+    }
+
+    const textWrap = document.createElement("span");
+    textWrap.className = "demoNavText";
+
+    const title = document.createElement("span");
+    title.className = "demoNavTitle";
+    title.textContent = entry.title;
+
+    if (!isSub && hasSteps && stepCount > 0) {
+      const stepBadge = document.createElement("span");
+      stepBadge.className = "demoNavStepBadge";
+      stepBadge.textContent = String(stepCount);
+      stepBadge.title = tx("topicCount", { count: stepCount });
+      title.appendChild(stepBadge);
+    }
+
+    if (!isSub && entry.status === "lab") {
+      const titleRow = document.createElement("span");
+      titleRow.className = "demoNavTitleRow";
+      titleRow.appendChild(title);
+      const lab = document.createElement("span");
+      lab.className = "demoLabBadge";
+      lab.textContent = "LAB";
+      lab.title = tx("labExtTitle");
+      titleRow.appendChild(lab);
+      textWrap.appendChild(titleRow);
+    } else {
+      textWrap.appendChild(title);
+    }
+
+    const desc = document.createElement("span");
+    desc.className = "demoNavDesc";
+    desc.textContent = entry.navSummary;
+
+    textWrap.appendChild(desc);
+    button.appendChild(textWrap);
+
+    if (!isSub && hasSteps) {
+      const expandIcon = document.createElement("span");
+      expandIcon.className = "demoNavExpandIcon";
+      expandIcon.setAttribute("aria-hidden", "true");
+      button.appendChild(expandIcon);
+    }
+
+    return button;
+  }
+
+  function renderDemoNav() {
+    demoNav.innerHTML = "";
+    demoCount.textContent = tx("topicCount", { count: DEMOS.length });
+
+    const groups = createGroupMap(sortDemosForNav(DEMOS));
+    for (const [groupName, items] of groups.entries()) {
+      const groupWrap = document.createElement("section");
+      groupWrap.className = "demoGroup";
+
+      const groupTitle = document.createElement("h3");
+      groupTitle.className = "demoGroupTitle";
+      groupTitle.textContent = groupName;
+      groupWrap.appendChild(groupTitle);
+
+      const list = document.createElement("div");
+      list.className = "demoList";
+
+      for (const demo of items) {
+        const steps = demo.steps ?? [];
+        if (steps.length === 0) {
+          const button = createDemoNavButton(demo);
+          button.addEventListener("click", () => {
+            selectDemo(demo.id);
+          });
+          list.appendChild(button);
+          continue;
+        }
+
+        const block = document.createElement("div");
+        block.className = "demoNavBlock";
+        block.dataset.parentId = demo.id;
+
+        const expanded = expandedParentIds.has(demo.id);
+        if (expanded) {
+          block.classList.add("isExpanded");
+        }
+
+        const subListId = "demoSubList-" + demo.id;
+        const button = createDemoNavButton(demo, { hasSteps: true, stepCount: steps.length });
+        button.classList.toggle("isExpanded", expanded);
+        button.setAttribute("aria-expanded", expanded ? "true" : "false");
+        button.setAttribute("aria-controls", subListId);
+
+        const subList = document.createElement("div");
+        subList.className = "demoSubList";
+        subList.id = subListId;
+        subList.hidden = !expanded;
+
+        button.addEventListener("click", () => {
+          selectDemo(demo.id);
+          toggleExpanded(demo.id);
+        });
+
+        for (const step of steps) {
+          const stepEntry = mergeStepWithParent(step, demo);
+          const stepButton = createDemoNavButton(stepEntry, { isSub: true });
+          stepButton.addEventListener("click", () => {
+            selectDemo(stepEntry.id);
+          });
+          subList.appendChild(stepButton);
+        }
+
+        block.appendChild(button);
+        block.appendChild(subList);
+        list.appendChild(block);
+      }
+
+      groupWrap.appendChild(list);
+      demoNav.appendChild(groupWrap);
+    }
+  }
+
+  function setLoadingState(text) {
+    frameLoadingMask.textContent = text || tx("frameLoading");
+    frameLoadingMask.hidden = false;
+  }
+
+  function clearNodeChildren(node) {
+    while (node.firstChild) {
+      node.removeChild(node.firstChild);
+    }
+  }
+
+  const readerEntryPath = "./doc/reader/reader.html";
+  const readerTextFilePattern = /\.(md|markdown|json|js|mjs|cjs|ts|tsx|jsx|html|htm|vue|css|txt|text|yml|yaml|bash|sh|ps1|cmd|bat|obj|mtl|csv)$/i;
+
+  function shouldOpenWithReader(href) {
+    if (!href || typeof href !== "string") {
+      return false;
+    }
+    try {
+      const resolved = new URL(href, window.location.href);
+      return resolved.origin === window.location.origin && readerTextFilePattern.test(resolved.pathname);
+    } catch (_error) {
+      return false;
+    }
+  }
+
+  function tutorialDocHref() {
+    return currentLocale === "en-US" ? "./doc/en/tutorial.md" : "./doc/tutorial.md";
+  }
+
+  function buildReaderLink(href) {
+    const resolved = new URL(href, window.location.href);
+    const readerUrl = new URL(readerEntryPath, window.location.href);
+    readerUrl.searchParams.set("src", resolved.pathname + resolved.search);
+    readerUrl.hash = resolved.hash;
+    return readerUrl.href;
+  }
+
+  function isTutorialDocHref(href) {
+    if (typeof href !== "string") {
+      return false;
+    }
+    const path = href.split("#")[0].replace(/^\.\//, "").replace(/^\//, "");
+    return path === "doc/tutorial.md" || path === "doc/en/tutorial.md";
+  }
+
+  function appendDocLinkItem(container, href, label) {
+    const li = document.createElement("li");
+    const anchor = document.createElement("a");
+    anchor.href = shouldOpenWithReader(href) ? buildReaderLink(href) : href;
+    anchor.target = "_blank";
+    anchor.rel = "noreferrer";
+    anchor.textContent = label;
+    li.appendChild(anchor);
+    container.appendChild(li);
+  }
+
+  /**
+   * @param {object} demo
+   * @returns {{ name: string, json: string }[]}
+   */
+  function resolveDemoJsonFiles(demo) {
+    if (Array.isArray(demo?.jsonFiles) && demo.jsonFiles.length > 0) {
+      return demo.jsonFiles
+        .filter((entry) => entry && typeof entry.json === "string" && entry.json.trim())
+        .map((entry) => ({
+          name: typeof entry.name === "string" ? entry.name.trim() : "",
+          json: entry.json.trim()
+        }));
+    }
+    if (typeof demo?.jsonPath === "string" && demo.jsonPath.trim()) {
+      return [{ name: "", json: demo.jsonPath.trim() }];
+    }
+    return [];
+  }
+
+  /**
+   * @param {{ name: string, json: string }} entry
+   * @param {number} index
+   * @param {number} total
+   * @returns {string}
+   */
+  function buildJsonViewButtonLabel(entry, index, total) {
+    if (entry.name) {
+      return entry.name;
+    }
+    if (total <= 1) {
+      return tx("viewJson");
+    }
+    return tx("viewJsonN", { n: index + 1 });
+  }
+
+  function updateDetailJsonLinks(demo) {
+    if (!detailJsonLinks) {
+      return;
+    }
+    clearNodeChildren(detailJsonLinks);
+    const jsonFiles = resolveDemoJsonFiles(demo);
+    if (jsonFiles.length === 0) {
+      detailJsonLinks.hidden = true;
+      return;
+    }
+    detailJsonLinks.hidden = false;
+    jsonFiles.forEach((entry, index) => {
+      const anchor = document.createElement("a");
+      anchor.className = "actionLink";
+      anchor.target = "_blank";
+      anchor.rel = "noreferrer";
+      anchor.textContent = buildJsonViewButtonLabel(entry, index, jsonFiles.length);
+      anchor.href = shouldOpenWithReader(entry.json) ? buildReaderLink(entry.json) : entry.json;
+      detailJsonLinks.appendChild(anchor);
+    });
+  }
+
+  function formatNavTrailSegment(order, title) {
+    const label = String(title ?? "").trim();
+    const ord = order != null && String(order).trim() !== "" ? String(order).trim() : "";
+    return ord ? ord + " " + label : label;
+  }
+
+  function updateNavTrail(entry) {
+    if (!contentNavTrail) {
+      return;
+    }
+    clearNodeChildren(contentNavTrail);
+
+    const topDemo = getTopLevelDemo(entry);
+    const segments = [
+      topDemo.group,
+      formatNavTrailSegment(topDemo.order, topDemo.title)
+    ];
+    if (entry.navLevel === 2) {
+      segments.push(formatNavTrailSegment(entry.order, entry.title) || entry.title);
+    }
+
+    segments.forEach((text, index) => {
+      if (index > 0) {
+        const sep = document.createElement("span");
+        sep.className = "contentNavTrailSep";
+        sep.setAttribute("aria-hidden", "true");
+        sep.textContent = "»";
+        contentNavTrail.appendChild(sep);
+      }
+      const segment = document.createElement("span");
+      segment.className = "contentNavTrailSegment";
+      segment.textContent = text;
+      contentNavTrail.appendChild(segment);
+    });
+  }
+
+  function updateDetailPanel(demo) {
+    detailTitle.textContent = demo.title;
+    detailPath.textContent = demo.path.replace(/^\.\//, "");
+    detailSummary.textContent = demo.summary;
+    detailGroupBadge.textContent = demo.group;
+
+    if (detailJsonPath) {
+      const jsonFiles = resolveDemoJsonFiles(demo);
+      if (jsonFiles.length > 0) {
+        detailJsonPath.hidden = false;
+        detailJsonPath.innerHTML =
+          tx("dataFile") +
+          jsonFiles.map((entry) => "<code>" + entry.json + "</code>").join("、");
+      } else {
+        detailJsonPath.hidden = true;
+        detailJsonPath.textContent = "";
+      }
+    }
+
+    updateDetailJsonLinks(demo);
+
+    if (detailPrereqSection && detailPrereqList) {
+      clearNodeChildren(detailPrereqList);
+      const prereqs = demo.prerequisites ?? [];
+      if (prereqs.length === 0) {
+        detailPrereqSection.hidden = true;
+      } else {
+        detailPrereqSection.hidden = false;
+        for (const pid of prereqs) {
+          const pre = demoMap.get(pid);
+          const li = document.createElement("li");
+          if (pre) {
+            const anchor = document.createElement("a");
+            anchor.href = "#" + pid;
+            anchor.textContent = pre.order + " " + pre.title;
+            anchor.addEventListener("click", (e) => {
+              e.preventDefault();
+              selectDemo(pid);
+            });
+            li.appendChild(anchor);
+          } else {
+            li.textContent = pid;
+          }
+          detailPrereqList.appendChild(li);
+        }
+      }
+    }
+
+    contentTitle.textContent = demo.title;
+    contentSummary.textContent = demo.summary;
+    contentPath.textContent = demo.path.replace(/^\.\//, "");
+    contentGroupBadge.textContent = demo.group;
+
+    detailOpenLink.href = demo.path;
+    detailSourceLink.href = shouldOpenWithReader(demo.path) ? buildReaderLink(demo.path) : demo.path;
+    openDemoLink.href = demo.path;
+
+    updateNavTrail(demo);
+
+    clearNodeChildren(highlightList);
+    for (const item of demo.highlights ?? []) {
+      const li = document.createElement("li");
+      li.textContent = item;
+      highlightList.appendChild(li);
+    }
+
+    clearNodeChildren(docLinkList);
+    const docLinks = demo.docLinks ?? [];
+    for (const link of docLinks) {
+      appendDocLinkItem(docLinkList, link.href, link.label);
+    }
+    if (!docLinks.some((link) => isTutorialDocHref(link.href))) {
+      appendDocLinkItem(docLinkList, tutorialDocHref(), tx("tutorialLink"));
+    }
+
+    document.title = demo.title + " - " + tx("documentTitleSuffix");
+  }
+
+  function syncActiveNav(demoId) {
+    const entry = demoMap.get(demoId);
+    const parentId = entry?.navLevel === 2 ? entry.parentId : null;
+
+    demoNav.querySelectorAll(".demoNavItem").forEach((item) => {
+      const id = item.dataset.demoId;
+      const active = id === demoId;
+      const activeParent = Boolean(parentId && id === parentId);
+      item.classList.toggle("isActive", active);
+      item.classList.toggle("isActiveParent", activeParent && !active);
+      item.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+
+    demoNav.querySelectorAll(".demoSubNavItem").forEach((item) => {
+      const active = item.dataset.demoId === demoId;
+      item.classList.toggle("isActive", active);
+      item.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+
+    if (parentId) {
+      ensureExpanded(parentId);
+    }
+  }
+
+  function selectDemo(demoId, options = {}) {
+    const demo = demoMap.get(demoId) || demoMap.get(DEMOS[0].id);
+    const updateHash = options.updateHash !== false;
+    const persist = options.persist !== false;
+    const forceReload = options.forceReload === true;
+
+    currentDemoId = demo.id;
+    updateDetailPanel(demo);
+    syncActiveNav(demo.id);
+
+    if (persist) {
+      persistCurrentDemo(demo.id);
+    }
+    if (updateHash) {
+      writeDemoIdToHash(demo.id);
+    }
+
+    const nextUrl = new URL(demo.path, window.location.href).href;
+    if (forceReload || demoFrame.src !== nextUrl) {
+      setLoadingState(tx("frameLoadingDemo", { title: demo.title }));
+      demoFrame.src = demo.path;
+    }
+  }
+
+  function getInitialDemoId() {
+    const hashDemoId = readDemoIdFromHash();
+    if (hashDemoId && demoMap.has(hashDemoId)) {
+      return hashDemoId;
+    }
+
+    const storedDemoId = readStoredDemoId();
+    if (storedDemoId && demoMap.has(storedDemoId)) {
+      return storedDemoId;
+    }
+
+    return DEMOS[0].id;
+  }
+
+  function isFrameShowingDemo() {
+    const assignedSrc = (demoFrame.getAttribute("src") || "").trim();
+    if (!assignedSrc) {
+      return false;
+    }
+    try {
+      const href = demoFrame.contentWindow?.location?.href || "";
+      if (!href || href === "about:blank") {
+        return false;
+      }
+      return true;
+    } catch (_) {
+      return assignedSrc.length > 0;
+    }
+  }
+
+  function initFrameEvents() {
+    demoFrame.addEventListener("load", () => {
+      if (!isFrameShowingDemo()) {
+        return;
+      }
+      frameLoadingMask.hidden = true;
+      try {
+        const frameDocument = demoFrame.contentDocument;
+        frameDocument?.addEventListener(
+          "pointerdown",
+          () => {
+            if (!leftDockPinned) {
+              leftDockPeek = false;
+              clearTimeout(leftPeekHideTimer);
+            }
+            if (!rightDockPinned) {
+              rightDockPeek = false;
+              clearTimeout(rightPeekHideTimer);
+            }
+            syncDockPeekClasses();
+          },
+          true
+        );
+      } catch (_) {
+        /* ignore */
+      }
+    });
+  }
+
+  function initHashSync() {
+    window.addEventListener("hashchange", () => {
+      const hashDemoId = readDemoIdFromHash();
+      if (hashDemoId && hashDemoId !== currentDemoId) {
+        selectDemo(hashDemoId, {
+          updateHash: false,
+          persist: true
+        });
+      }
+    });
+  }
+
+  function applyUiStrings() {
+    document.documentElement.lang = currentLocale === "en-US" ? "en" : "zh-CN";
+    if (langSwitchBtn) {
+      langSwitchBtn.textContent = tx("langSwitch");
+      langSwitchBtn.setAttribute("aria-label", tx("langSwitchAria"));
+    }
+    if (contentNavTrail) {
+      contentNavTrail.setAttribute("aria-label", tx("contentNavAria"));
+    }
+    if (contentGroupBadge) {
+      contentGroupBadge.textContent = tx("groupBadgeExample");
+    }
+    const pinLabel = document.querySelector(".headerToggleLabel");
+    if (pinLabel) {
+      pinLabel.title = tx("pinPanelsTitle");
+      const pinSpan = pinLabel.querySelector("span");
+      if (pinSpan) {
+        pinSpan.textContent = tx("pinPanels");
+      }
+    }
+    if (openDemoLink) {
+      openDemoLink.textContent = tx("openInNewTab");
+    }
+    const iframeStage = document.getElementById("iframeStage");
+    if (iframeStage) {
+      iframeStage.setAttribute("aria-label", tx("iframeStageAria"));
+    }
+    if (demoFrame) {
+      demoFrame.title = tx("demoFrameTitle");
+    }
+    if (leftPanel) {
+      leftPanel.setAttribute("aria-label", tx("leftPanelAria"));
+    }
+    if (leftPanelPinBtn) {
+      leftPanelPinBtn.setAttribute("aria-label", tx("leftPinAria"));
+    }
+    const leftSubtitle = document.querySelector(".sidePanelChromeSubtitle");
+    if (leftSubtitle) {
+      leftSubtitle.textContent = tx("leftSubtitle");
+    }
+    if (demoNavTitle) {
+      demoNavTitle.textContent = tx("learningPath");
+    }
+    if (demoNav) {
+      demoNav.setAttribute("aria-label", tx("demoNavAria"));
+    }
+    if (rightPanel) {
+      rightPanel.setAttribute("aria-label", tx("rightPanelAria"));
+    }
+    if (rightPanelPinBtn) {
+      rightPanelPinBtn.setAttribute("aria-label", tx("rightPinAria"));
+    }
+    const rightSubtitle = document.querySelector(".sidePanelPinRowRight .sidePanelChromeSubtitle");
+    if (rightSubtitle) {
+      rightSubtitle.textContent = tx("rightSubtitle");
+    }
+    const pageDescTitle = document.querySelector(".panelCardHeaderTight .panelCardTitle");
+    if (pageDescTitle) {
+      pageDescTitle.textContent = tx("pageDescription");
+    }
+    const detailModeToggle = document.querySelector(".detailModeToggle");
+    if (detailModeToggle) {
+      detailModeToggle.setAttribute("aria-label", tx("detailModeAria"));
+    }
+    detailModeButtons.forEach((btn) => {
+      const mode = btn.getAttribute("data-detail-mode");
+      btn.textContent = mode === "highlights" ? tx("detailModeHighlights") : tx("detailModeFull");
+    });
+    document.querySelectorAll(".detailSectionTitle").forEach((el) => {
+      const text = el.textContent.trim();
+      if (text === "先修课程" || text === "Prerequisites") {
+        el.textContent = tx("prerequisites");
+      } else if (text === "演示要点" || text === "Demo highlights") {
+        el.textContent = tx("highlightsSection");
+      } else if (text === "相关文档" || text === "Related docs") {
+        el.textContent = tx("relatedDocs");
+      }
+    });
+    if (detailOpenLink) {
+      detailOpenLink.textContent = tx("openCurrentDemo");
+    }
+    if (detailSourceLink) {
+      detailSourceLink.textContent = tx("viewSource");
+    }
+    if (frameworkDemosTitle) {
+      frameworkDemosTitle.textContent = tx("frameworkTitle");
+    }
+    const frameworkNote = document.querySelector(".frameworkHintNote");
+    if (frameworkNote) {
+      frameworkNote.textContent = tx("frameworkNote");
+    }
+    syncDockPeekClasses({ persist: false });
+  }
+
+  function initLangSwitch() {
+    if (!langSwitchBtn) {
+      return;
+    }
+    langSwitchBtn.addEventListener("click", async () => {
+      const next = currentLocale === "zh-CN" ? "en-US" : "zh-CN";
+      DemoIndexI18n.setLocale(next);
+      await reloadDemoIndexLocale(next);
+    });
+  }
+
+  async function reloadDemoIndexLocale(locale) {
+    const activeId = currentDemoId || getInitialDemoId();
+    const bundle = await DemoIndexI18n.loadDemoIndexBundle(locale);
+    currentLocale = bundle.locale;
+    DEMOS = bundle.demos;
+    ui = bundle.ui;
+    demoMap = buildDemoRegistry(DEMOS);
+    applyUiStrings();
+    renderDemoNav();
+    if (demoMap.has(activeId)) {
+      selectDemo(activeId, { updateHash: false, persist: true, forceReload: false });
+    } else {
+      selectDemo(DEMOS[0].id, { updateHash: true, persist: true, forceReload: true });
+    }
+  }
+
+  function initPage() {
+    expandedParentIds = new Set(readExpandedParentIds());
+    renderDemoNav();
+    initDockFlyouts();
+    initPinPanelsCheckbox();
+    initDetailModeToggle();
+    initFrameEvents();
+    initHashSync();
+    initLangSwitch();
+    selectDemo(getInitialDemoId(), {
+      updateHash: true,
+      persist: true,
+      forceReload: true
+    });
+  }
+
+  async function bootstrapDemoIndex() {
+    currentLocale = DemoIndexI18n.getLocale();
+    const bundle = await DemoIndexI18n.loadDemoIndexBundle(currentLocale);
+    currentLocale = bundle.locale;
+    DEMOS = bundle.demos;
+    ui = bundle.ui;
+    demoMap = buildDemoRegistry(DEMOS);
+    applyUiStrings();
+    initPage();
+  }
+
+  bootstrapDemoIndex();
+</script>
+</body>
+</html>

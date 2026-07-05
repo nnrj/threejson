@@ -1,0 +1,104 @@
+{
+  "metadata": {
+    "version": 4.6,
+    "type": "Object",
+    "generator": "ThreeJSON demo sample (THREE.Group.toJSON)"
+  },
+  "geometries": [
+    {
+      "uuid": "1999adb5-8a2d-4112-9c69-de096022842b",
+      "type": "BoxGeometry",
+      "width": 2,
+      "height": 1,
+      "depth": 3,
+      "widthSegments": 1,
+      "heightSegments": 1,
+      "depthSegments": 1
+    }
+  ],
+  "materials": [
+    {
+      "uuid": "f6bd29d9-44a0-4ad0-8a2d-a6ecfd583942",
+      "type": "MeshStandardMaterial",
+      "color": 8947848,
+      "roughness": 1,
+      "metalness": 0,
+      "emissive": 0,
+      "envMapIntensity": 1,
+      "depthFunc": 3,
+      "depthTest": true,
+      "depthWrite": true,
+      "colorWrite": true,
+      "stencilWrite": false,
+      "stencilWriteMask": 255,
+      "stencilFunc": 519,
+      "stencilRef": 0,
+      "stencilFuncMask": 255,
+      "stencilFail": 7680,
+      "stencilZFail": 7680,
+      "stencilZPass": 7680
+    }
+  ],
+  "object": {
+    "uuid": "e521a83b-79b2-4c5a-b303-35fb1a27f82c",
+    "type": "Group",
+    "name": "NativeSample",
+    "layers": 1,
+    "matrix": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1
+    ],
+    "up": [
+      0,
+      1,
+      0
+    ],
+    "children": [
+      {
+        "uuid": "d58dc25e-7d49-401e-a91b-4095ae83505c",
+        "type": "Mesh",
+        "layers": 1,
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "geometry": "1999adb5-8a2d-4112-9c69-de096022842b",
+        "material": "f6bd29d9-44a0-4ad0-8a2d-a6ecfd583942"
+      }
+    ]
+  },
+  "threeJsonId": "three_native"
+}

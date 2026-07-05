@@ -1,0 +1,29 @@
+{
+  "name": "cabinet",
+  "label": "默认机柜",
+  "objType": "deviceCabinet",
+  "toward": "front",
+  "doors": [
+    {
+      "side": "front",
+      "swing": "right",
+      "leafCount": 1
+    }
+  ],
+  "geometry": {
+    "width": 6,
+    "length": 12,
+    "height": 20
+  },
+  "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+  },
+  "slots": {
+    "total": 9,
+    "unitHeight": 0.48,
+    "bottomMargin": 0.77
+  },
+  "devices": []
+}

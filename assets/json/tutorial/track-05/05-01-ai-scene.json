@@ -1,0 +1,86 @@
+{
+  "worldInfo": {
+    "domainModelList": [
+      {
+        "objType": "domain",
+        "domain": "wall",
+        "handler": "addToScene",
+        "name": "ai-demo-main-building",
+        "geometry": {
+          "width": 18,
+          "height": 16,
+          "depth": 12
+        },
+        "position": {
+          "x": -15,
+          "y": 8,
+          "z": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#5d7084",
+          "opacity": 1
+        },
+        "label": "主楼"
+      },
+      {
+        "objType": "domain",
+        "domain": "wall",
+        "handler": "addToScene",
+        "name": "ai-demo-warehouse",
+        "geometry": {
+          "width": 22,
+          "height": 9,
+          "depth": 15
+        },
+        "position": {
+          "x": 17,
+          "y": 5,
+          "z": 4
+        },
+        "material": {
+          "type": "standard",
+          "color": "#6f7c8b",
+          "opacity": 1
+        },
+        "label": "仓库"
+      }
+    ],
+    "boxModelList": [
+      {
+        "name": "ai-demo-ground",
+        "objType": "floor",
+        "geometry": {
+          "width": 90,
+          "height": 0.8,
+          "depth": 70
+        },
+        "position": {
+          "x": 0,
+          "y": -0.4,
+          "z": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#2a3442",
+          "opacity": 1,
+          "metalness": 0.05,
+          "roughness": 0.85
+        },
+        "label": "基础地面"
+      }
+    ]
+  },
+  "remark": "AI demo base scene",
+  "threeJsonId": "05-01-ai-scene",
+  "label": "AI Demo Base Scene",
+  "sceneConfig": {
+    "camera": {
+      "position": {
+        "x": 50,
+        "y": 45,
+        "z": 126
+      }
+    }
+  }
+}

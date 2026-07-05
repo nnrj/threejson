@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThreeJSON 文档阅读器</title>
+  <link id="markdownThemeLink" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css/github-markdown-dark.min.css">
+  <link id="highlightThemeLink" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js/styles/github-dark.min.css">
+  <link rel="stylesheet" href="./css/reader.css">
+</head>
+<body>
+<div id="appShell">
+  <header class="readerHeader">
+    <div class="readerHeaderMain">
+      <div class="readerEyebrow">ThreeJSON Reader</div>
+      <h1 id="readerTitle" class="readerTitle">项目文档阅读器</h1>
+      <div id="readerPath" class="readerPath">等待载入文件...</div>
+    </div>
+    <div class="readerHeaderActions">
+      <span id="readerModeBadge" class="modeBadge">待加载</span>
+      <label class="readerSelectWrap" for="themeSelect">
+        <span class="readerSelectLabel">主题</span>
+        <select id="themeSelect" class="readerSelect">
+          <option value="system">跟随系统</option>
+          <option value="dark">暗色</option>
+          <option value="light">亮色</option>
+        </select>
+      </label>
+      <nav class="readerTopMenubar" aria-label="更多操作">
+        <details id="actionsMenu" class="topMenu actionsTopMenu">
+          <summary id="actionsMenuButton" class="menuTriggerButton" title="更多操作">⋯</summary>
+          <div id="actionsMenuPanel" class="topDropdown actionsMenuPanel">
+          <button id="lineNumbersButton" class="actionsMenuItem" type="button" hidden>隐藏行号</button>
+          <button id="toggleViewButton" class="actionsMenuItem" type="button" hidden>查看源码</button>
+          <button id="copyButton" class="actionsMenuItem" type="button" disabled>复制内容</button>
+          <button id="reloadButton" class="actionsMenuItem" type="button">重新加载</button>
+          <a id="openRawLink" class="actionsMenuItem readerMenuLink isDisabled" href="#" target="_blank" rel="noreferrer">打开原文件</a>
+          </div>
+        </details>
+      </nav>
+    </div>
+  </header>
+
+  <div class="readerLayout">
+    <div id="tocFlyoutHost" class="tocFlyoutHost">
+      <aside id="tocPanel" class="tocPanel" hidden>
+        <div class="tocTitle">
+          <span>目录</span>
+          <button id="tocPinButton" class="tocPinButton" type="button" hidden aria-pressed="true" title="已钉住：鼠标移开仍显示">PIN</button>
+        </div>
+        <nav id="tocNav" class="tocNav"></nav>
+      </aside>
+      <div id="tocEdgeHoverZone" class="edgeHoverZone edgeHoverZoneLeft" aria-hidden="true"></div>
+    </div>
+
+    <main class="readerMain">
+      <div id="statusBar" class="statusBar">准备中...</div>
+
+      <section id="emptyState" class="emptyState" hidden>
+        <div class="emptyStateCard">
+          <h2>如何使用</h2>
+          <p>通过 `src` 参数指定要阅读的项目内文件，例如：</p>
+          <pre><code>reader.html?src=/doc/quick-start.md
+reader.html?src=/doc/json-format.md#runtime-场景配置
+reader.html?src=/assets/json/sceneRuntimeBasic.json</code></pre>
+          <p>支持 markdown、json 和常见源码文本文件的友好阅读。</p>
+        </div>
+      </section>
+
+      <section id="errorState" class="errorState" hidden>
+        <div class="emptyStateCard errorCard">
+          <h2>加载失败</h2>
+          <p id="errorMessage">无法读取当前文件。</p>
+        </div>
+      </section>
+
+      <article id="contentHost" class="contentHost" hidden></article>
+    </main>
+  </div>
+</div>
+
+<script type="module" src="./js/reader-app.js"></script>
+</body>
+</html>

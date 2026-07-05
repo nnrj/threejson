@@ -1,0 +1,110 @@
+{
+  "version": "next",
+  "name": "tutorial-event-mechanism",
+  "canvasWidth": 1920,
+  "canvasHeight": 1080,
+  "objectList": [
+    {
+      "objType": "scene",
+      "background": "#222222"
+    },
+    {
+      "objType": "camera",
+      "fov": 60,
+      "near": 0.1,
+      "far": 250,
+      "position": {
+        "x": 18,
+        "y": 12,
+        "z": 22
+      },
+      "target": {
+        "x": 0,
+        "y": 3,
+        "z": 0
+      }
+    },
+    {
+      "objType": "renderer",
+      "antialias": true,
+      "ratioRate": 1
+    },
+    {
+      "objType": "controls",
+      "enableDamping": true,
+      "dampingFactor": 0.08,
+      "target": {
+        "x": 0,
+        "y": 3,
+        "z": 0
+      }
+    },
+    {
+      "objType": "light",
+      "type": "ambient",
+      "color": "#ffffff",
+      "intensity": 0.45
+    },
+    {
+      "objType": "light",
+      "type": "directional",
+      "color": "#ffffff",
+      "intensity": 0.9,
+      "position": {
+        "x": 22,
+        "y": 32,
+        "z": 18
+      }
+    },
+    {
+      "objType": "renderLoop",
+      "autoResize": true,
+      "firstAutoResize": true
+    },
+    {
+      "threeJsonId": "event-demo-floor",
+      "name": "event-demo-floor",
+      "objType": "floor",
+      "geometry": {
+        "width": 32,
+        "height": 0.8,
+        "depth": 22
+      },
+      "position": {
+        "x": 0,
+        "y": -0.4,
+        "z": 0
+      },
+      "material": {
+        "type": "standard",
+        "color": "#30343c"
+      }
+    },
+    {
+      "threeJsonId": "event-demo-box",
+      "name": "event-demo-box",
+      "refName": "demo-box",
+      "objType": "box",
+      "geometry": {
+        "width": 6,
+        "height": 6,
+        "depth": 6
+      },
+      "position": {
+        "x": 0,
+        "y": 3,
+        "z": 0
+      },
+      "material": {
+        "type": "standard",
+        "color": "#409eff"
+      },
+      "events": {
+        "click": {
+          "script": "self.moveBy(-3, 0, 0)\nawait wait(400)\nself.moveBy(3, 0, 0)\nawait wait(400)\nself.moveBy(-9, 2, 0)"
+        }
+      }
+    }
+  ],
+  "threeJsonId": "04-09-event-mechanism"
+}

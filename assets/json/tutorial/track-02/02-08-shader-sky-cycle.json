@@ -1,0 +1,99 @@
+{
+  "version": "next",
+  "name": "tutorial-shader-sky-cycle",
+  "sceneConfig": {
+    "scene": {
+      "background": "#0b0e14"
+    },
+    "camera": {
+      "fov": 55,
+      "near": 0.5,
+      "far": 800,
+      "position": {
+        "x": 0,
+        "y": 1.4,
+        "z": 4
+      }
+    },
+    "renderer": {
+      "antialias": true,
+      "ratioRate": 1
+    },
+    "controls": {
+      "enableDamping": true,
+      "dampingFactor": 0.08,
+      "target": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "color": "#ffffff",
+        "intensity": 0.35
+      }
+    ],
+    "renderLoop": {
+      "autoResize": true,
+      "firstAutoResize": true,
+      "fps": 60
+    }
+  },
+  "worldInfo": {
+    "domainModelList": [
+      {
+        "name": "demo-sky-cycle",
+        "domain": "nature.sky",
+        "handler": "cycle",
+        "timeOfDay": 17,
+        "autoCycle": true,
+        "cycleDuration": 180,
+        "syncBackground": true,
+        "geometry": {
+          "radius": 350
+        }
+      },
+      {
+        "name": "demo-ocean",
+        "domain": "nature.water",
+        "handler": "ocean",
+        "quality": "high",
+        "geometry": {
+          "width": 280,
+          "height": 280
+        },
+        "position": {
+          "x": 0,
+          "y": -0.1,
+          "z": 0
+        },
+        "uniforms": {
+          "waveSpeed": 1.2,
+          "waveHeight": 0.35
+        }
+      }
+    ],
+    "boxModelList": [
+      {
+        "name": "dock-pier",
+        "geometry": {
+          "width": 2.8,
+          "height": 0.2,
+          "depth": 1
+        },
+        "position": {
+          "x": 0,
+          "y": 0.1,
+          "z": -1.6
+        },
+        "material": {
+          "type": "standard",
+          "color": "#636e72",
+          "textureUrl": "/assets/textures/building/floor/wood_floor.webp"
+        }
+      }
+    ]
+  }
+}

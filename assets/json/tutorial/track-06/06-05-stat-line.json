@@ -1,0 +1,81 @@
+{
+  "version": "next",
+  "name": "tutorial-stat-line",
+  "sceneConfig": {
+    "scene": { "background": "#101820" },
+    "textFont": {
+      "preloadCharacters": "Q1Q4AD"
+    },
+    "camera": {
+      "fov": 52,
+      "position": { "x": 0, "y": 70, "z": 130 },
+      "near": 0.1,
+      "far": 4000
+    },
+    "renderer": { "antialias": true },
+    "controls": {
+      "enableDamping": true,
+      "target": { "x": 0, "y": 22, "z": 0 }
+    },
+    "lights": [
+      { "type": "ambient", "color": "#9fb4c8", "intensity": 0.95 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1.2, "position": { "x": 72, "y": 130, "z": 96 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "worldInfo": {
+    "boxModelList": [
+      {
+        "name": "floor",
+        "objType": "floor",
+        "geometry": { "width": 220, "height": 1, "depth": 120 },
+        "position": { "x": 0, "y": 0, "z": 0 },
+        "material": { "color": "#2a3038" }
+      }
+    ],
+    "domainModelList": [
+      {
+        "objType": "domain",
+        "domain": "stat.line",
+        "handler": "createStatLine",
+        "options": {
+          "baseY": 0,
+          "linewidth": 3,
+          "showDropLines": true,
+          "showMarkers": true,
+          "markerRadius": 1.4,
+          "labelStyle": {
+            "labelMode": "sdf",
+            "fontSize": 1.25,
+            "sdf": {
+              "outlineWidth": 0.06,
+              "outlineColor": "#1a2030"
+            }
+          }
+        },
+        "series": [
+          {
+            "name": "series-a",
+            "color": "#4fc3f7",
+            "points": [
+              { "x": -50, "y": 12, "z": -8, "label": "Q1" },
+              { "x": -15, "y": 38, "z": -8 },
+              { "x": 20, "y": 28, "z": -8 },
+              { "x": 55, "y": 52, "z": -8, "label": "Q4" }
+            ]
+          },
+          {
+            "name": "series-b",
+            "color": "#ffb74d",
+            "points": [
+              { "x": -50, "y": 8, "z": 12, "label": "A" },
+              { "x": -15, "y": 22, "z": 12 },
+              { "x": 20, "y": 42, "z": 12 },
+              { "x": 55, "y": 35, "z": 12, "label": "D" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThreeJSON Demo - CSS3D 曲面屏 Three.js 官网</title>
+  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <script type="importmap">
+    {
+      "imports": {
+        "threejson": "/builtins/full.js",
+        "threejson/core": "/core/index.js",
+        "three": "https://esm.sh/three@0.184.0",
+        "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
+        "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
+        "html2canvas-pro": "https://esm.sh/html2canvas-pro@2.0.4",
+        "gifuct-js": "https://esm.sh/gifuct-js@2.1.2",
+        "three-mesh-bvh": "https://esm.sh/three-mesh-bvh@0.9.10?deps=three@0.184.0",
+        "three-bvh-csg": "https://esm.sh/three-bvh-csg@0.0.18?deps=three@0.184.0,three-mesh-bvh@0.9.10"
+      }
+    }
+  </script>
+  <style>
+    html, body {
+      width: 100%; height: 100%; margin: 0; overflow: hidden;
+      background: #03040a;
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+    }
+    #rootContainer { position: relative; width: 100vw; height: 100vh; }
+    #canvasContainer { display: block; width: 100%; height: 100%; }
+    #loadingMask {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 10px;
+      color: #e8eaed; background: rgba(3, 4, 10, 0.88); font-size: 14px; z-index: 5;
+    }
+    #loadingMask small { color: #9aa0a6; font-size: 12px; max-width: 520px; text-align: center; line-height: 1.5; }
+    #hint {
+      position: absolute; left: 12px; bottom: 10px; color: #9aa0a6; font-size: 11px;
+      max-width: min(640px, 92vw); z-index: 6; line-height: 1.5;
+      background: rgba(0,0,0,0.35); padding: 8px 10px; border-radius: 8px;
+    }
+    #hint strong { color: #ffaa55; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div id="rootContainer">
+  <canvas id="canvasContainer">需要 WebGL</canvas>
+  <div id="loadingMask">
+    <div>加载 VR 曲面浏览器场景…</div>
+    <small>悬空大屏嵌入 <strong>threejs.org</strong>。需联网；屏上可滚动/点击链接。拖拽空白处 Orbit 环绕观看。</small>
+  </div>
+  <div id="hint">
+    <strong>04-07 曲面屏 Three.js 官网</strong> · 数据 <code>/assets/json/tutorial/track-04/04-07-css3d-curved-google.json</code><br>
+    VR 悬空大荧屏 · 屏上为 threejs.org · 滚轮缩放 · 基础 demo 见 <code>04-06-css3d-panel.html</code>
+  </div>
+</div>
+<script type="module">
+  import { createJsonScene } from "threejson/core";
+
+  const canvas = document.getElementById("canvasContainer");
+  const loadingMask = document.getElementById("loadingMask");
+  const sceneJsonUrl = "/assets/json/tutorial/track-04/04-07-css3d-curved-google.json";
+
+  let sceneRuntime;
+
+  try {
+    const response = await fetch(sceneJsonUrl);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const sceneData = await response.json();
+    sceneData.canvasWidth = window.innerWidth;
+    sceneData.canvasHeight = window.innerHeight;
+
+    sceneRuntime = await createJsonScene(sceneData, { canvas });
+    sceneRuntime.start();
+    loadingMask.style.display = "none";
+    window.addEventListener("resize", () => {
+      sceneRuntime?.resize({ width: window.innerWidth, height: window.innerHeight });
+    });
+  } catch (e) {
+    console.error(e);
+    loadingMask.innerHTML = `<div>加载失败：${e?.message || String(e)}</div>`;
+  }
+
+  window.addEventListener("beforeunload", () => sceneRuntime?.dispose());
+</script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+{
+  "version": "next",
+  "name": "tutorial-nested-domain",
+  "sceneConfig": {
+    "scene": {
+      "background": "#0c1018"
+    },
+    "camera": {
+      "fov": 55,
+      "position": {
+        "x": 0,
+        "y": 15,
+        "z": 36
+      },
+      "near": 0.1,
+      "far": 400
+    },
+    "renderer": {
+      "antialias": true
+    },
+    "controls": {
+      "enableDamping": true,
+      "target": {
+        "x": 0,
+        "y": 4,
+        "z": 0
+      }
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "color": "#8899aa",
+        "intensity": 0.65
+      }
+    ],
+    "renderLoop": {
+      "autoResize": true,
+      "firstAutoResize": true,
+      "updateAnimations": true
+    }
+  },
+  "worldInfo": {
+    "domainModelList": [
+      {
+        "objType": "domain",
+        "domain": "weather.rain",
+        "name": "nested-rain",
+        "position": {
+          "x": -7,
+          "y": 8,
+          "z": 0
+        },
+        "count": 1400
+      },
+      {
+        "objType": "domain",
+        "domain": "weather.wind",
+        "handler": "coldWind",
+        "name": "nested-cold-wind",
+        "position": {
+          "x": 7,
+          "y": 3,
+          "z": -2
+        },
+        "geometry": {
+          "width": 12,
+          "height": 1,
+          "depth": 12
+        }
+      },
+      {
+        "objType": "domain",
+        "domain": "weather",
+        "handler": "snow",
+        "name": "root-weather-snow",
+        "position": {
+          "x": 0,
+          "y": 7,
+          "z": 4
+        },
+        "count": 600
+      }
+    ],
+    "boxModelList": [
+      {
+        "name": "ground",
+        "objType": "box",
+        "geometry": {
+          "width": 40,
+          "height": 0.4,
+          "depth": 40
+        },
+        "position": {
+          "x": 0,
+          "y": -0.2,
+          "z": 0
+        },
+        "material": {
+          "color": "#1a2230"
+        }
+      }
+    ]
+  }
+}

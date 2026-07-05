@@ -1,0 +1,571 @@
+{
+  "version": "next",
+  "name": "panorama-solar-system-demo",
+  "remark": "太阳系背景演示：行星间距与半径为教学/视觉比例，非真实 AU 或米制。html-demo 多数 tutorial 约 1 单位≈1 米，本场景尺寸 intentionally 保持现状。",
+  "sceneConfig": {
+    "canvasWidth": 1920,
+    "canvasHeight": 1080,
+    "scene": {
+      "background": {
+        "type": "equirect",
+        "url": "/assets/textures/environment/skybox/universe360.png",
+        "crossOrigin": "anonymous",
+        "colorSpace": "srgb"
+      }
+    },
+    "camera": {
+      "fov": 50,
+      "near": 0.1,
+      "far": 4000,
+      "position": {
+        "x": 8,
+        "y": 28,
+        "z": 118
+      }
+    },
+    "renderer": {
+      "antialias": true,
+      "ratioRate": 1
+    },
+    "controls": {
+      "enableDamping": true,
+      "dampingFactor": 0.08,
+      "enableZoom": true,
+      "target": {
+        "x": 42,
+        "y": 0,
+        "z": 0
+      }
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "color": "#4a5a6e",
+        "intensity": 1,
+        "unit": "physical"
+      },
+      {
+        "type": "point",
+        "color": "#fff4dc",
+        "intensity": 20000,
+        "unit": "candela",
+        "distance": 0,
+        "decay": 2,
+        "position": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    ],
+    "renderLoop": {
+      "autoResize": true,
+      "firstAutoResize": true
+    }
+  },
+  "worldInfo": {
+    "sphereModelList": [
+      {
+        "name": "sun",
+        "geometry": {
+          "radius": 9,
+          "widthSegments": 40,
+          "heightSegments": 28
+        },
+        "position": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 1,
+          "scaleY": 1,
+          "scaleZ": 1
+        },
+        "material": {
+          "type": "basic",
+          "textureUrl": "/assets/textures/environment/nature/planet/sun.png",
+          "color": "#ffffff",
+          "receiveShadow": false
+        },
+        "animations": [
+          {
+            "type": "rotate",
+            "axis": "y",
+            "speed": 0.06
+          }
+        ]
+      },
+      {
+        "name": "mercury",
+        "geometry": {
+          "radius": 0.65,
+          "widthSegments": 24,
+          "heightSegments": 16
+        },
+        "position": {
+          "x": 14.83,
+          "y": 0.35,
+          "z": 5.99
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 1,
+          "scaleY": 1,
+          "scaleZ": 1
+        },
+        "material": {
+          "type": "standard",
+          "textureUrl": "/assets/textures/environment/nature/planet/mercury.png",
+          "roughness": 0.85,
+          "metalness": 0.08
+        },
+        "animations": [
+          {
+            "type": "rotate",
+            "axis": "y",
+            "speed": 0.42
+          }
+        ],
+        "orbitalFallback": {
+          "semiMajorAu": 0.387,
+          "eccentricity": 0.2056,
+          "inclinationDeg": 7,
+          "longitudeAscendingDeg": 48.33,
+          "argumentPerihelionDeg": 29.12,
+          "meanAnomalyDeg0": 174.8,
+          "periodDays": 87.97
+        }
+      },
+      {
+        "name": "venus",
+        "geometry": {
+          "radius": 0.95,
+          "widthSegments": 24,
+          "heightSegments": 16
+        },
+        "position": {
+          "x": -0.8,
+          "y": -0.4,
+          "z": 22.82
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 1,
+          "scaleY": 1,
+          "scaleZ": 1
+        },
+        "material": {
+          "type": "standard",
+          "textureUrl": "/assets/textures/environment/nature/planet/venus.png",
+          "roughness": 0.82,
+          "metalness": 0.06
+        },
+        "animations": [
+          {
+            "type": "rotate",
+            "axis": "y",
+            "speed": -0.28
+          }
+        ],
+        "orbitalFallback": {
+          "semiMajorAu": 0.723,
+          "eccentricity": 0.0068,
+          "inclinationDeg": 3.39,
+          "longitudeAscendingDeg": 76.68,
+          "argumentPerihelionDeg": 54.89,
+          "meanAnomalyDeg0": 50.42,
+          "periodDays": 224.7
+        }
+      },
+      {
+        "name": "earth",
+        "geometry": {
+          "radius": 1.05,
+          "widthSegments": 28,
+          "heightSegments": 18
+        },
+        "position": {
+          "x": -27.28,
+          "y": 0.55,
+          "z": 11.02
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 1,
+          "scaleY": 1,
+          "scaleZ": 1
+        },
+        "material": {
+          "type": "standard",
+          "textureUrl": "/assets/textures/environment/nature/planet/earth.png",
+          "roughness": 0.78,
+          "metalness": 0.1
+        },
+        "animations": [
+          {
+            "type": "rotate",
+            "axis": "y",
+            "speed": 0.32
+          }
+        ],
+        "orbitalFallback": {
+          "semiMajorAu": 1,
+          "eccentricity": 0.0167,
+          "inclinationDeg": 0,
+          "longitudeAscendingDeg": -11.26,
+          "argumentPerihelionDeg": 114.21,
+          "meanAnomalyDeg0": 357.52,
+          "periodDays": 365.25
+        }
+      },
+      {
+        "name": "moon",
+        "geometry": {
+          "radius": 0.28,
+          "widthSegments": 20,
+          "heightSegments": 14
+        },
+        "position": {
+          "x": -23.78,
+          "y": 0.55,
+          "z": 11.02
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 1,
+          "scaleY": 1,
+          "scaleZ": 1
+        },
+        "material": {
+          "type": "standard",
+          "textureUrl": "/assets/textures/environment/nature/planet/moon.png",
+          "color": "#b8bcc8",
+          "roughness": 0.92,
+          "metalness": 0.04
+        },
+        "animations": [
+          {
+            "type": "rotate",
+            "axis": "y",
+            "speed": 0.12
+          }
+        ],
+        "orbitalFallback": {
+          "semiMajorAu": 0.00257,
+          "eccentricity": 0.0549,
+          "inclinationDeg": 5.145,
+          "longitudeAscendingDeg": 125.08,
+          "argumentPerihelionDeg": 318.15,
+          "meanAnomalyDeg0": 135.27,
+          "periodDays": 27.32
+        }
+      },
+      {
+        "name": "mars",
+        "geometry": {
+          "radius": 0.78,
+          "widthSegments": 24,
+          "heightSegments": 16
+        },
+        "position": {
+          "x": -29.33,
+          "y": -0.35,
+          "z": -22.92
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 1,
+          "scaleY": 1,
+          "scaleZ": 1
+        },
+        "material": {
+          "type": "standard",
+          "textureUrl": "/assets/textures/environment/nature/planet/mars.png",
+          "roughness": 0.88,
+          "metalness": 0.12
+        },
+        "animations": [
+          {
+            "type": "rotate",
+            "axis": "y",
+            "speed": 0.38
+          }
+        ],
+        "orbitalFallback": {
+          "semiMajorAu": 1.524,
+          "eccentricity": 0.0934,
+          "inclinationDeg": 1.85,
+          "longitudeAscendingDeg": 49.56,
+          "argumentPerihelionDeg": 286.5,
+          "meanAnomalyDeg0": 19.37,
+          "periodDays": 686.98
+        }
+      },
+      {
+        "name": "jupiter",
+        "geometry": {
+          "radius": 4.2,
+          "widthSegments": 36,
+          "heightSegments": 22
+        },
+        "position": {
+          "x": 12.05,
+          "y": 0.25,
+          "z": -48.5
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 1,
+          "scaleY": 1,
+          "scaleZ": 1
+        },
+        "material": {
+          "type": "standard",
+          "textureUrl": "/assets/textures/environment/nature/planet/jupiter.png",
+          "roughness": 0.72,
+          "metalness": 0.05
+        },
+        "animations": [
+          {
+            "type": "rotate",
+            "axis": "y",
+            "speed": 0.55
+          }
+        ],
+        "orbitalFallback": {
+          "semiMajorAu": 5.203,
+          "eccentricity": 0.0489,
+          "inclinationDeg": 1.3,
+          "longitudeAscendingDeg": 100.56,
+          "argumentPerihelionDeg": 273.87,
+          "meanAnomalyDeg0": 20.02,
+          "periodDays": 4332.59
+        }
+      },
+      {
+        "name": "uranus",
+        "geometry": {
+          "radius": 2.1,
+          "widthSegments": 28,
+          "heightSegments": 18
+        },
+        "position": {
+          "x": 49.39,
+          "y": 0.45,
+          "z": 63.21
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 1,
+          "scaleY": 1,
+          "scaleZ": 1
+        },
+        "material": {
+          "type": "standard",
+          "textureUrl": "/assets/textures/environment/nature/planet/uranus.png",
+          "roughness": 0.68,
+          "metalness": 0.12
+        },
+        "animations": [
+          {
+            "type": "rotate",
+            "axis": "y",
+            "speed": -0.36
+          }
+        ],
+        "orbitalFallback": {
+          "semiMajorAu": 19.191,
+          "eccentricity": 0.0469,
+          "inclinationDeg": 0.77,
+          "longitudeAscendingDeg": 74.01,
+          "argumentPerihelionDeg": 96.99,
+          "meanAnomalyDeg0": 142.24,
+          "periodDays": 30688.5
+        }
+      },
+      {
+        "name": "neptune",
+        "geometry": {
+          "radius": 2,
+          "widthSegments": 28,
+          "heightSegments": 18
+        },
+        "position": {
+          "x": -91.39,
+          "y": -0.4,
+          "z": -29.71
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 1,
+          "scaleY": 1,
+          "scaleZ": 1
+        },
+        "material": {
+          "type": "standard",
+          "textureUrl": "/assets/textures/environment/nature/planet/neptune.png",
+          "roughness": 0.7,
+          "metalness": 0.1
+        },
+        "animations": [
+          {
+            "type": "rotate",
+            "axis": "y",
+            "speed": 0.3
+          }
+        ],
+        "orbitalFallback": {
+          "semiMajorAu": 30.07,
+          "eccentricity": 0.0095,
+          "inclinationDeg": 1.77,
+          "longitudeAscendingDeg": 131.78,
+          "argumentPerihelionDeg": 273.25,
+          "meanAnomalyDeg0": 256.23,
+          "periodDays": 60182
+        }
+      }
+    ],
+    "groupList": [
+      {
+        "name": "saturn",
+        "objType": "group",
+        "position": {
+          "x": 63.08,
+          "y": -0.55,
+          "z": -13.4
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 1,
+          "scaleY": 1,
+          "scaleZ": 1
+        },
+        "orbitalFallback": {
+          "semiMajorAu": 9.537,
+          "eccentricity": 0.0565,
+          "inclinationDeg": 2.49,
+          "longitudeAscendingDeg": 113.72,
+          "argumentPerihelionDeg": 339.39,
+          "meanAnomalyDeg0": 316.97,
+          "periodDays": 10759.22
+        },
+        "subScene": [
+          {
+            "name": "saturnBody",
+            "objType": "sphere",
+            "geometry": {
+              "radius": 3.4,
+              "widthSegments": 32,
+              "heightSegments": 20
+            },
+            "position": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "rotation": {
+              "rotationX": 0,
+              "rotationY": 0,
+              "rotationZ": 0
+            },
+            "scale": {
+              "scaleX": 1,
+              "scaleY": 1,
+              "scaleZ": 1
+            },
+            "material": {
+              "type": "standard",
+              "textureUrl": "/assets/textures/environment/nature/planet/saturn.png",
+              "roughness": 0.75,
+              "metalness": 0.06
+            },
+            "animations": [
+              {
+                "type": "rotate",
+                "axis": "y",
+                "speed": 0.48
+              }
+            ]
+          },
+          {
+            "name": "saturnRing",
+            "objType": "ring",
+            "geometry": {
+              "innerRadius": 4.4,
+              "outerRadius": 7,
+              "thetaSegments": 64
+            },
+            "position": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "rotation": {
+              "rotationX": 1.5708,
+              "rotationY": 0,
+              "rotationZ": 0
+            },
+            "scale": {
+              "scaleX": 1,
+              "scaleY": 1,
+              "scaleZ": 1
+            },
+            "material": {
+              "type": "standard",
+              "textureUrl": "/assets/textures/environment/nature/planet/saturn_ring.png",
+              "color": "#c4b59a",
+              "transparent": true,
+              "opacity": 0.75,
+              "side": "double",
+              "roughness": 0.92,
+              "metalness": 0.04
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "threeJsonId": "02-05-scene-background"
+}

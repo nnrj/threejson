@@ -1,0 +1,149 @@
+{
+  "version": "next",
+  "name": "external-gltf-demo-friendly",
+  "sceneConfig": {
+    "canvasWidth": 1920,
+    "canvasHeight": 1080,
+    "scene": {
+      "background": "#222222"
+    },
+    "camera": {
+      "fov": 55,
+      "near": 0.1,
+      "far": 250,
+      "position": {
+        "x": 24,
+        "y": 16,
+        "z": 30
+      }
+    },
+    "renderer": {
+      "antialias": true,
+      "ratioRate": 1
+    },
+    "controls": {
+      "enableDamping": true,
+      "dampingFactor": 0.08,
+      "enableZoom": true,
+      "target": {
+        "x": 0,
+        "y": 2.4,
+        "z": 1
+      }
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "color": "#ffffff",
+        "intensity": 0.65
+      },
+      {
+        "type": "directional",
+        "color": "#ffffff",
+        "intensity": 0.95,
+        "position": {
+          "x": 18,
+          "y": 28,
+          "z": 14
+        }
+      }
+    ],
+    "renderLoop": {
+      "autoResize": true,
+      "firstAutoResize": true
+    }
+  },
+  "worldInfo": {
+    "externalModelList": [
+      {
+        "name": "demo08-gltf",
+        "modelPath": "/assets/model/gltf/threejson_unlit_pyramid.gltf",
+        "modelFileType": "gltf",
+        "position": {
+          "x": 0,
+          "y": 1.6,
+          "z": 2.4
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0.55,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 3.2,
+          "scaleY": 3.2,
+          "scaleZ": 3.2
+        }
+      }
+    ],
+    "boxModelList": [
+      {
+        "name": "room-floor",
+        "objType": "floor",
+        "geometry": {
+          "width": 32,
+          "height": 0.8,
+          "depth": 24
+        },
+        "position": {
+          "x": 0,
+          "y": -0.4,
+          "z": 0
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 1,
+          "scaleY": 1,
+          "scaleZ": 1
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "metalness": 0.05,
+          "roughness": 0.85,
+          "textureUrl": "/assets/textures/building/floor/wood_floor.webp",
+          "textureRepeat": {
+            "x": 2,
+            "y": 2
+          }
+        },
+        "label": "demo08-floor"
+      },
+      {
+        "name": "demo08-backdrop",
+        "objType": "box",
+        "geometry": {
+          "width": 14,
+          "height": 9,
+          "depth": 2
+        },
+        "position": {
+          "x": 0,
+          "y": 5,
+          "z": -7
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 1,
+          "scaleY": 1,
+          "scaleZ": 1
+        },
+        "material": {
+          "type": "standard",
+          "color": "#8ecbff",
+          "transparent": true,
+          "opacity": 0.18
+        }
+      }
+    ]
+  },
+  "threeJsonId": "03-01-external-gltf"
+}

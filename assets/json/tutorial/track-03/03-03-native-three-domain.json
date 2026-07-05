@@ -1,0 +1,149 @@
+{
+  "worldInfo": {
+    "objModelList": [],
+    "domainModelList": [
+      {
+        "domain": "nativeThree",
+        "handler": "loadFromUrl",
+        "modelPath": "/assets/json/three_native.json",
+        "position": {
+          "x": 0,
+          "y": 0.8,
+          "z": 3.5
+        },
+        "scale": {
+          "scaleX": 1.2,
+          "scaleY": 1.2,
+          "scaleZ": 1.2
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0.5,
+          "rotationZ": 0
+        }
+      },
+      {
+        "domain": "box",
+        "handler": "addToScene",
+        "payload": {
+          "name": "demo06-domain-box",
+          "geometry": {
+            "width": 3.6,
+            "height": 3.6,
+            "depth": 3.6
+          },
+          "position": {
+            "x": -8.5,
+            "y": 2.2,
+            "z": 2.5
+          },
+          "material": {
+            "type": "lambert",
+            "color": "#e6a23c",
+            "opacity": 1,
+            "transparent": false
+          }
+        }
+      }
+    ],
+    "boxModelList": [
+      {
+        "name": "room-floor",
+        "objType": "floor",
+        "geometry": {
+          "width": 32,
+          "height": 0.8,
+          "depth": 24
+        },
+        "position": {
+          "x": 0,
+          "y": -0.4,
+          "z": 0
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 1,
+          "scaleY": 1,
+          "scaleZ": 1
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffffff",
+          "metalness": 0.05,
+          "roughness": 0.85,
+          "textureUrl": "/assets/textures/building/floor/wood_floor.webp",
+          "textureRepeat": {
+            "x": 2,
+            "y": 2
+          }
+        },
+        "label": "demo06-floor"
+      }
+    ]
+  },
+  "sceneConfig": {
+    "canvasWidth": 1920,
+    "canvasHeight": 1080,
+    "scene": {
+      "background": "#222222"
+    },
+    "camera": {
+      "fov": 55,
+      "near": 0.1,
+      "far": 250,
+      "position": {
+        "x": 24,
+        "y": 15,
+        "z": 27
+      }
+    },
+    "renderer": {
+      "antialias": true,
+      "ratioRate": 1
+    },
+    "controls": {
+      "enableDamping": true,
+      "dampingFactor": 0.08,
+      "enableZoom": true,
+      "target": {
+        "x": 0,
+        "y": 1.2,
+        "z": 1.8
+      }
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "color": "#ffffff",
+        "intensity": 0.5
+      },
+      {
+        "type": "directional",
+        "color": "#ffffff",
+        "intensity": 0.95,
+        "position": {
+          "x": 18,
+          "y": 28,
+          "z": 14
+        }
+      }
+    ],
+    "renderLoop": {
+      "autoResize": true,
+      "firstAutoResize": true
+    },
+    "helpers": {
+      "grid": {
+        "visible": true
+      },
+      "axes": {
+        "visible": true
+      }
+    }
+  },
+  "threeJsonId": "03-03-native-three-domain"
+}

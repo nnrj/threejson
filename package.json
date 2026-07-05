@@ -1,0 +1,90 @@
+{
+  "name": "threejson",
+  "version": "0.1.0-alpha.0",
+  "description": "JSON-driven Three.js scene runtime: declarative 3D scenes, builders, and handlers.",
+  "author": "nnrj <tianhehechu2017@gmail.com>",
+  "type": "module",
+  "exports": {
+    ".": "./builtins/full.js",
+    "./core": "./core/index.js",
+    "./builtins": "./builtins/register.js",
+    "./builtins/register": "./builtins/register.js",
+    "./domains/*": "./domains/*/index.js",
+    "./extensions/*": "./extensions/*",
+    "./patch": "./core/handler/jsonPatchDescriptor.js",
+    "./patch-core": "./core/handler/jsonPatchApplyCore.js",
+    "./runtime-mutation": "./core/runtime/objectMutation/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "core",
+    "domains",
+    "builtins",
+    "extensions",
+    "LICENSE",
+    "package.json",
+    "README.md",
+    "README_EN.md"
+  ],
+  "sideEffects": [
+    "**/core/ai/index.js",
+    "**/builtins/full.js",
+    "**/builtins/register.js",
+    "**/domains/**/index.js"
+  ],
+  "peerDependencies": {
+    "@dimforge/rapier3d-compat": "^0.19.3",
+    "@tweenjs/tween.js": "^25.0.0",
+    "echarts": "^5.5.0",
+    "html2canvas-pro": "^2.0.0",
+    "three": ">=0.179.0"
+  },
+  "peerDependenciesMeta": {
+    "@dimforge/rapier3d-compat": {
+      "optional": true
+    },
+    "echarts": {
+      "optional": true
+    }
+  },
+  "scripts": {
+    "generate:business-domain-manifest": "node tools/dev/build/generate-business-domain-manifest.mjs",
+    "generate:subdomain": "node tools/dev/build/generate-subdomain.mjs",
+    "prepublishOnly": "npm run generate:business-domain-manifest",
+    "test": "node --test tests/*.test.mjs",
+    "audit:console": "node tools/dev/audit-console-usage.mjs",
+    "lint:console": "node tools/dev/audit-console-usage.mjs --gate",
+    "validate:demo-catalog": "node tools/dev/validate-demo-catalog.mjs",
+    "verify:ai-static": "node --test tests/ai-verification.automated.mjs",
+    "verify:ai-live": "node tests/ai-verification.live.mjs",
+    "verify": "npm test && npm run verify:ai-static",
+    "threejson-agent:gui": "python tools/threejson-agent/shell/py/gui/app.py",
+    "mcp-threejson:install": "npm install --prefix tools/mcp-threejson",
+    "desktop-agent:install": "npm install --prefix tools/threejson-agent-desktop"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "keywords": [
+    "three.js",
+    "threejson",
+    "3d",
+    "webgl",
+    "json-scene"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "fflate": "^0.8.3",
+    "gifuct-js": "^2.1.2",
+    "three-bvh-csg": "^0.0.18",
+    "troika-three-text": "^0.52.4"
+  },
+  "devDependencies": {
+    "@dimforge/rapier3d-compat": "^0.19.3",
+    "@tweenjs/tween.js": "^25.0.0",
+    "html2canvas-pro": "^2.0.0",
+    "three": "^0.184.0",
+    "three-mesh-bvh": "^0.9.10"
+  }
+}

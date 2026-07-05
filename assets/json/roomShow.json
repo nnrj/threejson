@@ -1,0 +1,3896 @@
+{
+  "version": "next",
+  "name": "roomShow-enterprise-datacenter",
+  "threeJsonId": "roomShow",
+  "remark": "企业级模块化机房（冷热通道、UPS 分区、走廊入口）",
+  "label": "核心网络机房 A 区",
+  "sceneConfig": {
+    "camera": {
+      "fov": 48,
+      "near": 0.015,
+      "far": 400,
+      "position": {
+        "x": 88,
+        "y": 62,
+        "z": -72
+      }
+    },
+    "renderer": {
+      "antialias": true,
+      "ratioRate": 1,
+      "precision": "highp",
+      "preserveDrawingBuffer": true,
+      "stencil": true,
+      "alpha": true,
+      "shadowMapEnabled": true,
+      "clearAlpha": 0.1
+    },
+    "controls": {
+      "listenToKeyEvents": true,
+      "enableDamping": true,
+      "dampingFactor": 0.35,
+      "enableZoom": true,
+      "autoRotate": false,
+      "minDistance": 0.5,
+      "maxDistance": 280,
+      "maxPolarAngle": 1.66086,
+      "enablePan": true,
+      "target": {
+        "x": 0,
+        "y": 8,
+        "z": -5
+      }
+    },
+    "renderLoop": {
+      "autoResize": true,
+      "firstAutoResize": true,
+      "fps": 60,
+      "lowFps": false
+    },
+    "extensions": {
+      "fps-walk": {
+        "enabled": true,
+        "floorMeshRef": "floor-main"
+      }
+    },
+    "deployScheduler": {
+      "enabled": true,
+      "mode": "scheduled",
+      "policy": "timeslot",
+      "fluxMs": 10,
+      "density": 10,
+      "maxInFlightAsync": 4,
+      "retry": {
+        "maxAttempts": 2,
+        "backoffMs": 400
+      }
+    }
+  },
+  "worldInfo": {
+    "boxModelList": [
+      {
+        "code": "roomFloorMain",
+        "objType": "floor",
+        "refName": "floor-main",
+        "name": "room-floor",
+        "label": "机房高架地板",
+        "geometry": {
+          "width": 140,
+          "depth": 92,
+          "height": 1
+        },
+        "position": {
+          "x": 0,
+          "y": -0.5,
+          "z": -4
+        },
+        "material": {
+          "color": "#e4e6ea",
+          "textureUrl": "/assets/textures/building/floor/wood_floor.webp",
+          "type": "standard",
+          "metalness": 0.08,
+          "roughness": 0.82,
+          "textureRepeat": {
+            "x": 10,
+            "y": 5
+          }
+        }
+      },
+      {
+        "objType": "floor",
+        "refName": "floor-corridor",
+        "name": "room-floor",
+        "label": "入口走廊地面",
+        "geometry": {
+          "width": 22,
+          "depth": 14,
+          "height": 1
+        },
+        "position": {
+          "x": 0,
+          "y": -0.52,
+          "z": -59
+        },
+        "material": {
+          "color": "#c8c8c8",
+          "textureUrl": "/assets/textures/building/floor/cement.png",
+          "type": "standard",
+          "metalness": 0.05,
+          "roughness": 0.92,
+          "textureRepeat": {
+            "x": 10,
+            "y": 5
+          }
+        }
+      },
+      {
+        "objType": "wall",
+        "name": "room-wall",
+        "label": "北墙",
+        "geometry": {
+          "width": 112,
+          "depth": 2,
+          "height": 24
+        },
+        "position": {
+          "x": 0,
+          "y": 12,
+          "z": 35
+        },
+        "material": {
+          "color": "#b8bcc4",
+          "type": "standard",
+          "textureUrl": "/assets/textures/building/floor/cement.png",
+          "metalness": 0.35,
+          "roughness": 0.55,
+          "textureRepeat": {
+            "x": 10,
+            "y": 5
+          }
+        },
+        "holes": [
+          {
+            "geometry": {
+              "width": 18,
+              "depth": 4,
+              "height": 8
+            },
+            "position": {
+              "x": -28,
+              "y": 14,
+              "z": 35
+            },
+            "material": {
+              "type": "standard",
+              "color": "#111"
+            }
+          },
+          {
+            "geometry": {
+              "width": 18,
+              "depth": 4,
+              "height": 8
+            },
+            "position": {
+              "x": 28,
+              "y": 14,
+              "z": 35
+            },
+            "material": {
+              "type": "standard",
+              "color": "#111"
+            }
+          }
+        ]
+      },
+      {
+        "objType": "wall",
+        "name": "room-wall",
+        "label": "南墙-左段",
+        "geometry": {
+          "width": 47,
+          "depth": 2,
+          "height": 24
+        },
+        "position": {
+          "x": -32.5,
+          "y": 12,
+          "z": -35
+        },
+        "material": {
+          "color": "#b8bcc4",
+          "type": "standard",
+          "textureUrl": "/assets/textures/building/floor/cement.png",
+          "metalness": 0.35,
+          "roughness": 0.55,
+          "textureRepeat": {
+            "x": 10,
+            "y": 5
+          }
+        }
+      },
+      {
+        "objType": "wall",
+        "name": "room-wall",
+        "label": "南墙-右段",
+        "geometry": {
+          "width": 47,
+          "depth": 2,
+          "height": 24
+        },
+        "position": {
+          "x": 32.5,
+          "y": 12,
+          "z": -35
+        },
+        "material": {
+          "color": "#b8bcc4",
+          "type": "standard",
+          "textureUrl": "/assets/textures/building/floor/cement.png",
+          "metalness": 0.35,
+          "roughness": 0.55,
+          "textureRepeat": {
+            "x": 10,
+            "y": 5
+          }
+        }
+      },
+      {
+        "objType": "wall",
+        "name": "room-wall",
+        "label": "南墙-门楣",
+        "geometry": {
+          "width": 18,
+          "depth": 2,
+          "height": 5
+        },
+        "position": {
+          "x": 0,
+          "y": 21.5,
+          "z": -35
+        },
+        "material": {
+          "color": "#b8bcc4",
+          "type": "standard",
+          "textureUrl": "/assets/textures/building/floor/cement.png",
+          "metalness": 0.35,
+          "roughness": 0.55,
+          "textureRepeat": {
+            "x": 10,
+            "y": 5
+          }
+        }
+      },
+      {
+        "objType": "wall",
+        "name": "room-wall",
+        "label": "东墙",
+        "geometry": {
+          "width": 2,
+          "depth": 72,
+          "height": 24
+        },
+        "position": {
+          "x": 55,
+          "y": 12,
+          "z": 0
+        },
+        "material": {
+          "color": "#b8bcc4",
+          "type": "standard",
+          "textureUrl": "/assets/textures/building/floor/cement.png",
+          "metalness": 0.35,
+          "roughness": 0.55,
+          "textureRepeat": {
+            "x": 10,
+            "y": 5
+          }
+        },
+        "holes": [
+          {
+            "geometry": {
+              "width": 4,
+              "depth": 10,
+              "height": 19
+            },
+            "position": {
+              "x": 55,
+              "y": 9.5,
+              "z": 12
+            },
+            "material": {
+              "type": "standard",
+              "color": "#111"
+            }
+          },
+          {
+            "geometry": {
+              "width": 4,
+              "depth": 8,
+              "height": 3
+            },
+            "position": {
+              "x": 55,
+              "y": 21.5,
+              "z": 12
+            },
+            "material": {
+              "type": "standard",
+              "color": "#111"
+            }
+          }
+        ]
+      },
+      {
+        "objType": "wall",
+        "name": "room-wall",
+        "label": "西墙",
+        "geometry": {
+          "width": 2,
+          "depth": 72,
+          "height": 24
+        },
+        "position": {
+          "x": -55,
+          "y": 12,
+          "z": 0
+        },
+        "material": {
+          "color": "#b8bcc4",
+          "type": "standard",
+          "textureUrl": "/assets/textures/building/floor/cement.png",
+          "metalness": 0.35,
+          "roughness": 0.55,
+          "textureRepeat": {
+            "x": 10,
+            "y": 5
+          }
+        }
+      },
+      {
+        "objType": "wall",
+        "name": "room-wall",
+        "label": "UPS分区墙",
+        "geometry": {
+          "width": 2,
+          "depth": 58,
+          "height": 24
+        },
+        "position": {
+          "x": -42,
+          "y": 12,
+          "z": 4
+        },
+        "material": {
+          "color": "#c4a882",
+          "type": "standard",
+          "textureUrl": "/assets/textures/building/wall/red_brick.webp",
+          "metalness": 0.35,
+          "roughness": 0.55
+        },
+        "holes": [
+          {
+            "geometry": {
+              "width": 4,
+              "depth": 8,
+              "height": 19
+            },
+            "position": {
+              "x": -42,
+              "y": 9.5,
+              "z": -20
+            },
+            "material": {
+              "type": "standard",
+              "color": "#333"
+            }
+          }
+        ]
+      },
+      {
+        "code": "entryDoorLeft",
+        "objType": "door",
+        "doorType": "left",
+        "openAngleDeg": 108,
+        "glassKind": "clear",
+        "textureFace": "exterior",
+        "exteriorFace": "-z",
+        "name": "room-door",
+        "label": "入口左门",
+        "geometry": {
+          "width": 9,
+          "depth": 0.25,
+          "height": 19
+        },
+        "position": {
+          "x": -9,
+          "y": 9.5,
+          "z": -35
+        },
+        "material": {
+          "color": "#2F3133",
+          "textureUrl": "/assets/textures/building/door/right_door.png"
+        }
+      },
+      {
+        "code": "entryDoorRight",
+        "objType": "door",
+        "doorType": "right",
+        "openAngleDeg": 108,
+        "glassKind": "clear",
+        "textureFace": "exterior",
+        "exteriorFace": "-z",
+        "name": "room-door",
+        "label": "入口右门",
+        "geometry": {
+          "width": 9,
+          "depth": 0.25,
+          "height": 19
+        },
+        "position": {
+          "x": 9,
+          "y": 9.5,
+          "z": -35
+        },
+        "material": {
+          "color": "#2F3133",
+          "textureUrl": "/assets/textures/building/door/left_door.png"
+        }
+      },
+      {
+        "code": "eastEmergencyLeft",
+        "objType": "door",
+        "doorType": "left",
+        "openAngleDeg": 108,
+        "glassKind": "clear",
+        "textureFace": "exterior",
+        "exteriorFace": "+x",
+        "name": "room-door",
+        "label": "东侧应急门-左",
+        "geometry": {
+          "width": 0.25,
+          "depth": 5,
+          "height": 19
+        },
+        "position": {
+          "x": 54,
+          "y": 9.5,
+          "z": 7
+        },
+        "material": {
+          "color": "#2F3133",
+          "textureUrl": "/assets/textures/building/door/right_door.png"
+        }
+      },
+      {
+        "code": "eastEmergencyRight",
+        "objType": "door",
+        "doorType": "right",
+        "openAngleDeg": 108,
+        "glassKind": "clear",
+        "textureFace": "exterior",
+        "exteriorFace": "+x",
+        "name": "room-door",
+        "label": "东侧应急门-右",
+        "geometry": {
+          "width": 0.25,
+          "depth": 5,
+          "height": 19
+        },
+        "position": {
+          "x": 54,
+          "y": 9.5,
+          "z": 17
+        },
+        "material": {
+          "color": "#2F3133",
+          "textureUrl": "/assets/textures/building/door/left_door.png"
+        }
+      },
+      {
+        "code": "upsDoorLeft",
+        "objType": "door",
+        "doorType": "left",
+        "openAngleDeg": 108,
+        "glassKind": "clear",
+        "textureFace": "exterior",
+        "exteriorFace": "+x",
+        "name": "room-door",
+        "label": "UPS区左门",
+        "geometry": {
+          "width": 0.25,
+          "depth": 4,
+          "height": 19
+        },
+        "position": {
+          "x": -41,
+          "y": 9.5,
+          "z": -24
+        },
+        "material": {
+          "color": "#2F3133",
+          "textureUrl": "/assets/textures/building/door/right_door.png"
+        }
+      },
+      {
+        "code": "upsDoorRight",
+        "objType": "door",
+        "doorType": "right",
+        "openAngleDeg": 108,
+        "glassKind": "clear",
+        "textureFace": "exterior",
+        "exteriorFace": "+x",
+        "name": "room-door",
+        "label": "UPS区右门",
+        "geometry": {
+          "width": 0.25,
+          "depth": 4,
+          "height": 19
+        },
+        "position": {
+          "x": -41,
+          "y": 9.5,
+          "z": -16
+        },
+        "material": {
+          "color": "#2F3133",
+          "textureUrl": "/assets/textures/building/door/left_door.png"
+        }
+      },
+      {
+        "objType": "box",
+        "name": "head-cabinet",
+        "threeJsonId": "room-head-cabinet-a",
+        "label": "配电柜A",
+        "geometry": {
+          "width": 4,
+          "depth": 8,
+          "height": 18
+        },
+        "position": {
+          "x": 48,
+          "y": 9,
+          "z": -12
+        },
+        "businessInfo": {
+          "deviceTypeCode": "ltg"
+        },
+        "material": {
+          "color": "#3d4248",
+          "type": "standard",
+          "textureUrl": "/assets/textures/building/metal/stainless_steel.webp",
+          "metalness": 0.5,
+          "roughness": 0.35
+        }
+      },
+      {
+        "objType": "box",
+        "name": "head-cabinet",
+        "label": "配电柜B",
+        "geometry": {
+          "width": 4,
+          "depth": 8,
+          "height": 18
+        },
+        "position": {
+          "x": 48,
+          "y": 9,
+          "z": 12
+        },
+        "businessInfo": {
+          "deviceTypeCode": "ltg",
+          "deviceId": 22
+        },
+        "material": {
+          "color": "#3d4248",
+          "type": "standard",
+          "textureUrl": "/assets/textures/building/metal/stainless_steel.webp",
+          "metalness": 0.5,
+          "roughness": 0.35
+        }
+      },
+      {
+        "objType": "box",
+        "name": "tempe-sensor",
+        "label": "环境监控主机",
+        "geometry": {
+          "width": 1.2,
+          "depth": 0.4,
+          "height": 1.6
+        },
+        "position": {
+          "x": -53,
+          "y": 5,
+          "z": -30
+        },
+        "businessInfo": {
+          "deviceTypeCode": "hum",
+          "deviceId": 16
+        },
+        "material": {
+          "type": "standard",
+          "textureUrl": "/assets/textures/device/temperature_display.png"
+        }
+      },
+      {
+        "objType": "box",
+        "name": "ac-temp-controller",
+        "label": "冷通道空调温控",
+        "geometry": {
+          "width": 0.55,
+          "depth": 0.12,
+          "height": 0.55
+        },
+        "position": {
+          "x": 11.65,
+          "y": 12,
+          "z": -33.68
+        },
+        "businessInfo": {
+          "deviceTypeCode": "hum",
+          "deviceId": 17
+        },
+        "materials": [
+          { "color": "#111111", "type": "standard" },
+          { "color": "#111111", "type": "standard" },
+          { "color": "#111111", "type": "standard" },
+          { "color": "#111111", "type": "standard" },
+          {
+            "color": "#ffffff",
+            "type": "standard",
+            "textureUrl": "/assets/textures/device/air_conditioning_controller.png"
+          },
+          { "color": "#111111", "type": "standard" }
+        ]
+      },
+      {
+        "objType": "box",
+        "name": "ac-temp-controller",
+        "label": "热通道空调温控",
+        "geometry": {
+          "width": 0.55,
+          "depth": 0.12,
+          "height": 0.55
+        },
+        "position": {
+          "x": 12.35,
+          "y": 12,
+          "z": -33.68
+        },
+        "businessInfo": {
+          "deviceTypeCode": "hum",
+          "deviceId": 51
+        },
+        "materials": [
+          { "color": "#111111", "type": "standard" },
+          { "color": "#111111", "type": "standard" },
+          { "color": "#111111", "type": "standard" },
+          { "color": "#111111", "type": "standard" },
+          {
+            "color": "#ffffff",
+            "type": "standard",
+            "textureUrl": "/assets/textures/device/air_conditioning_controller.png"
+          },
+          { "color": "#111111", "type": "standard" }
+        ]
+      },
+      {
+        "objType": "box",
+        "name": "access-reader",
+        "label": "门禁读头",
+        "geometry": {
+          "width": 1,
+          "depth": 0.25,
+          "height": 2
+        },
+        "position": {
+          "x": -11,
+          "y": 12.75,
+          "z": -36.205
+        },
+        "material": {
+          "type": "standard",
+          "textureUrl": "/assets/textures/device/pass_control.png"
+        }
+      },
+      {
+        "objType": "box",
+        "name": "fire-suppression",
+        "label": "消防气瓶组",
+        "geometry": {
+          "width": 2.5,
+          "depth": 1.2,
+          "height": 3
+        },
+        "position": {
+          "x": -12,
+          "y": 1.5,
+          "z": -36.68
+        },
+        "material": {
+          "color": "#cc3333",
+          "type": "standard",
+          "metalness": 0.4,
+          "roughness": 0.5
+        }
+      },
+      {
+        "objType": "box",
+        "name": "corridor-screen",
+        "label": "走廊监控屏",
+        "geometry": {
+          "width": 5,
+          "depth": 0.25,
+          "height": 3.5
+        },
+        "position": {
+          "x": 14,
+          "y": 12,
+          "z": -36.205
+        },
+        "material": {
+          "type": "standard",
+          "textureUrl": "/assets/textures/device/dashboard_screen.png",
+          "emissive": "#2244aa",
+          "emissiveIntensity": 0.25
+        }
+      },
+      {
+        "objType": "box",
+        "name": "room-ceiling",
+        "label": "吊顶",
+        "visible": false,
+        "geometry": {
+          "width": 106,
+          "depth": 66,
+          "height": 0.5
+        },
+        "position": {
+          "x": 0,
+          "y": 23.75,
+          "z": 0
+        },
+        "material": {
+          "color": "#eceff3",
+          "type": "standard",
+          "metalness": 0.15,
+          "roughness": 0.65
+        }
+      },
+      {
+        "objType": "box",
+        "name": "room-ceiling",
+        "label": "冷通道封闭顶板",
+        "visible": false,
+        "geometry": {
+          "width": 52,
+          "depth": 8,
+          "height": 0.35
+        },
+        "position": {
+          "x": 0,
+          "y": 20.5,
+          "z": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#dde8f5",
+          "opacity": 0.55,
+          "transparent": true,
+          "metalness": 0.2,
+          "roughness": 0.4
+        }
+      },
+      {
+        "objType": "box",
+        "name": "utility-cabinet",
+        "label": "工具柜",
+        "geometry": {
+          "width": 4,
+          "depth": 2,
+          "height": 8
+        },
+        "position": {
+          "x": 46,
+          "y": 4,
+          "z": -30
+        },
+        "material": {
+          "color": "#2F3133",
+          "type": "standard"
+        }
+      },
+      {
+        "objType": "box",
+        "name": "fiber-patch",
+        "label": "光纤配线箱",
+        "geometry": {
+          "width": 3,
+          "depth": 1.5,
+          "height": 6
+        },
+        "position": {
+          "x": -53,
+          "y": 3,
+          "z": 28
+        },
+        "material": {
+          "color": "#555",
+          "type": "standard",
+          "textureUrl": "/assets/textures/building/metal/stainless_steel.webp"
+        }
+      }
+    ],
+    "domainModelList": [
+      {
+        "name": "room-glass",
+        "label": "北墙观察窗-西",
+        "objType": "domain",
+        "domain": "glass",
+        "handler": "addToScene",
+        "glassKind": "clear",
+        "boxType": "box",
+        "geometry": {
+          "width": 18,
+          "height": 8,
+          "depth": 0.35
+        },
+        "material": {
+          "type": "standard",
+          "color": "#7ec8e8",
+          "opacity": 0.32,
+          "transparent": true,
+          "metalness": 0.08,
+          "roughness": 0.12
+        },
+        "position": {
+          "x": -28,
+          "y": 14,
+          "z": 34
+        },
+        "visible": true,
+        "subScene": []
+      },
+      {
+        "name": "room-glass",
+        "label": "北墙观察窗-东",
+        "objType": "domain",
+        "domain": "glass",
+        "handler": "addToScene",
+        "glassKind": "clear",
+        "boxType": "box",
+        "geometry": {
+          "width": 18,
+          "height": 8,
+          "depth": 0.35
+        },
+        "material": {
+          "type": "standard",
+          "color": "#7ec8e8",
+          "opacity": 0.32,
+          "transparent": true,
+          "metalness": 0.08,
+          "roughness": 0.12
+        },
+        "position": {
+          "x": 28,
+          "y": 14,
+          "z": 34
+        },
+        "visible": true,
+        "subScene": []
+      },
+      {
+        "name": "room-glass",
+        "label": "东墙应急门气窗",
+        "objType": "domain",
+        "domain": "glass",
+        "handler": "addToScene",
+        "glassKind": "tinted",
+        "boxType": "box",
+        "geometry": {
+          "width": 0.35,
+          "height": 3,
+          "depth": 8
+        },
+        "material": {
+          "type": "standard",
+          "color": "#7ec8e8",
+          "opacity": 0.32,
+          "transparent": true,
+          "metalness": 0.08,
+          "roughness": 0.12
+        },
+        "position": {
+          "x": 54,
+          "y": 21.5,
+          "z": 12
+        },
+        "visible": true,
+        "subScene": []
+      },
+      {
+        "objType": "domain",
+        "domain": "device.airConditioner",
+        "handler": "deployAirConditioner",
+        "visible": true,
+        "name": "air-conditioning",
+        "label": "机房空调-北1",
+        "geometry": {
+          "width": 6,
+          "depth": 10,
+          "height": 20
+        },
+        "position": {
+          "x": -30,
+          "y": 10,
+          "z": 29
+        },
+        "businessInfo": {
+          "deviceTypeCode": "air",
+          "deviceId": 11
+        },
+        "materials": [
+          {
+            "color": "#7a7d82",
+            "type": "standard",
+            "receiveShadow": true
+          },
+          {
+            "color": "#7a7d82",
+            "type": "standard",
+            "receiveShadow": true
+          },
+          {
+            "color": "#8E8E8E",
+            "type": "standard",
+            "receiveShadow": true
+          },
+          {
+            "color": "#7a7d82",
+            "type": "standard",
+            "receiveShadow": true
+          },
+          {
+            "color": "#8A8A8A",
+            "type": "standard",
+            "receiveShadow": true,
+            "textureUrl": "/assets/textures/device/air_conditioner_back.png"
+          },
+          {
+            "color": "#8A8A8A",
+            "type": "standard",
+            "receiveShadow": true,
+            "textureUrl": "/assets/textures/device/air_conditioner_front.png"
+          }
+        ]
+      },
+      {
+        "objType": "domain",
+        "domain": "device.airConditioner",
+        "handler": "deployAirConditioner",
+        "visible": true,
+        "name": "air-conditioning",
+        "label": "机房空调-北2",
+        "geometry": {
+          "width": 6,
+          "depth": 10,
+          "height": 20
+        },
+        "position": {
+          "x": -10,
+          "y": 10,
+          "z": 29
+        },
+        "businessInfo": {
+          "deviceTypeCode": "air",
+          "deviceId": 12
+        },
+        "materials": [
+          {
+            "color": "#7a7d82",
+            "type": "standard",
+            "receiveShadow": true
+          },
+          {
+            "color": "#7a7d82",
+            "type": "standard",
+            "receiveShadow": true
+          },
+          {
+            "color": "#8E8E8E",
+            "type": "standard",
+            "receiveShadow": true
+          },
+          {
+            "color": "#7a7d82",
+            "type": "standard",
+            "receiveShadow": true
+          },
+          {
+            "color": "#8A8A8A",
+            "type": "standard",
+            "receiveShadow": true,
+            "textureUrl": "/assets/textures/device/air_conditioner_back.png"
+          },
+          {
+            "color": "#8A8A8A",
+            "type": "standard",
+            "receiveShadow": true,
+            "textureUrl": "/assets/textures/device/air_conditioner_front.png"
+          }
+        ]
+      },
+      {
+        "objType": "domain",
+        "domain": "device.airConditioner",
+        "handler": "deployAirConditioner",
+        "visible": true,
+        "name": "air-conditioning",
+        "label": "机房空调-北3",
+        "geometry": {
+          "width": 6,
+          "depth": 10,
+          "height": 20
+        },
+        "position": {
+          "x": 10,
+          "y": 10,
+          "z": 29
+        },
+        "businessInfo": {
+          "deviceTypeCode": "air",
+          "deviceId": 13
+        },
+        "materials": [
+          {
+            "color": "#7a7d82",
+            "type": "standard",
+            "receiveShadow": true
+          },
+          {
+            "color": "#7a7d82",
+            "type": "standard",
+            "receiveShadow": true
+          },
+          {
+            "color": "#8E8E8E",
+            "type": "standard",
+            "receiveShadow": true
+          },
+          {
+            "color": "#7a7d82",
+            "type": "standard",
+            "receiveShadow": true
+          },
+          {
+            "color": "#8A8A8A",
+            "type": "standard",
+            "receiveShadow": true,
+            "textureUrl": "/assets/textures/device/air_conditioner_back.png"
+          },
+          {
+            "color": "#8A8A8A",
+            "type": "standard",
+            "receiveShadow": true,
+            "textureUrl": "/assets/textures/device/air_conditioner_front.png"
+          }
+        ]
+      },
+      {
+        "objType": "domain",
+        "domain": "device.airConditioner",
+        "handler": "deployAirConditioner",
+        "visible": true,
+        "name": "air-conditioning",
+        "label": "机房空调-北4",
+        "geometry": {
+          "width": 6,
+          "depth": 10,
+          "height": 20
+        },
+        "position": {
+          "x": 30,
+          "y": 10,
+          "z": 29
+        },
+        "businessInfo": {
+          "deviceTypeCode": "air",
+          "deviceId": 14
+        },
+        "materials": [
+          {
+            "color": "#7a7d82",
+            "type": "standard",
+            "receiveShadow": true
+          },
+          {
+            "color": "#7a7d82",
+            "type": "standard",
+            "receiveShadow": true
+          },
+          {
+            "color": "#8E8E8E",
+            "type": "standard",
+            "receiveShadow": true
+          },
+          {
+            "color": "#7a7d82",
+            "type": "standard",
+            "receiveShadow": true
+          },
+          {
+            "color": "#8A8A8A",
+            "type": "standard",
+            "receiveShadow": true,
+            "textureUrl": "/assets/textures/device/air_conditioner_back.png"
+          },
+          {
+            "color": "#8A8A8A",
+            "type": "standard",
+            "receiveShadow": true,
+            "textureUrl": "/assets/textures/device/air_conditioner_front.png"
+          }
+        ]
+      },
+      {
+        "objType": "domain",
+        "domain": "device.airConditioner",
+        "handler": "deployAirConditioner",
+        "visible": true,
+        "name": "air-conditioning",
+        "label": "机房空调-西备",
+        "geometry": {
+          "width": 6,
+          "depth": 10,
+          "height": 20
+        },
+        "position": {
+          "x": -51,
+          "y": 10,
+          "z": 0
+        },
+        "businessInfo": {
+          "deviceTypeCode": "air",
+          "deviceId": 25
+        },
+        "materials": [
+          {
+            "color": "#7a7d82",
+            "type": "standard",
+            "receiveShadow": true
+          },
+          {
+            "color": "#7a7d82",
+            "type": "standard",
+            "receiveShadow": true
+          },
+          {
+            "color": "#8E8E8E",
+            "type": "standard",
+            "receiveShadow": true
+          },
+          {
+            "color": "#7a7d82",
+            "type": "standard",
+            "receiveShadow": true
+          },
+          {
+            "color": "#8A8A8A",
+            "type": "standard",
+            "receiveShadow": true,
+            "textureUrl": "/assets/textures/device/air_conditioner_back.png"
+          },
+          {
+            "color": "#8A8A8A",
+            "type": "standard",
+            "receiveShadow": true,
+            "textureUrl": "/assets/textures/device/air_conditioner_front.png"
+          }
+        ]
+      },
+      {
+        "objType": "domain",
+        "domain": "device.ups",
+        "handler": "deployUps",
+        "name": "device-ups",
+        "label": "UPS主机A",
+        "geometry": {
+          "width": 8,
+          "depth": 10,
+          "height": 16
+        },
+        "position": {
+          "x": -50,
+          "y": 8,
+          "z": -18
+        },
+        "door": {
+          "panelKind": "glass",
+          "swing": "right",
+          "glassKind": "clear"
+        },
+        "panelShowTrigger": "dblclick",
+        "panelHideTrigger": "dblclick",
+        "infoPanel": {
+          "name": "infoPanel",
+          "text": "<div><div style='height:22px;background:#b71c1c;font-size:13px;color:#fff;padding:2px 6px'>UPS 主机 A</div><div style='background:#fff;color:#000;padding:6px;font-size:12px'>负载 <span style='color:#e65100'>62%</span><br/>电池 98%<br/>状态 <span style='color:green'>在线</span></div></div>",
+          "type": "html",
+          "boxType": "sprite",
+          "visible": true,
+          "fix": false,
+          "topDistance": 9,
+          "panel": {
+            "geometry": {
+              "width": 10,
+              "height": 10,
+              "depth": 0.1
+            },
+            "position": {
+              "x": -50,
+              "y": 33,
+              "z": -18
+            },
+            "material": {
+              "color": "#fff",
+              "transparent": true,
+              "opacity": 0.85
+            }
+          }
+        }
+      },
+      {
+        "objType": "domain",
+        "domain": "device.ups",
+        "handler": "deployUps",
+        "name": "device-ups",
+        "label": "UPS主机B",
+        "geometry": {
+          "width": 8,
+          "depth": 10,
+          "height": 16
+        },
+        "position": {
+          "x": -50,
+          "y": 8,
+          "z": 18
+        },
+        "door": {
+          "panelKind": "glass",
+          "swing": "right",
+          "glassKind": "clear"
+        },
+        "panelShowTrigger": "dblclick",
+        "panelHideTrigger": "dblclick",
+        "infoPanel": {
+          "name": "infoPanel",
+          "text": "<div><div style='height:22px;background:#b71c1c;font-size:13px;color:#fff;padding:2px 6px'>UPS 主机 B</div><div style='background:#fff;color:#000;padding:6px;font-size:12px'>负载 <span style='color:#e65100'>58%</span><br/>电池 96%<br/>状态 <span style='color:green'>在线</span></div></div>",
+          "type": "html",
+          "boxType": "sprite",
+          "visible": true,
+          "fix": false,
+          "topDistance": 9,
+          "panel": {
+            "geometry": {
+              "width": 10,
+              "height": 10,
+              "depth": 0.1
+            },
+            "position": {
+              "x": -50,
+              "y": 33,
+              "z": 18
+            },
+            "material": {
+              "color": "#fff",
+              "transparent": true,
+              "opacity": 0.85
+            }
+          }
+        }
+      },
+      {
+        "objType": "domain",
+        "domain": "device.cabinet",
+        "handler": "deployCabinet",
+        "name": "cabinet",
+        "label": "机柜01",
+        "doors": [
+          {
+            "side": "front",
+            "swing": "right",
+            "leafCount": 1,
+            "label": {
+              "text": "01"
+            }
+          },
+          {
+            "side": "back",
+            "swing": "right",
+            "leafCount": 2
+          }
+        ],
+        "toward": "front",
+        "devices": [
+          {
+            "deviceType": "server",
+            "uStart": 24,
+            "uSize": 1,
+            "name": "计算节点",
+            "brandName": "Huawei"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 22,
+            "uSize": 2,
+            "name": "存储节点",
+            "brandName": "Inspur"
+          }
+        ],
+        "slots": {
+          "total": 24,
+          "unitHeight": 0.48,
+          "bottomMargin": 0.77
+        },
+        "stats": {
+          "slots": {
+            "used": 3,
+            "total": 24
+          },
+          "load": {
+            "used": 430,
+            "total": 2600
+          }
+        },
+        "cabLabel": "01",
+        "geometry": {
+          "width": 6,
+          "length": 12,
+          "height": 20
+        },
+        "position": {
+          "x": -21,
+          "y": 0,
+          "z": -12
+        }
+      },
+      {
+        "objType": "domain",
+        "domain": "device.cabinet",
+        "handler": "deployCabinet",
+        "name": "cabinet",
+        "label": "机柜02",
+        "doors": [
+          {
+            "side": "front",
+            "swing": "right",
+            "leafCount": 1,
+            "label": {
+              "text": "02"
+            }
+          },
+          {
+            "side": "back",
+            "swing": "right",
+            "leafCount": 2
+          }
+        ],
+        "toward": "front",
+        "devices": [
+          {
+            "deviceType": "server",
+            "uStart": 23,
+            "uSize": 2,
+            "name": "虚拟化主机",
+            "brandName": "Lenovo"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 22,
+            "uSize": 1,
+            "name": "应用服务器",
+            "brandName": "HP"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 20,
+            "uSize": 2,
+            "name": "数据库服务器",
+            "brandName": "Dell"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 16,
+            "uSize": 4,
+            "name": "核心交换机",
+            "brandName": "H3C"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 14,
+            "uSize": 2,
+            "name": "防火墙",
+            "brandName": "Fortinet"
+          }
+        ],
+        "slots": {
+          "total": 24,
+          "unitHeight": 0.48,
+          "bottomMargin": 0.77
+        },
+        "stats": {
+          "slots": {
+            "used": 11,
+            "total": 24
+          },
+          "load": {
+            "used": 1257,
+            "total": 2600
+          }
+        },
+        "cabLabel": "02",
+        "geometry": {
+          "width": 6,
+          "length": 12,
+          "height": 20
+        },
+        "position": {
+          "x": -15,
+          "y": 0,
+          "z": -12
+        }
+      },
+      {
+        "objType": "domain",
+        "domain": "device.cabinet",
+        "handler": "deployCabinet",
+        "name": "cabinet",
+        "label": "机柜03",
+        "doors": [
+          {
+            "side": "front",
+            "swing": "right",
+            "leafCount": 1,
+            "label": {
+              "text": "03"
+            }
+          },
+          {
+            "side": "back",
+            "swing": "right",
+            "leafCount": 2
+          }
+        ],
+        "toward": "front",
+        "devices": [],
+        "slots": {
+          "total": 24,
+          "unitHeight": 0.48,
+          "bottomMargin": 0.77
+        },
+        "stats": {
+          "slots": {
+            "used": 0,
+            "total": 24
+          },
+          "load": {
+            "used": 0,
+            "total": 2600
+          }
+        },
+        "cabLabel": "03",
+        "geometry": {
+          "width": 6,
+          "length": 12,
+          "height": 20
+        },
+        "position": {
+          "x": -9,
+          "y": 0,
+          "z": -12
+        }
+      },
+      {
+        "objType": "domain",
+        "domain": "device.cabinet",
+        "handler": "deployCabinet",
+        "name": "cabinet",
+        "label": "机柜04",
+        "doors": [
+          {
+            "side": "front",
+            "swing": "right",
+            "leafCount": 1,
+            "label": {
+              "text": "04"
+            }
+          },
+          {
+            "side": "back",
+            "swing": "right",
+            "leafCount": 2
+          }
+        ],
+        "toward": "front",
+        "devices": [
+          {
+            "deviceType": "server",
+            "uStart": 24,
+            "uSize": 1,
+            "name": "计算节点",
+            "brandName": "Huawei"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 23,
+            "uSize": 1,
+            "name": "计算节点",
+            "brandName": "Huawei"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 22,
+            "uSize": 1,
+            "name": "K8s 节点",
+            "brandName": "Inspur"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 20,
+            "uSize": 2,
+            "name": "存储节点",
+            "brandName": "Inspur"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 18,
+            "uSize": 2,
+            "name": "虚拟化主机",
+            "brandName": "Lenovo"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 14,
+            "uSize": 4,
+            "name": "核心交换机",
+            "brandName": "H3C"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 12,
+            "uSize": 2,
+            "name": "数据库服务器",
+            "brandName": "Dell"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 10,
+            "uSize": 2,
+            "name": "应用服务器",
+            "brandName": "HP"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 6,
+            "uSize": 4,
+            "name": "分布式存储",
+            "brandName": "XSKY"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 4,
+            "uSize": 2,
+            "name": "备份设备",
+            "brandName": "EMC"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 2,
+            "uSize": 2,
+            "name": "汇聚交换",
+            "brandName": "Cisco"
+          }
+        ],
+        "slots": {
+          "total": 24,
+          "unitHeight": 0.48,
+          "bottomMargin": 0.77
+        },
+        "stats": {
+          "slots": {
+            "used": 23,
+            "total": 24
+          },
+          "load": {
+            "used": 2497,
+            "total": 2600
+          }
+        },
+        "cabLabel": "04",
+        "geometry": {
+          "width": 6,
+          "length": 12,
+          "height": 20
+        },
+        "position": {
+          "x": -3,
+          "y": 0,
+          "z": -12
+        }
+      },
+      {
+        "objType": "domain",
+        "domain": "device.cabinet",
+        "handler": "deployCabinet",
+        "name": "cabinet",
+        "label": "机柜05",
+        "doors": [
+          {
+            "side": "front",
+            "swing": "right",
+            "leafCount": 1,
+            "label": {
+              "text": "05"
+            }
+          },
+          {
+            "side": "back",
+            "swing": "right",
+            "leafCount": 2
+          }
+        ],
+        "toward": "front",
+        "devices": [
+          {
+            "deviceType": "server",
+            "uStart": 17,
+            "uSize": 8,
+            "name": "刀片机箱",
+            "brandName": "Huawei"
+          }
+        ],
+        "slots": {
+          "total": 24,
+          "unitHeight": 0.48,
+          "bottomMargin": 0.77
+        },
+        "stats": {
+          "slots": {
+            "used": 8,
+            "total": 24
+          },
+          "load": {
+            "used": 947,
+            "total": 2600
+          }
+        },
+        "cabLabel": "05",
+        "geometry": {
+          "width": 6,
+          "length": 12,
+          "height": 20
+        },
+        "position": {
+          "x": 3,
+          "y": 0,
+          "z": -12
+        }
+      },
+      {
+        "objType": "domain",
+        "domain": "device.cabinet",
+        "handler": "deployCabinet",
+        "name": "cabinet",
+        "label": "机柜06",
+        "doors": [
+          {
+            "side": "front",
+            "swing": "right",
+            "leafCount": 1,
+            "label": {
+              "text": "06"
+            }
+          },
+          {
+            "side": "back",
+            "swing": "right",
+            "leafCount": 2
+          }
+        ],
+        "toward": "front",
+        "devices": [
+          {
+            "deviceType": "server",
+            "uStart": 23,
+            "uSize": 2,
+            "name": "虚拟化主机",
+            "brandName": "Lenovo"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 19,
+            "uSize": 4,
+            "name": "核心交换机",
+            "brandName": "H3C"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 17,
+            "uSize": 2,
+            "name": "存储节点",
+            "brandName": "Inspur"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 16,
+            "uSize": 1,
+            "name": "计算节点",
+            "brandName": "Huawei"
+          }
+        ],
+        "slots": {
+          "total": 24,
+          "unitHeight": 0.48,
+          "bottomMargin": 0.77
+        },
+        "stats": {
+          "slots": {
+            "used": 9,
+            "total": 24
+          },
+          "load": {
+            "used": 1050,
+            "total": 2600
+          }
+        },
+        "cabLabel": "06",
+        "geometry": {
+          "width": 6,
+          "length": 12,
+          "height": 20
+        },
+        "position": {
+          "x": 9,
+          "y": 0,
+          "z": -12
+        }
+      },
+      {
+        "objType": "domain",
+        "domain": "device.cabinet",
+        "handler": "deployCabinet",
+        "name": "cabinet",
+        "label": "机柜07",
+        "doors": [
+          {
+            "side": "front",
+            "swing": "right",
+            "leafCount": 1,
+            "label": {
+              "text": "07"
+            }
+          },
+          {
+            "side": "back",
+            "swing": "right",
+            "leafCount": 2
+          }
+        ],
+        "toward": "front",
+        "devices": [
+          {
+            "deviceType": "server",
+            "uStart": 24,
+            "uSize": 1,
+            "name": "防火墙",
+            "brandName": "Fortinet"
+          }
+        ],
+        "slots": {
+          "total": 24,
+          "unitHeight": 0.48,
+          "bottomMargin": 0.77
+        },
+        "stats": {
+          "slots": {
+            "used": 1,
+            "total": 24
+          },
+          "load": {
+            "used": 223,
+            "total": 2600
+          }
+        },
+        "cabLabel": "07",
+        "geometry": {
+          "width": 6,
+          "length": 12,
+          "height": 20
+        },
+        "position": {
+          "x": 15,
+          "y": 0,
+          "z": -12
+        }
+      },
+      {
+        "objType": "domain",
+        "domain": "device.cabinet",
+        "handler": "deployCabinet",
+        "name": "cabinet",
+        "label": "机柜08",
+        "doors": [
+          {
+            "side": "front",
+            "swing": "right",
+            "leafCount": 1,
+            "label": {
+              "text": "08"
+            }
+          },
+          {
+            "side": "back",
+            "swing": "right",
+            "leafCount": 2
+          }
+        ],
+        "toward": "front",
+        "devices": [
+          {
+            "deviceType": "server",
+            "uStart": 24,
+            "uSize": 1,
+            "name": "计算节点",
+            "brandName": "Huawei"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 23,
+            "uSize": 1,
+            "name": "计算节点",
+            "brandName": "Huawei"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 22,
+            "uSize": 1,
+            "name": "K8s 节点",
+            "brandName": "Inspur"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 21,
+            "uSize": 1,
+            "name": "K8s 节点",
+            "brandName": "Inspur"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 20,
+            "uSize": 1,
+            "name": "K8s 节点",
+            "brandName": "Inspur"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 19,
+            "uSize": 1,
+            "name": "K8s 节点",
+            "brandName": "Inspur"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 18,
+            "uSize": 1,
+            "name": "应用服务器",
+            "brandName": "HP"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 16,
+            "uSize": 2,
+            "name": "数据库服务器",
+            "brandName": "Dell"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 14,
+            "uSize": 2,
+            "name": "虚拟化主机",
+            "brandName": "Lenovo"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 10,
+            "uSize": 4,
+            "name": "核心交换机",
+            "brandName": "H3C"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 8,
+            "uSize": 2,
+            "name": "备份设备",
+            "brandName": "EMC"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 7,
+            "uSize": 1,
+            "name": "监控探针",
+            "brandName": "Zabbix"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 5,
+            "uSize": 2,
+            "name": "汇聚交换",
+            "brandName": "Cisco"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 1,
+            "uSize": 4,
+            "name": "分布式存储",
+            "brandName": "XSKY"
+          }
+        ],
+        "slots": {
+          "total": 24,
+          "unitHeight": 0.48,
+          "bottomMargin": 0.77
+        },
+        "stats": {
+          "slots": {
+            "used": 24,
+            "total": 24
+          },
+          "load": {
+            "used": 2600,
+            "total": 2600
+          }
+        },
+        "cabLabel": "08",
+        "geometry": {
+          "width": 6,
+          "length": 12,
+          "height": 20
+        },
+        "position": {
+          "x": 21,
+          "y": 0,
+          "z": -12
+        }
+      },
+      {
+        "objType": "domain",
+        "domain": "device.cabinet",
+        "handler": "deployCabinet",
+        "name": "cabinet",
+        "label": "机柜09",
+        "doors": [
+          {
+            "side": "front",
+            "swing": "right",
+            "leafCount": 1,
+            "label": {
+              "text": "09"
+            }
+          },
+          {
+            "side": "back",
+            "swing": "right",
+            "leafCount": 2
+          }
+        ],
+        "toward": "back",
+        "devices": [
+          {
+            "deviceType": "server",
+            "uStart": 24,
+            "uSize": 1,
+            "name": "计算节点",
+            "brandName": "Huawei"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 22,
+            "uSize": 2,
+            "name": "存储节点",
+            "brandName": "Inspur"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 19,
+            "uSize": 3,
+            "name": "应用服务器",
+            "brandName": "HP"
+          }
+        ],
+        "slots": {
+          "total": 24,
+          "unitHeight": 0.48,
+          "bottomMargin": 0.77
+        },
+        "stats": {
+          "slots": {
+            "used": 6,
+            "total": 24
+          },
+          "load": {
+            "used": 740,
+            "total": 2600
+          }
+        },
+        "cabLabel": "09",
+        "geometry": {
+          "width": 6,
+          "length": 12,
+          "height": 20
+        },
+        "position": {
+          "x": -21,
+          "y": 0,
+          "z": 12
+        }
+      },
+      {
+        "objType": "domain",
+        "domain": "device.cabinet",
+        "handler": "deployCabinet",
+        "name": "cabinet",
+        "label": "机柜10",
+        "doors": [
+          {
+            "side": "front",
+            "swing": "right",
+            "leafCount": 1,
+            "label": {
+              "text": "10"
+            }
+          },
+          {
+            "side": "back",
+            "swing": "right",
+            "leafCount": 2
+          }
+        ],
+        "toward": "back",
+        "devices": [
+          {
+            "deviceType": "server",
+            "uStart": 24,
+            "uSize": 1,
+            "name": "K8s 节点",
+            "brandName": "Inspur"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 22,
+            "uSize": 2,
+            "name": "虚拟化主机",
+            "brandName": "Lenovo"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 20,
+            "uSize": 2,
+            "name": "数据库服务器",
+            "brandName": "Dell"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 16,
+            "uSize": 4,
+            "name": "核心交换机",
+            "brandName": "H3C"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 14,
+            "uSize": 2,
+            "name": "存储节点",
+            "brandName": "Inspur"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 10,
+            "uSize": 4,
+            "name": "备份设备",
+            "brandName": "EMC"
+          }
+        ],
+        "slots": {
+          "total": 24,
+          "unitHeight": 0.48,
+          "bottomMargin": 0.77
+        },
+        "stats": {
+          "slots": {
+            "used": 15,
+            "total": 24
+          },
+          "load": {
+            "used": 1670,
+            "total": 2600
+          }
+        },
+        "cabLabel": "10",
+        "geometry": {
+          "width": 6,
+          "length": 12,
+          "height": 20
+        },
+        "position": {
+          "x": -15,
+          "y": 0,
+          "z": 12
+        }
+      },
+      {
+        "objType": "domain",
+        "domain": "device.cabinet",
+        "handler": "deployCabinet",
+        "name": "cabinet",
+        "label": "机柜11",
+        "doors": [
+          {
+            "side": "front",
+            "swing": "right",
+            "leafCount": 1,
+            "label": {
+              "text": "11"
+            }
+          },
+          {
+            "side": "back",
+            "swing": "right",
+            "leafCount": 2
+          }
+        ],
+        "toward": "back",
+        "devices": [
+          {
+            "deviceType": "server",
+            "uStart": 23,
+            "uSize": 2,
+            "name": "计算节点",
+            "brandName": "Huawei"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 22,
+            "uSize": 1,
+            "name": "防火墙",
+            "brandName": "Fortinet"
+          }
+        ],
+        "slots": {
+          "total": 24,
+          "unitHeight": 0.48,
+          "bottomMargin": 0.77
+        },
+        "stats": {
+          "slots": {
+            "used": 3,
+            "total": 24
+          },
+          "load": {
+            "used": 430,
+            "total": 2600
+          }
+        },
+        "cabLabel": "11",
+        "geometry": {
+          "width": 6,
+          "length": 12,
+          "height": 20
+        },
+        "position": {
+          "x": -9,
+          "y": 0,
+          "z": 12
+        }
+      },
+      {
+        "objType": "domain",
+        "domain": "device.cabinet",
+        "handler": "deployCabinet",
+        "name": "cabinet",
+        "label": "机柜12",
+        "doors": [
+          {
+            "side": "front",
+            "swing": "right",
+            "leafCount": 1,
+            "label": {
+              "text": "12"
+            }
+          },
+          {
+            "side": "back",
+            "swing": "right",
+            "leafCount": 2
+          }
+        ],
+        "toward": "back",
+        "devices": [],
+        "slots": {
+          "total": 24,
+          "unitHeight": 0.48,
+          "bottomMargin": 0.77
+        },
+        "stats": {
+          "slots": {
+            "used": 0,
+            "total": 24
+          },
+          "load": {
+            "used": 0,
+            "total": 2600
+          }
+        },
+        "cabLabel": "12",
+        "geometry": {
+          "width": 6,
+          "length": 12,
+          "height": 20
+        },
+        "position": {
+          "x": -3,
+          "y": 0,
+          "z": 12
+        }
+      },
+      {
+        "objType": "domain",
+        "domain": "device.cabinet",
+        "handler": "deployCabinet",
+        "name": "cabinet",
+        "label": "机柜13",
+        "doors": [
+          {
+            "side": "front",
+            "swing": "right",
+            "leafCount": 1,
+            "label": {
+              "text": "13"
+            }
+          },
+          {
+            "side": "back",
+            "swing": "right",
+            "leafCount": 2
+          }
+        ],
+        "toward": "back",
+        "devices": [
+          {
+            "deviceType": "server",
+            "uStart": 23,
+            "uSize": 2,
+            "name": "异常节点",
+            "brandName": "Huawei"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 21,
+            "uSize": 2,
+            "name": "存储节点",
+            "brandName": "Inspur"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 19,
+            "uSize": 2,
+            "name": "应用服务器",
+            "brandName": "HP"
+          }
+        ],
+        "slots": {
+          "total": 24,
+          "unitHeight": 0.48,
+          "bottomMargin": 0.77
+        },
+        "stats": {
+          "slots": {
+            "used": 6,
+            "total": 24
+          },
+          "load": {
+            "used": 740,
+            "total": 2600
+          }
+        },
+        "cabLabel": "13",
+        "geometry": {
+          "width": 6,
+          "length": 12,
+          "height": 20
+        },
+        "position": {
+          "x": 3,
+          "y": 0,
+          "z": 12
+        },
+        "threeJsonId": "room-cabinet-13"
+      },
+      {
+        "objType": "domain",
+        "domain": "device.cabinet",
+        "handler": "deployCabinet",
+        "name": "cabinet",
+        "label": "机柜14",
+        "doors": [
+          {
+            "side": "front",
+            "swing": "right",
+            "leafCount": 1,
+            "label": {
+              "text": "14"
+            }
+          },
+          {
+            "side": "back",
+            "swing": "right",
+            "leafCount": 2
+          }
+        ],
+        "toward": "back",
+        "devices": [
+          {
+            "deviceType": "server",
+            "uStart": 23,
+            "uSize": 2,
+            "name": "虚拟化主机",
+            "brandName": "Lenovo"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 21,
+            "uSize": 2,
+            "name": "计算节点",
+            "brandName": "Huawei"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 19,
+            "uSize": 2,
+            "name": "计算节点",
+            "brandName": "Huawei"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 17,
+            "uSize": 2,
+            "name": "K8s 节点",
+            "brandName": "Inspur"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 13,
+            "uSize": 4,
+            "name": "核心交换机",
+            "brandName": "H3C"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 9,
+            "uSize": 4,
+            "name": "分布式存储",
+            "brandName": "XSKY"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 7,
+            "uSize": 2,
+            "name": "数据库服务器",
+            "brandName": "Dell"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 5,
+            "uSize": 2,
+            "name": "存储节点",
+            "brandName": "Inspur"
+          }
+        ],
+        "slots": {
+          "total": 24,
+          "unitHeight": 0.48,
+          "bottomMargin": 0.77
+        },
+        "stats": {
+          "slots": {
+            "used": 20,
+            "total": 24
+          },
+          "load": {
+            "used": 2187,
+            "total": 2600
+          }
+        },
+        "cabLabel": "14",
+        "geometry": {
+          "width": 6,
+          "length": 12,
+          "height": 20
+        },
+        "position": {
+          "x": 9,
+          "y": 0,
+          "z": 12
+        }
+      },
+      {
+        "objType": "domain",
+        "domain": "device.cabinet",
+        "handler": "deployCabinet",
+        "name": "cabinet",
+        "label": "机柜15",
+        "doors": [
+          {
+            "side": "front",
+            "swing": "right",
+            "leafCount": 1,
+            "label": {
+              "text": "15"
+            }
+          },
+          {
+            "side": "back",
+            "swing": "right",
+            "leafCount": 2
+          }
+        ],
+        "toward": "back",
+        "devices": [
+          {
+            "deviceType": "server",
+            "uStart": 23,
+            "uSize": 2,
+            "name": "虚拟化主机",
+            "brandName": "Lenovo"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 19,
+            "uSize": 4,
+            "name": "核心交换机",
+            "brandName": "H3C"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 17,
+            "uSize": 2,
+            "name": "存储节点",
+            "brandName": "Inspur"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 15,
+            "uSize": 2,
+            "name": "数据库服务器",
+            "brandName": "Dell"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 13,
+            "uSize": 2,
+            "name": "应用服务器",
+            "brandName": "HP"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 9,
+            "uSize": 4,
+            "name": "备份设备",
+            "brandName": "EMC"
+          }
+        ],
+        "slots": {
+          "total": 24,
+          "unitHeight": 0.48,
+          "bottomMargin": 0.77
+        },
+        "stats": {
+          "slots": {
+            "used": 16,
+            "total": 24
+          },
+          "load": {
+            "used": 1773,
+            "total": 2600
+          }
+        },
+        "cabLabel": "15",
+        "geometry": {
+          "width": 6,
+          "length": 12,
+          "height": 20
+        },
+        "position": {
+          "x": 15,
+          "y": 0,
+          "z": 12
+        }
+      },
+      {
+        "objType": "domain",
+        "domain": "device.cabinet",
+        "handler": "deployCabinet",
+        "name": "cabinet",
+        "label": "机柜16",
+        "doors": [
+          {
+            "side": "front",
+            "swing": "right",
+            "leafCount": 1,
+            "label": {
+              "text": "16"
+            }
+          },
+          {
+            "side": "back",
+            "swing": "right",
+            "leafCount": 2
+          }
+        ],
+        "toward": "back",
+        "devices": [
+          {
+            "deviceType": "server",
+            "uStart": 24,
+            "uSize": 1,
+            "name": "计算节点",
+            "brandName": "Huawei"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 23,
+            "uSize": 1,
+            "name": "防火墙",
+            "brandName": "Fortinet"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 21,
+            "uSize": 2,
+            "name": "存储节点",
+            "brandName": "Inspur"
+          }
+        ],
+        "slots": {
+          "total": 24,
+          "unitHeight": 0.48,
+          "bottomMargin": 0.77
+        },
+        "stats": {
+          "slots": {
+            "used": 4,
+            "total": 24
+          },
+          "load": {
+            "used": 533,
+            "total": 2600
+          }
+        },
+        "cabLabel": "16",
+        "geometry": {
+          "width": 6,
+          "length": 12,
+          "height": 20
+        },
+        "position": {
+          "x": 21,
+          "y": 0,
+          "z": 12
+        }
+      },
+      {
+        "objType": "domain",
+        "domain": "device.cabinet",
+        "handler": "deployCabinet",
+        "name": "cabinet",
+        "label": "机柜17",
+        "doors": [
+          {
+            "side": "front",
+            "swing": "right",
+            "leafCount": 1,
+            "label": {
+              "text": "17"
+            }
+          },
+          {
+            "side": "back",
+            "swing": "right",
+            "leafCount": 2
+          }
+        ],
+        "toward": "front",
+        "devices": [
+          {
+            "deviceType": "server",
+            "uStart": 21,
+            "uSize": 4,
+            "name": "核心路由",
+            "brandName": "Cisco"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 19,
+            "uSize": 2,
+            "name": "汇聚交换",
+            "brandName": "H3C"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 17,
+            "uSize": 2,
+            "name": "防火墙",
+            "brandName": "Fortinet"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 15,
+            "uSize": 2,
+            "name": "负载均衡",
+            "brandName": "F5"
+          }
+        ],
+        "slots": {
+          "total": 24,
+          "unitHeight": 0.48,
+          "bottomMargin": 0.77
+        },
+        "stats": {
+          "slots": {
+            "used": 10,
+            "total": 24
+          },
+          "load": {
+            "used": 1153,
+            "total": 2600
+          }
+        },
+        "cabLabel": "17",
+        "geometry": {
+          "width": 6,
+          "length": 12,
+          "height": 20
+        },
+        "position": {
+          "x": -36,
+          "y": 0,
+          "z": -12
+        }
+      },
+      {
+        "objType": "domain",
+        "domain": "device.cabinet",
+        "handler": "deployCabinet",
+        "name": "cabinet",
+        "label": "机柜18",
+        "doors": [
+          {
+            "side": "front",
+            "swing": "right",
+            "leafCount": 1,
+            "label": {
+              "text": "18"
+            }
+          },
+          {
+            "side": "back",
+            "swing": "right",
+            "leafCount": 2
+          }
+        ],
+        "toward": "back",
+        "devices": [
+          {
+            "deviceType": "server",
+            "uStart": 21,
+            "uSize": 4,
+            "name": "汇聚交换",
+            "brandName": "H3C"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 19,
+            "uSize": 2,
+            "name": "核心路由",
+            "brandName": "Cisco"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 17,
+            "uSize": 2,
+            "name": "存储节点",
+            "brandName": "Inspur"
+          },
+          {
+            "deviceType": "server",
+            "uStart": 16,
+            "uSize": 1,
+            "name": "监控探针",
+            "brandName": "Zabbix"
+          }
+        ],
+        "slots": {
+          "total": 24,
+          "unitHeight": 0.48,
+          "bottomMargin": 0.77
+        },
+        "stats": {
+          "slots": {
+            "used": 9,
+            "total": 24
+          },
+          "load": {
+            "used": 1050,
+            "total": 2600
+          }
+        },
+        "cabLabel": "18",
+        "geometry": {
+          "width": 6,
+          "length": 12,
+          "height": 20
+        },
+        "position": {
+          "x": -36,
+          "y": 0,
+          "z": 12
+        }
+      }
+    ],
+    "externalModelList": [
+      {
+        "name": "entry-teapot",
+        "label": "入口装饰茶壶",
+        "objType": "externalModel",
+        "modelPath": "/assets/model/gltf/teapot/scene.gltf",
+        "modelFileType": "gltf",
+        "position": {
+          "x": 17,
+          "y": 0.5106131379852294,
+          "z": -38.68604152679443
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": -3.141592653589793,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 0.008,
+          "scaleY": 0.008,
+          "scaleZ": 0.008
+        }
+      }
+    ],
+    "windList": [
+      {
+        "objType": "wind",
+        "visible": false,
+        "speed": -1,
+        "geometry": {
+          "width": 5,
+          "height": 18
+        },
+        "position": {
+          "x": -30,
+          "y": 17,
+          "z": 23.5
+        },
+        "rotation": {
+          "rotationX": 1.0471975511965976,
+          "rotationY": 3.141592653589793,
+          "rotationZ": 4.71238898038469
+        },
+        "material": {
+          "textureUrl": "/assets/textures/environment/nature/weather/wind_cold_left.png",
+          "textureRepeat": {
+            "x": 0.1,
+            "y": 13
+          },
+          "opacity": 0.85,
+          "transparent": true,
+          "side": "double"
+        }
+      },
+      {
+        "objType": "wind",
+        "visible": false,
+        "speed": -1,
+        "geometry": {
+          "width": 5,
+          "height": 18
+        },
+        "position": {
+          "x": -10,
+          "y": 17,
+          "z": 23.5
+        },
+        "rotation": {
+          "rotationX": 1.0471975511965976,
+          "rotationY": 3.141592653589793,
+          "rotationZ": 4.71238898038469
+        },
+        "material": {
+          "textureUrl": "/assets/textures/environment/nature/weather/wind_cold_left.png",
+          "textureRepeat": {
+            "x": 0.1,
+            "y": 13
+          },
+          "opacity": 0.85,
+          "transparent": true,
+          "side": "double"
+        }
+      },
+      {
+        "objType": "wind",
+        "visible": false,
+        "speed": -1,
+        "geometry": {
+          "width": 5,
+          "height": 18
+        },
+        "position": {
+          "x": 10,
+          "y": 17,
+          "z": 23.5
+        },
+        "rotation": {
+          "rotationX": 1.0471975511965976,
+          "rotationY": 3.141592653589793,
+          "rotationZ": 4.71238898038469
+        },
+        "material": {
+          "textureUrl": "/assets/textures/environment/nature/weather/wind_cold_left.png",
+          "textureRepeat": {
+            "x": 0.1,
+            "y": 13
+          },
+          "opacity": 0.85,
+          "transparent": true,
+          "side": "double"
+        }
+      },
+      {
+        "objType": "wind",
+        "visible": false,
+        "speed": -1,
+        "geometry": {
+          "width": 5,
+          "height": 18
+        },
+        "position": {
+          "x": 30,
+          "y": 17,
+          "z": 23.5
+        },
+        "rotation": {
+          "rotationX": 1.0471975511965976,
+          "rotationY": 3.141592653589793,
+          "rotationZ": 4.71238898038469
+        },
+        "material": {
+          "textureUrl": "/assets/textures/environment/nature/weather/wind_cold_left.png",
+          "textureRepeat": {
+            "x": 0.1,
+            "y": 13
+          },
+          "opacity": 0.85,
+          "transparent": true,
+          "side": "double"
+        }
+      },
+      {
+        "objType": "wind",
+        "visible": false,
+        "speed": -1,
+        "geometry": {
+          "width": 5,
+          "height": 18
+        },
+        "position": {
+          "x": -47,
+          "y": 17,
+          "z": 0
+        },
+        "rotation": {
+          "rotationX": 1.0471975511965976,
+          "rotationY": -1.5707963267948966,
+          "rotationZ": 4.71238898038469
+        },
+        "material": {
+          "textureUrl": "/assets/textures/environment/nature/weather/wind_cold_left.png",
+          "textureRepeat": {
+            "x": 0.1,
+            "y": 13
+          },
+          "opacity": 0.85,
+          "transparent": true,
+          "side": "double"
+        }
+      },
+      {
+        "objType": "wind",
+        "visible": false,
+        "speed": 1.2,
+        "geometry": {
+          "width": 5,
+          "height": 48
+        },
+        "position": {
+          "x": 0,
+          "y": 20,
+          "z": -18
+        },
+        "rotation": {
+          "rotationX": -1.0471975511965976,
+          "rotationY": 0,
+          "rotationZ": 4.71238898038469
+        },
+        "material": {
+          "textureUrl": "/assets/textures/environment/nature/weather/wind_hot_left.png",
+          "textureRepeat": {
+            "x": 0.1,
+            "y": 30
+          },
+          "opacity": 0.85,
+          "transparent": true,
+          "side": "double"
+        }
+      },
+      {
+        "objType": "wind",
+        "visible": false,
+        "speed": 1.2,
+        "geometry": {
+          "width": 5,
+          "height": 48
+        },
+        "position": {
+          "x": 0,
+          "y": 20,
+          "z": 18
+        },
+        "rotation": {
+          "rotationX": 1.0471975511965976,
+          "rotationY": 0,
+          "rotationZ": 4.71238898038469
+        },
+        "material": {
+          "textureUrl": "/assets/textures/environment/nature/weather/wind_hot_left.png",
+          "textureRepeat": {
+            "x": 0.1,
+            "y": 30
+          },
+          "opacity": 0.85,
+          "transparent": true,
+          "side": "double"
+        }
+      }
+    ],
+    "heatList": [
+      {
+        "geometry": {
+          "width": 110,
+          "height": 70
+        },
+        "position": {
+          "x": 0,
+          "y": 2,
+          "z": 0
+        },
+        "rotation": {
+          "rotationX": -1.5707963267948966,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "visible": false,
+        "heatMap": [
+          {
+            "x": 10,
+            "y": 10,
+            "temperature": 20
+          },
+          {
+            "x": 10,
+            "y": 20,
+            "temperature": 21
+          },
+          {
+            "x": 10,
+            "y": 30,
+            "temperature": 22
+          },
+          {
+            "x": 10,
+            "y": 40,
+            "temperature": 20
+          },
+          {
+            "x": 10,
+            "y": 50,
+            "temperature": 21
+          },
+          {
+            "x": 10,
+            "y": 60,
+            "temperature": 22
+          },
+          {
+            "x": 10,
+            "y": 70,
+            "temperature": 20
+          },
+          {
+            "x": 20,
+            "y": 10,
+            "temperature": 21
+          },
+          {
+            "x": 20,
+            "y": 20,
+            "temperature": 22
+          },
+          {
+            "x": 20,
+            "y": 30,
+            "temperature": 20
+          },
+          {
+            "x": 20,
+            "y": 40,
+            "temperature": 21
+          },
+          {
+            "x": 20,
+            "y": 50,
+            "temperature": 22
+          },
+          {
+            "x": 20,
+            "y": 60,
+            "temperature": 20
+          },
+          {
+            "x": 20,
+            "y": 70,
+            "temperature": 21
+          },
+          {
+            "x": 30,
+            "y": 10,
+            "temperature": 22
+          },
+          {
+            "x": 30,
+            "y": 20,
+            "temperature": 20
+          },
+          {
+            "x": 30,
+            "y": 30,
+            "temperature": 34
+          },
+          {
+            "x": 30,
+            "y": 40,
+            "temperature": 34
+          },
+          {
+            "x": 30,
+            "y": 50,
+            "temperature": 20
+          },
+          {
+            "x": 30,
+            "y": 60,
+            "temperature": 21
+          },
+          {
+            "x": 30,
+            "y": 70,
+            "temperature": 22
+          },
+          {
+            "x": 40,
+            "y": 10,
+            "temperature": 20
+          },
+          {
+            "x": 40,
+            "y": 20,
+            "temperature": 21
+          },
+          {
+            "x": 40,
+            "y": 30,
+            "temperature": 35
+          },
+          {
+            "x": 40,
+            "y": 40,
+            "temperature": 35
+          },
+          {
+            "x": 40,
+            "y": 50,
+            "temperature": 21
+          },
+          {
+            "x": 40,
+            "y": 60,
+            "temperature": 22
+          },
+          {
+            "x": 40,
+            "y": 70,
+            "temperature": 20
+          },
+          {
+            "x": 50,
+            "y": 10,
+            "temperature": 21
+          },
+          {
+            "x": 50,
+            "y": 20,
+            "temperature": 22
+          },
+          {
+            "x": 50,
+            "y": 30,
+            "temperature": 32
+          },
+          {
+            "x": 50,
+            "y": 40,
+            "temperature": 32
+          },
+          {
+            "x": 50,
+            "y": 50,
+            "temperature": 22
+          },
+          {
+            "x": 50,
+            "y": 60,
+            "temperature": 20
+          },
+          {
+            "x": 50,
+            "y": 70,
+            "temperature": 21
+          },
+          {
+            "x": 60,
+            "y": 10,
+            "temperature": 22
+          },
+          {
+            "x": 60,
+            "y": 20,
+            "temperature": 20
+          },
+          {
+            "x": 60,
+            "y": 30,
+            "temperature": 33
+          },
+          {
+            "x": 60,
+            "y": 40,
+            "temperature": 33
+          },
+          {
+            "x": 60,
+            "y": 50,
+            "temperature": 20
+          },
+          {
+            "x": 60,
+            "y": 60,
+            "temperature": 21
+          },
+          {
+            "x": 60,
+            "y": 70,
+            "temperature": 22
+          },
+          {
+            "x": 70,
+            "y": 10,
+            "temperature": 20
+          },
+          {
+            "x": 70,
+            "y": 20,
+            "temperature": 21
+          },
+          {
+            "x": 70,
+            "y": 30,
+            "temperature": 34
+          },
+          {
+            "x": 70,
+            "y": 40,
+            "temperature": 34
+          },
+          {
+            "x": 70,
+            "y": 50,
+            "temperature": 21
+          },
+          {
+            "x": 70,
+            "y": 60,
+            "temperature": 22
+          },
+          {
+            "x": 70,
+            "y": 70,
+            "temperature": 20
+          },
+          {
+            "x": 80,
+            "y": 10,
+            "temperature": 21
+          },
+          {
+            "x": 80,
+            "y": 20,
+            "temperature": 22
+          },
+          {
+            "x": 80,
+            "y": 30,
+            "temperature": 35
+          },
+          {
+            "x": 80,
+            "y": 40,
+            "temperature": 35
+          },
+          {
+            "x": 80,
+            "y": 50,
+            "temperature": 22
+          },
+          {
+            "x": 80,
+            "y": 60,
+            "temperature": 20
+          },
+          {
+            "x": 80,
+            "y": 70,
+            "temperature": 21
+          },
+          {
+            "x": 90,
+            "y": 10,
+            "temperature": 22
+          },
+          {
+            "x": 90,
+            "y": 20,
+            "temperature": 20
+          },
+          {
+            "x": 90,
+            "y": 30,
+            "temperature": 21
+          },
+          {
+            "x": 90,
+            "y": 40,
+            "temperature": 22
+          },
+          {
+            "x": 90,
+            "y": 50,
+            "temperature": 20
+          },
+          {
+            "x": 90,
+            "y": 60,
+            "temperature": 21
+          },
+          {
+            "x": 90,
+            "y": 70,
+            "temperature": 22
+          },
+          {
+            "x": 100,
+            "y": 10,
+            "temperature": 20
+          },
+          {
+            "x": 100,
+            "y": 20,
+            "temperature": 21
+          },
+          {
+            "x": 100,
+            "y": 30,
+            "temperature": 22
+          },
+          {
+            "x": 100,
+            "y": 40,
+            "temperature": 20
+          },
+          {
+            "x": 100,
+            "y": 50,
+            "temperature": 21
+          },
+          {
+            "x": 100,
+            "y": 60,
+            "temperature": 22
+          },
+          {
+            "x": 100,
+            "y": 70,
+            "temperature": 20
+          },
+          {
+            "x": 110,
+            "y": 10,
+            "temperature": 21
+          },
+          {
+            "x": 110,
+            "y": 20,
+            "temperature": 22
+          },
+          {
+            "x": 110,
+            "y": 30,
+            "temperature": 20
+          },
+          {
+            "x": 110,
+            "y": 40,
+            "temperature": 21
+          },
+          {
+            "x": 110,
+            "y": 50,
+            "temperature": 22
+          },
+          {
+            "x": 110,
+            "y": 60,
+            "temperature": 20
+          },
+          {
+            "x": 110,
+            "y": 70,
+            "temperature": 21
+          }
+        ]
+      }
+    ],
+    "lineList": [
+      {
+        "objType": "line",
+        "type": "line",
+        "name": "leak-line",
+        "label": "漏水感应绳-UPS区",
+        "material": {
+          "color": "#3186FF",
+          "opacity": 0.85,
+          "linewidth": "5",
+          "transparent": true
+        },
+        "points": [
+          {
+            "x": -54,
+            "y": 0.5,
+            "z": -30
+          },
+          {
+            "x": -44,
+            "y": 0.5,
+            "z": -30
+          },
+          {
+            "x": -44,
+            "y": 0.5,
+            "z": 30
+          },
+          {
+            "x": -54,
+            "y": 0.5,
+            "z": 30
+          },
+          {
+            "x": -54,
+            "y": 0.5,
+            "z": -30
+          }
+        ],
+        "businessInfo": {
+          "deviceTypeCode": "lea",
+          "deviceId": 30
+        }
+      },
+      {
+        "objType": "line",
+        "type": "line",
+        "name": "leak-line",
+        "label": "漏水感应绳-冷通道",
+        "material": {
+          "color": "#3186FF",
+          "opacity": 0.85,
+          "linewidth": "5",
+          "transparent": true
+        },
+        "points": [
+          {
+            "x": -24,
+            "y": 0.5,
+            "z": -4
+          },
+          {
+            "x": 24,
+            "y": 0.5,
+            "z": -4
+          },
+          {
+            "x": 24,
+            "y": 0.5,
+            "z": 4
+          },
+          {
+            "x": -24,
+            "y": 0.5,
+            "z": 4
+          },
+          {
+            "x": -24,
+            "y": 0.5,
+            "z": -4
+          }
+        ],
+        "businessInfo": {
+          "deviceTypeCode": "lea",
+          "deviceId": 31
+        }
+      }
+    ],
+    "infoPanelList": [
+      {
+        "text": "<div><div style='height:22px;background:#1565c0;font-size:13px;font-weight:bold;color:#fff;padding:2px 6px'>机房空调 #05</div><div style='background:#fff;color:#000;padding:6px;font-size:12px'>送风温度 <span style='color:#00897b'>18.2℃</span><br/>回风温度 26.4℃<br/>湿度 45% RH<br/>状态 <span style='color:green'>运行</span></div></div>",
+        "type": "html",
+        "boxType": "sprite",
+        "visible": true,
+        "name": "infoPanel",
+        "fix": false,
+        "origin": "db",
+        "refresh": true,
+        "panel": {
+          "geometry": {
+            "width": 10,
+            "height": 10,
+            "depth": 0.1
+          },
+          "position": {
+            "x": -30,
+            "y": 24,
+            "z": 29
+          },
+          "material": {
+            "color": "#fff",
+            "transparent": true,
+            "opacity": 0.85
+          }
+        }
+      },
+      {
+        "text": "<div><div style='height:22px;background:#6a1b9a;font-size:13px;color:#fff;padding:2px 6px'>配电柜 A</div><div style='background:#fff;color:#000;padding:6px;font-size:12px'>A 相 186A / 400A<br/>负载率 <span style='color:#e65100'>46%</span><br/>PDU 端口 28/42 占用</div></div>",
+        "type": "html",
+        "boxType": "plane",
+        "visible": true,
+        "name": "infoPanel",
+        "fix": false,
+        "panel": {
+          "geometry": {
+            "width": 10,
+            "height": 10,
+            "depth": 0.1
+          },
+          "position": {
+            "x": 48,
+            "y": 27,
+            "z": -12
+          },
+          "material": {
+            "color": "#fff",
+            "transparent": true,
+            "opacity": 0.85
+          }
+        }
+      },
+      {
+        "text": "<div><div style='height:22px;background:#6a1b9a;font-size:13px;color:#fff;padding:2px 6px'>配电柜 B</div><div style='background:#fff;color:#000;padding:6px;font-size:12px'>B 相 172A / 400A<br/>负载率 <span style='color:#e65100'>43%</span><br/>PDU 端口 24/42 占用</div></div>",
+        "type": "html",
+        "boxType": "box",
+        "visible": true,
+        "name": "infoPanel",
+        "fix": false,
+        "panel": {
+          "geometry": {
+            "width": 10,
+            "height": 10,
+            "depth": 0.1
+          },
+          "position": {
+            "x": 48,
+            "y": 27,
+            "z": 12
+          },
+          "material": {
+            "color": "#fff",
+            "transparent": true,
+            "opacity": 0.85
+          }
+        }
+      },
+      {
+        "text": "<div><div style='height:22px;background:#2e7d32;font-size:13px;color:#fff;padding:2px 6px'>环境监控</div><div style='background:#fff;color:#000;padding:6px;font-size:12px'>冷通道 22.1℃ / 48% RH<br/>热通道 34.6℃ / 38% RH<br/>露点 10.2℃</div></div>",
+        "type": "html",
+        "boxType": "sprite",
+        "visible": true,
+        "name": "infoPanel",
+        "fix": false,
+        "panel": {
+          "geometry": {
+            "width": 10,
+            "height": 10,
+            "depth": 0.1
+          },
+          "position": {
+            "x": 0,
+            "y": 26.5,
+            "z": 0
+          },
+          "material": {
+            "color": "#fff",
+            "transparent": true,
+            "opacity": 0.85
+          }
+        }
+      }
+    ],
+    "groupList": [
+      {
+        "name": "room-ceiling",
+        "label": "cable-tray-group",
+        "objType": "group",
+        "position": {
+          "x": 0,
+          "y": 22,
+          "z": 0
+        },
+        "subScene": [
+          {
+            "name": "tray-main",
+            "label": "tray-main",
+            "objType": "box",
+            "geometry": {
+              "width": 90,
+              "height": 1.2,
+              "depth": 2
+            },
+            "position": {
+              "x": 0,
+              "y": 0,
+              "z": -6
+            },
+            "material": {
+              "color": "#777",
+              "type": "standard",
+              "metalness": 0.65,
+              "roughness": 0.35,
+              "textureUrl": "/assets/textures/building/floor/cement.png",
+              "textureRepeat": {
+                "x": 10,
+                "y": 5
+              }
+            }
+          },
+          {
+            "name": "tray-branch-east",
+            "label": "tray-branch-east",
+            "objType": "box",
+            "geometry": {
+              "width": 2,
+              "height": 1.2,
+              "depth": 48
+            },
+            "position": {
+              "x": 24,
+              "y": 0,
+              "z": 10
+            },
+            "material": {
+              "color": "#777",
+              "type": "standard",
+              "metalness": 0.65,
+              "roughness": 0.35
+            }
+          },
+          {
+            "name": "tray-branch-west",
+            "label": "tray-branch-west",
+            "objType": "box",
+            "geometry": {
+              "width": 2,
+              "height": 1.2,
+              "depth": 36
+            },
+            "position": {
+              "x": -30,
+              "y": 0,
+              "z": 8
+            },
+            "material": {
+              "color": "#777",
+              "type": "standard",
+              "metalness": 0.65,
+              "roughness": 0.35
+            }
+          }
+        ]
+      }
+    ],
+    "tubeList": [
+      {
+        "name": "room-ceiling",
+        "label": "chilled-water-main",
+        "path": {
+          "type": "catmullRom",
+          "points": [
+            {
+              "x": -46,
+              "y": 21,
+              "z": -24
+            },
+            {
+              "x": -20,
+              "y": 22,
+              "z": -24
+            },
+            {
+              "x": 0,
+              "y": 21.5,
+              "z": 0
+            },
+            {
+              "x": 30,
+              "y": 22,
+              "z": 24
+            }
+          ]
+        },
+        "geometry": {
+          "radius": 0.7,
+          "tubularSegments": 48,
+          "radialSegments": 8
+        },
+        "material": {
+          "type": "standard",
+          "color": "#3a8fd4",
+          "metalness": 0.35,
+          "roughness": 0.38
+        }
+      }
+    ],
+    "sphereModelList": [
+      {
+        "name": "room-ceiling",
+        "label": "smoke-1",
+        "geometry": {
+          "radius": 0.55
+        },
+        "position": {
+          "x": -18,
+          "y": 23,
+          "z": -18
+        },
+        "material": {
+          "color": "#e53935",
+          "type": "standard",
+          "transparent": true,
+          "opacity": 0.75
+        }
+      },
+      {
+        "name": "room-ceiling",
+        "label": "smoke-2",
+        "geometry": {
+          "radius": 0.55
+        },
+        "position": {
+          "x": 18,
+          "y": 23,
+          "z": -18
+        },
+        "material": {
+          "color": "#e53935",
+          "type": "standard",
+          "transparent": true,
+          "opacity": 0.75
+        }
+      },
+      {
+        "name": "room-ceiling",
+        "label": "smoke-3",
+        "geometry": {
+          "radius": 0.55
+        },
+        "position": {
+          "x": -18,
+          "y": 23,
+          "z": 18
+        },
+        "material": {
+          "color": "#e53935",
+          "type": "standard",
+          "transparent": true,
+          "opacity": 0.75
+        }
+      },
+      {
+        "name": "room-ceiling",
+        "label": "smoke-4",
+        "geometry": {
+          "radius": 0.55
+        },
+        "position": {
+          "x": 18,
+          "y": 23,
+          "z": 18
+        },
+        "material": {
+          "color": "#e53935",
+          "type": "standard",
+          "transparent": true,
+          "opacity": 0.75
+        }
+      }
+    ],
+    "spriteList": [
+      {
+        "name": "room-ceiling",
+        "label": "cold-aisle-marker",
+        "position": {
+          "x": 0,
+          "y": 0.3,
+          "z": 0
+        },
+        "material": {
+          "color": "#0288d1",
+          "size": 22,
+          "transparent": true,
+          "opacity": 0.35
+        }
+      },
+      {
+        "name": "room-ceiling",
+        "label": "hot-aisle-marker-n",
+        "position": {
+          "x": 0,
+          "y": 0.3,
+          "z": -12
+        },
+        "material": {
+          "color": "#ff6d00",
+          "size": 18,
+          "transparent": true,
+          "opacity": 0.4
+        }
+      },
+      {
+        "name": "room-ceiling",
+        "label": "hot-aisle-marker-s",
+        "position": {
+          "x": 0,
+          "y": 0.3,
+          "z": 12
+        },
+        "material": {
+          "color": "#ff6d00",
+          "size": 18,
+          "transparent": true,
+          "opacity": 0.4
+        }
+      }
+    ],
+    "planeList": [
+      {
+        "name": "ceiling-light",
+        "label": "ceiling-light-1",
+        "geometry": {
+          "width": 14,
+          "height": 5
+        },
+        "position": {
+          "x": -18,
+          "y": 23.5,
+          "z": 0
+        },
+        "rotation": {
+          "rotationX": -1.5707963267948966,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "material": {
+          "color": "#fffef5",
+          "type": "standard",
+          "emissive": "#fff8e1",
+          "emissiveIntensity": 0.45
+        }
+      },
+      {
+        "name": "ceiling-light",
+        "label": "ceiling-light-2",
+        "geometry": {
+          "width": 14,
+          "height": 5
+        },
+        "position": {
+          "x": 18,
+          "y": 23.5,
+          "z": 0
+        },
+        "rotation": {
+          "rotationX": -1.5707963267948966,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "material": {
+          "color": "#fffef5",
+          "type": "standard",
+          "emissive": "#fff8e1",
+          "emissiveIntensity": 0.45
+        }
+      },
+      {
+        "name": "ceiling-light",
+        "label": "ceiling-light-corridor",
+        "geometry": {
+          "width": 8,
+          "height": 4
+        },
+        "position": {
+          "x": 0,
+          "y": 23.5,
+          "z": -48
+        },
+        "rotation": {
+          "rotationX": -1.5707963267948966,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "material": {
+          "color": "#fffef5",
+          "type": "standard",
+          "emissive": "#fff8e1",
+          "emissiveIntensity": 0.35
+        }
+      }
+    ]
+  }
+}

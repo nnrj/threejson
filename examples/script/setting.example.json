@@ -1,0 +1,41 @@
+{
+  "_doc": "Reference schema for ThreeJSON AI-related settings (llm with optional imageModel, agent, texture, asset). Browser demos use localStorage; tools/threejson-agent and tools/mcp-threejson each keep their own setting.json — see those packages' setting.example.json.",
+  "llm": {
+    "provider": "chatgpt",
+    "apiKey": "",
+    "baseUrl": "",
+    "model": "",
+    "imageModel": "dall-e-3",
+    "temperature": 0.2,
+    "maxTokens": 4000
+  },
+  "agent": {
+    "enabled": false,
+    "depth": "medium"
+  },
+  "texture": {
+    "mode": "node_bridge",
+    "fillAfterAgent": false,
+    "browserMode": "directory",
+    "localOutputDir": "assets/textures/ai-generated",
+    "preferRemoteUrl": false,
+    "overwriteExisting": false,
+    "concurrency": 2
+  },
+  "asset": {
+    "mode": "crawl",
+    "searchApiKey": "",
+    "searchEngine": "bing",
+    "unsplashAccessKey": "",
+    "allowlistDomains": [],
+    "respectRobots": true,
+    "maxConcurrent": 4,
+    "htmlSearchTemplate": "https://duckduckgo.com/?q={query}&iax=images&ia=images"
+  },
+  "paths": {
+    "_doc": "Agent runtime uses relativetRoot + redirectRelative (see tools/threejson-agent/setting.example.json). Example below is schema reference only.",
+    "relativetRoot": "../..",
+    "redirectRelative": false,
+    "redirectRelativeWarn": true
+  }
+}

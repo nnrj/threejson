@@ -1,0 +1,352 @@
+{
+  "version": "next",
+  "name": "info-panel-gallery",
+  "threeJsonId": "04-08-info-panel-gallery",
+  "remark": "静态 infoPanel 类型一览：box/sprite × text/html/img（tutorial 惯例约 1 单位≈1 米，面板世界宽 ~10–17）",
+  "label": "信息面板 Gallery",
+  "sceneConfig": {
+    "scene": {
+      "background": "#1a1f28"
+    },
+    "camera": {
+      "fov": 50,
+      "near": 0.1,
+      "far": 500,
+      "position": {
+        "x": 0,
+        "y": 14.5,
+        "z": 36
+      }
+    },
+    "renderer": {
+      "antialias": true,
+      "ratioRate": 1
+    },
+    "controls": {
+      "enableDamping": true,
+      "dampingFactor": 0.08,
+      "target": {
+        "x": 0,
+        "y": 4.8,
+        "z": 0
+      }
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "color": "#ffffff",
+        "intensity": 0.5
+      },
+      {
+        "type": "directional",
+        "color": "#ffffff",
+        "intensity": 0.85,
+        "position": {
+          "x": 12,
+          "y": 20,
+          "z": 10
+        }
+      }
+    ],
+    "renderLoop": {
+      "autoResize": true,
+      "firstAutoResize": true
+    }
+  },
+  "worldInfo": {
+    "boxModelList": [
+      {
+        "name": "gallery-floor",
+        "objType": "floor",
+        "geometry": {
+          "width": 48,
+          "height": 0.4,
+          "depth": 36
+        },
+        "position": {
+          "x": 0,
+          "y": -0.2,
+          "z": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#4a5668"
+        }
+      },
+      {
+        "name": "pedestal-left",
+        "objType": "box",
+        "geometry": {
+          "width": 0.8,
+          "height": 4,
+          "depth": 0.8
+        },
+        "position": {
+          "x": -16,
+          "y": 2,
+          "z": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#4a5568"
+        }
+      },
+      {
+        "name": "pedestal-center",
+        "objType": "box",
+        "geometry": {
+          "width": 0.8,
+          "height": 4,
+          "depth": 0.8
+        },
+        "position": {
+          "x": 0,
+          "y": 2,
+          "z": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#4a5568"
+        }
+      },
+      {
+        "name": "pedestal-right",
+        "objType": "box",
+        "geometry": {
+          "width": 0.8,
+          "height": 4,
+          "depth": 0.8
+        },
+        "position": {
+          "x": 16,
+          "y": 2,
+          "z": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#4a5568"
+        }
+      }
+    ],
+    "infoPanelList": [
+      {
+        "name": "panel-box-text-single",
+        "type": "text",
+        "panelBoxType": "box",
+        "text": "盒体 + 文字\ntextFace: single",
+        "color": "#ffffff",
+        "backColor": "#409eff",
+        "textFace": "single",
+        "panelWidth": 11,
+        "panelHeight": 5.2,
+        "panelDepth": 0.4,
+        "visible": true,
+        "textStyle": {
+          "fontSizePx": 11,
+          "padding": 6,
+          "lineHeight": 15
+        },
+        "panel": {
+          "position": {
+            "x": -16,
+            "y": 7.2,
+            "z": -11
+          },
+          "geometry": {
+            "width": 11,
+            "height": 5.2,
+            "depth": 0.4
+          }
+        }
+      },
+      {
+        "name": "panel-box-text-full",
+        "type": "text",
+        "panelBoxType": "box",
+        "text": "盒体六面贴图\ntextFace: full",
+        "color": "#ffffff",
+        "backColor": "#67c23a",
+        "textFace": "full",
+        "panelWidth": 10,
+        "panelHeight": 4.8,
+        "panelDepth": 0.2,
+        "visible": true,
+        "textStyle": {
+          "fontSizePx": 11,
+          "padding": 6,
+          "lineHeight": 15
+        },
+        "panel": {
+          "position": {
+            "x": -16,
+            "y": 7.2,
+            "z": 11
+          },
+          "geometry": {
+            "width": 10,
+            "height": 4.8,
+            "depth": 0.2
+          }
+        }
+      },
+      {
+        "name": "panel-sprite-text",
+        "type": "text",
+        "panelBoxType": "sprite",
+        "text": "精灵 + 文字\nborderRadius: 10",
+        "color": "#ffffff",
+        "backColor": "#303133",
+        "borderRadius": 10,
+        "panelWidth": 13,
+        "panelHeight": 5.8,
+        "visible": true,
+        "textStyle": {
+          "fontSizePx": 11,
+          "padding": 6,
+          "lineHeight": 15
+        },
+        "panel": {
+          "position": {
+            "x": 0,
+            "y": 7.2,
+            "z": -11
+          },
+          "geometry": {
+            "width": 13,
+            "height": 5.8,
+            "depth": 0.1
+          }
+        }
+      },
+      {
+        "name": "panel-sprite-html",
+        "type": "html",
+        "panelBoxType": "sprite",
+        "text": "<div style='font-family:Microsoft YaHei,sans-serif'><div style='height:22px;line-height:22px;padding:0 8px;color:#fff;background:#606266;font-size:13px;font-weight:bold'>精灵 + HTML</div><div style='padding:8px;background:#fff;color:#303133;font-size:12px;line-height:1.35'>静态 html2canvas 贴图<br/>不可点击 DOM</div></div>",
+        "panelWidth": 17,
+        "panelHeight": 7,
+        "visible": true,
+        "panel": {
+          "position": {
+            "x": 0,
+            "y": 7.2,
+            "z": 0
+          },
+          "geometry": {
+            "width": 17,
+            "height": 7,
+            "depth": 0.1
+          }
+        }
+      },
+      {
+        "name": "panel-sprite-img",
+        "type": "img",
+        "panelBoxType": "sprite",
+        "text": "/assets/textures/building/port/port.webp",
+        "panelWidth": 11,
+        "panelHeight": 6,
+        "visible": true,
+        "panel": {
+          "position": {
+            "x": 16,
+            "y": 7.2,
+            "z": -11
+          },
+          "geometry": {
+            "width": 11,
+            "height": 6,
+            "depth": 0.1
+          }
+        }
+      },
+      {
+        "name": "panel-box-removable",
+        "type": "text",
+        "panelBoxType": "box",
+        "text": "fix: false\n双击本面板可隐藏",
+        "color": "#ffffff",
+        "backColor": "#e6a23c",
+        "panelWidth": 12,
+        "panelHeight": 5.2,
+        "panelDepth": 0.3,
+        "visible": true,
+        "fix": false,
+        "textStyle": {
+          "fontSizePx": 10,
+          "padding": 5,
+          "lineHeight": 14
+        },
+        "panel": {
+          "position": {
+            "x": 16,
+            "y": 7.2,
+            "z": 11
+          },
+          "geometry": {
+            "width": 12,
+            "height": 5.2,
+            "depth": 0.3
+          }
+        }
+      },
+      {
+        "name": "panel-plane-text",
+        "type": "text",
+        "panelBoxType": "plane",
+        "text": "平面 + 文字\n固定朝向",
+        "color": "#ffffff",
+        "backColor": "#9c27b0",
+        "panelWidth": 12,
+        "panelHeight": 5.2,
+        "visible": true,
+        "textStyle": {
+          "fontSizePx": 11,
+          "padding": 6,
+          "lineHeight": 15
+        },
+        "panel": {
+          "position": {
+            "x": 0,
+            "y": 7.2,
+            "z": 11
+          },
+          "geometry": {
+            "width": 12,
+            "height": 5.2,
+            "depth": 0
+          },
+          "material": {
+            "side": "double"
+          }
+        }
+      },
+      {
+        "name": "panel-sprite-img-port360",
+        "type": "img",
+        "panelBoxType": "sprite",
+        "text": "/assets/textures/environment/skybox/port360.webp",
+        "panelWidth": 12,
+        "panelHeight": 6,
+        "visible": true,
+        "panel": {
+          "position": {
+            "x": 14,
+            "y": 7.2,
+            "z": 5
+          },
+          "geometry": {
+            "width": 12,
+            "height": 6,
+            "depth": 0.1
+          },
+          "material": {
+            "color": "#ffffff",
+            "transparent": true,
+            "opacity": 1
+          }
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "version": "next",
+  "name": "tutorial-stat-bar",
+  "sceneConfig": {
+    "scene": { "background": "#101820" },
+    "camera": {
+      "fov": 52,
+      "position": { "x": 0, "y": 90, "z": 180 },
+      "near": 0.1,
+      "far": 4000
+    },
+    "renderer": { "antialias": true },
+    "controls": {
+      "enableDamping": true,
+      "target": { "x": 0, "y": 35, "z": 0 }
+    },
+    "lights": [
+      { "type": "ambient", "color": "#9fb4c8", "intensity": 0.95 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1.2, "position": { "x": 72, "y": 130, "z": 96 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "worldInfo": {
+    "boxModelList": [
+      {
+        "name": "floor",
+        "objType": "floor",
+        "geometry": { "width": 200, "height": 1, "depth": 120 },
+        "position": { "x": 0, "y": 0, "z": 0 },
+        "material": { "color": "#2a3038" }
+      }
+    ],
+    "domainModelList": [
+      {
+        "objType": "domain",
+        "domain": "stat.bar",
+        "handler": "createStatBars",
+        "options": {
+          "labelStyle": {
+            "fontSizePx": 24,
+            "autoFit": true,
+            "fitRatio": 0.78,
+            "minFontPx": 16,
+            "maxFontPx": 64
+          }
+        },
+        "items": [
+          {
+            "name": "bar-low",
+            "position": { "x": -50, "y": 0, "z": 0 },
+            "value": 18,
+            "max": 100,
+            "label": "18%"
+          },
+          {
+            "name": "bar-mid",
+            "position": { "x": 0, "y": 0, "z": 0 },
+            "value": 55,
+            "max": 100
+          },
+          {
+            "name": "bar-high",
+            "position": { "x": 50, "y": 0, "z": 0 },
+            "value": 92,
+            "max": 100
+          }
+        ]
+      }
+    ]
+  }
+}

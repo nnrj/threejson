@@ -1,0 +1,129 @@
+{
+  "version": "next",
+  "name": "demo10-physics-rapier-extensions",
+  "sceneConfig": {
+    "scene": {
+      "background": "#252525"
+    },
+    "camera": {
+      "fov": 50,
+      "near": 0.1,
+      "far": 250,
+      "position": {
+        "x": 13,
+        "y": 8,
+        "z": 14
+      }
+    },
+    "renderer": {
+      "antialias": true,
+      "ratioRate": 1
+    },
+    "controls": {
+      "enableDamping": true,
+      "dampingFactor": 0.08,
+      "enableZoom": true,
+      "target": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "color": "#ffffff",
+        "intensity": 0.5
+      },
+      {
+        "type": "directional",
+        "color": "#ffffff",
+        "intensity": 0.85,
+        "position": {
+          "x": 4,
+          "y": 8,
+          "z": 5
+        }
+      }
+    ],
+    "renderLoop": {
+      "autoResize": true,
+      "firstAutoResize": true
+    },
+    "extensions": {
+      "physics-rapier": {
+        "enabled": true,
+        "gravity": {
+          "x": 0,
+          "y": -1,
+          "z": 0
+        }
+      }
+    }
+  },
+  "worldInfo": {
+    "boxModelList": [
+      {
+        "name": "room-floor",
+        "objType": "floor",
+        "geometry": {
+          "width": 20,
+          "height": 0.6,
+          "depth": 16
+        },
+        "position": {
+          "x": 0,
+          "y": -0.3,
+          "z": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#666666",
+          "metalness": 0.05,
+          "roughness": 0.85
+        },
+        "extensions": {
+          "physics-rapier": {
+            "rigidBody": "fixed",
+            "collider": {
+              "type": "box"
+            }
+          }
+        },
+        "label": "physics-demo-floor"
+      },
+      {
+        "name": "physics-demo-box",
+        "objType": "box",
+        "geometry": {
+          "width": 2,
+          "height": 2,
+          "depth": 2
+        },
+        "position": {
+          "x": 0,
+          "y": 2,
+          "z": 0
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0.2,
+          "rotationZ": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#67c23a"
+        },
+        "extensions": {
+          "physics-rapier": {
+            "rigidBody": "dynamic",
+            "collider": {
+              "type": "box"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "threeJsonId": "04-02-plugin-physics"
+}

@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>智慧港口 3D 调度中心</title>
+  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <script type="importmap">
+    
+    {
+      "imports": {
+        "threejson": "/builtins/full.js",
+        "threejson/core": "/core/index.js",
+        "three": "https://esm.sh/three@0.184.0",
+        "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
+        "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
+        "html2canvas-pro": "https://esm.sh/html2canvas-pro@2.0.4",
+        "gifuct-js": "https://esm.sh/gifuct-js@2.1.2",
+        "three-mesh-bvh": "https://esm.sh/three-mesh-bvh@0.9.10?deps=three@0.184.0",
+        "three-bvh-csg": "https://esm.sh/three-bvh-csg@0.0.18?deps=three@0.184.0,three-mesh-bvh@0.9.10"
+      }
+    }
+  
+  </script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --text-main: #f3f5f7;
+      --text-muted: rgba(232, 234, 237, 0.85);
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #1e2f43;
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    button,
+    summary {
+      font: inherit;
+    }
+
+    #rootContainer {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background: #1e2f43;
+    }
+
+    #canvasContainer {
+      display: block;
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      margin: 0;
+      background: #1e2f43;
+      outline: none;
+    }
+
+    .menuClass {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 20px;
+      z-index: 10;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .menuClass button,
+    .menuClass summary {
+      min-width: 76px;
+      height: 30px;
+      padding: 0 12px;
+      border: 1px solid rgba(64, 158, 255, 0.45);
+      border-radius: 6px;
+      color: var(--text-main);
+      background: rgba(64, 158, 255, 0.2);
+      font-size: 13px;
+      line-height: 28px;
+      cursor: pointer;
+      pointer-events: auto;
+    }
+
+    .menuClass button:hover,
+    .menuClass summary:hover {
+      background: rgba(64, 158, 255, 0.32);
+      border-color: rgba(64, 158, 255, 0.55);
+    }
+
+    .menuClass details {
+      position: relative;
+      pointer-events: auto;
+    }
+
+    .menuClass summary {
+      list-style: none;
+    }
+
+    .menuClass summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .menuClass details[open] summary {
+      background: rgba(64, 158, 255, 0.34);
+      border-color: rgba(64, 158, 255, 0.6);
+    }
+
+    .dropdownMenu {
+      position: absolute;
+      left: 50%;
+      bottom: 36px;
+      display: grid;
+      min-width: 124px;
+      padding: 6px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(22, 26, 34, 0.72);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+      -webkit-backdrop-filter: blur(18px) saturate(1.1);
+      backdrop-filter: blur(18px) saturate(1.1);
+      transform: translateX(-50%);
+    }
+
+    .dropdownMenu button {
+      width: 100%;
+      min-height: 28px;
+      padding: 4px 8px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-muted);
+      text-align: left;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .dropdownMenu button:hover {
+      background: rgba(64, 158, 255, 0.22);
+      color: var(--text-main);
+    }
+
+    #loadingMask {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      background: rgba(20, 31, 45, 0.72);
+      font-size: 15px;
+    }
+
+    #messageBox {
+      position: absolute;
+      top: 18px;
+      left: 50%;
+      z-index: 30;
+      display: none;
+      max-width: 70vw;
+      padding: 8px 14px;
+      border-radius: 4px;
+      color: #fff;
+      background: rgba(20, 20, 20, 0.82);
+      font-size: 13px;
+      transform: translateX(-50%);
+    }
+
+    .gameHud {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      z-index: 12;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transform: translateY(-50%);
+      pointer-events: none;
+    }
+
+    .gameHud button {
+      min-width: 52px;
+      height: 52px;
+      padding: 6px 10px;
+      border: 2px solid rgba(64, 158, 255, 0.45);
+      border-radius: 12px;
+      color: var(--text-main);
+      background: rgba(64, 158, 255, 0.2);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+      font-size: 12px;
+      line-height: 1.2;
+      cursor: pointer;
+      pointer-events: auto;
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+    }
+
+    .gameHud button:hover {
+      background: rgba(64, 158, 255, 0.32);
+      border-color: rgba(64, 158, 255, 0.55);
+    }
+
+    .gameHud button:active {
+      transform: scale(0.96);
+    }
+
+    .gameHud button.is-active {
+      background: rgba(64, 158, 255, 0.34);
+      border-color: rgba(64, 158, 255, 0.6);
+      box-shadow: 0 0 0 1px rgba(64, 158, 255, 0.35), 0 4px 14px rgba(0, 0, 0, 0.35);
+    }
+
+    #gameToastStack {
+      position: absolute;
+      right: 16px;
+      bottom: 22px;
+      z-index: 25;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+      max-width: min(360px, 44vw);
+      max-height: min(42vh, 320px);
+      overflow-x: hidden;
+      overflow-y: auto;
+      pointer-events: none;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+    }
+
+    #gameToastStack::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    #gameToastStack::-webkit-scrollbar-thumb {
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.22);
+    }
+
+    .gameToast {
+      width: 100%;
+      padding: 10px 14px 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-left-width: 3px;
+      color: #f2f4f8;
+      background: rgba(16, 20, 28, 0.9);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.38);
+      font-size: 13px;
+      line-height: 1.45;
+      pointer-events: auto;
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+      transform: translateX(110%);
+      opacity: 0;
+      transition:
+        transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 0.28s ease,
+        max-height 0.28s ease,
+        margin 0.28s ease,
+        padding 0.28s ease;
+      max-height: 120px;
+      overflow: hidden;
+    }
+
+    .gameToast.is-visible {
+      transform: translateX(0);
+      opacity: 1;
+    }
+
+    .gameToast.is-leaving {
+      transform: translateX(105%);
+      opacity: 0;
+      max-height: 0;
+      margin-top: 0;
+      margin-bottom: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      border-width: 0;
+    }
+
+    .gameToast--info {
+      border-left-color: #64b5f6;
+    }
+
+    .gameToast--success {
+      border-left-color: #66bb6a;
+    }
+
+    .gameToast--warning {
+      border-left-color: #ffb74d;
+    }
+
+    .gameToast--error {
+      border-left-color: #ef5350;
+    }
+
+    #hint {
+      position: absolute;
+      left: 10px;
+      bottom: 8px;
+      color: #ccc;
+      font-size: 11px;
+      max-width: 92vw;
+      z-index: 3;
+      line-height: 1.45;
+    }
+  </style>
+</head>
+<body>
+<div id="rootContainer">
+  <canvas id="canvasContainer">抱歉，你的浏览器不支持 WebGL。</canvas>
+  <div id="loadingMask">智慧港口场景加载中...</div>
+  <div id="messageBox"></div>
+  <div id="hint">
+    The three vessel models in this scene: Uses third-party model cruiser_ship_2012; author Herminio Nieves (2012).
+  </div>
+
+  <div class="menuClass">
+    <button type="button" data-menu="port">港口全景</button>
+
+    <details>
+      <summary>运营数据</summary>
+      <div class="dropdownMenu">
+        <button type="button" data-menu="throughput">吞吐统计</button>
+        <button type="button" data-menu="load">设备负载</button>
+        <button type="button" data-menu="stackUsage">堆场占用</button>
+      </div>
+    </details>
+
+    <details>
+      <summary>动态监控</summary>
+      <div class="dropdownMenu">
+        <button type="button" data-menu="windFlow">风流场</button>
+        <button type="button" data-menu="powerStation">配电状态</button>
+        <button type="button" data-menu="weatherStation">环境监测</button>
+        <button type="button" data-menu="logisticsPanel">物流节点</button>
+        <button type="button" data-menu="heatCloud">作业热力图</button>
+        <button type="button" data-menu="shippingLine">航道线路</button>
+      </div>
+    </details>
+  </div>
+
+  <div class="gameHud" aria-label="场景快捷操作">
+    <button type="button" id="resetViewBtn" title="重置相机到默认视角">重置<br>视角</button>
+    <button type="button" id="pauseAlarmBtn" title="清除当前告警高亮，刷新页面前不再显示">暂停<br>告警</button>
+  </div>
+
+  <div id="gameToastStack" aria-live="polite" aria-label="告警与运维消息"></div>
+</div>
+
+<script type="module">
+  import * as THREE from "three";
+  import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+
+  import {
+    bindProgressElement,
+    buildFloatingInfoPanel,
+    checkComplete,
+    sceneHighlight,
+    createJsonScene,
+    destroyObjectsByObjType,
+    getObjectByThreeJsonId,
+    setObjectsVisibleByObjType,
+    setObjectsVisibleByName,
+    setObjectsVisibleByNames,
+    applyInfoPanelList,
+    ensureThreeJsonIdsOnScenePayload,
+    listOr,
+    attachHostedContainerDoorDblclick,
+    openOrCloseProgressManager,
+    port,
+    disposeTrackedResources,
+    trackDisposableResource,
+    showProgressMessage,
+    valueOr
+  } from "threejson";
+
+  const canvasContainer = document.getElementById("canvasContainer");
+  const loadingMask = document.getElementById("loadingMask");
+  const messageBox = document.getElementById("messageBox");
+  const gameToastStack = document.getElementById("gameToastStack");
+  const sceneJsonUrl = "/assets/json/portShow.json";
+
+  let scene;
+  let camera;
+  let renderer;
+  let controls;
+  let composer;
+  let sceneRuntime;
+  let selectionVisual = null;
+  let portShowPresentationFinalized = false;
+  /** @type {(() => void)|null} */
+  let detachHostedContainerDoorDblclick = null;
+  let renderLoop;
+  let alarmHighlightPaused = false;
+  const ALARM_MOCK_IDS = {
+    A: "port-dock-crane-1",
+    B: "port-weather-tower"
+  };
+  const PORT_ROUTE_LINE_NAMES = ["port-logistics-line", "port-yard-patrol-line", "port-approach-line"];
+  const ALARM_MOCK_STEP_MS = 3000;
+  let defaultCameraView = null;
+
+  const resetViewBtn = document.getElementById("resetViewBtn");
+  const pauseAlarmBtn = document.getElementById("pauseAlarmBtn");
+
+  const sysConfig = {
+    canvasWidth: window.innerWidth,
+    canvasHeight: window.innerHeight,
+    antialias: true,
+    ratioRate: 1,
+    autoResize: true,
+    fps: 60,
+    lowFps: false,
+    progressFlag: true,
+    firstAutoResize: true,
+    sceneAutoRotate: false,
+    jsonData: {},
+    windowSizeNow: {
+      width: window.innerWidth,
+      height: window.innerHeight
+    },
+    initFlags: {
+      highLightInitFlag: false
+    }
+  };
+
+  const GAME_TOAST_MAX = 6;
+  const GAME_TOAST_DURATION_MS = 4800;
+
+  function showMessage(message, type = "info") {
+    const colorMap = {
+      info: "rgba(35, 93, 148, 0.95)",
+      success: "rgba(40, 128, 80, 0.95)",
+      warning: "rgba(161, 117, 24, 0.95)",
+      error: "rgba(162, 60, 60, 0.95)"
+    };
+    messageBox.textContent = message;
+    messageBox.style.background = colorMap[type] || colorMap.info;
+    messageBox.style.display = "block";
+    window.clearTimeout(showMessage.timer);
+    showMessage.timer = window.setTimeout(() => {
+      messageBox.style.display = "none";
+    }, 2000);
+  }
+
+  function resolveAlarmToastType(message, explicitType) {
+    if (explicitType) {
+      return explicitType;
+    }
+    const text = String(message || "");
+    if (/解除|恢复|正常/.test(text)) {
+      return "success";
+    }
+    if (/维护|转/.test(text)) {
+      return "info";
+    }
+    if (/故障|告警/.test(text)) {
+      return "warning";
+    }
+    return "warning";
+  }
+
+  function pushGameToast(message, type) {
+    if (!message || !gameToastStack) {
+      return;
+    }
+    const toastType = resolveAlarmToastType(message, type);
+    const toast = document.createElement("div");
+    toast.className = `gameToast gameToast--${toastType}`;
+    toast.textContent = message;
+    gameToastStack.appendChild(toast);
+    while (gameToastStack.children.length > GAME_TOAST_MAX) {
+      gameToastStack.firstElementChild?.remove();
+    }
+    gameToastStack.scrollTop = gameToastStack.scrollHeight;
+    requestAnimationFrame(() => {
+      toast.classList.add("is-visible");
+    });
+    const dismiss = () => {
+      if (!toast.isConnected) {
+        return;
+      }
+      toast.classList.add("is-leaving");
+      const removeToast = () => toast.remove();
+      toast.addEventListener("transitionend", removeToast, { once: true });
+      window.setTimeout(removeToast, 400);
+    };
+    window.setTimeout(dismiss, GAME_TOAST_DURATION_MS);
+  }
+
+  function captureDefaultCameraView() {
+    if (!camera || !controls || defaultCameraView) {
+      return;
+    }
+    defaultCameraView = {
+      position: camera.position.clone(),
+      target: controls.target.clone()
+    };
+  }
+
+  function resetCameraView() {
+    if (!camera || !controls) {
+      return;
+    }
+    if (!defaultCameraView) {
+      captureDefaultCameraView();
+    }
+    if (!defaultCameraView) {
+      return;
+    }
+    camera.position.copy(defaultCameraView.position);
+    controls.target.copy(defaultCameraView.target);
+    controls.update();
+    showMessage("已重置到默认视角。", "info");
+  }
+
+  function bindGameHud() {
+    resetViewBtn?.addEventListener("click", resetCameraView);
+    pauseAlarmBtn?.addEventListener("click", pauseAlarmHighlight);
+  }
+
+  function setLoading(flag) {
+    loadingMask.style.display = flag ? "flex" : "none";
+  }
+
+  function setLoadingMessage(message) {
+    loadingMask.textContent = message;
+    showProgressMessage(message);
+  }
+
+  window.addEventListener("DOMContentLoaded", async () => {
+    setLoadingMessage("初始化智慧港口配置...");
+    bindGameHud();
+    bindProgressElement(loadingMask, {
+      prefix: "场景资源加载中",
+      completeText: "场景资源加载完成",
+      onComplete: () => tryFinalizePortShowAfterHostInit()
+    });
+    openOrCloseProgressManager(sysConfig.progressFlag);
+    await loadScene();
+  });
+
+  async function loadScene() {
+    try {
+      setLoadingMessage("正在读取智慧港口配置...");
+      const response = await fetch(sceneJsonUrl);
+      if (!response.ok) {
+        throw new Error(`加载智慧港口场景失败：${response.status}`);
+      }
+      const sceneJson = await response.json();
+      ensureThreeJsonIdsOnScenePayload(sceneJson);
+      sysConfig.jsonData = sceneJson;
+      await initWorld();
+    } catch (error) {
+      setLoading(false);
+      openOrCloseProgressManager(false);
+      showMessage(`加载场景失败：${error.message}`, "error");
+      console.error(error);
+    }
+  }
+
+  function buildAutoRuntimeConfig(baseSceneConfig = {}) {
+    const existing = baseSceneConfig && typeof baseSceneConfig === "object" ? baseSceneConfig : {};
+    const cameraConfig = existing.camera && typeof existing.camera === "object" ? existing.camera : {};
+    const rendererConfig = existing.renderer && typeof existing.renderer === "object" ? existing.renderer : {};
+    const controlsConfig = existing.controls && typeof existing.controls === "object" ? existing.controls : {};
+    const renderLoopConfig = existing.renderLoop && typeof existing.renderLoop === "object" ? existing.renderLoop : {};
+    const sceneConfig = existing.scene && typeof existing.scene === "object" ? existing.scene : {};
+    const defaultLights = [
+      { type: "directional", color: "#ffffff", intensity: 0.45, position: { x: -580, y: 180, z: 420 }, shadow: true },
+      { type: "ambient", color: "#d2dde8", intensity: 0.58, position: { x: 0, y: 0, z: 0 }, shadow: false },
+      { type: "point", color: "#9cc7ff", intensity: 0.32, position: { x: 220, y: 360, z: -180 }, shadow: true }
+    ];
+    const hasExplicitLights = Object.prototype.hasOwnProperty.call(existing, "lights") && Array.isArray(existing.lights);
+
+    return {
+      ...existing,
+      canvasWidth: sysConfig.canvasWidth,
+      canvasHeight: sysConfig.canvasHeight,
+      scene: {
+        ...sceneConfig
+      },
+      camera: {
+        fov: valueOr(cameraConfig.fov, 50),
+        near: valueOr(cameraConfig.near, 0.15),
+        far: valueOr(cameraConfig.far, 3500),
+        position: cameraConfig.position || { x: 420, y: 460, z: 920 }
+      },
+      renderer: {
+        antialias: valueOr(rendererConfig.antialias, sysConfig.antialias),
+        ratioRate: valueOr(rendererConfig.ratioRate, sysConfig.ratioRate),
+        precision: valueOr(rendererConfig.precision, "highp"),
+        preserveDrawingBuffer: valueOr(rendererConfig.preserveDrawingBuffer, true),
+        stencil: valueOr(rendererConfig.stencil, true),
+        alpha: valueOr(rendererConfig.alpha, true),
+        shadowMapEnabled: valueOr(rendererConfig.shadowMapEnabled, true),
+        clearAlpha: valueOr(rendererConfig.clearAlpha, 0.1)
+      },
+      controls: {
+        listenToKeyEvents: valueOr(controlsConfig.listenToKeyEvents, true),
+        enableDamping: valueOr(controlsConfig.enableDamping, true),
+        dampingFactor: valueOr(controlsConfig.dampingFactor, 0.3),
+        enableZoom: valueOr(controlsConfig.enableZoom, true),
+        autoRotate: valueOr(controlsConfig.autoRotate, sysConfig.sceneAutoRotate),
+        minDistance: valueOr(controlsConfig.minDistance, 5),
+        maxDistance: valueOr(controlsConfig.maxDistance, 2600),
+        maxPolarAngle: valueOr(controlsConfig.maxPolarAngle, Math.PI / 1.9),
+        enablePan: valueOr(controlsConfig.enablePan, true),
+        target: controlsConfig.target
+      },
+      lights: hasExplicitLights ? existing.lights : defaultLights,
+      renderLoop: {
+        autoResize: valueOr(renderLoopConfig.autoResize, sysConfig.autoResize),
+        firstAutoResize: valueOr(renderLoopConfig.firstAutoResize, sysConfig.firstAutoResize),
+        fps: valueOr(renderLoopConfig.fps, sysConfig.fps),
+        lowFps: valueOr(renderLoopConfig.lowFps, sysConfig.lowFps)
+      }
+    };
+  }
+
+  function buildAutoScenePayload() {
+    const payload = JSON.parse(JSON.stringify(sysConfig.jsonData || {}));
+    payload.sceneConfig = buildAutoRuntimeConfig(payload.sceneConfig);
+    return payload;
+  }
+
+  async function initWorld() {
+    setLoadingMessage("正在解析智慧港口场景 JSON...");
+    await initSceneRuntime();
+    initEventListener();
+    initHighLight();
+    superAnimate();
+    initAlarmMockDemo();
+    tryFinalizePortShowAfterHostInit();
+  }
+
+  /** 宿主扩展（高亮、渲染循环）就绪且资源加载完成后关闭 loading。 */
+  function finalizePortShowAfterHostInit() {
+    if (portShowPresentationFinalized) {
+      return;
+    }
+    portShowPresentationFinalized = true;
+    captureDefaultCameraView();
+    setLoadingMessage("智慧港口场景加载完成。");
+    window.setTimeout(() => setLoading(false), 300);
+    openOrCloseProgressManager(false);
+  }
+
+  function tryFinalizePortShowAfterHostInit() {
+    if (
+      portShowPresentationFinalized ||
+      !sceneRuntime ||
+      !sysConfig.initFlags.highLightInitFlag ||
+      !checkComplete()
+    ) {
+      return;
+    }
+    finalizePortShowAfterHostInit();
+  }
+
+  function initEventListener() {
+    window.addEventListener("resize", windowResize);
+    detachHostedContainerDoorDblclick?.();
+    detachHostedContainerDoorDblclick = attachHostedContainerDoorDblclick({
+      getScene: () => scene,
+      getCamera: () => camera,
+      getCanvas: () => renderer?.domElement ?? canvasContainer
+    });
+    document.addEventListener("dblclick", onCanvasDoubleClickPickHighlight);
+    canvasContainer.addEventListener("contextmenu", rightClickHandler);
+    keyDownHandler();
+    document.querySelectorAll("[data-menu]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        dispatchMenuAction(btn.dataset.menu);
+        document.querySelectorAll(".menuClass details[open]").forEach((el) =>
+          el.removeAttribute("open")
+        );
+      });
+    });
+  }
+
+  async function initSceneRuntime() {
+    sceneRuntime = await createJsonScene(buildAutoScenePayload(), {
+      canvas: canvasContainer
+    });
+    scene = sceneRuntime.scene;
+    camera = sceneRuntime.camera;
+    renderer = sceneRuntime.renderer;
+    controls = sceneRuntime.controls;
+    renderLoop = sceneRuntime.renderLoop;
+    trackDisposableResource(scene);
+    windowResize();
+  }
+
+  function superAnimate() {
+    renderLoop.setComposer(composer);
+    renderLoop.start();
+  }
+
+  const PAGE_CHANNEL_STYLES = {
+    info: { visibleEdgeColor: "#ffffff", hiddenEdgeColor: "#ffffff" },
+    locate: { visibleEdgeColor: "#fbbc05", hiddenEdgeColor: "#fbbc05" },
+    alarm: { visibleEdgeColor: "#ea4335", hiddenEdgeColor: "#ea4335" }
+  };
+
+  function initHighLight() {
+    composer = new EffectComposer(renderer);
+    trackDisposableResource(composer);
+    selectionVisual = sceneHighlight.createPageHighlightSetup(scene, camera, {
+      composer,
+      renderer,
+      channelOptions: PAGE_CHANNEL_STYLES
+    }).controller;
+    sysConfig.initFlags.highLightInitFlag = true;
+  }
+
+  function createShippingLine() {
+    setObjectsVisibleByName("port-container", false);
+    setObjectsVisibleByNames(PORT_ROUTE_LINE_NAMES, true);
+    showMessage("已显示航道与物流线路。", "success");
+  }
+
+  function rightClickHandler(event) {
+    event.preventDefault();
+    // Info channel only (dblclick); alarm/locate channels stay untouched.
+    selectionVisual?.clearInfoHighlight?.();
+  }
+
+  function windowResize() {
+    const myWidth = window.innerWidth;
+    const myHeight = window.innerHeight;
+    sysConfig.windowSizeNow.width = myWidth;
+    sysConfig.windowSizeNow.height = myHeight;
+    sysConfig.canvasWidth = myWidth;
+    sysConfig.canvasHeight = myHeight;
+    renderLoop?.resize({
+      width: sysConfig.canvasWidth,
+      height: sysConfig.canvasHeight
+    });
+  }
+
+  function keyDownHandler() {
+    document.onkeydown = (event) => {
+      if (event.key === "Escape") {
+        showMessage("当前页面已全屏显示，无需恢复外层布局。");
+      }
+      if (event.key.toLowerCase() === "r") {
+        clearView();
+        showMessage("已重置到港口全景视图。", "success");
+      }
+    };
+  }
+
+  function mouseClickObj(event) {
+    event.preventDefault();
+    const vector = new THREE.Vector3(
+      (event.clientX / window.innerWidth) * 2 - 1,
+      -(event.clientY / window.innerHeight) * 2 + 1,
+      0.5
+    );
+    vector.unproject(camera);
+    const raycaster = new THREE.Raycaster(camera.position, vector.sub(camera.position).normalize());
+    raycaster.camera = camera;
+    const intersects = raycaster.intersectObjects(scene.children, true);
+    return intersects.length > 0 ? intersects[0].object : null;
+  }
+
+  function onCanvasDoubleClickPickHighlight(event) {
+    const pickedObject = mouseClickObj(event);
+    if (!pickedObject) {
+      return;
+    }
+    selectionVisual?.setInfoHighlight?.(pickedObject);
+  }
+
+  /** 视图类菜单：先 clearView，再执行对应动作（port 仅恢复全景）。 */
+  const MENU_VIEW_ACTIONS = {
+    port: () => {},
+    throughput: throughputStatistics,
+    load: loadStatistics,
+    stackUsage: stackStatistics,
+    heatCloud: requestHeatMap,
+    windFlow: () => setObjectsVisibleByObjType(scene, "wind", true),
+    powerStation: () => requestInfoPanel("power"),
+    weatherStation: () => requestInfoPanel("weather"),
+    logisticsPanel: () => requestInfoPanel("logistics"),
+    shippingLine: createShippingLine
+  };
+
+  function dispatchMenuAction(menuId) {
+    const viewAction = MENU_VIEW_ACTIONS[menuId];
+    if (viewAction) {
+      clearView();
+      viewAction();
+      return;
+    }
+    showMessage("正在建设中的功能，敬请期待...", "warning");
+  }
+
+  function throughputStatistics() {
+    const n = port.createPortStatistics(sysConfig.jsonData, scene, "capacity");
+    showMessage(
+      n > 0 ? `已叠加吞吐统计（${n} 处锚点）` : "未找到港口吞吐统计锚点，请在 JSON businessInfo 配置 portStatistic/totalTeu 等字段。",
+      n > 0 ? "success" : "warning"
+    );
+  }
+
+  function loadStatistics() {
+    const n = port.createPortStatistics(sysConfig.jsonData, scene, "bear");
+    showMessage(
+      n > 0 ? `已叠加设备负载统计（${n} 处锚点）` : "未找到负载统计锚点，请配置 totalLoad/usedLoad。",
+      n > 0 ? "success" : "warning"
+    );
+  }
+
+  function stackStatistics() {
+    const n = port.createPortStatistics(sysConfig.jsonData, scene, "rackSpace");
+    showMessage(
+      n > 0 ? `已叠加堆场占用统计（${n} 处锚点）` : "未找到堆场锚点，请配置 filledCells/totalCells 或 stackCapacityTeu。",
+      n > 0 ? "success" : "warning"
+    );
+  }
+
+  function clearView() {
+    setObjectsVisibleByNames(["infoPanel", "devicePanel"], false);
+    setObjectsVisibleByObjType(scene, "wind", false);
+    setObjectsVisibleByObjType(scene, "heatMap", false);
+    destroyObjectsByObjType(scene, "capacity");
+    destroyObjectsByObjType(scene, "bear");
+    destroyObjectsByObjType(scene, "rackSpace");
+    selectionVisual?.clearInfoHighlight?.();
+    setObjectsVisibleByNames(PORT_ROUTE_LINE_NAMES, true);
+    setObjectsVisibleByName("port-container", true);
+  }
+
+  function normalizeAlarmIdList(list) {
+    return Array.isArray(list)
+      ? list.map((id) => String(id ?? "").trim()).filter(Boolean)
+      : [];
+  }
+
+  function resolveAlarmObject(threeJsonId) {
+    const obj = getObjectByThreeJsonId(threeJsonId);
+    if (!obj) {
+      console.warn(`[port-show] alarm target not found: ${threeJsonId}`);
+    }
+    return obj;
+  }
+
+  function applyAlarmPush(payload) {
+    if (alarmHighlightPaused || !payload || !selectionVisual) {
+      return;
+    }
+    const fault = normalizeAlarmIdList(payload.fault);
+    const maintenance = normalizeAlarmIdList(payload.maintenance);
+    const cleared = normalizeAlarmIdList(payload.cleared);
+    if (payload.message) {
+      pushGameToast(payload.message, payload.toastType);
+    }
+    for (const id of fault) {
+      const obj = resolveAlarmObject(id);
+      if (!obj) {
+        continue;
+      }
+      selectionVisual.removeLocateObject(obj);
+      selectionVisual.addAlarmObjects([obj]);
+    }
+    for (const id of maintenance) {
+      const obj = resolveAlarmObject(id);
+      if (!obj) {
+        continue;
+      }
+      selectionVisual.removeAlarmObject(obj);
+      selectionVisual.addLocateObjects([obj]);
+    }
+    for (const id of cleared) {
+      const obj = resolveAlarmObject(id);
+      if (!obj) {
+        continue;
+      }
+      selectionVisual.removeAlarmObject(obj);
+      selectionVisual.removeLocateObject(obj);
+    }
+  }
+
+  function startAlarmMockDemo() {
+    if (alarmHighlightPaused) {
+      return;
+    }
+    const { A, B } = ALARM_MOCK_IDS;
+    const step = ALARM_MOCK_STEP_MS;
+    applyAlarmPush({
+      fault: [A, B],
+      maintenance: [],
+      cleared: [],
+      message: "故障告警：岸桥与环境塔"
+    });
+    window.setTimeout(
+      () =>
+        applyAlarmPush({
+          fault: [B],
+          maintenance: [A],
+          cleared: [],
+          message: "岸桥 1 转维护中"
+        }),
+      step
+    );
+    window.setTimeout(
+      () =>
+        applyAlarmPush({
+          fault: [],
+          maintenance: [A, B],
+          cleared: [],
+          message: "环境塔转维护中"
+        }),
+      step * 2
+    );
+    window.setTimeout(
+      () =>
+        applyAlarmPush({
+          fault: [],
+          maintenance: [B],
+          cleared: [A],
+          message: "岸桥 1 告警解除"
+        }),
+      step * 3
+    );
+    window.setTimeout(
+      () =>
+        applyAlarmPush({
+          fault: [],
+          maintenance: [],
+          cleared: [B],
+          message: "环境塔告警解除"
+        }),
+      step * 4
+    );
+  }
+
+  function initAlarmMockDemo() {
+    window.setTimeout(() => startAlarmMockDemo(), ALARM_MOCK_STEP_MS);
+  }
+
+  function requestInfoPanel(deviceTypeCode) {
+    const extraInfoPanelList = buildBusinessPanels(deviceTypeCode);
+    const staticPanelList = listOr(sysConfig.jsonData?.worldInfo?.infoPanelList);
+    const infoPanelList = extraInfoPanelList.length ? extraInfoPanelList : staticPanelList;
+    if (infoPanelList.length > 0) {
+      void applyInfoPanelList(scene, infoPanelList);
+      showMessage("已刷新港口信息面板数据。", "info");
+    } else {
+      showMessage("暂无对应信息面板数据。", "warning");
+    }
+  }
+
+  function resolveBoxHalfHeight(item) {
+    const geom = item?.geometry || {};
+    const height = Number(geom.height);
+    if (Number.isFinite(height) && height > 0) {
+      return height / 2;
+    }
+    const length = Number(geom.length);
+    if (Number.isFinite(length) && length > 0) {
+      return length / 2;
+    }
+    return 40;
+  }
+
+  function buildBusinessPanels(deviceTypeCode) {
+    const worldInfo = sysConfig.jsonData?.worldInfo || {};
+    const boxModelList = listOr(worldInfo.boxModelList);
+    const lineModelList = listOr(worldInfo.lineList);
+    const panelList = [];
+    const descMap = {
+      power: "电力",
+      weather: "环境",
+      logistics: "物流"
+    };
+
+    const sourceList = deviceTypeCode === "logistics" ? lineModelList : boxModelList;
+    for (const item of sourceList) {
+      const info = item?.businessInfo;
+      const code = info?.deviceTypeCode;
+      if (!code) {
+        continue;
+      }
+      if (deviceTypeCode !== code) {
+        continue;
+      }
+      const pos = item.position || { x: 0, y: 0, z: 0 };
+      const panelHeight = 82;
+      const panelClearance = 18;
+      const panel = buildFloatingInfoPanel(
+        `${item.label || item.name || "设备"}\n类型: ${descMap[deviceTypeCode] || code}\n状态: 正常`,
+        {
+          x: pos.x,
+          y: pos.y + resolveBoxHalfHeight(item) + panelHeight / 2 + panelClearance,
+          z: pos.z
+        },
+        {
+          panelWidth: 150,
+          panelHeight,
+          boxType: "sprite",
+          type: "text",
+          backColor: deviceTypeCode === "power" ? "#2f4f6a" : "#205162"
+        }
+      );
+      panelList.push(panel);
+    }
+    return panelList;
+  }
+
+  function requestHeatMap() {
+    setObjectsVisibleByName("port-container", false);
+    const heatList = listOr(sysConfig.jsonData?.worldInfo?.heatList);
+    if (heatList.length > 0) {
+      setObjectsVisibleByObjType(scene, "heatMap", true);
+    } else {
+      showMessage("暂无本地作业热力图数据。", "warning");
+    }
+  }
+
+  function clearAllAlarmHighlights() {
+    selectionVisual?.clearLocateHighlights?.();
+    selectionVisual?.clearAlarmHighlights?.();
+  }
+
+  function updatePauseAlarmButton() {
+    if (!pauseAlarmBtn) {
+      return;
+    }
+    if (alarmHighlightPaused) {
+      pauseAlarmBtn.innerHTML = "告警<br>已停";
+      pauseAlarmBtn.classList.add("is-active");
+      pauseAlarmBtn.title = "告警高亮已暂停，刷新页面后恢复";
+    } else {
+      pauseAlarmBtn.innerHTML = "暂停<br>告警";
+      pauseAlarmBtn.classList.remove("is-active");
+      pauseAlarmBtn.title = "清除当前告警高亮，刷新页面前不再显示";
+    }
+  }
+
+  function pauseAlarmHighlight() {
+    if (alarmHighlightPaused) {
+      return;
+    }
+    alarmHighlightPaused = true;
+    clearAllAlarmHighlights();
+    updatePauseAlarmButton();
+    showMessage("已暂停告警高亮，刷新页面前不再显示。", "success");
+  }
+
+  function wasteCleaner() {
+    renderLoop?.stop();
+    window.removeEventListener("resize", windowResize);
+    detachHostedContainerDoorDblclick?.();
+    detachHostedContainerDoorDblclick = null;
+    document.removeEventListener("dblclick", onCanvasDoubleClickPickHighlight);
+    canvasContainer.removeEventListener("contextmenu", rightClickHandler);
+    sceneRuntime?.dispose?.();
+    disposeTrackedResources();
+  }
+
+  window.addEventListener("beforeunload", wasteCleaner);
+
+  window.portshow = {
+    scene: () => scene,
+    camera: () => camera,
+    renderer: () => renderer,
+    controls: () => controls,
+    sysConfig,
+    dispatchMenuAction,
+    menuSwitchHandler: dispatchMenuAction,
+    alarmSocket: applyAlarmPush,
+    pushGameToast,
+    pauseAlarmHighlight,
+    isAlarmHighlightPaused: () => alarmHighlightPaused,
+    resetCameraView,
+    wasteCleaner
+  };
+</script>
+</body>
+</html>

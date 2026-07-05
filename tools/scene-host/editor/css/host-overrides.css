@@ -1,0 +1,59 @@
+/* scene-host editor: enable left/right docks (phase 2b+). */
+
+#rootContainer.sceneHostMvpNoDocks #leftFlyoutHost,
+#rootContainer.sceneHostMvpNoDocks #rightFlyoutHost {
+  display: none !important;
+}
+
+.eventEditorScript {
+  width: 100%;
+  min-height: 10rem;
+  margin-top: 0.35rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.eventEditorModeBadge {
+  justify-self: start;
+  font-size: 11px;
+  opacity: 0.75;
+}
+
+.eventEditorParseStatus {
+  min-height: 1.2em;
+  font-size: 12px;
+  margin: 0.35rem 0;
+}
+
+.eventEditorParseStatus[data-kind="error"] {
+  color: #e45757;
+}
+
+.eventEditorParseStatus[data-kind="ok"] {
+  color: #3a9d5d;
+}
+
+.eventEditorActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.eventEditorLibList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 16rem;
+  overflow: auto;
+}
+
+.eventEditorLibPickBtn {
+  text-align: left;
+}
+
+.eventEditorLibDialog::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+}
+

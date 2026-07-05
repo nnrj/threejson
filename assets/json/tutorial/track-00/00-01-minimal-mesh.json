@@ -1,0 +1,83 @@
+{
+  "version": "next",
+  "name": "tutorial-minimal-mesh",
+  "sceneConfig": {
+    "scene": {
+      "background": "#222222"
+    },
+    "camera": {
+      "fov": 60,
+      "near": 0.1,
+      "far": 250,
+      "position": {
+        "x": 28,
+        "y": 18,
+        "z": 32
+      }
+    },
+    "renderer": {
+      "antialias": true,
+      "ratioRate": 1
+    },
+    "controls": {
+      "enableDamping": true,
+      "dampingFactor": 0.08,
+      "target": {
+        "x": 0,
+        "y": 4,
+        "z": 0
+      }
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "color": "#ffffff",
+        "intensity": 0.58
+      },
+      {
+        "type": "directional",
+        "color": "#ffffff",
+        "intensity": 1.05,
+        "position": {
+          "x": 30,
+          "y": 40,
+          "z": 25
+        }
+      }
+    ],
+    "renderLoop": {
+      "autoResize": true,
+      "firstAutoResize": true
+    }
+  },
+  "worldInfo": {
+    "boxModelList": [
+      {
+        "name": "tutorial-box",
+        "objType": "box",
+        "geometry": {
+          "width": 8,
+          "height": 8,
+          "depth": 8
+        },
+        "position": {
+          "x": 0,
+          "y": 4,
+          "z": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#409eff"
+        },
+        "animations": [
+          {
+            "type": "rotate",
+            "axis": "y",
+            "speed": -0.6
+          }
+        ]
+      }
+    ]
+  },
+  "threeJsonId": "00-01-minimal-mesh"
+}

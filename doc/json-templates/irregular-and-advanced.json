@@ -1,0 +1,68 @@
+{
+  "templates": [
+    {
+      "name": "group-basic",
+      "objType": "group",
+      "threeJsonId": "tmpl-group-001",
+      "children": []
+    },
+    {
+      "name": "shape-plane-basic",
+      "objType": "shapePlane",
+      "threeJsonId": "tmpl-shape-plane-001",
+      "position": { "x": 0, "y": 0, "z": 0 },
+      "rotation": { "rotationX": 0, "rotationY": 0, "rotationZ": 0 },
+      "scale": { "scaleX": 1, "scaleY": 1, "scaleZ": 1 }
+    },
+    {
+      "name": "irregular-geometry-basic",
+      "objType": "irregularGeometry",
+      "threeJsonId": "tmpl-irregular-geometry-001",
+      "position": { "x": 0, "y": 0, "z": 0 },
+      "rotation": { "rotationX": 0, "rotationY": 0, "rotationZ": 0 },
+      "scale": { "scaleX": 1, "scaleY": 1, "scaleZ": 1 }
+    },
+    {
+      "name": "tube-basic",
+      "objType": "tube",
+      "threeJsonId": "tmpl-tube-001",
+      "position": { "x": 0, "y": 0, "z": 0 },
+      "rotation": { "rotationX": 0, "rotationY": 0, "rotationZ": 0 },
+      "scale": { "scaleX": 1, "scaleY": 1, "scaleZ": 1 }
+    }
+  ]
+}
+{
+  "templates": [
+    {
+      "name": "group-basic",
+      "objType": "group",
+      "threeJsonId": "tmpl-group-001",
+      "children": []
+    },
+    {
+      "name": "shape-plane-basic",
+      "objType": "shapePlane",
+      "threeJsonId": "tmpl-shape-plane-001",
+      "position": { "x": 0, "y": 0, "z": 0 },
+      "rotation": { "rotationX": 0, "rotationY": 0, "rotationZ": 0 },
+      "scale": { "scaleX": 1, "scaleY": 1, "scaleZ": 1 }
+    },
+    {
+      "name": "irregular-geometry-basic",
+      "objType": "irregularGeometry",
+      "threeJsonId": "tmpl-irregular-geometry-001",
+      "position": { "x": 0, "y": 0, "z": 0 },
+      "rotation": { "rotationX": 0, "rotationY": 0, "rotationZ": 0 },
+      "scale": { "scaleX": 1, "scaleY": 1, "scaleZ": 1 }
+    },
+    {
+      "name": "tube-basic",
+      "objType": "tube",
+      "threeJsonId": "tmpl-tube-001",
+      "position": { "x": 0, "y": 0, "z": 0 },
+      "rotation": { "rotationX": 0, "rotationY": 0, "rotationZ": 0 },
+      "scale": { "scaleX": 1, "scaleY": 1, "scaleZ": 1 }
+    }
+  ]
+}

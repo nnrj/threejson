@@ -1,0 +1,143 @@
+{
+  "version": "next",
+  "name": "tutorial-texture-sampling-toggle",
+  "threeJsonId": "02-11-texture-sampling",
+  "sceneConfig": {
+    "textureQuality": 2,
+    "scene": {
+      "background": "#1a1f28"
+    },
+    "camera": {
+      "fov": 50,
+      "position": {
+        "x": 0,
+        "y": 8,
+        "z": 17
+      },
+      "near": 0.1,
+      "far": 300
+    },
+    "renderer": {
+      "antialias": true,
+      "ratioRate": 1
+    },
+    "controls": {
+      "enableDamping": true,
+      "target": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "intensity": 0.55
+      },
+      {
+        "type": "directional",
+        "intensity": 0.85,
+        "position": {
+          "x": 8,
+          "y": 12,
+          "z": 6
+        }
+      }
+    ],
+    "renderLoop": {
+      "autoResize": true,
+      "firstAutoResize": true
+    }
+  },
+  "objectList": [
+    {
+      "threeJsonId": "panel-low",
+      "name": "panel-low",
+      "objType": "plane",
+      "geometry": {
+        "width": 7,
+        "height": 7
+      },
+      "position": {
+        "x": -4,
+        "y": 0,
+        "z": 0
+      },
+      "rotation": {
+        "rotationX": -1.2,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "material": {
+        "type": "standard",
+        "color": "#ffffff",
+        "roughness": 0.92,
+        "textureUrl": "/assets/textures/building/floor/wood_floor.webp",
+        "textureRepeat": {
+          "x": 1,
+          "y": 1
+        },
+        "textureQuality": 0
+      }
+    },
+    {
+      "threeJsonId": "panel-high",
+      "name": "panel-high",
+      "objType": "plane",
+      "geometry": {
+        "width": 7,
+        "height": 7
+      },
+      "position": {
+        "x": 4,
+        "y": 0,
+        "z": 0
+      },
+      "rotation": {
+        "rotationX": -1.2,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "material": {
+        "type": "standard",
+        "color": "#ffffff",
+        "roughness": 0.92,
+        "textureUrl": "/assets/textures/building/floor/wood_floor.webp",
+        "textureRepeat": {
+          "x": 1,
+          "y": 1
+        },
+        "textureQuality": 3
+      }
+    },
+    {
+      "threeJsonId": "panel-inherit",
+      "name": "panel-inherit",
+      "objType": "plane",
+      "geometry": {
+        "width": 7,
+        "height": 7
+      },
+      "position": {
+        "x": 0,
+        "y": -4,
+        "z": 0
+      },
+      "rotation": {
+        "rotationX": -1.2,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "material": {
+        "type": "standard",
+        "color": "#ffffff",
+        "roughness": 0.92,
+        "textureUrl": "/assets/textures/building/floor/wood_floor.webp",
+        "textureRepeat": {
+          "x": 1,
+          "y": 1
+        }
+      }
+    }
+  ]
+}

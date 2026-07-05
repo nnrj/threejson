@@ -1,0 +1,127 @@
+{
+  "version": "next",
+  "name": "tutorial-text-modes",
+  "sceneConfig": {
+    "scene": {
+      "background": "#1e2838"
+    },
+    "textFont": {
+      "preloadCharacters": "B2机房SDF"
+    },
+    "camera": {
+      "fov": 42,
+      "position": { "x": 0, "y": 13, "z": 36 },
+      "near": 0.1,
+      "far": 500
+    },
+    "renderer": {
+      "antialias": true
+    },
+    "controls": {
+      "enableDamping": true,
+      "target": { "x": 0, "y": 6, "z": 0 }
+    },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 0.6 },
+      { "type": "directional", "color": "#ffffff", "intensity": 0.9, "position": { "x": 20, "y": 40, "z": 24 } }
+    ],
+    "renderLoop": {
+      "autoResize": true,
+      "firstAutoResize": true
+    }
+  },
+  "objectList": [
+    {
+      "name": "floor",
+      "objType": "floor",
+      "geometry": { "width": 56, "height": 2, "depth": 32 },
+      "position": { "x": 0, "y": -1, "z": 0 },
+      "material": { "color": "#2d3a4a" }
+    },
+    {
+      "name": "caption-sdf",
+      "objType": "text",
+      "content": "mode: sdf",
+      "mode": "sdf",
+      "fontSize": 0.45,
+      "color": "#9aa3ad",
+      "align": "center",
+      "billboard": true,
+      "position": { "x": -11, "y": 3.2, "z": 0 }
+    },
+    {
+      "name": "caption-texture",
+      "objType": "text",
+      "content": "mode: texture",
+      "mode": "sdf",
+      "fontSize": 0.45,
+      "color": "#9aa3ad",
+      "align": "center",
+      "billboard": true,
+      "position": { "x": 0, "y": 3.2, "z": 0 }
+    },
+    {
+      "name": "caption-sdf-en",
+      "objType": "text",
+      "content": "mode: sdf",
+      "mode": "sdf",
+      "fontSize": 0.45,
+      "color": "#9aa3ad",
+      "align": "center",
+      "billboard": true,
+      "position": { "x": 11, "y": 3.2, "z": 0 }
+    },
+    {
+      "name": "label-sdf",
+      "objType": "text",
+      "threeJsonId": "label-sdf",
+      "content": "B2 机房",
+      "mode": "sdf",
+      "fontSize": 1.6,
+      "color": "#e8eaed",
+      "align": "center",
+      "anchor": { "x": 0.5, "y": 0.5 },
+      "billboard": true,
+      "position": { "x": -11, "y": 7, "z": 0 },
+      "sdf": {
+        "outlineWidth": 0.06,
+        "outlineColor": "#1a2030"
+      }
+    },
+    {
+      "name": "label-texture",
+      "objType": "text",
+      "threeJsonId": "label-texture",
+      "content": "Texture\n标签",
+      "mode": "texture",
+      "fontSize": 32,
+      "color": "#78B83E",
+      "align": "center",
+      "maxWidth": 9,
+      "billboard": true,
+      "position": { "x": 0, "y": 7, "z": 0 },
+      "texture": {
+        "padding": 12,
+        "backgroundColor": "transparent",
+        "textStyle": { "fontSizePx": 36, "fontFamily": "SimHei", "autoFit": true, "fitRatio": 0.82 }
+      }
+    },
+    {
+      "name": "label-sdf-en",
+      "objType": "text",
+      "threeJsonId": "label-sdf-en",
+      "content": "SDF Label",
+      "mode": "sdf",
+      "fontSize": 1.4,
+      "color": "#ffd04b",
+      "align": "center",
+      "anchor": { "x": 0.5, "y": 0.5 },
+      "billboard": true,
+      "position": { "x": 11, "y": 7, "z": 0 },
+      "sdf": {
+        "outlineWidth": 0.05,
+        "outlineColor": "#1a2030"
+      }
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "asset": {
+    "version": "2.0",
+    "generator": "ThreeJSON demo — translation clip for Mixer smoke test"
+  },
+  "extensionsUsed": ["KHR_materials_unlit"],
+  "scene": 0,
+  "scenes": [{ "nodes": [0] }],
+  "nodes": [{ "name": "ThreeJSONPyramidNode", "mesh": 0 }],
+  "meshes": [
+    {
+      "name": "ThreeJSONPyramidMesh",
+      "primitives": [
+        {
+          "attributes": { "POSITION": 0 },
+          "indices": 1,
+          "material": 0
+        }
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "name": "ThreeJSONUnlitBlue",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [0.2509803922, 0.6196078431, 1.0, 1.0],
+        "metallicFactor": 0.0,
+        "roughnessFactor": 0.9
+      },
+      "doubleSided": true,
+      "extensions": { "KHR_materials_unlit": {} }
+    }
+  ],
+  "buffers": [
+    {
+      "byteLength": 96,
+      "uri": "data:application/octet-stream;base64,AACAvwAAAAAAAIC/AACAPwAAAAAAAIC/AACAPwAAAAAAAIA/AACAvwAAAAAAAIA/AAAAAAAAwD8AAAAAAAABAAQAAQACAAQAAgADAAQAAwAAAAQAAwACAAEAAwABAAAA"
+    },
+    {
+      "byteLength": 32,
+      "uri": "data:application/octet-stream;base64,AAAAAAAAgD8AAAAAAAAAPwAAAAAAAAAAmpmZPwAAAAA="
+    }
+  ],
+  "bufferViews": [
+    { "buffer": 0, "byteOffset": 0, "byteLength": 60, "target": 34962 },
+    { "buffer": 0, "byteOffset": 60, "byteLength": 36, "target": 34963 },
+    { "buffer": 1, "byteOffset": 0, "byteLength": 32 }
+  ],
+  "accessors": [
+    {
+      "bufferView": 0,
+      "byteOffset": 0,
+      "componentType": 5126,
+      "count": 5,
+      "type": "VEC3",
+      "min": [-1.0, 0.0, -1.0],
+      "max": [1.0, 1.5, 1.0]
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 0,
+      "componentType": 5123,
+      "count": 18,
+      "type": "SCALAR",
+      "min": [0],
+      "max": [4]
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 0,
+      "componentType": 5126,
+      "count": 2,
+      "type": "SCALAR",
+      "min": [0],
+      "max": [1]
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 8,
+      "componentType": 5126,
+      "count": 2,
+      "type": "VEC3",
+      "min": [0, 0.5, 0],
+      "max": [0, 1.2, 0]
+    }
+  ],
+  "animations": [
+    {
+      "name": "bobY",
+      "channels": [
+        {
+          "sampler": 0,
+          "target": { "node": 0, "path": "translation" }
+        }
+      ],
+      "samplers": [
+        {
+          "input": 2,
+          "interpolation": "LINEAR",
+          "output": 3
+        }
+      ]
+    }
+  ]
+}

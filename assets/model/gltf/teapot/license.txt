@@ -1,0 +1,8 @@
+Model Information:
+* title:	Teapot
+* source:	https://sketchfab.com/3d-models/teapot-d9dba4e568cc4f6786febf6dc1fef91d
+* author:	Världskulturmuseerna (https://sketchfab.com/varldskulturmuseerna)
+
+Model License:
+* license type:	CC0-1.0 (http://creativecommons.org/publicdomain/zero/1.0/)
+* requirements:	Credit is not mandatory. Commercial use is allowed.

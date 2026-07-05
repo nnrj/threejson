@@ -1,0 +1,1358 @@
+{
+  "threeJsonId": "forest-animals-001",
+  "name": "森林与小动物",
+  "version": "next",
+  "assetLibrary": [],
+  "sceneConfig": {
+    "scene": {
+      "background": "#87CEEB",
+      "threeJsonId": "2cd6640d-e8b2-48f8-9ab9-2008ab035fbe"
+    },
+    "camera": {
+      "fov": 60,
+      "near": 0.1,
+      "far": 1000,
+      "position": {
+        "x": -63.666401648659566,
+        "y": 87.57955134554092,
+        "z": 173.46669829700514
+      },
+      "jsonOrigin": "config"
+    },
+    "controls": {
+      "target": {
+        "x": 0,
+        "y": 20,
+        "z": 0
+      },
+      "jsonOrigin": "config"
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "color": "#ffffff",
+        "intensity": 0.4,
+        "position": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "jsonOrigin": "config"
+      },
+      {
+        "type": "directional",
+        "color": "#ffffff",
+        "intensity": 0.8,
+        "position": {
+          "x": 100,
+          "y": 200,
+          "z": 100
+        },
+        "jsonOrigin": "config"
+      }
+    ]
+  },
+  "saveMeta": {
+    "exportMode": "standard_primary",
+    "exportedAt": "2026-06-13T01:11:13.981Z"
+  },
+  "objectList": [
+    {
+      "name": "tree-trunk-1",
+      "objType": "cylinder",
+      "geometry": {
+        "radiusTop": 3,
+        "radiusBottom": 5,
+        "height": 60,
+        "radialSegments": 8
+      },
+      "position": {
+        "x": -100,
+        "y": 30,
+        "z": -80
+      },
+      "material": {
+        "type": "standard",
+        "color": "#8B4513"
+      },
+      "threeJsonId": "b85b0620-d7f1-4db4-89dc-fc9ed904b769",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "tree-crown-1",
+      "objType": "cone",
+      "geometry": {
+        "radius": 25,
+        "height": 40,
+        "radialSegments": 8
+      },
+      "position": {
+        "x": -100,
+        "y": 70,
+        "z": -80
+      },
+      "material": {
+        "type": "standard",
+        "color": "#006400"
+      },
+      "threeJsonId": "d7e4224a-c82d-475b-906d-a3575e4bcd51",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "tree-trunk-2",
+      "objType": "cylinder",
+      "geometry": {
+        "radiusTop": 2.5,
+        "radiusBottom": 4,
+        "height": 50,
+        "radialSegments": 8
+      },
+      "position": {
+        "x": -30,
+        "y": 25,
+        "z": -120
+      },
+      "material": {
+        "type": "standard",
+        "color": "#8B4513"
+      },
+      "threeJsonId": "b3546288-bba2-4e29-ba2e-16b8f3c44485",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "tree-crown-2",
+      "objType": "cone",
+      "geometry": {
+        "radius": 20,
+        "height": 35,
+        "radialSegments": 8
+      },
+      "position": {
+        "x": -30,
+        "y": 60,
+        "z": -120
+      },
+      "material": {
+        "type": "standard",
+        "color": "#006400"
+      },
+      "threeJsonId": "32afee25-3dcc-44b7-a7a3-011f70aa0cee",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "tree-trunk-3",
+      "objType": "cylinder",
+      "geometry": {
+        "radiusTop": 3.5,
+        "radiusBottom": 5.5,
+        "height": 70,
+        "radialSegments": 8
+      },
+      "position": {
+        "x": 80,
+        "y": 35,
+        "z": -100
+      },
+      "material": {
+        "type": "standard",
+        "color": "#8B4513"
+      },
+      "threeJsonId": "b00ae41d-f34f-40a0-b4d1-eafeeda602d7",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "tree-crown-3",
+      "objType": "cone",
+      "geometry": {
+        "radius": 30,
+        "height": 45,
+        "radialSegments": 8
+      },
+      "position": {
+        "x": 80,
+        "y": 80,
+        "z": -100
+      },
+      "material": {
+        "type": "standard",
+        "color": "#006400"
+      },
+      "threeJsonId": "2ceab4ee-9a2e-49d5-bddd-2382af3730ba",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "tree-trunk-4",
+      "objType": "cylinder",
+      "geometry": {
+        "radiusTop": 2,
+        "radiusBottom": 3.5,
+        "height": 45,
+        "radialSegments": 8
+      },
+      "position": {
+        "x": 120,
+        "y": 22.5,
+        "z": 40
+      },
+      "material": {
+        "type": "standard",
+        "color": "#8B4513"
+      },
+      "threeJsonId": "da4c70e2-8cc5-4d2f-81e6-241f84a2dd75",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "tree-crown-4",
+      "objType": "cone",
+      "geometry": {
+        "radius": 18,
+        "height": 30,
+        "radialSegments": 8
+      },
+      "position": {
+        "x": 120,
+        "y": 55,
+        "z": 40
+      },
+      "material": {
+        "type": "standard",
+        "color": "#006400"
+      },
+      "threeJsonId": "5e38df30-2696-4b76-a829-11032cd03c1e",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "tree-trunk-5",
+      "objType": "cylinder",
+      "geometry": {
+        "radiusTop": 2.8,
+        "radiusBottom": 4.5,
+        "height": 55,
+        "radialSegments": 8
+      },
+      "position": {
+        "x": -150,
+        "y": 27.5,
+        "z": 50
+      },
+      "material": {
+        "type": "standard",
+        "color": "#8B4513"
+      },
+      "threeJsonId": "0c087550-95fb-4ccb-9609-6b8c3b603d4e",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "tree-crown-5",
+      "objType": "cone",
+      "geometry": {
+        "radius": 22,
+        "height": 38,
+        "radialSegments": 8
+      },
+      "position": {
+        "x": -150,
+        "y": 65,
+        "z": 50
+      },
+      "material": {
+        "type": "standard",
+        "color": "#006400"
+      },
+      "threeJsonId": "7abb8c29-d43b-4956-91be-150edd2a444e",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "tree-trunk-6",
+      "objType": "cylinder",
+      "geometry": {
+        "radiusTop": 3,
+        "radiusBottom": 5,
+        "height": 65,
+        "radialSegments": 8
+      },
+      "position": {
+        "x": -50,
+        "y": 32.5,
+        "z": 160
+      },
+      "material": {
+        "type": "standard",
+        "color": "#8B4513"
+      },
+      "threeJsonId": "f54726f0-e935-4e7f-87d9-5ab1e80b41ac",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "tree-crown-6",
+      "objType": "cone",
+      "geometry": {
+        "radius": 28,
+        "height": 42,
+        "radialSegments": 8
+      },
+      "position": {
+        "x": -50,
+        "y": 75,
+        "z": 160
+      },
+      "material": {
+        "type": "standard",
+        "color": "#006400"
+      },
+      "threeJsonId": "a881ecf8-3dd0-4199-a94a-e6a48de53864",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "tree-trunk-7",
+      "objType": "cylinder",
+      "geometry": {
+        "radiusTop": 2.2,
+        "radiusBottom": 4,
+        "height": 48,
+        "radialSegments": 8
+      },
+      "position": {
+        "x": 160,
+        "y": 24,
+        "z": -160
+      },
+      "material": {
+        "type": "standard",
+        "color": "#8B4513"
+      },
+      "threeJsonId": "c3a763cf-803c-4408-bb19-3c0ac945490e",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "tree-crown-7",
+      "objType": "cone",
+      "geometry": {
+        "radius": 19,
+        "height": 32,
+        "radialSegments": 8
+      },
+      "position": {
+        "x": 160,
+        "y": 58,
+        "z": -160
+      },
+      "material": {
+        "type": "standard",
+        "color": "#006400"
+      },
+      "threeJsonId": "07f3acee-b701-4f75-9ff2-e02fa525b001",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "rabbit-ear-left",
+      "objType": "cone",
+      "geometry": {
+        "radius": 1.5,
+        "height": 8,
+        "radialSegments": 8
+      },
+      "position": {
+        "x": -44,
+        "y": 24,
+        "z": 30
+      },
+      "material": {
+        "type": "standard",
+        "color": "#D2B48C"
+      },
+      "threeJsonId": "62a5761b-c844-4fab-9a5a-bfca7e8b6102",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "rabbit-ear-right",
+      "objType": "cone",
+      "geometry": {
+        "radius": 1.5,
+        "height": 8,
+        "radialSegments": 8
+      },
+      "position": {
+        "x": -36,
+        "y": 24,
+        "z": 30
+      },
+      "material": {
+        "type": "standard",
+        "color": "#D2B48C"
+      },
+      "threeJsonId": "c682577d-61f7-4a83-9bb1-5ac544dcadf3",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "deer-antler-left",
+      "objType": "cylinder",
+      "geometry": {
+        "radiusTop": 0.8,
+        "radiusBottom": 1.2,
+        "height": 10,
+        "radialSegments": 6
+      },
+      "position": {
+        "x": 55,
+        "y": 32,
+        "z": -50
+      },
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0.5236
+      },
+      "material": {
+        "type": "standard",
+        "color": "#A0522D"
+      },
+      "threeJsonId": "01c15f8a-c12f-40a5-8ad0-5238f98d3ff4",
+      "subScene": [],
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "deer-antler-right",
+      "objType": "cylinder",
+      "geometry": {
+        "radiusTop": 0.8,
+        "radiusBottom": 1.2,
+        "height": 10,
+        "radialSegments": 6
+      },
+      "position": {
+        "x": 65,
+        "y": 32,
+        "z": -50
+      },
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": -0.5236
+      },
+      "material": {
+        "type": "standard",
+        "color": "#A0522D"
+      },
+      "threeJsonId": "3dbf949d-8f2c-46fc-bdc9-4710a47dceaa",
+      "subScene": [],
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "fox-tail",
+      "objType": "cone",
+      "geometry": {
+        "radius": 3,
+        "height": 12,
+        "radialSegments": 8
+      },
+      "position": {
+        "x": 110,
+        "y": 8,
+        "z": 80
+      },
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0.7854
+      },
+      "material": {
+        "type": "standard",
+        "color": "#D2691E"
+      },
+      "threeJsonId": "03b5fcbe-eef2-41c0-acd8-b48870b3ec48",
+      "subScene": [],
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "rabbit-body",
+      "geometry": {
+        "radius": 8,
+        "widthSegments": 16,
+        "heightSegments": 12
+      },
+      "position": {
+        "x": -40,
+        "y": 8,
+        "z": 30
+      },
+      "material": {
+        "type": "standard",
+        "color": "#D2B48C"
+      },
+      "threeJsonId": "c601a31f-d71c-48a9-bef3-99c0e8d3736b",
+      "objType": "sphere",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "rabbit-head",
+      "geometry": {
+        "radius": 5,
+        "widthSegments": 16,
+        "heightSegments": 12
+      },
+      "position": {
+        "x": -40,
+        "y": 18,
+        "z": 30
+      },
+      "material": {
+        "type": "standard",
+        "color": "#D2B48C"
+      },
+      "threeJsonId": "053bf257-a15b-4ad8-8a56-20ef4e36886d",
+      "objType": "sphere",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "deer-body",
+      "geometry": {
+        "radius": 12,
+        "widthSegments": 16,
+        "heightSegments": 12
+      },
+      "position": {
+        "x": 60,
+        "y": 12,
+        "z": -50
+      },
+      "material": {
+        "type": "standard",
+        "color": "#8B4513"
+      },
+      "threeJsonId": "59ff4739-f049-4e67-a97b-ccba427a5afd",
+      "objType": "sphere",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "deer-head",
+      "geometry": {
+        "radius": 7,
+        "widthSegments": 16,
+        "heightSegments": 12
+      },
+      "position": {
+        "x": 60,
+        "y": 26,
+        "z": -50
+      },
+      "material": {
+        "type": "standard",
+        "color": "#8B4513"
+      },
+      "threeJsonId": "05637691-7274-4b95-a71a-9a64ec7b9efc",
+      "objType": "sphere",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "bird-body",
+      "geometry": {
+        "radius": 4,
+        "widthSegments": 12,
+        "heightSegments": 10
+      },
+      "position": {
+        "x": -80,
+        "y": 60,
+        "z": -70
+      },
+      "material": {
+        "type": "standard",
+        "color": "#FF6347"
+      },
+      "threeJsonId": "161e172a-135d-4d82-9eba-2beb9acce3e4",
+      "objType": "sphere",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "bird-head",
+      "geometry": {
+        "radius": 2.5,
+        "widthSegments": 12,
+        "heightSegments": 10
+      },
+      "position": {
+        "x": -80,
+        "y": 66,
+        "z": -70
+      },
+      "material": {
+        "type": "standard",
+        "color": "#FF4500"
+      },
+      "threeJsonId": "21593486-9a86-4868-875f-25cef172289a",
+      "objType": "sphere",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "fox-body",
+      "geometry": {
+        "radius": 9,
+        "widthSegments": 16,
+        "heightSegments": 12
+      },
+      "position": {
+        "x": 100,
+        "y": 9,
+        "z": 80
+      },
+      "material": {
+        "type": "standard",
+        "color": "#D2691E"
+      },
+      "threeJsonId": "24486676-a599-46b5-9d3e-23a06ed04c6e",
+      "objType": "sphere",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "fox-head",
+      "geometry": {
+        "radius": 5.5,
+        "widthSegments": 16,
+        "heightSegments": 12
+      },
+      "position": {
+        "x": 100,
+        "y": 20,
+        "z": 80
+      },
+      "material": {
+        "type": "standard",
+        "color": "#D2691E"
+      },
+      "threeJsonId": "084fba50-4cdc-42dd-8bf0-4d4abb6c45de",
+      "objType": "sphere",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "objType": "box",
+      "name": "house-roof",
+      "geometry": {
+        "width": 44,
+        "height": 2,
+        "depth": 24
+      },
+      "position": {
+        "x": -60,
+        "y": 32,
+        "z": 100
+      },
+      "material": {
+        "color": "#A0522D"
+      },
+      "threeJsonId": "roof-001",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "objType": "box",
+      "name": "house-roof-triangle",
+      "geometry": {
+        "width": 44,
+        "height": 20,
+        "depth": 24
+      },
+      "position": {
+        "x": -60,
+        "y": 32,
+        "z": 100
+      },
+      "material": {
+        "color": "#8B4513"
+      },
+      "threeJsonId": "roof-tri-001",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "objType": "box",
+      "name": "house-chimney",
+      "geometry": {
+        "width": 6,
+        "height": 16,
+        "depth": 6
+      },
+      "position": {
+        "x": -40,
+        "y": 40,
+        "z": 90
+      },
+      "material": {
+        "color": "#A0522D"
+      },
+      "threeJsonId": "chimney-001",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "objType": "box",
+      "name": "house-chimney-top",
+      "geometry": {
+        "width": 8,
+        "height": 2,
+        "depth": 8
+      },
+      "position": {
+        "x": -40,
+        "y": 48,
+        "z": 90
+      },
+      "material": {
+        "color": "#654321"
+      },
+      "threeJsonId": "chimney-top-001",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "objType": "box",
+      "name": "house-porch-post-left",
+      "geometry": {
+        "width": 2,
+        "height": 14,
+        "depth": 2
+      },
+      "position": {
+        "x": -10,
+        "y": 7,
+        "z": 22
+      },
+      "material": {
+        "color": "#8B4513"
+      },
+      "threeJsonId": "porch-post-l",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "objType": "box",
+      "name": "house-porch-post-right",
+      "geometry": {
+        "width": 2,
+        "height": 14,
+        "depth": 2
+      },
+      "position": {
+        "x": 10,
+        "y": 7,
+        "z": 22
+      },
+      "material": {
+        "color": "#8B4513"
+      },
+      "threeJsonId": "porch-post-r",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "objType": "box",
+      "name": "house-porch-roof",
+      "geometry": {
+        "width": 24,
+        "height": 1,
+        "depth": 6
+      },
+      "position": {
+        "x": 0,
+        "y": 15,
+        "z": 23
+      },
+      "material": {
+        "color": "#A0522D"
+      },
+      "threeJsonId": "porch-roof-001",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "objType": "box",
+      "name": "house-window-left",
+      "geometry": {
+        "width": 6,
+        "height": 6,
+        "depth": 0.5
+      },
+      "position": {
+        "x": -12,
+        "y": 16,
+        "z": 20.25
+      },
+      "material": {
+        "color": "#87CEEB",
+        "opacity": 0.7,
+        "transparent": true
+      },
+      "threeJsonId": "window-l-001",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "objType": "box",
+      "name": "house-window-frame-left",
+      "geometry": {
+        "width": 7,
+        "height": 7,
+        "depth": 0.3
+      },
+      "position": {
+        "x": -12,
+        "y": 16,
+        "z": 20.15
+      },
+      "material": {
+        "color": "#654321"
+      },
+      "threeJsonId": "window-frame-l",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "objType": "box",
+      "name": "house-window-frame-right",
+      "geometry": {
+        "width": 7,
+        "height": 7,
+        "depth": 0.3
+      },
+      "position": {
+        "x": 12,
+        "y": 16,
+        "z": 20.15
+      },
+      "material": {
+        "color": "#654321"
+      },
+      "threeJsonId": "window-frame-r",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "objType": "box",
+      "name": "house-door-frame",
+      "geometry": {
+        "width": 9,
+        "height": 15,
+        "depth": 0.5
+      },
+      "position": {
+        "x": 0,
+        "y": 7.5,
+        "z": 20.25
+      },
+      "material": {
+        "color": "#654321"
+      },
+      "threeJsonId": "door-frame-001",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "bird-wing-left",
+      "objType": "line",
+      "points": [
+        {
+          "x": -84,
+          "y": 60,
+          "z": -70
+        },
+        {
+          "x": -90,
+          "y": 58,
+          "z": -70
+        },
+        {
+          "x": -94,
+          "y": 56,
+          "z": -70
+        }
+      ],
+      "material": {
+        "color": "#FF6347"
+      },
+      "threeJsonId": "7aeedf36-0a73-4dc5-82e7-ebcde208a6d9",
+      "subScene": [],
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "bird-wing-right",
+      "objType": "line",
+      "points": [
+        {
+          "x": -76,
+          "y": 60,
+          "z": -70
+        },
+        {
+          "x": -70,
+          "y": 58,
+          "z": -70
+        },
+        {
+          "x": -66,
+          "y": 56,
+          "z": -70
+        }
+      ],
+      "material": {
+        "color": "#FF6347"
+      },
+      "threeJsonId": "2152861a-a42d-44a4-ba0e-c49b24211654",
+      "subScene": [],
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "room-floor",
+      "objType": "domain",
+      "boxType": "box",
+      "geometry": {
+        "width": 1200,
+        "depth": 1200,
+        "height": 1
+      },
+      "material": {
+        "type": "standard",
+        "color": "#228B22"
+      },
+      "position": {
+        "x": 0,
+        "y": -2,
+        "z": 0
+      },
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "threeJsonId": "1f5ce538-bc47-4d37-ac25-9ab9e3e98a86",
+      "subScene": [],
+      "visible": true,
+      "domain": "floor",
+      "handler": "addToScene",
+      "label": "ground"
+    }
+  ]
+}

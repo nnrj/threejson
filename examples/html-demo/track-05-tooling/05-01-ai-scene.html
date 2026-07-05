@@ -1,0 +1,2037 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThreeJSON Tutorial · Track 5 · AI 场景生成与调整</title>
+  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <script type="importmap">
+    
+    {
+      "imports": {
+        "threejson": "/builtins/full.js",
+        "threejson/core": "/core/index.js",
+        "three": "https://esm.sh/three@0.184.0",
+        "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
+        "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
+        "html2canvas-pro": "https://esm.sh/html2canvas-pro@2.0.4",
+        "gifuct-js": "https://esm.sh/gifuct-js@2.1.2",
+        "three-mesh-bvh": "https://esm.sh/three-mesh-bvh@0.9.10?deps=three@0.184.0",
+        "three-bvh-csg": "https://esm.sh/three-bvh-csg@0.0.18?deps=three@0.184.0,three-mesh-bvh@0.9.10"
+      }
+    }
+  
+  </script>
+  <style>
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #1f2227;
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+      color: #e7e7e7;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    #root {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #panel {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      padding: 14px;
+      border-left: 1px solid rgba(255, 255, 255, 0.12);
+      background: #1a1d21;
+      overflow: hidden;
+    }
+
+    .tabPanels {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-right: 4px;
+      scrollbar-width: thin;
+      scrollbar-color: #4d525a rgba(20, 22, 26, 0.55);
+    }
+
+    .tabPanels::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .tabPanels::-webkit-scrollbar-track {
+      margin: 2px 0;
+      background: rgba(20, 22, 26, 0.5);
+      border-radius: 4px;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    }
+
+    .tabPanels::-webkit-scrollbar-thumb {
+      background: #4d525a;
+      border-radius: 4px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .tabPanels::-webkit-scrollbar-thumb:hover {
+      background: #5c6470;
+      background-clip: padding-box;
+    }
+
+    .tabPanels::-webkit-scrollbar-thumb:active {
+      background: #3d6d9e;
+      background-clip: padding-box;
+    }
+
+    /* 仅「场景 JSON」标签页：整块占满纵向剩馀空间，JSON 在内侧滚动 */
+    .tabPanel[data-tab="scene"].is-active {
+      flex: 1 1 0%;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+      padding-bottom: 8px;
+    }
+
+    .block.sceneJsonBlock {
+      flex: 1 1 0%;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      margin-bottom: 0;
+    }
+
+    .sceneJsonBlock .renderRow {
+      flex-shrink: 0;
+    }
+
+    .sceneJsonBlock .label {
+      flex-shrink: 0;
+    }
+
+    .tabBar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .tabBtn {
+      width: auto;
+      padding: 6px 10px;
+      margin-bottom: 0;
+      font-size: 11px;
+      background: #2a3140;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      flex: 0 0 auto;
+    }
+
+    .tabBtn.active {
+      background: #3b82f6;
+      border-color: transparent;
+    }
+
+    .tabPanel {
+      display: none;
+    }
+
+    .tabPanel.is-active {
+      display: block;
+    }
+
+    .tabPanel .block:last-child {
+      margin-bottom: 0;
+    }
+
+    #canvasContainer {
+      width: 100%;
+      height: 100%;
+      display: block;
+      background: #171a1f;
+      outline: none;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .block {
+      margin-bottom: 16px;
+      padding: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .label {
+      margin-bottom: 6px;
+      font-size: 12px;
+      color: #b9c0cb;
+    }
+
+    input,
+    select,
+    textarea,
+    button {
+      width: 100%;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: #20252c;
+      color: #e7e7e7;
+      font-size: 12px;
+      padding: 8px 10px;
+      margin-bottom: 8px;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 96px;
+      line-height: 1.4;
+      font-family: Consolas, "Courier New", monospace;
+    }
+
+    #sceneOutput {
+      flex: 1 1 0%;
+      min-height: 0;
+      margin-bottom: 0;
+      resize: none;
+      outline: none;
+      overflow: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #4d525a rgba(20, 22, 26, 0.55);
+    }
+
+    /* 与 Scene Editor 右侧面板场景 JSON 文本域一致的滚动条 */
+    #sceneOutput::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #sceneOutput::-webkit-scrollbar-track {
+      margin: 2px 0;
+      background: rgba(20, 22, 26, 0.5);
+      border-radius: 4px;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    }
+
+    #sceneOutput::-webkit-scrollbar-thumb {
+      background: #4d525a;
+      border-radius: 4px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    #sceneOutput::-webkit-scrollbar-thumb:hover {
+      background: #5c6470;
+      background-clip: padding-box;
+    }
+
+    #sceneOutput::-webkit-scrollbar-thumb:active {
+      background: #3d6d9e;
+      background-clip: padding-box;
+    }
+
+    button {
+      cursor: pointer;
+      background: #3b82f6;
+      border-color: transparent;
+    }
+
+    button.secondary {
+      background: #39414d;
+    }
+
+    button:hover {
+      filter: brightness(1.08);
+    }
+
+    button.tabBtn:hover:not(.active) {
+      filter: brightness(1.12);
+      background: #323a49;
+    }
+
+    .hint {
+      margin-top: 4px;
+      font-size: 11px;
+      color: #95a0af;
+      line-height: 1.35;
+    }
+
+    .renderRow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .renderRow button {
+      width: 44%;
+      margin-bottom: 0;
+    }
+
+    .checkboxLabel {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #b9c0cb;
+      white-space: nowrap;
+    }
+
+    .checkboxLabel input[type="checkbox"] {
+      width: auto;
+      margin: 0;
+      accent-color: #3b82f6;
+    }
+
+    .checkboxLabel.multiline {
+      margin-bottom: 10px;
+      white-space: normal;
+    }
+
+    .blockTitle {
+      margin: 0 0 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #e7e7e7;
+    }
+
+    #message {
+      min-height: 22px;
+      margin: 6px 0 10px;
+      font-size: 12px;
+      color: #9cc8ff;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .renderRow.threeCol button {
+      width: auto;
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    .aiActionRow {
+      display: flex;
+      flex: 1 1 0;
+      align-items: stretch;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .aiActionRow > button:not(.aiStopBtn) {
+      flex: 1 1 0;
+      min-width: 0;
+      width: auto;
+      margin-bottom: 0;
+    }
+
+    .aiStopBtn {
+      flex: 0 0 36px;
+      width: 36px;
+      min-width: 36px;
+      padding: 0;
+      font-size: 14px;
+      line-height: 1;
+      margin-bottom: 0;
+    }
+
+    .aiStopBtn[hidden] {
+      display: none;
+    }
+
+    .aiLastResult {
+      min-height: 120px;
+      max-height: min(28vh, 240px);
+    }
+
+    .aiLastResultLabel {
+      margin: 8px 0 4px;
+      font-size: 11px;
+      color: #95a0af;
+    }
+
+    .aiStreamPreview {
+      display: block;
+      width: 100%;
+      min-height: 200px;
+      max-height: min(40vh, 360px);
+      overflow: auto;
+      overflow-anchor: none;
+      margin: 0 0 8px;
+      padding: 8px 10px;
+      font-size: 11px;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      word-break: break-all;
+      font-family: Consolas, "Courier New", monospace;
+      background: #20252c;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+      color: #e7e7e7;
+    }
+  </style>
+</head>
+<body>
+<div id="root">
+  <canvas id="canvasContainer">抱歉，你的浏览器不支持 WebGL。</canvas>
+
+  <aside id="panel">
+    <h1>AI 场景生成与调整 Demo</h1>
+    <div id="message"></div>
+
+    <div id="tabBar" class="tabBar" role="tablist">
+      <button type="button" role="tab" class="tabBtn active" data-tab="config" aria-selected="true">AI 配置</button>
+      <button type="button" role="tab" class="tabBtn" data-tab="generate" aria-selected="false">AI 生成</button>
+      <button type="button" role="tab" class="tabBtn" data-tab="adjust" aria-selected="false">AI 调整</button>
+      <button type="button" role="tab" class="tabBtn" data-tab="image" aria-selected="false">看图生成</button>
+      <button type="button" role="tab" class="tabBtn" data-tab="scene" aria-selected="false">场景 JSON</button>
+    </div>
+
+    <div class="tabPanels">
+      <div class="tabPanel is-active" role="tabpanel" data-tab="config">
+        <div class="block">
+          <div class="blockTitle">AI 凭据</div>
+          <label class="label" for="providerSelect">Provider</label>
+          <select id="providerSelect">
+            <option value="chatgpt" selected>chatgpt</option>
+            <option value="deepseek">deepseek</option>
+            <option value="custom">自定义</option>
+          </select>
+
+          <div id="customApiBaseWrap" hidden>
+            <label class="label" for="customApiBaseInput">接口根 URL</label>
+            <input id="customApiBaseInput" type="text" placeholder="例如 https://api.openai.com/v1（末尾自动拼接 /chat/completions）" autocomplete="off">
+            <div class="hint">须兼容 OpenAI Chat Completions；若整段粘贴含 <code>/chat/completions</code> 的路径，将自动裁剪为根前缀。</div>
+          </div>
+
+          <label class="label" for="apiKeyInput">API Key</label>
+          <input id="apiKeyInput" type="password" placeholder="ChatGPT（OpenAI）/ DeepSeek / 网关所用 Bearer Token" autocomplete="off">
+
+          <label class="label" for="modelInput">Model（可选）</label>
+          <input id="modelInput" type="text" placeholder="如 gpt-4o-mini；纯文本也可用 deepseek-chat；看图生成需 Vision 模型" autocomplete="off">
+
+          <label class="checkboxLabel multiline">
+            <input id="rememberAiConfigCheckbox" type="checkbox">
+            记住当前配置（仅存于本机浏览器缓存；含 API Key，请勿在共用设备勾选）
+          </label>
+          <div class="hint">取消勾选将立即清除已保存的配置项。</div>
+        </div>
+
+        <div class="block">
+          <div class="blockTitle">Agent（多轮）</div>
+          <label class="checkboxLabel multiline">
+            <input id="aiAgentEnabledCheckbox" type="checkbox">
+            启用 Agent（多轮，消耗更多 Token）
+          </label>
+          <label class="label" for="aiAgentDepthSelect">思考深度</label>
+          <select id="aiAgentDepthSelect">
+            <option value="simple">简单（大纲/修复较少）</option>
+            <option value="medium" selected>中等（大纲 + 校验修复）</option>
+            <option value="deep">深入（+ 纹理位点 dry-plan）</option>
+            <option value="auto">自动（在深入预算内尽量通过校验）</option>
+          </select>
+          <div class="hint">未勾选 Agent 时，生成/调整/看图与原先单次调用一致。</div>
+          <label class="checkboxLabel multiline">
+            <input id="aiAgentIterativeApplyCheckbox" type="checkbox">
+            迭代应用到画布（自动模式 + Agent；JSON 模式依赖阶段自动载入）
+          </label>
+          <label class="checkboxLabel multiline">
+            <input id="aiAgentFitViewEachRoundCheckbox" type="checkbox">
+            每轮自适应取景（阶段载入或迭代后 fit 场景）
+          </label>
+          <label class="checkboxLabel multiline">
+            <input id="aiFillTexturesCheckbox" type="checkbox">
+            完成后填充纹理（与上方 LLM 相同接口根 URL；默认生图模型 dall-e-3）
+          </label>
+          <div class="hint">浏览器直连生图可能受网关 CORS 限制；失败时仍会写入无纹理场景 JSON。</div>
+          <label class="checkboxLabel multiline">
+            <input id="aiStageAutoLoadCheckbox" type="checkbox" checked>
+            阶段产物自动载入（scene_ready / stage_preview 写入 JSON 并预览画布）
+          </label>
+          <label class="checkboxLabel multiline">
+            <input id="aiStreamPreviewCheckbox" type="checkbox" checked>
+            流式预览 LLM 输出（默认开；生成 / 调整 / 看图 标签页同步）
+          </label>
+          <label class="label" for="aiTextureBrowserModeSelect">浏览器落盘方式</label>
+          <select id="aiTextureBrowserModeSelect">
+            <option value="directory" selected>授权本地目录</option>
+            <option value="upload">图床上传 URL</option>
+            <option value="zipDownload">ZIP 下载（无目录权限时）</option>
+          </select>
+          <button type="button" id="aiPickTextureDirBtn" class="secondary">选择纹理输出目录</button>
+          <div id="aiTextureUploadWrap" hidden>
+            <label class="label" for="aiTextureUploadEndpoint">图床 endpoint（POST multipart）</label>
+            <input id="aiTextureUploadEndpoint" type="url" autocomplete="off" placeholder="https://your-host/upload">
+          </div>
+          <div class="hint" id="aiTextureDirHint">Electron 可直接写仓库 resources/textures/；浏览器需授权目录、图床或 ZIP。外置 CLI 为可选批处理，本 Demo 不依赖它。</div>
+          <div class="hint">AI 能力来自 ThreeJSON <code>core/ai</code>（浏览器直连 LLM），不读取 setting.json。</div>
+        </div>
+
+      </div>
+
+      <div class="tabPanel" role="tabpanel" data-tab="generate">
+        <div class="block">
+          <div class="blockTitle">生成场景</div>
+          <label class="label" for="generatePromptInput">提示词</label>
+          <textarea id="generatePromptInput">生成一个智慧园区场景：有地面、两栋建筑、一条道路、一个中心广场和至少一个信息面板。</textarea>
+          <div class="aiActionRow">
+            <button id="generateBtn">生成新场景 JSON</button>
+            <button type="button" class="aiStopBtn secondary" data-ai-stop hidden
+              aria-label="停止生成" title="停止生成">■</button>
+          </div>
+          <div class="hint">在输入框中按 Ctrl+Enter（Mac：⌘+Enter）提交。</div>
+          <pre id="aiStreamPreviewGenerate" class="aiStreamPreview" hidden spellcheck="false"></pre>
+        </div>
+      </div>
+
+      <div class="tabPanel" role="tabpanel" data-tab="adjust">
+        <div class="block">
+          <div class="blockTitle">调整当前场景</div>
+          <label class="label" for="updatePromptInput">修改说明</label>
+          <textarea id="updatePromptInput">把主楼颜色改成蓝灰色，在场景右侧增加两排设备机柜，并添加一个温度告警信息面板。</textarea>
+          <label class="label" for="aiUpdateOutputModeSelect">调整输出模式</label>
+          <select id="aiUpdateOutputModeSelect">
+            <option value="json-full" selected>JSON 全量（重建场景）</option>
+            <option value="json-incremental">JSON 增量补丁（RFC 6902）</option>
+            <option value="auto">自动（Agent 优先；无 Agent 时回退 JSON 全量）</option>
+          </select>
+          <label class="checkboxLabel multiline">
+            <input id="aiIncludeFullJsonCheckbox" type="checkbox">
+            在提示中附加完整 JSON 块（始终将场景 JSON 作为基线发给模型）
+          </label>
+          <label class="checkboxLabel multiline">
+            <input id="aiIncludeSpatialSummaryCheckbox" type="checkbox">
+            附带空间摘要（画布已渲染时提供位置/尺寸摘要；未渲染时仅对象列表）
+          </label>
+          <div class="renderRow threeCol">
+            <div class="aiActionRow">
+              <button id="updateBtn">调整并载入</button>
+              <button type="button" class="aiStopBtn secondary" data-ai-stop hidden
+                aria-label="停止生成" title="停止生成">■</button>
+            </div>
+            <button id="loadBaseBtn" class="secondary">加载 Demo 基础场景</button>
+          </div>
+          <div class="hint">在输入框中按 Ctrl+Enter（Mac：⌘+Enter）提交。</div>
+          <div class="hint" id="aiUpdateHintSource">始终将「场景 JSON」标签页中的完整 JSON 作为当前场景基线。</div>
+          <div class="hint" id="aiUpdateHintMode">JSON 全量模式会重建场景，与整包导入效果相同。</div>
+          <div class="hint">命令脚本模式（可撤销）请在 Scene Editor 体验；本 Demo 仅 JSON 向调整。</div>
+          <label id="aiLastAdjustResultLabel" class="aiLastResultLabel" for="aiLastAdjustResult" hidden>上次 AI 产出</label>
+          <pre id="aiLastAdjustResult" class="aiStreamPreview aiLastResult" hidden spellcheck="false"></pre>
+          <pre id="aiStreamPreviewAdjust" class="aiStreamPreview" hidden spellcheck="false"></pre>
+        </div>
+      </div>
+
+      <div class="tabPanel" role="tabpanel" data-tab="image">
+        <div class="block">
+          <div class="blockTitle">看图生成</div>
+          <div class="hint">图片 → 新场景 JSON（需 Vision，推荐 chatgpt + gpt-4o / gpt-4o-mini）</div>
+          <label class="label" for="imageFileInput">本地文件（优先级最高）</label>
+          <input id="imageFileInput" type="file" accept="image/*">
+
+          <label class="label" for="imageBase64Input">Base64（未选文件时使用；可贴裸 base64 或完整 data URL）</label>
+          <textarea id="imageBase64Input" placeholder="data:image/png;base64,... 或裸 base64"></textarea>
+
+          <label class="label" for="imageMimeSelect">裸 Base64 的 MIME</label>
+          <select id="imageMimeSelect">
+            <option value="image/png">image/png</option>
+            <option value="image/jpeg">image/jpeg</option>
+            <option value="image/webp">image/webp</option>
+            <option value="image/gif">image/gif</option>
+          </select>
+
+          <label class="label" for="imageUrlInput">在线图片 URL（前两者都空时使用）</label>
+          <input id="imageUrlInput" type="url" autocomplete="off" placeholder="https://...">
+
+          <label class="label" for="imagePromptInput">补充说明（可选）</label>
+          <textarea id="imagePromptInput" placeholder="例如：按图还原建筑与道路大致布局，用简洁色块材质"></textarea>
+
+          <label class="label" for="imageDetailSelect">image_detail（OpenAI）</label>
+          <select id="imageDetailSelect">
+            <option value="auto" selected>auto</option>
+            <option value="low">low</option>
+            <option value="high">high</option>
+          </select>
+
+          <div class="aiActionRow">
+            <button id="generateFromImageBtn">根据图片生成场景 JSON</button>
+            <button type="button" class="aiStopBtn secondary" data-ai-stop hidden
+              aria-label="停止生成" title="停止生成">■</button>
+          </div>
+          <div class="hint">在输入框中按 Ctrl+Enter（Mac：⌘+Enter）提交。</div>
+          <pre id="aiStreamPreviewImage" class="aiStreamPreview" hidden spellcheck="false"></pre>
+          <div class="hint">优先级：本地文件 &gt; Base64 &gt; URL。内网或 localhost 的 URL 常无法被模型服务端拉取，请用文件或 Base64。</div>
+        </div>
+      </div>
+
+      <div class="tabPanel" role="tabpanel" data-tab="scene">
+        <div class="block sceneJsonBlock">
+          <div class="renderRow">
+            <button id="renderBtn">渲染 JSON 到画布</button>
+            <label class="checkboxLabel">
+              <input id="cameraLockCheckbox" type="checkbox">
+              机位保持
+            </label>
+            <label class="checkboxLabel">
+              <input id="autoRenderCheckbox" type="checkbox" checked>
+              自动渲染
+            </label>
+          </div>
+          <label class="label" for="sceneOutput">当前场景 JSON</label>
+          <textarea id="sceneOutput"></textarea>
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script type="module">
+  import {
+    createJsonSceneFit,
+    createSceneAiClient,
+    createOpenAiImageProvider,
+    createDirectorySink,
+    createUploadSink,
+    createZipDownloadSink,
+    parseSceneJsonString,
+    resolveScenePayloadForLoad,
+    isCanonicalScenePayload
+  } from "threejson";
+
+  const providerSelect = document.getElementById("providerSelect");
+  const customApiBaseWrap = document.getElementById("customApiBaseWrap");
+  const customApiBaseInput = document.getElementById("customApiBaseInput");
+  const apiKeyInput = document.getElementById("apiKeyInput");
+  const modelInput = document.getElementById("modelInput");
+  const generatePromptInput = document.getElementById("generatePromptInput");
+  const updatePromptInput = document.getElementById("updatePromptInput");
+  const sceneOutput = document.getElementById("sceneOutput");
+  const canvasContainer = document.getElementById("canvasContainer");
+  const message = document.getElementById("message");
+  const generateBtn = document.getElementById("generateBtn");
+  const generateFromImageBtn = document.getElementById("generateFromImageBtn");
+  const imageFileInput = document.getElementById("imageFileInput");
+  const imageBase64Input = document.getElementById("imageBase64Input");
+  const imageMimeSelect = document.getElementById("imageMimeSelect");
+  const imageUrlInput = document.getElementById("imageUrlInput");
+  const imagePromptInput = document.getElementById("imagePromptInput");
+  const imageDetailSelect = document.getElementById("imageDetailSelect");
+  const loadBaseBtn = document.getElementById("loadBaseBtn");
+  const updateBtn = document.getElementById("updateBtn");
+  const renderBtn = document.getElementById("renderBtn");
+  const cameraLockCheckbox = document.getElementById("cameraLockCheckbox");
+  const autoRenderCheckbox = document.getElementById("autoRenderCheckbox");
+  const tabBar = document.getElementById("tabBar");
+  const rememberAiConfigCheckbox = document.getElementById("rememberAiConfigCheckbox");
+  const aiAgentEnabledCheckbox = document.getElementById("aiAgentEnabledCheckbox");
+  const aiAgentDepthSelect = document.getElementById("aiAgentDepthSelect");
+  const aiFillTexturesCheckbox = document.getElementById("aiFillTexturesCheckbox");
+  const aiStageAutoLoadCheckbox = document.getElementById("aiStageAutoLoadCheckbox");
+  const aiStreamPreviewCheckbox = document.getElementById("aiStreamPreviewCheckbox");
+  const aiStreamPreviewGenerate = document.getElementById("aiStreamPreviewGenerate");
+  const aiStreamPreviewAdjust = document.getElementById("aiStreamPreviewAdjust");
+  const aiStreamPreviewImage = document.getElementById("aiStreamPreviewImage");
+  const aiTextureBrowserModeSelect = document.getElementById("aiTextureBrowserModeSelect");
+  const aiPickTextureDirBtn = document.getElementById("aiPickTextureDirBtn");
+  const aiTextureUploadWrap = document.getElementById("aiTextureUploadWrap");
+  const aiTextureUploadEndpoint = document.getElementById("aiTextureUploadEndpoint");
+  const aiTextureDirHint = document.getElementById("aiTextureDirHint");
+  const aiUpdateOutputModeSelect = document.getElementById("aiUpdateOutputModeSelect");
+  const aiIncludeFullJsonCheckbox = document.getElementById("aiIncludeFullJsonCheckbox");
+  const aiIncludeSpatialSummaryCheckbox = document.getElementById("aiIncludeSpatialSummaryCheckbox");
+  const aiUpdateHintSource = document.getElementById("aiUpdateHintSource");
+  const aiUpdateHintMode = document.getElementById("aiUpdateHintMode");
+  const aiLastAdjustResult = document.getElementById("aiLastAdjustResult");
+  const aiLastAdjustResultLabel = document.getElementById("aiLastAdjustResultLabel");
+  const aiAgentIterativeApplyCheckbox = document.getElementById("aiAgentIterativeApplyCheckbox");
+  const aiAgentFitViewEachRoundCheckbox = document.getElementById("aiAgentFitViewEachRoundCheckbox");
+
+  let aiTextureDirectoryHandle = null;
+  let aiTextureZipSink = null;
+  let aiStreamPreviewBuffer = "";
+  let activeDemoTab = "config";
+  let aiAbortController = null;
+  let aiStageLoadChain = Promise.resolve();
+
+  /** 与 scene-editor（threejson_sceneEditor_ai_*）隔离的 localStorage 前缀 */
+  const LS_PREFIX = "threejson_t05_01_ai_";
+  const LS_REMEMBER = `${LS_PREFIX}remember`;
+  const LS_CUSTOM_API_BASE = `${LS_PREFIX}custom_api_base`;
+  const LS_AGENT_ENABLED = `${LS_PREFIX}agent_enabled`;
+  const LS_AGENT_DEPTH = `${LS_PREFIX}agent_depth`;
+  const LS_STREAM_PREVIEW = `${LS_PREFIX}stream_preview`;
+  const LS_STAGE_AUTO_LOAD = `${LS_PREFIX}stage_auto_load`;
+  const LS_UPDATE_OUTPUT_MODE = `${LS_PREFIX}update_output_mode`;
+  const LS_INCLUDE_FULL_JSON = `${LS_PREFIX}include_full_json`;
+  const LS_INCLUDE_SPATIAL = `${LS_PREFIX}include_spatial`;
+  const LS_AGENT_ITERATIVE = `${LS_PREFIX}agent_iterative`;
+  const LS_AGENT_FIT_VIEW = `${LS_PREFIX}agent_fit_view`;
+  const DEMO_DEFAULT_IMAGE_MODEL = "dall-e-3";
+
+  const AI_UPDATE_MODE_UI = {
+    "json-full": {
+      buttonLabel: "调整并载入",
+      busyLabel: "载入中...",
+      hintSource:
+        "始终将「场景 JSON」标签页中的完整 JSON 作为补丁/生成基线（与上方复选框无关）。",
+      hintMode: "JSON 全量模式会重建场景，与整包导入效果相同。"
+    },
+    "json-incremental": {
+      buttonLabel: "应用补丁",
+      busyLabel: "应用中...",
+      hintSource:
+        "始终将完整当前场景 JSON 作为 RFC 6902 补丁基线（与上方复选框无关）。",
+      hintMode: "JSON 增量模式应用补丁后载入；主要改 objectList，仍可能触发场景重载。"
+    },
+    auto: {
+      buttonLabel: "自动调整",
+      busyLabel: "调整中...",
+      hintSource:
+        "默认附带对象列表；可勾选空间摘要或在提示中附加完整 JSON。Agent 开启时优先自动模式。",
+      hintMode:
+        "无 Agent 时回退 JSON 全量。Agent + 自动可能产出命令脚本（本 Demo 不执行，请用 Scene Editor）。"
+    }
+  };
+
+  function normalizeDemoCustomBaseUrl(raw) {
+    let s = String(raw || "").trim();
+    if (!s) {
+      return "";
+    }
+    s = s.replace(/\/+$/, "");
+    const suffix = "/chat/completions";
+    const lower = s.toLowerCase();
+    if (lower.endsWith(suffix)) {
+      s = s.slice(0, -suffix.length).replace(/\/+$/, "");
+    }
+    return s;
+  }
+
+  function syncCustomProviderUi() {
+    const isCustom = providerSelect.value === "custom";
+    customApiBaseWrap.toggleAttribute("hidden", !isCustom);
+  }
+
+  function onProviderSelectChange() {
+    syncCustomProviderUi();
+    saveAiConfigToStorage();
+  }
+
+  let sceneRuntime = null;
+  let currentSceneJsonString = "";
+  let renderGeneration = 0;
+  let autoRenderTimer = null;
+  let activeAiAction = "";
+  const autoRenderDelayMs = 1000;
+  const defaultCameraPosition = { x: 320, y: 280, z: 460 };
+  const defaultLookAt = { x: 0, y: 30, z: 0 };
+
+  window.addEventListener("DOMContentLoaded", init);
+  window.addEventListener("beforeunload", cleanup);
+
+  function init() {
+    restoreAiConfigFromStorage();
+    restoreAiAgentPrefsFromStorage();
+    restoreAiTransportPrefsFromStorage();
+    restoreAiUpdatePrefsFromStorage();
+    syncCustomProviderUi();
+    syncAiTextureModeUi();
+    setActiveTab("config");
+    bindEvents();
+    bindAiConfigPersistence();
+    bindAiAgentPrefsPersistence();
+    bindAiTransportPrefsPersistence();
+    bindAiUpdatePrefsPersistence();
+    syncAiUpdateOutputModeUi();
+    loadBaseScene();
+  }
+
+  function bindEvents() {
+    generateBtn.addEventListener("click", onGenerateClick);
+    generateFromImageBtn.addEventListener("click", onGenerateFromImageClick);
+    loadBaseBtn.addEventListener("click", loadBaseScene);
+    updateBtn.addEventListener("click", onUpdateClick);
+    renderBtn.addEventListener("click", onRenderClick);
+    sceneOutput.addEventListener("input", onSceneOutputInput);
+    sceneOutput.addEventListener("blur", onSceneOutputBlur);
+    tabBar.addEventListener("click", onTabBarClick);
+    aiTextureBrowserModeSelect?.addEventListener("change", syncAiTextureModeUi);
+    aiPickTextureDirBtn?.addEventListener("click", onAiPickTextureDirClick);
+    document.querySelectorAll("[data-ai-stop]").forEach((btn) => {
+      btn.addEventListener("click", onAiCancelClick);
+    });
+    bindAiPanelSubmitShortcut([generatePromptInput], generateBtn, onGenerateClick);
+    bindAiPanelSubmitShortcut([updatePromptInput], updateBtn, onUpdateClick);
+    bindAiPanelSubmitShortcut(
+      [imagePromptInput, imageBase64Input],
+      generateFromImageBtn,
+      onGenerateFromImageClick
+    );
+    window.addEventListener("resize", onResize);
+    canvasContainer.addEventListener("contextmenu", onContextMenu);
+  }
+
+  function saveAiConfigToStorage() {
+    if (!rememberAiConfigCheckbox.checked) {
+      return;
+    }
+    try {
+      localStorage.setItem(LS_REMEMBER, "1");
+      localStorage.setItem(`${LS_PREFIX}provider`, providerSelect.value);
+      localStorage.setItem(`${LS_PREFIX}api_key`, apiKeyInput.value);
+      localStorage.setItem(`${LS_PREFIX}model`, modelInput.value);
+      localStorage.setItem(LS_CUSTOM_API_BASE, customApiBaseInput.value);
+    } catch (err) {
+      console.warn("saveAiConfigToStorage", err);
+    }
+  }
+
+  function clearAiConfigStorage() {
+    try {
+      localStorage.removeItem(LS_REMEMBER);
+      localStorage.removeItem(`${LS_PREFIX}provider`);
+      localStorage.removeItem(`${LS_PREFIX}api_key`);
+      localStorage.removeItem(`${LS_PREFIX}model`);
+      localStorage.removeItem(LS_CUSTOM_API_BASE);
+    } catch (err) {
+      console.warn("clearAiConfigStorage", err);
+    }
+  }
+
+  function restoreAiConfigFromStorage() {
+    try {
+      if (localStorage.getItem(LS_REMEMBER) !== "1") {
+        return;
+      }
+      rememberAiConfigCheckbox.checked = true;
+      const savedProvider = localStorage.getItem(`${LS_PREFIX}provider`);
+      const savedKey = localStorage.getItem(`${LS_PREFIX}api_key`);
+      const savedModel = localStorage.getItem(`${LS_PREFIX}model`);
+      if (savedProvider === "chatgpt" || savedProvider === "deepseek" || savedProvider === "custom") {
+        providerSelect.value = savedProvider;
+      }
+      const savedCustomBase = localStorage.getItem(LS_CUSTOM_API_BASE);
+      if (savedCustomBase !== null) {
+        customApiBaseInput.value = savedCustomBase;
+      }
+      if (savedKey !== null) {
+        apiKeyInput.value = savedKey;
+      }
+      if (savedModel !== null) {
+        modelInput.value = savedModel;
+      }
+    } catch (err) {
+      console.warn("restoreAiConfigFromStorage", err);
+    }
+  }
+
+  function onRememberAiConfigChange() {
+    if (rememberAiConfigCheckbox.checked) {
+      saveAiConfigToStorage();
+    } else {
+      clearAiConfigStorage();
+    }
+  }
+
+  function bindAiConfigPersistence() {
+    rememberAiConfigCheckbox.addEventListener("change", onRememberAiConfigChange);
+    providerSelect.addEventListener("change", onProviderSelectChange);
+    apiKeyInput.addEventListener("input", saveAiConfigToStorage);
+    modelInput.addEventListener("input", saveAiConfigToStorage);
+    customApiBaseInput.addEventListener("input", saveAiConfigToStorage);
+  }
+
+  function getDemoAgentOptions() {
+    return {
+      enabled: aiAgentEnabledCheckbox?.checked === true,
+      depth: aiAgentDepthSelect?.value || "simple",
+      iterativeApply: aiAgentIterativeApplyCheckbox?.checked === true,
+      fitViewEachRound: aiAgentFitViewEachRoundCheckbox?.checked === true
+    };
+  }
+
+  function saveAiAgentPrefsToStorage() {
+    try {
+      localStorage.setItem(LS_AGENT_ENABLED, aiAgentEnabledCheckbox?.checked ? "1" : "0");
+      localStorage.setItem(LS_AGENT_DEPTH, aiAgentDepthSelect?.value || "medium");
+      localStorage.setItem(LS_AGENT_ITERATIVE, aiAgentIterativeApplyCheckbox?.checked ? "1" : "0");
+      localStorage.setItem(LS_AGENT_FIT_VIEW, aiAgentFitViewEachRoundCheckbox?.checked ? "1" : "0");
+    } catch (err) {
+      console.warn("saveAiAgentPrefsToStorage", err);
+    }
+  }
+
+  function restoreAiAgentPrefsFromStorage() {
+    try {
+      if (localStorage.getItem(LS_AGENT_ENABLED) === "1" && aiAgentEnabledCheckbox) {
+        aiAgentEnabledCheckbox.checked = true;
+      }
+      const depth = localStorage.getItem(LS_AGENT_DEPTH);
+      const allowed = ["simple", "medium", "deep", "auto"];
+      if (depth && allowed.includes(depth) && aiAgentDepthSelect) {
+        aiAgentDepthSelect.value = depth;
+      }
+      if (localStorage.getItem(LS_AGENT_ITERATIVE) === "1" && aiAgentIterativeApplyCheckbox) {
+        aiAgentIterativeApplyCheckbox.checked = true;
+      }
+      if (localStorage.getItem(LS_AGENT_FIT_VIEW) === "1" && aiAgentFitViewEachRoundCheckbox) {
+        aiAgentFitViewEachRoundCheckbox.checked = true;
+      }
+    } catch (err) {
+      console.warn("restoreAiAgentPrefsFromStorage", err);
+    }
+  }
+
+  function bindAiAgentPrefsPersistence() {
+    aiAgentEnabledCheckbox?.addEventListener("change", saveAiAgentPrefsToStorage);
+    aiAgentDepthSelect?.addEventListener("change", saveAiAgentPrefsToStorage);
+    aiAgentIterativeApplyCheckbox?.addEventListener("change", saveAiAgentPrefsToStorage);
+    aiAgentFitViewEachRoundCheckbox?.addEventListener("change", saveAiAgentPrefsToStorage);
+  }
+
+  function saveAiTransportPrefsToStorage() {
+    try {
+      localStorage.setItem(
+        LS_STREAM_PREVIEW,
+        aiStreamPreviewCheckbox?.checked ? "1" : "0"
+      );
+      localStorage.setItem(
+        LS_STAGE_AUTO_LOAD,
+        aiStageAutoLoadCheckbox?.checked ? "1" : "0"
+      );
+    } catch (err) {
+      console.warn("saveAiTransportPrefsToStorage", err);
+    }
+  }
+
+  function restoreAiTransportPrefsFromStorage() {
+    try {
+      if (aiStreamPreviewCheckbox) {
+        aiStreamPreviewCheckbox.checked = localStorage.getItem(LS_STREAM_PREVIEW) !== "0";
+      }
+      const stageLoad = localStorage.getItem(LS_STAGE_AUTO_LOAD);
+      if (aiStageAutoLoadCheckbox) {
+        aiStageAutoLoadCheckbox.checked = stageLoad !== "0";
+      }
+      syncAiStreamPreviewUi();
+    } catch (err) {
+      console.warn("restoreAiTransportPrefsFromStorage", err);
+    }
+  }
+
+  function saveAiUpdatePrefsToStorage() {
+    try {
+      localStorage.setItem(LS_UPDATE_OUTPUT_MODE, aiUpdateOutputModeSelect?.value || "json-full");
+      localStorage.setItem(LS_INCLUDE_FULL_JSON, aiIncludeFullJsonCheckbox?.checked ? "1" : "0");
+      localStorage.setItem(LS_INCLUDE_SPATIAL, aiIncludeSpatialSummaryCheckbox?.checked ? "1" : "0");
+    } catch (err) {
+      console.warn("saveAiUpdatePrefsToStorage", err);
+    }
+  }
+
+  function restoreAiUpdatePrefsFromStorage() {
+    try {
+      const savedMode = localStorage.getItem(LS_UPDATE_OUTPUT_MODE);
+      const allowedModes = ["json-full", "json-incremental", "auto"];
+      if (savedMode && allowedModes.includes(savedMode) && aiUpdateOutputModeSelect) {
+        aiUpdateOutputModeSelect.value = savedMode;
+      }
+      if (localStorage.getItem(LS_INCLUDE_FULL_JSON) === "1" && aiIncludeFullJsonCheckbox) {
+        aiIncludeFullJsonCheckbox.checked = true;
+      }
+      if (localStorage.getItem(LS_INCLUDE_SPATIAL) === "1" && aiIncludeSpatialSummaryCheckbox) {
+        aiIncludeSpatialSummaryCheckbox.checked = true;
+      }
+    } catch (err) {
+      console.warn("restoreAiUpdatePrefsFromStorage", err);
+    }
+  }
+
+  function onAiUpdateOutputModeChange() {
+    saveAiUpdatePrefsToStorage();
+    syncAiUpdateOutputModeUi();
+  }
+
+  function bindAiUpdatePrefsPersistence() {
+    aiUpdateOutputModeSelect?.addEventListener("change", onAiUpdateOutputModeChange);
+    aiIncludeFullJsonCheckbox?.addEventListener("change", saveAiUpdatePrefsToStorage);
+    aiIncludeSpatialSummaryCheckbox?.addEventListener("change", saveAiUpdatePrefsToStorage);
+  }
+
+  function onAiStreamPreviewCheckboxChange() {
+    saveAiTransportPrefsToStorage();
+    syncAiStreamPreviewUi();
+  }
+
+  function bindAiTransportPrefsPersistence() {
+    aiStreamPreviewCheckbox?.addEventListener("change", onAiStreamPreviewCheckboxChange);
+    aiStageAutoLoadCheckbox?.addEventListener("change", saveAiTransportPrefsToStorage);
+  }
+
+  function getDemoStreamPreviewElementForTab(tabId) {
+    const map = {
+      generate: aiStreamPreviewGenerate,
+      adjust: aiStreamPreviewAdjust,
+      image: aiStreamPreviewImage
+    };
+    return map[tabId] || null;
+  }
+
+  function getAiStreamPreviewElements() {
+    return [
+      aiStreamPreviewGenerate,
+      aiStreamPreviewAdjust,
+      aiStreamPreviewImage
+    ].filter(Boolean);
+  }
+
+  function scrollAiStreamPreviewToEnd(el) {
+    if (!el || el.hasAttribute("hidden")) {
+      return;
+    }
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function syncAiStreamPreviewDom() {
+    const on = aiStreamPreviewCheckbox?.checked === true;
+    const cap = 12000;
+    const text =
+      aiStreamPreviewBuffer.length > cap
+        ? aiStreamPreviewBuffer.slice(-cap)
+        : aiStreamPreviewBuffer;
+    const elements = getAiStreamPreviewElements();
+    const activeEl = getDemoStreamPreviewElementForTab(activeDemoTab);
+    for (const el of elements) {
+      if (el === activeEl) {
+        continue;
+      }
+      el.textContent = "";
+      el.toggleAttribute("hidden", true);
+    }
+    if (!activeEl) {
+      return;
+    }
+    activeEl.textContent = text;
+    activeEl.toggleAttribute("hidden", !on || !text);
+    if (!on || !text) {
+      return;
+    }
+    requestAnimationFrame(() => {
+      scrollAiStreamPreviewToEnd(activeEl);
+    });
+  }
+
+  function syncAiStreamPreviewUi() {
+    syncAiStreamPreviewDom();
+  }
+
+  function beginAiOperation() {
+    aiAbortController?.abort();
+    aiAbortController = new AbortController();
+    aiStreamPreviewBuffer = "";
+    syncAiStreamPreviewDom();
+    return aiAbortController;
+  }
+
+  function isAiAbortError(err) {
+    const name = err?.name || "";
+    return name === "AbortError" || /aborted/i.test(String(err?.message || err));
+  }
+
+  function onAiCancelClick() {
+    aiAbortController?.abort();
+    setAiActionState(false, "");
+    setMessage("已中止 AI 请求。");
+  }
+
+  function syncAiStopButtons(busy) {
+    document.querySelectorAll("[data-ai-stop]").forEach((btn) => {
+      btn.toggleAttribute("hidden", !busy);
+      btn.disabled = !busy;
+    });
+  }
+
+  function bindAiPanelSubmitShortcut(fields, actionButton, trigger) {
+    const list = Array.isArray(fields) ? fields : [fields];
+    for (const field of list) {
+      if (!field) {
+        continue;
+      }
+      field.addEventListener("keydown", (event) => {
+        const mod = event.ctrlKey || event.metaKey;
+        if (event.key !== "Enter" || !mod || event.shiftKey || event.altKey) {
+          return;
+        }
+        if (actionButton?.disabled) {
+          return;
+        }
+        event.preventDefault();
+        void trigger();
+      });
+    }
+  }
+
+  function getDemoUpdateOutputMode() {
+    const mode = aiUpdateOutputModeSelect?.value || "json-full";
+    if (["json-full", "json-incremental", "auto"].includes(mode)) {
+      return mode;
+    }
+    return "json-full";
+  }
+
+  function getAiUpdateModeUiCopy(mode = getDemoUpdateOutputMode()) {
+    return AI_UPDATE_MODE_UI[mode] || AI_UPDATE_MODE_UI["json-full"];
+  }
+
+  function syncAiUpdateOutputModeUi() {
+    const copy = getAiUpdateModeUiCopy();
+    if (updateBtn && !activeAiAction) {
+      updateBtn.textContent = copy.buttonLabel;
+    }
+    if (aiUpdateHintSource) {
+      aiUpdateHintSource.textContent = copy.hintSource;
+    }
+    if (aiUpdateHintMode) {
+      aiUpdateHintMode.textContent = copy.hintMode;
+    }
+  }
+
+  function resolveDemoAgentOutputMode(uiMode) {
+    if (uiMode === "auto") {
+      return "auto";
+    }
+    return "json";
+  }
+
+  function resolveDemoUpdateMode(uiMode) {
+    return uiMode === "json-incremental" ? "incremental" : "full";
+  }
+
+  function truncateAiDisplayText(text, cap = 8000) {
+    const raw = String(text || "");
+    if (raw.length <= cap) {
+      return raw;
+    }
+    return `${raw.slice(0, cap)}\n…（已截断，共 ${raw.length} 字符）`;
+  }
+
+  function formatCommandsArrayForDisplay(commands) {
+    if (!Array.isArray(commands) || commands.length === 0) {
+      return "";
+    }
+    try {
+      return commands
+        .map((cmd) => {
+          const op = cmd?.op;
+          const args = cmd?.args || {};
+          if (!op) {
+            return "";
+          }
+          const id = args.id != null ? String(args.id) : "";
+          if (op === "object.patch" && id) {
+            const partial = args.partial != null ? JSON.stringify(args.partial) : "{}";
+            return `object.patch id=${id} partial=${partial}`;
+          }
+          if (op === "object.add") {
+            return `object.add parent=${args.parent ?? ""} descriptor=${JSON.stringify(args.descriptor || {})}`;
+          }
+          if (op === "object.remove" && id) {
+            return `object.remove id=${id}`;
+          }
+          return JSON.stringify({ op, args });
+        })
+        .filter(Boolean)
+        .join("\n");
+    } catch (_err) {
+      return commands.map((cmd) => JSON.stringify(cmd)).join("\n");
+    }
+  }
+
+  function buildDemoAdjustLastResultText(result, outputMode = getDemoUpdateOutputMode()) {
+    if (!result || typeof result !== "object") {
+      return null;
+    }
+    const mode = String(outputMode || result.outputMode || "json-full");
+    if (result.outputMode === "commands") {
+      const count = Array.isArray(result.commands) ? result.commands.length : 0;
+      const body =
+        String(result.commandScript || "").trim() ||
+        formatCommandsArrayForDisplay(result.commands);
+      return {
+        title: `上次 AI 产出 · 命令脚本 · ${count || "?"} 条（Demo 未执行）`,
+        body: truncateAiDisplayText(body || "（无命令脚本文本）")
+      };
+    }
+    if (result.sceneJsonString) {
+      const jsonBody = truncateAiDisplayText(result.sceneJsonString);
+      if (mode === "json-incremental" || result.updateMode === "incremental") {
+        return {
+          title: "上次 AI 产出 · JSON 增量 · 已载入",
+          body: jsonBody
+        };
+      }
+      return {
+        title: "上次 AI 产出 · JSON 全量 · 已载入",
+        body: jsonBody
+      };
+    }
+    return null;
+  }
+
+  function renderDemoAdjustLastResult(result, outputMode = getDemoUpdateOutputMode()) {
+    const formatted = buildDemoAdjustLastResultText(result, outputMode);
+    if (!formatted || !aiLastAdjustResult) {
+      aiLastAdjustResult?.toggleAttribute("hidden", true);
+      aiLastAdjustResultLabel?.toggleAttribute("hidden", true);
+      return;
+    }
+    if (aiLastAdjustResultLabel) {
+      aiLastAdjustResultLabel.textContent = formatted.title;
+      aiLastAdjustResultLabel.toggleAttribute("hidden", false);
+    }
+    aiLastAdjustResult.textContent = formatted.body;
+    aiLastAdjustResult.toggleAttribute("hidden", false);
+    requestAnimationFrame(() => scrollAiStreamPreviewToEnd(aiLastAdjustResult));
+  }
+
+  function buildDemoObjectListFromJson(jsonString) {
+    const items = [];
+    const seen = new Set();
+    try {
+      const parsed = parseSceneJsonString(jsonString);
+      const payload = resolveScenePayloadForLoad(parsed);
+      const objectList = Array.isArray(payload.objectList) ? payload.objectList : [];
+      for (let i = 0; i < objectList.length; i += 1) {
+        const descriptor = objectList[i];
+        if (!descriptor || typeof descriptor !== "object") {
+          continue;
+        }
+        const id = typeof descriptor.threeJsonId === "string" ? descriptor.threeJsonId.trim() : "";
+        if (!id || seen.has(id)) {
+          continue;
+        }
+        seen.add(id);
+        items.push({
+          threeJsonId: id,
+          name: typeof descriptor.name === "string" ? descriptor.name : "",
+          objType: typeof descriptor.objType === "string" ? descriptor.objType : ""
+        });
+      }
+    } catch (_err) {
+      return items;
+    }
+    return items;
+  }
+
+  function buildDemoObjectListFromRuntime() {
+    const items = [];
+    const seen = new Set();
+    const scene = sceneRuntime?.scene;
+    if (!scene?.isScene) {
+      return items;
+    }
+    scene.traverse((node) => {
+      const descriptor = node?.userData?.objJson;
+      if (!descriptor || typeof descriptor !== "object") {
+        return;
+      }
+      const id = typeof descriptor.threeJsonId === "string" ? descriptor.threeJsonId.trim() : "";
+      if (!id || seen.has(id)) {
+        return;
+      }
+      seen.add(id);
+      items.push({
+        threeJsonId: id,
+        name: typeof descriptor.name === "string" ? descriptor.name : "",
+        objType: typeof descriptor.objType === "string" ? descriptor.objType : ""
+      });
+    });
+    return items;
+  }
+
+  async function buildDemoUpdateContext(prompt, currentSceneJsonString) {
+    const includeFullJson = aiIncludeFullJsonCheckbox?.checked === true;
+    const includeSpatialSummary = aiIncludeSpatialSummaryCheckbox?.checked === true;
+    const trimmedJson = String(currentSceneJsonString || "").trim();
+    const runtimeList = buildDemoObjectListFromRuntime();
+    const objectList = runtimeList.length > 0 ? runtimeList : buildDemoObjectListFromJson(trimmedJson);
+    const context = {
+      objectList,
+      currentSceneJsonString: trimmedJson,
+      fullSceneJson: includeFullJson && trimmedJson ? trimmedJson : undefined
+    };
+
+    if (includeSpatialSummary && sceneRuntime?.scene?.isScene) {
+      const spatialModule = await import("/tools/common/editor-single/ai/sceneSpatialContext.js");
+      const cmdCtx = { scene: sceneRuntime.scene };
+      const spatial = spatialModule.buildObjectSpatialCardsFromScene(cmdCtx);
+      const cards = spatial.cards || [];
+      if (cards.length > 0) {
+        context.sceneScaleProfile = spatialModule.buildSceneScaleProfile(cards, {
+          truncated: spatial.truncated === true,
+          totalCount: spatial.totalCount ?? cards.length
+        });
+        context.objectSpatialCards = cards;
+        context.referenceObjects = spatialModule.pickReferenceObjects(
+          prompt,
+          cards,
+          spatial.descriptorById,
+          { selectionId: null, selectionDescriptor: null }
+        );
+        context.placementHints = spatialModule.buildPlacementHints(
+          prompt,
+          context.referenceObjects,
+          context.sceneScaleProfile
+        );
+        context.objectListForMessage = [];
+      }
+    }
+
+    return context;
+  }
+
+  async function demoFitViewToScene() {
+    if (!sceneRuntime?.scene?.isScene || !sceneRuntime?.camera) {
+      return;
+    }
+    try {
+      const util = await import("/core/util/util.js");
+      const bounds = util.buildAdaptiveContentBoundingBoxTHREE(sceneRuntime.scene, {
+        ignoreHelper: null
+      });
+      if (!bounds) {
+        return;
+      }
+      util.fitPerspectiveCameraToContentBoundsTHREE(
+        sceneRuntime.camera,
+        sceneRuntime.controls,
+        bounds,
+        { aspectHints: { canvasWrap: canvasContainer } }
+      );
+    } catch (err) {
+      console.warn("demoFitViewToScene", err);
+    }
+  }
+
+  function enqueueDemoStageSceneLoad(jsonString) {
+    if (!jsonString || aiStageAutoLoadCheckbox?.checked !== true) {
+      return aiStageLoadChain;
+    }
+    aiStageLoadChain = aiStageLoadChain
+      .then(async () => {
+        setSceneJsonText(jsonString);
+        const ok = await showSceneOnCanvasAsync(jsonString, { silentError: false });
+        if (ok) {
+          const agent = getDemoAgentOptions();
+          if (agent.fitViewEachRound) {
+            await demoFitViewToScene();
+          }
+        }
+      })
+      .catch((err) => {
+        console.warn("stage auto-load", err);
+      });
+    return aiStageLoadChain;
+  }
+
+  function getDemoStreamOptions() {
+    if (!aiStreamPreviewCheckbox?.checked) {
+      return {};
+    }
+    return { stream: true, streamPreview: true };
+  }
+
+  function syncAiTextureModeUi() {
+    const mode = aiTextureBrowserModeSelect?.value || "directory";
+    aiTextureUploadWrap?.toggleAttribute("hidden", mode !== "upload");
+    aiPickTextureDirBtn?.toggleAttribute("hidden", mode !== "directory");
+  }
+
+  async function onAiPickTextureDirClick() {
+    if (!window.showDirectoryPicker) {
+      setMessage("当前浏览器不支持目录选择，请改用 ZIP 下载或外置 CLI。");
+      return;
+    }
+    try {
+      aiTextureDirectoryHandle = await window.showDirectoryPicker();
+      if (aiTextureDirHint) {
+        aiTextureDirHint.textContent = "已授权纹理输出目录。";
+      }
+    } catch (err) {
+      if (err?.name !== "AbortError") {
+        console.warn(err);
+      }
+    }
+  }
+
+  function getDemoLlmCredentials() {
+    const provider = providerSelect.value;
+    const apiKey = apiKeyInput.value.trim();
+    const model = modelInput.value.trim();
+    if (!apiKey) {
+      throw new Error("请先输入 API Key。");
+    }
+    const creds = {
+      provider,
+      apiKey,
+      model: model || undefined,
+      baseUrl: undefined,
+      imageModel: DEMO_DEFAULT_IMAGE_MODEL
+    };
+    if (provider === "custom") {
+      const base = normalizeDemoCustomBaseUrl(customApiBaseInput.value);
+      if (!base || !/^https?:\/\//i.test(base)) {
+        throw new Error("自定义 Provider 请填写接口根 URL（须以 http:// 或 https:// 开头）。");
+      }
+      creds.baseUrl = base;
+    }
+    return creds;
+  }
+
+  function formatTextureFillWarning(warning) {
+    if (!warning) {
+      return null;
+    }
+    const w = String(warning);
+    const lower = w.toLowerCase();
+    if (lower.includes("failed to fetch") || lower.includes("networkerror")) {
+      return `纹理填充失败（可能是浏览器跨域 CORS）：${w}。场景 JSON 已写入。`;
+    }
+    if (/\b401\b/.test(w) || lower.includes("unauthorized")) {
+      return `纹理填充失败（401 未授权，请检查 API Key 与网关是否支持 images）：${w}。场景 JSON 已写入。`;
+    }
+    return `纹理填充失败：${w}。场景 JSON 已写入。`;
+  }
+
+  async function finalizeDemoSceneAgentResult(result, { source, doneAuto, doneManual }) {
+    await setSceneOutput(result.sceneJsonString, { autoRender: true, source });
+    const warn = formatTextureFillWarning(result.textureFillWarning);
+    if (warn) {
+      setMessage(warn);
+      return;
+    }
+    setMessage(isAutoRenderEnabled() ? doneAuto : doneManual);
+  }
+
+  async function buildDemoTextureOptions() {
+    if (!aiFillTexturesCheckbox?.checked) {
+      return null;
+    }
+    const creds = getDemoLlmCredentials();
+    const imageProvider = createOpenAiImageProvider({
+      apiKey: creds.apiKey,
+      baseUrl: creds.baseUrl,
+      model: creds.imageModel
+    });
+    let sink = null;
+    if (window.ThreeJsonDesktop?.saveTextureToProject) {
+      sink = {
+        saveLocal: async (blob, meta) => {
+          const ext = blob.type?.includes("jpeg") ? "jpg" : "png";
+          const rel = `assets/textures/ai-generated/texture-${meta.index ?? 0}.${ext}`;
+          const buf = new Uint8Array(await blob.arrayBuffer());
+          return window.ThreeJsonDesktop.saveTextureToProject(rel, buf);
+        }
+      };
+    } else {
+      const mode = aiTextureBrowserModeSelect?.value || "directory";
+      if (mode === "upload") {
+        const endpoint = aiTextureUploadEndpoint?.value?.trim();
+        if (!endpoint) {
+          throw new Error("请填写图床 upload endpoint。");
+        }
+        sink = createUploadSink({ endpoint });
+      } else if (mode === "zipDownload") {
+        aiTextureZipSink = createZipDownloadSink();
+        sink = aiTextureZipSink;
+      } else {
+        if (!aiTextureDirectoryHandle) {
+          throw new Error("请先点击「选择纹理输出目录」授权本地目录。");
+        }
+        sink = createDirectorySink(aiTextureDirectoryHandle);
+      }
+    }
+    return {
+      enabled: true,
+      sink,
+      imageProvider,
+      imageApiKey: creds.apiKey,
+      imageBaseUrl: creds.baseUrl,
+      imageModel: creds.imageModel,
+      overwriteExisting: false,
+      concurrency: 2
+    };
+  }
+
+  function buildDemoSceneAgentOnProgress(agent, texture, streamPreviewOn) {
+    const streamOn = streamPreviewOn === true;
+    return (payload) => {
+      if (!payload) {
+        return;
+      }
+      if (payload.kind === "stream" && streamOn && payload.previewDelta) {
+        aiStreamPreviewBuffer += payload.previewDelta;
+        syncAiStreamPreviewDom();
+        setMessage("流式生成中…");
+        return;
+      }
+      const stageJson = payload.sceneJsonString;
+      const isStageLoad =
+        (payload.kind === "scene_ready" || payload.kind === "stage_preview") &&
+        stageJson;
+      if (isStageLoad) {
+        void enqueueDemoStageSceneLoad(stageJson).then(() => {
+          setMessage(payload.message || "已载入阶段预览，纹理填充或后续步骤进行中…");
+        });
+        return;
+      }
+      if (payload.kind === "commands_applied" && agent.fitViewEachRound && payload.sceneMutated) {
+        void demoFitViewToScene();
+      }
+      if (agent.enabled) {
+        const label = payload.message || payload.kind || "进行中";
+        setMessage(`Agent [${payload.step}] ${label}`);
+        return;
+      }
+      if (texture?.enabled && payload.kind === "fill_textures") {
+        setMessage(payload.message || "正在填充纹理…");
+      }
+    };
+  }
+
+  async function runDemoSceneAgent(client, input, extraOptions = {}) {
+    const agent = getDemoAgentOptions();
+    const texture = await buildDemoTextureOptions();
+    const streamOpts = getDemoStreamOptions();
+    if (agent.enabled) {
+      setMessage("Agent 多轮运行中（消耗更多 Token）…");
+    }
+    const result = await client.runSceneAgent(input, {
+      agent,
+      texture: texture || undefined,
+      onProgress: buildDemoSceneAgentOnProgress(
+        agent,
+        texture,
+        streamOpts.streamPreview
+      ),
+      signal: aiAbortController?.signal,
+      ...streamOpts,
+      ...extraOptions
+    });
+    if (aiTextureZipSink?.finalizeDownload) {
+      await aiTextureZipSink.finalizeDownload("threejson-ai-textures");
+      setMessage("纹理已打包为 ZIP 下载；请解压到 resources/textures/ 后重新渲染。");
+    }
+    return result;
+  }
+
+  function setActiveTab(tabId) {
+    activeDemoTab = tabId;
+    const tabBtns = tabBar.querySelectorAll(".tabBtn");
+    const tabPanels = document.querySelectorAll(".tabPanel");
+    tabBtns.forEach((btn) => {
+      const active = btn.dataset.tab === tabId;
+      btn.classList.toggle("active", active);
+      btn.setAttribute("aria-selected", active ? "true" : "false");
+    });
+    tabPanels.forEach((panel) => {
+      const active = panel.dataset.tab === tabId;
+      panel.classList.toggle("is-active", active);
+      panel.setAttribute("aria-hidden", active ? "false" : "true");
+    });
+    const streamPreByTab = {
+      generate: aiStreamPreviewGenerate,
+      image: aiStreamPreviewImage,
+      adjust: aiStreamPreviewAdjust
+    };
+    syncAiStreamPreviewDom();
+    requestAnimationFrame(() => {
+      scrollAiStreamPreviewToEnd(streamPreByTab[tabId]);
+    });
+  }
+
+  function onTabBarClick(event) {
+    const btn = event.target.closest(".tabBtn");
+    if (!btn || !tabBar.contains(btn) || !btn.dataset.tab) {
+      return;
+    }
+    setActiveTab(btn.dataset.tab);
+  }
+
+  function onResize() {
+    sceneRuntime?.resize({
+      width: canvasContainer.clientWidth,
+      height: canvasContainer.clientHeight
+    });
+  }
+
+  function onContextMenu(event) {
+    event.preventDefault();
+  }
+
+  function getAiClient() {
+    const creds = getDemoLlmCredentials();
+    const opts = {
+      provider: creds.provider,
+      apiKey: creds.apiKey,
+      model: creds.model
+    };
+    if (creds.baseUrl) {
+      opts.baseUrl = creds.baseUrl;
+    }
+    return createSceneAiClient(opts);
+  }
+
+  function readFileAsDataURL(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(reader.error || new Error("读取文件失败。"));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function buildImagePayloadForVision() {
+    const file = imageFileInput.files && imageFileInput.files[0];
+    if (file) {
+      return readFileAsDataURL(file);
+    }
+    const b64Block = imageBase64Input.value.trim();
+    if (b64Block) {
+      if (/^data:image\//i.test(b64Block)) {
+        return b64Block;
+      }
+      const mime = imageMimeSelect.value.trim() || "image/png";
+      const cleaned = b64Block.replace(/\s+/g, "");
+      return `data:${mime};base64,${cleaned}`;
+    }
+    const url = imageUrlInput.value.trim();
+    if (url) {
+      return url;
+    }
+    throw new Error("请提供图片：选择本地文件、填写 Base64，或填写 URL（优先级：文件 > Base64 > URL）。");
+  }
+
+  async function onGenerateFromImageClick() {
+    try {
+      setMessage("正在准备图片并请求 AI...");
+      aiStageLoadChain = Promise.resolve();
+      beginAiOperation();
+      setAiActionState(true, "image");
+      const image = await buildImagePayloadForVision();
+      const aiClient = getAiClient();
+      const extraPrompt = imagePromptInput.value.trim();
+      const imageDetail = imageDetailSelect.value;
+      const result = await runDemoSceneAgent(
+        aiClient,
+        {
+          mode: "fromImage",
+          prompt: extraPrompt,
+          image
+        },
+        { imageDetail, maxTokens: 8192 }
+      );
+      await aiStageLoadChain;
+      await finalizeDemoSceneAgentResult(result, {
+        source: "image",
+        doneAuto: "看图生成完成并已自动渲染。",
+        doneManual: "看图生成完成，可点击「渲染 JSON 到画布」。"
+      });
+    } catch (error) {
+      if (isAiAbortError(error)) {
+        setMessage("已中止。");
+        return;
+      }
+      setMessage(`看图生成失败：${error.message}`);
+      console.error(error);
+    } finally {
+      setAiActionState(false, "");
+    }
+  }
+
+  async function onGenerateClick() {
+    try {
+      const prompt = generatePromptInput.value.trim();
+      if (!prompt) {
+        throw new Error("请输入生成提示词。");
+      }
+      setMessage("AI 正在生成场景 JSON...");
+      aiStageLoadChain = Promise.resolve();
+      beginAiOperation();
+      setAiActionState(true, "generate");
+      const aiClient = getAiClient();
+      const result = await runDemoSceneAgent(aiClient, {
+        mode: "generate",
+        prompt
+      });
+      await aiStageLoadChain;
+      await finalizeDemoSceneAgentResult(result, {
+        source: "generate",
+        doneAuto: "生成完成并已自动渲染。",
+        doneManual: "生成完成，可点击「渲染 JSON 到画布」。"
+      });
+    } catch (error) {
+      if (isAiAbortError(error)) {
+        setMessage("已中止。");
+        return;
+      }
+      setMessage(`生成失败：${error.message}`);
+      console.error(error);
+    } finally {
+      setAiActionState(false, "");
+    }
+  }
+
+  async function onUpdateClick() {
+    try {
+      const prompt = updatePromptInput.value.trim();
+      if (!prompt) {
+        throw new Error("请输入调整提示词。");
+      }
+      if (!currentSceneJsonString.trim()) {
+        throw new Error("请先加载或生成一个场景 JSON。");
+      }
+      aiStageLoadChain = Promise.resolve();
+      const uiOutputMode = getDemoUpdateOutputMode();
+      const agent = getDemoAgentOptions();
+      const effectiveUiMode =
+        !agent.enabled && uiOutputMode === "auto" ? "json-full" : uiOutputMode;
+      const statusByMode = {
+        "json-full": "AI 正在根据现有 JSON 生成全量场景…",
+        "json-incremental": "AI 正在根据现有 JSON 生成 RFC 6902 补丁…",
+        auto: agent.enabled
+          ? "AI Agent 正在自动选择调整方式…"
+          : "AI 正在根据现有 JSON 调整场景（自动模式回退 JSON 全量）…"
+      };
+      setMessage(statusByMode[effectiveUiMode] || statusByMode["json-full"]);
+      beginAiOperation();
+      setAiActionState(true, "update");
+      const aiClient = getAiClient();
+      const updateContext = await buildDemoUpdateContext(prompt, currentSceneJsonString);
+      const updateMode = resolveDemoUpdateMode(effectiveUiMode);
+      const agentInput = {
+        mode: "update",
+        prompt,
+        currentSceneJsonString,
+        updateContext
+      };
+      if (agent.enabled) {
+        agentInput.outputMode = resolveDemoAgentOutputMode(effectiveUiMode);
+      }
+      const result = await runDemoSceneAgent(aiClient, agentInput, { updateMode });
+      await aiStageLoadChain;
+
+      if (result.outputMode === "commands" && !result.sceneJsonString) {
+        renderDemoAdjustLastResult(result, uiOutputMode);
+        setMessage(
+          "Agent 产出了命令脚本；本 Demo 不执行命令。请改用 JSON 全量/增量，或在 Scene Editor 体验命令模式。"
+        );
+        return;
+      }
+
+      await finalizeDemoSceneAgentResult(result, {
+        source: "update",
+        doneAuto: "调整完成并已自动渲染。",
+        doneManual: "调整完成，可点击「渲染 JSON 到画布」。"
+      });
+      renderDemoAdjustLastResult(
+        {
+          ...result,
+          updateMode: result.updateMode || updateMode
+        },
+        uiOutputMode
+      );
+    } catch (error) {
+      if (isAiAbortError(error)) {
+        setMessage("已中止。");
+        return;
+      }
+      setMessage(`调整失败：${error.message}`);
+      console.error(error);
+    } finally {
+      setAiActionState(false, "");
+    }
+  }
+
+  async function loadBaseScene() {
+    try {
+      setMessage("正在加载基础场景 JSON...");
+      const response = await fetch("/assets/json/tutorial/track-05/05-01-ai-scene.json");
+      if (!response.ok) {
+        throw new Error(`加载基础场景失败：${response.status}`);
+      }
+      const jsonObj = await response.json();
+      const jsonText = JSON.stringify(jsonObj, null, 2);
+      setSceneJsonText(jsonText);
+      const ok = await showSceneOnCanvasAsync(jsonText, { silentError: false });
+      if (!ok) {
+        return;
+      }
+      setMessage("基础场景已加载并渲染。");
+    } catch (error) {
+      setMessage(`加载失败：${error.message}`);
+      console.error(error);
+    }
+  }
+
+  async function onRenderClick() {
+    renderBtn.disabled = true;
+    try {
+      const ok = await showSceneOnCanvasAsync(sceneOutput.value, { silentError: false });
+      if (!ok) {
+        return;
+      }
+      const count = getBoxModelCount(sceneOutput.value);
+      setMessage(`渲染完成，物体数量：${count}`);
+    } finally {
+      renderBtn.disabled = false;
+    }
+  }
+
+  function onSceneOutputInput() {
+    currentSceneJsonString = sceneOutput.value;
+    if (!isAutoRenderEnabled()) {
+      return;
+    }
+    scheduleAutoRender();
+  }
+
+  function onSceneOutputBlur() {
+    if (!isAutoRenderEnabled()) {
+      return;
+    }
+    void flushAutoRenderAsync({ silentError: false }).then((ok) => {
+      if (!ok) {
+        return;
+      }
+      const count = getBoxModelCount(sceneOutput.value);
+      setMessage(`自动渲染完成，物体数量：${count}`);
+    });
+  }
+
+  function scheduleAutoRender() {
+    if (autoRenderTimer) {
+      window.clearTimeout(autoRenderTimer);
+    }
+    autoRenderTimer = window.setTimeout(() => {
+      autoRenderTimer = null;
+      void showSceneOnCanvasAsync(sceneOutput.value, { silentError: true }).then((ok) => {
+        if (!ok) {
+          return;
+        }
+        const count = getBoxModelCount(sceneOutput.value);
+        setMessage(`自动渲染完成，物体数量：${count}`);
+      });
+    }, autoRenderDelayMs);
+  }
+
+  function flushAutoRender({ silentError = false } = {}) {
+    if (autoRenderTimer) {
+      window.clearTimeout(autoRenderTimer);
+      autoRenderTimer = null;
+    }
+    void flushAutoRenderAsync({ silentError });
+  }
+
+  async function flushAutoRenderAsync({ silentError = false } = {}) {
+    if (autoRenderTimer) {
+      window.clearTimeout(autoRenderTimer);
+      autoRenderTimer = null;
+    }
+    return showSceneOnCanvasAsync(sceneOutput.value, { silentError });
+  }
+
+  function setSceneJsonText(jsonString) {
+    currentSceneJsonString = jsonString;
+    sceneOutput.value = jsonString;
+  }
+
+  function applyCameraLockIfEnabled() {
+    if (!isCameraLockEnabled() || !sceneRuntime?.camera) {
+      return;
+    }
+    const p = defaultCameraPosition;
+    const t = defaultLookAt;
+    sceneRuntime.camera.position.set(p.x, p.y, p.z);
+    if (sceneRuntime.controls?.target) {
+      sceneRuntime.controls.target.set(t.x, t.y, t.z);
+      sceneRuntime.controls.update?.();
+    }
+  }
+
+  async function showSceneOnCanvasAsync(jsonString, { silentError = false } = {}) {
+    try {
+      const trimmed = String(jsonString || "").trim();
+      if (!trimmed) {
+        throw new Error("当前 JSON 为空。");
+      }
+      const sceneObj = parseSceneJsonString(trimmed);
+      const payload = resolveScenePayloadForLoad(sceneObj);
+      if (
+        !(payload.worldInfo && typeof payload.worldInfo === "object")
+        && !isCanonicalScenePayload(payload)
+      ) {
+        throw new Error("JSON 缺少 worldInfo 或标准 objectList。");
+      }
+
+      const gen = ++renderGeneration;
+      sceneRuntime?.dispose?.();
+
+      const resolved = resolveScenePayloadForLoad(payload);
+      sceneRuntime = await createJsonSceneFit(resolved, { canvas: canvasContainer });
+
+      if (gen !== renderGeneration) {
+        sceneRuntime?.dispose?.();
+        sceneRuntime = null;
+        return false;
+      }
+
+      applyCameraLockIfEnabled();
+      sceneRuntime.resize?.({
+        width: canvasContainer.clientWidth,
+        height: canvasContainer.clientHeight
+      });
+      sceneRuntime.start?.();
+      return true;
+    } catch (error) {
+      if (!silentError) {
+        setMessage(`渲染失败：${error.message}`);
+      }
+      console.error(error);
+      return false;
+    }
+  }
+
+  async function setSceneOutput(jsonString, { autoRender = false, source = "" } = {}) {
+    setSceneJsonText(jsonString);
+    if (!autoRender || !isAutoRenderEnabled()) {
+      return true;
+    }
+    const ok = await showSceneOnCanvasAsync(sceneOutput.value, { silentError: false });
+    if (!ok) {
+      return false;
+    }
+    const count = getBoxModelCount(sceneOutput.value);
+    if (source === "generate") {
+      setMessage(`生成完成并已自动渲染，物体数量：${count}`);
+    } else if (source === "update") {
+      setMessage(`调整完成并已自动渲染，物体数量：${count}`);
+    } else if (source === "image") {
+      setMessage(`看图生成完成并已自动渲染，物体数量：${count}`);
+    } else if (source === "stage") {
+      setMessage(`阶段预览已自动渲染，物体数量：${count}`);
+    } else {
+      setMessage(`自动渲染完成，物体数量：${count}`);
+    }
+    return true;
+  }
+
+  function setMessage(text) {
+    message.textContent = text;
+  }
+
+  function isAutoRenderEnabled() {
+    return autoRenderCheckbox.checked;
+  }
+
+  function isCameraLockEnabled() {
+    return cameraLockCheckbox.checked;
+  }
+
+  function getBoxModelCount(jsonString) {
+    try {
+      const sceneObj = JSON.parse(jsonString);
+      const wi = sceneObj?.worldInfo;
+      const boxes = Array.isArray(wi?.boxModelList) ? wi.boxModelList.length : 0;
+      const domains = Array.isArray(wi?.domainModelList) ? wi.domainModelList.length : 0;
+      return boxes + domains;
+    } catch {
+      return 0;
+    }
+  }
+
+  function setAiActionState(locked, action) {
+    activeAiAction = locked ? action : "";
+    const busy = Boolean(locked);
+    syncAiStopButtons(busy);
+    generateBtn.disabled = locked;
+    generateFromImageBtn.disabled = locked;
+    updateBtn.disabled = locked;
+    loadBaseBtn.disabled = locked;
+    aiPickTextureDirBtn && (aiPickTextureDirBtn.disabled = locked);
+    aiAgentEnabledCheckbox && (aiAgentEnabledCheckbox.disabled = locked);
+    aiAgentDepthSelect && (aiAgentDepthSelect.disabled = locked);
+    aiAgentIterativeApplyCheckbox && (aiAgentIterativeApplyCheckbox.disabled = locked);
+    aiAgentFitViewEachRoundCheckbox && (aiAgentFitViewEachRoundCheckbox.disabled = locked);
+    aiFillTexturesCheckbox && (aiFillTexturesCheckbox.disabled = locked);
+    aiStageAutoLoadCheckbox && (aiStageAutoLoadCheckbox.disabled = locked);
+    aiStreamPreviewCheckbox && (aiStreamPreviewCheckbox.disabled = locked);
+    aiTextureBrowserModeSelect && (aiTextureBrowserModeSelect.disabled = locked);
+    aiTextureUploadEndpoint && (aiTextureUploadEndpoint.disabled = locked);
+    aiUpdateOutputModeSelect && (aiUpdateOutputModeSelect.disabled = locked);
+    aiIncludeFullJsonCheckbox && (aiIncludeFullJsonCheckbox.disabled = locked);
+    aiIncludeSpatialSummaryCheckbox && (aiIncludeSpatialSummaryCheckbox.disabled = locked);
+
+    generateBtn.textContent = activeAiAction === "generate" ? "生成中..." : "生成新场景 JSON";
+    generateFromImageBtn.textContent = activeAiAction === "image" ? "看图生成中..." : "根据图片生成场景 JSON";
+    if (activeAiAction === "update") {
+      updateBtn.textContent = getAiUpdateModeUiCopy().busyLabel;
+    } else {
+      syncAiUpdateOutputModeUi();
+    }
+  }
+
+  function cleanup() {
+    if (autoRenderTimer) {
+      window.clearTimeout(autoRenderTimer);
+      autoRenderTimer = null;
+    }
+    sceneRuntime?.dispose();
+    window.removeEventListener("resize", onResize);
+    canvasContainer.removeEventListener("contextmenu", onContextMenu);
+    generateBtn.removeEventListener("click", onGenerateClick);
+    generateFromImageBtn.removeEventListener("click", onGenerateFromImageClick);
+    loadBaseBtn.removeEventListener("click", loadBaseScene);
+    updateBtn.removeEventListener("click", onUpdateClick);
+    renderBtn.removeEventListener("click", onRenderClick);
+    sceneOutput.removeEventListener("input", onSceneOutputInput);
+    sceneOutput.removeEventListener("blur", onSceneOutputBlur);
+    tabBar.removeEventListener("click", onTabBarClick);
+    rememberAiConfigCheckbox.removeEventListener("change", onRememberAiConfigChange);
+    providerSelect.removeEventListener("change", onProviderSelectChange);
+    apiKeyInput.removeEventListener("input", saveAiConfigToStorage);
+    modelInput.removeEventListener("input", saveAiConfigToStorage);
+    customApiBaseInput.removeEventListener("input", saveAiConfigToStorage);
+    aiTextureBrowserModeSelect?.removeEventListener("change", syncAiTextureModeUi);
+    aiPickTextureDirBtn?.removeEventListener("click", onAiPickTextureDirClick);
+    aiAgentEnabledCheckbox?.removeEventListener("change", saveAiAgentPrefsToStorage);
+    aiAgentDepthSelect?.removeEventListener("change", saveAiAgentPrefsToStorage);
+    aiStreamPreviewCheckbox?.removeEventListener("change", onAiStreamPreviewCheckboxChange);
+    aiStageAutoLoadCheckbox?.removeEventListener("change", saveAiTransportPrefsToStorage);
+    aiUpdateOutputModeSelect?.removeEventListener("change", onAiUpdateOutputModeChange);
+    aiIncludeFullJsonCheckbox?.removeEventListener("change", saveAiUpdatePrefsToStorage);
+    aiIncludeSpatialSummaryCheckbox?.removeEventListener("change", saveAiUpdatePrefsToStorage);
+    aiAgentIterativeApplyCheckbox?.removeEventListener("change", saveAiAgentPrefsToStorage);
+    aiAgentFitViewEachRoundCheckbox?.removeEventListener("change", saveAiAgentPrefsToStorage);
+    aiAbortController?.abort();
+  }
+</script>
+</body>
+</html>

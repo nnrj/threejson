@@ -1,0 +1,1867 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThreeJSON Tutorial · Track 2 · 360° 宇宙全景与太阳系</title>
+  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <script type="importmap">
+    
+    {
+      "imports": {
+        "threejson": "/builtins/full.js",
+        "threejson/core": "/core/index.js",
+        "three": "https://esm.sh/three@0.184.0",
+        "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
+        "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
+        "html2canvas-pro": "https://esm.sh/html2canvas-pro@2.0.4",
+        "gifuct-js": "https://esm.sh/gifuct-js@2.1.2",
+        "astronomy-engine": "https://esm.sh/astronomy-engine@2.1.19",
+        "three-mesh-bvh": "https://esm.sh/three-mesh-bvh@0.9.10?deps=three@0.184.0",
+        "three-bvh-csg": "https://esm.sh/three-bvh-csg@0.0.18?deps=three@0.184.0,three-mesh-bvh@0.9.10"
+      }
+    }
+  
+  </script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #1a1a1a;
+      --panel-bg: rgba(22, 26, 34, 0.52);
+      --panel-border: rgba(255, 255, 255, 0.08);
+      --text-main: #f3f5f7;
+      --text-muted: rgba(232, 234, 237, 0.72);
+      --text-subtle: rgba(232, 234, 237, 0.5);
+      --accent: #409eff;
+      --dock-width: 320px;
+      --peek-width: 14px;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: var(--bg);
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+      color: var(--text-main);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    #rootContainer {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    #rootContainer.panelsInline.layoutRightDockShown #contentShell {
+      right: var(--dock-width);
+    }
+
+    #stageShell {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    #contentShell {
+      position: absolute;
+      inset: 0;
+      transition: right 0.2s ease;
+    }
+
+    #canvasContainer {
+      display: block;
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      margin: 0;
+      background: #111;
+      outline: none;
+      cursor: crosshair;
+    }
+
+    #loadingMask {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      background: rgba(26, 26, 26, 0.78);
+      font-size: 15px;
+    }
+
+    #messageBox {
+      position: absolute;
+      top: 18px;
+      left: 50%;
+      z-index: 30;
+      display: none;
+      max-width: min(520px, 70vw);
+      padding: 8px 14px;
+      border-radius: 4px;
+      color: #fff;
+      background: rgba(20, 20, 20, 0.82);
+      font-size: 13px;
+      transform: translateX(-50%);
+    }
+
+    #hint {
+      position: absolute;
+      left: 12px;
+      bottom: 12px;
+      z-index: 25;
+      max-width: min(560px, 88vw);
+      padding: 8px 10px;
+      border-radius: 4px;
+      background: rgba(10, 10, 10, 0.6);
+      color: #e0e0e0;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .flyoutHost {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      z-index: 40;
+    }
+
+    .flyoutHostRight {
+      right: 0;
+      display: block;
+      overflow: hidden;
+      width: var(--peek-width);
+      transition: width 0.2s ease;
+    }
+
+    #rootContainer.rightDockPinned .flyoutHostRight,
+    #rootContainer.rightDockPeek .flyoutHostRight {
+      width: var(--dock-width);
+    }
+
+    .rightDock {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      width: var(--dock-width);
+      max-width: var(--dock-width);
+      height: 100%;
+      min-height: 0;
+      overflow: hidden;
+      pointer-events: none;
+      box-shadow: -8px 0 24px rgba(0, 0, 0, 0.28);
+      transition: transform 0.2s ease;
+    }
+
+    #rootContainer:not(.rightDockPinned):not(.rightDockPeek) .flyoutHostRight .rightDock {
+      transform: translateX(100%);
+    }
+
+    #rootContainer.rightDockPinned .rightDock,
+    #rootContainer.rightDockPeek .rightDock {
+      pointer-events: auto;
+    }
+
+    .rightDockPanel {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-width: 0;
+      min-height: 0;
+      gap: 10px;
+      padding: 8px 10px 14px;
+      background: var(--panel-bg);
+      border-left: 1px solid rgba(255, 255, 255, 0.12);
+      -webkit-backdrop-filter: blur(22px) saturate(1.15);
+      backdrop-filter: blur(22px) saturate(1.15);
+    }
+
+    .sidePanelPinRow {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      flex-shrink: 0;
+      padding: 4px 0 10px;
+      margin-bottom: 4px;
+      border-bottom: 1px solid var(--panel-border);
+    }
+
+    .sidePanelPinBtn {
+      min-width: 44px;
+      height: 28px;
+      padding: 0 10px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 6px;
+      background: #4a4c51;
+      color: #eef4fa;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      flex-shrink: 0;
+    }
+
+    .sidePanelPinBtn:hover {
+      background: #55585f;
+    }
+
+    .sidePanelPinBtn[aria-pressed="true"] {
+      background: rgba(64, 158, 255, 0.28);
+      border-color: rgba(64, 158, 255, 0.45);
+      color: #fff;
+    }
+
+    .sidePanelChromeTitle {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-subtle);
+    }
+
+    .sidePanelChromeSubtitle {
+      margin-top: 3px;
+      font-size: 11px;
+      line-height: 1.4;
+      color: var(--text-subtle);
+    }
+
+    .edgeHoverZoneRight {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: var(--peek-width);
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    #rootContainer:not(.rightDockPinned) .flyoutHostRight .edgeHoverZoneRight {
+      pointer-events: auto;
+    }
+
+    .panelCard {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      padding: 10px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.045);
+    }
+
+    .panelCardTitle {
+      font-size: 12px;
+      font-weight: 700;
+      color: #eef3f8;
+      margin-bottom: 8px;
+    }
+
+    .btnRow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .btnRow button {
+      flex: 1 1 auto;
+      min-width: 72px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-main);
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .btnRow button:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .btnRow button.primary {
+      border-color: rgba(64, 158, 255, 0.45);
+      background: rgba(64, 158, 255, 0.2);
+    }
+
+    .timeRow {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      word-break: break-all;
+    }
+
+    .btnRow button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .timeRow strong {
+      color: var(--text-main);
+    }
+
+    .jumpRow {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .jumpRow input[type="datetime-local"] {
+      width: 100%;
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--panel-border);
+      background: rgba(0, 0, 0, 0.25);
+      color: var(--text-main);
+    }
+
+    .checkRow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .introScroll {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: auto;
+      font-size: 12px;
+      line-height: 1.55;
+      color: var(--text-muted);
+    }
+
+    .introScroll h3 {
+      margin: 0 0 6px;
+      font-size: 13px;
+      color: var(--text-main);
+    }
+
+    .introScroll p {
+      margin: 0 0 8px;
+    }
+
+    .introCard {
+      padding: 2px 0;
+    }
+
+    .introCard p {
+      margin: 0 0 8px;
+    }
+
+    .introCard p:last-child {
+      margin-bottom: 0;
+    }
+
+    .speedPill {
+      font-size: 11px;
+      color: var(--text-subtle);
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+<div id="rootContainer" class="panelsInline rightDockPinned layoutRightDockShown">
+  <main id="stageShell">
+    <div id="contentShell">
+      <canvas id="canvasContainer">抱歉，你的浏览器不支持 WebGL。</canvas>
+      <div id="loadingMask">360° 全景与太阳系示例加载中…</div>
+      <div id="messageBox"></div>
+      <div id="hint">
+        【360° 球形背景】等距柱状全景包裹视野。「仅演示」：星历只快照初始位置，随后为<strong>示意公转</strong>（肉眼可见、外行星更慢，非真实周期比）；取消勾选后按 UTC 用 <code>astronomy-engine</code> 星历。步进在 <code>PluginHost.beforeFrame</code>。网络 UTC 优先 <code>timeapi.io</code>。请从<strong>仓库根</strong>静态服务打开。
+      </div>
+    </div>
+
+    <div id="rightFlyoutHost" class="flyoutHost flyoutHostRight">
+      <div id="rightDock" class="rightDock">
+        <aside id="rightPanel" class="rightDockPanel" aria-label="太阳系控制">
+          <div class="sidePanelPinRow">
+            <div>
+              <div class="sidePanelChromeTitle">Solar control</div>
+              <div class="sidePanelChromeSubtitle">钉住 / 靠右边缘唤出，与 demo 索引页右栏逻辑一致</div>
+            </div>
+            <button type="button" id="rightPanelPinBtn" class="sidePanelPinBtn" aria-pressed="true" aria-label="切换右侧栏钉住">PIN</button>
+          </div>
+
+          <section class="panelCard" style="flex: 0 0 auto">
+            <div class="panelCardTitle">时间与播放</div>
+            <div class="timeRow">模拟 UTC：<strong id="simTimeDisplay">—</strong></div>
+            <div class="btnRow">
+              <button type="button" id="btnPlayPause" class="primary">暂停</button>
+              <button type="button" id="btnSlower">减速</button>
+              <button type="button" id="btnFaster">加速</button>
+              <button type="button" id="btnReset">重置</button>
+            </div>
+            <div class="speedPill">时间倍率：<span id="speedLabel">1.000×</span></div>
+            <label class="checkRow" style="margin-top: 8px">
+              <input id="chkDemoShowOnly" type="checkbox" checked />
+              <span>仅演示（星历初始对齐 + 示意公转，外慢内快）</span>
+            </label>
+            <label class="checkRow">
+              <input id="chkHoverInfoPanel" type="checkbox" checked />
+              <span>悬停显示 3D 信息面板（与右侧简介一致）</span>
+            </label>
+            <div class="jumpRow">
+              <label class="timeRow" for="jumpDatetime">跳转到（本地日历）</label>
+              <input id="jumpDatetime" type="datetime-local" />
+              <button type="button" id="btnJump">应用跳转并重算轨道</button>
+            </div>
+            <label class="checkRow">
+              <input id="chkPauseAfterJump" type="checkbox" checked />
+              <span>跳转后暂停</span>
+            </label>
+          </section>
+
+          <section class="panelCard" style="flex: 1 1 auto; min-height: 120px">
+            <div class="panelCardTitle" id="introTitle">太阳系简介</div>
+            <div id="introBody" class="introScroll"></div>
+          </section>
+        </aside>
+      </div>
+      <div class="edgeHoverZoneRight" aria-hidden="true"></div>
+    </div>
+  </main>
+</div>
+
+<script type="module">
+  import { createJsonScene, updateInfoPanelContent, deployInfoPanel } from "threejson/core";
+  import { createPluginHost } from "../../../core/plugin/pluginHost.js";
+  import { getObjectsByName } from "../../../core/handler/objectRegistry.js";
+
+  const canvasContainer = document.getElementById("canvasContainer");
+  const loadingMask = document.getElementById("loadingMask");
+  const messageBox = document.getElementById("messageBox");
+  const rootContainer = document.getElementById("rootContainer");
+  const rightFlyoutHost = document.getElementById("rightFlyoutHost");
+  const rightPanelPinBtn = document.getElementById("rightPanelPinBtn");
+  const simTimeDisplay = document.getElementById("simTimeDisplay");
+  const speedLabel = document.getElementById("speedLabel");
+  const btnPlayPause = document.getElementById("btnPlayPause");
+  const btnSlower = document.getElementById("btnSlower");
+  const btnFaster = document.getElementById("btnFaster");
+  const btnReset = document.getElementById("btnReset");
+  const chkDemoShowOnly = document.getElementById("chkDemoShowOnly");
+  const chkHoverInfoPanel = document.getElementById("chkHoverInfoPanel");
+  const jumpDatetime = document.getElementById("jumpDatetime");
+  const btnJump = document.getElementById("btnJump");
+  const chkPauseAfterJump = document.getElementById("chkPauseAfterJump");
+  const introTitle = document.getElementById("introTitle");
+  const introBody = document.getElementById("introBody");
+
+  const sceneJsonUrl = "/assets/json/tutorial/track-02/02-05-scene-background.json";
+  const FLYOUT_PEEK_HIDE_DELAY_MS = 280;
+  const VIEW_CHROME_KEY = "t02_05_panorama_rightDockPinned_v1";
+
+  const PLANET_KEYS = ["mercury", "venus", "earth", "mars", "jupiter", "saturn", "uranus", "neptune"];
+  /** 星历模式按 IAU 自转；演示模式仍用 JSON animations.rotate */
+  const SPIN_KEYS = ["sun", "moon", ...PLANET_KEYS];
+  /** 与 02-05-scene-background.json 中各行星距太阳大致半径一致（仅用于视觉缩放，非真实 AU） */
+  const SCENE_ORBIT_RADIUS = {
+    mercury: 16,
+    venus: Math.hypot(22, 6),
+    earth: Math.hypot(29, 5),
+    mars: Math.hypot(37, 4),
+    jupiter: 50,
+    saturn: Math.hypot(64, 8),
+    uranus: Math.hypot(80, 6),
+    neptune: Math.hypot(96, 4)
+  };
+
+  /** 各行星平均日心距离 AU（方案 A：与 SCENE_ORBIT_RADIUS 配合做偏心率缩放） */
+  const SEMI_MAJOR_AU = {
+    mercury: 0.387,
+    venus: 0.723,
+    earth: 1.0,
+    mars: 1.524,
+    jupiter: 5.203,
+    saturn: 9.537,
+    uranus: 19.191,
+    neptune: 30.07
+  };
+
+  /** 地月平均距离 AU；场景平均半径 SCENE_MOON_ORBIT_RADIUS */
+  const MOON_SEMI_MAJOR_AU = 0.00257;
+  const SCENE_MOON_ORBIT_RADIUS = 3.5;
+
+  /** 仅演示：每 1 秒真实时间推进的模拟毫秒数（约 15 地球日/秒 @ 1×） */
+  const DEMO_TIME_MS_PER_SEC = 86400000 * 15;
+  /**
+   * 仅演示：示意公转周期（天），非真实天文比例；外行星更慢，便于肉眼观察椭圆轨道。
+   * 1× 下约一圈用时 ≈ 表值 / (DEMO_TIME_MS_PER_SEC / 86400000) 秒。
+   */
+  const DEMO_VISUAL_ORBIT_PERIOD_DAYS = {
+    mercury: 90,
+    venus: 140,
+    earth: 220,
+    mars: 280,
+    jupiter: 380,
+    saturn: 520,
+    uranus: 720,
+    neptune: 900,
+    moon: 180
+  };
+  const ORBIT_EPOCH_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
+  /** 场景轨道面为 XZ（Y 向上）；黄道法向 z 映射到 scene.y 并压缩倾角 */
+  const ORBIT_INCL_SCENE_SCALE = 0.35;
+
+  /** 星历库不可用时的恒星自转周期（天；负值=逆行） */
+  const SIDEREAL_ROTATION_DAYS = {
+    sun: 25.38,
+    mercury: 58.646,
+    venus: -243.025,
+    earth: 0.99726968,
+    mars: 1.025957,
+    jupiter: 0.41354,
+    saturn: 0.44401,
+    uranus: -0.71833,
+    neptune: 0.67125,
+    moon: 27.321661
+  };
+
+  /** 悬停精灵：目标为「屏上近似恒定高度」（相机垂直 FOV + 画布 CSS 像素），避免远处天体把面板撑满屏 */
+  const HOVER_SCREEN_MIN_PX = 108;
+  const HOVER_SCREEN_MAX_PX = 232;
+  const HOVER_SCREEN_FRAC_OF_MIN = 0.2;
+
+  /** 右侧栏与悬停精灵共用正文片段（不含外层样式容器） */
+  const INTRO_INNER = {
+    _default: `<h3>太阳系</h3><p>太阳与八大行星示意场景，地球旁有绕地公转的月球。行星沿<strong>椭圆轨道</strong>运动。「仅演示」：星历仅对齐初始位置，公转为<strong>示意速度</strong>（便于观察轨道，外行星转得慢一些，非真实周期比）；取消勾选后按 UTC 走 <code>astronomy-engine</code> 星历。</p><p>点击天体查看简介；移入可触发 3D 信息面板。</p>`,
+    sun: `<h3>太阳</h3><p>G 型主序星，太阳系质量中心。本示例中太阳置于原点，点光源模拟辐射。</p>`,
+    mercury: `<h3>水星</h3><p>距太阳最近、轨道偏心率较大的类地行星；表面温差极大。</p>`,
+    venus: `<h3>金星</h3><p>厚云层、强温室效应；自转方向与大多数行星相反（逆行自转）。</p>`,
+    earth: `<h3>地球</h3><p>已知唯一确认存在稳定液态水与生命的行星。贴图在此 demo 中与其他行星共用占位图。旁侧灰色小球为月球。</p>`,
+    moon: `<h3>月球</h3><p>地球的天然卫星，潮汐锁定导致长期以同一面朝向地球。绕地轨道亦为椭圆（地心向量或 JSON 回退根数）。</p>`,
+    mars: `<h3>火星</h3><p>红色荒漠与巨型火山、峡谷；人类深空探测的重点目标之一。</p>`,
+    jupiter: `<h3>木星</h3><p>气态巨行星，质量超过太阳系其余行星之和；大红斑为长期风暴。</p>`,
+    saturn: `<h3>土星</h3><p>显著光环系统由冰粒与岩石碎屑构成；密度低于水。</p>`,
+    uranus: `<h3>天王星</h3><p>冰巨行星，自转轴近乎“侧躺”在黄道面附近。</p>`,
+    neptune: `<h3>海王星</h3><p>太阳系已知最外侧大行星；深蓝色大气中有高速风暴。</p>`
+  };
+
+  /** 悬停 HTML 贴图外壳（html2canvas）：霓虹描边 + 深色玻璃内胆，宽度铺满容器避免右侧留白 */
+  function wrapHoverHtml(innerHtml) {
+    return (
+      `<div style="width:100%;box-sizing:border-box;padding:2px;border-radius:18px;background:linear-gradient(132deg,rgba(34,211,238,0.92),rgba(99,102,241,0.85),rgba(236,72,153,0.72));box-shadow:0 14px 40px rgba(0,0,0,0.55),0 0 48px rgba(34,211,238,0.14);">` +
+      `<div style="width:100%;box-sizing:border-box;border-radius:16px;padding:13px 15px 15px;background:linear-gradient(168deg,rgba(15,23,42,0.99),rgba(30,27,75,0.93));border:1px solid rgba(148,163,184,0.32);">` +
+      `<div style="display:inline-block;margin-bottom:10px;padding:3px 12px;border-radius:999px;background:rgba(6,182,212,0.2);border:1px solid rgba(34,211,238,0.5);color:#a5f3fc;font-size:10px;font-weight:700;letter-spacing:0.18em;">◆ ORBIT · HUD</div>` +
+      `<div style="color:#e2e8f0;font-size:14.5px;line-height:1.58;">${innerHtml}</div>` +
+      `</div></div>`
+    );
+  }
+
+  /** 按简介字数估算 html2canvas 逻辑尺寸，短文案收窄面板、长文案放宽 */
+  function estimateHoverTextureSize(innerHtml) {
+    const plain = String(innerHtml).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    const len = plain.length;
+    let width;
+    if (len < 70) {
+      width = 300;
+    } else if (len < 130) {
+      width = 360;
+    } else if (len < 220) {
+      width = 420;
+    } else if (len < 340) {
+      width = 480;
+    } else {
+      width = 540;
+    }
+    const approxLines = Math.max(2, Math.ceil(len / (width / 15)));
+    const height = Math.min(220, Math.max(96, 58 + approxLines * 24));
+    return { width, height };
+  }
+
+  /** 悬停精灵信息面板圆角（纹理逻辑像素，对接 infoPanel.borderRadius） */
+  const HOVER_INFO_PANEL_BORDER_RADIUS = 18;
+  const HOVER_PLACEHOLDER_INNER =
+    `<p style="margin:0;color:#cbd5e1;font-size:13px;line-height:1.55;">悬停<strong style="color:#67e8f9;">太阳 / 行星 / 月球</strong>时显示与右侧栏一致的简介；指针移开即隐藏。</p>`;
+  const HOVER_PLACEHOLDER_TEXTURE = estimateHoverTextureSize(HOVER_PLACEHOLDER_INNER);
+
+  /** 与场景 JSON 解耦：纯交互悬停面板（由 deployInfoPanel 写入 overlay） */
+  const HOVER_INFO_PANEL_TEMPLATE = {
+    name: "solarHoverInfoPanel",
+    objType: "infoPanel",
+    type: "html",
+    panelBoxType: "sprite",
+    fix: true,
+    visible: false,
+    backColor: "transparent",
+    borderRadius: HOVER_INFO_PANEL_BORDER_RADIUS,
+    html2canvasScale: 1.5,
+    text: wrapHoverHtml(HOVER_PLACEHOLDER_INNER),
+    textureWidth: HOVER_PLACEHOLDER_TEXTURE.width,
+    textureHeight: HOVER_PLACEHOLDER_TEXTURE.height,
+    transparent: true,
+    opacity: 0.98,
+    panel: {
+      geometry: { width: 22, height: 13, depth: 0.02 },
+      position: { x: 0, y: 22, z: 0 },
+      material: {
+        color: "#141a24",
+        transparent: true,
+        opacity: 0.02
+      },
+      rotation: { rotationX: 0, rotationY: 0, rotationZ: 0 },
+      scale: { scaleX: 1, scaleY: 1, scaleZ: 1 }
+    }
+  };
+
+  let sceneRuntime;
+  let sceneMeta = {};
+  let pluginHost = createPluginHost();
+  /** 避免本页再静态 import three，减轻与 core 重复实例告警（若仍有，多为 Live Reload 注入） */
+  let raycaster = null;
+  let pointerNdc = null;
+  let hoverWorldPos = null;
+  /** 帧间隔秒（由 performance.now 推算，替代 THREE.Clock） */
+  let lastFrameWallMs = performance.now();
+
+  let Astronomy = null;
+  let ephemerisReady = false;
+  let simDate = new Date();
+  /** 仅演示：开普勒动画专用时间（快速推进，与星历无关） */
+  let demoOrbitDate = new Date();
+  /** 勾选后：星历仅用于初始对齐；播放中由 JSON 开普勒椭圆快速公转 */
+  let demoVisualMode = true;
+  let keplerFallbackWarned = false;
+  let eclipticConvertWarned = false;
+  let playing = true;
+  let timeScale = 1;
+  let rightDockPinned = true;
+  let rightDockPeek = false;
+  let rightPeekHideTimer = null;
+
+  const pickMeshes = [];
+  const meshByPlanet = Object.create(null);
+  /** 场景中 `name: solarHoverInfoPanel` 的精灵信息面板 */
+  let hoverInfoSprite = null;
+  let lastHoverKey = null;
+  let hoverIntroBusy = false;
+
+  window.addEventListener("DOMContentLoaded", initDemo);
+  window.addEventListener("beforeunload", wasteCleaner);
+
+  function persistPin() {
+    try {
+      localStorage.setItem(VIEW_CHROME_KEY, JSON.stringify({ rightDockPinned }));
+    } catch (_) {
+      /* ignore */
+    }
+  }
+
+  function loadPin() {
+    try {
+      const raw = localStorage.getItem(VIEW_CHROME_KEY);
+      if (!raw) {
+        return;
+      }
+      const o = JSON.parse(raw);
+      if (typeof o.rightDockPinned === "boolean") {
+        rightDockPinned = o.rightDockPinned;
+      }
+    } catch (_) {
+      /* ignore */
+    }
+  }
+
+  function syncDockClasses(options = {}) {
+    const persist = options.persist !== false;
+    rootContainer.classList.toggle("rightDockPinned", rightDockPinned);
+    rootContainer.classList.toggle("rightDockPeek", rightDockPeek);
+    const shown = rightDockPinned || rightDockPeek;
+    rootContainer.classList.toggle("layoutRightDockShown", shown);
+    rightPanelPinBtn.setAttribute("aria-pressed", rightDockPinned ? "true" : "false");
+    rightPanelPinBtn.textContent = rightDockPinned ? "PIN" : "AUTO";
+    rightPanelPinBtn.title = rightDockPinned ? "已钉住：鼠标移开仍显示" : "未钉住：移到屏幕右边缘唤出";
+    if (persist) {
+      persistPin();
+    }
+  }
+
+  function scheduleRightPeekHide() {
+    clearTimeout(rightPeekHideTimer);
+    rightPeekHideTimer = setTimeout(() => {
+      rightDockPeek = false;
+      syncDockClasses();
+    }, FLYOUT_PEEK_HIDE_DELAY_MS);
+  }
+
+  function initDockUi() {
+    loadPin();
+    syncDockClasses({ persist: false });
+
+    rightFlyoutHost.addEventListener("mouseenter", () => {
+      clearTimeout(rightPeekHideTimer);
+      rightDockPeek = true;
+      syncDockClasses();
+    });
+    rightFlyoutHost.addEventListener("mouseleave", () => {
+      if (!rightDockPinned) {
+        scheduleRightPeekHide();
+      }
+    });
+
+    document.addEventListener(
+      "pointerdown",
+      (event) => {
+        if (!rightDockPinned && !rightFlyoutHost.contains(event.target)) {
+          rightDockPeek = false;
+          clearTimeout(rightPeekHideTimer);
+          syncDockClasses();
+        }
+      },
+      true
+    );
+
+    rightPanelPinBtn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      rightDockPinned = !rightDockPinned;
+      if (rightDockPinned) {
+        rightDockPeek = true;
+        clearTimeout(rightPeekHideTimer);
+      } else if (!rightFlyoutHost.matches(":hover")) {
+        rightDockPeek = false;
+      }
+      syncDockClasses();
+    });
+
+    syncDockClasses();
+  }
+
+  async function fetchUtcDateWithFallback() {
+    const timeoutMs = 2800;
+    const urls = [
+      "https://timeapi.io/api/Time/current/zone?timeZone=UTC",
+      "https://worldtimeapi.org/api/timezone/Etc/UTC"
+    ];
+    for (let attempt = 0; attempt < 2; attempt++) {
+      for (const url of urls) {
+        const ctrl = new AbortController();
+        const tid = setTimeout(() => ctrl.abort(), timeoutMs);
+        try {
+          const r = await fetch(url, { signal: ctrl.signal, cache: "no-store" });
+          if (!r.ok) {
+            continue;
+          }
+          const j = await r.json();
+          const iso = j.utc_datetime || j.dateTime;
+          if (typeof iso === "string") {
+            const d = new Date(iso);
+            if (!Number.isNaN(d.getTime())) {
+              return d;
+            }
+          }
+        } catch (_) {
+          /* try next */
+        } finally {
+          clearTimeout(tid);
+        }
+      }
+    }
+    return null;
+  }
+
+  async function loadAstronomy() {
+    try {
+      const mod = await import("astronomy-engine");
+      Astronomy = mod.default && typeof mod.default.HelioVector === "function" ? mod.default : mod;
+      ephemerisReady = Boolean(Astronomy?.HelioVector && Astronomy?.Ecliptic && Astronomy.Body);
+      return ephemerisReady;
+    } catch (e) {
+      console.warn("astronomy-engine 加载失败，将使用 JSON 静态布局:", e);
+      Astronomy = null;
+      ephemerisReady = false;
+      return false;
+    }
+  }
+
+  function bodyForPlanet(key) {
+    const B = Astronomy.Body;
+    const map = {
+      mercury: B.Mercury,
+      venus: B.Venus,
+      earth: B.Earth,
+      mars: B.Mars,
+      jupiter: B.Jupiter,
+      saturn: B.Saturn,
+      uranus: B.Uranus,
+      neptune: B.Neptune
+    };
+    return map[key] ?? null;
+  }
+
+  function bodyForSpinKey(key) {
+    const B = Astronomy?.Body;
+    if (!B) {
+      return null;
+    }
+    const map = {
+      sun: B.Sun,
+      mercury: B.Mercury,
+      venus: B.Venus,
+      earth: B.Earth,
+      mars: B.Mars,
+      jupiter: B.Jupiter,
+      saturn: B.Saturn,
+      uranus: B.Uranus,
+      neptune: B.Neptune,
+      moon: B.Moon
+    };
+    return map[key] ?? null;
+  }
+
+  /** 自转施加在可旋转 mesh 上（土星环组内球体，而非整组） */
+  function getSpinMesh(key) {
+    if (key === "saturn") {
+      const list = getObjectsByName("saturnBody");
+      if (list?.[0]?.isMesh) {
+        return list[0];
+      }
+    }
+    const m = meshByPlanet[key];
+    return m?.isMesh ? m : null;
+  }
+
+  function setJsonRotateAnimationsEnabled(enabled) {
+    for (const key of SPIN_KEYS) {
+      const mesh = getSpinMesh(key);
+      const anims = mesh?.userData?.objJson?.animations;
+      if (!Array.isArray(anims)) {
+        continue;
+      }
+      for (let i = 0; i < anims.length; i++) {
+        const anim = anims[i];
+        if (!anim || anim.type !== "rotate") {
+          continue;
+        }
+        if (enabled) {
+          delete anim.enabled;
+        } else {
+          anim.enabled = false;
+        }
+      }
+    }
+  }
+
+  function siderealSpinRadiansFallback(key, date) {
+    const periodDays = SIDEREAL_ROTATION_DAYS[key];
+    if (!Number.isFinite(periodDays) || periodDays === 0) {
+      return null;
+    }
+    const days = (date.getTime() - ORBIT_EPOCH_MS) / 86400000;
+    return normalizeAngleRad((2 * Math.PI * days) / periodDays);
+  }
+
+  /** astronomy-engine IAU 自转角（度）→ 场景 rotation.y（弧度） */
+  function siderealSpinRadians(key, date) {
+    const body = bodyForSpinKey(key);
+    if (ephemerisReady && Astronomy?.RotationAxis && body) {
+      try {
+        const axis = Astronomy.RotationAxis(body, date);
+        if (axis && Number.isFinite(axis.spin)) {
+          return deg2rad(axis.spin);
+        }
+      } catch (_) {
+        /* 回退到恒定周期 */
+      }
+    }
+    return siderealSpinRadiansFallback(key, date);
+  }
+
+  function applyEphemerisSiderealSpin(date) {
+    if (demoVisualMode) {
+      return;
+    }
+    for (const key of SPIN_KEYS) {
+      const mesh = getSpinMesh(key);
+      if (!mesh) {
+        continue;
+      }
+      const spinRad = siderealSpinRadians(key, date);
+      if (spinRad == null) {
+        continue;
+      }
+      mesh.rotation.y = spinRad;
+    }
+  }
+
+  function deg2rad(deg) {
+    return (Number(deg) * Math.PI) / 180;
+  }
+
+  function normalizeAngleRad(a) {
+    const t = Number(a);
+    if (!Number.isFinite(t)) {
+      return 0;
+    }
+    const twoPi = Math.PI * 2;
+    return ((t % twoPi) + twoPi) % twoPi;
+  }
+
+  function solveKeplerE(meanAnomaly, eccentricity) {
+    const M = normalizeAngleRad(meanAnomaly);
+    const e = Math.min(0.9999, Math.max(0, Number(eccentricity) || 0));
+    let E = M;
+    for (let i = 0; i < 10; i++) {
+      const f = E - e * Math.sin(E) - M;
+      const fp = 1 - e * Math.cos(E);
+      if (Math.abs(fp) < 1e-12) {
+        break;
+      }
+      E -= f / fp;
+    }
+    return E;
+  }
+
+  /** 星历/回退用 JSON periodDays；仅演示用示意周期表 */
+  function getOrbitPeriodDaysForLayout(fb, planetKey) {
+    if (demoVisualMode && planetKey) {
+      const visual = DEMO_VISUAL_ORBIT_PERIOD_DAYS[planetKey];
+      if (Number.isFinite(visual) && visual > 0) {
+        return visual;
+      }
+    }
+    return Number(fb?.periodDays) || 365.25;
+  }
+
+  /** 由 JSON orbitalFallback 求日心赤道 AU 向量（开普勒两体近似） */
+  function heliocentricAuFromOrbitalFallback(fb, date, planetKey) {
+    if (!fb || typeof fb !== "object") {
+      return null;
+    }
+    const a = Number(fb.semiMajorAu);
+    const e = Number(fb.eccentricity) || 0;
+    const periodDays = getOrbitPeriodDaysForLayout(fb, planetKey);
+    if (!Number.isFinite(a) || a <= 0 || periodDays <= 0) {
+      return null;
+    }
+    const days = (date.getTime() - ORBIT_EPOCH_MS) / 86400000;
+    const M = normalizeAngleRad(deg2rad(fb.meanAnomalyDeg0 ?? 0) + ((2 * Math.PI * days) / periodDays));
+    const E = solveKeplerE(M, e);
+    const sinE = Math.sin(E);
+    const cosE = Math.cos(E);
+    const nu = Math.atan2(Math.sqrt(1 + e) * sinE, Math.sqrt(1 - e) * cosE);
+    const r = (a * (1 - e * e)) / (1 + e * Math.cos(nu));
+    const xOrb = r * Math.cos(nu);
+    const yOrb = r * Math.sin(nu);
+    const i = deg2rad(fb.inclinationDeg ?? 0);
+    const Om = deg2rad(fb.longitudeAscendingDeg ?? 0);
+    const om = deg2rad(fb.argumentPerihelionDeg ?? 0);
+    const cosO = Math.cos(Om);
+    const sinO = Math.sin(Om);
+    const cosi = Math.cos(i);
+    const sini = Math.sin(i);
+    const cosw = Math.cos(om);
+    const sinw = Math.sin(om);
+    const x1 = cosw * xOrb - sinw * yOrb;
+    const y1 = sinw * xOrb + cosw * yOrb;
+    const x2 = x1;
+    const y2 = cosi * y1;
+    const z2 = sini * y1;
+    const x = cosO * x2 - sinO * y2;
+    const y = sinO * x2 + cosO * y2;
+    const z = z2;
+    return { x, y, z };
+  }
+
+  function getOrbitalFallbackForPlanet(key) {
+    const mesh = meshByPlanet[key];
+    const fb = mesh?.userData?.objJson?.orbitalFallback;
+    return fb && typeof fb === "object" ? fb : null;
+  }
+
+  function getMoonOrbitalFallback() {
+    const moon = meshByPlanet.moon;
+    const fb = moon?.userData?.objJson?.orbitalFallback;
+    return fb && typeof fb === "object" ? fb : null;
+  }
+
+  /** astronomy-engine 赤道 EQJ 向量 → 黄道 AU {x,y,z}（面内 x,y；法向 z） */
+  function toEclipticAu(eqVector) {
+    if (!eqVector || typeof eqVector !== "object") {
+      return null;
+    }
+    if (Astronomy?.Ecliptic) {
+      try {
+        const ecl = Astronomy.Ecliptic(eqVector);
+        const v = ecl?.vec ?? ecl?.vector;
+        if (v && Number.isFinite(Number(v.x))) {
+          return { x: Number(v.x), y: Number(v.y), z: Number(v.z) };
+        }
+      } catch (_) {
+        /* fall through */
+      }
+    }
+    if (!eclipticConvertWarned) {
+      eclipticConvertWarned = true;
+      console.warn("[t02-05] Astronomy.Ecliptic 不可用，星历向量未转黄道");
+    }
+    return {
+      x: Number(eqVector.x),
+      y: Number(eqVector.y),
+      z: Number(eqVector.z)
+    };
+  }
+
+  /** 黄道 AU → 场景坐标：轨道面 XZ，黄道法向 → Y（×倾角压缩） */
+  function scenePositionFromEclipticAu(au, rhoScene) {
+    const x = Number(au.x);
+    const y = Number(au.y);
+    const z = Number(au.z);
+    const rhoAu = Math.hypot(x, y, z) || 1e-9;
+    return {
+      x: (x / rhoAu) * rhoScene,
+      y: (z / rhoAu) * rhoScene * ORBIT_INCL_SCENE_SCALE,
+      z: (y / rhoAu) * rhoScene
+    };
+  }
+
+  /** 方案 A：保持 SCENE_ORBIT_RADIUS 为平均距离，径向按 AU 距离比缩放 → 椭圆 */
+  function placeHeliocentricAuOnMesh(mesh, key, au) {
+    const x = Number(au.x);
+    const y = Number(au.y);
+    const z = Number(au.z);
+    const rhoAu = Math.hypot(x, y, z) || 1e-9;
+    const semiMajor = SEMI_MAJOR_AU[key] ?? rhoAu;
+    const meanScene = SCENE_ORBIT_RADIUS[key] ?? 20;
+    const rhoScene = meanScene * (rhoAu / semiMajor);
+    const pos = scenePositionFromEclipticAu(au, rhoScene);
+    mesh.position.set(pos.x, pos.y, pos.z);
+    return Math.atan2(pos.z, pos.x);
+  }
+
+  /**
+   * astronomy-engine 日心向量 + 方案 A 径向缩放（椭圆轨道）。
+   */
+  function applyHeliocentricLayout(date, options = {}) {
+    if (!ephemerisReady || !Astronomy) {
+      return false;
+    }
+    const resetSpin = Boolean(options.resetSpin);
+    for (const key of PLANET_KEYS) {
+      const mesh = meshByPlanet[key];
+      if (!mesh) {
+        continue;
+      }
+      const body = bodyForPlanet(key);
+      if (!body) {
+        continue;
+      }
+      let vec;
+      try {
+        vec = Astronomy.HelioVector(body, date);
+        vec = toEclipticAu(vec);
+        if (!vec) {
+          continue;
+        }
+      } catch (_) {
+        continue;
+      }
+      const theta = placeHeliocentricAuOnMesh(mesh, key, vec);
+      if (resetSpin && demoVisualMode) {
+        mesh.rotation.y = theta * 0.4;
+      }
+    }
+    applyMoonLayout(date);
+    return true;
+  }
+
+  function applyKeplerFallbackLayout(date, options = {}) {
+    const resetSpin = Boolean(options.resetSpin);
+    let placed = 0;
+    for (const key of PLANET_KEYS) {
+      const mesh = meshByPlanet[key];
+      if (!mesh) {
+        continue;
+      }
+      const fb = getOrbitalFallbackForPlanet(key);
+      const au = heliocentricAuFromOrbitalFallback(fb, date, key);
+      if (!au) {
+        continue;
+      }
+      const theta = placeHeliocentricAuOnMesh(mesh, key, au);
+      if (resetSpin && demoVisualMode) {
+        mesh.rotation.y = theta * 0.4;
+      }
+      placed++;
+    }
+    if (placed === 0 && !keplerFallbackWarned) {
+      keplerFallbackWarned = true;
+      console.warn("[t02-05] 无 orbitalFallback，无法推算椭圆轨道");
+    }
+    applyMoonLayoutKeplerFallback(date);
+    return placed > 0;
+  }
+
+  /**
+   * 初始对齐：仅演示模式下可用星历快照一次；星历模式则持续用星历布局。
+   */
+  function snapOrbitLayout(epochDate, options = {}) {
+    if (demoVisualMode) {
+      if (ephemerisReady) {
+        applyHeliocentricLayout(epochDate, options);
+      } else {
+        applyKeplerFallbackLayout(epochDate, options);
+      }
+      demoOrbitDate = new Date(epochDate.getTime());
+      return;
+    }
+    if (ephemerisReady && applyHeliocentricLayout(epochDate, options)) {
+      applyEphemerisSiderealSpin(epochDate);
+      return;
+    }
+    applyKeplerFallbackLayout(epochDate, options);
+    applyEphemerisSiderealSpin(epochDate);
+  }
+
+  /** 每帧更新：仅演示=开普勒快转；星历模式=HelioVector 按 UTC */
+  function applyOrbitFrame(options = {}) {
+    if (demoVisualMode) {
+      applyKeplerFallbackLayout(demoOrbitDate, options);
+      return;
+    }
+    if (ephemerisReady && applyHeliocentricLayout(simDate, options)) {
+      applyEphemerisSiderealSpin(simDate);
+      return;
+    }
+    applyKeplerFallbackLayout(simDate, options);
+    applyEphemerisSiderealSpin(simDate);
+  }
+
+  function offsetMoonFromGeocentricAu(earth, moon, geoEcliptic) {
+    const x = Number(geoEcliptic.x);
+    const y = Number(geoEcliptic.y);
+    const z = Number(geoEcliptic.z);
+    const rhoAu = Math.hypot(x, y, z) || 1e-9;
+    const rhoScene = SCENE_MOON_ORBIT_RADIUS * (rhoAu / MOON_SEMI_MAJOR_AU);
+    const offset = scenePositionFromEclipticAu(geoEcliptic, rhoScene);
+    moon.position.set(earth.position.x + offset.x, earth.position.y + offset.y, earth.position.z + offset.z);
+  }
+
+  function applyMoonLayout(date) {
+    const earth = meshByPlanet.earth;
+    const moon = meshByPlanet.moon;
+    if (!earth || !moon) {
+      return;
+    }
+    if (ephemerisReady && Astronomy?.GeoVector && Astronomy.Body?.Moon) {
+      try {
+        const geoEq = Astronomy.GeoVector(Astronomy.Body.Moon, date);
+        const geo = toEclipticAu(geoEq);
+        if (!geo) {
+          throw new Error("moon ecliptic convert failed");
+        }
+        offsetMoonFromGeocentricAu(earth, moon, geo);
+        return;
+      } catch (_) {
+        /* fall through */
+      }
+    }
+    applyMoonLayoutKeplerFallback(date);
+  }
+
+  function applyMoonLayoutKeplerFallback(date) {
+    const earth = meshByPlanet.earth;
+    const moon = meshByPlanet.moon;
+    if (!earth || !moon) {
+      return;
+    }
+    const fb = getMoonOrbitalFallback();
+    const au = heliocentricAuFromOrbitalFallback(fb, date, "moon");
+    if (au) {
+      offsetMoonFromGeocentricAu(earth, moon, au);
+    }
+  }
+
+  function isPickableBody(object3D) {
+    return Boolean(object3D && (object3D.isMesh || object3D.isGroup));
+  }
+
+  /** 点击/悬停命中子 mesh 时，解析到已注册行星（如 saturnRing → saturn）。 */
+  function resolvePlanetPickKey(object3D) {
+    let node = object3D;
+    while (node) {
+      const name = (node.name || "").toLowerCase();
+      if (meshByPlanet[name]) {
+        return name;
+      }
+      node = node.parent;
+    }
+    return null;
+  }
+
+  function getPlanetDisplayRadius(anchor) {
+    if (!anchor) {
+      return 1.5;
+    }
+    if (anchor.isMesh) {
+      const p = anchor.geometry?.parameters;
+      if (p && Number.isFinite(p.outerRadius)) {
+        return Number(p.outerRadius);
+      }
+      if (p && Number.isFinite(p.radius)) {
+        return Number(p.radius);
+      }
+    }
+    if (anchor.isGroup && typeof anchor.traverse === "function") {
+      let r = 1.5;
+      anchor.traverse((child) => {
+        if (!child?.isMesh) {
+          return;
+        }
+        const p = child.geometry?.parameters;
+        if (p && Number.isFinite(p.outerRadius)) {
+          r = Math.max(r, Number(p.outerRadius));
+        } else if (p && Number.isFinite(p.radius)) {
+          r = Math.max(r, Number(p.radius));
+        }
+      });
+      return r;
+    }
+    return 1.5;
+  }
+
+  function collectPickables() {
+    pickMeshes.length = 0;
+    for (const key of PLANET_KEYS) {
+      const list = getObjectsByName(key);
+      const m = list && list[0];
+      if (isPickableBody(m)) {
+        meshByPlanet[key] = m;
+        pickMeshes.push(m);
+      }
+    }
+    const sunList = getObjectsByName("sun");
+    const sun = sunList && sunList[0];
+    if (sun && sun.isMesh) {
+      meshByPlanet.sun = sun;
+      pickMeshes.push(sun);
+    }
+    const moonList = getObjectsByName("moon");
+    const moon = moonList && moonList[0];
+    if (moon && moon.isMesh) {
+      meshByPlanet.moon = moon;
+      pickMeshes.push(moon);
+    }
+  }
+
+  function introTitleForKey(key) {
+    if (!key || key === "_default") {
+      return "太阳系简介";
+    }
+    const map = {
+      sun: "太阳",
+      mercury: "水星",
+      venus: "金星",
+      earth: "地球",
+      moon: "月球",
+      mars: "火星",
+      jupiter: "木星",
+      saturn: "土星",
+      uranus: "天王星",
+      neptune: "海王星"
+    };
+    return map[key] || key;
+  }
+
+  function setIntro(key) {
+    const k = key && INTRO_INNER[key] ? key : "_default";
+    introTitle.textContent = introTitleForKey(k === "_default" ? null : k);
+    introBody.innerHTML = `<div class="introCard">${INTRO_INNER[k] || INTRO_INNER._default}</div>`;
+  }
+
+  function findOverlayRoot(scene) {
+    if (!scene || !Array.isArray(scene.children)) {
+      return null;
+    }
+    for (const c of scene.children) {
+      if (c?.userData?.managedRootKind === "overlay") {
+        return c;
+      }
+    }
+    return null;
+  }
+
+  function cloneHoverPanelRecord() {
+    return JSON.parse(JSON.stringify(HOVER_INFO_PANEL_TEMPLATE));
+  }
+
+  function getRendererCssSize() {
+    const el = sceneRuntime?.renderer?.domElement;
+    if (el && el.clientWidth > 0 && el.clientHeight > 0) {
+      return { w: el.clientWidth, h: el.clientHeight };
+    }
+    return {
+      w: Number(sceneMeta.canvasWidth) || (typeof window !== "undefined" ? window.innerWidth : 1) || 1,
+      h: Number(sceneMeta.canvasHeight) || (typeof window !== "undefined" ? window.innerHeight : 1) || 1
+    };
+  }
+
+  async function deployHoverInfoPanel() {
+    const overlay = sceneRuntime?.scene;
+    if (!overlay) {
+      console.warn("未找到 scene，无法部署悬停信息面板");
+      return;
+    }
+    deployInfoPanel(overlay, cloneHoverPanelRecord());
+    await waitHoverSpriteCreated();
+  }
+
+  function resolveHoverInfoSprite() {
+    if (hoverInfoSprite && hoverInfoSprite.parent) {
+      return hoverInfoSprite;
+    }
+    const scene = sceneRuntime?.scene;
+    if (!scene) {
+      return null;
+    }
+    let found = null;
+    scene.traverse((o) => {
+      if (found) {
+        return;
+      }
+      if (o.isSprite && o.userData?.objJson?.name === "solarHoverInfoPanel") {
+        found = o;
+      }
+    });
+    hoverInfoSprite = found;
+    return hoverInfoSprite;
+  }
+
+  function positionHoverSprite(sprite, hitObject) {
+    const key = resolvePlanetPickKey(hitObject);
+    const anchor = (key && meshByPlanet[key]) || hitObject;
+    const r = getPlanetDisplayRadius(anchor);
+    if (hoverWorldPos && typeof anchor.getWorldPosition === "function") {
+      anchor.getWorldPosition(hoverWorldPos);
+      sprite.position.set(hoverWorldPos.x, hoverWorldPos.y + r * 3.2, hoverWorldPos.z);
+    } else {
+      sprite.position.set(anchor.position.x, anchor.position.y + r * 3.2, anchor.position.z);
+    }
+  }
+
+  function syncHoverSpriteWorldScale(sprite) {
+    const cam = sceneRuntime?.camera;
+    if (!cam || !sprite) {
+      return;
+    }
+    const bx = sprite.userData.hoverBaseScaleX;
+    const by = sprite.userData.hoverBaseScaleY;
+    if (!Number.isFinite(bx) || !Number.isFinite(by) || by <= 1e-8) {
+      return;
+    }
+    const dist = cam.position.distanceTo(sprite.position);
+    if (!(dist > 1e-5)) {
+      return;
+    }
+    if (!cam.isPerspectiveCamera) {
+      const u = Math.max(0.42, Math.min(2.0, dist / 140));
+      sprite.scale.set(bx * u, by * u, 1);
+      return;
+    }
+    const { w: vpW, h: vpH } = getRendererCssSize();
+    const minDim = Math.min(vpW, vpH);
+    let targetPx = Math.max(HOVER_SCREEN_MIN_PX, minDim * HOVER_SCREEN_FRAC_OF_MIN);
+    targetPx = Math.min(targetPx, HOVER_SCREEN_MAX_PX, minDim * 0.32);
+    const vFovRad = (cam.fov * Math.PI) / 180;
+    const frustumH = 2 * dist * Math.tan(vFovRad / 2);
+    const worldPerCssPx = frustumH / Math.max(1, vpH);
+    const targetWorldH = targetPx * worldPerCssPx;
+    const u = targetWorldH / by;
+    sprite.scale.set(bx * u, by * u, 1);
+  }
+
+  function hideHoverInfoPanel() {
+    lastHoverKey = null;
+    const sp = resolveHoverInfoSprite();
+    if (sp) {
+      sp.visible = false;
+    }
+  }
+
+  async function syncHoverIntroTexture(bodyKey) {
+    if (!chkHoverInfoPanel.checked || hoverIntroBusy) {
+      return;
+    }
+    const sprite = resolveHoverInfoSprite();
+    const scene = sceneRuntime?.scene;
+    if (!sprite || !scene || !sprite.userData?.objJson) {
+      return;
+    }
+    hoverIntroBusy = true;
+    try {
+      const base = sprite.userData.objJson;
+      const inner = INTRO_INNER[bodyKey] || INTRO_INNER._default;
+      const texSize = estimateHoverTextureSize(inner);
+      const next = {
+        ...base,
+        type: "html",
+        text: wrapHoverHtml(inner),
+        backColor: "transparent",
+        borderRadius: Number.isFinite(Number(base.borderRadius))
+          ? Number(base.borderRadius)
+          : HOVER_INFO_PANEL_BORDER_RADIUS,
+        textureWidth: texSize.width,
+        textureHeight: texSize.height,
+        html2canvasScale: Number.isFinite(Number(base.html2canvasScale)) ? Number(base.html2canvasScale) : 1.5
+      };
+      const panelId = base.threeJsonId;
+      if (panelId) {
+        await updateInfoPanelContent(panelId, next, { scene });
+      } else {
+        await deployInfoPanel(scene, next);
+      }
+      sprite.userData.hoverBaseScaleX = sprite.scale.x;
+      sprite.userData.hoverBaseScaleY = sprite.scale.y;
+      syncHoverSpriteWorldScale(sprite);
+      sprite.visible = true;
+    } catch (e) {
+      console.warn("悬停信息面板更新失败:", e);
+    } finally {
+      hoverIntroBusy = false;
+    }
+  }
+
+  async function onCanvasPointerMove(event) {
+    await ensureThreeRaycaster();
+    if (!sceneRuntime?.camera || !raycaster || !pointerNdc || !chkHoverInfoPanel?.checked) {
+      hideHoverInfoPanel();
+      return;
+    }
+    const rect = canvasContainer.getBoundingClientRect();
+    pointerNdc.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    pointerNdc.y = -(((event.clientY - rect.top) / rect.height) * 2 - 1);
+    raycaster.setFromCamera(pointerNdc, sceneRuntime.camera);
+    const hits = raycaster.intersectObjects(pickMeshes, true);
+    if (!hits.length) {
+      hideHoverInfoPanel();
+      return;
+    }
+    const bodyMesh = hits[0].object;
+    const pickKey = resolvePlanetPickKey(bodyMesh);
+    if (!pickKey) {
+      hideHoverInfoPanel();
+      return;
+    }
+    const sprite = resolveHoverInfoSprite();
+    if (!sprite) {
+      return;
+    }
+    positionHoverSprite(sprite, bodyMesh);
+    if (lastHoverKey !== pickKey) {
+      lastHoverKey = pickKey;
+      await syncHoverIntroTexture(pickKey);
+    } else {
+      sprite.visible = true;
+      syncHoverSpriteWorldScale(sprite);
+    }
+  }
+
+  function onCanvasPointerLeave() {
+    hideHoverInfoPanel();
+  }
+
+  function onCanvasPointerMoveHandler(event) {
+    onCanvasPointerMove(event).catch((err) => console.warn(err));
+  }
+
+  function onChkHoverInfoPanelChange() {
+    if (!chkHoverInfoPanel.checked) {
+      hideHoverInfoPanel();
+    }
+  }
+
+  function formatSimUtc(d) {
+    try {
+      return d.toISOString().replace("T", " ").replace(/\.\d{3}Z$/, " UTC");
+    } catch (_) {
+      return String(d);
+    }
+  }
+
+  function syncJumpControlsEnabled() {
+    const on = !demoVisualMode;
+    jumpDatetime.disabled = !on;
+    btnJump.disabled = !on;
+    chkPauseAfterJump.disabled = !on;
+  }
+
+  function advanceOrbitTime(dt) {
+    if (demoVisualMode) {
+      demoOrbitDate = new Date(demoOrbitDate.getTime() + dt * timeScale * DEMO_TIME_MS_PER_SEC);
+      return;
+    }
+    simDate = new Date(simDate.getTime() + dt * timeScale * 1000);
+  }
+
+  async function ensureThreeRaycaster() {
+    if (raycaster && pointerNdc && hoverWorldPos) {
+      return;
+    }
+    const mod = await import("three");
+    raycaster = new mod.Raycaster();
+    pointerNdc = new mod.Vector2();
+    hoverWorldPos = new mod.Vector3();
+  }
+
+  function readFrameDeltaSeconds() {
+    const now = performance.now();
+    const raw = (now - lastFrameWallMs) / 1000;
+    lastFrameWallMs = now;
+    return Math.min(0.15, Math.max(0, raw));
+  }
+
+  function syncPlayButtonDisabled() {
+    btnPlayPause.disabled = false;
+    btnPlayPause.title = demoVisualMode
+      ? "仅演示：示意公转（星历仅初始对齐；外行星更慢，非真实周期比）"
+      : ephemerisReady
+        ? "星历模式：按 UTC 推进"
+        : "星历库未加载：使用 JSON orbitalFallback 开普勒椭圆";
+  }
+
+  function refreshSimClockDisplay() {
+    if (demoVisualMode) {
+      simTimeDisplay.textContent = `演示模式 · 历元 ${formatSimUtc(simDate)} · 示意公转`;
+      return;
+    }
+    simTimeDisplay.textContent = formatSimUtc(simDate);
+  }
+
+  function syncJumpInput() {
+    const d = new Date(simDate.getTime() - simDate.getTimezoneOffset() * 60000);
+    jumpDatetime.value = d.toISOString().slice(0, 16);
+  }
+
+  async function waitHoverSpriteCreated() {
+    for (let i = 0; i < 48; i++) {
+      const sp = resolveHoverInfoSprite();
+      if (sp) {
+        sp.visible = false;
+        return;
+      }
+      await new Promise((r) => requestAnimationFrame(r));
+    }
+  }
+
+  async function initDemo() {
+    initDockUi();
+    demoVisualMode = chkDemoShowOnly.checked;
+    setIntro(null);
+    refreshSimClockDisplay();
+    syncJumpInput();
+
+    const networkUtc = await fetchUtcDateWithFallback();
+    const astroOk = await loadAstronomy();
+
+    try {
+      const response = await fetch(sceneJsonUrl);
+      if (!response.ok) {
+        throw new Error(`加载场景配置失败：${response.status}`);
+      }
+      const sceneData = await response.json();
+      sceneMeta = {
+        canvasWidth: window.innerWidth,
+        canvasHeight: window.innerHeight
+      };
+      sceneData.canvasWidth = sceneMeta.canvasWidth;
+      sceneData.canvasHeight = sceneMeta.canvasHeight;
+
+      pluginHost.register({
+        name: "solar-orbit-ephemeris",
+        beforeFrame(ctx) {
+          if (!playing) {
+            return;
+          }
+          const dt = Number(ctx?.deltaSeconds);
+          if (!Number.isFinite(dt) || dt <= 0) {
+            return;
+          }
+          advanceOrbitTime(dt);
+          applyOrbitFrame({ resetSpin: false });
+          refreshSimClockDisplay();
+        }
+      });
+
+      pluginHost.register({
+        name: "hover-sprite-camera-scale",
+        beforeFrame() {
+          if (!chkHoverInfoPanel?.checked || hoverIntroBusy) {
+            return;
+          }
+          const sp = hoverInfoSprite && hoverInfoSprite.parent ? hoverInfoSprite : resolveHoverInfoSprite();
+          if (sp && sp.visible && Number.isFinite(sp.userData.hoverBaseScaleX)) {
+            syncHoverSpriteWorldScale(sp);
+          }
+        }
+      });
+
+      sceneRuntime = await createJsonScene(sceneData, {
+        canvas: canvasContainer,
+        resetScene: true,
+        beforeFrame: () => {
+          const deltaSeconds = readFrameDeltaSeconds();
+          pluginHost.beforeFrame({
+            scene: sceneRuntime?.scene,
+            renderer: sceneRuntime?.renderer,
+            deltaSeconds,
+            nowMs: performance.now()
+          });
+        }
+      });
+
+      lastFrameWallMs = performance.now();
+
+      await deployHoverInfoPanel();
+
+      collectPickables();
+      setJsonRotateAnimationsEnabled(demoVisualMode);
+
+      simDate = networkUtc ?? new Date();
+      snapOrbitLayout(simDate, { resetSpin: true });
+      playing = true;
+      btnPlayPause.textContent = "暂停";
+      btnPlayPause.classList.add("primary");
+      const netHint = networkUtc ? " 网络 UTC 已作为初始历元。" : "";
+      const orbitHint = demoVisualMode
+        ? ephemerisReady
+          ? " 已用星历对齐初始位置，随后为示意公转（外慢内快，非真实周期比）。"
+          : " 星历不可用，全程示意椭圆公转。"
+        : ephemerisReady
+          ? " 椭圆轨道由 astronomy-engine 按 UTC 驱动。"
+          : " 星历库未加载，使用 JSON orbitalFallback。";
+      if (demoVisualMode) {
+        showMessage(`默认「仅演示」：示意公转（外行星更慢，非真实速度比）。${orbitHint}${netHint}取消勾选后按 1:1 UTC 星历推进。`, "info");
+      } else if (networkUtc && astroOk) {
+        showMessage(`已用网络 UTC 对齐模拟时间。${orbitHint}`, "info");
+      } else if (astroOk) {
+        showMessage(`网络 UTC 不可用，已用本机时间。${orbitHint}`, "info");
+      } else {
+        showMessage(`星历库未加载。${orbitHint} 点击播放可推进轨道。`, "info");
+      }
+
+      refreshSimClockDisplay();
+      syncJumpInput();
+
+      await ensureThreeRaycaster();
+
+      syncPlayButtonDisabled();
+      syncJumpControlsEnabled();
+
+      initEventListener();
+      sceneRuntime.start();
+      setLoading(false);
+    } catch (error) {
+      console.error(error);
+      setLoading(false);
+      showMessage(`太阳系全景示例初始化失败：${error.message}`, "error");
+    }
+  }
+
+  let uiIntervalId = 0;
+
+  async function applyReset() {
+    hideHoverInfoPanel();
+    timeScale = 1;
+    speedLabel.textContent = "1.000×";
+    const utc = await fetchUtcDateWithFallback();
+    simDate = utc ?? new Date();
+    lastFrameWallMs = performance.now();
+    demoVisualMode = chkDemoShowOnly.checked;
+    setJsonRotateAnimationsEnabled(demoVisualMode);
+    snapOrbitLayout(simDate, { resetSpin: true });
+    playing = true;
+    btnPlayPause.textContent = "暂停";
+    btnPlayPause.classList.add("primary");
+    syncJumpControlsEnabled();
+    syncPlayButtonDisabled();
+    refreshSimClockDisplay();
+    syncJumpInput();
+    const snapHint = demoVisualMode
+      ? ephemerisReady
+        ? " 已星历快照并重置示意公转。"
+        : " 已重置示意椭圆公转。"
+      : ephemerisReady
+        ? " 已按当前 UTC 刷新星历轨道。"
+        : " 已用 JSON 开普勒根数刷新。";
+    showMessage(
+      utc ? `已重置：1× 倍率，并已尝试同步网络 UTC。${snapHint}` : `已重置：1× 倍率与本机当前时间（网络 UTC 不可用）。${snapHint}`,
+      "info"
+    );
+  }
+
+  function initEventListener() {
+    window.addEventListener("resize", windowResize);
+    canvasContainer.addEventListener("contextmenu", rightClickHandler);
+    canvasContainer.addEventListener("click", onCanvasClick);
+    canvasContainer.addEventListener("mousemove", onCanvasPointerMoveHandler);
+    canvasContainer.addEventListener("mouseleave", onCanvasPointerLeave);
+
+    btnPlayPause.addEventListener("click", () => {
+      playing = !playing;
+      btnPlayPause.textContent = playing ? "暂停" : "播放";
+      btnPlayPause.classList.toggle("primary", playing);
+      lastFrameWallMs = performance.now();
+    });
+    btnSlower.addEventListener("click", () => {
+      timeScale = Math.max(0.05, timeScale / 1.35);
+      speedLabel.textContent = `${timeScale.toFixed(3)}×`;
+    });
+    btnFaster.addEventListener("click", () => {
+      timeScale = Math.min(8000, timeScale * 1.35);
+      speedLabel.textContent = `${timeScale.toFixed(3)}×`;
+    });
+    btnReset.addEventListener("click", () => {
+      applyReset().catch((e) => console.error(e));
+    });
+    chkDemoShowOnly.addEventListener("change", () => {
+      hideHoverInfoPanel();
+      demoVisualMode = chkDemoShowOnly.checked;
+      setJsonRotateAnimationsEnabled(demoVisualMode);
+      snapOrbitLayout(simDate, { resetSpin: true });
+      if (!playing) {
+        playing = true;
+        btnPlayPause.textContent = "暂停";
+        btnPlayPause.classList.add("primary");
+      }
+      lastFrameWallMs = performance.now();
+      syncJumpControlsEnabled();
+      syncPlayButtonDisabled();
+      refreshSimClockDisplay();
+      syncJumpInput();
+    });
+    chkHoverInfoPanel.addEventListener("change", onChkHoverInfoPanelChange);
+    btnJump.addEventListener("click", () => {
+      if (demoVisualMode) {
+        demoVisualMode = false;
+        chkDemoShowOnly.checked = false;
+        setJsonRotateAnimationsEnabled(false);
+        hideHoverInfoPanel();
+        syncJumpControlsEnabled();
+        syncPlayButtonDisabled();
+      }
+      const v = jumpDatetime.value;
+      if (!v) {
+        return;
+      }
+      const d = new Date(v);
+      if (Number.isNaN(d.getTime())) {
+        showMessage("日期时间无效", "error");
+        return;
+      }
+      simDate = d;
+      snapOrbitLayout(simDate, { resetSpin: true });
+      refreshSimClockDisplay();
+      if (chkPauseAfterJump.checked) {
+        playing = false;
+        btnPlayPause.textContent = "播放";
+        btnPlayPause.classList.remove("primary");
+      }
+      lastFrameWallMs = performance.now();
+    });
+
+    uiIntervalId = window.setInterval(() => {
+      if (playing) {
+        refreshSimClockDisplay();
+      }
+    }, 500);
+  }
+
+  async function onCanvasClick(event) {
+    await ensureThreeRaycaster();
+    if (!sceneRuntime?.camera || !sceneRuntime?.scene || !raycaster || !pointerNdc) {
+      return;
+    }
+    const rect = canvasContainer.getBoundingClientRect();
+    pointerNdc.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    pointerNdc.y = -(((event.clientY - rect.top) / rect.height) * 2 - 1);
+    raycaster.setFromCamera(pointerNdc, sceneRuntime.camera);
+    const hits = raycaster.intersectObjects(pickMeshes, true);
+    if (!hits.length) {
+      setIntro(null);
+      return;
+    }
+    const pickKey = resolvePlanetPickKey(hits[0].object);
+    if (pickKey) {
+      setIntro(pickKey === "sun" ? "sun" : pickKey);
+    } else {
+      setIntro(null);
+    }
+  }
+
+  function windowResize() {
+    sceneMeta.canvasWidth = window.innerWidth;
+    sceneMeta.canvasHeight = window.innerHeight;
+    sceneRuntime?.resize({
+      width: sceneMeta.canvasWidth,
+      height: sceneMeta.canvasHeight
+    });
+  }
+
+  function rightClickHandler(event) {
+    event.preventDefault();
+  }
+
+  function setLoading(flag) {
+    loadingMask.style.display = flag ? "flex" : "none";
+  }
+
+  function showMessage(message, type = "info") {
+    const colorMap = {
+      info: "rgba(20, 20, 20, 0.82)",
+      error: "rgba(180, 35, 24, 0.9)"
+    };
+    messageBox.textContent = message;
+    messageBox.style.background = colorMap[type] || colorMap.info;
+    messageBox.style.display = "block";
+    window.clearTimeout(showMessage.timer);
+    showMessage.timer = window.setTimeout(() => {
+      messageBox.style.display = "none";
+    }, 2600);
+  }
+
+  function wasteCleaner() {
+    if (uiIntervalId) {
+      clearInterval(uiIntervalId);
+      uiIntervalId = 0;
+    }
+    pluginHost.dispose();
+    hoverInfoSprite = null;
+    sceneRuntime?.dispose();
+    window.removeEventListener("resize", windowResize);
+    canvasContainer.removeEventListener("contextmenu", rightClickHandler);
+    canvasContainer.removeEventListener("click", onCanvasClick);
+    canvasContainer.removeEventListener("mousemove", onCanvasPointerMoveHandler);
+    canvasContainer.removeEventListener("mouseleave", onCanvasPointerLeave);
+    chkHoverInfoPanel.removeEventListener("change", onChkHoverInfoPanelChange);
+  }
+</script>
+</body>
+</html>

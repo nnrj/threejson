@@ -1,0 +1,246 @@
+{
+  "version": "next",
+  "name": "runtime-basic-standard",
+  "canvasWidth": 1920,
+  "canvasHeight": 1080,
+  "objectList": [
+    {
+      "objType": "scene",
+      "background": "#222222"
+    },
+    {
+      "objType": "camera",
+      "fov": 60,
+      "near": 0.1,
+      "far": 250,
+      "position": {
+        "x": 32,
+        "y": 23,
+        "z": 36
+      }
+    },
+    {
+      "objType": "renderer",
+      "antialias": true,
+      "ratioRate": 1
+    },
+    {
+      "objType": "controls",
+      "enableDamping": true,
+      "dampingFactor": 0.08,
+      "enableZoom": true,
+      "target": {
+        "x": 0,
+        "y": 4,
+        "z": 0
+      }
+    },
+    {
+      "objType": "light",
+      "type": "ambient",
+      "color": "#ffffff",
+      "intensity": 0.58
+    },
+    {
+      "objType": "light",
+      "type": "directional",
+      "color": "#ffffff",
+      "intensity": 1.05,
+      "position": {
+        "x": 30,
+        "y": 40,
+        "z": 25
+      }
+    },
+    {
+      "objType": "renderLoop",
+      "autoResize": true,
+      "firstAutoResize": true
+    },
+    {
+      "name": "runtime-floor",
+      "objType": "floor",
+      "geometry": {
+        "width": 36,
+        "height": 0.8,
+        "depth": 26
+      },
+      "position": {
+        "x": 0,
+        "y": -0.4,
+        "z": 0
+      },
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "material": {
+        "type": "standard",
+        "color": "#ffffff",
+        "metalness": 0.05,
+        "roughness": 0.85,
+        "textureUrl": "/assets/textures/building/floor/wood_floor.webp",
+        "textureRepeat": {
+          "x": 2,
+          "y": 2
+        }
+      }
+    },
+    {
+      "name": "runtime-blue-box",
+      "objType": "box",
+      "geometry": {
+        "width": 8,
+        "height": 8,
+        "depth": 8
+      },
+      "position": {
+        "x": -7,
+        "y": 4,
+        "z": 0
+      },
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "material": {
+        "type": "standard",
+        "color": "#409eff"
+      },
+      "animations": [
+        {
+          "type": "rotate",
+          "axis": "y",
+          "speed": -0.6
+        }
+      ]
+    },
+    {
+      "name": "runtime-glass-box",
+      "objType": "box",
+      "geometry": {
+        "width": 7,
+        "height": 11,
+        "depth": 7
+      },
+      "position": {
+        "x": 7,
+        "y": 6,
+        "z": -3
+      },
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0.35,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "material": {
+        "type": "standard",
+        "color": "#67c23a",
+        "transparent": true,
+        "opacity": 0.45
+      }
+    },
+    {
+      "name": "runtime-earth-sphere",
+      "objType": "sphere",
+      "geometry": {
+        "radius": 4,
+        "widthSegments": 32,
+        "heightSegments": 16
+      },
+      "position": {
+        "x": 6,
+        "y": 5,
+        "z": 7
+      },
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "material": {
+        "type": "standard",
+        "textureUrl": "/assets/textures/environment/nature/planet/earth.png"
+      },
+      "animations": [
+        {
+          "type": "rotate",
+          "axis": "y",
+          "speed": 0.48
+        }
+      ]
+    },
+    {
+      "text": "standard objectList\nall records flow\nthrough objType",
+      "type": "text",
+      "objType": "infoPanel",
+      "panelBoxType": "sprite",
+      "visible": true,
+      "color": "#ffffff",
+      "backColor": "#303133",
+      "panelWidth": 22,
+      "panelHeight": 10,
+      "panelDepth": 1,
+      "textureWidth": 220,
+      "textureHeight": 100,
+      "transparent": true,
+      "opacity": 0.72,
+      "textStyle": {
+        "fontSizePx": 13,
+        "fontFamily": "Microsoft YaHei, sans-serif",
+        "padding": 8,
+        "lineHeight": 17
+      },
+      "panel": {
+        "geometry": {
+          "width": 22,
+          "height": 10,
+          "depth": 1
+        },
+        "position": {
+          "x": 0,
+          "y": 15,
+          "z": 0
+        },
+        "material": {
+          "color": "#303133",
+          "transparent": true,
+          "opacity": 0.92
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 1,
+          "scaleY": 1,
+          "scaleZ": 1
+        }
+      }
+    }
+  ],
+  "threeJsonId": "00-04-standard-objectlist"
+}

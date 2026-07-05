@@ -1,0 +1,247 @@
+{
+  "version": "next",
+  "name": "tutorial-heatmap-wind",
+  "sceneConfig": {
+    "scene": {
+      "background": "#222222"
+    },
+    "camera": {
+      "fov": 60,
+      "near": 0.1,
+      "far": 2500,
+      "position": {
+        "x": 320,
+        "y": 240,
+        "z": 360
+      }
+    },
+    "renderer": {
+      "antialias": true,
+      "ratioRate": 1
+    },
+    "controls": {
+      "enableDamping": true,
+      "dampingFactor": 0.08,
+      "target": {
+        "x": 20,
+        "y": 55,
+        "z": 0
+      }
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "color": "#ffffff",
+        "intensity": 0.55
+      },
+      {
+        "type": "directional",
+        "color": "#ffffff",
+        "intensity": 0.75,
+        "position": {
+          "x": 250,
+          "y": 380,
+          "z": 260
+        }
+      }
+    ],
+    "renderLoop": {
+      "autoResize": true,
+      "firstAutoResize": true
+    }
+  },
+  "worldInfo": {
+    "heatList": [
+      {
+        "name": "planar-heatmap",
+        "geometry": {
+          "width": 230,
+          "height": 220
+        },
+        "position": {
+          "x": -110,
+          "y": 2,
+          "z": 0
+        },
+        "rotation": {
+          "rotationX": -1.5708,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "heatMap": [
+          {
+            "x": 45,
+            "y": 65,
+            "temperature": 22
+          },
+          {
+            "x": 95,
+            "y": 120,
+            "temperature": 30
+          },
+          {
+            "x": 165,
+            "y": 90,
+            "temperature": 36
+          },
+          {
+            "x": 200,
+            "y": 170,
+            "temperature": 28
+          }
+        ]
+      },
+      {
+        "name": "volume-heatmap",
+        "geometry": {
+          "width": 140,
+          "height": 110,
+          "depth": 120
+        },
+        "position": {
+          "x": 150,
+          "y": 55,
+          "z": 0
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0.25,
+          "rotationZ": 0
+        },
+        "heatMap": [
+          {
+            "x": 22,
+            "y": 25,
+            "z": 28,
+            "temperature": 16
+          },
+          {
+            "x": 58,
+            "y": 38,
+            "z": 72,
+            "temperature": 24
+          },
+          {
+            "x": 85,
+            "y": 58,
+            "z": 48,
+            "temperature": 35
+          },
+          {
+            "x": 112,
+            "y": 80,
+            "z": 90,
+            "temperature": 29
+          }
+        ],
+        "material": {
+          "transparent": true,
+          "opacity": 0.88
+        }
+      }
+    ],
+    "windList": [
+      {
+        "name": "wind-strip-left",
+        "objType": "wind",
+        "speed": 1,
+        "geometry": {
+          "width": 55,
+          "height": 190
+        },
+        "position": {
+          "x": -245,
+          "y": 95,
+          "z": 0
+        },
+        "material": {
+          "textureUrl": "/assets/textures/environment/nature/weather/wind_cold_left.png",
+          "textureRepeat": {
+            "x": 0.1,
+            "y": 8
+          },
+          "transparent": true,
+          "opacity": 0.82,
+          "side": "double"
+        }
+      },
+      {
+        "name": "wind-strip-right",
+        "objType": "wind",
+        "speed": 1.6,
+        "geometry": {
+          "width": 55,
+          "height": 190
+        },
+        "position": {
+          "x": 270,
+          "y": 95,
+          "z": 0
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0,
+          "rotationZ": 3.14159
+        },
+        "material": {
+          "textureUrl": "/assets/textures/environment/nature/weather/wind_cold_left.png",
+          "textureRepeat": {
+            "x": 0.1,
+            "y": 8
+          },
+          "transparent": true,
+          "opacity": 0.82,
+          "side": "double"
+        }
+      }
+    ],
+    "boxModelList": [
+      {
+        "name": "heatmap-base-left",
+        "objType": "floor",
+        "geometry": {
+          "width": 230,
+          "height": 6,
+          "depth": 220
+        },
+        "position": {
+          "x": -110,
+          "y": -3,
+          "z": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#3a3f44",
+          "transparent": true,
+          "opacity": 0.85
+        }
+      },
+      {
+        "name": "heatmap-volume-frame",
+        "objType": "box",
+        "geometry": {
+          "width": 140,
+          "height": 110,
+          "depth": 120
+        },
+        "position": {
+          "x": 150,
+          "y": 55,
+          "z": 0
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0.25,
+          "rotationZ": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#8ecbff",
+          "transparent": true,
+          "opacity": 0.1
+        }
+      }
+    ]
+  },
+  "threeJsonId": "02-01-heatmap-wind"
+}

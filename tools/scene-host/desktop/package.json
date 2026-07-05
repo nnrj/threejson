@@ -1,0 +1,58 @@
+{
+  "name": "threejson-scene-host-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Electron shell for scene-host editor and player",
+  "main": "main.mjs",
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "start:editor": "electron editor-main.mjs",
+    "start:player": "electron player-main.mjs",
+    "start": "electron main.mjs",
+    "stage:resources": "node scripts/stage-desktop-resources.mjs",
+    "pack:dir": "npm run stage:resources && electron-builder --dir",
+    "pack:win": "npm run stage:resources && electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "electron": "^42.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.threejson.scenehost",
+    "productName": "ThreeJSON Scene Host",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "create-desktop-app.mjs",
+      "main.mjs",
+      "editor-main.mjs",
+      "player-main.mjs",
+      "static-server.mjs",
+      "build/installer.nsh",
+      "utility/**",
+      "../editor/electron/preload.mjs",
+      "../player/electron/preload.mjs",
+      "README.md"
+    ],
+    "extraResources": [
+      {
+        "from": ".pack/threejson-root",
+        "to": "threejson-root"
+      }
+    ],
+    "win": {
+      "target": ["nsis"]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "ThreeJSON Scene Host",
+      "include": "build/installer.nsh"
+    }
+  }
+}

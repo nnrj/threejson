@@ -1,0 +1,452 @@
+{
+  "worldInfo": {
+    "particleList": [],
+    "audioList": [],
+    "sphereModelList": [],
+    "groupList": [],
+    "lineList": [],
+    "domainModelList": [],
+    "heatList": [],
+    "windList": [],
+    "infoPanelList": [],
+    "objModelList": [],
+    "boxModelList": [
+      {
+        "name": "Robot Body",
+        "objType": "box",
+        "geometry": {
+          "width": 2,
+          "height": 3,
+          "depth": 1
+        },
+        "position": {
+          "x": 0,
+          "y": 1.5,
+          "z": 0
+        },
+        "material": {
+          "type": "phong",
+          "color": "#808080",
+          "opacity": 1,
+          "transparent": false
+        },
+        "threeJsonId": "89e044b6-e0de-44b1-b396-b9b3bed22e68",
+        "materials": [
+          {
+            "type": "phong",
+            "color": "#808080",
+            "opacity": 1,
+            "transparent": false
+          },
+          {
+            "type": "phong",
+            "color": "#808080",
+            "opacity": 1,
+            "transparent": false
+          },
+          {
+            "type": "phong",
+            "color": "#808080",
+            "opacity": 1,
+            "transparent": false
+          },
+          {
+            "type": "phong",
+            "color": "#808080",
+            "opacity": 1,
+            "transparent": false
+          },
+          {
+            "type": "phong",
+            "color": "#808080",
+            "opacity": 1,
+            "transparent": false
+          },
+          {
+            "type": "phong",
+            "color": "#808080",
+            "opacity": 1,
+            "transparent": false
+          }
+        ],
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 1,
+          "scaleY": 1,
+          "scaleZ": 1
+        },
+        "label": "Robot Body"
+      },
+      {
+        "name": "Robot Head",
+        "objType": "box",
+        "geometry": {
+          "width": 1.5,
+          "height": 1.5,
+          "depth": 1.5
+        },
+        "position": {
+          "x": 0,
+          "y": 4.5,
+          "z": 0
+        },
+        "material": {
+          "type": "phong",
+          "color": "#C0C0C0",
+          "opacity": 1,
+          "transparent": false
+        },
+        "threeJsonId": "e44ab212-6fb3-42a5-88fd-e3f69244b65c",
+        "materials": [
+          {
+            "type": "phong",
+            "color": "#C0C0C0",
+            "opacity": 1,
+            "transparent": false
+          },
+          {
+            "type": "phong",
+            "color": "#C0C0C0",
+            "opacity": 1,
+            "transparent": false
+          },
+          {
+            "type": "phong",
+            "color": "#C0C0C0",
+            "opacity": 1,
+            "transparent": false
+          },
+          {
+            "type": "phong",
+            "color": "#C0C0C0",
+            "opacity": 1,
+            "transparent": false
+          },
+          {
+            "type": "phong",
+            "color": "#C0C0C0",
+            "opacity": 1,
+            "transparent": false
+          },
+          {
+            "type": "phong",
+            "color": "#C0C0C0",
+            "opacity": 1,
+            "transparent": false
+          }
+        ],
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 1,
+          "scaleY": 1,
+          "scaleZ": 1
+        },
+        "label": "Robot Head"
+      },
+      {
+        "name": "Robot Arm Left",
+        "objType": "box",
+        "geometry": {
+          "width": 0.5,
+          "height": 2,
+          "depth": 0.5
+        },
+        "position": {
+          "x": -1.25,
+          "y": 2.5,
+          "z": 0
+        },
+        "material": {
+          "type": "phong",
+          "color": "#A9A9A9",
+          "opacity": 1,
+          "transparent": false
+        },
+        "threeJsonId": "5388691c-4e96-4ccd-83a9-3b7240e25ba5",
+        "materials": [
+          {
+            "type": "phong",
+            "color": "#A9A9A9",
+            "opacity": 1,
+            "transparent": false
+          },
+          {
+            "type": "phong",
+            "color": "#A9A9A9",
+            "opacity": 1,
+            "transparent": false
+          },
+          {
+            "type": "phong",
+            "color": "#A9A9A9",
+            "opacity": 1,
+            "transparent": false
+          },
+          {
+            "type": "phong",
+            "color": "#A9A9A9",
+            "opacity": 1,
+            "transparent": false
+          },
+          {
+            "type": "phong",
+            "color": "#A9A9A9",
+            "opacity": 1,
+            "transparent": false
+          },
+          {
+            "type": "phong",
+            "color": "#A9A9A9",
+            "opacity": 1,
+            "transparent": false
+          }
+        ],
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 1,
+          "scaleY": 1,
+          "scaleZ": 1
+        },
+        "label": "Robot Arm Left"
+      },
+      {
+        "name": "Robot Arm Right",
+        "objType": "box",
+        "geometry": {
+          "width": 0.5,
+          "height": 2,
+          "depth": 0.5
+        },
+        "position": {
+          "x": 1.25,
+          "y": 2.5,
+          "z": 0
+        },
+        "material": {
+          "type": "phong",
+          "color": "#A9A9A9",
+          "opacity": 1,
+          "transparent": false
+        },
+        "threeJsonId": "d4d1e8e5-75e0-4da7-8085-b2c23edbb4fe",
+        "materials": [
+          {
+            "type": "phong",
+            "color": "#A9A9A9",
+            "opacity": 1,
+            "transparent": false
+          },
+          {
+            "type": "phong",
+            "color": "#A9A9A9",
+            "opacity": 1,
+            "transparent": false
+          },
+          {
+            "type": "phong",
+            "color": "#A9A9A9",
+            "opacity": 1,
+            "transparent": false
+          },
+          {
+            "type": "phong",
+            "color": "#A9A9A9",
+            "opacity": 1,
+            "transparent": false
+          },
+          {
+            "type": "phong",
+            "color": "#A9A9A9",
+            "opacity": 1,
+            "transparent": false
+          },
+          {
+            "type": "phong",
+            "color": "#A9A9A9",
+            "opacity": 1,
+            "transparent": false
+          }
+        ],
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 1,
+          "scaleY": 1,
+          "scaleZ": 1
+        },
+        "label": "Robot Arm Right"
+      },
+      {
+        "name": "Robot Leg Left",
+        "objType": "box",
+        "geometry": {
+          "width": 0.5,
+          "height": 2,
+          "depth": 0.5
+        },
+        "position": {
+          "x": -0.5,
+          "y": 0,
+          "z": 0
+        },
+        "material": {
+          "type": "phong",
+          "color": "#A9A9A9",
+          "opacity": 1,
+          "transparent": false
+        },
+        "threeJsonId": "8ac24e07-699d-440d-a919-f5acda515717",
+        "materials": [
+          {
+            "type": "phong",
+            "color": "#A9A9A9",
+            "opacity": 1,
+            "transparent": false
+          },
+          {
+            "type": "phong",
+            "color": "#A9A9A9",
+            "opacity": 1,
+            "transparent": false
+          },
+          {
+            "type": "phong",
+            "color": "#A9A9A9",
+            "opacity": 1,
+            "transparent": false
+          },
+          {
+            "type": "phong",
+            "color": "#A9A9A9",
+            "opacity": 1,
+            "transparent": false
+          },
+          {
+            "type": "phong",
+            "color": "#A9A9A9",
+            "opacity": 1,
+            "transparent": false
+          },
+          {
+            "type": "phong",
+            "color": "#A9A9A9",
+            "opacity": 1,
+            "transparent": false
+          }
+        ],
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 1,
+          "scaleY": 1,
+          "scaleZ": 1
+        },
+        "label": "Robot Leg Left"
+      },
+      {
+        "name": "Robot Leg Right",
+        "objType": "box",
+        "geometry": {
+          "width": 0.5,
+          "height": 2,
+          "depth": 0.5
+        },
+        "position": {
+          "x": 0.5,
+          "y": 0,
+          "z": 0
+        },
+        "material": {
+          "type": "phong",
+          "color": "#A9A9A9",
+          "opacity": 1,
+          "transparent": false
+        },
+        "threeJsonId": "557d8591-8932-4f23-bbc8-b854294647b8",
+        "materials": [
+          {
+            "type": "phong",
+            "color": "#A9A9A9",
+            "opacity": 1,
+            "transparent": false
+          },
+          {
+            "type": "phong",
+            "color": "#A9A9A9",
+            "opacity": 1,
+            "transparent": false
+          },
+          {
+            "type": "phong",
+            "color": "#A9A9A9",
+            "opacity": 1,
+            "transparent": false
+          },
+          {
+            "type": "phong",
+            "color": "#A9A9A9",
+            "opacity": 1,
+            "transparent": false
+          },
+          {
+            "type": "phong",
+            "color": "#A9A9A9",
+            "opacity": 1,
+            "transparent": false
+          },
+          {
+            "type": "phong",
+            "color": "#A9A9A9",
+            "opacity": 1,
+            "transparent": false
+          }
+        ],
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 1,
+          "scaleY": 1,
+          "scaleZ": 1
+        },
+        "label": "Robot Leg Right"
+      }
+    ]
+  },
+  "remark": "A simple robot model composed of boxes.",
+  "saveMeta": {
+    "exportMode": "worldinfo_primary",
+    "exportedAt": "2026-05-18T19:17:51.499Z"
+  },
+  "threeJsonId": "robot_demo",
+  "label": "Robot Room",
+  "sceneConfig": {
+    "camera": {
+      "position": {
+        "x": 3.1406690860072297,
+        "y": 3.685127800480248,
+        "z": 10.271927058297209
+      }
+    }
+  }
+}

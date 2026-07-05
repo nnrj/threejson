@@ -1,0 +1,64 @@
+{
+  "version": "next",
+  "name": "tutorial-stat-grid",
+  "sceneConfig": {
+    "scene": { "background": "#101820" },
+    "camera": {
+      "fov": 52,
+      "position": { "x": 0, "y": 120, "z": 220 },
+      "near": 0.1,
+      "far": 4000
+    },
+    "renderer": { "antialias": true },
+    "controls": {
+      "enableDamping": true,
+      "target": { "x": 0, "y": 35, "z": 0 }
+    },
+    "lights": [
+      { "type": "ambient", "color": "#9fb4c8", "intensity": 0.95 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1.2, "position": { "x": 72, "y": 130, "z": 96 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "worldInfo": {
+    "boxModelList": [
+      {
+        "name": "floor",
+        "objType": "floor",
+        "geometry": { "width": 220, "height": 1, "depth": 160 },
+        "position": { "x": 0, "y": 0, "z": 0 },
+        "material": { "color": "#2a3038" }
+      }
+    ],
+    "domainModelList": [
+      {
+        "objType": "domain",
+        "domain": "stat.grid",
+        "handler": "createStatGrid",
+        "options": {
+          "spacingX": 42,
+          "spacingZ": 42,
+          "columns": 4,
+          "origin": { "x": -63, "y": 0, "z": -21 },
+          "labelStyle": {
+            "fontSizePx": 22,
+            "autoFit": true,
+            "fitRatio": 0.76,
+            "minFontPx": 16,
+            "maxFontPx": 60
+          }
+        },
+        "items": [
+          { "value": 20, "max": 100 },
+          { "value": 45, "max": 100 },
+          { "value": 68, "max": 100 },
+          { "value": 88, "max": 100 },
+          { "value": 35, "max": 100 },
+          { "value": 52, "max": 100 },
+          { "value": 74, "max": 100 },
+          { "value": 91, "max": 100 }
+        ]
+      }
+    ]
+  }
+}

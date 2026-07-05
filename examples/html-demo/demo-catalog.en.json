@@ -1,0 +1,1927 @@
+[
+  {
+    "id": "t00-01",
+    "track": "00",
+    "order": "01",
+    "path": "./examples/html-demo/track-00-runtime/00-01-minimal-mesh.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-00/00-01-minimal-mesh.json"
+      }
+    ],
+    "prerequisites": [],
+    "status": "stable",
+    "group": "Track 0 · Runtime and JSON contracts",
+    "title": "Minimal scene",
+    "summary": "Start with a single box and declarative rotate; walk through the minimal friendly JSON pipeline with createJsonScene.",
+    "navSummary": "Single box + declarative rotation.",
+    "highlights": [
+      "createJsonScene() loads sceneConfig + worldInfo in one call.",
+      "boxModelList single record + animations.rotate.",
+      "No hand-written requestAnimationFrame."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/quick-start.md",
+        "label": "Quick start"
+      },
+      {
+        "href": "./doc/en/json-format.md#box",
+        "label": "JSON: box"
+      },
+      {
+        "href": "./doc/en/json-format.md#declarative-animations",
+        "label": "Declarative animation"
+      }
+    ]
+  },
+  {
+    "id": "t00-02",
+    "track": "00",
+    "order": "02",
+    "path": "./examples/html-demo/track-00-runtime/00-02-primitives-materials.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-00/00-02-primitives.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-01"
+    ],
+    "status": "stable",
+    "group": "Track 0 · Runtime and JSON contracts",
+    "title": "Primitives and materials",
+    "summary": "Showcase box/sphere/cylinder/cone/ring/torus/capsule, textured floor, glass, and PBR fields.",
+    "navSummary": "Multiple primitives + textures + PBR.",
+    "highlights": [
+      "sphereModelList and modelList carry different geometry types.",
+      "floor / glass semantic objType values.",
+      "metalness / roughness for standard materials."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md#other-basic-primitives",
+        "label": "JSON: other primitives"
+      },
+      {
+        "href": "./doc/en/json-format.md#sphere",
+        "label": "JSON: sphere"
+      }
+    ]
+  },
+  {
+    "id": "t00-03",
+    "track": "00",
+    "order": "03",
+    "path": "./examples/html-demo/track-00-runtime/00-03-friendly-full-scene.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-00/00-03-friendly-full-scene.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-02"
+    ],
+    "status": "stable",
+    "group": "Track 0 · Runtime and JSON contracts",
+    "title": "Friendly JSON full scene",
+    "summary": "sceneConfig + multiple typed lists + friendlyMap; see how friendly shapes normalize into objectList.",
+    "navSummary": "sceneConfig + typed lists.",
+    "highlights": [
+      "sceneRuntimeBasic tutorial copy.",
+      "friendlyMap fills default objType on list items.",
+      "animations driven by the core frame loop."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md#friendly-json",
+        "label": "Human-friendly JSON"
+      },
+      {
+        "href": "./doc/en/json-format.md#friendlymap",
+        "label": "friendlyMap"
+      }
+    ]
+  },
+  {
+    "id": "t00-04",
+    "track": "00",
+    "order": "04",
+    "path": "./examples/html-demo/track-00-runtime/00-04-standard-objectlist.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-00/00-04-standard-objectlist.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-03"
+    ],
+    "status": "stable",
+    "group": "Track 0 · Runtime and JSON contracts",
+    "title": "Standard JSON full scene",
+    "summary": "Standard IR: runtime and content objects share objectList—suited for procedural generation and AI output debugging.",
+    "navSummary": "objectList single-list full scene.",
+    "highlights": [
+      "scene/camera/renderer/controls/light alongside meshes in one list.",
+      "Compare with friendly JSON to understand the mapping.",
+      "Unified sceneLoadHandler phased deploy."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md#standard-json",
+        "label": "Standard JSON"
+      },
+      {
+        "href": "./doc/en/json-format.md#objectlist-dispatch-rules",
+        "label": "objectList dispatch"
+      }
+    ]
+  },
+  {
+    "id": "t00-05",
+    "track": "00",
+    "order": "05",
+    "path": "./examples/html-demo/track-00-runtime/00-05-import-paths.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-00/00-03-friendly-full-scene.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-01"
+    ],
+    "status": "stable",
+    "group": "Track 0 · Runtime and JSON contracts",
+    "title": "Import paths (split vs import map)",
+    "summary": "Clone the repo: relative core + builtins/register paths; other demos use an import map mapped to threejson / threejson/core (same as npm).",
+    "navSummary": "Split imports vs import map.",
+    "highlights": [
+      "core/index.js does not include built-in domain registration.",
+      "builtins/register.js registers all built-in domains in the catalog.",
+      "See examples/html-demo/README.md for the standard import map."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/domains.md",
+        "label": "Business domains"
+      },
+      {
+        "href": "./examples/html-demo/README.md",
+        "label": "html-demo README"
+      }
+    ]
+  },
+  {
+    "id": "t00-06",
+    "track": "00",
+    "order": "06",
+    "path": "./examples/html-demo/track-00-runtime/00-06-resource-reclaimer.html",
+    "jsonFiles": [],
+    "prerequisites": [
+      "t00-01"
+    ],
+    "status": "stable",
+    "group": "Track 0 · Runtime and JSON contracts",
+    "title": "Resource reclaim (auto default + optional manual)",
+    "summary": "Zero-touch: createJsonScene + runtime.dispose(); optional disposeByThreeJsonId(scene, threeJsonId) to remove a single object by id.",
+    "navSummary": "dispose / disposeByThreeJsonId.",
+    "highlights": [
+      "Scene runs fine without calling reclaim APIs explicitly.",
+      "disposeByThreeJsonId(scene, id) removes one object by business id.",
+      "runtime.dispose() releases GPU resources and listeners on page unload."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/api.md#disposebythreejsonidscene-threejsonid-options--detachbythreejsonid",
+        "label": "disposeByThreeJsonId"
+      },
+      {
+        "href": "./examples/html-demo/README.md",
+        "label": "html-demo README"
+      }
+    ]
+  },
+  {
+    "id": "t00-07",
+    "track": "00",
+    "order": "07",
+    "path": "./examples/html-demo/track-00-runtime/00-07-manual-deploy-mesh.html",
+    "jsonFiles": [],
+    "prerequisites": [
+      "t00-01"
+    ],
+    "status": "stable",
+    "group": "Track 0 · Runtime and JSON contracts",
+    "title": "Manual single-object deploy (**optional**)",
+    "summary": "Advanced elective: createSceneRuntime + deployMesh for a single box JSON record; compare with the doc/README imperative path—the main track still uses createJsonScene.",
+    "navSummary": "Elective · deployMesh single box.",
+    "highlights": [
+      "View after t00-01; compare with createJsonScene to understand low-level deploy.",
+      "Single objType: box + deployMesh; no full domain entry required.",
+      "Useful when assembling scenes dynamically or debugging a single object."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/README.md",
+        "label": "Caller handbook"
+      },
+      {
+        "href": "./doc/en/json-format.md#box",
+        "label": "JSON: box"
+      }
+    ]
+  },
+  {
+    "id": "t00-08",
+    "track": "00",
+    "order": "08",
+    "path": "./examples/html-demo/track-00-runtime/00-08-scene-intro.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-00/00-08-scene-intro.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-01"
+    ],
+    "status": "stable",
+    "group": "Track 0 · Runtime & JSON contract",
+    "title": "sceneConfig.intro splash",
+    "summary": "postLoad DOM intro: logo + text, fixed duration, click to skip; shown after deploy before onSceneReady.",
+    "navSummary": "intro.postLoad splash.",
+    "highlights": [
+      "sceneConfig.intro.postLoad.slides (image / text).",
+      "excludeFromLoadWait: no loadingMask/onSceneReady wait; defaults blockInteraction false.",
+      "blockInteraction false: pointer pass-through; skipOnClick only on slide content.",
+      "createJsonSceneSimple skips intro with warn."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md",
+        "label": "JSON: sceneConfig.intro"
+      },
+      {
+        "href": "./doc/en/scene-load-lifecycle.md",
+        "label": "Scene load lifecycle"
+      }
+    ]
+  },
+  {
+    "id": "t01-01",
+    "track": "01",
+    "order": "01",
+    "path": "./examples/html-demo/track-01-geometry/01-01-group-line-panel.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-01/01-01-group-line-panel.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-03"
+    ],
+    "status": "stable",
+    "group": "Track 1 · Scene objects and geometry",
+    "title": "Groups, lines, and panels",
+    "summary": "Imperative API vs JSON: createGroup, createLine2, infoPanel, and batch visibility by objType.",
+    "navSummary": "group / line / infoPanel API.",
+    "highlights": [
+      "createGroup() nests boxModelList.",
+      "createLine2() wide polyline.",
+      "setObjectsVisibleByObjType / destroyObjectsByObjType."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md#group",
+        "label": "group"
+      },
+      {
+        "href": "./doc/en/json-format.md#line",
+        "label": "line"
+      },
+      {
+        "href": "./doc/en/json-format.md#infopanel",
+        "label": "Info panel"
+      },
+      {
+        "href": "./doc/en/info-panels.md",
+        "label": "Info panel guide"
+      }
+    ]
+  },
+  {
+    "id": "t01-02",
+    "track": "01",
+    "order": "02",
+    "path": "./examples/html-demo/track-01-geometry/01-02-plane-line-topology.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-01/01-02-plane-line-topology.json"
+      }
+    ],
+    "prerequisites": [
+      "t01-01"
+    ],
+    "status": "stable",
+    "group": "Track 1 · Scene objects and geometry",
+    "title": "Planes and line topology",
+    "summary": "planeList ground planes and line topology: line / lineSegments / lineLoop.",
+    "navSummary": "plane + line topology.",
+    "highlights": [
+      "plane uses rotation to lie on the ground.",
+      "topology selects Line / LineSegments / LineLoop.",
+      "Data externalized in tutorial JSON."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md#plane-textured--solid-plane",
+        "label": "plane"
+      },
+      {
+        "href": "./doc/en/json-format.md#line-topology-topology",
+        "label": "line topology"
+      }
+    ]
+  },
+  {
+    "id": "t01-03",
+    "track": "01",
+    "order": "03",
+    "path": "./examples/html-demo/track-01-geometry/01-03-preset-objtypes.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-01/01-03-preset-objtypes.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-03"
+    ],
+    "status": "stable",
+    "group": "Track 1 · Scene objects and geometry",
+    "title": "Preset objTypes",
+    "summary": "wallList / floorList / glassList with friendlyMap defaults to reduce repeated fields.",
+    "navSummary": "wall / floor / glass.",
+    "highlights": [
+      "friendlyMap injects default material.",
+      "glassKind distinguishes glass styles.",
+      "List items may omit per-item objType."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md#preset-objtype-wall-glass-etc",
+        "label": "Preset objType"
+      }
+    ]
+  },
+  {
+    "id": "t01-04",
+    "track": "01",
+    "order": "04",
+    "path": "./examples/html-demo/track-01-geometry/01-04-csg-joins.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-01/01-04-csg-joins.json"
+      }
+    ],
+    "prerequisites": [
+      "t01-03"
+    ],
+    "status": "stable",
+    "group": "Track 1 · Scene objects and geometry",
+    "title": "CSG joins and holes",
+    "summary": "joins / holes declared on boxModelList items for boolean ops (three-bvh-csg).",
+    "navSummary": "joins / holes.",
+    "highlights": [
+      "holes cut windows in walls.",
+      "joins merge adjacent blocks.",
+      "CSG is heavy—use sparingly."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md#csg-union-intersection-holes",
+        "label": "CSG"
+      }
+    ]
+  },
+  {
+    "id": "t01-05",
+    "track": "01",
+    "order": "05",
+    "path": "./examples/html-demo/track-01-geometry/01-05-helpers-irregular-geometry.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-01/01-05-helpers-irregular.json"
+      }
+    ],
+    "prerequisites": [
+      "t01-02"
+    ],
+    "status": "stable",
+    "group": "Track 1 · Scene objects and geometry",
+    "title": "Helpers and irregular geometry",
+    "summary": "sceneConfig.helpers (Grid + Axes), irregularPlane / shapeExtrude / bufferMesh, and parallelTo quick orientation.",
+    "navSummary": "helpers + irregular plane/solid.",
+    "highlights": [
+      "helpers.grid / helpers.axes semi-runtime reference lines.",
+      "irregularPlane.planeKind: shape + parallelTo: xz.",
+      "shapeExtrude and bufferMesh triangle mesh examples."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md#sceneconfighelpers-grid--axes-helpers",
+        "label": "sceneConfig.helpers"
+      },
+      {
+        "href": "./doc/en/json-format.md#shapeplane--irregularplane-irregular-plane",
+        "label": "irregularPlane"
+      },
+      {
+        "href": "./doc/en/json-format.md#shapeextrude--irregulargeometry-irregular-solid",
+        "label": "shapeExtrude"
+      }
+    ]
+  },
+  {
+    "id": "t01-06",
+    "track": "01",
+    "order": "06",
+    "path": "./examples/html-demo/track-01-geometry/01-06-native-object-dispatch.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-01/01-06-native-objects.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-04",
+      "t01-02"
+    ],
+    "status": "stable",
+    "group": "Track 1 · Scene objects and geometry",
+    "title": "Native generic objects",
+    "summary": "parseMode / objType native: Three.js-native objTypes not yet defined in ThreeJSON (e.g. TorusKnot, Lathe, Dodecahedron) are allowed; ObjectLoader can auto-infer and create them; includes hierarchical Group and parseMode:native dual path.",
+    "navSummary": "Any Three.js type auto-inferred.",
+    "highlights": [
+      "torusKnot / latheVase / dodecahedronGem are non-core objTypes; auto routes to native.",
+      "objType:native + children hierarchical lamp model.",
+      "parseMode:native forces bypass of the box-specific parser."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md#objtype-native-general-threejs-object",
+        "label": "objType: native"
+      },
+      {
+        "href": "./lab/native-object-dispatch-memo.md",
+        "label": "lab notes"
+      }
+    ]
+  },
+  {
+    "id": "t01-07",
+    "track": "01",
+    "order": "07",
+    "path": "./examples/html-demo/track-01-geometry/01-07-jsm-geometries.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-01/01-07-jsm-geometries.json"
+      }
+    ],
+    "prerequisites": [
+      "t01-06"
+    ],
+    "status": "stable",
+    "group": "Track 1 · Scene objects and geometry",
+    "title": "JSM geometry and asset refs",
+    "summary": "RoundedBoxGeometry (roundedBox alias), geometryRef/materialPreset, native Line2; perspective Orbit for browsing (orthographic/fly see json-format).",
+    "navSummary": "jsm geometry + asset library refs.",
+    "highlights": [
+      "assetLibrary geometryPreset / materialPreset + lib:// refs.",
+      "sceneConfig.extensions.nativeGeometries register on demand.",
+      "roundedBox alias and preset-ref rounded box, native Line2 polyline."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md#objtype-native-general-threejs-object",
+        "label": "objType: native"
+      },
+      {
+        "href": "./doc/en/json-format.md",
+        "label": "assetLibrary"
+      }
+    ]
+  },
+  {
+    "id": "t01-08",
+    "track": "01",
+    "order": "08",
+    "path": "./examples/html-demo/track-01-geometry/01-08-ortho-fly.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-01/01-08-ortho-fly.json"
+      }
+    ],
+    "prerequisites": [
+      "t01-07"
+    ],
+    "status": "stable",
+    "group": "Track 1 · Scene objects and geometry",
+    "title": "Orthographic camera + Fly controls",
+    "summary": "OrthographicCamera + lookAt + FlyControls; verify orthographic frustum resize and fly initial orientation.",
+    "navSummary": "Orthographic camera + Fly controls.",
+    "highlights": [
+      "camera.type orthographic + lookAt aimed at the scene.",
+      "controls.type fly: dragToLook + WASD/QE.",
+      "Under autoResize / firstAutoResize, orthographic frustum keeps world height."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md",
+        "label": "camera type"
+      },
+      {
+        "href": "./doc/en/json-format.md",
+        "label": "controls fly"
+      }
+    ]
+  },
+  {
+    "id": "t02-01",
+    "track": "02",
+    "order": "01",
+    "path": "./examples/html-demo/track-02-visual-fx/02-01-heatmap-wind.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-02/02-01-heatmap-wind.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-03"
+    ],
+    "status": "stable",
+    "group": "Track 2 · Visualization and effects",
+    "title": "Heatmap and wind strips",
+    "summary": "heatList planar/volumetric heat and windList dynamic texture strips.",
+    "navSummary": "heatMap + wind.",
+    "highlights": [
+      "heatMap temperature points drive color.",
+      "wind texture flow driven by TWEEN.",
+      "geometry.depth distinguishes planar vs volumetric heat."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md#heatmap",
+        "label": "Heatmap"
+      },
+      {
+        "href": "./doc/en/json-format.md#wind-dynamic-plane",
+        "label": "Dynamic wind plane"
+      }
+    ]
+  },
+  {
+    "id": "t02-02",
+    "track": "02",
+    "order": "02",
+    "path": "./examples/html-demo/track-02-visual-fx/02-02-points-motion.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-02/02-02-points-motion.json"
+      }
+    ],
+    "prerequisites": [
+      "t02-01"
+    ],
+    "status": "stable",
+    "group": "Track 2 · Visualization and effects",
+    "title": "Points and motion",
+    "summary": "particleList (points) three motion modes: static, fall, rise drift.",
+    "navSummary": "points + three motion modes.",
+    "highlights": [
+      "Right panel toggles static / fall / rise.",
+      "motion.drift updates vertices each frame.",
+      "additive blending particle look."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md#points-point-cloud--particles",
+        "label": "points"
+      }
+    ]
+  },
+  {
+    "id": "t02-03",
+    "track": "02",
+    "order": "03",
+    "path": "./examples/html-demo/track-02-visual-fx/02-03-weather-domain.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-02/02-03-weather-domain.json"
+      }
+    ],
+    "prerequisites": [
+      "t02-02"
+    ],
+    "status": "stable",
+    "group": "Track 2 · Visualization and effects",
+    "title": "Weather domain",
+    "summary": "domainModelList with domain: weather rain / snow preset particles.",
+    "navSummary": "weather rain/snow.",
+    "highlights": [
+      "handler: rain | snow | sparkles | embers.",
+      "Internally via particleEmitterBuilder (default simulation: cpu).",
+      "Override count / bounds / simulation."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md#domain-weather-weather-particle-presets",
+        "label": "weather domain"
+      },
+      {
+        "href": "./doc/en/domains.md",
+        "label": "domains.md"
+      }
+    ]
+  },
+  {
+    "id": "t02-04",
+    "track": "02",
+    "order": "04",
+    "path": "./examples/html-demo/track-02-visual-fx/02-04-sprite-tube-instanced.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-02/02-04-sprite-tube-instanced.json"
+      }
+    ],
+    "prerequisites": [
+      "t02-01"
+    ],
+    "status": "stable",
+    "group": "Track 2 · Visualization and effects",
+    "title": "Sprite / tube / instanced",
+    "summary": "spriteList markers, tubeList pipe paths, instancedList column-grid instancing.",
+    "navSummary": "sprite / tube / instanced.",
+    "highlights": [
+      "tube path catmullRom.",
+      "instancedList transforms array.",
+      "sprite material.size controls size."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md#sprite-icon--marker",
+        "label": "sprite"
+      },
+      {
+        "href": "./doc/en/json-format.md#tube-pipe-path",
+        "label": "tube"
+      },
+      {
+        "href": "./doc/en/json-format.md#instanced-explicit-instancedmesh",
+        "label": "instanced"
+      }
+    ]
+  },
+  {
+    "id": "t02-05",
+    "track": "02",
+    "order": "05",
+    "path": "./examples/html-demo/track-02-visual-fx/02-05-scene-background.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-02/02-05-scene-background.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-04"
+    ],
+    "status": "stable",
+    "group": "Track 2 · Visualization and effects",
+    "title": "Scene background and panorama",
+    "summary": "scene.background equirect panorama and solar-system sphereModelList (requires createSceneRuntimeAsync).",
+    "navSummary": "equirect + solar system.",
+    "highlights": [
+      "background.type: equirect.",
+      "Async texture loading.",
+      "sphereModelList planet placeholder textures."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md#sceneconfigscene-background-and-environment",
+        "label": "background / environment"
+      }
+    ]
+  },
+  {
+    "id": "t02-06",
+    "track": "02",
+    "order": "06",
+    "path": "./examples/html-demo/track-02-visual-fx/02-06-audio-spatial.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-02/02-06-audio-spatial.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-03"
+    ],
+    "status": "stable",
+    "group": "Track 2 · Visualization and effects",
+    "title": "Spatial audio",
+    "summary": "audioList ambient and positional modes (playback requires user gesture).",
+    "navSummary": "audioList dual mode.",
+    "highlights": [
+      "mode: ambient | positional.",
+      "refDistance / maxDistance attenuation.",
+      "autoplay limited by browser policy."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md#audio",
+        "label": "audio"
+      }
+    ]
+  },
+  {
+    "id": "t02-09",
+    "track": "02",
+    "order": "09",
+    "path": "./examples/html-demo/track-02-visual-fx/02-09-particle-emitter-gpu.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-02/02-09-particle-emitter-gpu.json"
+      }
+    ],
+    "prerequisites": [
+      "t02-02"
+    ],
+    "status": "stable",
+    "group": "Track 2 · Visualization and effects",
+    "title": "particleEmitter gpuCompute",
+    "summary": "objType particleEmitter: gpuCompute (GPUComputationRenderer) vs cpu twinkle comparison.",
+    "navSummary": "particleEmitter gpu/cpu.",
+    "highlights": [
+      "simulation: gpuCompute + compute.textureSize.",
+      "GPU position texture + ShaderMaterial Points.",
+      "Falls back to cpu without WebGL2."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md#particleemitter-unified-emitter-entry",
+        "label": "particleEmitter"
+      }
+    ]
+  },
+  {
+    "id": "t02-10",
+    "track": "02",
+    "order": "10",
+    "path": "./examples/html-demo/track-02-visual-fx/02-10-particle-nebula-provider.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-02/02-10-particle-nebula-provider.json"
+      }
+    ],
+    "prerequisites": [
+      "t02-09"
+    ],
+    "status": "stable",
+    "group": "Track 2 · Visualization and effects",
+    "title": "particleEmitter third-party provider",
+    "summary": "extensions/particle-nebula: provider: nebula registers a third-party particle adapter, side-by-side with core.",
+    "navSummary": "Third-party particle provider.",
+    "highlights": [
+      "Import threejson/core first, then extensions/particle-nebula to register provider.",
+      "JSON provider: nebula → adapter tweaks material then delegates to core.",
+      "Warn and fall back to core when extension not imported."
+    ],
+    "docLinks": [
+      {
+        "href": "./extensions/particle-nebula/README.md",
+        "label": "particle-nebula README"
+      },
+      {
+        "href": "./doc/en/json-format.md#particleemitter-unified-emitter-entry",
+        "label": "particleEmitter"
+      }
+    ]
+  },
+  {
+    "id": "t02-11",
+    "track": "02",
+    "order": "11",
+    "path": "./examples/html-demo/track-02-visual-fx/02-11-texture-sampling-toggle.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-02/02-11-texture-sampling-toggle.json"
+      }
+    ],
+    "prerequisites": [
+      "t02-06"
+    ],
+    "status": "stable",
+    "group": "Track 2 · Visualization and effects",
+    "title": "textureQuality texture sampling tiers",
+    "summary": "sceneConfig / material.textureQuality 0–3 merged with path-A presets; runtime applyObjectChange hot toggle.",
+    "navSummary": "Texture sampling tier toggle.",
+    "highlights": [
+      "sceneConfig.textureQuality is the scene default tier (S).",
+      "material.textureQuality overrides scene default; 0 opts out.",
+      "Explicit generateMipmaps / minFilter / anisotropy (C) win over tier bundles."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md#assetlibrary-and-lib-texture-references",
+        "label": "textureQuality"
+      },
+      {
+        "href": "./doc/en/api.md#coreutiltextureutilsjs",
+        "label": "textureSampling API"
+      }
+    ]
+  },
+  {
+    "id": "t02-sky",
+    "track": "02",
+    "order": "07",
+    "path": "./examples/html-demo/track-02-visual-fx/02-08-shader-sky-cycle.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-02/02-08-shader-sky-cycle.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-03"
+    ],
+    "status": "stable",
+    "group": "Track 2 · Visualization and effects",
+    "title": "Shader sky and water (folder)",
+    "summary": "nature.sky / nature.water + shaderSurface: static presets and handler: cycle day/night loop.",
+    "navSummary": "Sky and water · two lessons.",
+    "highlights": [
+      "Subfolder: static sky/water and dynamic cycle.",
+      "domainModelList + shaderSurfaceList.",
+      "cycle: timeOfDay / autoCycle / syncBackground."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md#shadersurface-core-generic-shader-surface",
+        "label": "shaderSurface / nature.sky"
+      },
+      {
+        "href": "./lab/shader-preset-architecture.md",
+        "label": "Shader architecture contract"
+      }
+    ],
+    "steps": [
+      {
+        "id": "t02-07",
+        "order": "A",
+        "path": "./examples/html-demo/track-02-visual-fx/02-07-shader-sky-water.html",
+        "jsonFiles": [
+          {
+            "json": "/assets/json/tutorial/track-02/02-07-shader-sky-water.json"
+          }
+        ],
+        "prerequisites": [
+          "t00-03"
+        ],
+        "parentId": "t02-sky",
+        "group": "",
+        "title": "Static sky and ocean",
+        "summary": "domainModelList (nature.sky / nature.water) + shaderSurfaceList demonstrate shader presets and domain semantic wrapping.",
+        "navSummary": "sunset + ocean static preset",
+        "highlights": [
+          "handler: sunset / ocean static presets.",
+          "quality: low | medium | high | ultra controls water fidelity.",
+          "shaderSurface solidColor marker plane."
+        ],
+        "docLinks": []
+      },
+      {
+        "id": "t02-08",
+        "order": "B",
+        "path": "./examples/html-demo/track-02-visual-fx/02-08-shader-sky-cycle.html",
+        "jsonFiles": [
+          {
+            "json": "/assets/json/tutorial/track-02/02-08-shader-sky-cycle.json"
+          }
+        ],
+        "prerequisites": [
+          "t02-07"
+        ],
+        "parentId": "t02-sky",
+        "group": "",
+        "title": "Sky day/night cycle",
+        "summary": "nature.sky handler: cycle keyframe interpolation + automatic 24h loop; optional syncBackground syncs solid-color background.",
+        "navSummary": "handler: cycle + autoCycle",
+        "highlights": [
+          "timeOfDay / cycleDuration / autoCycle.",
+          "syncBackground applies only to solid-color scene.background.",
+          "Static dawn/noon/night still available via handler switch."
+        ],
+        "docLinks": []
+      }
+    ]
+  },
+  {
+    "id": "t03-01",
+    "track": "03",
+    "order": "01",
+    "path": "./examples/html-demo/track-03-assets/03-01-external-gltf.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-03/03-01-external-gltf.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-04"
+    ],
+    "status": "stable",
+    "group": "Track 3 · External assets and domains",
+    "title": "glTF external models",
+    "summary": "externalModelList loads in-repo glTF alongside floor box in the same scene.",
+    "navSummary": "externalModel + glTF.",
+    "highlights": [
+      "modelFileType selects loader.",
+      "List may omit per-item objType.",
+      "Asset paths rooted at /assets/."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md#externalmodel",
+        "label": "externalModel"
+      }
+    ]
+  },
+  {
+    "id": "t03-02",
+    "track": "03",
+    "order": "02",
+    "path": "./examples/html-demo/track-03-assets/03-02-gltf-animation-mixer.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-03/03-02-gltf-animation-mixer.json"
+      }
+    ],
+    "prerequisites": [
+      "t03-01"
+    ],
+    "status": "stable",
+    "group": "Track 3 · External assets and domains",
+    "title": "glTF animation mixer",
+    "summary": "glTF with translation clips; verify AnimationMixer and animationMode.",
+    "navSummary": "glTF Mixer.",
+    "highlights": [
+      "Mixer LoopRepeat.",
+      "Can coordinate with declarative rotate.",
+      "03-02-gltf-animation-mixer.json."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md#animationmode-optional",
+        "label": "animationMode"
+      }
+    ]
+  },
+  {
+    "id": "t03-03",
+    "track": "03",
+    "order": "03",
+    "path": "./examples/html-demo/track-03-assets/03-03-native-three-domain.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-03/03-03-native-three-domain.json"
+      }
+    ],
+    "prerequisites": [
+      "t03-01"
+    ],
+    "status": "stable",
+    "group": "Track 3 · External assets and domains",
+    "title": "Native Three JSON domain",
+    "summary": "domainModelList nativeThree loads three_native.json subgraph.",
+    "navSummary": "nativeThree domain.",
+    "highlights": [
+      "applyDomainModelsFromWorldInfo.",
+      "Standalone three_native.json.",
+      "domain: box reference bar."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md#external-models-objgltfglbthreejson",
+        "label": "External models and native JSON"
+      }
+    ]
+  },
+  {
+    "id": "t03-04",
+    "track": "03",
+    "order": "04",
+    "path": "./examples/html-demo/track-03-assets/03-04-obj-maps-fallback.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-03/03-04-obj-maps-fallback.json"
+      }
+    ],
+    "prerequisites": [
+      "t03-01"
+    ],
+    "status": "stable",
+    "group": "Track 3 · External assets and domains",
+    "title": "OBJ and maps fallback",
+    "summary": "objModelList loads maps_fallback/alpaca.obj; demonstrates same-directory maps/ material fallback.",
+    "navSummary": "OBJ loading.",
+    "highlights": [
+      "modelPath points to .obj (objModelList).",
+      "MTL/maps auto-discovery.",
+      "Minimal floor reference scene."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md#obj-sibling-maps-fallback",
+        "label": "OBJ maps fallback"
+      }
+    ]
+  },
+  {
+    "id": "t03-06",
+    "track": "03",
+    "order": "06",
+    "path": "./examples/html-demo/track-03-assets/03-06-animation-graph.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-03/03-06-animation-graph.json"
+      }
+    ],
+    "prerequisites": [
+      "t03-02"
+    ],
+    "status": "stable",
+    "group": "Track 3 · External assets and domains",
+    "title": "animationGraph state machine",
+    "summary": "glTF + animationGraph: parameter-driven state transitions and clipFinished fallback; without graph, still plays all clips.",
+    "navSummary": "animationGraph state machine.",
+    "highlights": [
+      "setAnimationParameter / fireAnimationEvent API.",
+      "slow ↔ fast crossFade; pulse one-shot clip.",
+      "Opt-in graph only; compatible with legacy JSON."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md#animationgraph-optional-gltf-animation-state-machine",
+        "label": "animationGraph"
+      }
+    ]
+  },
+  {
+    "id": "t04-01",
+    "track": "04",
+    "order": "01",
+    "path": "./examples/html-demo/track-04-interaction/04-01-object-registry.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-04/04-01-object-registry.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-02"
+    ],
+    "status": "stable",
+    "group": "Track 4 · Runtime interaction and extensions (LAB)",
+    "title": "Object registry",
+    "summary": "refName / threeJsonId / name query runtime objects and modify transforms and materials.",
+    "navSummary": "objectRegistry API.",
+    "highlights": [
+      "getObjectByRefName.",
+      "getObjectByThreeJsonId.",
+      "rebuildObjectRegistryFromScene fallback."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md#runtime-object-lookup",
+        "label": "Runtime object lookup"
+      }
+    ]
+  },
+  {
+    "id": "t04-02",
+    "track": "04",
+    "order": "02",
+    "path": "./examples/html-demo/track-04-interaction/04-02-plugin-physics.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-04/04-02-plugin-physics.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-04"
+    ],
+    "status": "lab",
+    "group": "Track 4 · Runtime interaction and extensions (LAB)",
+    "title": "PluginHost and physics",
+    "summary": "In-page toggle between simple-gravity and physics-rapier (WASM), hooked on PluginHost.beforePhysics.",
+    "navSummary": "Gravity / Rapier combo.",
+    "highlights": [
+      "extensions/simple-gravity.",
+      "extensions/physics-rapier + esm.sh WASM.",
+      "04-02-plugin-physics.json extensions."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/scope.md",
+        "label": "scope.md"
+      },
+      {
+        "href": "./extensions/physics-rapier/README.md",
+        "label": "physics-rapier README"
+      }
+    ]
+  },
+  {
+    "id": "t04-fps",
+    "track": "04",
+    "order": "03",
+    "path": "./examples/html-demo/track-04-interaction/04-05-fps-rapier-collision.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-04/04-05-fps-rapier-collision.json"
+      }
+    ],
+    "prerequisites": [
+      "t04-02"
+    ],
+    "status": "lab",
+    "group": "Track 4 · Runtime interaction and extensions (LAB)",
+    "title": "First-person walk (folded)",
+    "summary": "Progressive depth: PointerLock walk → Player Rig → Rapier capsule collision (full version is default preview).",
+    "navSummary": "FPS progressive three lessons.",
+    "highlights": [
+      "Subfolder switches different HTML scenes.",
+      "controls.type firstPerson + fps-walk.",
+      "Rapier CharacterController full example on default page."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md#objtype-controls-viewport-controller",
+        "label": "controls"
+      },
+      {
+        "href": "./extensions/fps-walk/README.md",
+        "label": "fps-walk"
+      },
+      {
+        "href": "./lab/first-person-integration.md",
+        "label": "first-person-integration"
+      }
+    ],
+    "steps": [
+      {
+        "id": "t04-03",
+        "order": "A",
+        "path": "./examples/html-demo/track-04-interaction/04-03-fps-walk.html",
+        "jsonFiles": [
+          {
+            "json": "/assets/json/tutorial/track-04/04-03-fps-walk.json"
+          }
+        ],
+        "prerequisites": [
+          "t00-04"
+        ],
+        "parentId": "t04-fps",
+        "group": "",
+        "title": "Basic walk",
+        "summary": "controls.type firstPerson + optional extensions fps-walk ground snap.",
+        "navSummary": "PointerLock + fps-walk",
+        "highlights": [
+          "Standard objectList indoor box.",
+          "bootstrapFpsWalkFromScene.",
+          "scene-player also supported."
+        ],
+        "docLinks": []
+      },
+      {
+        "id": "t04-04",
+        "order": "B",
+        "path": "./examples/html-demo/track-04-interaction/04-04-fps-player-rig.html",
+        "jsonFiles": [
+          {
+            "json": "/assets/json/tutorial/track-04/04-04-fps-player-rig.json"
+          }
+        ],
+        "prerequisites": [
+          "t04-03"
+        ],
+        "parentId": "t04-fps",
+        "group": "",
+        "title": "Player rig",
+        "summary": "camera.attachTo mounts camera on refName: player group; WASD moves the rig.",
+        "navSummary": "attachTo player rig",
+        "highlights": [
+          "group refName player.",
+          "attachCameraToPlayerRig.",
+          "Works with fps-walk ground snap."
+        ],
+        "docLinks": []
+      },
+      {
+        "id": "t04-05",
+        "order": "C",
+        "path": "./examples/html-demo/track-04-interaction/04-05-fps-rapier-collision.html",
+        "jsonFiles": [
+          {
+            "json": "/assets/json/tutorial/track-04/04-05-fps-rapier-collision.json"
+          }
+        ],
+        "prerequisites": [
+          "t04-02",
+          "t04-03"
+        ],
+        "parentId": "t04-fps",
+        "group": "",
+        "title": "Rapier collision",
+        "summary": "controls.collision.provider rapier + CharacterController capsule collision.",
+        "navSummary": "Rapier first-person",
+        "highlights": [
+          "Walls physics-rapier fixed.",
+          "Requires @dimforge/rapier3d-compat.",
+          "lab/first-person-integration."
+        ],
+        "docLinks": []
+      }
+    ]
+  },
+  {
+    "id": "t04-09",
+    "track": "04",
+    "order": "09",
+    "path": "./examples/html-demo/track-04-interaction/04-09-event-mechanism.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-04/04-09-event-mechanism.json"
+      }
+    ],
+    "prerequisites": [
+      "t04-01",
+      "t00-04"
+    ],
+    "status": "stable",
+    "group": "Track 4 · Runtime interaction",
+    "title": "Core event mechanism (EventScript)",
+    "summary": "Plain box with events.click.script and await wait; dblclick sidebar to edit and rebind.",
+    "navSummary": "Event mechanism",
+    "highlights": [
+      "bindSceneEventRuntime wires ELM + JSON bindings.",
+      "Click box: move left → wait → move back.",
+      "Dblclick opens script sidebar; Apply rebinds immediately.",
+      "Phase-1 plain path; domain wiring is optional."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/event-mechanism.md#一事件机制使用方法",
+        "label": "Event mechanism"
+      },
+      {
+        "href": "./doc/event-mechanism.md#二eventscript-语法",
+        "label": "EventScript syntax"
+      },
+      {
+        "href": "./doc/en/json-format.md",
+        "label": "JSON events"
+      }
+    ]
+  },
+  {
+    "id": "t04-10",
+    "track": "04",
+    "order": "10",
+    "path": "./examples/html-demo/track-04-interaction/04-10-object-lifecycle.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-04/04-10-object-lifecycle.json"
+      }
+    ],
+    "prerequisites": [
+      "t04-09"
+    ],
+    "status": "stable",
+    "group": "Track 4 · Runtime interaction",
+    "title": "Per-object lifecycle (ready / dispose)",
+    "summary": "object.ready runs after deploy; object.dispose runs before explicit async removal; batch load replays ready after ELM bind.",
+    "navSummary": "Object lifecycle",
+    "highlights": [
+      "JSON events.object.ready / object.dispose (content denylist).",
+      "createJsonScene: host hook during deploy; JSON ready script replays after bind.",
+      "Press D for dynamic deployJsonObjectAsync; press R to trigger object.dispose through removeObjectByIdAsync."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/event-mechanism.md#131-单对象-lifecycle-与场景-load-的区别",
+        "label": "Object lifecycle"
+      }
+    ]
+  },
+  {
+    "id": "t04-11",
+    "track": "04",
+    "order": "11",
+    "path": "./examples/html-demo/track-04-interaction/04-11-declarative-actions.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-04/04-11-declarative-actions.json"
+      }
+    ],
+    "prerequisites": [
+      "t04-09"
+    ],
+    "status": "stable",
+    "group": "Track 4 · Runtime interaction",
+    "title": "Declarative actions",
+    "summary": "Use action/actions for move, visibility, and patch interactions; action and script can coexist, with actions first.",
+    "navSummary": "JSON action/actions",
+    "highlights": [
+      "Single action shorthand and multi-action arrays.",
+      "object.patch defaults to sync/deferred behavior and does not force texture awaits.",
+      "scene.ready can bind to a scene record."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/event-mechanism.md#12-jsonevents-块",
+        "label": "JSON actions"
+      }
+    ]
+  },
+  {
+    "id": "t04-08",
+    "track": "04",
+    "order": "03",
+    "path": "./examples/html-demo/track-04-interaction/04-08-info-panel-gallery.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-04/04-08-info-panel-gallery.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-04"
+    ],
+    "status": "stable",
+    "group": "Track 4 · Runtime interaction and extensions (LAB)",
+    "title": "Info panel gallery",
+    "summary": "infoPanelList static-type gallery: box/sprite × text/html/img; fix:false dblclick dismiss demo.",
+    "navSummary": "infoPanel type gallery",
+    "highlights": [
+      "Six panels: box/sprite × text/HTML/image.",
+      "textFace full, borderRadius examples.",
+      "Orange panel uses fix:false to hide on double-click (core event mechanism).",
+      "Interactive DOM see t04-06 css3dPanel."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/info-panels.md",
+        "label": "Info panel guide"
+      },
+      {
+        "href": "./doc/en/json-format.md#infopanel",
+        "label": "infoPanel JSON"
+      }
+    ]
+  },
+  {
+    "id": "t04-06",
+    "track": "04",
+    "order": "04",
+    "path": "./examples/html-demo/track-04-interaction/04-06-css3d-panel.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-04/04-06-css3d-panel.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-04"
+    ],
+    "status": "stable",
+    "group": "Track 4 · Runtime interaction and extensions (LAB)",
+    "title": "CSS3D interactive panel",
+    "summary": "css3dPanelList interactive DOM / iframe panels (complements static infoPanel textures).",
+    "navSummary": "css3dPanel basics.",
+    "highlights": [
+      "Left panel supports click/input.",
+      "Right iframe requires target site to allow embedding.",
+      "Dual pass WebGL + CSS3DRenderer."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md#interactive-css3d-panel-css3dpanel-core",
+        "label": "css3dPanel"
+      }
+    ],
+    "steps": [
+      {
+        "id": "t04-07",
+        "order": "B",
+        "path": "./examples/html-demo/track-04-interaction/04-07-css3d-curved-browser.html",
+        "jsonFiles": [
+          {
+            "json": "/assets/json/tutorial/track-04/04-07-css3d-curved-google.json"
+          }
+        ],
+        "prerequisites": [],
+        "parentId": "t04-06",
+        "group": "",
+        "title": "Curved-screen browser",
+        "summary": "VR floating curved screen mounts threejs.org; scroll wheel zoom; advanced beyond basic css3dPanel.",
+        "navSummary": "Curved CSS3D display",
+        "highlights": [
+          "04-07-css3d-curved-google.json.",
+          "Curved transform + iframe embed.",
+          "Basics in 04-06."
+        ],
+        "docLinks": []
+      }
+    ]
+  },
+  {
+    "id": "t05-01",
+    "track": "05",
+    "order": "01",
+    "path": "./examples/html-demo/track-05-tooling/05-01-ai-scene.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-05/05-01-ai-scene.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-04"
+    ],
+    "status": "lab",
+    "group": "Track 5 · Tooling",
+    "title": "AI scene generation",
+    "summary": "ChatGPT/DeepSeek generate and adjust scene JSON; renderSceneByJsonString unified rendering.",
+    "navSummary": "AI generate / adjust / preview.",
+    "highlights": [
+      "createSceneAiClient + runSceneAgent.",
+      "JSON full replace / RFC6902 patch / auto-adjust modes.",
+      "Agent multi-turn, staged auto-load, streaming preview and abort.",
+      "Camera hold and per-round adaptive framing."
+    ],
+    "docLinks": [
+      {
+        "href": "./core/ai/README.md",
+        "label": "AI README"
+      },
+      {
+        "href": "./doc/mcp-cursor.md",
+        "label": "mcp-cursor"
+      }
+    ]
+  },
+  {
+    "id": "t05-02a",
+    "track": "05",
+    "order": "02",
+    "path": "./examples/html-demo/track-05-tooling/05-02-nested-domain.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-05/05-02-nested-domain.json"
+      }
+    ],
+    "prerequisites": [
+      "t02-03"
+    ],
+    "status": "stable",
+    "group": "Track 5 · Tooling",
+    "title": "Nested subdomains (weather.rain / weather.wind)",
+    "summary": "Dot-qualified id dispatches subdomains: weather.rain / weather.wind coexist with root weather; businessDomains chained navigation.",
+    "navSummary": "nested domain + Proxy API.",
+    "highlights": [
+      "domainModelList uses domain: weather.rain | weather.wind.",
+      "Root weather domain still handles snow and other handlers.",
+      "businessDomains.weather.rain.deployRain and bracket access."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/domains.md",
+        "label": "domains.md"
+      },
+      {
+        "href": "./doc/en/json-format.md#domain-weather-weather-particle-presets",
+        "label": "weather domain"
+      }
+    ]
+  },
+  {
+    "id": "t05-02",
+    "track": "05",
+    "order": "01",
+    "path": "./room-show.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/roomShow.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-04"
+    ],
+    "status": "stable",
+    "group": "Track 5 · Host application samples",
+    "title": "Core network room zone A",
+    "summary": "Enterprise modular datacenter ops dashboard: hot/cold aisles, UPS zones, 18 racks, heatmap/aisle airflow, first-person walk and ops menus.",
+    "navSummary": "roomShow.json · datacenter ops dashboard",
+    "highlights": [
+      "worldInfo friendly lists + deployScheduler phased deploy.",
+      "Aisle airflow/heatmap/capacity and environment monitoring menus.",
+      "sceneConfig.extensions fps-walk and entrance corridor."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md#friendly-json",
+        "label": "World business JSON"
+      }
+    ]
+  },
+  {
+    "id": "t05-05",
+    "track": "05",
+    "order": "02",
+    "path": "./port-show.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/portShow.json"
+      }
+    ],
+    "prerequisites": [
+      "t05-02"
+    ],
+    "status": "stable",
+    "group": "Track 5 · Host application samples",
+    "title": "Smart port",
+    "summary": "Port business dashboard; default portShow.json.",
+    "navSummary": "Port world sample.",
+    "highlights": [
+      "Same pipeline as room-show.",
+      "Complex wind/heatmap business data.",
+      "Not required tutorial track."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/demos.md",
+        "label": "Demo guide"
+      }
+    ]
+  },
+  {
+    "id": "t05-03",
+    "track": "05",
+    "order": "03",
+    "path": "./scene-editor.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/portShow.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-04"
+    ],
+    "status": "stable",
+    "group": "Track 5 · Host application samples",
+    "title": "Scene editor",
+    "summary": "General editor: load local JSON, export, adaptive layout, and AI Agent configuration.",
+    "navSummary": "scene-editor tool page.",
+    "highlights": [
+      "portShow.json baseline.",
+      "window.sceneEditor debug entry.",
+      "Native Three JSON export."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/demos.md",
+        "label": "Demo guide"
+      }
+    ]
+  },
+  {
+    "id": "t05-04",
+    "track": "05",
+    "order": "04",
+    "path": "./scene-player.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/portShow.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-04"
+    ],
+    "status": "stable",
+    "group": "Track 5 · Host application samples",
+    "title": "Scene player",
+    "summary": "Playlist, folder import, firstPerson and fps-walk auto bootstrap.",
+    "navSummary": "scene-player inspection playback.",
+    "highlights": [
+      "?scene= / ?url= query params.",
+      "Fullscreen edge-reveal UI.",
+      "Standard JSON + firstPerson."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/demos.md",
+        "label": "Demo guide"
+      }
+    ]
+  },
+  {
+    "id": "t06-stat",
+    "track": "06",
+    "order": "01",
+    "path": "./examples/html-demo/track-06-stat/06-02-stat-grid.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-06/06-02-stat-grid.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-04"
+    ],
+    "status": "stable",
+    "group": "Track 6 · Statistics and visualization (stat domain)",
+    "title": "stat statistics domain",
+    "summary": "stat subdomain progression: transparent bars → bar grid → Canvas panel → ECharts (default preview is stat.grid bar array).",
+    "navSummary": "stat domain four lessons.",
+    "highlights": [
+      "domainModelList + stat.bar / grid / panel / chart.",
+      "Subfolder switches different HTML scenes.",
+      "stat.chart needs css3dPanel and extensions/stat-echarts."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/domains.md",
+        "label": "Business domains"
+      },
+      {
+        "href": "./extensions/stat-echarts/README.md",
+        "label": "stat-echarts README"
+      }
+    ],
+    "steps": [
+      {
+        "id": "t06-01",
+        "order": "A",
+        "path": "./examples/html-demo/track-06-stat/06-01-stat-bar.html",
+        "jsonFiles": [
+          {
+            "json": "/assets/json/tutorial/track-06/06-01-stat-bar.json"
+          }
+        ],
+        "prerequisites": [
+          "t00-04"
+        ],
+        "parentId": "t06-stat",
+        "group": "",
+        "title": "stat.bar transparent bars",
+        "summary": "Generic stat.bar subdomain: domainModelList declares value/max, transparent utilization bars and statLabel textures.",
+        "navSummary": "stat.bar single bar",
+        "highlights": [
+          "domain: stat.bar · handler: createStatBars",
+          "objType statBar / statBarGroup",
+          "mapUtilizationRateToColor color band"
+        ],
+        "docLinks": []
+      },
+      {
+        "id": "t06-02",
+        "order": "B",
+        "path": "./examples/html-demo/track-06-stat/06-02-stat-grid.html",
+        "jsonFiles": [
+          {
+            "json": "/assets/json/tutorial/track-06/06-02-stat-grid.json"
+          }
+        ],
+        "prerequisites": [
+          "t06-01"
+        ],
+        "parentId": "t06-stat",
+        "group": "",
+        "title": "stat.grid bar array",
+        "summary": "stat.grid multi-bar layout: spacingX/Z, columns, origin.",
+        "navSummary": "stat.grid array",
+        "highlights": [
+          "items[] batch bars",
+          "options.columns grid layout",
+          "Pure Three.js, no ECharts"
+        ],
+        "docLinks": []
+      },
+      {
+        "id": "t06-03",
+        "order": "C",
+        "path": "./examples/html-demo/track-06-stat/06-03-stat-panel.html",
+        "jsonFiles": [
+          {
+            "json": "/assets/json/tutorial/track-06/06-03-stat-panel.json"
+          }
+        ],
+        "prerequisites": [
+          "t06-02"
+        ],
+        "parentId": "t06-stat",
+        "group": "",
+        "title": "stat.panel dashboard",
+        "summary": "stat.panel: 3D plane + Canvas multi-line KPI summary (not ECharts).",
+        "navSummary": "stat.panel Canvas",
+        "highlights": [
+          "lines[] multi-line copy",
+          "businessInfo.statLabel contract",
+          "Combines with stat.bar in same scene"
+        ],
+        "docLinks": []
+      },
+      {
+        "id": "t06-04",
+        "order": "D",
+        "path": "./examples/html-demo/track-06-stat/06-04-stat-chart-echarts.html",
+        "jsonFiles": [
+          {
+            "json": "/assets/json/tutorial/track-06/06-04-stat-chart-echarts.json"
+          }
+        ],
+        "prerequisites": [
+          "t06-03",
+          "t04-06"
+        ],
+        "parentId": "t06-stat",
+        "group": "",
+        "title": "stat.chart + ECharts",
+        "summary": "stat.chart thin subdomain + extensions/stat-echarts: CSS3D panel mounts ECharts (optional peer).",
+        "navSummary": "ECharts in scene",
+        "highlights": [
+          "css3dPanelList + domain stat.chart",
+          "onSceneReady bootstrapStatChartsFromScene",
+          "import map adds echarts"
+        ],
+        "docLinks": [
+          {
+            "href": "./extensions/stat-echarts/README.md",
+            "label": "stat-echarts README"
+          },
+          {
+            "href": "./doc/en/json-format.md#interactive-css3d-panel-css3dpanel-core",
+            "label": "CSS3D panel"
+          }
+        ]
+      },
+      {
+        "id": "t06-05",
+        "order": "E",
+        "path": "./examples/html-demo/track-06-stat/06-05-stat-line.html",
+        "jsonFiles": [
+          {
+            "json": "/assets/json/tutorial/track-06/06-05-stat-line.json"
+          }
+        ],
+        "prerequisites": [
+          "t06-04"
+        ],
+        "parentId": "t06-stat",
+        "group": "",
+        "title": "stat.line 3D polyline",
+        "summary": "stat.line: Line2 polylines with optional drop lines, sphere markers, and statLabel on vertices.",
+        "navSummary": "3D line chart",
+        "highlights": [
+          "domain stat.line + createStatLine",
+          "Line2 linewidth + dropLine / marker subScene",
+          "Multi-series via series[]"
+        ],
+        "docLinks": []
+      },
+      {
+        "id": "t06-06",
+        "order": "F",
+        "path": "./examples/html-demo/track-06-stat/06-06-stat-pie.html",
+        "jsonFiles": [
+          {
+            "json": "/assets/json/tutorial/track-06/06-06-stat-pie.json"
+          }
+        ],
+        "prerequisites": [
+          "t06-05"
+        ],
+        "parentId": "t06-stat",
+        "group": "",
+        "title": "stat.pie 3D pie chart",
+        "summary": "stat.pie: cylinder sector slices with statLabel overlays (≤8 slices).",
+        "navSummary": "3D pie chart",
+        "highlights": [
+          "domain stat.pie + createStatPie",
+          "thetaStart / thetaLength per slice",
+          "statLabel on slice bisector"
+        ],
+        "docLinks": []
+      },
+      {
+        "id": "t06-07",
+        "order": "G",
+        "path": "./examples/html-demo/track-06-stat/06-07-stat-pie-ring.html",
+        "jsonFiles": [
+          {
+            "json": "/assets/json/tutorial/track-06/06-07-stat-pie-ring.json"
+          }
+        ],
+        "prerequisites": [
+          "t06-06"
+        ],
+        "parentId": "t06-stat",
+        "group": "",
+        "title": "stat.pie vs stat.ring",
+        "summary": "Same scene: solid pie (left) vs CSG ring chart (right); import map needs three-bvh-csg.",
+        "navSummary": "Pie + ring compare",
+        "highlights": [
+          "stat.pie + stat.ring side by side",
+          "ring uses holes[] CSG inner cylinder",
+          "ring demo ≤6 slices"
+        ],
+        "docLinks": []
+      }
+    ]
+  },
+  {
+    "id": "t07-text",
+    "track": "07",
+    "order": "01",
+    "path": "./examples/html-demo/track-07-text/07-02-text-mesh.html",
+    "jsonFiles": [
+      {
+        "json": "/assets/json/tutorial/track-07/07-02-text-mesh.json"
+      }
+    ],
+    "prerequisites": [
+      "t00-04"
+    ],
+    "status": "stable",
+    "group": "Track 7 · Scene text (`objType: text`)",
+    "title": "text objects (folded)",
+    "summary": "objType:text three modes: default SDF (troika), Canvas texture fallback, TextGeometry extruded mesh.",
+    "navSummary": "text domain two lessons.",
+    "highlights": [
+      "mode: sdf | texture | mesh",
+      "sceneConfig.textFont scene-level font and Unicode fallback",
+      "mesh requires mesh.fontJsonUrl (example Helvetiker)"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/json-format.md",
+        "label": "text object"
+      },
+      {
+        "href": "./assets/json/tutorial/track-07/07-01-text-modes.json",
+        "label": "JSON examples"
+      }
+    ],
+    "steps": [
+      {
+        "id": "t07-01",
+        "order": "A",
+        "path": "./examples/html-demo/track-07-text/07-01-text-modes.html",
+        "jsonFiles": [
+          {
+            "json": "/assets/json/tutorial/track-07/07-01-text-modes.json"
+          }
+        ],
+        "prerequisites": [
+          "t00-04"
+        ],
+        "parentId": "t07-text",
+        "group": "",
+        "title": "sdf vs texture comparison",
+        "summary": "Side-by-side troika SDF Chinese labels, Canvas texture, and English SDF.",
+        "navSummary": "sdf / texture",
+        "highlights": [
+          "Default sdf + unicode fallback (no full font library needed)",
+          "billboard faces camera",
+          "import map needs troika-three-text"
+        ],
+        "docLinks": []
+      },
+      {
+        "id": "t07-02",
+        "order": "B",
+        "path": "./examples/html-demo/track-07-text/07-02-text-mesh.html",
+        "jsonFiles": [
+          {
+            "json": "/assets/json/tutorial/track-07/07-02-text-mesh.json"
+          }
+        ],
+        "prerequisites": [
+          "t07-01"
+        ],
+        "parentId": "t07-text",
+        "group": "",
+        "title": "mesh extruded title",
+        "summary": "mode:mesh + FontLoader typeface.json; local font assets/fonts/helvetiker_bold.typeface.json.",
+        "navSummary": "TextGeometry mesh",
+        "highlights": [
+          "mesh.fontJsonUrl required",
+          "bevelEnabled bevel extrusion",
+          "Chinese needs custom font JSON"
+        ],
+        "docLinks": []
+      }
+    ]
+  }
+]

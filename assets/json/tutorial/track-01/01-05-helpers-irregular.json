@@ -1,0 +1,202 @@
+{
+  "version": "next",
+  "name": "helpers-and-irregular-demo",
+  "sceneConfig": {
+    "helpers": {
+      "grid": {
+        "visible": true,
+        "size": 120,
+        "divisions": 24,
+        "colorCenterLine": "#555555",
+        "colorGrid": "#999999"
+      },
+      "axes": {
+        "visible": true,
+        "size": 40
+      }
+    },
+    "camera": {
+      "fov": 55,
+      "position": {
+        "x": 80,
+        "y": 70,
+        "z": 100
+      }
+    },
+    "controls": {
+      "target": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "intensity": 0.55
+      },
+      {
+        "type": "directional",
+        "intensity": 0.85,
+        "position": {
+          "x": 40,
+          "y": 80,
+          "z": 30
+        }
+      }
+    ]
+  },
+  "worldInfo": {
+    "irregularPlaneList": [
+      {
+        "name": "zone-shape",
+        "planeKind": "shape",
+        "parallelTo": "xz",
+        "shape": {
+          "contour": [
+            [
+              -30,
+              -20
+            ],
+            [
+              35,
+              -15
+            ],
+            [
+              40,
+              25
+            ],
+            [
+              -25,
+              30
+            ]
+          ]
+        },
+        "material": {
+          "type": "standard",
+          "color": "#8ecae6",
+          "side": "double"
+        },
+        "position": {
+          "x": 0,
+          "y": 0.05,
+          "z": 0
+        }
+      }
+    ],
+    "shapeExtrudeList": [
+      {
+        "name": "block-extrude",
+        "shape": {
+          "contour": [
+            [
+              0,
+              0
+            ],
+            [
+              12,
+              0
+            ],
+            [
+              12,
+              8
+            ],
+            [
+              0,
+              8
+            ]
+          ]
+        },
+        "extrude": {
+          "depth": 10,
+          "bevelEnabled": false
+        },
+        "material": {
+          "type": "standard",
+          "color": "#dcdfe6"
+        },
+        "position": {
+          "x": -10,
+          "y": 0,
+          "z": -15
+        }
+      }
+    ],
+    "bufferMeshList": [
+      {
+        "name": "tri-slab",
+        "geometry": {
+          "positions": [
+            [
+              15,
+              0,
+              10
+            ],
+            [
+              25,
+              0,
+              10
+            ],
+            [
+              20,
+              0,
+              22
+            ],
+            [
+              15,
+              8,
+              10
+            ],
+            [
+              25,
+              8,
+              10
+            ],
+            [
+              20,
+              8,
+              22
+            ]
+          ],
+          "indices": [
+            0,
+            1,
+            2,
+            3,
+            5,
+            4,
+            0,
+            3,
+            4,
+            0,
+            4,
+            1,
+            1,
+            4,
+            5,
+            1,
+            5,
+            2,
+            2,
+            5,
+            3,
+            2,
+            3,
+            0
+          ]
+        },
+        "material": {
+          "type": "standard",
+          "color": "#67c23a",
+          "side": "double"
+        },
+        "position": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    ]
+  },
+  "threeJsonId": "01-05-helpers-irregular"
+}

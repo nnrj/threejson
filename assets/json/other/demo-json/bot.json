@@ -1,0 +1,195 @@
+{
+  "version": "next",
+  "name": "Robot Scene",
+  "sceneConfig": {
+    "scene": {
+      "background": "#222"
+    },
+    "camera": {
+      "fov": 60,
+      "near": 1,
+      "far": 1000,
+      "position": {
+        "x": 0,
+        "y": 5,
+        "z": 10
+      }
+    },
+    "renderer": {
+      "antialias": true
+    },
+    "controls": {
+      "enableDamping": true,
+      "target": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "color": "#ffffff",
+        "intensity": 0.5
+      },
+      {
+        "type": "directional",
+        "color": "#ffffff",
+        "intensity": 0.8,
+        "position": {
+          "x": 5,
+          "y": 10,
+          "z": 5
+        }
+      }
+    ],
+    "renderLoop": {
+      "autoResize": true
+    },
+    "helpers": {
+      "grid": true,
+      "axes": true
+    }
+  },
+  "worldInfo": {
+    "boxModelList": [],
+    "sphereModelList": [],
+    "modelList": [
+      {
+        "name": "robot-body",
+        "objType": "cylinder",
+        "geometry": {
+          "radiusTop": 1,
+          "radiusBottom": 1,
+          "height": 2,
+          "radialSegments": 32
+        },
+        "position": {
+          "x": 0,
+          "y": 1,
+          "z": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffcc00"
+        }
+      },
+      {
+        "name": "robot-head",
+        "objType": "sphere",
+        "geometry": {
+          "radius": 0.75,
+          "widthSegments": 32,
+          "heightSegments": 16
+        },
+        "position": {
+          "x": 0,
+          "y": 2.5,
+          "z": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffcc00"
+        }
+      },
+      {
+        "name": "robot-arm-left",
+        "objType": "cylinder",
+        "geometry": {
+          "radiusTop": 0.2,
+          "radiusBottom": 0.2,
+          "height": 1.5,
+          "radialSegments": 32
+        },
+        "position": {
+          "x": -1.2,
+          "y": 1.5,
+          "z": 0
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0,
+          "rotationZ": -0.5
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffcc00"
+        }
+      },
+      {
+        "name": "robot-arm-right",
+        "objType": "cylinder",
+        "geometry": {
+          "radiusTop": 0.2,
+          "radiusBottom": 0.2,
+          "height": 1.5,
+          "radialSegments": 32
+        },
+        "position": {
+          "x": 1.2,
+          "y": 1.5,
+          "z": 0
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0,
+          "rotationZ": 0.5
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffcc00"
+        }
+      },
+      {
+        "name": "robot-leg-left",
+        "objType": "cylinder",
+        "geometry": {
+          "radiusTop": 0.3,
+          "radiusBottom": 0.3,
+          "height": 1.5,
+          "radialSegments": 32
+        },
+        "position": {
+          "x": -0.5,
+          "y": -0.75,
+          "z": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffcc00"
+        }
+      },
+      {
+        "name": "robot-leg-right",
+        "objType": "cylinder",
+        "geometry": {
+          "radiusTop": 0.3,
+          "radiusBottom": 0.3,
+          "height": 1.5,
+          "radialSegments": 32
+        },
+        "position": {
+          "x": 0.5,
+          "y": -0.75,
+          "z": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#ffcc00"
+        }
+      }
+    ],
+    "groupList": [],
+    "lineList": [],
+    "infoPanelList": [],
+    "particleList": [],
+    "tubeList": [],
+    "spriteList": [],
+    "instancedList": [],
+    "windList": [],
+    "heatList": [],
+    "audioList": [],
+    "domainModelList": [],
+    "externalModelList": []
+  }
+}

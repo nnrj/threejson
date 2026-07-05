@@ -1,0 +1,83 @@
+{
+  "version": "next",
+  "name": "tutorial-particle-emitter-gpu",
+  "sceneConfig": {
+    "scene": { "background": "#0b1020" },
+    "camera": {
+      "fov": 55,
+      "position": { "x": 0, "y": 90, "z": 220 },
+      "near": 0.1,
+      "far": 5000
+    },
+    "renderer": { "antialias": true, "ratioRate": 1 },
+    "controls": {
+      "enableDamping": true,
+      "target": { "x": 0, "y": 35, "z": 0 }
+    },
+    "lights": [
+      { "type": "ambient", "intensity": 0.4 },
+      { "type": "directional", "intensity": 0.8, "position": { "x": 80, "y": 120, "z": 60 } }
+    ],
+    "renderLoop": {
+      "autoResize": true,
+      "firstAutoResize": true,
+      "updateAnimations": true
+    }
+  },
+  "objectList": [
+    {
+      "objType": "box",
+      "name": "floor",
+      "geometry": { "width": 320, "height": 2, "depth": 240 },
+      "material": { "type": "standard", "color": "#2a3140", "roughness": 0.95 },
+      "position": { "x": 0, "y": -1, "z": 0 }
+    },
+    {
+      "objType": "particleEmitter",
+      "name": "gpu-rain",
+      "simulation": "gpuCompute",
+      "count": 6000,
+      "bounds": { "width": 200, "height": 80, "depth": 200 },
+      "position": { "x": 0, "y": 55, "z": 0 },
+      "emitter": {
+        "velocity": { "x": 0, "y": -1, "z": 0 },
+        "speed": 18,
+        "wrap": true
+      },
+      "compute": {
+        "textureSize": 128
+      },
+      "material": {
+        "color": "#9ec8ff",
+        "size": 2.2,
+        "sizeAttenuation": true,
+        "transparent": true,
+        "opacity": 0.85,
+        "blending": "additive",
+        "depthWrite": false
+      }
+    },
+    {
+      "objType": "particleEmitter",
+      "name": "cpu-sparkles",
+      "simulation": "cpu",
+      "count": 400,
+      "bounds": { "width": 120, "height": 50, "depth": 120 },
+      "position": { "x": -70, "y": 30, "z": 40 },
+      "motion": {
+        "type": "twinkle",
+        "speed": 2.5,
+        "minOpacity": 0.25,
+        "maxOpacity": 1
+      },
+      "material": {
+        "color": "#ffdd88",
+        "size": 3.5,
+        "transparent": true,
+        "opacity": 0.85,
+        "blending": "additive",
+        "depthWrite": false
+      }
+    }
+  ]
+}

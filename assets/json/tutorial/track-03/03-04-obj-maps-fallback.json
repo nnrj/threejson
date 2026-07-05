@@ -1,0 +1,92 @@
+{
+  "version": "next",
+  "name": "tutorial-obj-maps-fallback",
+  "sceneConfig": {
+    "scene": {
+      "background": "#1a2030"
+    },
+    "camera": {
+      "fov": 50,
+      "position": {
+        "x": 11,
+        "y": 6,
+        "z": 17
+      },
+      "near": 0.1,
+      "far": 500
+    },
+    "renderer": {
+      "antialias": true
+    },
+    "controls": {
+      "enableDamping": true,
+      "target": {
+        "x": 0,
+        "y": 2,
+        "z": 0
+      }
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "color": "#ffffff",
+        "intensity": 0.55
+      },
+      {
+        "type": "directional",
+        "color": "#ffffff",
+        "intensity": 0.85,
+        "position": {
+          "x": 6,
+          "y": 10,
+          "z": 4
+        }
+      }
+    ],
+    "renderLoop": {
+      "autoResize": true,
+      "firstAutoResize": true
+    }
+  },
+  "worldInfo": {
+    "objModelList": [
+      {
+        "name": "alpaca-obj",
+        "modelPath": "/assets/model/obj/maps_fallback/alpaca.obj",
+        "modelFileType": "obj",
+        "position": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "scale": {
+          "scaleX": 0.3,
+          "scaleY": 0.3,
+          "scaleZ": 0.3
+        },
+        "mapsFolderFallback": "map"
+      }
+    ],
+    "boxModelList": [
+      {
+        "name": "ground",
+        "objType": "floor",
+        "geometry": {
+          "width": 12,
+          "height": 0.4,
+          "depth": 12
+        },
+        "position": {
+          "x": 0,
+          "y": -0.2,
+          "z": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#2a3548"
+        }
+      }
+    ]
+  },
+  "threeJsonId": "03-04-obj-maps-fallback"
+}

@@ -1,0 +1,98 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThreeJSON Demo 17 - 第一人称 + Rapier 碰撞</title>
+  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <script type="importmap">
+    {
+      "imports": {
+        "threejson": "/builtins/full.js",
+        "threejson/core": "/core/index.js",
+        "three": "https://esm.sh/three@0.184.0",
+        "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
+        "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
+        "html2canvas-pro": "https://esm.sh/html2canvas-pro@2.0.4",
+        "gifuct-js": "https://esm.sh/gifuct-js@2.1.2",
+        "@dimforge/rapier3d-compat": "https://esm.sh/@dimforge/rapier3d-compat@0.19.3",
+        "three-mesh-bvh": "https://esm.sh/three-mesh-bvh@0.9.10?deps=three@0.184.0",
+        "three-bvh-csg": "https://esm.sh/three-bvh-csg@0.0.18?deps=three@0.184.0,three-mesh-bvh@0.9.10"
+      }
+    }
+  </script>
+  <style>
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #1a2030; font-family: Arial, "Microsoft YaHei", sans-serif; }
+    #rootContainer { position: relative; width: 100vw; height: 100vh; }
+    #canvasContainer { display: block; width: 100%; height: 100%; cursor: crosshair; }
+    #loadingMask {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      color: #fff; background: rgba(0,0,0,0.55); font-size: 14px; z-index: 2; text-align: center; padding: 16px;
+    }
+    #hint {
+      position: absolute; left: 10px; bottom: 8px; color: #ccc; font-size: 11px; max-width: 92vw; z-index: 3; line-height: 1.45;
+    }
+  </style>
+</head>
+<body>
+<div id="rootContainer">
+  <canvas id="canvasContainer">需要 WebGL 与 WASM</canvas>
+  <div id="loadingMask">正在加载 Rapier WASM…</div>
+  <div id="hint">
+    数据：<code>04-05-fps-rapier-collision.json</code> ·
+    SCAR-H viewmodel 已微调：更小、更远、略压低 · WASD · 点击锁定指针<br>
+    First-person dual-hand viewmodel in this scene (<code>scar-h_first-person_fps_animated</code>) — model author requires the following attribution: This work is based on "Scar-H First-Person (FPS) Animated" (https://sketchfab.com/3d-models/scar-h-first-person-fps-animated-404b16a45a224163850df34a20391739) by Jainesh Pathak (https://sketchfab.com/spectraut2) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/).
+  </div>
+</div>
+<script type="module">
+  import { createJsonScene } from "threejson/core";
+  import { createPluginHost } from "../../../core/plugin/pluginHost.js";
+  import { bootstrapFirstPersonExtensionsFromScene } from "../../../extensions/fps-walk/bootstrapFirstPersonExtensions.js";
+
+  const canvas = document.getElementById("canvasContainer");
+  const loadingMask = document.getElementById("loadingMask");
+  const sceneJsonUrl = "/assets/json/tutorial/track-04/04-05-fps-rapier-collision.json";
+  const pluginHost = createPluginHost();
+
+  let sceneRuntime;
+
+  try {
+    loadingMask.textContent = "正在初始化 Rapier WASM…";
+    const RAPIER = (await import("@dimforge/rapier3d-compat")).default;
+
+    const response = await fetch(sceneJsonUrl);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const sceneData = await response.json();
+    sceneData.canvasWidth = window.innerWidth;
+    sceneData.canvasHeight = window.innerHeight;
+
+    sceneRuntime = await createJsonScene(sceneData, {
+      canvas,
+      pluginHost,
+      async onSceneReady(ctx) {
+        await bootstrapFirstPersonExtensionsFromScene({
+          ...ctx,
+          pluginHost,
+          RAPIER
+        });
+      }
+    });
+    sceneRuntime.start();
+    loadingMask.style.display = "none";
+    window.addEventListener("resize", () => {
+      sceneRuntime?.resize({ width: window.innerWidth, height: window.innerHeight });
+    });
+  } catch (e) {
+    console.error(e);
+    loadingMask.textContent = "加载失败：" + (e?.message || String(e));
+  }
+
+  window.addEventListener("beforeunload", () => {
+    pluginHost.dispose();
+    sceneRuntime?.dispose();
+  });
+</script>
+</body>
+</html>

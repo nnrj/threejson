@@ -1,0 +1,194 @@
+{
+  "version": "next",
+  "name": "track-01-07-jsm-geometries",
+  "assetLibrary": [
+    {
+      "threeJsonId": "geom-rounded-pedestal",
+      "assetKind": "geometryPreset",
+      "name": "roundedPedestal",
+      "geometry": {
+        "type": "RoundedBoxGeometry",
+        "width": 0.3,
+        "height": 0.12,
+        "depth": 0.3,
+        "radius": 0.02,
+        "segments": 4
+      }
+    },
+    {
+      "threeJsonId": "mat-chrome",
+      "assetKind": "materialPreset",
+      "name": "chrome",
+      "material": {
+        "type": "MeshStandardMaterial",
+        "color": "#b8c0cc",
+        "metalness": 0.9,
+        "roughness": 0.18
+      }
+    }
+  ],
+  "sceneConfig": {
+    "extensions": {
+      "nativeGeometries": [
+        "RoundedBoxGeometry",
+        "LineGeometry"
+      ]
+    }
+  },
+  "objectList": [
+    {
+      "objType": "scene",
+      "background": "#1b1f28"
+    },
+    {
+      "objType": "camera",
+      "fov": 52,
+      "near": 0.1,
+      "far": 200,
+      "position": {
+        "x": 8,
+        "y": 6,
+        "z": 10
+      }
+    },
+    {
+      "objType": "renderer",
+      "antialias": true,
+      "ratioRate": 1
+    },
+    {
+      "objType": "controls",
+      "enableDamping": true,
+      "target": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "objType": "light",
+      "type": "ambient",
+      "intensity": 0.45
+    },
+    {
+      "objType": "light",
+      "type": "directional",
+      "intensity": 0.95,
+      "position": {
+        "x": 3,
+        "y": 5,
+        "z": 2
+      }
+    },
+    {
+      "objType": "renderLoop",
+      "autoResize": true,
+      "firstAutoResize": true
+    },
+    {
+      "objType": "box",
+      "name": "floor",
+      "geometry": {
+        "width": 12,
+        "height": 0.1,
+        "depth": 9
+      },
+      "material": {
+        "type": "MeshStandardMaterial",
+        "color": "#3a404c",
+        "roughness": 0.95
+      },
+      "position": {
+        "x": 0,
+        "y": -0.05,
+        "z": 0
+      }
+    },
+    {
+      "objType": "roundedBox",
+      "name": "legacy-rounded-alias",
+      "width": 0.4,
+      "height": 0.25,
+      "depth": 0.4,
+      "radius": 0.03,
+      "segments": 4,
+      "material": {
+        "type": "MeshStandardMaterial",
+        "color": "#6d8fae",
+        "roughness": 0.55
+      },
+      "position": {
+        "x": -1,
+        "y": 0.13,
+        "z": 0
+      }
+    },
+    {
+      "objType": "pedestalA",
+      "name": "preset-ref-a",
+      "geometryRef": "lib://geom-rounded-pedestal",
+      "materialRef": "lib://mat-chrome",
+      "sharePolicy": {
+        "geometry": "clone",
+        "material": "clone"
+      },
+      "position": {
+        "x": 0,
+        "y": 0.06,
+        "z": 0
+      }
+    },
+    {
+      "objType": "pedestalB",
+      "name": "preset-ref-b-overrides",
+      "geometryRef": "lib://geom-rounded-pedestal",
+      "geometryOverrides": {
+        "width": 0.22,
+        "height": 0.35
+      },
+      "materialRef": "lib://mat-chrome",
+      "materialOverrides": {
+        "color": "#d4a574"
+      },
+      "position": {
+        "x": 1,
+        "y": 0.18,
+        "z": 0
+      }
+    },
+    {
+      "objType": "nativeLine2",
+      "threeType": "Line2",
+      "geometry": {
+        "type": "LineGeometry",
+        "positions": [
+          -2,
+          0,
+          -1,
+          -1,
+          0,
+          -1,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          2,
+          0,
+          1
+        ]
+      },
+      "material": {
+        "type": "LineMaterial",
+        "color": "#66ccff",
+        "linewidth": 3
+      },
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    }
+  ]
+}

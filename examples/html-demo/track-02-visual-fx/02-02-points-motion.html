@@ -1,0 +1,658 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThreeJSON Demo 12 - Points / 粒子点云（含 motion）</title>
+  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <script type="importmap">
+    
+    {
+      "imports": {
+        "threejson": "/builtins/full.js",
+        "threejson/core": "/core/index.js",
+        "three": "https://esm.sh/three@0.184.0",
+        "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
+        "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
+        "html2canvas-pro": "https://esm.sh/html2canvas-pro@2.0.4",
+        "gifuct-js": "https://esm.sh/gifuct-js@2.1.2",
+        "three-mesh-bvh": "https://esm.sh/three-mesh-bvh@0.9.10?deps=three@0.184.0",
+        "three-bvh-csg": "https://esm.sh/three-bvh-csg@0.0.18?deps=three@0.184.0,three-mesh-bvh@0.9.10"
+      }
+    }
+  
+  </script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0a0a12;
+      --panel-bg: rgba(22, 26, 34, 0.52);
+      --panel-border: rgba(255, 255, 255, 0.08);
+      --text-main: #f3f5f7;
+      --text-muted: rgba(232, 234, 237, 0.72);
+      --text-subtle: rgba(232, 234, 237, 0.5);
+      --accent: #409eff;
+      --dock-width: 300px;
+      --peek-width: 14px;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: var(--bg);
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+      color: var(--text-main);
+    }
+
+    * { box-sizing: border-box; }
+
+    button, input, textarea, select { font: inherit; }
+
+    #rootContainer {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    #rootContainer.panelsInline.layoutRightDockShown #contentShell {
+      right: var(--dock-width);
+    }
+
+    #stageShell {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    #contentShell {
+      position: absolute;
+      inset: 0;
+      transition: right 0.2s ease;
+    }
+
+    #canvasContainer {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: #0a0a12;
+      outline: none;
+    }
+
+    #loadingMask {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #eee;
+      background: rgba(0, 0, 0, 0.6);
+      font-size: 15px;
+    }
+
+    #hint {
+      position: absolute;
+      left: 12px;
+      bottom: 12px;
+      z-index: 25;
+      max-width: min(520px, 88vw);
+      padding: 8px 10px;
+      border-radius: 4px;
+      background: rgba(10, 10, 10, 0.6);
+      color: #e0e0e0;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    #hint code {
+      font-size: 10px;
+      color: #b8d4ff;
+    }
+
+    .flyoutHost {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      z-index: 40;
+    }
+
+    .flyoutHostRight {
+      right: 0;
+      display: block;
+      overflow: hidden;
+      width: var(--peek-width);
+      transition: width 0.2s ease;
+    }
+
+    #rootContainer.rightDockPinned .flyoutHostRight,
+    #rootContainer.rightDockPeek .flyoutHostRight {
+      width: var(--dock-width);
+    }
+
+    .rightDock {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      width: var(--dock-width);
+      max-width: var(--dock-width);
+      height: 100%;
+      min-height: 0;
+      overflow: hidden;
+      pointer-events: none;
+      box-shadow: -8px 0 24px rgba(0, 0, 0, 0.28);
+      transition: transform 0.2s ease;
+    }
+
+    #rootContainer:not(.rightDockPinned):not(.rightDockPeek) .flyoutHostRight .rightDock {
+      transform: translateX(100%);
+    }
+
+    #rootContainer.rightDockPinned .rightDock,
+    #rootContainer.rightDockPeek .rightDock {
+      pointer-events: auto;
+    }
+
+    .rightDockPanel {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-width: 0;
+      min-height: 0;
+      gap: 10px;
+      padding: 8px 10px 14px;
+      background: var(--panel-bg);
+      border-left: 1px solid rgba(255, 255, 255, 0.12);
+      -webkit-backdrop-filter: blur(22px) saturate(1.15);
+      backdrop-filter: blur(22px) saturate(1.15);
+    }
+
+    .sidePanelPinRow {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      flex-shrink: 0;
+      padding: 4px 0 10px;
+      margin-bottom: 4px;
+      border-bottom: 1px solid var(--panel-border);
+    }
+
+    .sidePanelPinBtn {
+      min-width: 44px;
+      height: 28px;
+      padding: 0 10px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 6px;
+      background: #4a4c51;
+      color: #eef4fa;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      flex-shrink: 0;
+    }
+
+    .sidePanelPinBtn:hover { background: #55585f; }
+
+    .sidePanelPinBtn[aria-pressed="true"] {
+      background: rgba(64, 158, 255, 0.28);
+      border-color: rgba(64, 158, 255, 0.45);
+      color: #fff;
+    }
+
+    .sidePanelChromeTitle {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-subtle);
+    }
+
+    .sidePanelChromeSubtitle {
+      margin-top: 3px;
+      font-size: 11px;
+      line-height: 1.4;
+      color: var(--text-subtle);
+    }
+
+    .edgeHoverZoneRight {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: var(--peek-width);
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    #rootContainer:not(.rightDockPinned) .flyoutHostRight .edgeHoverZoneRight {
+      pointer-events: auto;
+    }
+
+    .panelCard {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      padding: 10px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.045);
+    }
+
+    .panelCardTitle {
+      font-size: 12px;
+      font-weight: 700;
+      color: #eef3f8;
+      margin-bottom: 8px;
+    }
+
+    .btnRow {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .btnRow button {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-main);
+      cursor: pointer;
+      font-size: 12px;
+      text-align: left;
+    }
+
+    .btnRow button:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .btnRow button.primary {
+      border-color: rgba(64, 158, 255, 0.45);
+      background: rgba(64, 158, 255, 0.22);
+    }
+
+    .introScroll {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: auto;
+      font-size: 12px;
+      line-height: 1.55;
+      color: var(--text-muted);
+    }
+
+    .introScroll h3 {
+      margin: 0 0 6px;
+      font-size: 13px;
+      color: var(--text-main);
+    }
+
+    .introScroll p {
+      margin: 0 0 8px;
+    }
+
+    .introScroll p:last-child {
+      margin-bottom: 0;
+    }
+
+    .introScroll code {
+      font-size: 11px;
+      color: #b8d4ff;
+    }
+  </style>
+</head>
+<body>
+<div id="rootContainer" class="panelsInline rightDockPinned layoutRightDockShown">
+  <main id="stageShell">
+    <div id="contentShell">
+      <canvas id="canvasContainer">需要 WebGL</canvas>
+      <div id="loadingMask">点云示例加载中…</div>
+      <div id="hint">
+        【ThreeJSON 粒子】<code>objType: points</code> + <code>worldInfo.particleList</code>。右栏切换三种模式，每次只显示一组点云。阶段 2 <code>motion</code> 在 <code>animationHandler</code> 每帧更新顶点或材质。请从<strong>仓库根</strong>目录静态服务打开本页。
+      </div>
+    </div>
+
+    <div id="rightFlyoutHost" class="flyoutHost flyoutHostRight">
+      <div id="rightDock" class="rightDock">
+        <aside id="rightPanel" class="rightDockPanel" aria-label="粒子示例控制">
+          <div class="sidePanelPinRow">
+            <div>
+              <div class="sidePanelChromeTitle">Points demo</div>
+              <div class="sidePanelChromeSubtitle">钉住 / 靠右边缘唤出（同 Track 2 · 场景背景）</div>
+            </div>
+            <button type="button" id="rightPanelPinBtn" class="sidePanelPinBtn" aria-pressed="true" aria-label="切换右侧栏钉住">PIN</button>
+          </div>
+
+          <section class="panelCard" style="flex: 0 0 auto">
+            <div class="panelCardTitle">粒子模式</div>
+            <div class="btnRow">
+              <button type="button" id="btnModeStatic" class="primary" data-mode="static">静态粒子</button>
+              <button type="button" id="btnModeFall" data-mode="fall">动态粒子（下落）</button>
+              <button type="button" id="btnModeRise" data-mode="rise">动态粒子（上浮）</button>
+            </div>
+          </section>
+
+          <section class="panelCard" style="flex: 1 1 auto; min-height: 140px">
+            <div class="panelCardTitle" id="introTitle">场景说明</div>
+            <div id="introBody" class="introScroll"></div>
+          </section>
+        </aside>
+      </div>
+      <div class="edgeHoverZoneRight" aria-hidden="true"></div>
+    </div>
+  </main>
+</div>
+
+<script type="module">
+  import { createJsonScene } from "threejson/core";
+
+  const VIEW_CHROME_KEY = "t02_02_points_rightDockPinned_v1";
+
+  const PARTICLE_MODES = {
+    static: ["points-static"],
+    fall: ["points-fall"],
+    rise: ["points-rise"]
+  };
+
+  const MODE_INTROS = {
+    static: {
+      title: "静态粒子",
+      html: `
+        <h3>静态粒子</h3>
+        <p>大量顶点位置在加载时由 <code>count</code> + <code>bounds</code> 随机生成，<strong>无</strong> <code>motion</code> 字段，因此不会每帧改写 <code>position</code> 属性。</p>
+        <p>实现：<code>particleList</code> 一条记录 → <code>createPoints</code>（<code>pointsBuilder.js</code>）→ <code>THREE.Points</code> + <code>PointsMaterial</code>（additive、半透明）。</p>
+      `
+    },
+    fall: {
+      title: "动态粒子（下落）",
+      html: `
+        <h3>动态粒子（下落）</h3>
+        <p><code>motion: { type: "drift", direction: { y: -1 }, wrap: true }</code>：每帧在 <code>pointsMotion.js</code> 里根据初始顶点副本沿方向漂移，超出包围盒后在 <code>bounds</code> 内循环（雨点效果）。</p>
+        <p>由 <code>updatePointsMotion</code> 挂接在 <code>animationHandler.updateSceneAnimations</code>，与场景 <code>renderLoop</code> 同步。</p>
+      `
+    },
+    rise: {
+      title: "动态粒子（上浮）",
+      html: `
+        <h3>动态粒子（上浮）</h3>
+        <p>同样为 <code>motion.type: "drift"</code>，<code>direction</code> 指向 +Y，模拟火星/余烬上浮；可选 <code>twinkle</code> 或贴图 <code>scrollUv</code> 组合（本示例仅漂移）。</p>
+        <p>也可通过 <code>domain: "weather"</code> + <code>handler: "embers"</code> 预设生成类似效果；此处为直接 <code>particleList</code> 写法。</p>
+      `
+    }
+  };
+
+  const canvas = document.getElementById("canvasContainer");
+  const loadingMask = document.getElementById("loadingMask");
+  const rootContainer = document.getElementById("rootContainer");
+  const rightFlyoutHost = document.getElementById("rightFlyoutHost");
+  const rightPanelPinBtn = document.getElementById("rightPanelPinBtn");
+  const introTitle = document.getElementById("introTitle");
+  const introBody = document.getElementById("introBody");
+  const modeButtons = [
+    document.getElementById("btnModeStatic"),
+    document.getElementById("btnModeFall"),
+    document.getElementById("btnModeRise")
+  ];
+
+  let sceneRuntime = null;
+  let currentMode = "static";
+  let rightDockPinned = true;
+  let rightDockPeek = false;
+
+  const sceneJsonUrl = "/assets/json/tutorial/track-02/02-02-points-motion.json";
+
+  /** @type {object} */
+  let scenePayload = {
+    name: "points-demo",
+    sceneConfig: {
+      scene: { background: "#0a0a14" },
+      camera: {
+        fov: 55,
+        position: { x: 0, y: 120, z: 280 },
+        near: 0.1,
+        far: 5000
+      },
+      renderer: { antialias: true, ratioRate: 1 },
+      controls: {
+        enableDamping: true,
+        target: { x: 0, y: 40, z: 0 }
+      },
+      lights: [
+        { type: "ambient", color: "#ffffff", intensity: 0.35 }
+      ],
+      renderLoop: { autoResize: true, firstAutoResize: true, updateAnimations: true }
+    },
+    worldInfo: {
+      boxModelList: [
+        {
+          name: "floor-ref",
+          objType: "box",
+          geometry: { width: 320, height: 4, depth: 320 },
+          position: { x: 0, y: -2, z: 0 },
+          material: { type: "standard", color: "#1a2030" }
+        }
+      ],
+      particleList: [
+        {
+          name: "points-static",
+          count: 2200,
+          bounds: { width: 360, height: 160, depth: 360 },
+          position: { x: 0, y: 70, z: 0 },
+          visible: true,
+          material: {
+            color: "#a8c8ff",
+            size: 2.5,
+            sizeAttenuation: true,
+            transparent: true,
+            opacity: 0.9,
+            blending: "additive",
+            depthWrite: false
+          }
+        },
+        {
+          name: "points-fall",
+          count: 700,
+          bounds: { width: 280, height: 90, depth: 280 },
+          position: { x: 0, y: 52, z: 0 },
+          visible: false,
+          motion: {
+            type: "drift",
+            speed: 16,
+            direction: { x: 0, y: -1, z: 0 },
+            wrap: true
+          },
+          material: {
+            color: "#9ec8ff",
+            size: 2,
+            sizeAttenuation: true,
+            transparent: true,
+            opacity: 0.75,
+            blending: "additive",
+            depthWrite: false
+          }
+        },
+        {
+          name: "points-rise",
+          count: 420,
+          bounds: { width: 140, height: 100, depth: 140 },
+          position: { x: 0, y: 32, z: 0 },
+          visible: false,
+          motion: {
+            type: "drift",
+            speed: 7,
+            direction: { x: 0.05, y: 1, z: 0.08 },
+            wrap: true
+          },
+          material: {
+            color: "#ffaa66",
+            size: 3.5,
+            sizeAttenuation: true,
+            transparent: true,
+            opacity: 0.88,
+            blending: "additive",
+            depthWrite: false
+          }
+        }
+      ]
+    }
+  };
+
+  function resizeSceneRuntime() {
+    sceneRuntime?.resize?.({
+      width: canvas.clientWidth || window.innerWidth,
+      height: canvas.clientHeight || window.innerHeight
+    });
+  }
+
+  function applyRightDockChrome() {
+    rootContainer.classList.toggle("rightDockPinned", rightDockPinned);
+    rootContainer.classList.toggle("rightDockPeek", rightDockPeek);
+    rootContainer.classList.toggle("layoutRightDockShown", rightDockPinned || rightDockPeek);
+    rightPanelPinBtn.setAttribute("aria-pressed", rightDockPinned ? "true" : "false");
+    rightPanelPinBtn.textContent = rightDockPinned ? "PIN" : "AUTO";
+    rightPanelPinBtn.title = rightDockPinned ? "已钉住：鼠标移开仍显示" : "未钉住：移到屏幕右边缘唤出";
+    requestAnimationFrame(resizeSceneRuntime);
+  }
+
+  function saveRightDockPinned() {
+    try {
+      localStorage.setItem(VIEW_CHROME_KEY, JSON.stringify({ rightDockPinned }));
+    } catch (_) { /* ignore */ }
+  }
+
+  function loadRightDockPinned() {
+    try {
+      const raw = localStorage.getItem(VIEW_CHROME_KEY);
+      if (!raw) return;
+      const o = JSON.parse(raw);
+      if (typeof o.rightDockPinned === "boolean") {
+        rightDockPinned = o.rightDockPinned;
+      }
+    } catch (_) { /* ignore */ }
+  }
+
+  function setupRightDockUi() {
+    loadRightDockPinned();
+    applyRightDockChrome();
+
+    rightPanelPinBtn.addEventListener("click", () => {
+      rightDockPinned = !rightDockPinned;
+      if (rightDockPinned) {
+        rightDockPeek = true;
+      } else {
+        rightDockPeek = false;
+      }
+      saveRightDockPinned();
+      applyRightDockChrome();
+    });
+
+    rightFlyoutHost.addEventListener("mouseenter", () => {
+      if (!rightDockPinned) {
+        rightDockPeek = true;
+        applyRightDockChrome();
+      }
+    });
+
+    rightFlyoutHost.addEventListener("mouseleave", () => {
+      if (!rightDockPinned) {
+        rightDockPeek = false;
+        applyRightDockChrome();
+      }
+    });
+
+    document.addEventListener("mousemove", (event) => {
+      if (rightDockPinned) return;
+      const nearRight = event.clientX >= window.innerWidth - 18;
+      if (nearRight) {
+        rightDockPeek = true;
+        applyRightDockChrome();
+      }
+    });
+  }
+
+  function setPointsVisibility(scene, mode) {
+    const allNames = new Set();
+    for (const names of Object.values(PARTICLE_MODES)) {
+      for (const n of names) {
+        allNames.add(n);
+      }
+    }
+    const showSet = new Set(PARTICLE_MODES[mode] || []);
+    for (const name of allNames) {
+      const obj = scene.getObjectByName(name);
+      if (!obj) continue;
+      const visible = showSet.has(name);
+      obj.visible = visible;
+      if (obj.material) {
+        if (Array.isArray(obj.material)) {
+          for (const m of obj.material) {
+            if (m) m.visible = visible;
+          }
+        } else {
+          obj.material.visible = visible;
+        }
+      }
+    }
+  }
+
+  function setMode(mode) {
+    if (!PARTICLE_MODES[mode] || !sceneRuntime?.scene) return;
+    currentMode = mode;
+    setPointsVisibility(sceneRuntime.scene, mode);
+    for (const btn of modeButtons) {
+      const active = btn.dataset.mode === mode;
+      btn.classList.toggle("primary", active);
+    }
+    const intro = MODE_INTROS[mode];
+    introTitle.textContent = intro.title;
+    introBody.innerHTML = intro.html;
+  }
+
+  function setupModeButtons() {
+    for (const btn of modeButtons) {
+      btn.addEventListener("click", () => {
+        setMode(btn.dataset.mode);
+      });
+    }
+  }
+
+  window.addEventListener("DOMContentLoaded", () => {
+    setupRightDockUi();
+    setupModeButtons();
+    void init();
+  });
+  window.addEventListener("resize", resizeSceneRuntime);
+  window.addEventListener("beforeunload", () => sceneRuntime?.dispose?.());
+
+  async function init() {
+    try {
+      const response = await fetch(sceneJsonUrl);
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      scenePayload = await response.json();
+      scenePayload.canvasWidth = window.innerWidth;
+      scenePayload.canvasHeight = window.innerHeight;
+      sceneRuntime = await createJsonScene(scenePayload, { canvas });
+      resizeSceneRuntime();
+      sceneRuntime.renderLoop.start();
+      setMode("static");
+      loadingMask.style.display = "none";
+    } catch (err) {
+      console.error(err);
+      loadingMask.textContent = "加载失败，请查看控制台";
+    }
+  }
+</script>
+</body>
+</html>

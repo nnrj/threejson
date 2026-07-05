@@ -1,0 +1,81 @@
+{
+  "version": "next",
+  "name": "tutorial-particle-nebula-provider",
+  "sceneConfig": {
+    "scene": { "background": "#0b1020" },
+    "camera": {
+      "fov": 55,
+      "position": { "x": 0, "y": 70, "z": 180 },
+      "near": 0.1,
+      "far": 5000
+    },
+    "renderer": { "antialias": true, "ratioRate": 1 },
+    "controls": {
+      "enableDamping": true,
+      "target": { "x": 0, "y": 30, "z": 0 }
+    },
+    "lights": [
+      { "type": "ambient", "intensity": 0.45 },
+      { "type": "directional", "intensity": 0.75, "position": { "x": 60, "y": 100, "z": 80 } }
+    ],
+    "renderLoop": {
+      "autoResize": true,
+      "firstAutoResize": true,
+      "updateAnimations": true
+    }
+  },
+  "objectList": [
+    {
+      "objType": "box",
+      "name": "floor",
+      "geometry": { "width": 280, "height": 2, "depth": 200 },
+      "material": { "type": "standard", "color": "#2a3140", "roughness": 0.95 },
+      "position": { "x": 0, "y": -1, "z": 0 }
+    },
+    {
+      "objType": "particleEmitter",
+      "name": "core-sparkles",
+      "simulation": "cpu",
+      "count": 500,
+      "bounds": { "width": 100, "height": 45, "depth": 100 },
+      "position": { "x": -65, "y": 28, "z": 0 },
+      "motion": {
+        "type": "twinkle",
+        "speed": 2.2,
+        "minOpacity": 0.3,
+        "maxOpacity": 1
+      },
+      "material": {
+        "color": "#88ccff",
+        "size": 2,
+        "transparent": true,
+        "opacity": 0.85,
+        "blending": "additive",
+        "depthWrite": false
+      }
+    },
+    {
+      "objType": "particleEmitter",
+      "name": "nebula-sparkles",
+      "provider": "nebula",
+      "simulation": "cpu",
+      "count": 500,
+      "bounds": { "width": 100, "height": 45, "depth": 100 },
+      "position": { "x": 65, "y": 28, "z": 0 },
+      "motion": {
+        "type": "twinkle",
+        "speed": 2.2,
+        "minOpacity": 0.3,
+        "maxOpacity": 1
+      },
+      "material": {
+        "color": "#88ccff",
+        "size": 2,
+        "transparent": true,
+        "opacity": 0.85,
+        "blending": "additive",
+        "depthWrite": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "templates": [
+    {
+      "name": "domain-wall",
+      "objType": "domain",
+      "domain": "wall",
+      "handler": "wall",
+      "threeJsonId": "tmpl-domain-wall-001",
+      "position": { "x": 0, "y": 0, "z": 0 }
+    },
+    {
+      "name": "domain-glass",
+      "objType": "domain",
+      "domain": "glass",
+      "handler": "glass",
+      "threeJsonId": "tmpl-domain-glass-001",
+      "position": { "x": 0, "y": 0, "z": 0 }
+    },
+    {
+      "name": "domain-floor",
+      "objType": "domain",
+      "domain": "floor",
+      "handler": "floor",
+      "threeJsonId": "tmpl-domain-floor-001",
+      "position": { "x": 0, "y": 0, "z": 0 }
+    },
+    {
+      "name": "domain-door",
+      "objType": "domain",
+      "domain": "door",
+      "handler": "door",
+      "threeJsonId": "tmpl-domain-door-001",
+      "position": { "x": 0, "y": 0, "z": 0 }
+    },
+    {
+      "name": "cabinet",
+      "label": "机柜模板",
+      "objType": "domain",
+      "domain": "cabinet",
+      "handler": "createCabinet",
+      "threeJsonId": "tmpl-domain-cabinet-001",
+      "position": { "x": 0, "y": 0, "z": 0 },
+      "geometry": { "width": 6, "length": 12, "height": 20 }
+    }
+  ]
+}

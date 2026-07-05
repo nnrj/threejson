@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThreeJSON Tutorial · Track 2 · textureQuality 纹理采样</title>
+  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <script type="importmap">
+    {
+      "imports": {
+        "threejson": "/builtins/full.js",
+        "threejson/core": "/core/index.js",
+        "three": "https://esm.sh/three@0.184.0",
+        "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
+        "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
+        "html2canvas-pro": "https://esm.sh/html2canvas-pro@2.0.4",
+        "gifuct-js": "https://esm.sh/gifuct-js@2.1.2",
+        "three-mesh-bvh": "https://esm.sh/three-mesh-bvh@0.9.10?deps=three@0.184.0",
+        "three-bvh-csg": "https://esm.sh/three-bvh-csg@0.0.18?deps=three@0.184.0,three-mesh-bvh@0.9.10"
+      }
+    }
+  </script>
+  <style>
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #222; font-family: Arial, "Microsoft YaHei", sans-serif; }
+    #rootContainer { position: relative; width: 100vw; height: 100vh; }
+    #canvasContainer { display: block; width: 100%; height: 100%; background: #111; }
+    #loadingMask {
+      position: absolute; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
+      color: #fff; background: rgba(0,0,0,0.55); font-size: 15px;
+    }
+    #panel {
+      position: absolute; left: 12px; top: 12px; z-index: 25; max-width: min(420px, 94vw);
+      padding: 10px 12px; border-radius: 6px; background: rgba(10,10,10,0.72); color: #e8eaed; font-size: 12px; line-height: 1.55;
+    }
+    #panel h2 { margin: 0 0 8px; font-size: 14px; font-weight: 600; }
+    #panel code { color: #b8d4ff; font-size: 11px; }
+    #panel .row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    #panel button {
+      padding: 4px 10px; border: 1px solid rgba(255,255,255,0.18); border-radius: 4px;
+      background: #2a3140; color: #e8eaed; cursor: pointer; font-size: 12px;
+    }
+    #panel button:hover { background: #364055; }
+    #panel p { margin: 6px 0 0; color: rgba(232,234,237,0.72); font-size: 11px; }
+  </style>
+</head>
+<body>
+<div id="rootContainer">
+  <canvas id="canvasContainer">需要 WebGL</canvas>
+  <div id="loadingMask">加载中…</div>
+  <div id="panel">
+    <h2>textureQuality · 纹理采样档位</h2>
+    <div>JSON：<code>/assets/json/tutorial/track-02/02-11-texture-sampling-toggle.json</code></div>
+    <div class="row">
+      <button type="button" data-target="panel-low" data-tier="0">左 · 关(0)</button>
+      <button type="button" data-target="panel-low" data-tier="3">左 · 高(3)</button>
+      <button type="button" data-target="panel-high" data-tier="0">右 · 关(0)</button>
+      <button type="button" data-target="panel-high" data-tier="3">右 · 高(3)</button>
+    </div>
+    <p>左/右初始为 0 与 3；中间继承 <code>sceneConfig.textureQuality: 2</code>。拉近观察 mipmap / 各向异性差异。</p>
+  </div>
+</div>
+<script type="module">
+  import { createJsonScene, applyObjectChange } from "threejson/core";
+
+  const sceneJsonUrl = "/assets/json/tutorial/track-02/02-11-texture-sampling-toggle.json";
+  const canvas = document.getElementById("canvasContainer");
+  const loadingMask = document.getElementById("loadingMask");
+  let sceneRuntime;
+
+  window.addEventListener("DOMContentLoaded", init);
+  window.addEventListener("beforeunload", () => sceneRuntime?.dispose?.());
+
+  async function init() {
+    try {
+      const response = await fetch(sceneJsonUrl);
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      const sceneData = await response.json();
+      sceneData.canvasWidth = window.innerWidth;
+      sceneData.canvasHeight = window.innerHeight;
+      sceneRuntime = await createJsonScene(sceneData, { canvas, resetScene: true });
+      window.addEventListener("resize", () => sceneRuntime?.resize?.(window.innerWidth, window.innerHeight));
+      sceneRuntime.start();
+      loadingMask.style.display = "none";
+      bindControls();
+    } catch (err) {
+      console.error(err);
+      loadingMask.textContent = "加载失败：" + err.message;
+    }
+  }
+
+  function bindControls() {
+    document.querySelectorAll("#panel button[data-target]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-target");
+        const tier = Number(btn.getAttribute("data-tier"));
+        const res = applyObjectChange(id, "material.textureQuality", tier, { createMissing: true });
+        if (!res?.ok) {
+          console.warn(res?.error || "applyObjectChange failed");
+        }
+      });
+    });
+  }
+</script>
+</body>
+</html>

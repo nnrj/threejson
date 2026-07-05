@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThreeJSON Tutorial · Track 4 · 事件机制</title>
+  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <script type="importmap">
+    {
+      "imports": {
+        "threejson": "/builtins/full.js",
+        "threejson/core": "/core/index.js",
+        "three": "https://esm.sh/three@0.184.0",
+        "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
+        "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
+        "html2canvas-pro": "https://esm.sh/html2canvas-pro@2.0.4",
+        "gifuct-js": "https://esm.sh/gifuct-js@2.1.2",
+        "three-mesh-bvh": "https://esm.sh/three-mesh-bvh@0.9.10?deps=three@0.184.0",
+        "three-bvh-csg": "https://esm.sh/three-bvh-csg@0.0.18?deps=three@0.184.0,three-mesh-bvh@0.9.10"
+      }
+    }
+  </script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #1a1a1a;
+      --panel-bg: rgba(22, 26, 34, 0.52);
+      --panel-border: rgba(255, 255, 255, 0.08);
+      --text-main: #f3f5f7;
+      --text-muted: rgba(232, 234, 237, 0.72);
+      --text-subtle: rgba(232, 234, 237, 0.5);
+      --accent: #409eff;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: var(--bg);
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+      color: var(--text-main);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    button,
+    textarea {
+      font: inherit;
+    }
+
+    #rootContainer {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background: var(--bg);
+    }
+
+    #canvasContainer {
+      display: block;
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      margin: 0;
+      background: #222;
+      outline: none;
+      cursor: pointer;
+    }
+
+    #loadingMask {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      background: rgba(47, 47, 47, 0.72);
+      font-size: 15px;
+    }
+
+    #messageBox {
+      position: absolute;
+      top: 18px;
+      left: 50%;
+      z-index: 30;
+      display: none;
+      max-width: 70vw;
+      padding: 8px 14px;
+      border-radius: 4px;
+      color: #fff;
+      background: rgba(20, 20, 20, 0.82);
+      font-size: 13px;
+      transform: translateX(-50%);
+    }
+
+    #hint {
+      position: absolute;
+      left: 12px;
+      bottom: 12px;
+      z-index: 25;
+      max-width: min(520px, 92vw);
+      padding: 8px 10px;
+      border-radius: 4px;
+      background: rgba(10, 10, 10, 0.6);
+      color: #e0e0e0;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    #hint code {
+      font-size: 10px;
+      color: #b8d4ff;
+    }
+
+    .demoInspector {
+      position: absolute;
+      top: 18px;
+      z-index: 25;
+      width: min(320px, calc(100vw - 36px));
+      max-height: calc(100vh - 36px);
+      overflow: auto;
+      padding: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      background: var(--panel-bg);
+      color: var(--text-main);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+      -webkit-backdrop-filter: blur(22px) saturate(1.15);
+      backdrop-filter: blur(22px) saturate(1.15);
+    }
+
+    .demoInspectorRight {
+      right: 18px;
+      left: auto;
+    }
+
+    .demoInspector h2,
+    .demoInspector h3,
+    .demoInspector p {
+      margin: 0;
+    }
+
+    .demoInspector h2 {
+      font-size: 16px;
+      line-height: 1.35;
+      color: #eef3f8;
+    }
+
+    .demoInspector p {
+      margin-top: 8px;
+      color: var(--text-muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .demoInspector code {
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #9fd3ff;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 12px;
+    }
+
+    .demoInspectorSection {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid var(--panel-border);
+    }
+
+    .demoInspectorSection h3 {
+      font-size: 13px;
+      color: #eef3f8;
+    }
+
+    .demoInspectorAction {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.045);
+    }
+
+    .demoInspectorActionLabel {
+      color: var(--text-muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .demoInspectorAction button {
+      width: 100%;
+      margin-top: 8px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid rgba(64, 158, 255, 0.45);
+      background: rgba(64, 158, 255, 0.2);
+      color: var(--text-main);
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .demoInspectorAction button:hover {
+      background: rgba(64, 158, 255, 0.32);
+      border-color: rgba(64, 158, 255, 0.55);
+    }
+
+    .demoInspectorAction button.secondary {
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      background: #4a4c51;
+      color: #eef4fa;
+    }
+
+    .demoInspectorAction button.secondary:hover {
+      background: #55585f;
+      border-color: rgba(255, 255, 255, 0.28);
+    }
+
+    .scriptEditorField {
+      display: block;
+      width: 100%;
+      margin-top: 8px;
+      padding: 8px 10px;
+      resize: vertical;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(8, 12, 18, 0.72);
+      color: #e8eaed;
+      font: 12px/1.45 Consolas, "Courier New", monospace;
+    }
+
+    .scriptEditorField:focus {
+      outline: none;
+      border-color: rgba(64, 158, 255, 0.45);
+    }
+
+    #scriptEditor {
+      min-height: 108px;
+    }
+
+    #complexScriptEditor {
+      min-height: 200px;
+    }
+  </style>
+</head>
+<body>
+<div id="rootContainer">
+  <canvas id="canvasContainer">需要 WebGL</canvas>
+  <div id="loadingMask">ThreeJSON 事件机制示例加载中…</div>
+  <div id="messageBox"></div>
+  <div id="hint">
+    【Track 4 · 事件机制】数据：<code>/assets/json/tutorial/track-04/04-09-event-mechanism.json</code>
+    · 单击蓝色立方体执行 <code>events.click.script</code>
+    · 示例 1 默认简单脚本 · 示例 2 含 DSL/JS 进阶语法（Shift+单击变色）· 复位恢复初始位置
+  </div>
+
+  <aside class="demoInspector demoInspectorRight" aria-label="EventScript 编辑">
+    <h2>EventScript 演示</h2>
+    <p><code>events.click</code> · 示例 1 默认简单脚本 · 示例 2 进阶语法 · 应用后单击立方体验证</p>
+
+    <section class="demoInspectorSection">
+      <h3>示例 1 · 简单脚本</h3>
+      <div class="demoInspectorAction">
+        <div class="demoInspectorActionLabel">
+          <code>events.click.script</code> · <span id="scriptModeLabel">模式：DSL</span>
+        </div>
+        <textarea id="scriptEditor" class="scriptEditorField" spellcheck="false"></textarea>
+        <button type="button" id="applyScriptBtn">应用并绑定</button>
+        <button type="button" class="secondary" id="toggleScriptModeBtn">切换到 JavaScript</button>
+      </div>
+
+      <div class="demoInspectorAction">
+        <div class="demoInspectorActionLabel">
+          示例 2 · 复杂脚本 · <span id="complexScriptModeLabel">模式：DSL</span>
+        </div>
+        <textarea id="complexScriptEditor" class="scriptEditorField" spellcheck="false"></textarea>
+        <button type="button" id="applyComplexScriptBtn">应用并绑定</button>
+        <button type="button" class="secondary" id="toggleComplexScriptModeBtn">切换到 JavaScript</button>
+      </div>
+
+      <div class="demoInspectorAction">
+        <div class="demoInspectorActionLabel">立方体复位到 JSON 初始位置</div>
+        <button type="button" class="secondary" id="resetBoxBtn">复位立方体</button>
+      </div>
+    </section>
+  </aside>
+</div>
+<script type="module">
+  import * as THREE from "three";
+  import { createJsonScene } from "threejson";
+  import {
+    applyObjectPartial,
+    getObjectByThreeJsonId,
+    pickEditableObject,
+    rebuildObjectRegistryFromScene,
+    resolveEventScriptMode
+  } from "threejson/core";
+
+  const sceneJsonUrl = "/assets/json/tutorial/track-04/04-09-event-mechanism.json";
+  const BOX_ID = "event-demo-box";
+  const BOX_INITIAL_POSITION = Object.freeze({ x: 0, y: 3, z: 0 });
+  const SIMPLE_DSL_SCRIPT = [
+    "self.moveBy(-3, 0, 0)",
+    "await wait(400)",
+    "self.moveBy(3, 0, 0)",
+    "await wait(400)",
+    "self.moveBy(-9, 2, 0)"
+  ].join("\n");
+  const SIMPLE_JS_SCRIPT = [
+    "self.moveBy(-3, 0, 0);",
+    "await wait(400);",
+    "self.moveBy(3, 0, 0);",
+    "await wait(400);",
+    "self.moveBy(-9, 2, 0);"
+  ].join("\n");
+  const COMPLEX_DSL_SCRIPT = [
+    "// EventScript DSL — var / if / run",
+    "",
+    "var nudge = -3",
+    "self.moveBy(nudge, 0, 0)",
+    "await wait(280)",
+    "self.moveBy(-nudge, 0, 0)",
+    "await wait(280)",
+    "",
+    "if (self.visible) {",
+    "  self.moveBy(0, 1.4, 1)",
+    "  await wait(220)",
+    "  self.setPosition(0, 3, 0)",
+    "}",
+    "",
+    "await wait(150)",
+    "run object.patch id=event-demo-box partial={\"material\":{\"color\":\"#e6a23c\"}}",
+    "await wait(350)",
+    "run object.patch id=event-demo-box partial={\"material\":{\"color\":\"#409eff\"}}"
+  ].join("\n");
+  const COMPLEX_JS_SCRIPT = [
+    "// JavaScript — ref / runCommand / payload / 循环",
+    "",
+    "const home = { x: 0, y: 3, z: 0 };",
+    "const accent = payload?.shiftKey ? \"#f56c6c\" : \"#67c23a\";",
+    "",
+    "const host = ref(\"demo-box\");",
+    "if (!host) return;",
+    "",
+    "const path = [",
+    "  { dx: -3.2, dy: 0.8, dz: 0, ms: 260 },",
+    "  { dx: 3.2, dy: -0.8, dz: 0, ms: 260 },",
+    "  { dx: 0, dy: 1, dz: -1.6, ms: 300 }",
+    "];",
+    "",
+    "for (const step of path) {",
+    "  host.moveBy(step.dx, step.dy, step.dz);",
+    "  await wait(step.ms);",
+    "}",
+    "",
+    "host.setPosition(home.x, home.y, home.z);",
+    "",
+    "await runCommand(",
+    "  `object.patch id=${host.threeJsonId} partial=${JSON.stringify({ material: { color: accent } })}`",
+    ");",
+    "await wait(400);",
+    "await runCommand(",
+    "  `object.patch id=${host.threeJsonId} partial=${JSON.stringify({ material: { color: \"#409eff\" } })}`",
+    ");"
+  ].join("\n");
+
+  const canvas = document.getElementById("canvasContainer");
+  const loadingMask = document.getElementById("loadingMask");
+  const scriptEditor = document.getElementById("scriptEditor");
+  const complexScriptEditor = document.getElementById("complexScriptEditor");
+  const scriptModeLabel = document.getElementById("scriptModeLabel");
+  const complexScriptModeLabel = document.getElementById("complexScriptModeLabel");
+  const applyScriptBtn = document.getElementById("applyScriptBtn");
+  const applyComplexScriptBtn = document.getElementById("applyComplexScriptBtn");
+  const toggleScriptModeBtn = document.getElementById("toggleScriptModeBtn");
+  const toggleComplexScriptModeBtn = document.getElementById("toggleComplexScriptModeBtn");
+  const resetBoxBtn = document.getElementById("resetBoxBtn");
+  const messageBox = document.getElementById("messageBox");
+
+  /** @type {{ dsl: string|null, javascript: string|null }} */
+  const simpleScriptCache = { dsl: null, javascript: null };
+  /** @type {{ dsl: string|null, javascript: string|null }} */
+  const complexScriptCache = { dsl: null, javascript: null };
+  /** @type {'dsl'|'javascript'} */
+  let complexScriptMode = "dsl";
+
+  let sceneRuntime;
+  let scene;
+  let camera;
+  let eventRuntime;
+  let sceneJsonRoot;
+
+  window.addEventListener("DOMContentLoaded", init);
+  window.addEventListener("beforeunload", dispose);
+
+  async function init() {
+    try {
+      const response = await fetch(sceneJsonUrl);
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      sceneJsonRoot = await response.json();
+      sceneJsonRoot.canvasWidth = window.innerWidth;
+      sceneJsonRoot.canvasHeight = window.innerHeight;
+      sceneRuntime = await createJsonScene(sceneJsonRoot, { canvas, resetScene: true });
+      scene = sceneRuntime?.scene;
+      camera = sceneRuntime?.camera;
+      rebuildObjectRegistryFromScene(scene);
+      eventRuntime = sceneRuntime?.eventMechanism ?? null;
+      syncScriptEditorFromBox();
+      initComplexScriptEditor();
+      updateScriptModeUi();
+      updateComplexScriptModeUi();
+      bindCanvasEvents();
+      window.addEventListener("resize", onResize);
+      sceneRuntime.start();
+      loadingMask.style.display = "none";
+      showMessage("场景就绪：单击立方体触发 EventScript");
+    } catch (err) {
+      console.error(err);
+      loadingMask.textContent = "加载失败：" + err.message;
+    }
+  }
+
+  function onResize() {
+    sceneRuntime?.resize?.(window.innerWidth, window.innerHeight);
+  }
+
+  function bindCanvasEvents() {
+    canvas.addEventListener("click", onCanvasClick);
+    applyScriptBtn?.addEventListener("click", () => applyScriptFromEditor({ source: "simple" }));
+    applyComplexScriptBtn?.addEventListener("click", () => applyScriptFromEditor({ source: "complex" }));
+    toggleScriptModeBtn?.addEventListener("click", () => toggleScriptMode("simple", { autoApply: true }));
+    toggleComplexScriptModeBtn?.addEventListener("click", () => toggleScriptMode("complex", { autoApply: false }));
+    resetBoxBtn?.addEventListener("click", resetBoxPosition);
+  }
+
+  function ensureEventScriptConfig() {
+    if (!sceneJsonRoot.sceneConfig) {
+      sceneJsonRoot.sceneConfig = sceneRuntime?.sceneConfig ?? {};
+    }
+    if (!sceneJsonRoot.sceneConfig.eventScript) {
+      sceneJsonRoot.sceneConfig.eventScript = {};
+    }
+    if (sceneRuntime) {
+      if (!sceneRuntime.sceneConfig) {
+        sceneRuntime.sceneConfig = sceneJsonRoot.sceneConfig;
+      } else if (sceneRuntime.sceneConfig !== sceneJsonRoot.sceneConfig) {
+        sceneRuntime.sceneConfig.eventScript = {
+          ...sceneRuntime.sceneConfig.eventScript,
+          ...sceneJsonRoot.sceneConfig.eventScript
+        };
+      }
+    }
+    return sceneJsonRoot.sceneConfig.eventScript;
+  }
+
+  function getCurrentScriptMode() {
+    return resolveEventScriptMode(sceneJsonRoot?.sceneConfig ?? sceneRuntime?.sceneConfig);
+  }
+
+  function setRuntimeScriptMode(mode) {
+    const normalized = mode === "javascript" ? "javascript" : "dsl";
+    const eventScriptConfig = ensureEventScriptConfig();
+    eventScriptConfig.mode = normalized;
+    if (sceneRuntime?.sceneConfig && sceneRuntime.sceneConfig !== sceneJsonRoot.sceneConfig) {
+      if (!sceneRuntime.sceneConfig.eventScript) {
+        sceneRuntime.sceneConfig.eventScript = {};
+      }
+      sceneRuntime.sceneConfig.eventScript.mode = normalized;
+    }
+    return normalized;
+  }
+
+  function getScriptDefaults(kind, mode) {
+    if (kind === "complex") {
+      return mode === "javascript" ? COMPLEX_JS_SCRIPT : COMPLEX_DSL_SCRIPT;
+    }
+    return mode === "javascript" ? SIMPLE_JS_SCRIPT : SIMPLE_DSL_SCRIPT;
+  }
+
+  function getScriptCache(kind) {
+    return kind === "complex" ? complexScriptCache : simpleScriptCache;
+  }
+
+  function getScriptEditor(kind) {
+    return kind === "complex" ? complexScriptEditor : scriptEditor;
+  }
+
+  function getLocalScriptMode(kind) {
+    return kind === "complex" ? complexScriptMode : getCurrentScriptMode();
+  }
+
+  function setLocalScriptMode(kind, mode) {
+    if (kind === "complex") {
+      complexScriptMode = mode === "javascript" ? "javascript" : "dsl";
+      return complexScriptMode;
+    }
+    return setRuntimeScriptMode(mode);
+  }
+
+  function saveEditorToCache(kind, mode) {
+    const editor = getScriptEditor(kind);
+    getScriptCache(kind)[mode] = editor.value;
+  }
+
+  function loadEditorFromCache(kind, mode) {
+    const cache = getScriptCache(kind);
+    const editor = getScriptEditor(kind);
+    editor.value = typeof cache[mode] === "string" ? cache[mode] : getScriptDefaults(kind, mode);
+  }
+
+  function updateScriptModeUi() {
+    const mode = getCurrentScriptMode();
+    if (scriptModeLabel) {
+      scriptModeLabel.textContent = mode === "javascript" ? "模式：JavaScript" : "模式：DSL";
+    }
+    if (toggleScriptModeBtn) {
+      toggleScriptModeBtn.textContent =
+        mode === "javascript" ? "切换到 DSL" : "切换到 JavaScript";
+    }
+  }
+
+  function updateComplexScriptModeUi() {
+    if (complexScriptModeLabel) {
+      complexScriptModeLabel.textContent =
+        complexScriptMode === "javascript" ? "模式：JavaScript" : "模式：DSL";
+    }
+    if (toggleComplexScriptModeBtn) {
+      toggleComplexScriptModeBtn.textContent =
+        complexScriptMode === "javascript" ? "切换到 DSL" : "切换到 JavaScript";
+    }
+  }
+
+  function syncScriptEditorFromBox() {
+    const box = getObjectByThreeJsonId(BOX_ID);
+    const script = box?.userData?.objJson?.events?.click?.script ?? "";
+    const mode = getCurrentScriptMode();
+    simpleScriptCache[mode] = script;
+    scriptEditor.value = script;
+  }
+
+  function initComplexScriptEditor() {
+    complexScriptMode = "dsl";
+    loadEditorFromCache("complex", "dsl");
+  }
+
+  async function toggleScriptMode(kind, options = {}) {
+    const currentMode = getLocalScriptMode(kind);
+    const nextMode = currentMode === "javascript" ? "dsl" : "javascript";
+    saveEditorToCache(kind, currentMode);
+    setLocalScriptMode(kind, nextMode);
+    loadEditorFromCache(kind, nextMode);
+    if (kind === "complex") {
+      updateComplexScriptModeUi();
+    } else {
+      updateScriptModeUi();
+    }
+    if (options.autoApply) {
+      await applyScriptFromEditor({
+        source: kind,
+        successMessage: `示例 1 已切换到 ${nextMode === "javascript" ? "JavaScript" : "DSL"} 并应用`
+      });
+    } else {
+      showMessage(
+        `示例 2 已切换到 ${nextMode === "javascript" ? "JavaScript" : "DSL"}，点击应用并绑定生效`
+      );
+    }
+  }
+
+  function clientToNdc(event) {
+    const rect = canvas.getBoundingClientRect();
+    return new THREE.Vector2(
+      ((event.clientX - rect.left) / rect.width) * 2 - 1,
+      -(((event.clientY - rect.top) / rect.height) * 2 - 1)
+    );
+  }
+
+  function resolvePickThreeJsonId(event) {
+    const picked = pickEditableObject({ scene, camera, ndc: clientToNdc(event) });
+    if (!picked) return null;
+    let node = picked;
+    while (node) {
+      const id = node.userData?.objJson?.threeJsonId;
+      if (typeof id === "string" && id.trim()) return id.trim();
+      node = node.parent;
+    }
+    return null;
+  }
+
+  async function onCanvasClick(event) {
+    const threeJsonId = resolvePickThreeJsonId(event);
+    if (!threeJsonId) {
+      return;
+    }
+    await eventRuntime?.manager?.dispatchPlatformEvent(threeJsonId, "click", {
+      scene,
+      sceneRuntime,
+      nativeEvent: event
+    });
+  }
+
+  async function applyScriptFromEditor(options = {}) {
+    const source = options.source === "complex" ? "complex" : "simple";
+    const editor = getScriptEditor(source);
+    const mode = getLocalScriptMode(source);
+    const box = getObjectByThreeJsonId(BOX_ID);
+    if (!box?.userData?.objJson) {
+      showMessage("未找到 event-demo-box", "error");
+      return;
+    }
+    setRuntimeScriptMode(mode);
+    if (!box.userData.objJson.events) box.userData.objJson.events = {};
+    if (!box.userData.objJson.events.click) box.userData.objJson.events.click = {};
+    box.userData.objJson.events.click.script = editor.value;
+    delete box.userData.objJson.events.click.scriptUrl;
+    saveEditorToCache(source, mode);
+    if (source === "simple") {
+      updateScriptModeUi();
+    } else {
+      updateComplexScriptModeUi();
+    }
+    await eventRuntime?.rebind?.();
+    const label = source === "complex" ? "示例 2" : "示例 1";
+    showMessage(options.successMessage ?? `${label} 脚本已应用并绑定`, "success");
+  }
+
+  function resetBoxPosition() {
+    const result = applyObjectPartial(BOX_ID, {
+      position: {
+        x: BOX_INITIAL_POSITION.x,
+        y: BOX_INITIAL_POSITION.y,
+        z: BOX_INITIAL_POSITION.z
+      },
+      material: { color: "#409eff" }
+    });
+    if (!result.ok) {
+      showMessage("未找到 event-demo-box", "error");
+      return;
+    }
+    showMessage("立方体已复位", "success");
+  }
+
+  function showMessage(text, type = "info") {
+    const colors = {
+      info: "rgba(20, 20, 20, 0.82)",
+      success: "rgba(46, 125, 50, 0.88)",
+      error: "rgba(180, 35, 24, 0.9)"
+    };
+    messageBox.textContent = text;
+    messageBox.style.background = colors[type] || colors.info;
+    messageBox.style.display = "block";
+    clearTimeout(showMessage.timer);
+    showMessage.timer = setTimeout(() => {
+      messageBox.style.display = "none";
+    }, 2600);
+  }
+
+  async function dispose() {
+    canvas.removeEventListener("click", onCanvasClick);
+    window.removeEventListener("resize", onResize);
+    sceneRuntime?.dispose?.();
+    eventRuntime = null;
+  }
+</script>
+</body>
+</html>

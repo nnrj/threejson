@@ -1,0 +1,42 @@
+{
+  "_doc": "threejson-agent CLI/GUI. Copy to setting.json. Default: CLI -i/-o relative to cwd. To base CLI + Node workspace on repo root: set relativetRoot (relative to this file, e.g. ../..) and redirectRelative true. redirectRelativeWarn false suppresses stderr redirect notices.",
+  "_providerBaseUrlHints": {
+    "chatgpt": "Leave empty for https://api.openai.com/v1 or set explicitly.",
+    "deepseek": "Leave baseUrl empty for default https://api.deepseek.com (JS bridge appends /chat/completions). Do not add /v1 unless your gateway requires it.",
+    "custom": "OpenAI-compatible root URL, e.g. https://your-gateway.example/v1 — must match what your gateway expects before /chat/completions."
+  },
+  "llm": {
+    "provider": "chatgpt",
+    "apiKey": "",
+    "baseUrl": "",
+    "model": "",
+    "imageModel": "dall-e-3",
+    "temperature": 0.2,
+    "maxTokens": 4000
+  },
+  "agent": {
+    "enabled": false,
+    "depth": "medium"
+  },
+  "texture": {
+    "mode": "node_bridge",
+    "fillAfterAgent": false,
+    "localOutputDir": "assets/textures/ai-generated",
+    "preferRemoteUrl": false,
+    "overwriteExisting": false,
+    "concurrency": 2
+  },
+  "asset": {
+    "mode": "crawl",
+    "searchApiKey": "",
+    "searchEngine": "bing",
+    "unsplashAccessKey": "",
+    "allowlistDomains": [],
+    "respectRobots": true,
+    "maxConcurrent": 4,
+    "htmlSearchTemplate": "https://duckduckgo.com/?q={query}&iax=images&ia=images"
+  },
+  "paths": {
+    "redirectRelative": false
+  }
+}

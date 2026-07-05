@@ -1,0 +1,247 @@
+{
+  "version": "next",
+  "name": "native-object-dispatch-demo",
+  "objectList": [
+    {
+      "objType": "scene",
+      "background": "#1a1d24"
+    },
+    {
+      "objType": "camera",
+      "fov": 52,
+      "near": 0.1,
+      "far": 200,
+      "position": {
+        "x": 8,
+        "y": 5,
+        "z": 10
+      }
+    },
+    {
+      "objType": "renderer",
+      "antialias": true,
+      "ratioRate": 1
+    },
+    {
+      "objType": "controls",
+      "enableDamping": true,
+      "target": {
+        "x": 0,
+        "y": 1,
+        "z": 0
+      }
+    },
+    {
+      "objType": "light",
+      "type": "ambient",
+      "intensity": 0.5
+    },
+    {
+      "objType": "light",
+      "type": "directional",
+      "intensity": 0.9,
+      "position": {
+        "x": 4,
+        "y": 6,
+        "z": 4
+      }
+    },
+    {
+      "objType": "renderLoop",
+      "autoResize": true,
+      "firstAutoResize": true
+    },
+    {
+      "objType": "box",
+      "name": "floor",
+      "geometry": {
+        "width": 10,
+        "height": 0.1,
+        "depth": 8
+      },
+      "material": {
+        "type": "standard",
+        "color": "#3d4450",
+        "roughness": 0.95
+      },
+      "position": {
+        "x": 0,
+        "y": -0.05,
+        "z": 0
+      }
+    },
+    {
+      "objType": "torusKnot",
+      "name": "native-torus-knot",
+      "geometry": {
+        "type": "TorusKnotGeometry",
+        "radius": 0.4,
+        "tube": 0.11,
+        "tubularSegments": 128,
+        "radialSegments": 16,
+        "p": 2,
+        "q": 3
+      },
+      "material": {
+        "type": "MeshStandardMaterial",
+        "color": "#e76f51",
+        "metalness": 0.35,
+        "roughness": 0.45
+      },
+      "position": {
+        "x": -2,
+        "y": 1,
+        "z": 0
+      }
+    },
+    {
+      "objType": "latheVase",
+      "name": "native-lathe-vase",
+      "geometry": {
+        "type": "LatheGeometry",
+        "points": [
+          [0, 0],
+          [0.12, 0],
+          [0.16, 0.2],
+          [0.11, 0.5],
+          [0.18, 0.8],
+          [0.1, 1.1],
+          [0, 1.1]
+        ],
+        "segments": 32
+      },
+      "material": {
+        "type": "MeshStandardMaterial",
+        "color": "#2a9d8f",
+        "roughness": 0.55
+      },
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "objType": "dodecahedronGem",
+      "name": "native-dodecahedron",
+      "geometry": {
+        "type": "DodecahedronGeometry",
+        "radius": 0.5,
+        "detail": 0
+      },
+      "material": {
+        "type": "MeshStandardMaterial",
+        "color": "#457b9d",
+        "metalness": 0.6,
+        "roughness": 0.25
+      },
+      "position": {
+        "x": 2,
+        "y": 1,
+        "z": 0
+      }
+    },
+    {
+      "objType": "tetrahedronObelisk",
+      "name": "native-tetrahedron-obelisk",
+      "geometry": {
+        "type": "TetrahedronGeometry",
+        "radius": 0.9,
+        "detail": 0
+      },
+      "material": {
+        "type": "MeshStandardMaterial",
+        "color": "#ffd60a",
+        "emissive": "#ff9500",
+        "emissiveIntensity": 0.55,
+        "metalness": 0.45,
+        "roughness": 0.32
+      },
+      "position": {
+        "x": 0,
+        "y": 2,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.4,
+        "z": 0
+      }
+    },
+    {
+      "objType": "native",
+      "name": "native-lamp-group",
+      "threeType": "Group",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": -2
+      },
+      "children": [
+        {
+          "threeType": "Mesh",
+          "name": "lamp-pole",
+          "geometry": {
+            "type": "CylinderGeometry",
+            "radiusTop": 0.12,
+            "radiusBottom": 0.18,
+            "height": 1,
+            "radialSegments": 20
+          },
+          "material": {
+            "type": "MeshStandardMaterial",
+            "color": "#555555"
+          },
+          "position": {
+            "y": 0.5
+          }
+        },
+        {
+          "threeType": "Mesh",
+          "name": "lamp-shade",
+          "geometry": {
+            "type": "SphereGeometry",
+            "radius": 0.18,
+            "widthSegments": 24,
+            "heightSegments": 16,
+            "phiStart": 0,
+            "phiLength": 3.141592653589793,
+            "thetaStart": 0,
+            "thetaLength": 1.5707963267948966
+          },
+          "material": {
+            "type": "MeshStandardMaterial",
+            "color": "#fcbf49",
+            "emissive": "#664400",
+            "emissiveIntensity": 0.35
+          },
+          "position": {
+            "y": 1
+          }
+        }
+      ]
+    },
+    {
+      "objType": "box",
+      "name": "native-via-parseMode",
+      "parseMode": "native",
+      "threeType": "Mesh",
+      "geometry": {
+        "type": "BoxGeometry",
+        "width": 0.4,
+        "height": 0.4,
+        "depth": 0.4
+      },
+      "material": {
+        "type": "MeshStandardMaterial",
+        "color": "#9b5de5"
+      },
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 2
+      }
+    }
+  ],
+  "threeJsonId": "01-06-native-objects"
+}

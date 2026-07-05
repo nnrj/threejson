@@ -1,0 +1,94 @@
+{
+  "version": "next",
+  "name": "tutorial-object-registry",
+  "sceneConfig": {
+    "scene": {
+      "background": "#222222"
+    },
+    "camera": {
+      "fov": 60,
+      "position": {
+        "x": 28,
+        "y": 19,
+        "z": 31
+      },
+      "near": 0.1,
+      "far": 250
+    },
+    "renderer": {
+      "antialias": true
+    },
+    "controls": {
+      "enableDamping": true,
+      "target": {
+        "x": 0,
+        "y": 4,
+        "z": 0
+      }
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "color": "#ffffff",
+        "intensity": 0.5
+      },
+      {
+        "type": "directional",
+        "color": "#ffffff",
+        "intensity": 0.85,
+        "position": {
+          "x": 20,
+          "y": 30,
+          "z": 15
+        }
+      }
+    ],
+    "renderLoop": {
+      "autoResize": true,
+      "firstAutoResize": true
+    }
+  },
+  "worldInfo": {
+    "boxModelList": [
+      {
+        "name": "registry-target",
+        "refName": "mainTarget",
+        "objType": "box",
+        "geometry": {
+          "width": 6,
+          "height": 6,
+          "depth": 6
+        },
+        "position": {
+          "x": 0,
+          "y": 3,
+          "z": 0
+        },
+        "material": {
+          "type": "standard",
+          "color": "#409eff"
+        }
+      },
+      {
+        "name": "registry-clone",
+        "refName": "secondaryTarget",
+        "objType": "box",
+        "geometry": {
+          "width": 4,
+          "height": 8,
+          "depth": 4
+        },
+        "position": {
+          "x": 8,
+          "y": 4,
+          "z": -3
+        },
+        "material": {
+          "type": "standard",
+          "color": "#67c23a"
+        }
+      }
+    ]
+  },
+  "threeJsonId": "04-01-object-registry"
+}

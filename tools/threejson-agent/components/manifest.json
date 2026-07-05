@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "components": [
+    {
+      "id": "asset-search",
+      "description": "Asset search/import (Python implementation; invoked only via Node bridge/asset.mjs)",
+      "platforms": ["win32-x64", "darwin-arm64", "darwin-x64", "linux-x64"],
+      "binaryName": "asset-search",
+      "devFallback": "python-module:threejson_agent.asset_bridge_entry"
+    }
+  ]
+}

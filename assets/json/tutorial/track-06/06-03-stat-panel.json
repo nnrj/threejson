@@ -1,0 +1,84 @@
+{
+  "version": "next",
+  "name": "tutorial-stat-panel",
+  "sceneConfig": {
+    "scene": { "background": "#101820" },
+    "camera": {
+      "fov": 52,
+      "position": { "x": 0, "y": 70, "z": 140 },
+      "near": 0.1,
+      "far": 4000
+    },
+    "renderer": { "antialias": true },
+    "controls": {
+      "enableDamping": true,
+      "target": { "x": 0, "y": 20, "z": 0 }
+    },
+    "lights": [
+      { "type": "ambient", "color": "#9fb4c8", "intensity": 0.95 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1.15, "position": { "x": 64, "y": 120, "z": 90 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "worldInfo": {
+    "boxModelList": [
+      {
+        "name": "floor",
+        "objType": "floor",
+        "geometry": { "width": 160, "height": 1, "depth": 100 },
+        "position": { "x": 0, "y": 0, "z": 0 },
+        "material": { "color": "#2a3038" }
+      }
+    ],
+    "domainModelList": [
+      {
+        "objType": "domain",
+        "domain": "stat.panel",
+        "handler": "deployStatPanel",
+        "name": "kpi-panel",
+        "position": { "x": 0, "y": 0, "z": -42 },
+        "geometry": { "width": 96, "height": 44, "depth": 0.8 },
+        "labelStyle": {
+          "fontSizePx": 24,
+          "lineHeight": 28,
+          "autoFit": true,
+          "fitRatio": 0.86,
+          "minFontPx": 16,
+          "maxFontPx": 66
+        },
+        "lines": [
+          "KPI 摘要",
+          "容量: 72%",
+          "承重: 61%",
+          "U位: 18/42"
+        ]
+      },
+      {
+        "objType": "domain",
+        "domain": "stat.bar",
+        "handler": "createStatBars",
+        "options": {
+          "labelStyle": {
+            "fontSizePx": 24,
+            "autoFit": true,
+            "fitRatio": 0.78,
+            "minFontPx": 16,
+            "maxFontPx": 64
+          }
+        },
+        "items": [
+          {
+            "position": { "x": -35, "y": 0, "z": 0 },
+            "value": 72,
+            "max": 100
+          },
+          {
+            "position": { "x": 35, "y": 0, "z": 0 },
+            "value": 61,
+            "max": 100
+          }
+        ]
+      }
+    ]
+  }
+}

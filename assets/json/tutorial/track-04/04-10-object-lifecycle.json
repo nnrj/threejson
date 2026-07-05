@@ -1,0 +1,72 @@
+{
+  "version": "next",
+  "name": "tutorial-object-lifecycle",
+  "canvasWidth": 1920,
+  "canvasHeight": 1080,
+  "objectList": [
+    {
+      "objType": "scene",
+      "background": "#222222"
+    },
+    {
+      "objType": "camera",
+      "fov": 60,
+      "near": 0.1,
+      "far": 250,
+      "position": { "x": 14, "y": 10, "z": 18 },
+      "target": { "x": 0, "y": 2, "z": 0 }
+    },
+    {
+      "objType": "renderer",
+      "antialias": true,
+      "ratioRate": 1
+    },
+    {
+      "objType": "controls",
+      "enableDamping": true,
+      "dampingFactor": 0.08,
+      "target": { "x": 0, "y": 2, "z": 0 }
+    },
+    {
+      "objType": "light",
+      "type": "ambient",
+      "color": "#ffffff",
+      "intensity": 0.45
+    },
+    {
+      "objType": "light",
+      "type": "directional",
+      "color": "#ffffff",
+      "intensity": 0.9,
+      "position": { "x": 18, "y": 28, "z": 12 }
+    },
+    {
+      "objType": "renderLoop",
+      "autoResize": true,
+      "firstAutoResize": true
+    },
+    {
+      "threeJsonId": "lifecycle-demo-floor",
+      "name": "lifecycle-demo-floor",
+      "objType": "floor",
+      "geometry": { "width": 24, "height": 0.6, "depth": 16 },
+      "position": { "x": 0, "y": -0.3, "z": 0 },
+      "material": { "type": "standard", "color": "#2c3038" }
+    },
+    {
+      "threeJsonId": "lifecycle-demo-box",
+      "name": "lifecycle-demo-box",
+      "refName": "lifecycle-box",
+      "objType": "box",
+      "geometry": { "width": 4, "height": 4, "depth": 4 },
+      "position": { "x": 0, "y": 2, "z": 0 },
+      "material": { "type": "standard", "color": "#67c23a" },
+      "events": {
+        "object.ready": {
+          "script": "self.moveBy(0, 2, 0)\nawait wait(300)\nself.moveBy(0, -0.5, 0)"
+        }
+      }
+    }
+  ],
+  "threeJsonId": "04-10-object-lifecycle"
+}

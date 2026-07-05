@@ -1,0 +1,29 @@
+newmtl HullMaterial
+Ka 0.2 0.2 0.2
+Kd 0.1 0.2 0.7
+Ks 0.3 0.3 0.3
+Ns 20
+
+newmtl ContainerMaterial
+Ka 0.2 0.2 0.2
+Kd 0.7 0.2 0.2
+Ks 0.2 0.2 0.2
+Ns 10
+
+newmtl BridgeMaterial
+Ka 0.2 0.2 0.2
+Kd 0.85 0.85 0.85
+Ks 0.4 0.4 0.4
+Ns 40
+
+newmtl ChimneyMaterial
+Ka 0.2 0.2 0.2
+Kd 0.15 0.15 0.15
+Ks 0.2 0.2 0.2
+Ns 5
+
+newmtl MastMaterial
+Ka 0.2 0.2 0.2
+Kd 0.9 0.9 0.9
+Ks 0.3 0.3 0.3
+Ns 20

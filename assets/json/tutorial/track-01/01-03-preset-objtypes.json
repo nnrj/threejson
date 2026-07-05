@@ -1,0 +1,159 @@
+{
+  "version": "next",
+  "name": "tutorial-preset-objtypes",
+  "friendlyMap": {
+    "wallList": {
+      "objType": "wall",
+      "defaults": {
+        "material": {
+          "type": "standard",
+          "color": "#dcdfe6"
+        }
+      }
+    },
+    "floorList": {
+      "objType": "floor",
+      "defaults": {
+        "material": {
+          "type": "standard",
+          "metalness": 0.05,
+          "roughness": 0.85
+        }
+      }
+    },
+    "glassList": {
+      "objType": "glass",
+      "defaults": {
+        "material": {
+          "type": "standard",
+          "transparent": true,
+          "opacity": 0.42
+        }
+      }
+    }
+  },
+  "sceneConfig": {
+    "scene": {
+      "background": "#1e2228"
+    },
+    "camera": {
+      "fov": 55,
+      "position": {
+        "x": 25,
+        "y": 15,
+        "z": 28
+      },
+      "near": 0.1,
+      "far": 300
+    },
+    "renderer": {
+      "antialias": true
+    },
+    "controls": {
+      "enableDamping": true,
+      "target": {
+        "x": 0,
+        "y": 5,
+        "z": 0
+      }
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "color": "#ffffff",
+        "intensity": 0.5
+      },
+      {
+        "type": "directional",
+        "color": "#ffffff",
+        "intensity": 0.85,
+        "position": {
+          "x": 12,
+          "y": 20,
+          "z": 8
+        }
+      }
+    ],
+    "renderLoop": {
+      "autoResize": true,
+      "firstAutoResize": true
+    }
+  },
+  "worldInfo": {
+    "floorList": [
+      {
+        "name": "main-floor",
+        "geometry": {
+          "width": 28,
+          "height": 0.6,
+          "depth": 20
+        },
+        "position": {
+          "x": 0,
+          "y": -0.3,
+          "z": 0
+        },
+        "material": {
+          "textureUrl": "/assets/textures/building/floor/wood_floor.webp",
+          "textureRepeat": {
+            "x": 0,
+            "y": 0
+          }
+        }
+      }
+    ],
+    "wallList": [
+      {
+        "name": "back-wall",
+        "geometry": {
+          "width": 22,
+          "height": 10,
+          "depth": 2
+        },
+        "position": {
+          "x": 0,
+          "y": 5,
+          "z": -9
+        }
+      },
+      {
+        "name": "side-wall",
+        "geometry": {
+          "width": 2,
+          "height": 10,
+          "depth": 16
+        },
+        "position": {
+          "x": -10,
+          "y": 5,
+          "z": 0
+        }
+      }
+    ],
+    "glassList": [
+      {
+        "name": "front-glass",
+        "glassKind": "clear",
+        "geometry": {
+          "width": 12,
+          "height": 9,
+          "depth": 1
+        },
+        "position": {
+          "x": 4,
+          "y": 5,
+          "z": 6
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": -0.2,
+          "rotationZ": 0
+        },
+        "material": {
+          "color": "#a8d8ff"
+        }
+      }
+    ]
+  },
+  "threeJsonId": "01-03-preset-objtypes"
+}
