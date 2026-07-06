@@ -66,6 +66,9 @@ __pycache__/
 !.env.example
 *.local
 setting.json
+!assets/json/other/scene-editer/setting.json
+!assets/json/other/scene-editor/setting.json
+!assets/json/other/scene-player/setting.json
 /tools/threejson-agent/setting.json
 /tools/mcp-threejson/setting.json
 

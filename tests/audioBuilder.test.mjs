@@ -6,9 +6,11 @@ import {
   disposeThreeJsonAudioNode,
   getThreeJsonSceneAudioSessionId,
   invalidateThreeJsonSceneAudioSession,
+  resolveAudioUrl,
   setThreeJsonSceneAudioPlaybackPolicy,
   teardownThreeJsonSceneAudioFromRuntime
 } from "../core/builder/audioBuilder.js";
+import { applyAssetsBaseForLoad } from "../core/util/assetsBase.js";
 
 describe("audioBuilder session", () => {
   it("invalidateThreeJsonSceneAudioSession increments id", () => {
@@ -46,6 +48,24 @@ describe("disposeThreeJsonAudioNode", () => {
     sound.disconnect = () => {};
     assert.equal(disposeThreeJsonAudioNode(sound), true);
     assert.equal(disposeThreeJsonAudioNode(new THREE.Object3D()), false);
+  });
+});
+
+describe("resolveAudioUrl", () => {
+  it("rewrites /assets audio paths through active assetsBase", () => {
+    const restoreAssetsBase = applyAssetsBaseForLoad({}, { assetsBase: "./assets" });
+    try {
+      assert.equal(
+        resolveAudioUrl({ audioUrl: "/assets/audio/farewell.mp3" }),
+        "./assets/audio/farewell.mp3"
+      );
+      assert.equal(
+        resolveAudioUrl({ url: "/assets/audio/ambient_loop.mp3" }),
+        "./assets/audio/ambient_loop.mp3"
+      );
+    } finally {
+      restoreAssetsBase();
+    }
   });
 });
 

@@ -1414,14 +1414,14 @@ Powered by ThreeJSON and Three.js</div>
 
   // ===== Player Settings =====
   const PLAYER_SETTINGS_STORAGE_KEY = "scenePlayer_settings_v1";
-  const PLAYER_SETTINGS_JSON_URL = "/assets/json/other/scene-player/setting.json";
+  const PLAYER_SETTINGS_JSON_URL = "./assets/json/other/scene-player/setting.json";
 
   const PLAYER_SETTINGS_DEFAULTS = {
     version: 1,
     app: "scene-player",
     general: {
       baseTitle: "场景播放器",
-      defaultSceneUrl: "/assets/json/portShow.json",
+      defaultSceneUrl: "./assets/json/portShow.json",
       loadingMaskText: "3D 场景加载中...",
       messageToastDurationMs: 2600,
       progressOverlayEnabled: true,
@@ -1637,14 +1637,28 @@ Powered by ThreeJSON and Three.js</div>
     cur[parts[parts.length - 1]] = value;
   }
 
+  function resolvePlayerPageUrl(url) {
+    const value = String(url || "").trim();
+    if (value.startsWith("/assets/") || value === "/demo.html") {
+      return "." + value;
+    }
+    return value;
+  }
+
+  function normalizePlayerSettingsUrls(settings) {
+    if (settings?.general?.defaultSceneUrl) {
+      settings.general.defaultSceneUrl = resolvePlayerPageUrl(settings.general.defaultSceneUrl);
+    }
+    return settings;
+  }
   async function fetchPlayerSettingsFileDefaults() {
     try {
       const response = await fetch(PLAYER_SETTINGS_JSON_URL, { cache: "no-cache" });
-      if (!response.ok) return clonePlayerSettings(PLAYER_SETTINGS_DEFAULTS);
-      return deepMergePlayerSettings(PLAYER_SETTINGS_DEFAULTS, await response.json());
+      if (!response.ok) return normalizePlayerSettingsUrls(clonePlayerSettings(PLAYER_SETTINGS_DEFAULTS));
+      return normalizePlayerSettingsUrls(deepMergePlayerSettings(PLAYER_SETTINGS_DEFAULTS, await response.json()));
     } catch (err) {
       console.warn("[player-settings] fetch failed:", err);
-      return clonePlayerSettings(PLAYER_SETTINGS_DEFAULTS);
+      return normalizePlayerSettingsUrls(clonePlayerSettings(PLAYER_SETTINGS_DEFAULTS));
     }
   }
 
@@ -1677,7 +1691,7 @@ Powered by ThreeJSON and Three.js</div>
 
   async function loadPlayerSettings() {
     playerSettingsFileDefaults = await fetchPlayerSettingsFileDefaults();
-    playerSettings = deepMergePlayerSettings(playerSettingsFileDefaults, readPlayerSettingsCache() || {});
+    playerSettings = normalizePlayerSettingsUrls(deepMergePlayerSettings(playerSettingsFileDefaults, readPlayerSettingsCache() || {}));
     return playerSettings;
   }
 
@@ -1704,7 +1718,7 @@ Powered by ThreeJSON and Three.js</div>
   }
 
   function getPlayerDefaultSceneUrl() {
-    return playerSettings?.general?.defaultSceneUrl || PLAYER_SETTINGS_DEFAULTS.general.defaultSceneUrl;
+    return resolvePlayerPageUrl(playerSettings?.general?.defaultSceneUrl || PLAYER_SETTINGS_DEFAULTS.general.defaultSceneUrl);
   }
 
   function getPlayerMessageToastDurationMs() {
@@ -3290,15 +3304,16 @@ Powered by ThreeJSON and Three.js</div>
       setLoadingMessage("正在读取场景...");
       openOrCloseProgressManager(sysConfig.progressFlag);
       if (entry.kind === "url" && entry.url) {
-        if (isTjzSceneFileName(entry.url)) {
-          const response = await fetch(entry.url);
+        const entryUrl = resolvePlayerPageUrl(entry.url);
+        if (isTjzSceneFileName(entryUrl)) {
+          const response = await fetch(entryUrl);
           if (!response.ok) {
             throw new Error(`加载场景失败：${response.status}`);
           }
           const bytes = new Uint8Array(await response.arrayBuffer());
-          await applyTjzArchiveToPlayer(bytes, entry.label || fileNameFromUrl(entry.url));
+          await applyTjzArchiveToPlayer(bytes, entry.label || fileNameFromUrl(entryUrl));
         } else {
-          const response = await fetch(entry.url);
+          const response = await fetch(entryUrl);
           if (!response.ok) {
             throw new Error(`加载场景失败：${response.status}`);
           }
@@ -4118,7 +4133,7 @@ Powered by ThreeJSON and Three.js</div>
     };
     sceneRuntime = await createJsonScene(buildPlayerScenePayload(), {
       canvas: canvasContainer,
-      assetsBase: "/assets",
+      assetsBase: "./assets",
       autoFillLights: true,
       autoFillCamera: true,
       sceneAutoRotate: sysConfig.sceneAutoRotate,

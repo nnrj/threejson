@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "baseUrl": "/assets/json/other/demo-json/",
+  "baseUrl": "./assets/json/other/demo-json/",
   "entries": [
     {
       "id": "preset-blank-orbit",

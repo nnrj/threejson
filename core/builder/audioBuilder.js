@@ -8,6 +8,7 @@ import { loadingManager } from "../cache/loading.js";
 import { registerObject } from "../handler/objectRegistry.js";
 import { setUserDataObjJson } from "../handler/objectDescriptorAttach.js";
 import { hasValue } from "../util/util.js";
+import { resolvePublicAssetUrl } from "../util/assetsBase.js";
 
 const LISTENER_USERDATA_KEY = "threeJsonAudioListener";
 const SCENE_AUDIO_TAG_KEY = "threeJsonSceneAudio";
@@ -394,12 +395,12 @@ function normalizeAudioMode(value) {
   return "positional";
 }
 
-function resolveAudioUrl(record) {
+export function resolveAudioUrl(record) {
   if (typeof record?.audioUrl === "string" && record.audioUrl.trim()) {
-    return record.audioUrl.trim();
+    return resolvePublicAssetUrl(record.audioUrl.trim());
   }
   if (typeof record?.url === "string" && record.url.trim()) {
-    return record.url.trim();
+    return resolvePublicAssetUrl(record.url.trim());
   }
   return "";
 }

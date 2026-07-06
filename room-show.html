@@ -62,7 +62,7 @@
       height: 100%;
       padding: 0;
       margin: 0;
-      background: #2f2f2f url("/assets/textures/environment/skybox/galaxy.jpg") center center / cover no-repeat;
+      background: #2f2f2f url("./assets/textures/environment/skybox/galaxy.jpg") center center / cover no-repeat;
       outline: none;
     }
 
@@ -467,7 +467,7 @@
   const loadingMask = document.getElementById("loadingMask");
   const messageBox = document.getElementById("messageBox");
   const gameToastStack = document.getElementById("gameToastStack");
-  const sceneJsonUrl = "/assets/json/roomShow.json";
+  const sceneJsonUrl = "./assets/json/roomShow.json";
 
   let scene;
   let camera;
@@ -869,7 +869,7 @@
     setLoadingMessage("正在创建 3D 场景...");
     sceneRuntime = await createJsonScene(sysConfig.jsonData, {
       canvas: canvasContainer,
-      assetsBase: "/assets",
+      assetsBase: "./assets",
       context: {
         jsonData: sysConfig.jsonData,
         sceneJsonRoot: sysConfig.jsonData

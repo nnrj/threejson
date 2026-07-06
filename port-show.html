@@ -393,7 +393,7 @@
   const loadingMask = document.getElementById("loadingMask");
   const messageBox = document.getElementById("messageBox");
   const gameToastStack = document.getElementById("gameToastStack");
-  const sceneJsonUrl = "/assets/json/portShow.json";
+  const sceneJsonUrl = "./assets/json/portShow.json";
 
   let scene;
   let camera;
@@ -697,7 +697,7 @@
   async function initSceneRuntime() {
     sceneRuntime = await createJsonScene(buildAutoScenePayload(), {
       canvas: canvasContainer,
-      assetsBase: "/assets"
+      assetsBase: "./assets"
     });
     scene = sceneRuntime.scene;
     camera = sceneRuntime.camera;

@@ -4592,7 +4592,7 @@ Powered by ThreeJSON and Three.js</div>
   const EDITOR_SETTINGS_STORAGE_KEY = "sceneEditor_settings_v1";
   const OBJECT_IMPORT_SESSION_FILL_LIGHTS = "sceneEditor_objectImportFillLights";
   const OBJECT_IMPORT_SESSION_FILL_CAMERA = "sceneEditor_objectImportFillCamera";
-  const EDITOR_SETTINGS_JSON_URL = "/assets/json/other/scene-editor/setting.json";
+  const EDITOR_SETTINGS_JSON_URL = "./assets/json/other/scene-editor/setting.json";
   const LOADING_MASK_ACTIVITY_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
   const EDITOR_SETTINGS_DEFAULTS = {
@@ -4600,9 +4600,9 @@ Powered by ThreeJSON and Three.js</div>
     app: "scene-editor",
     general: {
       baseTitle: "场景编辑器",
-      defaultSceneUrl: "/assets/json/portShow.json",
+      defaultSceneUrl: "./assets/json/portShow.json",
       openLastSceneOnStartup: false,
-      exitNavigateUrl: "/demo.html",
+      exitNavigateUrl: "./demo.html",
       loadingMaskText: "3D 场景加载中...",
       loadingActivityIntervalMs: 120,
       messageToastDurationMs: 2600,
@@ -5463,17 +5463,34 @@ Powered by ThreeJSON and Three.js</div>
     cur[parts[parts.length - 1]] = value;
   }
 
+  function resolveEditorPageUrl(url) {
+    const value = String(url || "").trim();
+    if (value.startsWith("/assets/") || value === "/demo.html") {
+      return "." + value;
+    }
+    return value;
+  }
+
+  function normalizeEditorSettingsUrls(settings) {
+    if (settings?.general?.defaultSceneUrl) {
+      settings.general.defaultSceneUrl = resolveEditorPageUrl(settings.general.defaultSceneUrl);
+    }
+    if (settings?.general?.exitNavigateUrl) {
+      settings.general.exitNavigateUrl = resolveEditorPageUrl(settings.general.exitNavigateUrl);
+    }
+    return settings;
+  }
   async function fetchEditorSettingsFileDefaults() {
     try {
       const response = await fetch(EDITOR_SETTINGS_JSON_URL, { cache: "no-cache" });
       if (!response.ok) {
-        return cloneEditorSettings(EDITOR_SETTINGS_DEFAULTS);
+        return normalizeEditorSettingsUrls(cloneEditorSettings(EDITOR_SETTINGS_DEFAULTS));
       }
       const json = await response.json();
-      return deepMergeEditorSettings(EDITOR_SETTINGS_DEFAULTS, json);
+      return normalizeEditorSettingsUrls(deepMergeEditorSettings(EDITOR_SETTINGS_DEFAULTS, json));
     } catch (error) {
       console.warn("[settings] fetch defaults failed:", error);
-      return cloneEditorSettings(EDITOR_SETTINGS_DEFAULTS);
+      return normalizeEditorSettingsUrls(cloneEditorSettings(EDITOR_SETTINGS_DEFAULTS));
     }
   }
 
@@ -5509,7 +5526,7 @@ Powered by ThreeJSON and Three.js</div>
   async function loadEditorSettings() {
     editorSettingsFileDefaults = await fetchEditorSettingsFileDefaults();
     const cached = readEditorSettingsCache();
-    editorSettings = deepMergeEditorSettings(editorSettingsFileDefaults, cached || {});
+    editorSettings = normalizeEditorSettingsUrls(deepMergeEditorSettings(editorSettingsFileDefaults, cached || {}));
     return editorSettings;
   }
 
@@ -5584,7 +5601,7 @@ Powered by ThreeJSON and Three.js</div>
   }
 
   function getDefaultSceneJsonUrl() {
-    return editorSettings?.general?.defaultSceneUrl || EDITOR_SETTINGS_DEFAULTS.general.defaultSceneUrl;
+    return resolveEditorPageUrl(editorSettings?.general?.defaultSceneUrl || EDITOR_SETTINGS_DEFAULTS.general.defaultSceneUrl);
   }
 
   function getLoadingMaskDefaultText() {
@@ -6344,7 +6361,7 @@ Powered by ThreeJSON and Three.js</div>
   const EDITOR_RECENT_SCENES_KEY = "recent-scenes";
   const EDITOR_SCENE_SNAPSHOT_KEY = "scene-snapshots";
   const EDITOR_SCENE_PRESETS_KEY = "scene-presets";
-  const PRESET_SCENE_BASE_URL = "/assets/json/other/demo-json/";
+  const PRESET_SCENE_BASE_URL = "./assets/json/other/demo-json/";
   const PRESET_MANIFEST_URL = `${PRESET_SCENE_BASE_URL}presets.manifest.json`;
   const PRESET_SCENES_FALLBACK = [
     { id: "preset-blank-orbit", file: "preset-blank-orbit.json", label: "普通场景", order: 1 },
@@ -8371,7 +8388,7 @@ Powered by ThreeJSON and Three.js</div>
     };
     const opts = {
       canvas: canvasContainer,
-      assetsBase: "/assets",
+      assetsBase: "./assets",
       cameraFallbackPosition: editorSettings?.render?.cameraFallbackPosition,
       defaultFov: editorSettings?.render?.defaultFov,
       orbitDampingFactor: editorSettings?.render?.orbitDampingFactor,
@@ -15130,17 +15147,18 @@ Powered by ThreeJSON and Three.js</div>
       // 点击“打开示例场景”等入口后，开始请求即收起空态。
       toggleStartupEmptyState(false);
       setLoadingMessage("正在读取场景配置...");
-      const response = await fetch(url);
+      const resolvedUrl = resolveEditorPageUrl(url);
+      const response = await fetch(resolvedUrl);
       if (!response.ok) {
         throw new Error(`加载场景失败：${response.status}`);
       }
       const sceneJson = await response.json();
-      recordEditorScenePayloadViewFormat(sceneJson, hintLabel || url);
+      recordEditorScenePayloadViewFormat(sceneJson, hintLabel || resolvedUrl);
       ensureThreeJsonIdsOnScenePayload(sceneJson);
       sysConfig.jsonData = sceneJson;
       invalidateRightSidebarSceneJsonTextCache();
       await subInit();
-      updateEditorTopBarSceneTitle(hintLabel || url);
+      updateEditorTopBarSceneTitle(hintLabel || resolvedUrl);
       const bootSnap =
         (await captureEditorHistorySnapshotPayloadAsync()) ||
         captureEditorHistorySnapshotPayloadSync();
@@ -15874,7 +15892,7 @@ Powered by ThreeJSON and Three.js</div>
 
   async function exitEditorNavigateAway() {
     wasteCleaner();
-    window.location.href = editorSettings?.general?.exitNavigateUrl || EDITOR_SETTINGS_DEFAULTS.general.exitNavigateUrl;
+    window.location.href = resolveEditorPageUrl(editorSettings?.general?.exitNavigateUrl || EDITOR_SETTINGS_DEFAULTS.general.exitNavigateUrl);
   }
 
   async function onMenuExitEditor() {

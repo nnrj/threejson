@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "app": "scene-player",
+  "general": {
+    "baseTitle": "场景播放器",
+    "defaultSceneUrl": "./assets/json/portShow.json",
+    "loadingMaskText": "3D 场景加载中...",
+    "messageToastDurationMs": 2600,
+    "progressOverlayEnabled": true,
+    "sceneLoadDoneDelayMs": 300
+  },
+  "layout": {
+    "rightPanelOpenByDefault": true,
+    "playlistListMinHeightPx": 120
+  },
+  "audio": {
+    "defaultVolumePercent": 100,
+    "defaultMuted": false,
+    "rememberVolume": true
+  },
+  "playback": {
+    "restorePlaylistOnStartup": true,
+    "preferUrlQueryScene": true,
+    "sceneAutoRotate": false
+  },
+  "render": {
+    "antialias": true,
+    "targetFps": 60,
+    "lowFpsMode": false,
+    "overrideSceneRenderLoop": false,
+    "earlyRenderWhileLoading": true
+  },
+  "immersive": {
+    "chromeHideDelayMs": 420,
+    "rightEdgeStripWidthPx": 22
+  },
+  "highlight": {
+    "channels": {
+      "info": "#ffffff",
+      "locate": "#E6A800",
+      "alarm": "#DC3A2F"
+    }
+  },
+  "threeJsonId": "setting"
+}
