@@ -1,5 +1,33 @@
 [
   {
+    "id": "t00-01-simple",
+    "track": "00",
+    "order": "00",
+    "path": "./examples/html-demo/track-00-runtime/00-00-simple-mesh.html",
+    "jsonFiles": [],
+    "prerequisites": [],
+    "status": "stable",
+    "group": "Track 0 · Runtime and JSON contracts",
+    "title": "Minimal scene (sync)",
+    "summary": "Inline JSON with no external file fetch; create one cube and one floor synchronously with createJsonSceneSimple. createJsonSceneSimple() is a simplified version of createJsonScene that only guarantees synchronous loading; async textures may fail. See 00-01-minimal-mesh.html for the complete loading flow.",
+    "navSummary": "Inline JSON + sync creation.",
+    "highlights": [
+      "createJsonSceneSimple() is a simplified createJsonScene path and returns the runtime directly, with no async/await.",
+      "sceneData lives inside the page, so beginners do not need fetch.",
+      "It only guarantees synchronous loading; async textures may fail, so use 00-01-minimal-mesh.html for the complete flow."
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/en/quick-start.md",
+        "label": "Quick start"
+      },
+      {
+        "href": "./doc/en/json-format.md#box",
+        "label": "JSON: box"
+      }
+    ]
+  },
+  {
     "id": "t00-01",
     "track": "00",
     "order": "01",
@@ -12,9 +40,9 @@
     "prerequisites": [],
     "status": "stable",
     "group": "Track 0 · Runtime and JSON contracts",
-    "title": "Minimal scene",
-    "summary": "Start with a single box and declarative rotate; walk through the minimal friendly JSON pipeline with createJsonScene.",
-    "navSummary": "Single box + declarative rotation.",
+    "title": "Minimal scene (async)",
+    "summary": "Start with a single box and declarative rotate; walk through the minimal friendly JSON pipeline with createJsonScene and the complete async loading flow.",
+    "navSummary": "Async load + single box rotation.",
     "highlights": [
       "createJsonScene() loads sceneConfig + worldInfo in one call.",
       "boxModelList single record + animations.rotate.",

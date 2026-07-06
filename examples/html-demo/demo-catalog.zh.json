@@ -1,5 +1,33 @@
 [
   {
+    "id": "t00-01-simple",
+    "track": "00",
+    "order": "00",
+    "path": "./examples/html-demo/track-00-runtime/00-00-simple-mesh.html",
+    "jsonFiles": [],
+    "prerequisites": [],
+    "status": "stable",
+    "group": "Track 0 · 运行时与 JSON 契约",
+    "title": "最小场景（同步）",
+    "summary": "内置 JSON，不读取外部文件；用 createJsonSceneSimple 同步创建一个立方体和一个地板。createJsonSceneSimple() 是 createJsonScene 的简化版，只保证同步加载，异步纹理可能失败；更完整的加载用法见 00-01-minimal-mesh.html。",
+    "navSummary": "内置 JSON + 同步创建。",
+    "highlights": [
+      "createJsonSceneSimple() 是 createJsonScene 的简化版，直接返回 runtime，不需要 async/await。",
+      "sceneData 写在页面内，入门时不用 fetch 外部 JSON。",
+      "只保证同步加载；异步纹理可能失败，完整加载流程见 00-01-minimal-mesh.html。"
+    ],
+    "docLinks": [
+      {
+        "href": "./doc/quick-start.md",
+        "label": "快速开始"
+      },
+      {
+        "href": "./doc/json-format.md#盒子-box",
+        "label": "JSON：盒子 box"
+      }
+    ]
+  },
+  {
     "id": "t00-01",
     "track": "00",
     "order": "01",
@@ -12,9 +40,9 @@
     "prerequisites": [],
     "status": "stable",
     "group": "Track 0 · 运行时与 JSON 契约",
-    "title": "最小场景",
-    "summary": "从单盒子与声明式 rotate 入手，用 createJsonScene 走通最小友好 JSON 管线。",
-    "navSummary": "单 box + 声明式旋转。",
+    "title": "最小场景（异步）",
+    "summary": "从单盒子与声明式 rotate 入手，用 createJsonScene 走通最小友好 JSON 管线，演示完整异步加载流程。",
+    "navSummary": "异步加载 + 单 box 旋转。",
     "highlights": [
       "createJsonScene() 统一加载 sceneConfig + worldInfo。",
       "boxModelList 单条记录 + animations.rotate。",
