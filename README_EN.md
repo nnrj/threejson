@@ -9,9 +9,27 @@ JSON-driven [Three.js](https://threejs.org/) scene runtime: build 3D scenes from
 
 **Repository**: [github.com/nnrj/threejson](https://github.com/nnrj/threejson) · **Issues**: [GitHub Issues](https://github.com/nnrj/threejson/issues)
 
-Exact description:
+**npm**：[threejson - npm](https://www.npmjs.com/package/threejson) 、[@threejson/assets - npm](https://www.npmjs.com/package/@threejson/assets?activeTab=versions) 
+
+Demos & Tutorials (GitHub Pages): [Minimal scene (async) - ThreeJSON Demo Index](https://nnrj.github.io/threejson/demo.html#demo=t00-01)
+
+**Exact description:**
 
 ThreeJSON is a JSON-driven declarative scene runtime for Three.js, designed for persistent, mutable and extensible 3D worlds — from human-authored scenes to AI and Agent-driven generation and control.
+
+## Use in your project
+
+```bash
+npm install threejson
+```
+
+In addition, certain built-in models rely on the assets package (which contains textures, sample scene JSONs, etc.). By default, no manual setup is required as ThreeJSON will automatically fetch them via CDN. 
+
+If you prefer to host or use them locally, you can install the assets package separately: 
+
+```bash
+npm install @threejson/assets
+```
 
 ## Development environment
 
@@ -32,7 +50,13 @@ See **[`doc/development.md`](doc/development.md)** (Chinese; English: [`doc/en/d
 npm install threejson
 ```
 
-## English Version
+In addition, certain built-in models rely on the assets package (which contains textures, sample scene JSONs, etc.). By default, no manual setup is required as ThreeJSON will automatically fetch them via CDN. 
+
+If you prefer to host or use them locally, you can install the assets package separately: 
+
+```bash
+npm install @threejson/assets
+```
 
 ### The philosophy of ThreeJSON, distilled into four lines:
 

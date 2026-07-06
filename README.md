@@ -9,9 +9,27 @@
 
 **仓库**：[github.com/nnrj/threejson](https://github.com/nnrj/threejson) · **问题反馈**：[Issues](https://github.com/nnrj/threejson/issues)
 
-精确描述：
+**npm**：[threejson - npm](https://www.npmjs.com/package/threejson) 、[@threejson/assets - npm](https://www.npmjs.com/package/@threejson/assets?activeTab=versions) 
+
+**Demo 及教程**（GitHub Pages）：[最小场景（异步） - ThreeJSON Demo 索引](https://nnrj.github.io/threejson/demo.html#demo=t00-01)
+
+**精确描述：**
 
 ThreeJSON 是一个 JSON 驱动的 Three.js 声明式场景运行时。它将 3D 场景表示为可持久化、可修改、可扩展的数据，通过统一运行时完成场景装配、对象管理、动画、事件和动态变更，并为业务域、第三方扩展、编辑器以及 AI / Agent 场景生成与操作提供稳定接口。
+
+## 在你的项目中使用
+
+```bash
+npm install threejson
+```
+
+此外，某些内置模型依赖 assets 资源包（包含纹理、示例场景JSON等），默认情况下，您无需处理，ThreeJSON 会自动访问 CDN 获取。
+
+如您想要在本地引入，可单独安装 assets 资源包：
+
+```bas
+npm install @threejson/assets
+```
 
 ## 开发环境
 
@@ -30,6 +48,14 @@ npm ci && npm test
 
 ```bash
 npm install threejson
+```
+
+此外，某些内置模型依赖 assets 资源包（包含纹理、示例场景JSON等），默认情况下，您无需处理，ThreeJSON 会自动访问 CDN 获取。
+
+如您想要在本地引入，可单独安装 assets 资源包：
+
+```bas
+npm install @threejson/assets
 ```
 
 ### ThreeJSON 的哲学，浓缩成四句话：
