@@ -9,6 +9,7 @@ import {
   assetUrlCandidates,
   getAssetsBaseMode,
   getAssetsBaseUrl,
+  normalizeAssetsBaseMode,
   resolveAssetsBaseFromLoad,
   resolveAssetsBaseModeFromLoad,
   resolvePublicAssetUrl,
@@ -18,9 +19,11 @@ import {
 } from "../core/util/assetsBase.js";
 import { loadTextureFromMaterialJson } from "../core/util/loadTextureFromMaterialJson.js";
 
-test("default assets base is local-first with jsDelivr fallback", () => {
+test("default assets base is base-first with jsDelivr fallback", () => {
   assert.equal(getAssetsBaseUrl(), LOCAL_ASSETS_BASE);
-  assert.equal(getAssetsBaseMode(), "local-first");
+  assert.equal(getAssetsBaseMode(), "base-first");
+  assert.equal(normalizeAssetsBaseMode(""), "base-first");
+  assert.equal(normalizeAssetsBaseMode("unknown"), "base-first");
   assert.ok(DEFAULT_CDN_ASSETS_BASE.includes(`@threejson/assets@${ASSETS_PACKAGE_VERSION}`));
   assert.deepEqual(assetUrlCandidates("textures/foo.png"), [
     "/assets/textures/foo.png",
@@ -28,11 +31,14 @@ test("default assets base is local-first with jsDelivr fallback", () => {
   ]);
 });
 
-test("setAssetsBaseUrl and assetUrl join segments as an explicit base", () => {
+test("setAssetsBaseUrl defaults to base-first CDN fallback", () => {
+  setAssetsBaseUrl("./assets");
+  assert.equal(assetUrl("textures/foo.png"), "./assets/textures/foo.png");
+  assert.deepEqual(assetUrlCandidates("textures/foo.png"), [
+    "./assets/textures/foo.png",
+    `${DEFAULT_CDN_ASSETS_BASE}/textures/foo.png`
+  ]);
   setAssetsBaseUrl(LOCAL_ASSETS_BASE);
-  assert.equal(assetUrl("textures/foo.png"), "/assets/textures/foo.png");
-  assert.deepEqual(assetUrlCandidates("textures/foo.png"), ["/assets/textures/foo.png"]);
-  setAssetsBaseMode("local-first");
 });
 
 test("resolvePublicAssetUrl rewrites /assets/ prefix to the first candidate", () => {
@@ -47,7 +53,7 @@ test("resolvePublicAssetUrl rewrites /assets/ prefix to the first candidate", ()
       DEFAULT_CDN_ASSETS_BASE
     )
   );
-  setAssetsBaseMode("local-first");
+  setAssetsBaseMode("base-first");
 });
 
 test("resolvePublicAssetUrlCandidates exposes local/CDN fallback order", () => {
@@ -61,7 +67,7 @@ test("resolvePublicAssetUrlCandidates exposes local/CDN fallback order", () => {
     `${DEFAULT_CDN_ASSETS_BASE}/textures/foo.png`,
     "/assets/textures/foo.png"
   ]);
-  setAssetsBaseMode("local-first");
+  setAssetsBaseMode("base-first");
 });
 
 test("resolvePublicAssetUrl leaves absolute https URLs unchanged", () => {
@@ -114,4 +120,5 @@ test("loadTextureFromMaterialJson falls back from local assets to CDN", async ()
   ]);
   assert.equal(texture.image, "cdn-image");
   assert.equal(texture.userData.threeJsonResolvedUrl, `${DEFAULT_CDN_ASSETS_BASE}/textures/fallback-test.png`);
+  setAssetsBaseMode("base-first");
 });

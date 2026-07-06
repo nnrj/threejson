@@ -1,5 +1,5 @@
 /**
- * Public asset URL base: local-first by default; npm/CDN fallback covers installs without `/assets`.
+ * Public asset URL base: base-first by default; npm/CDN fallback covers installs without local assets.
  */
 
 /** Pin to published @threejson/assets version used in default CDN URLs. */
@@ -18,7 +18,7 @@ export const ASSETS_BASE_MODE_BASE_ONLY = "base-only";
 export const ASSETS_BASE_MODE_BASE_FIRST = "base-first";
 
 let runtimeBase = LOCAL_ASSETS_BASE;
-let runtimeMode = ASSETS_BASE_MODE_LOCAL_FIRST;
+let runtimeMode = ASSETS_BASE_MODE_BASE_FIRST;
 
 /**
  * @param {string} url
@@ -52,7 +52,7 @@ export function normalizeAssetsBaseMode(mode) {
   if (value === ASSETS_BASE_MODE_BASE_FIRST || value === "fallback-cdn") {
     return ASSETS_BASE_MODE_BASE_FIRST;
   }
-  return ASSETS_BASE_MODE_LOCAL_FIRST;
+  return ASSETS_BASE_MODE_BASE_FIRST;
 }
 
 /**
@@ -64,7 +64,7 @@ export function setAssetsBaseUrl(url) {
     throw new Error("setAssetsBaseUrl: expected non-empty base URL");
   }
   runtimeBase = normalized;
-  runtimeMode = ASSETS_BASE_MODE_BASE_ONLY;
+  runtimeMode = ASSETS_BASE_MODE_BASE_FIRST;
 }
 
 export function setAssetsBaseMode(mode) {
@@ -218,7 +218,7 @@ export function applyAssetsBaseForLoad(payload = {}, options = {}) {
   const previousMode = getAssetsBaseMode();
   if (override) {
     runtimeBase = override;
-    runtimeMode = modeOverride || ASSETS_BASE_MODE_BASE_ONLY;
+    runtimeMode = modeOverride || ASSETS_BASE_MODE_BASE_FIRST;
   } else {
     runtimeMode = modeOverride;
   }
