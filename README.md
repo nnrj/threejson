@@ -13,6 +13,8 @@
 
 **Demo 及教程**（GitHub Pages）：[最小场景（异步） - ThreeJSON Demo 索引](https://nnrj.github.io/threejson/demo.html#demo=t00-01)
 
+> Demo 中某些复杂页面（如编辑器、播放器）可能无法在 GitHub Pages 中正确运行，可将本项目 clone 到本地后，使用 VSCode + Live Server 运行以便体验。
+
 **精确描述：**
 
 ThreeJSON 是一个 JSON 驱动的 Three.js 声明式场景运行时。它将 3D 场景表示为可持久化、可修改、可扩展的数据，通过统一运行时完成场景装配、对象管理、动画、事件和动态变更，并为业务域、第三方扩展、编辑器以及 AI / Agent 场景生成与操作提供稳定接口。

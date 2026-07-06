@@ -13,6 +13,8 @@ JSON-driven [Three.js](https://threejs.org/) scene runtime: build 3D scenes from
 
 Demos & Tutorials (GitHub Pages): [Minimal scene (async) - ThreeJSON Demo Index](https://nnrj.github.io/threejson/demo.html#demo=t00-01)
 
+> Some complex pages in the demos (such as the editor or player) may not function properly on GitHub Pages. To experience them fully, you can clone this repository locally and run it using VSCode + Live Server.
+
 **Exact description:**
 
 ThreeJSON is a JSON-driven declarative scene runtime for Three.js, designed for persistent, mutable and extensible 3D worlds — from human-authored scenes to AI and Agent-driven generation and control.
