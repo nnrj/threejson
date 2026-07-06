@@ -65,6 +65,7 @@ __pycache__/
 .env.*
 !.env.example
 *.local
+package-lock.json
 setting.json
 !assets/json/other/scene-editer/setting.json
 !assets/json/other/scene-editor/setting.json
@@ -74,6 +75,7 @@ setting.json
 
 
 # Temporary files
+/target/
 /tmp/
 /temp/
 tools/threejson-agent/shell/py/tmp

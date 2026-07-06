@@ -69,7 +69,8 @@
     "verify": "npm test && npm run verify:ai-static",
     "threejson-agent:gui": "python tools/threejson-agent/shell/py/gui/app.py",
     "mcp-threejson:install": "npm install --prefix tools/mcp-threejson",
-    "desktop-agent:install": "npm install --prefix tools/threejson-agent-desktop"
+    "desktop-agent:install": "npm install --prefix tools/threejson-agent-desktop",
+    "build:pack": "npm pack --pack-destination=dist"
   },
   "engines": {
     "node": ">=24.0.0"
