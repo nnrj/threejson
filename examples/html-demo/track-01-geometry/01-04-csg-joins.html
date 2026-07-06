@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ThreeJSON Tutorial · Track 1 · CSG 布尔</title>
-  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <link rel="icon" href="../../../assets/img/threejson.ico" type="image/x-icon">
   <script type="importmap">
     {
       "imports": {
-        "threejson": "/builtins/full.js",
-        "threejson/core": "/core/index.js",
+        "threejson": "../../../builtins/full.js",
+        "threejson/core": "../../../core/index.js",
         "three": "https://esm.sh/three@0.184.0",
         "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
         "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
@@ -38,12 +38,12 @@
 <div id="rootContainer">
   <canvas id="canvasContainer">需要 WebGL</canvas>
   <div id="loadingMask">加载中…</div>
-  <div id="hint">【Track 1 · CSG 布尔】数据：<code>/assets/json/tutorial/track-01/01-04-csg-joins.json</code>。joins / holes 示例</div>
+  <div id="hint">【Track 1 · CSG 布尔】数据：<code>../../../assets/json/tutorial/track-01/01-04-csg-joins.json</code>。joins / holes 示例</div>
 </div>
 <script type="module">
   import { createJsonScene } from "threejson";
 
-  const sceneJsonUrl = "/assets/json/tutorial/track-01/01-04-csg-joins.json";
+  const sceneJsonUrl = "../../../assets/json/tutorial/track-01/01-04-csg-joins.json";
   const canvas = document.getElementById("canvasContainer");
   const loadingMask = document.getElementById("loadingMask");
   let sceneRuntime;
@@ -60,7 +60,7 @@
       sceneData.canvasHeight = window.innerHeight;
       sceneRuntime = await createJsonScene(sceneData, {
     canvas,
-    assetsBase: "/assets",
+    assetsBase: "../../../assets",
     resetScene: true
   });
       window.addEventListener("resize", () => sceneRuntime?.resize?.(window.innerWidth, window.innerHeight));

@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ThreeJSON Tutorial · Track 3 · 原生 Three JSON 域</title>
-  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <link rel="icon" href="../../../assets/img/threejson.ico" type="image/x-icon">
   <script type="importmap">
     
     {
       "imports": {
-        "threejson": "/builtins/full.js",
-        "threejson/core": "/core/index.js",
+        "threejson": "../../../builtins/full.js",
+        "threejson/core": "../../../core/index.js",
         "three": "https://esm.sh/three@0.184.0",
         "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
         "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
@@ -105,7 +105,7 @@
   <div id="loadingMask">Track 3 · 原生 Three JSON 域加载中…</div>
   <div id="messageBox"></div>
   <div id="hint">
-    【原生JSON加载示例】数据文件：<code>/assets/json/tutorial/track-03/03-03-native-three-domain.json</code>（内含 <code>worldInfo.domainModelList</code> 的 <code>nativeThree</code>，经 ObjectLoader 加载独立子图 <code>/assets/json/three_native.json</code>）；另有一条 <code>domain: &quot;box&quot;</code> 作对照。请用项目根目录静态服务打开本页。
+    【原生JSON加载示例】数据文件：<code>../../../assets/json/tutorial/track-03/03-03-native-three-domain.json</code>（内含 <code>worldInfo.domainModelList</code> 的 <code>nativeThree</code>，经 ObjectLoader 加载独立子图 <code>../../../assets/json/three_native.json</code>）；另有一条 <code>domain: &quot;box&quot;</code> 作对照。请用项目根目录静态服务打开本页。
   </div>
 </div>
 
@@ -119,7 +119,7 @@
   const canvasContainer = document.getElementById("canvasContainer");
   const loadingMask = document.getElementById("loadingMask");
   const messageBox = document.getElementById("messageBox");
-  const sceneJsonUrl = "/assets/json/tutorial/track-03/03-03-native-three-domain.json";
+  const sceneJsonUrl = "../../../assets/json/tutorial/track-03/03-03-native-three-domain.json";
 
   let sceneRuntime;
   let sceneConfig = {};

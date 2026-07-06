@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ThreeJSON Tutorial · Track 3 · glTF 含剪辑 + AnimationMixer</title>
-  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <link rel="icon" href="../../../assets/img/threejson.ico" type="image/x-icon">
   <script type="importmap">
     
     {
       "imports": {
-        "threejson": "/builtins/full.js",
-        "threejson/core": "/core/index.js",
+        "threejson": "../../../builtins/full.js",
+        "threejson/core": "../../../core/index.js",
         "three": "https://esm.sh/three@0.184.0",
         "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
         "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
@@ -41,7 +41,7 @@
   <canvas id="canvasContainer">需要 WebGL</canvas>
   <div id="loadingMask">Track 3 · glTF 动画剪辑加载中…</div>
   <div id="hint">
-    资源：<code>/assets/json/tutorial/track-03/03-02-gltf-animation-mixer.json</code>；glTF 含线性 <strong>translation</strong> 剪辑（约 1s 周期上下位移），加载后由 core 注册 <code>AnimationMixer</code>。
+    资源：<code>../../../assets/json/tutorial/track-03/03-02-gltf-animation-mixer.json</code>；glTF 含线性 <strong>translation</strong> 剪辑（约 1s 周期上下位移），加载后由 core 注册 <code>AnimationMixer</code>。
     可在 JSON 上改 <code>animationMode</code> 为 <code>mixer</code> / <code>basic</code> 观察与声明式 <code>animations</code> 的协调（本示例未配声明式 rotate）。
   </div>
 </div>
@@ -50,7 +50,7 @@
 
   const canvasContainer = document.getElementById("canvasContainer");
   const loadingMask = document.getElementById("loadingMask");
-  const sceneJsonUrl = "/assets/json/tutorial/track-03/03-02-gltf-animation-mixer.json";
+  const sceneJsonUrl = "../../../assets/json/tutorial/track-03/03-02-gltf-animation-mixer.json";
 
   window.addEventListener("DOMContentLoaded", () => void initDemo());
   window.addEventListener("beforeunload", () => sceneRuntime?.dispose?.());
@@ -66,7 +66,7 @@
       sceneData.canvasHeight = window.innerHeight;
       sceneRuntime = await createJsonScene(sceneData, {
         canvas: canvasContainer,
-        assetsBase: "/assets"
+        assetsBase: "../../../assets"
       });
       window.addEventListener("resize", () =>
         sceneRuntime?.resize?.(window.innerWidth, window.innerHeight)

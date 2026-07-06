@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ThreeJSON Tutorial · Track 2 · 空间音频</title>
-  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <link rel="icon" href="../../../assets/img/threejson.ico" type="image/x-icon">
   <script type="importmap">
     {
       "imports": {
-        "threejson": "/builtins/full.js",
-        "threejson/core": "/core/index.js",
+        "threejson": "../../../builtins/full.js",
+        "threejson/core": "../../../core/index.js",
         "three": "https://esm.sh/three@0.184.0",
         "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
         "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
@@ -158,7 +158,7 @@
     getThreeJsonSceneAudioRoots
   } from "threejson";
 
-  const sceneJsonUrl = "/assets/json/tutorial/track-02/02-06-audio-spatial.json";
+  const sceneJsonUrl = "../../../assets/json/tutorial/track-02/02-06-audio-spatial.json";
   const SPEAKER_POSITION = new THREE.Vector3(50, 25, 0);
   const CAMERA_MOVE_STEP = 24;
   const MIN_SPEAKER_DISTANCE = 12;
@@ -399,7 +399,7 @@
       sceneData.canvasHeight = window.innerHeight;
       sceneRuntime = await createJsonScene(sceneData, {
     canvas,
-    assetsBase: "/assets",
+    assetsBase: "../../../assets",
     resetScene: true
   });
       initialCameraView = captureCameraView(sceneRuntime.camera, sceneRuntime.controls);

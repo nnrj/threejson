@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ThreeJSON Tutorial · Track 1 · Native 通用对象</title>
-  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <link rel="icon" href="../../../assets/img/threejson.ico" type="image/x-icon">
   <script type="importmap">
     {
       "imports": {
-        "threejson": "/builtins/full.js",
-        "threejson/core": "/core/index.js",
+        "threejson": "../../../builtins/full.js",
+        "threejson/core": "../../../core/index.js",
         "three": "https://esm.sh/three@0.184.0",
         "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
         "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
@@ -40,7 +40,7 @@
   <canvas id="canvasContainer">需要 WebGL</canvas>
   <div id="loadingMask">加载中…</div>
   <div id="hint">
-    【Track 1 · Native 通用对象】<code>/assets/json/tutorial/track-01/01-06-native-objects.json</code>（标准 objectList）。<br>
+    【Track 1 · Native 通用对象】<code>../../../assets/json/tutorial/track-01/01-06-native-objects.json</code>（标准 objectList）。<br>
     未知 objType（<code>torusKnot</code> / <code>latheVase</code> / <code>dodecahedronGem</code> / <code>tetrahedronObelisk</code>）在 <code>parseMode:auto</code> 下走 ObjectLoader；
     <code>objType:native</code> 层级 Group；<code>parseMode:native</code> 强制 native 盒子。
   </div>
@@ -48,7 +48,7 @@
 <script type="module">
   import { createJsonScene } from "threejson/core";
 
-  const sceneJsonUrl = "/assets/json/tutorial/track-01/01-06-native-objects.json";
+  const sceneJsonUrl = "../../../assets/json/tutorial/track-01/01-06-native-objects.json";
   const canvas = document.getElementById("canvasContainer");
   const loadingMask = document.getElementById("loadingMask");
   let sceneRuntime;
@@ -65,7 +65,7 @@
       sceneData.canvasHeight = window.innerHeight;
       sceneRuntime = await createJsonScene(sceneData, {
     canvas,
-    assetsBase: "/assets",
+    assetsBase: "../../../assets",
     resetScene: true
   });
       window.addEventListener("resize", () => sceneRuntime?.resize?.(window.innerWidth, window.innerHeight));

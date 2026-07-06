@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ThreeJSON Demo - CSS3D 可交互面板</title>
-  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <link rel="icon" href="../../../assets/img/threejson.ico" type="image/x-icon">
   <script type="importmap">
     {
       "imports": {
-        "threejson": "/builtins/full.js",
-        "threejson/core": "/core/index.js",
+        "threejson": "../../../builtins/full.js",
+        "threejson/core": "../../../core/index.js",
         "three": "https://esm.sh/three@0.184.0",
         "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
         "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
@@ -38,7 +38,7 @@
   <canvas id="canvasContainer">需要 WebGL</canvas>
   <div id="loadingMask">加载 CSS3D 场景…</div>
   <div id="hint">
-    数据：<code>/assets/json/tutorial/track-04/04-06-css3d-panel.json</code> · 左侧面板可点按/输入 · 右侧 iframe 需目标站允许嵌入 · 拖拽空白处 Orbit
+    数据：<code>../../../assets/json/tutorial/track-04/04-06-css3d-panel.json</code> · 左侧面板可点按/输入 · 右侧 iframe 需目标站允许嵌入 · 拖拽空白处 Orbit
   </div>
 </div>
 <script type="module">
@@ -46,7 +46,7 @@
 
   const canvas = document.getElementById("canvasContainer");
   const loadingMask = document.getElementById("loadingMask");
-  const sceneJsonUrl = "/assets/json/tutorial/track-04/04-06-css3d-panel.json";
+  const sceneJsonUrl = "../../../assets/json/tutorial/track-04/04-06-css3d-panel.json";
 
   let sceneRuntime;
 
@@ -59,7 +59,7 @@
     sceneData.canvasWidth = window.innerWidth;
     sceneData.canvasHeight = window.innerHeight;
 
-    sceneRuntime = await createJsonScene(sceneData, { canvas, assetsBase: "/assets" });
+    sceneRuntime = await createJsonScene(sceneData, { canvas, assetsBase: "../../../assets" });
     sceneRuntime.start();
     loadingMask.style.display = "none";
     window.addEventListener("resize", () => {

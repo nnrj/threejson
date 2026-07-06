@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ThreeJSON Tutorial · Track 0 · 资源回收（默认自动 + 可选手动）</title>
-  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <link rel="icon" href="../../../assets/img/threejson.ico" type="image/x-icon">
   <script type="importmap">
     {
       "imports": {
-        "threejson": "/builtins/full.js",
-        "threejson/core": "/core/index.js",
+        "threejson": "../../../builtins/full.js",
+        "threejson/core": "../../../core/index.js",
         "three": "https://esm.sh/three@0.184.0",
         "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
         "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
@@ -108,7 +108,7 @@
     try {
       sceneJson.canvasWidth = window.innerWidth;
       sceneJson.canvasHeight = window.innerHeight;
-      runtime = await createJsonScene(sceneJson, { canvas, resetScene: true, assetsBase: "/assets" });
+      runtime = await createJsonScene(sceneJson, { canvas, resetScene: true, assetsBase: "../../../assets" });
       runtime.start();
       status.textContent = "场景已运行（即使不手动调用回收 API 也可正常运行）";
       window.addEventListener("resize", () => runtime?.resize?.(window.innerWidth, window.innerHeight));

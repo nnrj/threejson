@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ThreeJSON Tutorial · Track 4 · 事件机制</title>
-  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <link rel="icon" href="../../../assets/img/threejson.ico" type="image/x-icon">
   <script type="importmap">
     {
       "imports": {
-        "threejson": "/builtins/full.js",
-        "threejson/core": "/core/index.js",
+        "threejson": "../../../builtins/full.js",
+        "threejson/core": "../../../core/index.js",
         "three": "https://esm.sh/three@0.184.0",
         "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
         "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
@@ -253,7 +253,7 @@
   <div id="loadingMask">ThreeJSON 事件机制示例加载中…</div>
   <div id="messageBox"></div>
   <div id="hint">
-    【Track 4 · 事件机制】数据：<code>/assets/json/tutorial/track-04/04-09-event-mechanism.json</code>
+    【Track 4 · 事件机制】数据：<code>../../../assets/json/tutorial/track-04/04-09-event-mechanism.json</code>
     · 单击蓝色立方体执行 <code>events.click.script</code>
     · 示例 1 默认简单脚本 · 示例 2 含 DSL/JS 进阶语法（Shift+单击变色）· 复位恢复初始位置
   </div>
@@ -300,7 +300,7 @@
     resolveEventScriptMode
   } from "threejson/core";
 
-  const sceneJsonUrl = "/assets/json/tutorial/track-04/04-09-event-mechanism.json";
+  const sceneJsonUrl = "../../../assets/json/tutorial/track-04/04-09-event-mechanism.json";
   const BOX_ID = "event-demo-box";
   const BOX_INITIAL_POSITION = Object.freeze({ x: 0, y: 3, z: 0 });
   const SIMPLE_DSL_SCRIPT = [
@@ -404,7 +404,7 @@
       sceneJsonRoot = await response.json();
       sceneJsonRoot.canvasWidth = window.innerWidth;
       sceneJsonRoot.canvasHeight = window.innerHeight;
-      sceneRuntime = await createJsonScene(sceneJsonRoot, { canvas, resetScene: true, assetsBase: "/assets" });
+      sceneRuntime = await createJsonScene(sceneJsonRoot, { canvas, resetScene: true, assetsBase: "../../../assets" });
       scene = sceneRuntime?.scene;
       camera = sceneRuntime?.camera;
       rebuildObjectRegistryFromScene(scene);

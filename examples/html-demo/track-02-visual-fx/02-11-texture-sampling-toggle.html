@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ThreeJSON Tutorial · Track 2 · textureQuality 纹理采样</title>
-  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <link rel="icon" href="../../../assets/img/threejson.ico" type="image/x-icon">
   <script type="importmap">
     {
       "imports": {
-        "threejson": "/builtins/full.js",
-        "threejson/core": "/core/index.js",
+        "threejson": "../../../builtins/full.js",
+        "threejson/core": "../../../core/index.js",
         "three": "https://esm.sh/three@0.184.0",
         "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
         "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
@@ -49,7 +49,7 @@
   <div id="loadingMask">加载中…</div>
   <div id="panel">
     <h2>textureQuality · 纹理采样档位</h2>
-    <div>JSON：<code>/assets/json/tutorial/track-02/02-11-texture-sampling-toggle.json</code></div>
+    <div>JSON：<code>../../../assets/json/tutorial/track-02/02-11-texture-sampling-toggle.json</code></div>
     <div class="row">
       <button type="button" data-target="panel-low" data-tier="0">左 · 关(0)</button>
       <button type="button" data-target="panel-low" data-tier="3">左 · 高(3)</button>
@@ -62,7 +62,7 @@
 <script type="module">
   import { createJsonScene, applyObjectChange } from "threejson/core";
 
-  const sceneJsonUrl = "/assets/json/tutorial/track-02/02-11-texture-sampling-toggle.json";
+  const sceneJsonUrl = "../../../assets/json/tutorial/track-02/02-11-texture-sampling-toggle.json";
   const canvas = document.getElementById("canvasContainer");
   const loadingMask = document.getElementById("loadingMask");
   let sceneRuntime;
@@ -79,7 +79,7 @@
       sceneData.canvasHeight = window.innerHeight;
       sceneRuntime = await createJsonScene(sceneData, {
     canvas,
-    assetsBase: "/assets",
+    assetsBase: "../../../assets",
     resetScene: true
   });
       window.addEventListener("resize", () => sceneRuntime?.resize?.(window.innerWidth, window.innerHeight));

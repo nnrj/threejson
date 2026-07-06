@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ThreeJSON Demo 12 - Points / 粒子点云（含 motion）</title>
-  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <link rel="icon" href="../../../assets/img/threejson.ico" type="image/x-icon">
   <script type="importmap">
     
     {
       "imports": {
-        "threejson": "/builtins/full.js",
-        "threejson/core": "/core/index.js",
+        "threejson": "../../../builtins/full.js",
+        "threejson/core": "../../../core/index.js",
         "three": "https://esm.sh/three@0.184.0",
         "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
         "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
@@ -411,7 +411,7 @@
   let rightDockPinned = true;
   let rightDockPeek = false;
 
-  const sceneJsonUrl = "/assets/json/tutorial/track-02/02-02-points-motion.json";
+  const sceneJsonUrl = "../../../assets/json/tutorial/track-02/02-02-points-motion.json";
 
   /** @type {object} */
   let scenePayload = {
@@ -643,7 +643,7 @@
       scenePayload = await response.json();
       scenePayload.canvasWidth = window.innerWidth;
       scenePayload.canvasHeight = window.innerHeight;
-      sceneRuntime = await createJsonScene(scenePayload, { canvas, assetsBase: "/assets" });
+      sceneRuntime = await createJsonScene(scenePayload, { canvas, assetsBase: "../../../assets" });
       resizeSceneRuntime();
       sceneRuntime.renderLoop.start();
       setMode("static");

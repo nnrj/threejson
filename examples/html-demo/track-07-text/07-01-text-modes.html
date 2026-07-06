@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ThreeJSON Tutorial · Track 7 · text 模式对比</title>
-  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <link rel="icon" href="../../../assets/img/threejson.ico" type="image/x-icon">
   <script type="importmap">
     {
       "imports": {
-        "threejson": "/builtins/full.js",
-        "threejson/core": "/core/index.js",
+        "threejson": "../../../builtins/full.js",
+        "threejson/core": "../../../core/index.js",
         "three": "https://esm.sh/three@0.184.0",
         "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
         "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
@@ -43,13 +43,13 @@
   <div id="loadingMask">加载中…</div>
   <div id="hint">
     【Track 7 · text】三列对比：左 <code>sdf</code> 中文 · 中 <code>texture</code> · 右 <code>sdf</code> 英文；下方灰字为 mode 标注<br>
-    数据：<code>/assets/json/tutorial/track-07/07-01-text-modes.json</code>
+    数据：<code>../../../assets/json/tutorial/track-07/07-01-text-modes.json</code>
   </div>
 </div>
 <script type="module">
   import { createJsonScene } from "threejson";
 
-  const sceneJsonUrl = "/assets/json/tutorial/track-07/07-01-text-modes.json";
+  const sceneJsonUrl = "../../../assets/json/tutorial/track-07/07-01-text-modes.json";
   const canvas = document.getElementById("canvasContainer");
   const loadingMask = document.getElementById("loadingMask");
   let sceneRuntime;
@@ -66,7 +66,7 @@
       sceneData.canvasHeight = window.innerHeight;
       sceneRuntime = await createJsonScene(sceneData, {
     canvas,
-    assetsBase: "/assets",
+    assetsBase: "../../../assets",
     resetScene: true
   });
       window.addEventListener("resize", () => sceneRuntime?.resize?.(window.innerWidth, window.innerHeight));

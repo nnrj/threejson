@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ThreeJSON Tutorial · Track 2 · 360° 宇宙全景与太阳系</title>
-  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <link rel="icon" href="../../../assets/img/threejson.ico" type="image/x-icon">
   <script type="importmap">
     
     {
       "imports": {
-        "threejson": "/builtins/full.js",
-        "threejson/core": "/core/index.js",
+        "threejson": "../../../builtins/full.js",
+        "threejson/core": "../../../core/index.js",
         "three": "https://esm.sh/three@0.184.0",
         "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
         "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
@@ -476,7 +476,7 @@
   const introTitle = document.getElementById("introTitle");
   const introBody = document.getElementById("introBody");
 
-  const sceneJsonUrl = "/assets/json/tutorial/track-02/02-05-scene-background.json";
+  const sceneJsonUrl = "../../../assets/json/tutorial/track-02/02-05-scene-background.json";
   const FLYOUT_PEEK_HIDE_DELAY_MS = 280;
   const VIEW_CHROME_KEY = "t02_05_panorama_rightDockPinned_v1";
 
@@ -1625,7 +1625,7 @@
 
       sceneRuntime = await createJsonScene(sceneData, {
         canvas: canvasContainer,
-        assetsBase: "/assets",
+        assetsBase: "../../../assets",
         resetScene: true,
         beforeFrame: () => {
           const deltaSeconds = readFrameDeltaSeconds();

@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ThreeJSON Tutorial · Track 4 · Declarative actions</title>
-  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <link rel="icon" href="../../../assets/img/threejson.ico" type="image/x-icon">
   <script type="importmap">
     {
       "imports": {
-        "threejson": "/builtins/full.js",
-        "threejson/core": "/core/index.js",
+        "threejson": "../../../builtins/full.js",
+        "threejson/core": "../../../core/index.js",
         "three": "https://esm.sh/three@0.184.0",
         "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
         "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
@@ -71,14 +71,14 @@
   import { createJsonScene } from "threejson";
 
   const canvas = document.getElementById("canvasContainer");
-  const sceneData = await fetch("/assets/json/tutorial/track-04/04-11-declarative-actions.json")
+  const sceneData = await fetch("../../../assets/json/tutorial/track-04/04-11-declarative-actions.json")
     .then((response) => response.json());
   sceneData.canvasWidth = window.innerWidth;
   sceneData.canvasHeight = window.innerHeight;
 
   const runtime = await createJsonScene(sceneData, {
     canvas,
-    assetsBase: "/assets",
+    assetsBase: "../../../assets",
     resetScene: true
   });
   runtime.start();

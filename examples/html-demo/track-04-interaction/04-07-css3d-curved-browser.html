@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ThreeJSON Demo - CSS3D 曲面屏 Three.js 官网</title>
-  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <link rel="icon" href="../../../assets/img/threejson.ico" type="image/x-icon">
   <script type="importmap">
     {
       "imports": {
-        "threejson": "/builtins/full.js",
-        "threejson/core": "/core/index.js",
+        "threejson": "../../../builtins/full.js",
+        "threejson/core": "../../../core/index.js",
         "three": "https://esm.sh/three@0.184.0",
         "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
         "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
@@ -50,7 +50,7 @@
     <small>悬空大屏嵌入 <strong>threejs.org</strong>。需联网；屏上可滚动/点击链接。拖拽空白处 Orbit 环绕观看。</small>
   </div>
   <div id="hint">
-    <strong>04-07 曲面屏 Three.js 官网</strong> · 数据 <code>/assets/json/tutorial/track-04/04-07-css3d-curved-google.json</code><br>
+    <strong>04-07 曲面屏 Three.js 官网</strong> · 数据 <code>../../../assets/json/tutorial/track-04/04-07-css3d-curved-google.json</code><br>
     VR 悬空大荧屏 · 屏上为 threejs.org · 滚轮缩放 · 基础 demo 见 <code>04-06-css3d-panel.html</code>
   </div>
 </div>
@@ -59,7 +59,7 @@
 
   const canvas = document.getElementById("canvasContainer");
   const loadingMask = document.getElementById("loadingMask");
-  const sceneJsonUrl = "/assets/json/tutorial/track-04/04-07-css3d-curved-google.json";
+  const sceneJsonUrl = "../../../assets/json/tutorial/track-04/04-07-css3d-curved-google.json";
 
   let sceneRuntime;
 
@@ -72,7 +72,7 @@
     sceneData.canvasWidth = window.innerWidth;
     sceneData.canvasHeight = window.innerHeight;
 
-    sceneRuntime = await createJsonScene(sceneData, { canvas, assetsBase: "/assets" });
+    sceneRuntime = await createJsonScene(sceneData, { canvas, assetsBase: "../../../assets" });
     sceneRuntime.start();
     loadingMask.style.display = "none";
     window.addEventListener("resize", () => {

@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ThreeJSON Tutorial · Track 2 · particleEmitter nebula provider</title>
-  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <link rel="icon" href="../../../assets/img/threejson.ico" type="image/x-icon">
   <script type="importmap">
     {
       "imports": {
-        "threejson": "/builtins/full.js",
-        "threejson/core": "/core/index.js",
+        "threejson": "../../../builtins/full.js",
+        "threejson/core": "../../../core/index.js",
         "three": "https://esm.sh/three@0.184.0",
         "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
         "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
@@ -40,14 +40,14 @@
   <canvas id="canvasContainer">需要 WebGL</canvas>
   <div id="loadingMask">加载中…</div>
   <div id="hint">
-    【Track 2 · 第三方粒子】<code>/assets/json/tutorial/track-02/02-10-particle-nebula-provider.json</code><br>
+    【Track 2 · 第三方粒子】<code>../../../assets/json/tutorial/track-02/02-10-particle-nebula-provider.json</code><br>
     先 <code>threejson/core</code> 再 <code>import "/extensions/particle-nebula/index.js"</code> · 左侧 core · 右侧 <code>provider: "nebula"</code>
   </div>
 </div>
 <script type="module">
   import { createJsonScene } from "threejson/core";
 
-  const sceneJsonUrl = "/assets/json/tutorial/track-02/02-10-particle-nebula-provider.json";
+  const sceneJsonUrl = "../../../assets/json/tutorial/track-02/02-10-particle-nebula-provider.json";
   const canvas = document.getElementById("canvasContainer");
   const loadingMask = document.getElementById("loadingMask");
   let sceneRuntime;
@@ -56,7 +56,7 @@
 
   async function init() {
     try {
-      await import("/extensions/particle-nebula/index.js");
+      await import("../../../extensions/particle-nebula/index.js");
       const response = await fetch(sceneJsonUrl);
       if (!response.ok) throw new Error("HTTP " + response.status);
       const sceneData = await response.json();
@@ -64,7 +64,7 @@
       sceneData.canvasHeight = window.innerHeight;
       sceneRuntime = await createJsonScene(sceneData, {
     canvas,
-    assetsBase: "/assets",
+    assetsBase: "../../../assets",
     resetScene: true
   });
       window.addEventListener("resize", () => sceneRuntime?.resize?.(window.innerWidth, window.innerHeight));

@@ -6,6 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const ROOT = path.resolve(import.meta.dirname, "../..");
+const PAGE_ROOT = "../../../";
 
 const IMPORTMAP = `  <script type="importmap">
     {
@@ -40,7 +41,7 @@ const FETCH_PAGES = [
 
 function buildFetchPage(trackDir, fileName, jsonName, title, hint) {
   const track = trackDir.replace("track-", "").split("-")[0];
-  const jsonUrl = `/assets/json/tutorial/track-${track}/${jsonName}`;
+  const jsonUrl = `${PAGE_ROOT}assets/json/tutorial/track-${track}/${jsonName}`;
   return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -86,7 +87,7 @@ ${IMPORTMAP}
       const sceneData = await response.json();
       sceneData.canvasWidth = window.innerWidth;
       sceneData.canvasHeight = window.innerHeight;
-      sceneRuntime = await createJsonScene(sceneData, { canvas, resetScene: true, assetsBase: "/assets" });
+      sceneRuntime = await createJsonScene(sceneData, { canvas, resetScene: true, assetsBase: "${PAGE_ROOT}assets" });
       window.addEventListener("resize", () => sceneRuntime?.resize?.(window.innerWidth, window.innerHeight));
       sceneRuntime.start();
       loadingMask.style.display = "none";

@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ThreeJSON Tutorial · Track 5 · AI 场景生成与调整</title>
-  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <link rel="icon" href="../../../assets/img/threejson.ico" type="image/x-icon">
   <script type="importmap">
     
     {
       "imports": {
-        "threejson": "/builtins/full.js",
-        "threejson/core": "/core/index.js",
+        "threejson": "../../../builtins/full.js",
+        "threejson/core": "../../../core/index.js",
         "three": "https://esm.sh/three@0.184.0",
         "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
         "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
@@ -1279,7 +1279,7 @@
     };
 
     if (includeSpatialSummary && sceneRuntime?.scene?.isScene) {
-      const spatialModule = await import("/tools/common/editor-single/ai/sceneSpatialContext.js");
+      const spatialModule = await import("../../../tools/common/editor-single/ai/sceneSpatialContext.js");
       const cmdCtx = { scene: sceneRuntime.scene };
       const spatial = spatialModule.buildObjectSpatialCardsFromScene(cmdCtx);
       const cards = spatial.cards || [];
@@ -1312,7 +1312,7 @@
       return;
     }
     try {
-      const util = await import("/core/util/util.js");
+      const util = await import("../../../core/util/util.js");
       const bounds = util.buildAdaptiveContentBoundingBoxTHREE(sceneRuntime.scene, {
         ignoreHelper: null
       });
@@ -1773,7 +1773,7 @@
   async function loadBaseScene() {
     try {
       setMessage("正在加载基础场景 JSON...");
-      const response = await fetch("/assets/json/tutorial/track-05/05-01-ai-scene.json");
+      const response = await fetch("../../../assets/json/tutorial/track-05/05-01-ai-scene.json");
       if (!response.ok) {
         throw new Error(`加载基础场景失败：${response.status}`);
       }
@@ -1895,7 +1895,7 @@
       sceneRuntime?.dispose?.();
 
       const resolved = resolveScenePayloadForLoad(payload);
-      sceneRuntime = await createJsonSceneFit(resolved, { canvas: canvasContainer, assetsBase: "/assets" });
+      sceneRuntime = await createJsonSceneFit(resolved, { canvas: canvasContainer, assetsBase: "../../../assets" });
 
       if (gen !== renderGeneration) {
         sceneRuntime?.dispose?.();

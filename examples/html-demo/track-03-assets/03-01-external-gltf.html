@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ThreeJSON Tutorial · Track 3 · glTF 外部模型</title>
-  <link rel="icon" href="/assets/img/threejson.ico" type="image/x-icon">
+  <link rel="icon" href="../../../assets/img/threejson.ico" type="image/x-icon">
   <script type="importmap">
     
     {
       "imports": {
-        "threejson": "/builtins/full.js",
-        "threejson/core": "/core/index.js",
+        "threejson": "../../../builtins/full.js",
+        "threejson/core": "../../../core/index.js",
         "three": "https://esm.sh/three@0.184.0",
         "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
         "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
@@ -105,7 +105,7 @@
   <div id="loadingMask">Track 3 · glTF 外部模型加载中…</div>
   <div id="messageBox"></div>
   <div id="hint">
-    【glTF 外部模型示例】数据文件：<code>/assets/json/tutorial/track-03/03-01-external-gltf.json</code>；模型文件：<code>/assets/model/gltf/threejson_unlit_pyramid.gltf</code>。本页使用友好分组里的 <code>worldInfo.externalModelList</code>，列表本身负责推导 <code>objType: "externalModel"</code>，单条记录继续保留 <code>modelFileType</code> 以显式控制加载器。
+    【glTF 外部模型示例】数据文件：<code>../../../assets/json/tutorial/track-03/03-01-external-gltf.json</code>；模型文件：<code>../../../assets/model/gltf/threejson_unlit_pyramid.gltf</code>。本页使用友好分组里的 <code>worldInfo.externalModelList</code>，列表本身负责推导 <code>objType: "externalModel"</code>，单条记录继续保留 <code>modelFileType</code> 以显式控制加载器。
   </div>
 </div>
 
@@ -115,7 +115,7 @@
   const canvasContainer = document.getElementById("canvasContainer");
   const loadingMask = document.getElementById("loadingMask");
   const messageBox = document.getElementById("messageBox");
-  const sceneJsonUrl = "/assets/json/tutorial/track-03/03-01-external-gltf.json";
+  const sceneJsonUrl = "../../../assets/json/tutorial/track-03/03-01-external-gltf.json";
 
   let sceneRuntime;
   let renderLoop;
@@ -142,7 +142,7 @@
 
       sceneRuntime = await createJsonScene(sceneData, {
         canvas: canvasContainer,
-        assetsBase: "/assets"
+        assetsBase: "../../../assets"
       });
       renderLoop = sceneRuntime.renderLoop;
 
