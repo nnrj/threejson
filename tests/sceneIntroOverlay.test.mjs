@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { applyAssetsBaseForLoad } from "../core/util/assetsBase.js";
 import {
   isIntroEnabled,
   isIntroExcludedFromLoadWait,
@@ -162,6 +163,77 @@ test("runPostLoadIntro with blockInteraction false uses pointer-events none on o
   }
 });
 
+test("runPostLoadIntro resolves /assets image slides through active assetsBase", async () => {
+  const priorDocument = globalThis.document;
+  const priorImage = globalThis.Image;
+  const preloadedUrls = [];
+
+  globalThis.document = {
+    createElement(tag) {
+      const el = {
+        tagName: tag.toUpperCase(),
+        style: {},
+        className: "",
+        children: [],
+        parentElement: null,
+        _src: "",
+        set src(value) {
+          this._src = value;
+        },
+        get src() {
+          return this._src;
+        },
+        replaceChildren() {
+          this.children = [];
+        },
+        appendChild(child) {
+          child.parentElement = this;
+          this.children.push(child);
+        },
+        remove() {
+          if (this.parentElement?.children) {
+            const idx = this.parentElement.children.indexOf(this);
+            if (idx >= 0) {
+              this.parentElement.children.splice(idx, 1);
+            }
+          }
+          this.parentElement = null;
+        },
+        addEventListener() {},
+        setAttribute() {}
+      };
+      return el;
+    }
+  };
+  globalThis.Image = class {
+    set src(value) {
+      preloadedUrls.push(value);
+      queueMicrotask(() => this.onload?.());
+    }
+  };
+  globalThis.getComputedStyle = () => ({ position: "static" });
+  const restoreAssetsBase = applyAssetsBaseForLoad({}, { assetsBase: "../../../assets" });
+
+  try {
+    const host = document.createElement("div");
+    const intro = normalizeIntroConfig({
+      enabled: true,
+      postLoad: {
+        slides: [{ type: "image", url: "/assets/img/ThreeJSON.png", durationMs: 1 }],
+        fadeInMs: 0,
+        fadeOutMs: 0,
+        skipOnClick: false
+      }
+    });
+    await runPostLoadIntro(intro, host);
+    assert.deepEqual(preloadedUrls, ["../../../assets/img/ThreeJSON.png"]);
+  } finally {
+    restoreAssetsBase();
+    globalThis.document = priorDocument;
+    globalThis.Image = priorImage;
+    delete globalThis.getComputedStyle;
+  }
+});
 test("runPostLoadIntro shows text slide then removes overlay", async () => {
   const priorDocument = globalThis.document;
   globalThis.document = {

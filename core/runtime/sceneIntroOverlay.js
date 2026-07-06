@@ -2,6 +2,7 @@
  * DOM overlay for sceneConfig.intro postLoad slides.
  */
 import { log } from "../util/logger.js";
+import { resolvePublicAssetUrl } from "../util/assetsBase.js";
 import { isIntroEnabled, isIntroExcludedFromLoadWait, resolveIntroMountRoot } from "./sceneIntroConfig.js";
 
 const OVERLAY_CLASS = "threejson-scene-intro-overlay";
@@ -92,8 +93,9 @@ function bindIntroSkipHandler(introConfig, overlay, contentHost, abortController
 
 function renderSlideContent(slide) {
   if (slide.type === "image") {
+    const imageUrl = resolvePublicAssetUrl(slide.url);
     const img = document.createElement("img");
-    img.src = slide.url;
+    img.src = imageUrl;
     img.alt = "";
     Object.assign(img.style, {
       maxWidth: "min(420px, 80vw)",
@@ -162,7 +164,7 @@ export async function runPostLoadIntro(introConfig, mountRoot) {
       contentHost.replaceChildren();
       try {
         if (slide.type === "image") {
-          await preloadImage(slide.url);
+          await preloadImage(resolvePublicAssetUrl(slide.url));
         }
         contentHost.appendChild(renderSlideContent(slide));
       } catch (err) {
