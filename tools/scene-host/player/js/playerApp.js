@@ -558,7 +558,7 @@ export async function bootstrapPlayerApp() {
       async onSceneReady(ctx) {
         try {
           const { bootstrapFirstPersonExtensionsFromScene } = await import(
-            "/extensions/fps-walk/bootstrapFirstPersonExtensions.js"
+            "../../../../extensions/fps-walk/bootstrapFirstPersonExtensions.js"
           );
           await bootstrapFirstPersonExtensionsFromScene(ctx);
         } catch (err) {
