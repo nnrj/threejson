@@ -313,14 +313,26 @@ export {
 } from "./util/textureSampling.js";
 export {
   assetUrl,
+  assetUrlCandidates,
   resolvePublicAssetUrl,
+  resolvePublicAssetUrlCandidates,
   getAssetsBaseUrl,
+  getAssetsBaseMode,
   setAssetsBaseUrl,
+  setAssetsBaseMode,
   normalizeAssetsBase,
+  normalizeAssetsBaseMode,
   resolveAssetsBaseFromLoad,
+  resolveAssetsBaseModeFromLoad,
   applyAssetsBaseForLoad,
   DEFAULT_CDN_ASSETS_BASE,
   LOCAL_ASSETS_BASE,
+  ASSETS_BASE_MODE_LOCAL_FIRST,
+  ASSETS_BASE_MODE_CDN_FIRST,
+  ASSETS_BASE_MODE_LOCAL_ONLY,
+  ASSETS_BASE_MODE_CDN_ONLY,
+  ASSETS_BASE_MODE_BASE_ONLY,
+  ASSETS_BASE_MODE_BASE_FIRST,
   ASSETS_PACKAGE_VERSION
 } from "./util/assetsBase.js";
 export { registerCoreParticleMechanism } from "./builder/particle/registerCoreParticle.js";

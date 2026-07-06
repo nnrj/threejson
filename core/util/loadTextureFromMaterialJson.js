@@ -6,6 +6,7 @@ import { log } from "./logger.js";
 import { trackDisposableResource } from "../handler/trackedResourceRegistry.js";
 import { createGifCanvasTextureFromMaterialJson } from "./gifAnimatedTexture.js";
 import { resolveTextureSource } from "./resolveTextureSource.js";
+import { resolvePublicAssetUrlCandidates } from "./assetsBase.js";
 import { applyTexturePropsFromRecord } from "./textureSampling.js";
 import {
   getCanonicalTexture,
@@ -137,6 +138,34 @@ function createVideoTextureFromMaterialJson(materialJson, url, opts = {}) {
   return texture;
 }
 
+function copyLoadedTextureIntoTarget(target, loaded, url) {
+  if (!target || !loaded) {
+    return;
+  }
+  target.image = loaded.image;
+  target.source = loaded.source;
+  target.flipY = loaded.flipY;
+  target.colorSpace = loaded.colorSpace;
+  target.needsUpdate = true;
+  tagTextureResolvedUrl(target, url);
+}
+
+function loadTextureFallbackCandidate(loader, urls, index, target, cacheKey, previousError) {
+  const url = urls[index];
+  if (!url) {
+    log.error("Texture load failed:", urls[0], previousError);
+    return;
+  }
+  loader.load(
+    url,
+    (loaded) => {
+      copyLoadedTextureIntoTarget(target, loaded, url);
+      rememberCanonicalTexture(cacheKey, target);
+    },
+    undefined,
+    (err) => loadTextureFallbackCandidate(loader, urls, index + 1, target, cacheKey, err)
+  );
+}
 /**
  * @param {object} materialJson
  * @param {{
@@ -151,7 +180,12 @@ function loadTextureFromMaterialJson(materialJson, opts = {}) {
   if (!materialJson || typeof materialJson !== "object") {
     return null;
   }
-  const url = resolveTextureSource(materialJson);
+  const rawUrl = resolveTextureSource(materialJson);
+  if (!rawUrl) {
+    return null;
+  }
+  const urls = resolvePublicAssetUrlCandidates(rawUrl);
+  const url = urls[0];
   if (!url) {
     return null;
   }
@@ -178,13 +212,13 @@ function loadTextureFromMaterialJson(materialJson, opts = {}) {
   }
 
   if (isTextureUrlCacheEnabled()) {
-    const canonical = getCanonicalTexture(url);
+    const canonical = getCanonicalTexture(rawUrl);
     if (canonical) {
       const tex = canonical.clone();
       trackDisposableResource(tex);
       applyTextureRepeatToMap(tex, materialJson, opts);
       applyTexturePropsFromRecord(tex, "imageMap", materialJson);
-      tagTextureResolvedUrl(tex, url);
+      tagTextureResolvedUrl(tex, canonical.userData?.threeJsonResolvedUrl || url);
       return tex;
     }
   }
@@ -193,13 +227,14 @@ function loadTextureFromMaterialJson(materialJson, opts = {}) {
   const texture = loader.load(
     url,
     (loaded) => {
-      rememberCanonicalTexture(url, loaded);
+      tagTextureResolvedUrl(loaded, url);
+      rememberCanonicalTexture(rawUrl, loaded);
     },
     undefined,
-    (err) => log.error("Texture load failed:", url, err)
+    (err) => loadTextureFallbackCandidate(loader, urls, 1, texture, rawUrl, err)
   );
   trackDisposableResource(texture);
-  rememberCanonicalTexture(url, texture);
+  rememberCanonicalTexture(rawUrl, texture);
   applyTextureRepeatToMap(texture, materialJson, opts);
   applyTexturePropsFromRecord(texture, "imageMap", materialJson);
   tagTextureResolvedUrl(texture, url);
