@@ -99,12 +99,52 @@ export function setHostLocaleStorage(locale) {
 
 export function t(key, fallback = "", params) {
   let text = (catalog && catalog[key]) || fallback || key;
+  if (!catalog?.[key] && currentLocale === "en-US") {
+    text = englishizeKey(key);
+  }
   if (params && typeof text === "string") {
     for (const [k, v] of Object.entries(params)) {
       text = text.replace(new RegExp("\\{" + k + "\\}", "g"), String(v));
     }
   }
   return text;
+}
+
+function englishizeKey(key) {
+  const raw = String(key || "")
+    .split(".")
+    .pop()
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .trim();
+  if (!raw) {
+    return key;
+  }
+  const words = raw
+    .split(/\s+/)
+    .map((word) => {
+      const lower = word.toLowerCase();
+      const map = {
+        ai: "AI",
+        api: "API",
+        id: "ID",
+        json: "JSON",
+        tjz: ".tjz",
+        url: "URL",
+        fps: "FPS",
+        glb: "GLB",
+        gltf: "GLTF",
+        obj: "OBJ",
+        stl: "STL",
+        ply: "PLY",
+        usdz: "USDZ"
+      };
+      if (map[lower]) {
+        return map[lower];
+      }
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    });
+  return words.join(" ");
 }
 
 export async function initHostI18n(settingsLocale) {

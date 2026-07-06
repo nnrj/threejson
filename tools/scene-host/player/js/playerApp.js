@@ -936,8 +936,11 @@ export async function bootstrapPlayerApp() {
       idx = 0;
     }
     renderPlaylistUi();
-    await activatePlaylistIndex(idx);
-    return true;
+    const ok = await activatePlaylistIndex(idx);
+    if (!ok) {
+      showPlayerStartupEmptyState();
+    }
+    return ok;
   }
 
   async function activatePlaylistIndex(index) {
@@ -1035,14 +1038,21 @@ export async function bootstrapPlayerApp() {
     if (/^(?:[a-z]+:)?\/\//i.test(raw) || raw.startsWith("data:") || raw.startsWith("blob:")) {
       return raw;
     }
+    const sceneHostRoot = new URL("../../../../", import.meta.url).href;
+    if (raw === "/demo.html" || raw === "./demo.html" || raw === "demo.html") {
+      return new URL("demo.html", sceneHostRoot).href;
+    }
     if (raw.startsWith("/assets/")) {
-      return new URL(`../../../../${raw.slice(1)}`, import.meta.url).href;
+      return new URL(raw.slice(1), sceneHostRoot).href;
     }
-    if (raw.startsWith("./") || raw.startsWith("../") || raw.startsWith("assets/")) {
-      return new URL(raw, import.meta.url).href;
+    if (raw.startsWith("./")) {
+      return new URL(raw.slice(2), sceneHostRoot).href;
     }
-    if (raw === "/demo.html") {
-      return new URL("../../../../demo.html", import.meta.url).href;
+    if (raw.startsWith("../")) {
+      return new URL(raw, sceneHostRoot).href;
+    }
+    if (raw.startsWith("assets/")) {
+      return new URL(raw, sceneHostRoot).href;
     }
     return raw;
   }
@@ -1177,7 +1187,10 @@ export async function bootstrapPlayerApp() {
     playlist.length = 0;
     currentPlaylistIndex = -1;
     const idx = appendUrlToPlaylist(url, fileNameFromUrl(url));
-    await activatePlaylistIndex(idx);
+    const ok = await activatePlaylistIndex(idx);
+    if (!ok) {
+      showPlayerStartupEmptyState();
+    }
   }
 
   bottomBtnPrev?.addEventListener("click", () => {
@@ -1366,7 +1379,10 @@ export async function bootstrapPlayerApp() {
       playlist.length = 0;
       currentPlaylistIndex = -1;
       appendUrlToPlaylist(queryUrl);
-      await activatePlaylistIndex(0);
+      const ok = await activatePlaylistIndex(0);
+      if (!ok) {
+        showPlayerStartupEmptyState();
+      }
     } else {
       showPlayerStartupEmptyState();
     }

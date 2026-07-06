@@ -898,14 +898,21 @@ export async function bootstrapSceneHostEditor() {
     if (/^(?:[a-z]+:)?\/\//i.test(raw) || raw.startsWith("data:") || raw.startsWith("blob:")) {
       return raw;
     }
+    const sceneHostRoot = new URL("../../../../", import.meta.url).href;
+    if (raw === "/demo.html" || raw === "./demo.html" || raw === "demo.html") {
+      return new URL("demo.html", sceneHostRoot).href;
+    }
     if (raw.startsWith("/assets/")) {
-      return new URL(`../../../../${raw.slice(1)}`, import.meta.url).href;
+      return new URL(raw.slice(1), sceneHostRoot).href;
     }
-    if (raw.startsWith("./") || raw.startsWith("../") || raw.startsWith("assets/")) {
-      return new URL(raw, import.meta.url).href;
+    if (raw.startsWith("./")) {
+      return new URL(raw.slice(2), sceneHostRoot).href;
     }
-    if (raw === "/demo.html") {
-      return new URL("../../../../demo.html", import.meta.url).href;
+    if (raw.startsWith("../")) {
+      return new URL(raw, sceneHostRoot).href;
+    }
+    if (raw.startsWith("assets/")) {
+      return new URL(raw, sceneHostRoot).href;
     }
     return raw;
   }
