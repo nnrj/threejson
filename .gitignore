@@ -1,48 +1,50 @@
+# ==========================================
 # OS generated files
+# ==========================================
 .DS_Store
 Thumbs.db
 Desktop.ini
 
+# ==========================================
 # Editor and IDE files
-.idea/*
-!.idea/.gitignore
-!.idea/UniappTool.xml
-!.idea/vcs.xml
+# ==========================================
+.idea/
 .vscode/
 .vs/
+.cursor/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 
+# ==========================================
 # Local dependencies and package-manager caches
+# ==========================================
+# 这一行会自动递归忽略根目录、examples、tools 下所有的 node_modules
 node_modules/
 .npm/
 .pnpm-store/
 .yarn/
-.cursor/
 
-# Build and generated output
-/dist/
+# ==========================================
+# Build and generated output (含各个子模块)
+# ==========================================
+dist/
+assets/dist/
+build/
+out/
+target/
+.cache/
+.vite/
 tools/scene-host/desktop/.pack/
 tools/scene-host/desktop/dist/
 tools/scene-host/desktop/dist-build/
 tools/scene-host/desktop/dist-installer/
-examples/**/dist/
-# Vite sample apps under examples/ (also listed in each app's .gitignore; explicit here if those files change)
-examples/vue-app/node_modules/
-examples/react-app/node_modules/
-examples/electron-apps/electron-app/node_modules/
-examples/electron-apps/electron-vue/node_modules/
-examples/electron-apps/electron-react-app/node_modules/
-examples/electron-apps/electron-vue-app/node_modules/
+/tests/fixtures/ai-test/out/
 
-/build/
-/out/
-/.cache/
-/.vite/
-
+# ==========================================
 # Logs and runtime diagnostics
+# ==========================================
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -50,35 +52,41 @@ yarn-error.log*
 pnpm-debug.log*
 selenium-debug.log
 
+# ==========================================
 # Test output
+# ==========================================
 coverage/
 test-results/
 playwright-report/
 
-# Python
+# ==========================================
+# Python (Tools & Agents)
+# ==========================================
 __pycache__/
 *.py[cod]
 *$py.class
+tools/threejson-agent/shell/py/tmp
 
+# ==========================================
 # Local environment and machine-specific config
+# ==========================================
 .env
 .env.*
 !.env.example
 *.local
 package-lock.json
 setting.json
-!assets/json/other/scene-editer/setting.json
+
+# 配置文件白名单（允许提交特定编辑器的配置）
 !assets/json/other/scene-editor/setting.json
 !assets/json/other/scene-player/setting.json
+
+# 明确忽略特定 Agent 模块的本地临时配置
 /tools/threejson-agent/setting.json
 /tools/mcp-threejson/setting.json
 
-
+# ==========================================
 # Temporary files
-/assets/dist/
-/dist/
-/target/
-/tmp/
-/temp/
-tools/threejson-agent/shell/py/tmp
-/tests/fixtures/ai-test/out/
+# ==========================================
+tmp/
+temp/
