@@ -850,7 +850,7 @@ export async function bootstrapPlayerApp() {
     const entry = {
       id: nextPlaylistId(),
       kind: "url",
-      url,
+      url: resolveSceneHostUrl(url),
       label: label || fileNameFromUrl(url)
     };
     playlist.push(entry);
@@ -899,7 +899,7 @@ export async function bootstrapPlayerApp() {
         playlist.push({
           id: item.id,
           kind: "url",
-          url: item.url,
+          url: resolveSceneHostUrl(item.url),
           label: item.label || fileNameFromUrl(item.url)
         });
         continue;
@@ -954,20 +954,21 @@ export async function bootstrapPlayerApp() {
       setLoadingMessage("正在读取场景...");
       openOrCloseProgressManager(sysConfig.progressFlag);
       if (entry.kind === "url" && entry.url) {
-        if (isTjzSceneFileName(entry.url)) {
-          const response = await fetch(entry.url);
+        const resolvedUrl = resolveSceneHostUrl(entry.url);
+        if (isTjzSceneFileName(resolvedUrl)) {
+          const response = await fetch(resolvedUrl);
           if (!response.ok) {
             throw new Error(`加载场景失败：${response.status}`);
           }
           const bytes = new Uint8Array(await response.arrayBuffer());
-          await applyTjzArchiveToPlayer(bytes, entry.label || fileNameFromUrl(entry.url));
+          await applyTjzArchiveToPlayer(bytes, entry.label || fileNameFromUrl(resolvedUrl));
         } else {
-          const response = await fetch(entry.url);
+          const response = await fetch(resolvedUrl);
           if (!response.ok) {
             throw new Error(`加载场景失败：${response.status}`);
           }
           const data = JSON.parse(await response.text());
-          await applyParsedSceneToPlayer(data, entry.label || fileNameFromUrl(entry.url));
+          await applyParsedSceneToPlayer(data, entry.label || fileNameFromUrl(resolvedUrl));
         }
       } else if (entry.kind === "file" && entry.file) {
         if (isTjzSceneFileName(entry.file.name)) {
@@ -1020,10 +1021,30 @@ export async function bootstrapPlayerApp() {
       return null;
     }
     try {
-      return decodeURIComponent(fromQuery);
+      return resolveSceneHostUrl(decodeURIComponent(fromQuery));
     } catch {
-      return fromQuery;
+      return resolveSceneHostUrl(fromQuery);
     }
+  }
+
+  function resolveSceneHostUrl(value) {
+    const raw = String(value || "").trim();
+    if (!raw) {
+      return raw;
+    }
+    if (/^(?:[a-z]+:)?\/\//i.test(raw) || raw.startsWith("data:") || raw.startsWith("blob:")) {
+      return raw;
+    }
+    if (raw.startsWith("/assets/")) {
+      return new URL(`../../../../${raw.slice(1)}`, import.meta.url).href;
+    }
+    if (raw.startsWith("./") || raw.startsWith("../") || raw.startsWith("assets/")) {
+      return new URL(raw, import.meta.url).href;
+    }
+    if (raw === "/demo.html") {
+      return new URL("../../../../demo.html", import.meta.url).href;
+    }
+    return raw;
   }
 
   let lastAppliedHostLocale = null;

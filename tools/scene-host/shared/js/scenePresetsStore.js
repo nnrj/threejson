@@ -12,20 +12,37 @@ export const PRESET_SCENE_BASE_URL = new URL(
 export const PRESET_MANIFEST_URL = `${PRESET_SCENE_BASE_URL}presets.manifest.json`;
 
 export const PRESET_SCENES_FALLBACK = [
-  { id: "preset-blank-orbit", file: "preset-blank-orbit.json", label: "普通场景", order: 1 },
-  { id: "smart-park", file: "smart-park.json", label: "智慧园区", order: 10 },
-  { id: "forest-02", file: "forest-02.json", label: "森林与小动物", order: 20 },
-  { id: "forest", file: "forest.json", label: "森林场景", order: 30 },
-  { id: "robot-training-02", file: "robot-training-02.json", label: "机器人训练环境", order: 40 },
-  { id: "robot-adam", file: "robot-adam.json", label: "机器人 Adam", order: 50 },
-  { id: "robot-eden", file: "robot-eden.json", label: "机器人 Eden", order: 60 },
-  { id: "bot", file: "bot.json", label: "机器人 Bot", order: 70 },
-  { id: "rotor", file: "rotor.json", label: "旋翼场景", order: 80 }
+  { id: "preset-blank-orbit", file: "preset-blank-orbit.json", label: "Preset blank orbit", order: 1 },
+  { id: "smart-park", file: "smart-park.json", label: "Smart park", order: 10 },
+  { id: "forest-02", file: "forest-02.json", label: "Forest and animals", order: 20 },
+  { id: "forest", file: "forest.json", label: "Forest scene", order: 30 },
+  { id: "robot-training-02", file: "robot-training-02.json", label: "Robot training", order: 40 },
+  { id: "robot-adam", file: "robot-adam.json", label: "Robot Adam", order: 50 },
+  { id: "robot-eden", file: "robot-eden.json", label: "Robot Eden", order: 60 },
+  { id: "bot", file: "bot.json", label: "Robot bot", order: 70 },
+  { id: "rotor", file: "rotor.json", label: "Rotor scene", order: 80 }
 ];
 
+function resolveSceneHostUrl(value) {
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return raw;
+  }
+  if (/^(?:[a-z]+:)?\/\//i.test(raw) || raw.startsWith("data:") || raw.startsWith("blob:")) {
+    return raw;
+  }
+  if (raw.startsWith("/assets/")) {
+    return new URL(`../../../../${raw.slice(1)}`, import.meta.url).href;
+  }
+  if (raw.startsWith("./") || raw.startsWith("../") || raw.startsWith("assets/")) {
+    return new URL(raw, import.meta.url).href;
+  }
+  return raw;
+}
+
 export function normalizePresetSceneEntries(manifest) {
-  const baseUrl = String(manifest?.baseUrl || PRESET_SCENE_BASE_URL).trim();
-  const normalizedBase = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
+  const normalizedBase = resolveSceneHostUrl(String(manifest?.baseUrl || PRESET_SCENE_BASE_URL));
+  const normalizedBaseWithSlash = normalizedBase.endsWith("/") ? normalizedBase : `${normalizedBase}/`;
   const raw = Array.isArray(manifest?.entries) ? manifest.entries : PRESET_SCENES_FALLBACK;
   return raw
     .map((entry, index) => {
@@ -39,7 +56,7 @@ export function normalizePresetSceneEntries(manifest) {
         file,
         label,
         order: Number.isFinite(Number(entry?.order)) ? Number(entry.order) : index * 10,
-        url: `${normalizedBase}${file}`
+        url: `${normalizedBaseWithSlash}${file}`
       };
     })
     .filter(Boolean)
@@ -80,12 +97,8 @@ export async function syncScenePresetsFromManifest() {
   const manifestVersion = Number(manifest?.version) || 1;
   const entries = normalizePresetSceneEntries(manifest);
   const record = await readScenePresetsRecord();
-  const baseUrl = String(manifest?.baseUrl || PRESET_SCENE_BASE_URL).trim();
-  const normalizedBase = baseUrl.startsWith("/assets/")
-    ? new URL(`../../../../${baseUrl.slice(1)}`, import.meta.url).href.replace(/\/?$/, "/")
-    : baseUrl.endsWith("/")
-      ? baseUrl
-      : `${baseUrl}/`;
+  const normalizedBase = resolveSceneHostUrl(String(manifest?.baseUrl || PRESET_SCENE_BASE_URL));
+  const normalizedBaseWithSlash = normalizedBase.endsWith("/") ? normalizedBase : `${normalizedBase}/`;
   const forceRefreshAllBuiltin = manifestVersion > (Number(record.manifestVersion) || 0);
   let changed = false;
 
@@ -97,7 +110,7 @@ export async function syncScenePresetsFromManifest() {
       continue;
     }
     try {
-      const response = await fetch(`${normalizedBase}${entry.file}`);
+      const response = await fetch(`${normalizedBaseWithSlash}${entry.file}`);
       if (!response.ok) {
         throw new Error(String(response.status));
       }
@@ -131,7 +144,7 @@ export async function buildPresetSceneEntriesFromRecord() {
   return Object.values(record.presets || {})
     .map((preset) => ({
       id: String(preset?.id || "").trim(),
-      label: String(preset?.label || preset?.id || "未命名预设").trim(),
+      label: String(preset?.label || preset?.id || "Unnamed preset").trim(),
       order: Number.isFinite(Number(preset?.order)) ? Number(preset.order) : 9999,
       source: preset?.source === "user" ? "user" : "builtin"
     }))
@@ -173,7 +186,7 @@ export async function writeUserScenePreset({ label, json }) {
   record.presets[id] = {
     id,
     source: "user",
-    label: String(label || "未命名预设").trim() || "未命名预设",
+    label: String(label || "Unnamed preset").trim() || "Unnamed preset",
     order: 9000 + (now % 1000),
     json: typeof json === "string" ? json : JSON.stringify(json, null, 2),
     createdAt: now,

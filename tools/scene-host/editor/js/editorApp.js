@@ -857,7 +857,7 @@ export async function bootstrapSceneHostEditor() {
     try {
       toggleStartupEmptyState(false);
       ui.setLoadingMessage("正在读取场景配置...");
-      const response = await fetch(url);
+      const response = await fetch(resolveSceneHostUrl(url));
       if (!response.ok) {
         throw new Error(`加载场景失败：${response.status}`);
       }
@@ -888,6 +888,26 @@ export async function bootstrapSceneHostEditor() {
       console.error(error);
       return false;
     }
+  }
+
+  function resolveSceneHostUrl(value) {
+    const raw = String(value || "").trim();
+    if (!raw) {
+      return raw;
+    }
+    if (/^(?:[a-z]+:)?\/\//i.test(raw) || raw.startsWith("data:") || raw.startsWith("blob:")) {
+      return raw;
+    }
+    if (raw.startsWith("/assets/")) {
+      return new URL(`../../../../${raw.slice(1)}`, import.meta.url).href;
+    }
+    if (raw.startsWith("./") || raw.startsWith("../") || raw.startsWith("assets/")) {
+      return new URL(raw, import.meta.url).href;
+    }
+    if (raw === "/demo.html") {
+      return new URL("../../../../demo.html", import.meta.url).href;
+    }
+    return raw;
   }
 
   function ensureDefaultSceneLights(rootScene, autoFillLights = true) {

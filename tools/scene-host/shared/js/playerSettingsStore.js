@@ -73,6 +73,26 @@ export function setPlayerSettingsByPath(obj, path, value) {
   cur[parts[parts.length - 1]] = value;
 }
 
+function resolveSceneHostUrl(value) {
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return raw;
+  }
+  if (/^(?:[a-z]+:)?\/\//i.test(raw) || raw.startsWith("data:") || raw.startsWith("blob:")) {
+    return raw;
+  }
+  if (raw === "/demo.html") {
+    return new URL("../../../../demo.html", import.meta.url).href;
+  }
+  if (raw.startsWith("/assets/")) {
+    return new URL(`../../../../${raw.slice(1)}`, import.meta.url).href;
+  }
+  if (raw.startsWith("./") || raw.startsWith("../") || raw.startsWith("assets/")) {
+    return new URL(raw, import.meta.url).href;
+  }
+  return raw;
+}
+
 export function clearPlayerSettingsCache() {
   try {
     localStorage.removeItem(PLAYER_SETTINGS_STORAGE_KEY);
@@ -138,13 +158,7 @@ export async function loadPlayerSettingsBundle() {
 
 export function getDefaultSceneUrl(playerSettings) {
   const value = playerSettings?.general?.defaultSceneUrl || PLAYER_SETTINGS_DEFAULTS.general.defaultSceneUrl;
-  if (String(value).startsWith("/assets/")) {
-    return new URL(`../../../../${String(value).slice(1)}`, import.meta.url).href;
-  }
-  if (String(value) === "/demo.html") {
-    return new URL("../../../../demo.html", import.meta.url).href;
-  }
-  return value;
+  return resolveSceneHostUrl(value);
 }
 
 export function getPlayerLoadingMaskText(playerSettings) {
