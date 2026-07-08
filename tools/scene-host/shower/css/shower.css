@@ -18,12 +18,12 @@ button { font: inherit; }
 .titleBlock { display: grid; gap: 2px; min-width: 0; flex: 1; }
 #exampleTitle { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #statusText { color: var(--muted); font-size: 12px; }
-.autoRunLabel { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
+.autoRunLabel { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; color: var(--muted); font-size: 13px; white-space: nowrap; }
 
 .workspace { display: grid; grid-template-columns: minmax(380px, 45vw) 1fr; min-height: 0; }
 .leftPane, .rightPane { min-width: 0; min-height: 0; }
 .leftPane { display: grid; grid-template-rows: 40px 42px 1fr; border-right: 1px solid var(--line); background: var(--panel); }
-.rightPane { display: grid; grid-template-rows: 42px 1fr; background: #11151b; }
+.rightPane { display: grid; grid-template-rows: 42px 1fr; overflow: hidden; background: #11151b; }
 
 .tabs, .editorToolbar, .canvasToolbar { display: flex; align-items: center; gap: 8px; padding: 0 10px; border-bottom: 1px solid var(--line); background: var(--panel2); }
 .tab, .editorToolbar button, .canvasToolbar button, .menu > button {
@@ -41,6 +41,8 @@ button { font: inherit; }
 .segmented button { border-radius: 0; }
 .segmented button:first-child { border-radius: 5px 0 0 5px; }
 .segmented button:last-child { border-radius: 0 5px 5px 0; margin-left: -1px; }
+.segmented button.active { background: var(--brand); border-color: var(--brand); color: #fff; }
+.segmented[hidden] { display: none; }
 
 .editorPanel, .treePanel { min-height: 0; overflow: hidden; }
 .CodeMirror { height: 100%; font-size: 13px; line-height: 1.55; }
@@ -55,10 +57,23 @@ button { font: inherit; }
 .menuPanel { position: absolute; top: 32px; left: 0; z-index: 10; display: none; min-width: 140px; padding: 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
 .menu:hover .menuPanel, .menu:focus-within .menuPanel { display: grid; gap: 6px; }
 
-#canvasWrap { position: relative; min-height: 0; background: #11151b; }
-#canvasContainer { display: block; width: 100%; height: 100%; background: #11151b; }
+#canvasWrap { position: relative; min-width: 0; min-height: 0; overflow: hidden; background: #11151b; }
+#canvasContainer { display: block; width: 100%; height: 100%; max-width: 100%; max-height: 100%; background: #11151b; }
 #loadingMask { position: absolute; inset: 0; z-index: 5; display: none; align-items: center; justify-content: center; background: rgba(10, 12, 16, 0.72); color: #fff; }
 #loadingMask.visible { display: flex; }
+.messageToast { position: fixed; left: 50%; bottom: 28px; z-index: 30; min-width: 220px; max-width: min(520px, calc(100vw - 32px)); padding: 9px 13px; border: 1px solid rgba(255,255,255,0.16); border-radius: 6px; background: rgba(28,34,43,0.96); color: var(--text); box-shadow: 0 12px 30px rgba(0,0,0,0.32); opacity: 0; transform: translate(-50%, 12px); pointer-events: none; transition: opacity .18s ease, transform .18s ease; }
+.messageToast.visible { opacity: 1; transform: translate(-50%, 0); }
+.modalOverlay { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(7,10,14,0.62); }
+.modalOverlay[hidden] { display: none; }
+.modalDialog { width: min(420px, 100%); border: 1px solid var(--line); border-radius: 8px; background: var(--panel); box-shadow: 0 18px 50px rgba(0,0,0,0.42); }
+.modalHeader { padding: 12px 14px; border-bottom: 1px solid var(--line); font-weight: 700; }
+.modalBody { display: grid; gap: 12px; padding: 14px; }
+.modalField { display: grid; gap: 6px; color: var(--muted); font-size: 13px; }
+.modalField select { height: 32px; border: 1px solid var(--line); border-radius: 5px; background: #202734; color: var(--text); }
+.modalHint { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.modalFooter { display: flex; justify-content: flex-end; gap: 8px; padding: 10px 14px 14px; }
+.modalFooter button { height: 30px; padding: 0 12px; border: 1px solid var(--line); border-radius: 5px; background: #202734; color: var(--text); cursor: pointer; }
+.modalFooter button.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
 
 @media (max-width: 900px) {
   .workspace { grid-template-columns: 1fr; grid-template-rows: 48vh 1fr; }

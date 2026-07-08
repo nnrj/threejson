@@ -13,6 +13,7 @@
         "three": "https://esm.sh/three@0.184.0",
         "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
         "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
+        "fflate": "https://esm.sh/fflate@0.8.3",
         "html2canvas-pro": "https://esm.sh/html2canvas-pro@2.0.4",
         "gifuct-js": "https://esm.sh/gifuct-js@2.1.2",
         "three-mesh-bvh": "https://esm.sh/three-mesh-bvh@0.9.10?deps=three@0.184.0",
@@ -37,10 +38,6 @@
         <div id="exampleTitle">ThreeJSON Shower</div>
         <span id="statusText">Ready</span>
       </div>
-      <label class="autoRunLabel">
-        <input id="autoRunCheckbox" type="checkbox">
-        <span data-i18n="autoRun">实时</span>
-      </label>
     </header>
     <main class="workspace">
       <section class="leftPane">
@@ -50,11 +47,15 @@
           <button class="tab" data-tab="tree" type="button" data-i18n="sceneTree">场景树</button>
         </nav>
         <div class="editorToolbar" id="jsonToolbar">
-          <div class="segmented">
-            <button id="friendlyBtn" type="button" data-i18n="friendlyJson">友好JSON</button>
-            <button id="standardBtn" type="button" data-i18n="standardJson">标准JSON</button>
+          <div class="segmented" id="jsonFormatSwitch">
+            <button id="friendlyBtn" type="button" data-i18n="friendlyJson">友好</button>
+            <button id="standardBtn" type="button" data-i18n="standardJson">标准</button>
           </div>
           <div class="toolbarSpacer"></div>
+          <label class="autoRunLabel">
+            <input id="autoRunCheckbox" type="checkbox">
+            <span data-i18n="autoRun">实时渲染</span>
+          </label>
           <button id="formatBtn" type="button" data-i18n="format">格式化</button>
           <button id="runBtn" class="primary" type="button" data-i18n="run">运行</button>
         </div>
@@ -63,9 +64,9 @@
       </section>
       <section class="rightPane">
         <div class="canvasToolbar">
-          <button id="downloadHtmlBtn" type="button" data-i18n="downloadHtml">下载</button>
+          <button id="downloadHtmlBtn" type="button" data-i18n="downloadHtml">Download This Example</button>
           <div class="menu">
-            <button type="button" data-i18n="export">导出</button>
+            <button type="button" data-i18n="export">Export This Scene</button>
             <div class="menuPanel">
               <button id="exportThreeJsonBtn" type="button">ThreeJSON</button>
               <button id="exportNativeBtn" type="button" data-i18n="nativeJson">原生JSON</button>
@@ -83,6 +84,30 @@
         </div>
       </section>
     </main>
+  </div>
+  <div id="messageToast" class="messageToast" role="status" aria-live="polite"></div>
+  <div id="modelExportModal" class="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modelExportTitle" hidden>
+    <div class="modalDialog">
+      <div class="modalHeader" id="modelExportTitle" data-i18n="modelExportTitle">Export Model</div>
+      <div class="modalBody">
+        <label class="modalField" for="modelExportFormatSelect">
+          <span data-i18n="modelExportFormat">Format</span>
+          <select id="modelExportFormatSelect">
+            <option value="glb">GLB</option>
+            <option value="gltf">GLTF</option>
+            <option value="obj">OBJ</option>
+            <option value="stl">STL</option>
+            <option value="ply">PLY</option>
+            <option value="usdz">USDZ</option>
+          </select>
+        </label>
+        <p class="modalHint" data-i18n="modelExportHint">GLB is recommended. OBJ/STL/PLY mainly export geometry; USDZ is suitable for iOS AR preview.</p>
+      </div>
+      <div class="modalFooter">
+        <button id="modelExportCancelBtn" type="button" data-i18n="cancel">Cancel</button>
+        <button id="modelExportConfirmBtn" class="primary" type="button" data-i18n="confirmExport">Export</button>
+      </div>
+    </div>
   </div>
   <script type="module" src="./js/main.js"></script>
 </body>
