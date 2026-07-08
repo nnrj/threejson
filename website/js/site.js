@@ -238,6 +238,7 @@ function switchDocPathLanguage(path, targetLang) {
 }
 
 function renderRoute() {
+  closeOpenMenus({ includePinned: true });
   const hash = decodeURIComponent(location.hash || "#/");
   const route = hash.replace(/^#/, "") || "/";
   if (route.startsWith("/reader/")) {
@@ -489,6 +490,21 @@ function wireMenuHoverBehavior() {
     const menu = event.target.closest?.(".navMenu");
     if (menu && menus.includes(menu)) {
       setHoverMenu(menu);
+      return;
+    }
+    const topLink = event.target.closest?.(".mainNav > a");
+    if (topLink) {
+      setHoverMenu(null);
+    }
+  });
+  header.addEventListener("mouseleave", () => {
+    if (!pinnedMenu) {
+      setHoverMenu(null);
+    }
+  });
+  app.addEventListener("pointerenter", () => {
+    if (!pinnedMenu) {
+      setHoverMenu(null);
     }
   });
   document.addEventListener("pointermove", (event) => {
@@ -502,7 +518,18 @@ function wireMenuHoverBehavior() {
       pinnedMenu.classList.remove("pinnedOpen");
       pinnedMenu = null;
     }
+    if (event.target.closest?.(".mainNav > a")) {
+      setHoverMenu(null);
+    }
   });
+}
+
+function closeOpenMenus(options = {}) {
+  setHoverMenu(null);
+  if (options.includePinned && pinnedMenu) {
+    pinnedMenu.classList.remove("pinnedOpen");
+    pinnedMenu = null;
+  }
 }
 
 function setHoverMenu(menu) {
