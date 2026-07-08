@@ -68,22 +68,22 @@ objectMutation texture paths are case 2: sync APIs do not block texture download
 
 This project **allows** AI-assisted code, provided contributors follow:
 
-1. **Docs in sync**: code changes must update project docs (`doc/`, API, JSON contracts, examples, tool READMEs).
+1. **Docs in sync**: code changes must update project docs (`docs/`, API, JSON contracts, examples, tool READMEs).
 2. **Plan before code**: a written plan must exist and be **human-reviewed** before implementation merges.
-3. **Attach plans on submit**: include related materials under [`doc/dev/plans/`](../../dev/plans/).
-4. **Plan folder naming**: `{unix_ms_timestamp}_{brief-description}_{32-char-hex-uuid}` — e.g. `1782301810000` → `2026-06-24 19:50:10` (UTC+8). See [`doc/dev/plans/README.md`](../../dev/plans/README.md).
+3. **Attach plans on submit**: include related materials under [`docs/dev/plans/`](../../dev/plans/).
+4. **Plan folder naming**: `{unix_ms_timestamp}_{brief-description}_{32-char-hex-uuid}` — e.g. `1782301810000` → `2026-06-24 19:50:10` (UTC+8). See [`docs/dev/plans/README.md`](../../dev/plans/README.md).
 5. **Plan contents**: prompt/context summary, requirements assessment, and solution design (may be split across `.md` files).
 6. **Tests**: when appropriate, add automated cases under [`tests/`](../../tests/) (`*.test.mjs`) and document coverage in the plan; otherwise document manual verification in acceptance criteria.
 
-Details and an example folder: **[`doc/dev/plans/README.md`](../../dev/plans/README.md)**.
+Details and an example folder: **[`docs/dev/plans/README.md`](../../dev/plans/README.md)**.
 
 ## Language and documentation policy
 
 | Layer | Policy |
 |-------|--------|
-| **Docs `doc/`** | Public contracts live in `doc/` + [`doc/en/`](./); add English mirrors for new docs when practical |
+| **Docs `docs/`** | Public contracts live in `docs/` + [`docs/en/`](./); add English mirrors for new docs when practical |
 | **Code comments** | New code and public APIs in **English**; legacy Chinese comments in `core/` and `domains/` are migrated **in batches** (remove stale comments, add missing notes; continue when touching files) |
-| **[`demo.html`](../../demo.html)** | Single-page runtime i18n; `navigator.language` → `zh-CN` / `en-US`, fallback `en-US`; Chinese UI links to `doc/*.md`; English UI links to `doc/en/*.md` where mirrors exist (e.g. `event-mechanism.md` stays Chinese-only) |
+| **[`demo.html`](../../demo.html)** | Single-page runtime i18n; `navigator.language` → `zh-CN` / `en-US`, fallback `en-US`; Chinese UI links to `docs/*.md`; English UI links to `docs/en/*.md` where mirrors exist (e.g. `event-mechanism.md` stays Chinese-only) |
 | **`html-demo` tutorial pages** | Body UI stays Chinese |
 | **`tools/scene-host` editor / player** | Application i18n (gap-fill only); settings can override locale; default follows browser, fallback `en-US` |
 | **Canonical `scene-editor.html` / `scene-player.html`** | **No UI i18n for now** (avoid drift before greenfield aligns with canonical pages) |

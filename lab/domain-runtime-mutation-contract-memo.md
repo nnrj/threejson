@@ -1,12 +1,12 @@
-﻿# Domain 运行时变更契约（与 objectMutation / sceneObjectCommands 对齐）
+# Domain 运行时变更契约（与 objectMutation / sceneObjectCommands 对齐）
 
 **状态**：`idea`（文档约定；**未遵循的 domain 待逐步改进**）  
 **日期**：2026-06-02  
 **来源**：[core 增删对象 API 方案](file:///C:/Users/nnrj/.cursor/plans/core_增删对象_api_ed4e1c45.plan.md) 讨论 3-12 / 4-12
 
-关联：[`doc/zh/domains.md`](../doc/zh/domains.md)、[`core/BUSINESS_DOMAINS.md`](../core/BUSINESS_DOMAINS.md)、[`core/runtime/objectMutation/`](../core/runtime/objectMutation/)、拟议 `core/runtime/sceneObjectCommands.js`
+关联：[`docs/zh/domains.md`](../docs/zh/domains.md)、[`core/BUSINESS_DOMAINS.md`](../core/BUSINESS_DOMAINS.md)、[`core/runtime/objectMutation/`](../core/runtime/objectMutation/)、拟议 `core/runtime/sceneObjectCommands.js`
 
-与 [`doc/zh/scope.md`](../doc/zh/scope.md) 无发布承诺。
+与 [`docs/zh/scope.md`](../docs/zh/scope.md) 无发布承诺。
 
 ---
 
@@ -24,7 +24,7 @@
 | 项 | 要求 |
 |----|------|
 | `threeJsonId` | 稳定、唯一；写入 descriptor 与 `userData` |
-| `userData.objJson` | 规范真源（canonical descriptor）；与 [`design-principles`](../doc/zh/design-principles.md) 一致 |
+| `userData.objJson` | 规范真源（canonical descriptor）；与 [`design-principles`](../docs/zh/design-principles.md) 一致 |
 | `registerObject` | 根及需按 id 查询的子节点均注册（与 [objectRegistry](../core/handler/objectRegistry.js) 一致） |
 | 移除 | 使用 `removeObjectById`（或等价 core 路径），**禁止**仅 `scene.remove` + 局部 dispose |
 
@@ -45,7 +45,7 @@ mutation/commands **不区分** objType 与 domain：只认 `threeJsonId` 与 `o
 
 ## Domain 实现约定（SHOULD / MAY）
 
-写入 [`doc/zh/domains.md`](../doc/zh/domains.md) 时建议包含：
+写入 [`docs/zh/domains.md`](../docs/zh/domains.md) 时建议包含：
 
 ### SHOULD
 
@@ -92,7 +92,7 @@ mutation/commands **不区分** objType 与 domain：只认 `threeJsonId` 与 `o
 | **sceneHighlight** | pass 对象是否参与 object registry / 删除 |
 | **weather** | points/mesh 部署后的 `threeJsonId` 与删除 |
 
-应用层（模型面板、`addToScene` 白名单等）属**产品配置**，不在 `doc/zh/domains.md` 必选 API。
+应用层（模型面板、`addToScene` 白名单等）属**产品配置**，不在 `docs/zh/domains.md` 必选 API。
 
 ---
 
@@ -104,6 +104,6 @@ core **无**独立「floor」领域类型；仅为降低心智的 **preset objTy
 
 ## 退出条件
 
-- `doc/zh/domains.md` 纳入本节要点。
+- `docs/zh/domains.md` 纳入本节要点。
 - 编辑器 Phase B 删除/属性/撤销仅通过 mutation + sceneObjectCommands。
 - 主要 business domain 通过「注册表 + objJson」抽检清单。

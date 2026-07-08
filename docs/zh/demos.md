@@ -57,5 +57,5 @@ examples/html-demo/
 ## 外置 Agent / MCP
 
 - [tools/threejson-agent/](../../tools/threejson-agent/README.md)
-- [doc/mcp-cursor.md](./mcp-cursor.md)
+- [docs/mcp-cursor.md](./mcp-cursor.md)
 - [tools/threejson-agent-desktop/](../../tools/threejson-agent-desktop/README.md)

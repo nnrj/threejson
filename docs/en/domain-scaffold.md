@@ -8,7 +8,7 @@ The document is written for any host application: demos, business pages, editors
 
 ## Documentation Layers
 
-- Library layer: this document, `doc/domains.md`, and core domain contracts.
+- Library layer: this document, `docs/domains.md`, and core domain contracts.
 - Application layer: host-specific UI, history stacks, and optional convenience calls such as `addToScene`.
 
 ## Template Levels

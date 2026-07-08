@@ -1,8 +1,8 @@
-﻿# Extension JSON 约定（草案）
+# Extension JSON 约定（草案）
 
-**状态**：`idea`（容器形状备忘；正式接入见 [`doc/zh/extensions.md`](../doc/zh/extensions.md)）
+**状态**：`idea`（容器形状备忘；正式接入见 [`docs/zh/extensions.md`](../docs/zh/extensions.md)）
 
-正式接入说明见 **[doc/zh/extensions.md](../doc/zh/extensions.md)**。本文保留容器形状与字段合并规则摘要。
+正式接入说明见 **[docs/zh/extensions.md](../docs/zh/extensions.md)**。本文保留容器形状与字段合并规则摘要。
 
 core **不**解析具体插件字段语义；只约定容器形状，并由 `extensions/<id>/` 文档说明各键含义。
 
@@ -40,4 +40,4 @@ core **不**解析具体插件字段语义；只约定容器形状，并由 `ext
 |---------|-----------|--------|
 | `physics-rapier` | `extensions/physics-rapier/bootstrapFromScene.js`（多刚体 + 可选 sensor collider） | [README](../extensions/physics-rapier/README.md) |
 
-编辑器可选：`sceneConfig.pick.meshBvh` 启用 BVH 拾取（见 [`doc/zh/tools.md`](../doc/zh/tools.md) 中 settings 与 JSON 合并说明）。
+编辑器可选：`sceneConfig.pick.meshBvh` 启用 BVH 拾取（见 [`docs/zh/tools.md`](../docs/zh/tools.md) 中 settings 与 JSON 合并说明）。

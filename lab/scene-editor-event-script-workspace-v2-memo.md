@@ -1,4 +1,4 @@
-﻿# 场景编辑器 — 事件脚本工作区与目录树 / 多标签（V2 备忘）
+# 场景编辑器 — 事件脚本工作区与目录树 / 多标签（V2 备忘）
 
 **版本**：V2（2026-06-28）  
 **状态**：`deferred` — **本期不做**；待 Core 运行时事件机制（[scene-event-mechanism-evaluation.md §10](./scene-event-mechanism-evaluation.md) + 工程讨论稿 `core_event_mechanism_v2_88159f7d.plan.md`，工作区 `.cursor/plans/` 私有）落地后，再单独立项讨论与实现。  
@@ -9,7 +9,7 @@
 - 编辑器 UI 备忘（V1）：[scene-editor-ui-memo.md](./scene-editor-ui-memo.md) §八（多场景多标签，与本备忘 **不同层级**）
 - 编辑器壳：[`scene-editor.html`](../scene-editor.html)、[`tools/scene-host/editor/index.html`](../tools/scene-host/editor/index.html)
 
-本页为 **VB6 式事件脚本编辑体验** 的编辑器壳层备忘，**不代表当前里程碑**；与 [`doc/zh/scope.md`](../doc/zh/scope.md) 的 Core 承诺区分。
+本页为 **VB6 式事件脚本编辑体验** 的编辑器壳层备忘，**不代表当前里程碑**；与 [`docs/zh/scope.md`](../docs/zh/scope.md) 的 Core 承诺区分。
 
 ---
 

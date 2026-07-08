@@ -1,6 +1,6 @@
-﻿# 业务域与 `domainModelList`
+# 业务域与 `domainModelList`
 
-调用者如果想快速理解 `domains/`、`domainModelList` 和自定义业务域的创建方式，建议优先阅读 [../doc/zh/domains.md](../doc/zh/domains.md)。本文更偏实现契约与内部设计说明。
+调用者如果想快速理解 `domains/`、`domainModelList` 和自定义业务域的创建方式，建议优先阅读 [../docs/zh/domains.md](../docs/zh/domains.md)。本文更偏实现契约与内部设计说明。
 
 **文档分层**：`core/` 与 `domains/` 为库；任意宿主（单对象 demo、RoomShow、场景编辑器等）均为平等消费者。本文不写「某编辑器专属」必选 API；宿主 UI 见各应用文档。
 
@@ -130,7 +130,7 @@
 
 **`devicePanelRef` 写错：仅 warn，不 fallback。** 只要写了非空 `devicePanelRef`，resolver **只走方式 1**，同 record 的 `info` / `infoPanel` **一律忽略**。ref 在 registry 中不存在时输出 `[device] devicePanelRef not found: …`；**不会** fallback 到内嵌 `infoPanel`，**不会**自动 deploy 内嵌面板。请修正 ref 或删除 `devicePanelRef` 以启用方式 2/3。
 
-API：`businessDomains.device.resolveDevicePanelRef`、`showDevicePanel`、`bindDevicePanelTriggers` 等。详见 [doc/zh/api.md § domains/device](../doc/zh/api.md#domainsdevice-设备面板)。
+API：`businessDomains.device.resolveDevicePanelRef`、`showDevicePanel`、`bindDevicePanelTriggers` 等。详见 [docs/zh/api.md § domains/device](../docs/zh/api.md#domainsdevice-设备面板)。
 
 ## 注册新业务域
 
@@ -159,6 +159,6 @@ Port 组合体应写在 **`worldInfo.domainModelList`**（`handler`: `dockCrane`
 
 ## 运行时变更契约（二期，与注册 API 分开）
 
-编辑态宿主（任意应用）若需统一增删改/撤销，见 [lab/domain-runtime-mutation-contract-memo.md](../lab/domain-runtime-mutation-contract-memo.md) 与 [doc/zh/runtime-object-mutation-quickref.md](../doc/zh/runtime-object-mutation-quickref.md)。**未**纳入 `validateDomainDescriptor`。
+编辑态宿主（任意应用）若需统一增删改/撤销，见 [lab/domain-runtime-mutation-contract-memo.md](../lab/domain-runtime-mutation-contract-memo.md) 与 [docs/zh/runtime-object-mutation-quickref.md](../docs/zh/runtime-object-mutation-quickref.md)。**未**纳入 `validateDomainDescriptor`。
 
 **待审计 gap（备忘）**：见 [lab/domain-runtime-mutation-contract-memo.md](../lab/domain-runtime-mutation-contract-memo.md) §待改进 domain。

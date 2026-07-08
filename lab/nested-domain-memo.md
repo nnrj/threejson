@@ -1,8 +1,8 @@
-﻿# 嵌套 Domain 备忘
+# 嵌套 Domain 备忘
 
 状态：**v1 已实现**（2026-06）：core registry 支持点分 qualified id、递归 manifest、`businessDomains` 多层 Proxy；试点 **`weather.rain`** / **`weather.wind`**。
 
-关联文档：[`core/BUSINESS_DOMAINS.md`](../core/BUSINESS_DOMAINS.md)、[`doc/zh/domains.md`](../doc/zh/domains.md)、[`examples/html-demo/track-05-tooling/05-02-nested-domain.html`](../examples/html-demo/track-05-tooling/05-02-nested-domain.html)
+关联文档：[`core/BUSINESS_DOMAINS.md`](../core/BUSINESS_DOMAINS.md)、[`docs/zh/domains.md`](../docs/zh/domains.md)、[`examples/html-demo/track-05-tooling/05-02-nested-domain.html`](../examples/html-demo/track-05-tooling/05-02-nested-domain.html)
 
 ## v1 已实现能力
 

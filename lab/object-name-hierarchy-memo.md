@@ -1,8 +1,8 @@
-﻿# 对象 `name` 层级筛选 — Lab 备忘
+# 对象 `name` 层级筛选 — Lab 备忘
 
 状态：`idea`（**非发布承诺**；**不保证**将来实现）
 
-关联：[`对象标识字段重构`](../.cursor/plans/对象标识字段重构_d2717a33.plan.md)（若 plan 已归档，见 `doc/zh/json-format.md` 对象身份专章）
+关联：[`对象标识字段重构`](../.cursor/plans/对象标识字段重构_d2717a33.plan.md)（若 plan 已归档，见 `docs/zh/json-format.md` 对象身份专章）
 
 ## 背景
 

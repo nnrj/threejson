@@ -1,8 +1,8 @@
-﻿# core/ 目录分层：builder · handler · runtime（远期设想）
+# core/ 目录分层：builder · handler · runtime（远期设想）
 
 **状态**：`idea` — 组织与认知上的目标态，**非发布承诺**；**不要求**现有代码立刻按此搬迁。
 
-**关联**：[doc/zh/design-principles.md](../doc/zh/design-principles.md)（理想职责简述）、[doc/zh/scope.md](../doc/zh/scope.md)（Canonical vs Runtime overlay）、[domain-runtime-mutation-contract-memo.md](./domain-runtime-mutation-contract-memo.md)、[core/runtime/objectMutation/](../core/runtime/objectMutation/)
+**关联**：[docs/zh/design-principles.md](../docs/zh/design-principles.md)（理想职责简述）、[docs/zh/scope.md](../docs/zh/scope.md)（Canonical vs Runtime overlay）、[domain-runtime-mutation-contract-memo.md](./domain-runtime-mutation-contract-memo.md)、[core/runtime/objectMutation/](../core/runtime/objectMutation/)
 
 ---
 
@@ -35,7 +35,7 @@
 - `core/builder/css3d/css3dRuntime.js` — CSS3DRenderer 生命周期
 - `core/handler/modelHandler.js` — 碰撞预览；盒体列表聚合见 `boxModelListCoalescer.js`，CSG 见 `csgBrushOps.js`
 
-对外稳定面仍是 [`core/index.js`](../core/index.js) 与 [`doc/zh/api.md`](../doc/zh/api.md) 的 **能力名**，而非目录名。
+对外稳定面仍是 [`core/index.js`](../core/index.js) 与 [`docs/zh/api.md`](../docs/zh/api.md) 的 **能力名**，而非目录名。
 
 ---
 
@@ -117,7 +117,7 @@ JSON / tjz
 
 ### 方案 A — 仅文档（成本最低）
 
-- 在 [design-principles.md](../doc/zh/design-principles.md) 说明理想三层（**已完成索引**）
+- 在 [design-principles.md](../docs/zh/design-principles.md) 说明理想三层（**已完成索引**）
 - 新代码 **倾向** 按职责选目录，**不** Retrofit 全库
 
 ### 方案 B — 契约 + 增量归位（若立项）
@@ -161,4 +161,4 @@ JSON / tjz
 
 - Load：`sceneLoadHandler`、`objectLoadHandler`、`modelBuilder`、`deployScheduler`
 - Runtime API：`objectMutation`、`sceneObjectCommands`、`infoPanelRuntime`、`objectObjType`、`descriptorSync`
-- 文档：`doc/zh/api.md` § runtime-mutation、§ sceneObjectCommands
+- 文档：`docs/zh/api.md` § runtime-mutation、§ sceneObjectCommands

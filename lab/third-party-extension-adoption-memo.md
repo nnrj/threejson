@@ -1,4 +1,4 @@
-﻿# 第三方 Extension 接入与 Domain 对称性评估
+# 第三方 Extension 接入与 Domain 对称性评估
 
 状态：`parked`（**本期不做**第三方 extension 标准接入；结论备忘，非发布承诺）
 
@@ -8,10 +8,10 @@
 
 - [extension-json.md](./extension-json.md) — Extension JSON 容器约定（草案）
 - [npm-publish-and-monorepo-memo.md](./npm-publish-and-monorepo-memo.md) — 单包 `files` 含 `extensions/`
-- [doc/zh/domains.md](../doc/zh/domains.md) — 第三方 domain（`add-domain`、独立 npm 包）
-- [doc/zh/design-principles.md](../doc/zh/design-principles.md) — core / extensions / 宿主划界
+- [docs/zh/domains.md](../docs/zh/domains.md) — 第三方 domain（`add-domain`、独立 npm 包）
+- [docs/zh/design-principles.md](../docs/zh/design-principles.md) — core / extensions / 宿主划界
 - [extensions/README.md](../extensions/README.md) — 仓库内参考实现说明
-- [doc/zh/glossary.md](../doc/zh/glossary.md) — domain vs extension 术语
+- [docs/zh/glossary.md](../docs/zh/glossary.md) — domain vs extension 术语
 
 ## 结论（TL;DR）
 
@@ -63,7 +63,7 @@ export * from "../core/index.js";
 
 ### 方式 D：本质是「自定义模型」→ 用 domain
 
-- 声明式 JSON、`domain` + `handler` 调度 → [doc/zh/domains.md § 第三方 domain](../doc/zh/domains.md#第三方-domainnpm--cli)。
+- 声明式 JSON、`domain` + `handler` 调度 → [docs/zh/domains.md § 第三方 domain](../docs/zh/domains.md#第三方-domainnpm--cli)。
 - 不要强行做成 extension。
 
 ## 与 domain「对称」是否有必要
@@ -97,7 +97,7 @@ export * from "../core/index.js";
 | `package.json` 声明 | `"threejson": { "domain", "domainId" }` | 无 `threejson.extension` 约定 |
 | CLI | `threejson add-domain` | 无 `add-extension` |
 | 用户 manifest | `threejson.domains.mjs` | 无 `threejson.extensions.mjs` |
-| 正式文档 | `doc/zh/domains.md` | JSON 容器见 lab 草案；无 `doc/zh/extensions.md` 级手册 |
+| 正式文档 | `docs/zh/domains.md` | JSON 容器见 lab 草案；无 `docs/zh/extensions.md` 级手册 |
 
 ## 决策记录
 

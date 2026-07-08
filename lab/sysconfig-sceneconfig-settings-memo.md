@@ -1,10 +1,10 @@
-﻿# Tools settings 与 sceneConfig 合并 — 分类级总开关（备忘）
+# Tools settings 与 sceneConfig 合并 — 分类级总开关（备忘）
 
 **状态**：`idea` — **本期不实现**。
 
 ## 背景
 
-编辑器/播放器 settings 与场景 JSON `sceneConfig` 的合并采用 **A/B/C 三分法**（见 [`doc/zh/tools.md`](../doc/zh/tools.md)）：
+编辑器/播放器 settings 与场景 JSON `sceneConfig` 的合并采用 **A/B/C 三分法**（见 [`docs/zh/tools.md`](../docs/zh/tools.md)）：
 
 - **A**：JSON 有字段则 JSON 优先；缺字段用 settings/sysConfig 兜底（`valueOr`）。
 - **B**：加载策略经 `createJsonScene` options（补光、补相机等）。
@@ -38,4 +38,4 @@
 ## 相关
 
 - 评估正史：[`sysConfig-vs-sceneConfig-assessment.md`](./sysConfig-vs-sceneConfig-assessment.md)
-- Tools 文档：[`doc/zh/tools.md`](../doc/zh/tools.md)
+- Tools 文档：[`docs/zh/tools.md`](../docs/zh/tools.md)

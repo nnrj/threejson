@@ -18,11 +18,11 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/quick-start.md",
+        "href": "./docs/zh/quick-start.md",
         "label": "快速开始"
       },
       {
-        "href": "./doc/zh/json-format.md#盒子-box",
+        "href": "./docs/zh/json-format.md#盒子-box",
         "label": "JSON：盒子 box"
       }
     ]
@@ -50,15 +50,15 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/quick-start.md",
+        "href": "./docs/zh/quick-start.md",
         "label": "快速开始"
       },
       {
-        "href": "./doc/zh/json-format.md#盒子-box",
+        "href": "./docs/zh/json-format.md#盒子-box",
         "label": "JSON：盒子 box"
       },
       {
-        "href": "./doc/zh/json-format.md#声明式动画-animations",
+        "href": "./docs/zh/json-format.md#声明式动画-animations",
         "label": "声明式动画"
       }
     ]
@@ -88,11 +88,11 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md#其他基础几何体-primitive",
+        "href": "./docs/zh/json-format.md#其他基础几何体-primitive",
         "label": "JSON：其他基础几何"
       },
       {
-        "href": "./doc/zh/json-format.md#球体-sphere",
+        "href": "./docs/zh/json-format.md#球体-sphere",
         "label": "JSON：球体"
       }
     ]
@@ -122,11 +122,11 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md#人类友好-json",
+        "href": "./docs/zh/json-format.md#人类友好-json",
         "label": "人类友好 JSON"
       },
       {
-        "href": "./doc/zh/json-format.md#friendlymap",
+        "href": "./docs/zh/json-format.md#friendlymap",
         "label": "friendlyMap"
       }
     ]
@@ -156,11 +156,11 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md#标准-json",
+        "href": "./docs/zh/json-format.md#标准-json",
         "label": "标准 JSON"
       },
       {
-        "href": "./doc/zh/json-format.md#objectlist-分发规则",
+        "href": "./docs/zh/json-format.md#objectlist-分发规则",
         "label": "objectList 分发"
       }
     ]
@@ -190,7 +190,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/domains.md",
+        "href": "./docs/zh/domains.md",
         "label": "业务域"
       },
       {
@@ -220,7 +220,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/api.md#disposebythreejsonidscene-threejsonid-options--detachbythreejsonid",
+        "href": "./docs/zh/api.md#disposebythreejsonidscene-threejsonid-options--detachbythreejsonid",
         "label": "disposeByThreeJsonId"
       },
       {
@@ -241,7 +241,7 @@
     "status": "stable",
     "group": "Track 0 · 运行时与 JSON 契约",
     "title": "单对象手写部署（选修）",
-    "summary": "进阶选修：createSceneRuntime + deployMesh 部署单条 box JSON，对照 doc/zh/README 手写路径；主线仍用 createJsonScene。",
+    "summary": "进阶选修：createSceneRuntime + deployMesh 部署单条 box JSON，对照 docs/zh/README 手写路径；主线仍用 createJsonScene。",
     "navSummary": "选修 · deployMesh 单 box。",
     "highlights": [
       "学完 t00-01 后再看；与 createJsonScene 对照理解底层部署。",
@@ -250,11 +250,11 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/README.md",
+        "href": "./docs/zh/README.md",
         "label": "调用者手册"
       },
       {
-        "href": "./doc/zh/json-format.md#盒子-box",
+        "href": "./docs/zh/json-format.md#盒子-box",
         "label": "JSON：盒子 box"
       }
     ]
@@ -285,11 +285,11 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md#sceneconfigintro-可选加载完成后片头",
+        "href": "./docs/zh/json-format.md#sceneconfigintro-可选加载完成后片头",
         "label": "JSON：sceneConfig.intro"
       },
       {
-        "href": "./doc/zh/scene-load-lifecycle.md",
+        "href": "./docs/zh/scene-load-lifecycle.md",
         "label": "场景加载生命周期"
       }
     ]
@@ -319,19 +319,19 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md#组合-group",
+        "href": "./docs/zh/json-format.md#组合-group",
         "label": "组合 group"
       },
       {
-        "href": "./doc/zh/json-format.md#线条-line",
+        "href": "./docs/zh/json-format.md#线条-line",
         "label": "线条 line"
       },
       {
-        "href": "./doc/zh/json-format.md#信息面板-infopanel",
+        "href": "./docs/zh/json-format.md#信息面板-infopanel",
         "label": "信息面板"
       },
       {
-        "href": "./doc/zh/info-panels.md",
+        "href": "./docs/zh/info-panels.md",
         "label": "信息面板专题"
       }
     ]
@@ -361,11 +361,11 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md#plane贴图纯色平面",
+        "href": "./docs/zh/json-format.md#plane贴图纯色平面",
         "label": "plane"
       },
       {
-        "href": "./doc/zh/json-format.md#line-拓扑-topology",
+        "href": "./docs/zh/json-format.md#line-拓扑-topology",
         "label": "line 拓扑"
       }
     ]
@@ -395,7 +395,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md#预设-objtypewallglass-等",
+        "href": "./docs/zh/json-format.md#预设-objtypewallglass-等",
         "label": "预设 objType"
       }
     ]
@@ -425,7 +425,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md#csg合并相交挖洞",
+        "href": "./docs/zh/json-format.md#csg合并相交挖洞",
         "label": "CSG"
       }
     ]
@@ -455,15 +455,15 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md#sceneconfighelpersgrid--axes-辅助线",
+        "href": "./docs/zh/json-format.md#sceneconfighelpersgrid--axes-辅助线",
         "label": "sceneConfig.helpers"
       },
       {
-        "href": "./doc/zh/json-format.md#shapeplane--irregularplane不规则平面",
+        "href": "./docs/zh/json-format.md#shapeplane--irregularplane不规则平面",
         "label": "irregularPlane"
       },
       {
-        "href": "./doc/zh/json-format.md#shapeextrude--irregulargeometry不规则几何体",
+        "href": "./docs/zh/json-format.md#shapeextrude--irregulargeometry不规则几何体",
         "label": "shapeExtrude"
       }
     ]
@@ -494,7 +494,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md#objtype-native通用-threejs-对象",
+        "href": "./docs/zh/json-format.md#objtype-native通用-threejs-对象",
         "label": "objType: native"
       },
       {
@@ -528,11 +528,11 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md#objtype-native通用-threejs-对象",
+        "href": "./docs/zh/json-format.md#objtype-native通用-threejs-对象",
         "label": "objType: native"
       },
       {
-        "href": "./doc/zh/json-format.md",
+        "href": "./docs/zh/json-format.md",
         "label": "assetLibrary"
       }
     ]
@@ -562,11 +562,11 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md",
+        "href": "./docs/zh/json-format.md",
         "label": "相机 type"
       },
       {
-        "href": "./doc/zh/json-format.md",
+        "href": "./docs/zh/json-format.md",
         "label": "controls fly"
       }
     ]
@@ -596,11 +596,11 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md#热力图-heatmap",
+        "href": "./docs/zh/json-format.md#热力图-heatmap",
         "label": "热力图"
       },
       {
-        "href": "./doc/zh/json-format.md#动态平面-wind",
+        "href": "./docs/zh/json-format.md#动态平面-wind",
         "label": "动态平面 wind"
       }
     ]
@@ -630,7 +630,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md#point点云-粒子",
+        "href": "./docs/zh/json-format.md#point点云-粒子",
         "label": "points"
       }
     ]
@@ -660,11 +660,11 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md#domain-weather天气粒子预设",
+        "href": "./docs/zh/json-format.md#domain-weather天气粒子预设",
         "label": "weather 域"
       },
       {
-        "href": "./doc/zh/domains.md",
+        "href": "./docs/zh/domains.md",
         "label": "domains.md"
       }
     ]
@@ -694,15 +694,15 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md#sprite图标-标记",
+        "href": "./docs/zh/json-format.md#sprite图标-标记",
         "label": "sprite"
       },
       {
-        "href": "./doc/zh/json-format.md#tube管道路径",
+        "href": "./docs/zh/json-format.md#tube管道路径",
         "label": "tube"
       },
       {
-        "href": "./doc/zh/json-format.md#instanced显式-instancedmesh",
+        "href": "./docs/zh/json-format.md#instanced显式-instancedmesh",
         "label": "instanced"
       }
     ]
@@ -732,7 +732,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md#sceneconfigscenebackground-与-environment",
+        "href": "./docs/zh/json-format.md#sceneconfigscenebackground-与-environment",
         "label": "background / environment"
       }
     ]
@@ -762,7 +762,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md#audio",
+        "href": "./docs/zh/json-format.md#audio",
         "label": "audio"
       }
     ]
@@ -792,7 +792,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md#particleemitter统一粒子发射器",
+        "href": "./docs/zh/json-format.md#particleemitter统一粒子发射器",
         "label": "particleEmitter"
       }
     ]
@@ -826,7 +826,7 @@
         "label": "particle-nebula README"
       },
       {
-        "href": "./doc/zh/json-format.md#particleemitter统一粒子发射器",
+        "href": "./docs/zh/json-format.md#particleemitter统一粒子发射器",
         "label": "particleEmitter"
       }
     ]
@@ -856,11 +856,11 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md#纹理采样-texturequality",
+        "href": "./docs/zh/json-format.md#纹理采样-texturequality",
         "label": "纹理采样 textureQuality"
       },
       {
-        "href": "./doc/zh/api.md#coreutiltexturesamplingjs",
+        "href": "./docs/zh/api.md#coreutiltexturesamplingjs",
         "label": "textureSampling API"
       }
     ]
@@ -890,7 +890,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md#shadersurfacecore-通用-shader-面",
+        "href": "./docs/zh/json-format.md#shadersurfacecore-通用-shader-面",
         "label": "shaderSurface / nature.sky"
       },
       {
@@ -974,7 +974,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md#externalmodel",
+        "href": "./docs/zh/json-format.md#externalmodel",
         "label": "externalModel"
       }
     ]
@@ -1004,7 +1004,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md#animationmode-可选",
+        "href": "./docs/zh/json-format.md#animationmode-可选",
         "label": "animationMode"
       }
     ]
@@ -1034,7 +1034,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md#外部模型-objgltfglbthreejson",
+        "href": "./docs/zh/json-format.md#外部模型-objgltfglbthreejson",
         "label": "外部模型与原生 JSON"
       }
     ]
@@ -1064,7 +1064,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md#obj-同目录-maps-回退",
+        "href": "./docs/zh/json-format.md#obj-同目录-maps-回退",
         "label": "OBJ maps 回退"
       }
     ]
@@ -1094,7 +1094,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md#animationgraph可选gltf-动画状态机",
+        "href": "./docs/zh/json-format.md#animationgraph可选gltf-动画状态机",
         "label": "animationGraph"
       }
     ]
@@ -1124,7 +1124,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md#运行时对象查询",
+        "href": "./docs/zh/json-format.md#运行时对象查询",
         "label": "运行时对象查询"
       }
     ]
@@ -1154,7 +1154,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/scope.md",
+        "href": "./docs/zh/scope.md",
         "label": "scope.md"
       },
       {
@@ -1188,7 +1188,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md#objtype-controls视口控制器",
+        "href": "./docs/zh/json-format.md#objtype-controls视口控制器",
         "label": "controls"
       },
       {
@@ -1303,15 +1303,15 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/event-mechanism.md#一事件机制使用方法",
+        "href": "./docs/zh/event-mechanism.md#一事件机制使用方法",
         "label": "事件机制"
       },
       {
-        "href": "./doc/zh/event-mechanism.md#二eventscript-语法",
+        "href": "./docs/zh/event-mechanism.md#二eventscript-语法",
         "label": "EventScript 语法"
       },
       {
-        "href": "./doc/zh/json-format.md",
+        "href": "./docs/zh/json-format.md",
         "label": "JSON events"
       }
     ]
@@ -1341,7 +1341,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/event-mechanism.md#131-单对象-lifecycle-与场景-load-的区别",
+        "href": "./docs/zh/event-mechanism.md#131-单对象-lifecycle-与场景-load-的区别",
         "label": "object lifecycle"
       }
     ]
@@ -1371,7 +1371,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/event-mechanism.md#12-jsonevents-块",
+        "href": "./docs/zh/event-mechanism.md#12-jsonevents-块",
         "label": "JSON actions"
       }
     ]
@@ -1402,11 +1402,11 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/info-panels.md",
+        "href": "./docs/zh/info-panels.md",
         "label": "信息面板专题"
       },
       {
-        "href": "./doc/zh/json-format.md#信息面板-infopanel",
+        "href": "./docs/zh/json-format.md#信息面板-infopanel",
         "label": "infoPanel JSON"
       }
     ]
@@ -1436,7 +1436,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md#可交互-css3d-面板-css3dpanelcore",
+        "href": "./docs/zh/json-format.md#可交互-css3d-面板-css3dpanelcore",
         "label": "css3dPanel"
       }
     ],
@@ -1495,7 +1495,7 @@
         "label": "AI README"
       },
       {
-        "href": "./doc/zh/mcp-cursor.md",
+        "href": "./docs/zh/mcp-cursor.md",
         "label": "mcp-cursor"
       }
     ]
@@ -1525,11 +1525,11 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/domains.md",
+        "href": "./docs/zh/domains.md",
         "label": "domains.md"
       },
       {
-        "href": "./doc/zh/json-format.md#domain-weather天气粒子预设",
+        "href": "./docs/zh/json-format.md#domain-weather天气粒子预设",
         "label": "weather 域"
       }
     ]
@@ -1559,7 +1559,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md#world-业务场景-json扩展",
+        "href": "./docs/zh/json-format.md#world-业务场景-json扩展",
         "label": "World 业务 JSON"
       }
     ]
@@ -1589,7 +1589,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/demos.md",
+        "href": "./docs/zh/demos.md",
         "label": "演示说明"
       }
     ]
@@ -1619,7 +1619,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/demos.md",
+        "href": "./docs/zh/demos.md",
         "label": "演示说明"
       }
     ]
@@ -1649,7 +1649,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/demos.md",
+        "href": "./docs/zh/demos.md",
         "label": "演示说明"
       }
     ]
@@ -1679,7 +1679,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/domains.md",
+        "href": "./docs/zh/domains.md",
         "label": "业务域"
       },
       {
@@ -1789,7 +1789,7 @@
             "label": "stat-echarts README"
           },
           {
-            "href": "./doc/zh/json-format.md#可交互-css3d-面板-css3dpanelcore",
+            "href": "./docs/zh/json-format.md#可交互-css3d-面板-css3dpanelcore",
             "label": "CSS3D 面板"
           }
         ]
@@ -1893,7 +1893,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/zh/json-format.md",
+        "href": "./docs/zh/json-format.md",
         "label": "text 对象"
       },
       {

@@ -1,6 +1,6 @@
-﻿# Lab 文档约定
+# Lab 文档约定
 
-本目录记录**实验、评估、架构备忘与已落地项的历史索引**，与 [`doc/zh/scope.md`](../doc/zh/scope.md) 中的 **Core 发布承诺** 区分。读者若只需稳定 API，优先查 `doc/` 与 `core/ai/SKILL.md`。
+本目录记录**实验、评估、架构备忘与已落地项的历史索引**，与 [`docs/zh/scope.md`](../docs/zh/scope.md) 中的 **Core 发布承诺** 区分。读者若只需稳定 API，优先查 `docs/` 与 `core/ai/SKILL.md`。
 
 ---
 
@@ -10,7 +10,7 @@
 
 | 标记 | 含义 | 何时使用 |
 |------|------|----------|
-| **`shipped`** | **已实现**，主路径可用 | 代码已落地；稳定说明可链到 `doc/` |
+| **`shipped`** | **已实现**，主路径可用 | 代码已落地；稳定说明可链到 `docs/` |
 | **`partial`** | **部分实现** | 核心能力可用，仍有明确 backlog（写清 Phase / 缺口） |
 | **`idea`** | **未实现**，开放探索 | 无排期；必要性 / 可行性待评估 |
 | **`committed`** | **已立项，承诺实现** | 路线图 / plan 已拍板，尚未编码 |
@@ -35,7 +35,7 @@
 
 | 类型 | 命名建议 | 生命周期 |
 |------|----------|----------|
-| **正史** | `*-roadmap.md`、`*-assessment.md` | `shipped` 后保留在 `lab/` 根目录，链到 `doc/` |
+| **正史** | `*-roadmap.md`、`*-assessment.md` | `shipped` 后保留在 `lab/` 根目录，链到 `docs/` |
 | **备忘** | `*-memo.md` | `idea` / `partial` / `deferred`；立项后升为正史或归档 |
 | **评估** | `*-evaluation.md` | 结论写清；子方案标 `deferred` / `rejected` |
 | **gap / 审计** | 并入相关 memo 或 **归档** | 一次性清理记录 → `archive/` |
@@ -48,7 +48,7 @@
 1. **新开主题**：在 [`README.md`](./README.md) 增一行，并添加 `lab/<topic>-memo.md`（文首写状态 + 日期）。
 2. **已 shipped 且仅剩迁移日志**：合并要点到正史 doc 后移入 [`archive/`](./archive/)。
 3. **重复主题**：保留一篇 **hub**（评估或 roadmap），其余合并或归档；勿留三份同义索引。
-4. **与 `doc/` 分工**：可声明式 JSON / 公共 API → `doc/`；未承诺行为、宿主集成、编辑器 backlog → `lab/`。
+4. **与 `docs/` 分工**：可声明式 JSON / 公共 API → `docs/`；未承诺行为、宿主集成、编辑器 backlog → `lab/`。
 5. **交叉链接**：归档后更新指向 `archive/` 或 hub 正史；避免链到已删路径。
 
 ---
@@ -56,7 +56,7 @@
 ## 与产品承诺的关系
 
 ```text
-doc/zh/scope.md          → Core 对外承诺
+docs/zh/scope.md          → Core 对外承诺
 lab/ (shipped/partial) → 已实现或部分实现的实现索引
 lab/ (idea~deferred)   → 排期参考，非承诺
 lab/ (parked/rejected) → 明确不做或否决

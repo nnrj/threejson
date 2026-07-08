@@ -1,4 +1,4 @@
-﻿# ThreeJSON AI 接口
+# ThreeJSON AI 接口
 
 [中文](./README.md) | [English](./README_EN.md)
 
@@ -339,6 +339,6 @@ console.log("skipped (already had url):", result.skipped);
 
 完整矩阵见 **[`tests/ai-manual-verification.md`](../../tests/ai-manual-verification.md)**。自动化（无 Key）：`npm test`；静态 AI 夹具 + bridge：`npm run verify:ai-static`；可选 live CLI：`npm run verify:ai-live`（需 `tools/threejson-agent/setting.json`）。
 
-完整说明见 [`core/ai/SKILL.md`](./SKILL.md)、[`doc/zh/json-format.md`](../../doc/zh/json-format.md)、[`doc/zh/extensions.md`](../../doc/zh/extensions.md)、[`doc/zh/glossary.md`](../../doc/zh/glossary.md)。能力 gap 归档：[`lab/archive/ai-skill-gap-matrix.md`](../../lab/archive/ai-skill-gap-matrix.md)。
+完整说明见 [`core/ai/SKILL.md`](./SKILL.md)、[`docs/zh/json-format.md`](../../docs/zh/json-format.md)、[`docs/zh/extensions.md`](../../docs/zh/extensions.md)、[`docs/zh/glossary.md`](../../docs/zh/glossary.md)。能力 gap 归档：[`lab/archive/ai-skill-gap-matrix.md`](../../lab/archive/ai-skill-gap-matrix.md)。
 
-更多演示见 `doc/zh/demos.md`（[`examples/html-demo/track-05-tooling/05-01-ai-scene.html`](../examples/html-demo/track-05-tooling/05-01-ai-scene.html)、`ai-scene.html`、`examples/script/ai-update-scene.mjs`）。
+更多演示见 `docs/zh/demos.md`（[`examples/html-demo/track-05-tooling/05-01-ai-scene.html`](../examples/html-demo/track-05-tooling/05-01-ai-scene.html)、`ai-scene.html`、`examples/script/ai-update-scene.mjs`）。

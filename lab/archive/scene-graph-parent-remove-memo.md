@@ -1,4 +1,4 @@
-﻿> **归档**：flat scene graph 已落地；剩余项为历史风险记录。
+> **归档**：flat scene graph 已落地；剩余项为历史风险记录。
 
 # 场景图挂载与 `scene.remove` 审计备忘
 
@@ -6,7 +6,7 @@
 **日期**：2026-05-29  
 **背景**：`room-show.html` 中 `fix: false` 信息面板双击不消失；根因是 `hideAllInfoPanel` 使用 `scene.remove(model)`，而 JSON 部署的面板曾挂在 `overlayRoot` 下。已修复 `hideAllInfoPanel`（`parent.remove`）。**2026-05 后续**：业务对象与 overlay 中间层已取消，统一 flat 挂 `scene` + bucket 分类。
 
-与 [`doc/zh/scope.md`](../doc/zh/scope.md) 无发布承诺；历史 managed roots 设计见 git 历史中的 `sceneLoadHandler.js`。
+与 [`docs/zh/scope.md`](../docs/zh/scope.md) 无发布承诺；历史 managed roots 设计见 git 历史中的 `sceneLoadHandler.js`。
 
 ---
 

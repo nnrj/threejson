@@ -1,10 +1,10 @@
-﻿# Domain 编辑 / 快照 — 待讨论 backlog（非承诺）
+# Domain 编辑 / 快照 — 待讨论 backlog（非承诺）
 
 **状态**：`idea`（**待讨论**；**未必实现**）  
 **日期**：2026-06-09  
 **讨论基线**：[domain 编辑快照整合](file:///C:/Users/nnrj/.cursor/plans/domain_编辑快照整合_5c6c8603.plan.md)（Phase A / B 已落地）
 
-与 [`doc/zh/scope.md`](../doc/zh/scope.md) 无发布承诺。本节仅收录整合方案中 **明确未立项** 或标为 **P2 / 另议题** 的条目，供后续评审；**不表示排期或必须做**。
+与 [`docs/zh/scope.md`](../docs/zh/scope.md) 无发布承诺。本节仅收录整合方案中 **明确未立项** 或标为 **P2 / 另议题** 的条目，供后续评审；**不表示排期或必须做**。
 
 ---
 
@@ -12,7 +12,7 @@
 
 整合方案 **Phase A + B** 已在仓库实现，包括但不限于：
 
-- 依赖方向条文：[`doc/zh/design-principles.md`](../doc/zh/design-principles.md) §依赖方向
+- 依赖方向条文：[`docs/zh/design-principles.md`](../docs/zh/design-principles.md) §依赖方向
 - `bound` 导出：有 `capturePersistDescriptor` 则合并；否则 `persistSource` + 根变换（**不阻断整场景**）
 - 子件漂移：`collectDomainExportCaveats` + 编辑器保存后 **非阻断** warning
 - cabinet `capture` 对齐 instance-only；移除 `groupInfo.cabinetInfo`

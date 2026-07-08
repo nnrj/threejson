@@ -18,11 +18,11 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/quick-start.md",
+        "href": "./docs/en/quick-start.md",
         "label": "Quick start"
       },
       {
-        "href": "./doc/en/json-format.md#box",
+        "href": "./docs/en/json-format.md#box",
         "label": "JSON: box"
       }
     ]
@@ -50,15 +50,15 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/quick-start.md",
+        "href": "./docs/en/quick-start.md",
         "label": "Quick start"
       },
       {
-        "href": "./doc/en/json-format.md#box",
+        "href": "./docs/en/json-format.md#box",
         "label": "JSON: box"
       },
       {
-        "href": "./doc/en/json-format.md#declarative-animations",
+        "href": "./docs/en/json-format.md#declarative-animations",
         "label": "Declarative animation"
       }
     ]
@@ -88,11 +88,11 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md#other-basic-primitives",
+        "href": "./docs/en/json-format.md#other-basic-primitives",
         "label": "JSON: other primitives"
       },
       {
-        "href": "./doc/en/json-format.md#sphere",
+        "href": "./docs/en/json-format.md#sphere",
         "label": "JSON: sphere"
       }
     ]
@@ -122,11 +122,11 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md#friendly-json",
+        "href": "./docs/en/json-format.md#friendly-json",
         "label": "Human-friendly JSON"
       },
       {
-        "href": "./doc/en/json-format.md#friendlymap",
+        "href": "./docs/en/json-format.md#friendlymap",
         "label": "friendlyMap"
       }
     ]
@@ -156,11 +156,11 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md#standard-json",
+        "href": "./docs/en/json-format.md#standard-json",
         "label": "Standard JSON"
       },
       {
-        "href": "./doc/en/json-format.md#objectlist-dispatch-rules",
+        "href": "./docs/en/json-format.md#objectlist-dispatch-rules",
         "label": "objectList dispatch"
       }
     ]
@@ -190,7 +190,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/domains.md",
+        "href": "./docs/en/domains.md",
         "label": "Business domains"
       },
       {
@@ -220,7 +220,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/api.md#disposebythreejsonidscene-threejsonid-options--detachbythreejsonid",
+        "href": "./docs/en/api.md#disposebythreejsonidscene-threejsonid-options--detachbythreejsonid",
         "label": "disposeByThreeJsonId"
       },
       {
@@ -241,7 +241,7 @@
     "status": "stable",
     "group": "Track 0 · Runtime and JSON contracts",
     "title": "Manual single-object deploy (**optional**)",
-    "summary": "Advanced elective: createSceneRuntime + deployMesh for a single box JSON record; compare with the doc/README imperative path—the main track still uses createJsonScene.",
+    "summary": "Advanced elective: createSceneRuntime + deployMesh for a single box JSON record; compare with the docs/README imperative path—the main track still uses createJsonScene.",
     "navSummary": "Elective · deployMesh single box.",
     "highlights": [
       "View after t00-01; compare with createJsonScene to understand low-level deploy.",
@@ -250,11 +250,11 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/README.md",
+        "href": "./docs/en/README.md",
         "label": "Caller handbook"
       },
       {
-        "href": "./doc/en/json-format.md#box",
+        "href": "./docs/en/json-format.md#box",
         "label": "JSON: box"
       }
     ]
@@ -285,11 +285,11 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md",
+        "href": "./docs/en/json-format.md",
         "label": "JSON: sceneConfig.intro"
       },
       {
-        "href": "./doc/en/scene-load-lifecycle.md",
+        "href": "./docs/en/scene-load-lifecycle.md",
         "label": "Scene load lifecycle"
       }
     ]
@@ -319,19 +319,19 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md#group",
+        "href": "./docs/en/json-format.md#group",
         "label": "group"
       },
       {
-        "href": "./doc/en/json-format.md#line",
+        "href": "./docs/en/json-format.md#line",
         "label": "line"
       },
       {
-        "href": "./doc/en/json-format.md#infopanel",
+        "href": "./docs/en/json-format.md#infopanel",
         "label": "Info panel"
       },
       {
-        "href": "./doc/en/info-panels.md",
+        "href": "./docs/en/info-panels.md",
         "label": "Info panel guide"
       }
     ]
@@ -361,11 +361,11 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md#plane-textured--solid-plane",
+        "href": "./docs/en/json-format.md#plane-textured--solid-plane",
         "label": "plane"
       },
       {
-        "href": "./doc/en/json-format.md#line-topology-topology",
+        "href": "./docs/en/json-format.md#line-topology-topology",
         "label": "line topology"
       }
     ]
@@ -395,7 +395,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md#preset-objtype-wall-glass-etc",
+        "href": "./docs/en/json-format.md#preset-objtype-wall-glass-etc",
         "label": "Preset objType"
       }
     ]
@@ -425,7 +425,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md#csg-union-intersection-holes",
+        "href": "./docs/en/json-format.md#csg-union-intersection-holes",
         "label": "CSG"
       }
     ]
@@ -455,15 +455,15 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md#sceneconfighelpers-grid--axes-helpers",
+        "href": "./docs/en/json-format.md#sceneconfighelpers-grid--axes-helpers",
         "label": "sceneConfig.helpers"
       },
       {
-        "href": "./doc/en/json-format.md#shapeplane--irregularplane-irregular-plane",
+        "href": "./docs/en/json-format.md#shapeplane--irregularplane-irregular-plane",
         "label": "irregularPlane"
       },
       {
-        "href": "./doc/en/json-format.md#shapeextrude--irregulargeometry-irregular-solid",
+        "href": "./docs/en/json-format.md#shapeextrude--irregulargeometry-irregular-solid",
         "label": "shapeExtrude"
       }
     ]
@@ -494,7 +494,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md#objtype-native-general-threejs-object",
+        "href": "./docs/en/json-format.md#objtype-native-general-threejs-object",
         "label": "objType: native"
       },
       {
@@ -528,11 +528,11 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md#objtype-native-general-threejs-object",
+        "href": "./docs/en/json-format.md#objtype-native-general-threejs-object",
         "label": "objType: native"
       },
       {
-        "href": "./doc/en/json-format.md",
+        "href": "./docs/en/json-format.md",
         "label": "assetLibrary"
       }
     ]
@@ -562,11 +562,11 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md",
+        "href": "./docs/en/json-format.md",
         "label": "camera type"
       },
       {
-        "href": "./doc/en/json-format.md",
+        "href": "./docs/en/json-format.md",
         "label": "controls fly"
       }
     ]
@@ -596,11 +596,11 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md#heatmap",
+        "href": "./docs/en/json-format.md#heatmap",
         "label": "Heatmap"
       },
       {
-        "href": "./doc/en/json-format.md#wind-dynamic-plane",
+        "href": "./docs/en/json-format.md#wind-dynamic-plane",
         "label": "Dynamic wind plane"
       }
     ]
@@ -630,7 +630,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md#points-point-cloud--particles",
+        "href": "./docs/en/json-format.md#points-point-cloud--particles",
         "label": "points"
       }
     ]
@@ -660,11 +660,11 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md#domain-weather-weather-particle-presets",
+        "href": "./docs/en/json-format.md#domain-weather-weather-particle-presets",
         "label": "weather domain"
       },
       {
-        "href": "./doc/en/domains.md",
+        "href": "./docs/en/domains.md",
         "label": "domains.md"
       }
     ]
@@ -694,15 +694,15 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md#sprite-icon--marker",
+        "href": "./docs/en/json-format.md#sprite-icon--marker",
         "label": "sprite"
       },
       {
-        "href": "./doc/en/json-format.md#tube-pipe-path",
+        "href": "./docs/en/json-format.md#tube-pipe-path",
         "label": "tube"
       },
       {
-        "href": "./doc/en/json-format.md#instanced-explicit-instancedmesh",
+        "href": "./docs/en/json-format.md#instanced-explicit-instancedmesh",
         "label": "instanced"
       }
     ]
@@ -732,7 +732,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md#sceneconfigscene-background-and-environment",
+        "href": "./docs/en/json-format.md#sceneconfigscene-background-and-environment",
         "label": "background / environment"
       }
     ]
@@ -762,7 +762,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md#audio",
+        "href": "./docs/en/json-format.md#audio",
         "label": "audio"
       }
     ]
@@ -792,7 +792,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md#particleemitter-unified-emitter-entry",
+        "href": "./docs/en/json-format.md#particleemitter-unified-emitter-entry",
         "label": "particleEmitter"
       }
     ]
@@ -826,7 +826,7 @@
         "label": "particle-nebula README"
       },
       {
-        "href": "./doc/en/json-format.md#particleemitter-unified-emitter-entry",
+        "href": "./docs/en/json-format.md#particleemitter-unified-emitter-entry",
         "label": "particleEmitter"
       }
     ]
@@ -856,11 +856,11 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md#assetlibrary-and-lib-texture-references",
+        "href": "./docs/en/json-format.md#assetlibrary-and-lib-texture-references",
         "label": "textureQuality"
       },
       {
-        "href": "./doc/en/api.md#coreutiltextureutilsjs",
+        "href": "./docs/en/api.md#coreutiltextureutilsjs",
         "label": "textureSampling API"
       }
     ]
@@ -890,7 +890,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md#shadersurface-core-generic-shader-surface",
+        "href": "./docs/en/json-format.md#shadersurface-core-generic-shader-surface",
         "label": "shaderSurface / nature.sky"
       },
       {
@@ -974,7 +974,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md#externalmodel",
+        "href": "./docs/en/json-format.md#externalmodel",
         "label": "externalModel"
       }
     ]
@@ -1004,7 +1004,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md#animationmode-optional",
+        "href": "./docs/en/json-format.md#animationmode-optional",
         "label": "animationMode"
       }
     ]
@@ -1034,7 +1034,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md#external-models-objgltfglbthreejson",
+        "href": "./docs/en/json-format.md#external-models-objgltfglbthreejson",
         "label": "External models and native JSON"
       }
     ]
@@ -1064,7 +1064,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md#obj-sibling-maps-fallback",
+        "href": "./docs/en/json-format.md#obj-sibling-maps-fallback",
         "label": "OBJ maps fallback"
       }
     ]
@@ -1094,7 +1094,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md#animationgraph-optional-gltf-animation-state-machine",
+        "href": "./docs/en/json-format.md#animationgraph-optional-gltf-animation-state-machine",
         "label": "animationGraph"
       }
     ]
@@ -1124,7 +1124,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md#runtime-object-lookup",
+        "href": "./docs/en/json-format.md#runtime-object-lookup",
         "label": "Runtime object lookup"
       }
     ]
@@ -1154,7 +1154,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/scope.md",
+        "href": "./docs/en/scope.md",
         "label": "scope.md"
       },
       {
@@ -1188,7 +1188,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md#objtype-controls-viewport-controller",
+        "href": "./docs/en/json-format.md#objtype-controls-viewport-controller",
         "label": "controls"
       },
       {
@@ -1303,15 +1303,15 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/event-mechanism.md#一事件机制使用方法",
+        "href": "./docs/en/event-mechanism.md#一事件机制使用方法",
         "label": "Event mechanism"
       },
       {
-        "href": "./doc/en/event-mechanism.md#二eventscript-语法",
+        "href": "./docs/en/event-mechanism.md#二eventscript-语法",
         "label": "EventScript syntax"
       },
       {
-        "href": "./doc/en/json-format.md",
+        "href": "./docs/en/json-format.md",
         "label": "JSON events"
       }
     ]
@@ -1341,7 +1341,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/event-mechanism.md#131-单对象-lifecycle-与场景-load-的区别",
+        "href": "./docs/en/event-mechanism.md#131-单对象-lifecycle-与场景-load-的区别",
         "label": "Object lifecycle"
       }
     ]
@@ -1371,7 +1371,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/event-mechanism.md#12-jsonevents-块",
+        "href": "./docs/en/event-mechanism.md#12-jsonevents-块",
         "label": "JSON actions"
       }
     ]
@@ -1402,11 +1402,11 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/info-panels.md",
+        "href": "./docs/en/info-panels.md",
         "label": "Info panel guide"
       },
       {
-        "href": "./doc/en/json-format.md#infopanel",
+        "href": "./docs/en/json-format.md#infopanel",
         "label": "infoPanel JSON"
       }
     ]
@@ -1436,7 +1436,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md#interactive-css3d-panel-css3dpanel-core",
+        "href": "./docs/en/json-format.md#interactive-css3d-panel-css3dpanel-core",
         "label": "css3dPanel"
       }
     ],
@@ -1495,7 +1495,7 @@
         "label": "AI README"
       },
       {
-        "href": "./doc/en/mcp-cursor.md",
+        "href": "./docs/en/mcp-cursor.md",
         "label": "mcp-cursor"
       }
     ]
@@ -1525,11 +1525,11 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/domains.md",
+        "href": "./docs/en/domains.md",
         "label": "domains.md"
       },
       {
-        "href": "./doc/en/json-format.md#domain-weather-weather-particle-presets",
+        "href": "./docs/en/json-format.md#domain-weather-weather-particle-presets",
         "label": "weather domain"
       }
     ]
@@ -1559,7 +1559,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md#friendly-json",
+        "href": "./docs/en/json-format.md#friendly-json",
         "label": "World business JSON"
       }
     ]
@@ -1589,7 +1589,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/demos.md",
+        "href": "./docs/en/demos.md",
         "label": "Demo guide"
       }
     ]
@@ -1619,7 +1619,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/demos.md",
+        "href": "./docs/en/demos.md",
         "label": "Demo guide"
       }
     ]
@@ -1649,7 +1649,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/demos.md",
+        "href": "./docs/en/demos.md",
         "label": "Demo guide"
       }
     ]
@@ -1679,7 +1679,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/domains.md",
+        "href": "./docs/en/domains.md",
         "label": "Business domains"
       },
       {
@@ -1789,7 +1789,7 @@
             "label": "stat-echarts README"
           },
           {
-            "href": "./doc/en/json-format.md#interactive-css3d-panel-css3dpanel-core",
+            "href": "./docs/en/json-format.md#interactive-css3d-panel-css3dpanel-core",
             "label": "CSS3D panel"
           }
         ]
@@ -1893,7 +1893,7 @@
     ],
     "docLinks": [
       {
-        "href": "./doc/en/json-format.md",
+        "href": "./docs/en/json-format.md",
         "label": "text object"
       },
       {

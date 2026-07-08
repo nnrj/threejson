@@ -1,8 +1,8 @@
-﻿# 开发方案归档（`doc/dev/plans`）
+# 开发方案归档（`docs/dev/plans`）
 
 [中文](./README.md)
 
-本目录用于存放**与代码提交绑定的方案文档**，尤其适用于 AI 辅助开发流程。规范全文见 [`doc/zh/development.md`](../../development.md) 中的「AI 生成代码贡献规范」。
+本目录用于存放**与代码提交绑定的方案文档**，尤其适用于 AI 辅助开发流程。规范全文见 [`docs/zh/development.md`](../../development.md) 中的「AI 生成代码贡献规范」。
 
 ## 何时需要建方案目录
 

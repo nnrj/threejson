@@ -32,7 +32,7 @@
 | 编辑器 / 播放器（**绿场**） | [`tools/scene-host/`](../../tools/scene-host/README.md) | 正本的拆分重构；对齐与调试中 |
 | 编辑器命令层 | [`tools/common/editor-single/command/`](../../tools/common/editor-single/command/) | `editor.*` 命令，供 HTML 接入 |
 | 业务演示 | [`room-show.html`](../../room-show.html)、[`port-show.html`](../../port-show.html) 等 | 机房/港口等业务大屏 |
-| 外置 Agent / MCP | [`tools/threejson-agent/`](../../tools/threejson-agent/README.md)、[`doc/mcp-cursor.md`](./mcp-cursor.md) | 不依赖页面 `sysConfig` |
+| 外置 Agent / MCP | [`tools/threejson-agent/`](../../tools/threejson-agent/README.md)、[`docs/mcp-cursor.md`](./mcp-cursor.md) | 不依赖页面 `sysConfig` |
 
 ## `sceneConfig` 与 `sysConfig`
 

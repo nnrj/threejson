@@ -1,8 +1,8 @@
-﻿# 第一人称漫游 / FPS 宿主集成备忘
+# 第一人称漫游 / FPS 宿主集成备忘
 
 **状态**：`idea` / **部分已落地**（core 环顾与 track-04 教程；业务整合页漫游 **未承诺**）  
 **日期**：2026-06-22（环顾契约与 room-show 评估增补）  
-**关联**：[room-show-first-person-evaluation-memo.md](./room-show-first-person-evaluation-memo.md)、[`doc/zh/json-format.md`](../doc/zh/json-format.md)、[`extensions/fps-walk/README.md`](../extensions/fps-walk/README.md)
+**关联**：[room-show-first-person-evaluation-memo.md](./room-show-first-person-evaluation-memo.md)、[`docs/zh/json-format.md`](../docs/zh/json-format.md)、[`extensions/fps-walk/README.md`](../extensions/fps-walk/README.md)
 
 > **非发布承诺**：下文含已实现能力与设想方案；业务页（如 room-show）是否接入见专项评估备忘。
 

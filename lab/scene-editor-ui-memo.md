@@ -1,10 +1,10 @@
-﻿# 场景编辑器右侧面板 UI 备忘（非发布承诺）
+# 场景编辑器右侧面板 UI 备忘（非发布承诺）
 
 **状态**：`idea`（待排期）  
 **关联页面**：[`scene-editor.html`](../scene-editor.html)  
 **记录日期**：2026-05（对话备忘整理）
 
-本页为产品/交互备忘，**不代表当前里程碑**；实现前需单独评估必要性、可行性与 JSON 写入契约。与 [`doc/zh/scope.md`](../doc/zh/scope.md) 的 Core 承诺区分。
+本页为产品/交互备忘，**不代表当前里程碑**；实现前需单独评估必要性、可行性与 JSON 写入契约。与 [`docs/zh/scope.md`](../docs/zh/scope.md) 的 Core 承诺区分。
 
 ---
 
@@ -38,9 +38,9 @@
 
 - 针对当前选中的对象，以 **图形控件** 编辑本项目已支持的部署调度配置（非新造字段，对齐运行时）。
 - 配置来源参考（实现时以代码与正史文档为准）：
-  - 场景级：[`sceneConfig.deployScheduler`](../doc/zh/api.md)（`createJsonScene` / `deployJsonScene` 路径）。
+  - 场景级：[`sceneConfig.deployScheduler`](../docs/zh/api.md)（`createJsonScene` / `deployJsonScene` 路径）。
   - 记录级：单条 JSON 上的 `deployScheduler`（如 `mode: "immediate"` 插队）。
-- 已知能力方向（摘自 [`doc/zh/api.md`](../doc/zh/api.md)，字段名以实现为准）：
+- 已知能力方向（摘自 [`docs/zh/api.md`](../docs/zh/api.md)，字段名以实现为准）：
   - `enabled` / `mode`（`immediate` | `scheduled`）
   - `policy`：`frameBudget`（`maxJobsPerFrame`、`maxFrameMs`）| `timeslot`（`fluxMs`、`density`）
   - `maxInFlightAsync`、`retry`（`maxAttempts`、`backoffMs`）
@@ -130,7 +130,7 @@
 | 资源 | 路径 |
 |------|------|
 | 部署调度实现 | [`core/runtime/deployScheduler.js`](../core/runtime/deployScheduler.js) |
-| API 说明 | [`doc/zh/api.md`](../doc/zh/api.md) § `sceneConfig.deployScheduler` |
+| API 说明 | [`docs/zh/api.md`](../docs/zh/api.md) § `sceneConfig.deployScheduler` |
 | 示例 JSON | [`assets/json/roomShow.json`](../assets/json/roomShow.json)（含 `sceneConfig.deployScheduler`） |
 | 左侧 AI 能力增强（core 优先） | [scene-ai-enhancement-memo.md](./scene-ai-enhancement-memo.md) |
 | Lab 总索引 | [`lab/README.md`](./README.md) |

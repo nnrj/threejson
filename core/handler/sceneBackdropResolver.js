@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Declarative scene.background / scene.environment resolution (LDR equirect, cube maps, HDR+PMREM).
  * Resources created and managed by ThreeJSON are tagged for dispose.
  */
@@ -124,7 +124,7 @@ function cropToCanvas(source, sx, sy, sw, sh) {
 }
 
 /**
- * Horizontal cross (4×3 grid), matching the diagram in `doc/zh/json-format.md`.
+ * Horizontal cross (4×3 grid), matching the diagram in `docs/zh/json-format.md`.
  * Row 0 center: +Y; row 1: -X, +Z, +X, -Z; row 2 center: -Y.
  * CubeTexture order: +X -X +Y -Y +Z -Z
  */

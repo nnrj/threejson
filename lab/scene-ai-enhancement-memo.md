@@ -1,10 +1,10 @@
-﻿# 场景编辑器 · AI 生成能力增强备忘（非发布承诺）
+# 场景编辑器 · AI 生成能力增强备忘（非发布承诺）
 
 **状态**：`partial`（Phase A/B 边界与 Node 套壳已落地；增量 Patch / 流式预览 API 已进 core/ai，编辑器 UI 仍可选接入）  
 **原则**：能力先在 [`core/ai/`](../core/ai/) 完善，再由 [`scene-editor.html`](../scene-editor.html) 左侧面板（AI 配置 / AI 生成 / AI 调整等子标签）接入。  
 **记录日期**：2026-05（对话备忘整理）
 
-本页**不代表发布承诺**；与 [`doc/zh/scope.md`](../doc/zh/scope.md) 的 Core 承诺区分。
+本页**不代表发布承诺**；与 [`docs/zh/scope.md`](../docs/zh/scope.md) 的 Core 承诺区分。
 
 ---
 
@@ -77,7 +77,7 @@
 | **可行性** | 浏览器内 agent 循环的延迟与 API 费用；大场景 JSON 上下文窗口限制。 |
 | **安全** | API Key 仅存本地；agent 工具是否允许写文件、请求任意 URL。 |
 | **测试** | `core/ai` 单元测试 + 可选 mock LLM；编辑器 E2E 仅保留 smoke。 |
-| **文档** | [`core/ai/SKILL.md`](../core/ai/SKILL.md)、[`doc/zh/api.md`](../doc/zh/api.md) 与示例页 — **2026-06 AI Skill 对齐已落地**；见 [archive/ai-skill-gap-matrix.md](./archive/ai-skill-gap-matrix.md)。 |
+| **文档** | [`core/ai/SKILL.md`](../core/ai/SKILL.md)、[`docs/zh/api.md`](../docs/zh/api.md) 与示例页 — **2026-06 AI Skill 对齐已落地**；见 [archive/ai-skill-gap-matrix.md](./archive/ai-skill-gap-matrix.md)。 |
 
 ---
 

@@ -1,4 +1,4 @@
-﻿# 静态资源（assets）目录与在线托管备忘
+# 静态资源（assets）目录与在线托管备忘
 
 状态：**已实发** `@threejson/assets@1.0.0`（npm）+ 运行时默认 jsDelivr CDN（`core/util/assetsBase.js`）。
 
@@ -30,7 +30,7 @@ https://cdn.jsdelivr.net/npm/@threejson/assets@1.0.0/textures/device/cabinet/cab
 
 **优先级（低 → 高）：** 内置 CDN → `setAssetsBaseUrl()` → `sceneConfig.assetsBase` → `createJsonScene({ assetsBase })`。
 
-文档：[`doc/zh/json-format.md`](../doc/zh/json-format.md#sceneconfigassetsbase-可选静态资源基址)、[`doc/zh/api.md`](../doc/zh/api.md#静态资源coreutilassetsbasejs)、根 [`README.md`](../README.md)。
+文档：[`docs/zh/json-format.md`](../docs/zh/json-format.md#sceneconfigassetsbase-可选静态资源基址)、[`docs/zh/api.md`](../docs/zh/api.md#静态资源coreutilassetsbasejs)、根 [`README.md`](../README.md)。
 
 ## 发布
 

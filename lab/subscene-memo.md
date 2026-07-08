@@ -1,8 +1,8 @@
-﻿# subScene Memo
+# subScene Memo
 
 **状态**：`shipped`（嵌套加载/导出/editor 已启用）
 
-用户文档：[JSON 配置手册 §subScene 嵌套](../doc/zh/json-format.md#subscene-嵌套层级对象)（英文：[doc/en/json-format.md](../doc/en/json-format.md#subscene-nested-hierarchy)）。
+用户文档：[JSON 配置手册 §subScene 嵌套](../docs/zh/json-format.md#subscene-嵌套层级对象)（英文：[docs/en/json-format.md](../docs/en/json-format.md#subscene-nested-hierarchy)）。
 
 ## Current Status (enabled)
 

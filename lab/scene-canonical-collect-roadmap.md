@@ -1,4 +1,4 @@
-﻿# Scene 标准 JSON 反扫路线图（正史）
+# Scene 标准 JSON 反扫路线图（正史）
 
 **状态**：`shipped`（C0–C2 已落地）  
 **日期**：2026-06-02  
@@ -168,4 +168,4 @@ friendlyMap: object                 // sceneToFriendlyJson 投影表
 | [archive/persist-canonical-json-memo.md](./archive/persist-canonical-json-memo.md) | 演进背景索引（指向本文） |
 | [domain-persist-snapshot-memo.md](./domain-persist-snapshot-memo.md) | domain merge / `capturePersistDescriptor` |
 | [移除机柜特殊逻辑 §六](../.cursor/plans/移除机柜特殊逻辑_4115e2a4.plan.md) | 机柜 persist 与 objectList 交叉引用 |
-| [doc/zh/api.md](../doc/zh/api.md) | 对外 API 说明 |
+| [docs/zh/api.md](../docs/zh/api.md) | 对外 API 说明 |

@@ -1,6 +1,6 @@
-﻿# Lab：实验与架构备忘索引
+# Lab：实验与架构备忘索引
 
-本目录**不是**发布承诺；与 [`doc/zh/scope.md`](../doc/zh/scope.md) 的 Core 承诺区分。
+本目录**不是**发布承诺；与 [`docs/zh/scope.md`](../docs/zh/scope.md) 的 Core 承诺区分。
 
 **状态标记**（全文统一，定义见 [`CONVENTIONS.md`](./CONVENTIONS.md)）：
 
@@ -23,11 +23,11 @@
 |------|------|------|------|
 | 标准 JSON 反扫（HOW） | [scene-canonical-collect-roadmap.md](./scene-canonical-collect-roadmap.md) | `shipped` | `sceneToJson` 族、编辑器迁移、merge 基座 |
 | 标准 JSON 外形（WHAT） | [standard-json-shape-proposal.md](./standard-json-shape-proposal.md) | `shipped` | 方案 B、`jsonOrigin`、去 `worldId` |
-| sysConfig / sceneConfig 字段归属 | [sysConfig-vs-sceneConfig-assessment.md](./sysConfig-vs-sceneConfig-assessment.md) | `shipped` | A/B/C 合并契约；宿主见 [`doc/zh/tools.md`](../doc/zh/tools.md) |
+| sysConfig / sceneConfig 字段归属 | [sysConfig-vs-sceneConfig-assessment.md](./sysConfig-vs-sceneConfig-assessment.md) | `shipped` | A/B/C 合并契约；宿主见 [`docs/zh/tools.md`](../docs/zh/tools.md) |
 | Domain 持久化快照钩子 | [domain-persist-snapshot-memo.md](./domain-persist-snapshot-memo.md) | `shipped` | `capturePersistDescriptor` / merge 下沉到域 |
-| subScene 嵌套 | [subscene-memo.md](./subscene-memo.md) | `shipped` | 加载/导出/editor layout；用户文档见 `doc/json-format` |
-| 分帧对象部署 | [`core/runtime/deployScheduler.js`](../core/runtime/deployScheduler.js) + [`doc/zh/api.md`](../doc/zh/api.md) | `shipped` | 默认 immediate；可选 `frameBudget` / `timeslot` |
-| 场景 intro postLoad | [`doc/zh/json-format.md`](../doc/zh/json-format.md#sceneconfigintro-可选加载完成后片头) | `shipped` | `excludeFromLoadWait` / `blockInteraction`（2026-07） |
+| subScene 嵌套 | [subscene-memo.md](./subscene-memo.md) | `shipped` | 加载/导出/editor layout；用户文档见 `docs/json-format` |
+| 分帧对象部署 | [`core/runtime/deployScheduler.js`](../core/runtime/deployScheduler.js) + [`docs/zh/api.md`](../docs/zh/api.md) | `shipped` | 默认 immediate；可选 `frameBudget` / `timeslot` |
+| 场景 intro postLoad | [`docs/zh/json-format.md`](../docs/zh/json-format.md#sceneconfigintro-可选加载完成后片头) | `shipped` | `excludeFromLoadWait` / `blockInteraction`（2026-07） |
 | Load gate 扩展（per-object） | [scene-load-gate-memo.md](./scene-load-gate-memo.md) | `idea` | 方案 C1–C3 备忘；**不承诺实现** |
 
 归档：持久化背景、worldInfo 清理审计 → [`archive/`](./archive/)
@@ -66,7 +66,7 @@
 | Domain 编辑 / 快照 backlog | [domain-edit-snapshot-backlog-memo.md](./domain-edit-snapshot-backlog-memo.md) | `idea` | Phase C/D；**未必实现** |
 | 场景事件机制（L3/L4 + **V2 设想** §10） | [scene-event-mechanism-evaluation.md](./scene-event-mechanism-evaluation.md) | `idea` | L3 **`deferred`**；L4 **`rejected`**；V2 **`idea`** |
 | 编辑器事件脚本工作区 V2（目录树/多标签） | [scene-editor-event-script-workspace-v2-memo.md](./scene-editor-event-script-workspace-v2-memo.md) | `deferred` | **本期不做**；事件机制 M1–M6 后再议 |
-| Extension JSON 形状（草案） | [extension-json.md](./extension-json.md) | `idea` | 正式接入 [`doc/zh/extensions.md`](../doc/zh/extensions.md) |
+| Extension JSON 形状（草案） | [extension-json.md](./extension-json.md) | `idea` | 正式接入 [`docs/zh/extensions.md`](../docs/zh/extensions.md) |
 | 第三方 Extension 标准 | [third-party-extension-adoption-memo.md](./third-party-extension-adoption-memo.md) | `parked` | **不做** CLI/manifest；复制 bootstrap 已可行 |
 
 ---
@@ -104,14 +104,14 @@
 | core 目录分层 | [core-layering-memo.md](./core-layering-memo.md) | `idea` | builder/handler/runtime 理想参照；**非强制搬迁** |
 | 模块 import 环 backlog | [module-import-cycle-backlog-memo.md](./module-import-cycle-backlog-memo.md) | `parked` | #4 已落地；#5–#13 **不承诺** |
 | defaultModel import 环 | [default-model-import-cycle-memo.md](./default-model-import-cycle-memo.md) | `parked` | 方案 A 已拆；方案 B 待评估 |
-| Tools settings 分类总开关 | [sysconfig-sceneconfig-settings-memo.md](./sysconfig-sceneconfig-settings-memo.md) | `deferred` | 见 `doc/zh/tools.md` A/B/C |
+| Tools settings 分类总开关 | [sysconfig-sceneconfig-settings-memo.md](./sysconfig-sceneconfig-settings-memo.md) | `deferred` | 见 `docs/zh/tools.md` A/B/C |
 | npm 发布与 Monorepo | [npm-publish-and-monorepo-memo.md](./npm-publish-and-monorepo-memo.md) | `deferred` | **开发期不实发 npm** |
 | 历史 Plan 摘录 | [roadmap-from-plans.md](./roadmap-from-plans.md) | `idea` | 从 `.cursor/plans` 整理；非承诺 |
 | 对象 `name` 层级筛选 | [object-name-hierarchy-memo.md](./object-name-hierarchy-memo.md) | `parked` | 本期不做 |
 | 按 `name` 泛化 operateObject | [object-operate-by-name.md](./object-operate-by-name.md) | `parked` | 与命令模式重合待设计 |
 | Runtime objType 特殊对待 | [runtime-objtypes-memo.md](./runtime-objtypes-memo.md) | `idea` | 视口/控制器 schema 差异 |
 | 场景图 parent.remove 审计 | [archive/scene-graph-parent-remove-memo.md](./archive/scene-graph-parent-remove-memo.md) | `archived` | flat graph 已落地 |
-| 可选安全 / 防篡改 | — | `deferred` | 见 [`doc/zh/design-principles.md`](../doc/zh/design-principles.md) |
+| 可选安全 / 防篡改 | — | `deferred` | 见 [`docs/zh/design-principles.md`](../docs/zh/design-principles.md) |
 | L4 用户脚本沙箱 | — | `rejected` | 见事件评估与 roadmap-from-plans |
 
 ---

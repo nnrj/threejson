@@ -34,7 +34,7 @@ Example plugins and simple physics demos: **not** semver-locked with core; see e
 
 ## Lab ([`lab/README.md`](../../lab/README.md))
 
-Future-capability drafts and experiment index (**not** a release commitment), separate from formal contracts in `doc/`.
+Future-capability drafts and experiment index (**not** a release commitment), separate from formal contracts in `docs/`.
 
 ## Explicitly out of core
 

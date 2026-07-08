@@ -1,6 +1,6 @@
-﻿# Runtime 对象与「特殊对待」备忘
+# Runtime 对象与「特殊对待」备忘
 
-> **非发布承诺**（`idea`）。记录当前 JSON schema 与加载实现之间的差异，供后续评估是否将 runtime 项统一为 `objType` + registry。划界原则见 [`doc/zh/design-principles.md`](../doc/zh/design-principles.md) §Core 与 extensions 的划界。
+> **非发布承诺**（`idea`）。记录当前 JSON schema 与加载实现之间的差异，供后续评估是否将 runtime 项统一为 `objType` + registry。划界原则见 [`docs/zh/design-principles.md`](../docs/zh/design-principles.md) §Core 与 extensions 的划界。
 
 ## 背景
 
@@ -56,6 +56,6 @@
 
 ## 相关文档与计划
 
-- [`doc/zh/design-principles.md`](../doc/zh/design-principles.md) — Core 与 extensions 划界
+- [`docs/zh/design-principles.md`](../docs/zh/design-principles.md) — Core 与 extensions 划界
 - [`lab/extension-json.md`](./extension-json.md) — 扩展 JSON 容器
 - 第一人称 / 漫游实现计划（`.cursor/plans` 或贡献者本地 plan 文件）

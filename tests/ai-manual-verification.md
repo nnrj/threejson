@@ -1,4 +1,4 @@
-﻿# ThreeJSON AI 手动验证方案
+# ThreeJSON AI 手动验证方案
 
 本文件是 **人工签收矩阵**；能自动跑的部分见 [`ai-verification.automated.mjs`](./ai-verification.automated.mjs) 与 [`npm run verify:ai-static`](#自动化前置)。需要 **真实 LLM 调用** 的可选 live 脚本：[`npm run verify:ai-live`](#可选-live-自动化)。
 
@@ -69,7 +69,7 @@
 | **C17** | 能力 spot·css3d | CLI `scene generate --no-agent` prompt 含「可点击控制台/表单」 | Key | JSON 含 `css3dPanelList` 或 `objType css3dPanel`（非仅 infoPanel） | `threeJsonCoreSkill.js`、`sceneCapability.js` |
 | **C18** | 能力 spot·粒子 | CLI generate prompt「粒子尘/星尘」 | Key | JSON 含 `objType particleEmitter`（非仅 box） | 同上 |
 | **C19** | 命令 spot·改色 | editer AI 调整「把选中物体改成蓝色」 | localStorage Key | 命令含 `material.patch` 或 `object.patch`；画布变色 | `sceneCommandSkill.js`、`runEditorAiUpdate.js` |
-| **M1** | MCP generate | Cursor 调 `threejson_generate` | MCP setting | 返回场景 JSON | `doc/zh/mcp-cursor.md` |
+| **M1** | MCP generate | Cursor 调 `threejson_generate` | MCP setting | 返回场景 JSON | `docs/zh/mcp-cursor.md` |
 | **M2** | MCP update | `threejson_update` + `updateMode` | 已有 JSON | 增量/全量符合参数 | `server.mjs` |
 | **L1** | Live 自动 | `npm run verify:ai-live` | agent setting | 脚本报告 PASS | Key、网络、Node 24 |
 
@@ -172,6 +172,6 @@ python -m threejson_agent --config ../../setting.json scene generate \
 - [`core/ai/README.md`](../core/ai/README.md)
 - [`core/ai/SKILL.md`](../core/ai/SKILL.md)
 - [`lab/archive/ai-skill-gap-matrix.md`](../lab/archive/ai-skill-gap-matrix.md)
-- [`doc/zh/development.md`](../doc/zh/development.md)
+- [`docs/zh/development.md`](../docs/zh/development.md)
 - [`tools/threejson-agent/README.md`](../tools/threejson-agent/README.md)
-- [`doc/zh/mcp-cursor.md`](../doc/zh/mcp-cursor.md)
+- [`docs/zh/mcp-cursor.md`](../docs/zh/mcp-cursor.md)

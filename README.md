@@ -1,4 +1,4 @@
-﻿# ThreeJSON
+# ThreeJSON
 
 [中文](./README.md) | [English](./README_EN.md)
 
@@ -44,23 +44,23 @@ nvm use          # 读取 .nvmrc
 npm ci && npm test
 ```
 
-详见 **[`doc/zh/development.md`](doc/zh/development.md)**。
+详见 **[`docs/zh/development.md`](docs/zh/development.md)**。
 
 ## 贡献与 AI 生成代码
 
-本开源项目**允许**提交 AI 辅助生成的代码，但须遵守 [`doc/zh/development.md`](doc/zh/development.md) 中的 **AI 生成代码贡献规范**（代码与文档同步、方案须人类评审、提交时附带 `doc/dev/plans/` 方案目录等）。详见该文档与 [`doc/dev/plans/README.md`](doc/dev/plans/README.md)。
+本开源项目**允许**提交 AI 辅助生成的代码，但须遵守 [`docs/zh/development.md`](docs/zh/development.md) 中的 **AI 生成代码贡献规范**（代码与文档同步、方案须人类评审、提交时附带 `docs/dev/plans/` 方案目录等）。详见该文档与 [`docs/dev/plans/README.md`](docs/dev/plans/README.md)。
 
 ## 文档
 
-完整的调用指南、JSON 格式说明和 API 参考，请查看 **[`doc/zh/README.md`](doc/zh/README.md)**。
+完整的调用指南、JSON 格式说明和 API 参考，请查看 **[`docs/zh/README.md`](docs/zh/README.md)**。
 
-如果你想了解 `domains/` 的设计、`domainModelList` 的写法，或如何创建自定义业务域，请查看 **[`doc/zh/domains.md`](doc/zh/domains.md)**。
+如果你想了解 `domains/` 的设计、`domainModelList` 的写法，或如何创建自定义业务域，请查看 **[`docs/zh/domains.md`](docs/zh/domains.md)**。
 
 ## 通过 npm 安装（包名：`threejson`）
 
 你需要在自己的应用中安装这些对等依赖（版本需满足 [`package.json`](package.json) 中 `peerDependencies` 字段的要求）：
 
-- **Three.js**：`>= 0.179.0`（推荐 **0.184.x**，开发与测试主版本）。版本矩阵见 [`doc/zh/three-compat.md`](doc/zh/three-compat.md)。
+- **Three.js**：`>= 0.179.0`（推荐 **0.184.x**，开发与测试主版本）。版本矩阵见 [`docs/zh/three-compat.md`](docs/zh/three-compat.md)。
 
 ```bash
 npm install threejson three @tweenjs/tween.js html2canvas-pro
@@ -107,7 +107,7 @@ await createJsonScene(payload, {
 
 ## 不使用 npm（克隆仓库 + 静态服务器）
 
-克隆该仓库后，通过 HTTP 提供静态服务（例如使用 Live Server）。在 import map 中映射 **`threejson`** → [`builtins/full.js`](builtins/full.js)、**`threejson/core`** → [`core/index.js`](core/index.js)（或 [`index.js`](index.js)），即可在 HTML 里写 `import { createJsonScene } from "threejson"`，与 npm 一致。详见 [`examples/html-demo/README.md`](examples/html-demo/README.md)。另可选用相对路径 `core/index.js` + `builtins/register.js`（见该目录下的 `00-05-import-paths.html`）。为 `three`、`@tweenjs/tween.js`、`html2canvas-pro` 配置 [import map](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script/type/importmap)。**按需**补充：**`gifuct-js`**（`textureKind: "gif"`）、**`troika-three-text`** + **`fflate`**（SDF 场景文字）；详见 [`doc/zh/quick-start.md`](doc/zh/quick-start.md)。
+克隆该仓库后，通过 HTTP 提供静态服务（例如使用 Live Server）。在 import map 中映射 **`threejson`** → [`builtins/full.js`](builtins/full.js)、**`threejson/core`** → [`core/index.js`](core/index.js)（或 [`index.js`](index.js)），即可在 HTML 里写 `import { createJsonScene } from "threejson"`，与 npm 一致。详见 [`examples/html-demo/README.md`](examples/html-demo/README.md)。另可选用相对路径 `core/index.js` + `builtins/register.js`（见该目录下的 `00-05-import-paths.html`）。为 `three`、`@tweenjs/tween.js`、`html2canvas-pro` 配置 [import map](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script/type/importmap)。**按需**补充：**`gifuct-js`**（`textureKind: "gif"`）、**`troika-three-text`** + **`fflate`**（SDF 场景文字）；详见 [`docs/zh/quick-start.md`](docs/zh/quick-start.md)。
 
 ## 本地快速预览
 

@@ -1,6 +1,6 @@
 # Lab 归档
 
-**状态**：`archived`（只读历史；实现细节以 `doc/` 与代码为准）
+**状态**：`archived`（只读历史；实现细节以 `docs/` 与代码为准）
 
 本目录存放 **已关闭 initiative** 的迁移日志、gap 矩阵、验收清单与 **rejected** 设计方案。活跃备忘见 [`../README.md`](../README.md)；状态定义见 [`../CONVENTIONS.md`](../CONVENTIONS.md)。
 

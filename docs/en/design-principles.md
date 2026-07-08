@@ -10,7 +10,7 @@ Optional capabilities that are not used should not require configuration switche
 
 “JSON is king” refers to the **canonical descriptor**: when persisting, reloading, and interacting with declarative core APIs (such as `descriptorSync`, L3 Patch), the descriptions in `userData.objJson` and the corresponding entries in `worldInfo` are authoritative. This does not conflict with the **runtime overlay**: game loops, physics, Mixer, and scripts may modify `THREE.Object3D` directly; the two need not be equal on every frame in time.
 
-- **Game / high-frequency paths**: It is acceptable to maintain only runtime state for extended periods. Before re-entering a core flow that depends on “descriptor as source of truth,” the host should call `reconcileTransformToDescriptor` (or an equivalent batch commit); otherwise paths that rely on `objJson` may read stale values. See the contract table in [`doc/scope.md`](./scope.md).
+- **Game / high-frequency paths**: It is acceptable to maintain only runtime state for extended periods. Before re-entering a core flow that depends on “descriptor as source of truth,” the host should call `reconcileTransformToDescriptor` (or an equivalent batch commit); otherwise paths that rely on `objJson` may read stale values. See the contract table in [`docs/scope.md`](./scope.md).
 - **Declarative animation**: JSON `animations` remains the configuration source of truth; glTF asset animations are handled by the `AnimationMixer` pipeline, coordinated via `animationMode` when coexisting with declarative animation.
 
 ## Optional, non-invasive
@@ -20,7 +20,7 @@ Optional capabilities that are not used should not require configuration switche
 
 ## Core vs extensions boundary
 
-The following principles determine whether a new capability belongs in **core**, **`extensions/`**, or the **host**; they apply to any requirement (not limited to a particular controller type or gameplay mode). They complement the “explicitly out of core” items in [`doc/scope.md`](./scope.md)—those list typical **infrastructure / product-layer** concerns (private-network sync, ECS frameworks, production-grade editor UI, anti-cheat, etc.); this section provides **general criteria**.
+The following principles determine whether a new capability belongs in **core**, **`extensions/`**, or the **host**; they apply to any requirement (not limited to a particular controller type or gameplay mode). They complement the “explicitly out of core” items in [`docs/scope.md`](./scope.md)—those list typical **infrastructure / product-layer** concerns (private-network sync, ECS frameworks, production-grade editor UI, anti-cheat, etc.); this section provides **general criteria**.
 
 ### When putting in core, usually all of the following should hold
 
@@ -41,10 +41,10 @@ Typical core capabilities: viewport `camera` / `renderer`, scene-viewing-related
 | **Swappable backend** | Multiple implementations coexist (e.g. different physics engines); core keeps only a **stable interface** (contract + graceful degradation); concrete engines register under `extensions/`. |
 | **Heavy dependency or large footprint** | WASM, specialized libraries, or reference implementations that should not be tightly semver-bound to core. |
 | **Business semantics** | Strongly tied to a specific project, domain, or scene asset naming (e.g. snap-to-floor for one business floor only, integration with alert rules). |
-| **Gameplay and infrastructure** | Weapons, damage, matchmaking, anti-cheat, signature verification, etc.; or items already listed in [`doc/scope.md`](./scope.md) such as private-network sync and productized ECS. |
+| **Gameplay and infrastructure** | Weapons, damage, matchmaking, anti-cheat, signature verification, etc.; or items already listed in [`docs/scope.md`](./scope.md) such as private-network sync and productized ECS. |
 | **Integration pages / product UI** | In-repo demo pages, editor shell layers; treated as examples or products, not default library API. |
 
-JSON container conventions for `extensions/` are in [`doc/extensions.md`](./extensions.md) and [`lab/extension-json.md`](../../lab/extension-json.md).
+JSON container conventions for `extensions/` are in [`docs/extensions.md`](./extensions.md) and [`lab/extension-json.md`](../../lab/extension-json.md).
 
 ### Modular ≠ should split
 
@@ -91,7 +91,7 @@ Long-term cleanup ideas and audit notes: [`lab/core-layering-memo.md`](../../lab
 - **Standard JSON**: expresses the whole scene via **`objectList` + a small amount of top-level metadata**, with **`objType`** for unified dispatch; uniform structure, better suited to programmatic processing, pipeline tools, and **AI generation**, etc.
 - **User-friendly JSON**: split, named, and grouped for human habits (e.g. common layouts with `sceneConfig`, `worldInfo`); easier to read, hand-write, and edit locally. **Its fields and organization are not legacy or transitional formats.**
 
-Inside **core**, user-friendly JSON is **translated / normalized** to the standard shape on the load chain, then parsed and assembled by the same pipeline; which to use is a team and scenario choice. Field descriptions and examples are in [`doc/json-format.md`](./json-format.md).
+Inside **core**, user-friendly JSON is **translated / normalized** to the standard shape on the load chain, then parsed and assembled by the same pipeline; which to use is a team and scenario choice. Field descriptions and examples are in [`docs/json-format.md`](./json-format.md).
 
 ## Security and untrusted input (placeholder, not current implementation)
 
@@ -116,4 +116,4 @@ The following constraints describe **who may import whom** and responsibility bo
 6. **Editor vs snapshot**: runtime source of truth is Scene + `userData`; persistence exit is `sceneToJson`; core need not know the host concept of “editor.”
 7. **Visual constants** (colors, opacity, etc.): **core** centralizes only defaults used inside core source in [`core/theme/runtimeVisualDefaults.js`](../../core/theme/runtimeVisualDefaults.js); **domains** each maintain a palette for domain-native visuals (cabinet shell, door panel, etc.); the **host** may import exported constants from core and domains but must not place host- or domain-specific constants in core. When one domain **composes or delegates to another** (e.g. cabinet uses stat for capacity bars, port reuses stat bar styling), code that creates or configures those dependent-domain objects **should deliberately import and apply constants from the dependency’s palette** for visual consistency; explicit custom colors may still override defaults. What is forbidden is unrelated cross-domain palette imports and `core → domains` reverse dependencies.
 
-Domain extension and JSON shapes are detailed in [`doc/domains.md`](./domains.md).
+Domain extension and JSON shapes are detailed in [`docs/domains.md`](./domains.md).

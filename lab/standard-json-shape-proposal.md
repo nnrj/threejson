@@ -1,11 +1,11 @@
-﻿# 标准 JSON 外形讨论稿
+# 标准 JSON 外形讨论稿
 
 **状态**：`shipped`（D0–D5 已落地）  
 **日期**：2026-06-02  
 **关联**：[scene-canonical-collect-roadmap.md](./scene-canonical-collect-roadmap.md)（反扫 HOW）、[runtime-objtypes-memo.md](./runtime-objtypes-memo.md)（runtime objType 备忘）
 
 > 本文解决 **WHAT**：标准 JSON 文件应长什么样。反扫管线（`sceneToJson` 族）见 roadmap。  
-> 讨论定稿后按 §12 阶段 D0–D5 修订 `doc/zh/json-format.md` 正史与实现；**本稿撰写阶段不改 core**。
+> 讨论定稿后按 §12 阶段 D0–D5 修订 `docs/zh/json-format.md` 正史与实现；**本稿撰写阶段不改 core**。
 
 ---
 
@@ -32,7 +32,7 @@
 
 ```mermaid
 flowchart LR
-  subgraph doc [doc/json-format 主示例]
+  subgraph doc [docs/json-format 主示例]
     A["objectList 含 runtime"]
   end
   subgraph impl [sceneToJson 导出]
@@ -52,8 +52,8 @@ flowchart LR
 
 | 来源 | 标准 JSON 长相 | runtime 位置 | 内容位置 | 顶层元信息 |
 |------|----------------|--------------|----------|------------|
-| [`doc/zh/json-format.md`](../doc/zh/json-format.md) | `objectList` + 少量元信息 | **在 objectList** | 同 list | `version/name/canvasWidth/extensions` |
-| [`doc/zh/design-principles.md`](../doc/zh/design-principles.md) | 同上 | 同上 | 同上 | 「少量元信息」 |
+| [`docs/zh/json-format.md`](../docs/zh/json-format.md) | `objectList` + 少量元信息 | **在 objectList** | 同 list | `version/name/canvasWidth/extensions` |
+| [`docs/zh/design-principles.md`](../docs/zh/design-principles.md) | 同上 | 同上 | 同上 | 「少量元信息」 |
 | demo/tutorial（如 [`00-04-standard-objectlist.json`](../assets/json/tutorial/track-00/00-04-standard-objectlist.json)） | 与 doc 主示例一致 | 在 objectList | 在 objectList | 有 canvas 等 |
 | [`sceneToJson`](../core/util/sceneToJson.js) + [`sceneRuntimeConfigExport`](../core/util/sceneRuntimeConfigExport.js) | 杂交态 | **sceneConfig** | **objectList** | `worldId/saveMeta/assetLibrary` 等 |
 | 友好 JSON | `sceneConfig` + `worldInfo.*List` | sceneConfig | worldInfo 分桶 | 常见 `worldId` 等 |
@@ -298,7 +298,7 @@ flowchart TB
 
 **代码**：`scene-editor.html`、`scene-player.html`、`port-show.html`、`room-show.html`；`sceneFriendlyNormalizer.js`、`sceneToJson.js`、`scenePayloadMerge.js`；`core/ai/*`；`domains/*`。
 
-**文档**：`doc/zh/json-format.md`、`doc/zh/api.md`、`lab/scene-canonical-collect-roadmap.md`。
+**文档**：`docs/zh/json-format.md`、`docs/zh/api.md`、`lab/scene-canonical-collect-roadmap.md`。
 
 **资源**：`assets/json/demo*.json`、`assets/json/tutorial/**`、`examples/**`。
 
@@ -314,7 +314,7 @@ flowchart TB
 | **D1** | normalize 双通道合并 + 重复去重；`sceneToJson` + `jsonOrigin` |
 | **D2** | 编辑器/player persist/快照/校验；去 `sysConfig.worldId` |
 | **D3** | demo/tutorial 必改项 + 测试；删 player `initAlarm` |
-| **D4** | roadmap / api.md / `doc/en/json-format.md` 修订 — **已完成** |
+| **D4** | roadmap / api.md / `docs/en/json-format.md` 修订 — **已完成** |
 | **D5** | §11 引用清查 + `core/ai` skill/few-shot + `agentTools` 标准 JSON 校验 — **已完成** |
 
 友好 `worldInfo`→`sceneInfo`：**不纳入 D0–D5**。

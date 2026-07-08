@@ -1,6 +1,6 @@
 # 提示词与上下文（示例）
 
-> **说明**：本文件为 `doc/dev/plans` 的格式示例，对应虚构提交「在 examples 根目录增加 html-app.html」。  
+> **说明**：本文件为 `docs/dev/plans` 的格式示例，对应虚构提交「在 examples 根目录增加 html-app.html」。  
 > **时间戳**：`1782301810000`（Unix 毫秒，对应 `2026-06-24 19:50:10` UTC+8）  
 > **关联变更**：`examples/html-app.html`、`examples/README.md`
 

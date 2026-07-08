@@ -106,4 +106,4 @@ core 固定从裸说明符 `three-bvh-csg` 导入（[`modelHandler.js`](../../co
 ### 其它依赖
 
 - `three`：须满足你选用的 `three-bvh-csg` / `three-mesh-bvh` peer，且满足 core 对 examples/jsm（如 `OutputPass` 自 r153 起）的硬依赖。
-- 完整 import map 基线见 [`doc/quick-start.md`](./quick-start.md)。
+- 完整 import map 基线见 [`docs/quick-start.md`](./quick-start.md)。

@@ -1,7 +1,7 @@
-const ROOT = new URL("../../../", import.meta.url);
-const READER = new URL("../../../doc/reader/reader.html", import.meta.url);
-const MANIFEST_URL = new URL("../../../assets/json/demo-show/manifest.json", import.meta.url);
-const PLACEHOLDER_IMG = new URL("../../../assets/img/ThreeJSON_desc.png", import.meta.url).href;
+const ROOT = new URL("../../", import.meta.url);
+const READER = new URL("../../tools/reader/reader.html", import.meta.url);
+const MANIFEST_URL = new URL("../../assets/json/demo-show/manifest.json", import.meta.url);
+const PLACEHOLDER_IMG = new URL("../../assets/img/ThreeJSON_desc.png", import.meta.url).href;
 const STORAGE = {
   lang: "threejson.site.lang",
   theme: "threejson.site.theme"
@@ -193,12 +193,12 @@ function wireDocLinks() {
 }
 
 function localizedDocPath(file) {
-  return lang === "en-US" ? `doc/en/${file}` : `doc/zh/${file}`;
+  return lang === "en-US" ? `docs/en/${file}` : `docs/zh/${file}`;
 }
 
 function readerHref(file, targetLang = lang) {
   const readerUrl = new URL(READER.href);
-  const src = targetLang === "en-US" ? `../../doc/en/${file}` : `../../doc/zh/${file}`;
+  const src = targetLang === "en-US" ? `../../docs/en/${file}` : `../../docs/zh/${file}`;
   readerUrl.searchParams.set("src", src);
   return readerUrl.href;
 }
@@ -216,19 +216,19 @@ function syncReaderRouteLanguage(previousLang, nextLang) {
 }
 
 function switchDocPathLanguage(path, targetLang) {
-  const match = String(path || "").match(/^doc\/(?:zh|en)\/([^?#]+\.md)(.*)$/i);
+  const match = String(path || "").match(/^docs\/(?:zh|en)\/([^?#]+\.md)(.*)$/i);
   if (match) {
     const file = match[1];
     const suffix = match[2] || "";
-    return `${targetLang === "en-US" ? "doc/en" : "doc/zh"}/${file}${suffix}`;
+    return `${targetLang === "en-US" ? "docs/en" : "docs/zh"}/${file}${suffix}`;
   }
-  const legacyMatch = String(path || "").match(/^doc\/([^/][^?#]+\.md)(.*)$/i);
+  const legacyMatch = String(path || "").match(/^docs\/([^/][^?#]+\.md)(.*)$/i);
   if (!legacyMatch) {
     return path;
   }
   const file = legacyMatch[1];
   const suffix = legacyMatch[2] || "";
-  return `${targetLang === "en-US" ? "doc/en" : "doc/zh"}/${file}${suffix}`;
+  return `${targetLang === "en-US" ? "docs/en" : "docs/zh"}/${file}${suffix}`;
 }
 
 function renderRoute() {
@@ -357,7 +357,7 @@ async function renderExamples() {
   });
   app.querySelectorAll(".exampleCard").forEach((card) => {
     card.addEventListener("click", () => {
-      const shower = new URL("../../../tools/scene-host/shower/index.html", import.meta.url);
+      const shower = new URL("../../tools/scene-host/shower/index.html", import.meta.url);
       shower.searchParams.set("json", card.dataset.json);
       shower.searchParams.set("lang", lang);
       window.location.href = shower.href;
@@ -414,13 +414,13 @@ function pill(name) {
 
 function openEditorTool(event) {
   event.preventDefault();
-  const href = lang === "zh-CN" ? "../../../scene-editor.html" : "../../../tools/scene-host/editor/index.html";
+  const href = lang === "zh-CN" ? "../../scene-editor.html" : "../../tools/scene-host/editor/index.html";
   window.open(new URL(href, import.meta.url), "_blank", "noreferrer");
 }
 
 function openPlayerTool(event) {
   event.preventDefault();
-  const href = lang === "zh-CN" ? "../../../scene-player.html" : "../../../tools/scene-host/player/index.html";
+  const href = lang === "zh-CN" ? "../../scene-player.html" : "../../tools/scene-host/player/index.html";
   window.open(new URL(href, import.meta.url), "_blank", "noreferrer");
 }
 

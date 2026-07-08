@@ -1,13 +1,13 @@
-﻿# ThreeJSON Examples
+# ThreeJSON Examples
 
 [中文](./README.md) | [English](./README_EN.md)
 
-**前置条件**：`html-demo` 仅需静态 HTTP；`vue-app` / `react-app` / `electron-apps` / `script` 需 **Node.js ≥ 24**（见 [`doc/zh/development.md`](../doc/zh/development.md)）。
+**前置条件**：`html-demo` 仅需静态 HTTP；`vue-app` / `react-app` / `electron-apps` / `script` 需 **Node.js ≥ 24**（见 [`docs/zh/development.md`](../docs/zh/development.md)）。
 
 本目录包含：
 
 - **[`html-app.html`](./html-app.html)**：纯 HTML 最小入口（友好 JSON 全场景 `00-03-friendly-full-scene.json`）。从**仓库根**启动静态服务后打开 `/examples/html-app.html`。
-- **`html-demo/`**：无构建的 HTML + import map 教程合集（与 `doc/` 手册配合阅读）。请用本地静态服务器打开仓库根目录，勿用 `file://`。导入约定见 [`html-demo/README.md`](./html-demo/README.md)（`threejson` / `threejson/core` 与 npm 一致）。
+- **`html-demo/`**：无构建的 HTML + import map 教程合集（与 `docs/` 手册配合阅读）。请用本地静态服务器打开仓库根目录，勿用 `file://`。导入约定见 [`html-demo/README.md`](./html-demo/README.md)（`threejson` / `threejson/core` 与 npm 一致）。
 - **`vue-app/`**：Vite + Vue 3 最小集成（`npm install` 与 `npm run dev` 在该子目录执行）。
 - **`react-app/`**：Vite + React 最小集成（同上）。
 - **`electron-apps/`**：Electron 桌面壳示例，含 `electron-app`（原生）、`electron-vue`、`electron-react-app` 三个子项目（各目录内 `npm install` 与 `npm run dev`）。
@@ -17,7 +17,7 @@
 
 ## `html-demo/` 页面（节选）
 
-完整列表见 [`demo.html`](../demo.html) 与 [`doc/zh/tutorial.md`](../doc/zh/tutorial.md)。
+完整列表见 [`demo.html`](../demo.html) 与 [`docs/zh/tutorial.md`](../docs/zh/tutorial.md)。
 
 - [`track-00-runtime/00-01-minimal-mesh.html`](./html-demo/track-00-runtime/00-01-minimal-mesh.html)：Track 0 入口，`createJsonScene` + 最小友好 JSON。
 - [`track-00-runtime/00-07-manual-deploy-mesh.html`](./html-demo/track-00-runtime/00-07-manual-deploy-mesh.html)（选修）：`createSceneRuntime` + `deployMesh` 单 box 手写部署。
@@ -31,7 +31,7 @@
 
 ### Import map 与 core（裸 ESM）
 
-无打包器时，页面上的 **`<script type="importmap">` 必须覆盖 core 整条模块图里出现的裸说明符**（含 `three`、`three/examples/jsm/`、`three-mesh-bvh`、`three-bvh-csg`、`@tweenjs/tween.js`、`html2canvas-pro`、`gifuct-js` 等）。根目录的 `scene-editor.html`、`room-show.html`、`scene-player.html`、`port-show.html`、`port-show-auto.html` 与 `examples/html-demo/track-*/*.html` 均已对齐；若你复制示例自建页面，请一并复制 import map 或改用打包方案。详见 [`../doc/zh/quick-start.md`](../doc/zh/quick-start.md) 中的 import map 示例。
+无打包器时，页面上的 **`<script type="importmap">` 必须覆盖 core 整条模块图里出现的裸说明符**（含 `three`、`three/examples/jsm/`、`three-mesh-bvh`、`three-bvh-csg`、`@tweenjs/tween.js`、`html2canvas-pro`、`gifuct-js` 等）。根目录的 `scene-editor.html`、`room-show.html`、`scene-player.html`、`port-show.html`、`port-show-auto.html` 与 `examples/html-demo/track-*/*.html` 均已对齐；若你复制示例自建页面，请一并复制 import map 或改用打包方案。详见 [`../docs/zh/quick-start.md`](../docs/zh/quick-start.md) 中的 import map 示例。
 
 ## Node 脚本（`script/`）
 

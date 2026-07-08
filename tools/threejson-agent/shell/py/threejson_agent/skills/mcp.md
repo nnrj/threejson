@@ -1,4 +1,4 @@
-﻿# MCP integration (Cursor / compatible hosts)
+# MCP integration (Cursor / compatible hosts)
 
 Register the stdio server at `tools/mcp-threejson/server.mjs` with `THREEJSON_ROOT` pointing at the repository root.
 
@@ -6,4 +6,4 @@ Credentials: `tools/mcp-threejson/setting.json` → `llm` (optional `imageModel`
 
 Texture fill via MCP requires Node (local filesystem); browser editors should use `fillTextureUrls` with `browserTextureSink` instead.
 
-See [`doc/zh/mcp-cursor.md`](../../../../doc/zh/mcp-cursor.md) for example `.cursor/mcp.json`.
+See [`docs/zh/mcp-cursor.md`](../../../../docs/zh/mcp-cursor.md) for example `.cursor/mcp.json`.

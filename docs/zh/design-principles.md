@@ -10,7 +10,7 @@
 
 「JSON 为王」指 **规范真源（canonical descriptor）**：持久化、再加载、与声明式 core API（如 `descriptorSync`、L3 Patch）交互时，以 `userData.objJson` 及 `worldInfo` 中对应描述为准。这与 **运行叠加层（runtime overlay）** 不矛盾：游戏循环、物理、Mixer、脚本可直接改 `THREE.Object3D`，二者在时间上**不必逐帧相等**。
 
-- **游戏 / 高频路径**：允许长期只维护运行态；在需要再次进入「以描述符为准」的 core 流程之前，宿主应调用 `reconcileTransformToDescriptor`（或等价批量提交），否则依赖 `objJson` 的路径可能读到陈旧值。详见 [`doc/scope.md`](./scope.md) 中的契约表。
+- **游戏 / 高频路径**：允许长期只维护运行态；在需要再次进入「以描述符为准」的 core 流程之前，宿主应调用 `reconcileTransformToDescriptor`（或等价批量提交），否则依赖 `objJson` 的路径可能读到陈旧值。详见 [`docs/scope.md`](./scope.md) 中的契约表。
 - **声明式动画**：仍以 JSON `animations` 为配置真源；glTF 资产动画由 `AnimationMixer` 管线承担，由 `animationMode` 协调是否与声明式并存。
 
 ## 可选、非侵入
@@ -20,7 +20,7 @@
 
 ## Core 与 extensions 的划界
 
-下列原则用于判断新能力应进入 **core** 还是 **`extensions/`** / **宿主**，适用于任意需求（不限于某一类控制器或玩法）。与 [`doc/scope.md`](./scope.md) 中「明确不纳入 Core」的条目互补：后者列举典型**基础设施/产品层**（专网同步、ECS 框架、成品级编辑器 UI、反作弊等），本节给出**一般性判据**。
+下列原则用于判断新能力应进入 **core** 还是 **`extensions/`** / **宿主**，适用于任意需求（不限于某一类控制器或玩法）。与 [`docs/scope.md`](./scope.md) 中「明确不纳入 Core」的条目互补：后者列举典型**基础设施/产品层**（专网同步、ECS 框架、成品级编辑器 UI、反作弊等），本节给出**一般性判据**。
 
 ### 放进 core 时，通常应同时满足
 
@@ -41,10 +41,10 @@
 | **可替换后端** | 多种实现并存（如不同物理引擎）；core 只保留**稳定接口**（契约 + 降级），具体引擎在 `extensions/` 注册。 |
 | **重依赖或大体量** | WASM、专用库、与 core semver 不宜强绑定的参考实现。 |
 | **业务语义** | 与具体项目、domain、场景资源命名强绑定（如仅对某张业务地板贴地、与告警规则联动）。 |
-| **玩法与基础设施** | 武器、伤害、匹配、反作弊、签名校验等；或 [`doc/scope.md`](./scope.md) 已列明的专网同步、ECS 产品化等。 |
+| **玩法与基础设施** | 武器、伤害、匹配、反作弊、签名校验等；或 [`docs/scope.md`](./scope.md) 已列明的专网同步、ECS 产品化等。 |
 | **集成页 / 产品 UI** | 仓库内演示页、编辑器壳层；作为示例或产品，而非默认库 API。 |
 
-`extensions/` 的 JSON 容器约定见 [`doc/extensions.md`](./extensions.md) 与 [`lab/extension-json.md`](../../lab/extension-json.md)。
+`extensions/` 的 JSON 容器约定见 [`docs/extensions.md`](./extensions.md) 与 [`lab/extension-json.md`](../../lab/extension-json.md)。
 
 ### 可拆 ≠ 该拆
 
@@ -91,7 +91,7 @@
 - **标准 JSON**：以 **`objectList` + 顶层少量元信息** 表达整场景，用 **`objType`** 做统一分发；结构整齐划一，更适于程序处理、流水线工具与 **AI 生成** 等场景。
 - **用户友好 JSON**：按人类习惯拆分、命名与分组（例如 `sceneConfig`、`worldInfo` 等常见布局）；便于阅读、手写与局部修改。**其字段与组织方式不是遗留或过渡格式。**
 
-在 **core 内部**，用户友好 JSON 会在加载链上被 **翻译 / 归一** 为标准形态，再走同一套解析与装配；选用哪一种由团队与场景决定。字段说明与示例见 [`doc/json-format.md`](./json-format.md)。
+在 **core 内部**，用户友好 JSON 会在加载链上被 **翻译 / 归一** 为标准形态，再走同一套解析与装配；选用哪一种由团队与场景决定。字段说明与示例见 [`docs/json-format.md`](./json-format.md)。
 
 ## 安全与不可信输入（占位，非当前实现）
 
@@ -116,4 +116,4 @@ ThreeJSON 旨在消化「用 JSON 描述 Three.js 场景」的重复劳动；不
 6. **编辑器与快照**：运行时真源是 Scene + `userData`；持久化出口是 `sceneToJson`；core 不必认识「编辑器」这一宿主概念。
 7. **视觉常量**（颜色、透明度等）：**core** 仅在 [`core/theme/runtimeVisualDefaults.js`](../../core/theme/runtimeVisualDefaults.js) 集中定义 core 源码内实际使用的缺省值；**domains** 各自维护本域 palette（机柜壳体、门扇等域内专属色）；**宿主** 可 import core 与 domain 的导出常量，但不得将宿主或 domain 专属常量写入 core。当某一 domain **基于另一 domain 实现**（如 cabinet 委托 stat 绘制容量方柱、port 复用 stat 方柱样式）时，在创建或配置该依赖域对象时**应刻意 import 并应用被依赖域 palette 中的常量**，以保持视觉一致；业务上也可显式传入自定义颜色覆盖缺省。禁止的是无 compose 关系的 palette 交叉引用，以及 `core → domains` 反向依赖。
 
-业务域扩展与 JSON 形态详见 [`doc/domains.md`](./domains.md)。
+业务域扩展与 JSON 形态详见 [`docs/domains.md`](./domains.md)。

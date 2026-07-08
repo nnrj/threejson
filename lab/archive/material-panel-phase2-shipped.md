@@ -1,7 +1,7 @@
-﻿# 材质面板二期（已归档）
+# 材质面板二期（已归档）
 
 **状态**：`archived`（2026-06 已收尾）  
-**正史**：[`doc/zh/json-format.md`](../doc/zh/json-format.md) § `assetLibrary` 与 `lib://`
+**正史**：[`docs/zh/json-format.md`](../docs/zh/json-format.md) § `assetLibrary` 与 `lib://`
 
 合并自 `material-panel-phase2-roadmap.md` 与 `material-panel-phase2-closure-and-phase3-prep.md`。
 

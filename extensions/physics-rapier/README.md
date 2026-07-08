@@ -1,4 +1,4 @@
-﻿# Rapier 3D（浏览器）示例插件
+# Rapier 3D（浏览器）示例插件
 
 可选扩展：**不**被 `threejson` 默认入口加载；页面需 `import` 本目录模块并 `pluginHost.register(...)`。
 
@@ -24,7 +24,7 @@ JSON 示例：
 - 落体/多刚体：[`04-02-plugin-physics.json`](../../assets/json/tutorial/track-04/04-02-plugin-physics.json)
 - 第一人称碰撞：[`04-05-fps-rapier-collision.json`](../../assets/json/tutorial/track-04/04-05-fps-rapier-collision.json) + [`examples/html-demo/track-04-interaction/04-05-fps-rapier-collision.html`](../../examples/html-demo/track-04-interaction/04-05-fps-rapier-collision.html)
 
-约定：[`doc/zh/extensions.md`](../../doc/zh/extensions.md)、[`lab/extension-json.md`](../../lab/extension-json.md)。
+约定：[`docs/zh/extensions.md`](../../docs/zh/extensions.md)、[`lab/extension-json.md`](../../lab/extension-json.md)。
 
 ## 非侵入性
 

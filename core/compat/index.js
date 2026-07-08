@@ -1,4 +1,4 @@
-﻿import { baseline153Adapter } from "./adapters/baseline153.js";
+import { baseline153Adapter } from "./adapters/baseline153.js";
 import { log } from "../util/logger.js";
 import { r155lightsAdapter } from "./adapters/r155lights.js";
 import { r169controlsAdapter } from "./adapters/r169controls.js";
@@ -58,7 +58,7 @@ export function warnIfUnsupportedThreeRevision(ctx = {}) {
       "[threejson] Three.js revision r" + revision +
       " is not in the supported matrix (r" + THREEJSON_MIN_SUPPORTED_REVISION +
       "–r" + getThreeJsonPrimaryRevision() +
-      "). Behavior is not guaranteed. See doc/zh/three-compat.md for upgrade notes and advanced workarounds."
+      "). Behavior is not guaranteed. See docs/zh/three-compat.md for upgrade notes and advanced workarounds."
     );
   }
   return compat;

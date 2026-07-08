@@ -1362,7 +1362,7 @@
 
               <div class="detailFooter">
                 <a id="detailOpenLink" class="actionLink" href="./examples/html-demo/track-00-runtime/00-01-minimal-mesh.html" target="_blank" rel="noreferrer">单独打开</a>
-                <a id="detailSourceLink" class="actionLink" href="./doc/reader/reader.html?src=/examples/html-demo/track-00-runtime/00-01-minimal-mesh.html" target="_blank" rel="noreferrer">查看源码</a>
+                <a id="detailSourceLink" class="actionLink" href="./tools/reader/reader.html?src=/examples/html-demo/track-00-runtime/00-01-minimal-mesh.html" target="_blank" rel="noreferrer">查看源码</a>
                 <div id="detailJsonLinks" class="detailJsonLinks" hidden></div>
               </div>
             </div>
@@ -1997,7 +1997,7 @@
     }
   }
 
-  const readerEntryPath = "./doc/reader/reader.html";
+  const readerEntryPath = "./tools/reader/reader.html";
   const readerTextFilePattern = /\.(md|markdown|json|js|mjs|cjs|ts|tsx|jsx|html|htm|vue|css|txt|text|yml|yaml|bash|sh|ps1|cmd|bat|obj|mtl|csv)$/i;
 
   function getProjectRootUrl() {
@@ -2027,7 +2027,7 @@
   }
 
   function tutorialDocHref() {
-    return currentLocale === "en-US" ? "./doc/en/tutorial.md" : "./doc/zh/tutorial.md";
+    return currentLocale === "en-US" ? "./docs/en/tutorial.md" : "./docs/zh/tutorial.md";
   }
 
   function buildReaderLink(href) {
@@ -2043,7 +2043,7 @@
       return false;
     }
     const path = href.split("#")[0].replace(/^\.\//, "").replace(/^\//, "");
-    return path === "doc/zh/tutorial.md" || path === "doc/en/tutorial.md";
+    return path === "docs/zh/tutorial.md" || path === "docs/en/tutorial.md";
   }
 
   function appendDocLinkItem(container, href, label) {

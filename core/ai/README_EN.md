@@ -26,7 +26,7 @@ Supported providers: `chatgpt`, `deepseek`, `custom` (OpenAI-compatible; require
 - `sceneAgent.js` / `agentDepth.js` / `agentTools.js` — optional multi-step agent.
 - `index.js` — public entry; mounts `window.ThreeJsonAI` in the browser.
 
-Human-readable skill: [`SKILL.md`](./SKILL.md). Related docs: [`doc/en/json-format.md`](../../doc/en/json-format.md), [`doc/en/extensions.md`](../../doc/en/extensions.md), [`doc/en/glossary.md`](../../doc/en/glossary.md). Gap matrix (archived): [`lab/archive/ai-skill-gap-matrix.md`](../../lab/archive/ai-skill-gap-matrix.md).
+Human-readable skill: [`SKILL.md`](./SKILL.md). Related docs: [`docs/en/json-format.md`](../../docs/en/json-format.md), [`docs/en/extensions.md`](../../docs/en/extensions.md), [`docs/en/glossary.md`](../../docs/en/glossary.md). Gap matrix (archived): [`lab/archive/ai-skill-gap-matrix.md`](../../lab/archive/ai-skill-gap-matrix.md).
 
 ## Module exports (ESM)
 
@@ -125,10 +125,10 @@ const result = await aiClient.runSceneAgent(
 
 - Prompts ask for raw JSON; `extractJsonText()` still strips fences for resilience.
 - Loadable scenes need `worldInfo` and/or standard `objectList` + `sceneConfig`.
-- Capability catalog in prompts covers css3dPanel, shaderSurface, particleEmitter; extension **bootstrap** is host responsibility ([`doc/en/extensions.md`](../../doc/en/extensions.md)).
+- Capability catalog in prompts covers css3dPanel, shaderSurface, particleEmitter; extension **bootstrap** is host responsibility ([`docs/en/extensions.md`](../../docs/en/extensions.md)).
 
 ## Manual verification
 
 See [`tests/ai-manual-verification.md`](../../tests/ai-manual-verification.md). Automated: `npm test`, `npm run verify:ai-static`; optional live: `npm run verify:ai-live`.
 
-Demos: [`doc/en/demos.md`](../../doc/en/demos.md), [`05-01-ai-scene.html`](../../examples/html-demo/track-05-tooling/05-01-ai-scene.html).
+Demos: [`docs/en/demos.md`](../../docs/en/demos.md), [`05-01-ai-scene.html`](../../examples/html-demo/track-05-tooling/05-01-ai-scene.html).

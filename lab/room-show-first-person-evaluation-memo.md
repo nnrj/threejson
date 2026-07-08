@@ -1,4 +1,4 @@
-﻿# room-show 第一人称漫游 — 评估备忘
+# room-show 第一人称漫游 — 评估备忘
 
 **状态**：`idea`（评估与方案设想，**非实施承诺**）  
 **日期**：2026-06-22  
@@ -121,7 +121,7 @@ flowchart TB
 3. 仅在 FPS 模式 `bootstrapFirstPersonExtensionsFromScene`  
 4. 常量：`FPS_SPAWN`、`FPS_CONTROLS_CONFIG`（如 `lookSmoothing: 0.18`）  
 5. 进入 FPS 时可选 `setWallsVisible(false)`、`setRoofVisible(false)`  
-6. [`doc/zh/demos.md`](../doc/zh/demos.md) 一句说明是否含漫游模式  
+6. [`docs/zh/demos.md`](../docs/zh/demos.md) 一句说明是否含漫游模式  
 
 ---
 

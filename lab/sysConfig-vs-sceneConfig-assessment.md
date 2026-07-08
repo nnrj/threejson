@@ -1,7 +1,7 @@
-﻿# sysConfig 与 sceneConfig 配置归属评估
+# sysConfig 与 sceneConfig 配置归属评估
 
 **状态**：`shipped`（2026-06 实施）  
-**宿主文档**：[`doc/zh/tools.md`](../doc/zh/tools.md)  
+**宿主文档**：[`docs/zh/tools.md`](../docs/zh/tools.md)  
 **远期备忘**：[`sysconfig-sceneconfig-settings-memo.md`](./sysconfig-sceneconfig-settings-memo.md)
 
 ## 1. 结论
@@ -60,7 +60,7 @@
 
 ## 5. settings A/B/C
 
-见 [`doc/zh/tools.md`](../doc/zh/tools.md)。不为每字段加「覆盖 JSON」复选框。
+见 [`docs/zh/tools.md`](../docs/zh/tools.md)。不为每字段加「覆盖 JSON」复选框。
 
 ## 6. 风险与冒烟
 
@@ -94,4 +94,4 @@
 
 - [`lab/standard-json-shape-proposal.md`](./standard-json-shape-proposal.md)
 - [`lab/scene-canonical-collect-roadmap.md`](./scene-canonical-collect-roadmap.md)（背景见 [archive/persist-canonical-json-memo.md](./archive/persist-canonical-json-memo.md)）
-- [`doc/zh/json-format.md`](../doc/zh/json-format.md) — `renderLoop.renderMode`、`helpers`
+- [`docs/zh/json-format.md`](../docs/zh/json-format.md) — `renderLoop.renderMode`、`helpers`

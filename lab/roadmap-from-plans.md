@@ -1,15 +1,15 @@
-﻿# 历史 Cursor 计划摘录（非发布承诺）
+# 历史 Cursor 计划摘录（非发布承诺）
 
-本页整理自仓库开发过程中在 Cursor 里生成的若干 `.plan.md` 结论与路线，**不代表当前里程碑或发布承诺**；与 [`doc/zh/scope.md`](../doc/zh/scope.md) 的「Core 承诺」区分。若与实现不一致，以代码与 `doc/` 正史为准。
+本页整理自仓库开发过程中在 Cursor 里生成的若干 `.plan.md` 结论与路线，**不代表当前里程碑或发布承诺**；与 [`docs/zh/scope.md`](../docs/zh/scope.md) 的「Core 承诺」区分。若与实现不一致，以代码与 `docs/` 正史为准。
 
 ## 已落地或已被代码覆盖的历史项
 
 以下条目在旧计划中曾为待办，当前仓库已有对应实现或文档，**保留作溯源**：
 
-- **声明式全景 / IBL 背景**：`sceneBackdropResolver` + `createSceneRuntimeAsync`；字段说明见 [`doc/zh/json-format.md`](../doc/zh/json-format.md) 中 `sceneConfig.scene` 的 `background` / `environment`（旧「360° 场景背景」评估中的多数待办已由实现替代）。
+- **声明式全景 / IBL 背景**：`sceneBackdropResolver` + `createSceneRuntimeAsync`；字段说明见 [`docs/zh/json-format.md`](../docs/zh/json-format.md) 中 `sceneConfig.scene` 的 `background` / `environment`（旧「360° 场景背景」评估中的多数待办已由实现替代）。
 - **材质 `textureKind`（视频 / GIF 动画）**：`modelBuilder` 中 `ensureMaterialTextureFromJson` 等路径；说明见 [`core/BUSINESS_DOMAINS.md`](../core/BUSINESS_DOMAINS.md)。
 - **合并盒 / CSG 子树与 `textureUrl`**：旧「core texture URL gaps」计划中的抽取与接线在 core 中已标记完成；若遇个案，优先查 CORS 与 `map` 仅写 URL 字符串的约定。
-- **npm 库形态与裸模块 import**：根目录 [`package.json`](../package.json)、`doc/zh/README.md` 安装段；旧「Phase B npm」中的技术债（仅 esm.sh 等）已按当前策略处理。
+- **npm 库形态与裸模块 import**：根目录 [`package.json`](../package.json)、`docs/zh/README.md` 安装段；旧「Phase B npm」中的技术债（仅 esm.sh 等）已按当前策略处理。
 
 - **Rapier 物理插件（M5 方向）**：[`extensions/physics-rapier/README.md`](../extensions/physics-rapier/README.md) + [`examples/html-demo/track-04-interaction/04-02-plugin-physics.html`](../examples/html-demo/track-04-interaction/04-02-plugin-physics.html)。首版为可选扩展 + 演示页；WASM 来源与网络依赖以各 README 为准。
 
@@ -39,4 +39,4 @@
 
 ## 文档与站点类（同仓、非 core）
 
-`doc/reader` 演示索引、多语言 README 等计划在 **Lab 范围外**；需要时直接在 `doc/` 或对应示例目录演进即可。
+`tools/reader` 演示索引、多语言 README 等计划在 **Lab 范围外**；需要时直接在 `docs/` 或对应示例目录演进即可。

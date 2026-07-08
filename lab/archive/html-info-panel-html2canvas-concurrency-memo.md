@@ -1,4 +1,4 @@
-﻿> **归档**：方案 **`rejected`**；Debug 内联队列保留。见 [`../CONVENTIONS.md`](../CONVENTIONS.md)。
+> **归档**：方案 **`rejected`**；Debug 内联队列保留。见 [`../CONVENTIONS.md`](../CONVENTIONS.md)。
 
 # 信息面板 html2canvas 并发治理 — 搁置备忘
 
@@ -6,7 +6,7 @@
 **日期**：2026-06-25  
 **关联**：[infoPanelBuilder.js](../core/builder/infoPanelBuilder.js)、[deployScheduler.js](../core/runtime/deployScheduler.js)、[loading.js](../core/cache/loading.js)、[room-show.html](../room-show.html)、Cursor plan `html_panel_concurrency`
 
-与 [`doc/zh/scope.md`](../doc/zh/scope.md) 无发布承诺。本文记录曾讨论的治理方案及**为何搁置**，供日后查阅，避免重复走弯路。
+与 [`docs/zh/scope.md`](../docs/zh/scope.md) 无发布承诺。本文记录曾讨论的治理方案及**为何搁置**，供日后查阅，避免重复走弯路。
 
 ---
 

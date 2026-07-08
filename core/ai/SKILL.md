@@ -1,4 +1,4 @@
-﻿---
+---
 name: threejson-ai-scene
 description: Generate or modify ThreeJSON scene JSON, core command scripts, and optional multi-step agents via core/ai; plan/fill textureUrl. Use for prompts, image-to-scene, command-mode edits, or texture pipelines.
 ---
@@ -27,7 +27,7 @@ Use this skill when the request includes one of these intents:
 
 ## Capability catalog (runtime prompts)
 
-Generation/update prompts (`threeJsonCoreSkill.js`) include: primitives, native Three.js, lines, **infoPanel** vs **css3dPanel**, **shaderSurface**, **particleEmitter**, domains, wind/heat, `sceneConfig` (incl. optional `textureQuality`, `extensions` container), CSG, scene text. Host-only wiring (PluginHost, extension bootstrap) is **not** auto-generated — see [`doc/zh/extensions.md`](../../doc/zh/extensions.md). Business objects use [`doc/zh/domains.md`](../../doc/zh/domains.md) — see [`doc/zh/glossary.md`](../../doc/zh/glossary.md).
+Generation/update prompts (`threeJsonCoreSkill.js`) include: primitives, native Three.js, lines, **infoPanel** vs **css3dPanel**, **shaderSurface**, **particleEmitter**, domains, wind/heat, `sceneConfig` (incl. optional `textureQuality`, `extensions` container), CSG, scene text. Host-only wiring (PluginHost, extension bootstrap) is **not** auto-generated — see [`docs/zh/extensions.md`](../../docs/zh/extensions.md). Business objects use [`docs/zh/domains.md`](../../docs/zh/domains.md) — see [`docs/zh/glossary.md`](../../docs/zh/glossary.md).
 
 ## Core Interfaces
 
@@ -145,4 +145,4 @@ Handle these errors explicitly:
 
 - Keep this file concise and documentation-focused.
 - Keep runtime skill logic in `threeJsonCoreSkill.js` (full scene), `sceneCommandSkill.js` (commands), `texturePrompt.js` (texture plans), and `textureAiService.js` (image pipeline).
-- If schema constraints change, update `threeJsonCoreSkill.js`, `sceneCapability.js`, `sceneCommandSkill.js`, this skill, and `doc/zh/json-format.md` / `core/ai/README.md` together. Archived gap matrix: [`lab/archive/ai-skill-gap-matrix.md`](../../lab/archive/ai-skill-gap-matrix.md).
+- If schema constraints change, update `threeJsonCoreSkill.js`, `sceneCapability.js`, `sceneCommandSkill.js`, this skill, and `docs/zh/json-format.md` / `core/ai/README.md` together. Archived gap matrix: [`lab/archive/ai-skill-gap-matrix.md`](../../lab/archive/ai-skill-gap-matrix.md).

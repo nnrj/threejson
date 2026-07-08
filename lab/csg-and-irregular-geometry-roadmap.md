@@ -1,6 +1,6 @@
-﻿# CSG 泛化与不规则体 — 远期规划
+# CSG 泛化与不规则体 — 远期规划
 
-**非发布承诺**；与 [`doc/zh/scope.md`](../doc/zh/scope.md) Core 承诺区分。
+**非发布承诺**；与 [`docs/zh/scope.md`](../docs/zh/scope.md) Core 承诺区分。
 
 ## 背景
 

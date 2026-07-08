@@ -1,4 +1,4 @@
-﻿# scene-host（绿场编辑器 / 播放器）
+# scene-host（绿场编辑器 / 播放器）
 
 `tools/scene-host/` 内的**编辑器**（`editor/`）与**播放器**（`player/`）是对根目录 [`scene-editor.html`](../../scene-editor.html)、[`scene-player.html`](../../scene-player.html) 的**拆分重构版**：从正本 HTML **复制**业务逻辑后模块化，与正本**代码零耦合**（禁止 import 基准文件）。
 
@@ -62,7 +62,7 @@ tools/scene-host/
 
 | 阶段 | 内容 |
 |------|------|
-| 0 | 本 README + 骨架 + `doc/zh/tools.md` 说明 |
+| 0 | 本 README + 骨架 + `docs/zh/tools.md` 说明 |
 | 1 | `shared/`：settings、runtimeConfig、基础 CSS |
 | 2 | Editor **mvp_canvas**：全量加载入口 + settings + 复制基准 CSS；**无** AI/command/场景树/TransformControls |
 | 2b+ | command/ai 复制到 `editor/lib/`；场景树、属性、AI |

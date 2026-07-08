@@ -1,4 +1,4 @@
-﻿# ThreeJSON
+# ThreeJSON
 
 [中文](./README.md) | [English](./README_EN.md)
 
@@ -44,7 +44,7 @@ nvm use          # reads .nvmrc
 npm ci && npm test
 ```
 
-See **[`doc/zh/development.md`](doc/zh/development.md)** (Chinese; English: [`doc/en/development.md`](doc/en/development.md)).
+See **[`docs/zh/development.md`](docs/zh/development.md)** (Chinese; English: [`docs/en/development.md`](docs/en/development.md)).
 
 ## Use in your project
 
@@ -73,19 +73,19 @@ npm install @threejson/assets
 
 ## Contributing and AI-generated code
 
-This project **allows** AI-assisted contributions, subject to the **AI-generated code guidelines** in [`doc/zh/development.md`](doc/zh/development.md) (keep docs in sync, human-reviewed plans, attach `doc/dev/plans/` with each submission). See also [`doc/dev/plans/README.md`](doc/dev/plans/README.md).
+This project **allows** AI-assisted contributions, subject to the **AI-generated code guidelines** in [`docs/zh/development.md`](docs/zh/development.md) (keep docs in sync, human-reviewed plans, attach `docs/dev/plans/` with each submission). See also [`docs/dev/plans/README.md`](docs/dev/plans/README.md).
 
 ## Documentation
 
-See **[`doc/en/README.md`](doc/en/README.md)** for the full caller guide, JSON format, and API reference.
+See **[`docs/en/README.md`](docs/en/README.md)** for the full caller guide, JSON format, and API reference.
 
-If you want to understand the design of `domains/`, how `domainModelList` works, or how to create a custom business domain, see **[`doc/en/domains.md`](doc/en/domains.md)**.
+If you want to understand the design of `domains/`, how `domainModelList` works, or how to create a custom business domain, see **[`docs/en/domains.md`](docs/en/domains.md)**.
 
 ## Install from npm (package name: `threejson`)
 
 Peer dependencies must be installed in your app (versions should satisfy the `peerDependencies` field in [`package.json`](package.json)):
 
-- **Three.js**: `>= 0.179.0` (recommended **0.184.x**). See [`doc/zh/three-compat.md`](doc/zh/three-compat.md) (Chinese; version matrix and workarounds).
+- **Three.js**: `>= 0.179.0` (recommended **0.184.x**). See [`docs/zh/three-compat.md`](docs/zh/three-compat.md) (Chinese; version matrix and workarounds).
 
 ```bash
 npm install threejson three @tweenjs/tween.js html2canvas-pro
@@ -130,7 +130,7 @@ Bundlers (Vite, Webpack, etc.) resolve `three` and addons from `node_modules`.
 
 ## Use without npm (clone + static server)
 
-Clone the repo and serve it over HTTP (e.g. Live Server). Map **`threejson`** → [`builtins/full.js`](builtins/full.js) and **`threejson/core`** → [`core/index.js`](core/index.js) in an [import map](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script/type/importmap), then use `import { createJsonScene } from "threejson"` like npm. See [`examples/html-demo/README.md`](examples/html-demo/README.md). Relative `core/index.js` + `builtins/register.js` is documented in `00-05-import-paths.html`. Map `three`, `@tweenjs/tween.js`, `html2canvas-pro` by default. Add **`gifuct-js`** (`textureKind: "gif"`) and **`troika-three-text`** + **`fflate`** (SDF scene text) only when needed — see [`doc/en/quick-start.md`](doc/en/quick-start.md).
+Clone the repo and serve it over HTTP (e.g. Live Server). Map **`threejson`** → [`builtins/full.js`](builtins/full.js) and **`threejson/core`** → [`core/index.js`](core/index.js) in an [import map](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script/type/importmap), then use `import { createJsonScene } from "threejson"` like npm. See [`examples/html-demo/README.md`](examples/html-demo/README.md). Relative `core/index.js` + `builtins/register.js` is documented in `00-05-import-paths.html`. Map `three`, `@tweenjs/tween.js`, `html2canvas-pro` by default. Add **`gifuct-js`** (`textureKind: "gif"`) and **`troika-three-text`** + **`fflate`** (SDF scene text) only when needed — see [`docs/en/quick-start.md`](docs/en/quick-start.md).
 
 ## Quick Local Preview
 

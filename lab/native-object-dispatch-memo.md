@@ -1,8 +1,8 @@
-﻿# Native 通用对象创建备忘
+# Native 通用对象创建备忘
 
 状态：`partial`（v1 已实现；双轨入口与 allowlist 仍演进中）
 
-关联：[`core/builder/nativeObjectBuilder.js`](../core/builder/nativeObjectBuilder.js)、[`core/handler/nativeParseMode.js`](../core/handler/nativeParseMode.js)。**主文档示例**（torusKnot 推断、显式 native 层级）：[`doc/zh/json-format.md` § objType: native](../doc/zh/json-format.md#objtype-native通用-threejs-对象)。
+关联：[`core/builder/nativeObjectBuilder.js`](../core/builder/nativeObjectBuilder.js)、[`core/handler/nativeParseMode.js`](../core/handler/nativeParseMode.js)。**主文档示例**（torusKnot 推断、显式 native 层级）：[`docs/zh/json-format.md` § objType: native](../docs/zh/json-format.md#objtype-native通用-threejs-对象)。
 
 ## 动机
 

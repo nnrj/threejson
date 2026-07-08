@@ -1,4 +1,4 @@
-﻿# 场景事件机制 — 评估文档
+# 场景事件机制 — 评估文档
 
 **状态**：`idea`（L3 **`deferred`** P2–P3；L4 **`rejected`** / parked；**V2 产品设想** §10 **`implemented-phase1+2`** — 见 [`core/runtime/eventMechanism/`](../core/runtime/eventMechanism/) 与 [event_mechanism P2-P3 plan](../../.cursor/plans/event_mechanism_p2-p3_9161ad53.plan.md)）  
 **日期**：2026-06-12（2026-06-28 整理：动机与 L3 草图自归档 memo 并入；§10 追加 V2 产品设想）  
@@ -276,7 +276,7 @@ flowchart LR
 | 能力 | 位置 |
 |------|------|
 | `createJsonScene` 自动 bind/dispose ELM | [`core/runtime/eventMechanism/attachSceneEventRuntime.js`](../core/runtime/eventMechanism/attachSceneEventRuntime.js) |
-| `interaction.bindSceneEvents`、`dismissTrigger`、per-event `mode` | [`doc/zh/event-mechanism.md`](../doc/zh/event-mechanism.md)、[`doc/zh/json-format.md`](../doc/zh/json-format.md) |
+| `interaction.bindSceneEvents`、`dismissTrigger`、per-event `mode` | [`docs/zh/event-mechanism.md`](../docs/zh/event-mechanism.md)、[`docs/zh/json-format.md`](../docs/zh/json-format.md) |
 | 通用 player 去 door 硬编码（门等 domain 事件 **三期** JSON 绑定） | [`scene-player.html`](../scene-player.html) |
 | 编辑器 `[事件]` 标签、预览/编辑器事件绑定设置、F5 运行场景 | [`scene-editor.html`](../scene-editor.html)、[`tools/scene-host/`](../tools/scene-host/) |
 | demo/tutorial `fix` → `dismissTrigger` | [`04-08-info-panel-gallery`](../examples/html-demo/track-04-interaction/04-08-info-panel-gallery.html) |

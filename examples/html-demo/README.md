@@ -1,4 +1,4 @@
-﻿# html-demo 导入说明
+# html-demo 导入说明
 
 [中文](./README.md)
 
@@ -63,13 +63,13 @@ import "../../../builtins/register.js";
 - [`demo-catalog.zh.json`](./demo-catalog.zh.json) — 中文（含 path、docLinks、标题说明等全部字段）
 - [`demo-catalog.en.json`](./demo-catalog.en.json) — 英文（结构须与中文版一致，文案为英文）
 
-维护后运行 `npm run validate:demo-catalog` 校验两份 catalog 的结构字段一致（`docLinks.href` 允许 zh/en 不同）。新增 `doc/*.md` 链接后，可运行 `node tools/dev/build/localize-demo-catalog-en-doc-hrefs.mjs` 刷新英文 catalog 的 `doc/en/` 路径。
+维护后运行 `npm run validate:demo-catalog` 校验两份 catalog 的结构字段一致（`docLinks.href` 允许 zh/en 不同）。新增 `docs/*.md` 链接后，可运行 `node tools/dev/build/localize-demo-catalog-en-doc-hrefs.mjs` 刷新英文 catalog 的 `docs/en/` 路径。
 
 - Track 0–7 对应 `track-00-runtime/` … `track-07-text/`
 
 ## tutorial 尺度约定
 
-html-demo 教程 JSON（[`assets/json/tutorial/`](../../assets/json/tutorial/)）**实践中**多数按 **约 1 世界单位 ≈ 1 米** 编写，便于与 room-show 等业务场景对齐。**这是 demo 惯例，不是 ThreeJSON 引擎的全局规定**——引擎契约仍为「单位由调用者场景约定决定」（见 [`doc/zh/json-format.md`](../../doc/zh/json-format.md)）。
+html-demo 教程 JSON（[`assets/json/tutorial/`](../../assets/json/tutorial/)）**实践中**多数按 **约 1 世界单位 ≈ 1 米** 编写，便于与 room-show 等业务场景对齐。**这是 demo 惯例，不是 ThreeJSON 引擎的全局规定**——引擎契约仍为「单位由调用者场景约定决定」（见 [`docs/zh/json-format.md`](../../docs/zh/json-format.md)）。
 
 | 建议 | 说明 |
 |------|------|

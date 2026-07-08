@@ -1,13 +1,13 @@
-﻿# 纹理采样编辑器 backlog — Lab 备忘
+# 纹理采样编辑器 backlog — Lab 备忘
 
 | 字段 | 值 |
 |------|-----|
 | 状态 | `parked`（本期不做，**非发布承诺**） |
 | 记录日期 | 2026-06 |
 | 正史 plan | [纹理采样自由配置_17ce372e.plan.md](../.cursor/plans/纹理采样自由配置_17ce372e.plan.md) |
-| 用户文档 | [doc/zh/json-format.md](../doc/zh/json-format.md)（采样字段节）、[doc/zh/api.md](../doc/zh/api.md)（`textureSampling.js`） |
+| 用户文档 | [docs/zh/json-format.md](../docs/zh/json-format.md)（采样字段节）、[docs/zh/api.md](../docs/zh/api.md)（`textureSampling.js`） |
 
-与 [`doc/zh/scope.md`](../doc/zh/scope.md) 的 Core 承诺区分：下文「未做」项仅指**编辑器 UI**，不代表 runtime / JSON 能力缺失。
+与 [`docs/zh/scope.md`](../docs/zh/scope.md) 的 Core 承诺区分：下文「未做」项仅指**编辑器 UI**，不代表 runtime / JSON 能力缺失。
 
 ---
 

@@ -1,10 +1,10 @@
-﻿# 场景 Load Gate 与 per-object 进度排除备忘（非发布承诺）
+# 场景 Load Gate 与 per-object 进度排除备忘（非发布承诺）
 
 **状态**：`idea`（开放探索，**不承诺实现**）  
-**关联**：[`sceneConfig.intro`](../doc/zh/json-format.md#sceneconfigintro-可选加载完成后片头)、[`deployScheduler`](../core/runtime/deployScheduler.js)、[`scene-load-lifecycle.md`](../doc/zh/scene-load-lifecycle.md)  
+**关联**：[`sceneConfig.intro`](../docs/zh/json-format.md#sceneconfigintro-可选加载完成后片头)、[`deployScheduler`](../core/runtime/deployScheduler.js)、[`scene-load-lifecycle.md`](../docs/zh/scene-load-lifecycle.md)  
 **记录日期**：2026-07-05  
 
-本页记录 load gate（「何时算加载完成」）的扩展设想。与 [`doc/zh/scope.md`](../doc/zh/scope.md) 的 Core 承诺区分。
+本页记录 load gate（「何时算加载完成」）的扩展设想。与 [`docs/zh/scope.md`](../docs/zh/scope.md) 的 Core 承诺区分。
 
 **已实现（方案 A，2026-07-05）**：`sceneConfig.intro.postLoad.excludeFromLoadWait` — intro 不阻塞 `createJsonScene` / `onSceneReady`；`blockInteraction` 控制 overlay 指针捕获（`excludeFromLoadWait: true` 且未写 `blockInteraction` 时默认 `false`；`blockInteraction: false` 时 overlay `pointer-events: none`，`skipOnClick` 仅绑定 slide 内容区）。见 `core/runtime/sceneIntroConfig.js`、`sceneIntroOverlay.js`。
 
