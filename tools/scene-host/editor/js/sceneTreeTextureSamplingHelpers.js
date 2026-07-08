@@ -7,15 +7,16 @@ import {
   resolveEffectiveTextureSummary,
   serializeTextureFilter
 } from "../../../../core/util/textureSampling.js";
+import { t } from "../../shared/i18n/index.js";
 
 export const TEXTURE_QUALITY_INHERIT = "";
 
 export const TEXTURE_QUALITY_OPTIONS = [
-  { value: TEXTURE_QUALITY_INHERIT, label: "默认(继承场景)" },
-  { value: "0", label: "关(0)" },
-  { value: "1", label: "低(1)" },
-  { value: "2", label: "中(2)" },
-  { value: "3", label: "高(3)" }
+  { value: TEXTURE_QUALITY_INHERIT, label: "默认(继承场景)", key: "editor.textureQuality.inherit" },
+  { value: "0", label: "关(0)", key: "editor.textureQuality.off" },
+  { value: "1", label: "低(1)", key: "editor.textureQuality.low" },
+  { value: "2", label: "中(2)", key: "editor.textureQuality.medium" },
+  { value: "3", label: "高(3)", key: "editor.textureQuality.high" }
 ];
 
 export function buildTextureQualitySelectOptions(selectedValue) {
@@ -24,7 +25,8 @@ export function buildTextureQualitySelectOptions(selectedValue) {
     : String(selectedValue);
   return TEXTURE_QUALITY_OPTIONS.map((opt) => {
     const picked = opt.value === sel ? " selected" : "";
-    return `<option value="${opt.value.replace(/"/g, "&quot;")}"${picked}>${opt.label}</option>`;
+    const label = t(opt.key, opt.label);
+    return `<option value="${opt.value.replace(/"/g, "&quot;")}"${picked}>${label}</option>`;
   }).join("");
 }
 

@@ -5,6 +5,7 @@ import {
 } from "threejson";
 import { getBusinessDomainApi } from "../../../../core/handler/businessDomainRegistry.js";
 import { buildEditorPrimitiveDescriptor } from "./editorPrimitiveDescriptors.js";
+import { t } from "../../shared/i18n/index.js";
 
 const MODEL_DOMAIN_WHITELIST = new Set([
   "box",
@@ -35,36 +36,44 @@ const MODEL_GROUP_TITLES = {
   biz: "业务模型"
 };
 
+function modelLabel(key, fallback) {
+  return t(`editor.model.${key}`, fallback || key);
+}
+
+function modelGroupTitle(groupKey) {
+  return t(`editor.modelGroup.${groupKey}`, MODEL_GROUP_TITLES[groupKey] || groupKey);
+}
+
 function getModelPanelGroups() {
   const groups = {
     basic: [
-      { key: "box", label: "立方体", kind: "objType" },
-      { key: "sphere", label: "球体", kind: "objType" },
-      { key: "plane", label: "平面", kind: "objType" },
-      { key: "line", label: "线段", kind: "objType" },
-      { key: "cylinder", label: "圆柱", kind: "objType" },
-      { key: "cone", label: "圆锥", kind: "objType" },
-      { key: "ring", label: "圆环", kind: "objType" },
-      { key: "torus", label: "圆环体", kind: "objType" },
-      { key: "capsule", label: "胶囊体", kind: "objType" }
+      { key: "box", label: modelLabel("box", "立方体"), kind: "objType" },
+      { key: "sphere", label: modelLabel("sphere", "球体"), kind: "objType" },
+      { key: "plane", label: modelLabel("plane", "平面"), kind: "objType" },
+      { key: "line", label: modelLabel("line", "线段"), kind: "objType" },
+      { key: "cylinder", label: modelLabel("cylinder", "圆柱"), kind: "objType" },
+      { key: "cone", label: modelLabel("cone", "圆锥"), kind: "objType" },
+      { key: "ring", label: modelLabel("ring", "圆环"), kind: "objType" },
+      { key: "torus", label: modelLabel("torus", "圆环体"), kind: "objType" },
+      { key: "capsule", label: modelLabel("capsule", "胶囊体"), kind: "objType" }
     ],
     irregular: [
-      { key: "group", label: "分组", kind: "objType" },
-      { key: "shapePlane", label: "不规则平面", kind: "objType" },
-      { key: "irregularPlane", label: "多边形平面", kind: "objType" },
-      { key: "shapeExtrude", label: "拉伸体", kind: "objType" },
-      { key: "irregularGeometry", label: "不规则集合体", kind: "objType" },
-      { key: "tube", label: "管线", kind: "objType" },
-      { key: "bufferMesh", label: "缓冲网格", kind: "objType" },
-      { key: "instanced", label: "实例化模型", kind: "objType" }
+      { key: "group", label: modelLabel("group", "分组"), kind: "objType" },
+      { key: "shapePlane", label: modelLabel("shapePlane", "不规则平面"), kind: "objType" },
+      { key: "irregularPlane", label: modelLabel("irregularPlane", "多边形平面"), kind: "objType" },
+      { key: "shapeExtrude", label: modelLabel("shapeExtrude", "拉伸体"), kind: "objType" },
+      { key: "irregularGeometry", label: modelLabel("irregularGeometry", "不规则集合体"), kind: "objType" },
+      { key: "tube", label: modelLabel("tube", "管线"), kind: "objType" },
+      { key: "bufferMesh", label: modelLabel("bufferMesh", "缓冲网格"), kind: "objType" },
+      { key: "instanced", label: modelLabel("instanced", "实例化模型"), kind: "objType" }
     ],
     fx: [
-      { key: "infoPanel", label: "信息面板", kind: "objType" },
-      { key: "css3dPanel", label: "CSS3D 面板", kind: "objType" },
-      { key: "heatMap", label: "热力图", kind: "objType" },
-      { key: "points", label: "点集", kind: "objType" },
-      { key: "sprite", label: "精灵", kind: "objType" },
-      { key: "audio", label: "音频对象", kind: "objType" }
+      { key: "infoPanel", label: modelLabel("infoPanel", "信息面板"), kind: "objType" },
+      { key: "css3dPanel", label: modelLabel("css3dPanel", "CSS3D 面板"), kind: "objType" },
+      { key: "heatMap", label: modelLabel("heatMap", "热力图"), kind: "objType" },
+      { key: "points", label: modelLabel("points", "点集"), kind: "objType" },
+      { key: "sprite", label: modelLabel("sprite", "精灵"), kind: "objType" },
+      { key: "audio", label: modelLabel("audio", "音频对象"), kind: "objType" }
     ],
     biz: []
   };
@@ -73,7 +82,7 @@ function getModelPanelGroups() {
   ids.sort((a, b) => (MODEL_DOMAIN_META[a]?.order || 999) - (MODEL_DOMAIN_META[b]?.order || 999));
   for (const id of ids) {
     const meta = MODEL_DOMAIN_META[id] || { label: id, group: "biz", order: 999 };
-    groups.biz.push({ key: id, label: meta.label, kind: "domain" });
+    groups.biz.push({ key: id, label: modelLabel(id, meta.label), kind: "domain" });
   }
   return groups;
 }
@@ -244,7 +253,7 @@ export function createModelGroupPanel(host) {
       details.open = resolveGroupOpen(groupKey, openState);
       const summary = document.createElement("summary");
       summary.className = "modelGroupSummary";
-      summary.textContent = MODEL_GROUP_TITLES[groupKey];
+      summary.textContent = modelGroupTitle(groupKey);
       details.appendChild(summary);
       const grid = document.createElement("div");
       grid.className = "buttonGrid";

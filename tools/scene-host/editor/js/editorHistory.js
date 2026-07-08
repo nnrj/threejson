@@ -10,6 +10,7 @@ import {
 } from "threejson";
 import { boxUsesIntentionalMaterialsArray } from "./sceneTreeMaterialHelpers.js";
 import { syncEditorMeshVisualFromObjJson } from "./editorMeshVisualSync.js";
+import { t } from "../../shared/i18n/index.js";
 
 function cloneJsonDeep(value) {
   if (value == null) {
@@ -459,7 +460,7 @@ export function createEditorHistory(host) {
       }
       const ok = await replaySceneSnapshot(entry.snapshot, `撤销：${entry.label}`);
       if (ok) {
-        host.showMessage("已撤销。", "info");
+        host.showMessage(t("editor.message.undoDone", "Undone."), "info");
       }
       syncMenuState();
       return { ok: Boolean(ok) };
@@ -469,7 +470,7 @@ export function createEditorHistory(host) {
       if (ok) {
         state.future.push(entry);
         afterObjectHistoryApplied();
-        host.showMessage("已撤销。", "info");
+        host.showMessage(t("editor.message.undoDone", "Undone."), "info");
       } else {
         state.past.push(entry);
       }
@@ -481,7 +482,7 @@ export function createEditorHistory(host) {
       if (ok) {
         state.future.push(entry);
         afterObjectHistoryApplied();
-        host.showMessage("已撤销。", "info");
+        host.showMessage(t("editor.message.undoDone", "Undone."), "info");
       } else {
         state.past.push(entry);
       }
@@ -493,7 +494,7 @@ export function createEditorHistory(host) {
       if (ok) {
         state.future.push(entry);
         afterObjectHistoryApplied();
-        host.showMessage("已撤销。", "info");
+        host.showMessage(t("editor.message.undoDone", "Undone."), "info");
       } else {
         state.past.push(entry);
       }
@@ -505,7 +506,7 @@ export function createEditorHistory(host) {
       if (ok) {
         state.future.push(entry);
         afterObjectHistoryApplied();
-        host.showMessage("已撤销。", "info");
+        host.showMessage(t("editor.message.undoDone", "Undone."), "info");
       } else {
         state.past.push(entry);
       }
@@ -535,7 +536,7 @@ export function createEditorHistory(host) {
       }
       const ok = await replaySceneSnapshot(entry.snapshot, `重做：${entry.label}`);
       if (ok) {
-        host.showMessage("已重做。", "info");
+        host.showMessage(t("editor.message.redoDone", "Redone."), "info");
       }
       syncMenuState();
       return { ok: Boolean(ok) };
@@ -546,7 +547,7 @@ export function createEditorHistory(host) {
         state.past.push(entry);
         trimDepth();
         afterObjectHistoryApplied();
-        host.showMessage("已重做。", "info");
+        host.showMessage(t("editor.message.redoDone", "Redone."), "info");
       } else {
         state.future.push(entry);
       }
@@ -559,7 +560,7 @@ export function createEditorHistory(host) {
         state.past.push(entry);
         trimDepth();
         afterObjectHistoryApplied();
-        host.showMessage("已重做。", "info");
+        host.showMessage(t("editor.message.redoDone", "Redone."), "info");
       } else {
         state.future.push(entry);
       }
@@ -572,7 +573,7 @@ export function createEditorHistory(host) {
         state.past.push(entry);
         trimDepth();
         afterObjectHistoryApplied();
-        host.showMessage("已重做。", "info");
+        host.showMessage(t("editor.message.redoDone", "Redone."), "info");
       } else {
         state.future.push(entry);
       }
@@ -585,7 +586,7 @@ export function createEditorHistory(host) {
         state.past.push(entry);
         trimDepth();
         afterObjectHistoryApplied();
-        host.showMessage("已重做。", "info");
+        host.showMessage(t("editor.message.redoDone", "Redone."), "info");
       } else {
         state.future.push(entry);
       }

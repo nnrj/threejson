@@ -49,7 +49,10 @@ export function pickEditorSceneTitleSuffix(hintLabel, jsonData) {
 }
 
 export function formatEditorTopBarSceneTitle(suffix, baseTitle) {
+  const rawBase = String(baseTitle || "").trim();
   const base =
-    String(baseTitle || "").trim() || t("editor.shell.topBarSceneTitle", "Scene Editor");
+    !rawBase || rawBase === "Scene Editor" || rawBase === "场景编辑器"
+      ? t("editor.shell.topBarSceneTitle", "SceneEditor")
+      : rawBase;
   return suffix ? `${base} - ${suffix}` : base;
 }

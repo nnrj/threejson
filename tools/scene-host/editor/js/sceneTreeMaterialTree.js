@@ -16,6 +16,7 @@ import {
   readTextureQualityFromMaterial,
   writeTextureQualityToMaterial
 } from "./sceneTreeTextureSamplingHelpers.js";
+import { t } from "../../shared/i18n/index.js";
 
 function applyTextureRepeatFromSlotPointer(mesh, rootData, pointer) {
   if (!mesh?.isMesh) {
@@ -59,7 +60,7 @@ function isTextureAssetKind(kind) {
 
 function buildAssetLibSelectOptions(host, selectedId) {
   const lib = ensureSceneAssetLibraryArray(host);
-  const opts = ['<option value="">（直接输入 URL）</option>'];
+  const opts = [`<option value="">${t("editor.material.directUrl", "(Direct URL)")}</option>`];
   lib.forEach((entry) => {
     if (!entry || typeof entry !== "object") {
       return;
@@ -211,7 +212,9 @@ export function createSceneTreeMaterialTree(host, { isPropSyncing }) {
       const libOpts = buildAssetLibSelectOptions(host, texUrl);
       const qualityVal = readTextureQualityFromMaterial(mat);
       const qualityOpts = buildTextureQualitySelectOptions(qualityVal);
-      const customHint = materialHasExplicitSamplingOverrides(mat) ? " (已自定义)" : "";
+      const customHint = materialHasExplicitSamplingOverrides(mat)
+        ? ` ${t("editor.material.customizedSuffix", "(customized)")}`
+        : "";
       const effectiveSummary = formatEffectiveSummaryForMaterial(mat, "imageMap");
       const details = document.createElement("details");
       details.className = "sceneTreeMatSlotDetails";
@@ -222,22 +225,22 @@ export function createSceneTreeMaterialTree(host, { isPropSyncing }) {
       details.appendChild(summary);
       const grid = document.createElement("div");
       grid.className = "sceneTreeMaterialSlotGrid";
-      grid.innerHTML = `<label>纹理</label>
+      grid.innerHTML = `<label>${t("editor.material.texture", "Texture")}</label>
         <input type="text" class="sceneTreeMatTex" value="${texUrl.replace(/"/g, "&quot;")}" spellcheck="false">
         <label>lib</label>
         <select class="sceneTreeMatLib">${libOpts}</select>
-        <label>重复 X</label>
+        <label>${t("editor.material.repeatX", "Repeat X")}</label>
         <input type="number" class="sceneTreeMatRepeatX" step="0.1" min="0.01" value="${repeatX}">
-        <label>重复 Y</label>
+        <label>${t("editor.material.repeatY", "Repeat Y")}</label>
         <input type="number" class="sceneTreeMatRepeatY" step="0.1" min="0.01" value="${repeatY}">
-        <label>颜色</label>
+        <label>${t("editor.material.color", "Color")}</label>
         <input type="color" class="sceneTreeMatColor" value="${color}">
-        <label>纹理采样</label>
+        <label>${t("editor.material.textureSampling", "Texture Sampling")}</label>
         <div class="sceneTreeMatSamplingRow">
           <select class="sceneTreeMatQuality">${qualityOpts}</select>
-          <button type="button" class="sceneTreeMatSamplingAdvancedLink">高级设置${customHint}</button>
+          <button type="button" class="sceneTreeMatSamplingAdvancedLink">${t("editor.material.advancedSettings", "Advanced Settings")}${customHint}</button>
         </div>
-        <span class="sceneTreeMatSamplingEffective" colspan="2">当前生效：${effectiveSummary || "—"}</span>`;
+        <span class="sceneTreeMatSamplingEffective" colspan="2">${t("editor.material.effective", "Effective")}: ${effectiveSummary || "—"}</span>`;
       details.appendChild(grid);
       const texInput = grid.querySelector(".sceneTreeMatTex");
       const libSelect = grid.querySelector(".sceneTreeMatLib");

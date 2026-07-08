@@ -3,6 +3,7 @@ import {
   isScenePreviewMessageEvent,
   postScenePreviewMessage
 } from "../../shared/js/scenePreviewProtocol.js";
+import { t } from "../../shared/i18n/index.js";
 
 /**
  * @param {object} options
@@ -47,11 +48,11 @@ export function createPlayerEditorPreviewBridge(options) {
     const gen = ++loadingGeneration;
     hideStartupEmptyState?.();
     setLoading?.(true);
-    setLoadingMessage?.("正在加载编辑器预览场景...");
+    setLoadingMessage?.(t("player.message.loadingEditorPreview", "Loading editor preview scene..."));
     try {
       const payload = data.payload;
       if (!payload || typeof payload !== "object") {
-        throw new Error("预览消息缺少有效 payload。");
+        throw new Error(t("player.error.previewPayloadMissing", "Preview message is missing a valid payload."));
       }
       await applyPreviewPayload(payload, {
         bindSceneEvents: data.bindSceneEvents,
@@ -61,7 +62,7 @@ export function createPlayerEditorPreviewBridge(options) {
         return;
       }
       notifyEditorLoaded(true);
-      showMessage?.("已加载编辑器预览场景。", "success");
+      showMessage?.(t("player.message.editorPreviewLoaded", "Editor preview scene loaded."), "success");
     } catch (error) {
       if (gen !== loadingGeneration) {
         return;
@@ -101,7 +102,7 @@ export function createPlayerEditorPreviewBridge(options) {
     }
     installMessageListener();
     hideStartupEmptyState?.();
-    setLoadingMessage?.("等待编辑器推送场景…");
+    setLoadingMessage?.(t("player.message.waitingEditorPreview", "Waiting for editor scene preview..."));
     setLoading?.(true);
     window.setTimeout(() => notifyEditorReady(), 0);
     window.setTimeout(notifyEditorReady, 250);

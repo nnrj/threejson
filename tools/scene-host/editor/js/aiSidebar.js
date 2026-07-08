@@ -6,6 +6,7 @@ import {
 import { looksLikeMicroDslLine } from "../../../../core/command/microDsl.js";
 import { runEditorAiUpdate } from "../lib/ai/index.js";
 import { EDITOR_SETTINGS_DEFAULTS } from "../../shared/js/editorSettingsSchema.js";
+import { t } from "../../shared/i18n/index.js";
 import {
   AI_UPDATE_MODE_UI,
   applyAiSettingsToSidebarDom,
@@ -117,7 +118,9 @@ export function createAiSidebar(host) {
     });
     if (dom.generateBtn) {
       dom.generateBtn.disabled = busy;
-      dom.generateBtn.textContent = action === "generate" ? "生成中..." : "生成并载入";
+      dom.generateBtn.textContent = action === "generate"
+        ? t("editor.ai.generating", "Generating...")
+        : t("editor.shell.aiGenerateBtn", "Generate & Load");
     }
     if (dom.updateBtn) {
       dom.updateBtn.disabled = busy;
@@ -126,7 +129,9 @@ export function createAiSidebar(host) {
     }
     if (dom.imageBtn) {
       dom.imageBtn.disabled = busy;
-      dom.imageBtn.textContent = action === "image" ? "看图生成中..." : "根据图片生成并载入";
+      dom.imageBtn.textContent = action === "image"
+        ? t("editor.ai.imageGenerating", "Generating from image...")
+        : t("editor.shell.aiGenerateFromImageBtn", "Generate from Image & Load");
     }
   }
 
@@ -144,7 +149,7 @@ export function createAiSidebar(host) {
     const apiKey = dom.apiKey?.value?.trim() || "";
     const model = dom.model?.value?.trim() || "";
     if (!apiKey) {
-      throw new Error("请先输入 API Key。");
+      throw new Error(t("editor.ai.error.apiKeyRequired", "Please enter an API Key first."));
     }
     const creds = {
       provider,
@@ -157,7 +162,7 @@ export function createAiSidebar(host) {
     if (provider === "custom") {
       const base = normalizeCustomBase(dom.customBase?.value);
       if (!base || !/^https?:\/\//i.test(base)) {
-        throw new Error("自定义 Provider 请填写接口根 URL（须以 http:// 或 https:// 开头）。");
+        throw new Error(t("editor.ai.error.customApiBaseRequired", "For a custom provider, enter an API base URL starting with http:// or https://."));
       }
       creds.baseUrl = base;
     }
@@ -282,7 +287,7 @@ export function createAiSidebar(host) {
       batchResultsHaveSuccessfulAdjustment(results) ||
       (batch?.ok === true && Array.isArray(results) && results.length === 0);
     if (!adjusted) {
-      const msg = "AI 仅执行查询命令，场景未修改。";
+      const msg = t("editor.ai.message.queryOnly", "AI only ran query commands; the scene was not changed.");
       host.showMessage(msg, "error");
       setMessage(msg);
       return false;
@@ -292,24 +297,24 @@ export function createAiSidebar(host) {
       !batchResultsHaveSceneMutation(results) && batchResultsHaveSuccessfulAdjustment(results);
     const noContentChange = batch?.ok === true && Array.isArray(results) && results.length === 0;
     if (viewOnly) {
-      host.showMessage("AI 已调整相机/视角。", "success");
-      setMessage("AI 已调整相机/视角。");
+      host.showMessage(t("editor.ai.message.cameraAdjusted", "AI adjusted the camera/view."), "success");
+      setMessage(t("editor.ai.message.cameraAdjusted", "AI adjusted the camera/view."));
       return true;
     }
     if (noContentChange) {
-      host.showMessage("已按您的要求，未修改场景内容。", "success");
-      setMessage("已按您的要求，未修改场景内容。");
+      host.showMessage(t("editor.ai.message.noChangeRequested", "No scene content was changed as requested."), "success");
+      setMessage(t("editor.ai.message.noChangeRequested", "No scene content was changed as requested."));
       return true;
     }
     const wasSession = agentSessionActive;
     if (wasSession) {
       host.markSceneDirty?.();
-      const baseMsg = "AI 已更新场景。";
+      const baseMsg = t("editor.ai.message.sceneUpdated", "AI updated the scene.");
       const msg = assemblyWarning ? `${baseMsg} ${assemblyWarning}` : baseMsg;
       host.showMessage(msg, assemblyWarning ? "warning" : "success");
       setMessage(msg);
     } else {
-      const baseMsg = successMessage || "AI 命令已执行。";
+      const baseMsg = successMessage || t("editor.ai.message.commandsExecuted", "AI commands executed.");
       const msg = assemblyWarning ? `${baseMsg} ${assemblyWarning}` : baseMsg;
       host.showMessage(msg, assemblyWarning ? "warning" : "success");
       setMessage(msg);
@@ -426,7 +431,7 @@ export function createAiSidebar(host) {
       }
       if (payload.kind === "stream" && streamOn && payload.previewDelta) {
         streamPreview.appendDelta(payload.previewDelta);
-        setMessage("流式生成中…");
+      setMessage(t("editor.ai.message.streaming", "Streaming..."));
         return;
       }
       const stageJson = payload.sceneJsonString;
@@ -434,7 +439,7 @@ export function createAiSidebar(host) {
         (payload.kind === "scene_ready" || payload.kind === "stage_preview") && stageJson;
       if (isStageLoad) {
         void enqueueAiStageSceneLoad(stageJson, "AI 阶段预览").then(() => {
-          setMessage(payload.message || "已载入阶段预览，纹理填充或后续步骤进行中…");
+          setMessage(payload.message || t("editor.ai.message.stagePreviewLoaded", "Stage preview loaded; texture fill or follow-up steps are still running..."));
         });
         return;
       }
@@ -455,7 +460,7 @@ export function createAiSidebar(host) {
         return;
       }
       if (texture?.enabled && payload.kind === "fill_textures") {
-        setMessage(payload.message || "正在填充纹理…");
+        setMessage(payload.message || t("editor.ai.message.fillingTextures", "Filling textures..."));
       }
     };
   }
@@ -465,7 +470,7 @@ export function createAiSidebar(host) {
     const texture = await buildSidebarTextureOptions(host, dom, getCredentials);
     const streamOpts = getSidebarStreamOptions();
     if (agent.enabled) {
-      setMessage("Agent 多轮运行中（消耗更多 Token）…");
+      setMessage(t("editor.ai.message.agentRunning", "Agent is running multiple rounds and may use more tokens..."));
     }
     const result = await client.runSceneAgent(input, {
       agent,
@@ -505,14 +510,14 @@ export function createAiSidebar(host) {
     }
     abortController?.abort();
     setBusy(false);
-    setMessage("已中止 AI 请求。");
+    setMessage(t("editor.ai.message.aborted", "AI request aborted."));
     return true;
   }
 
   async function onGenerate() {
     const prompt = dom.generatePrompt?.value?.trim() || "";
     if (!prompt) {
-      throw new Error("请输入生成提示词。");
+      throw new Error(t("editor.ai.error.promptRequired", "Please enter a generation prompt."));
     }
     const dirty = host.getEditorDocumentState?.()?.isDirty?.();
     if (dirty) {
@@ -522,7 +527,7 @@ export function createAiSidebar(host) {
       }
     }
     stageLoadChain = Promise.resolve();
-    setMessage("AI 正在生成场景 JSON...");
+    setMessage(t("editor.ai.message.generatingSceneJson", "AI is generating scene JSON..."));
     beginAiOperation();
     setBusy(true, "generate");
     try {
@@ -538,10 +543,10 @@ export function createAiSidebar(host) {
   async function onUpdate() {
     const prompt = dom.updatePrompt?.value?.trim() || "";
     if (!prompt) {
-      throw new Error("请输入修改说明。");
+      throw new Error(t("editor.ai.error.updatePromptRequired", "Please enter a change description."));
     }
     if (!host.getScene()) {
-      throw new Error("场景尚未就绪。");
+      throw new Error(t("editor.ai.error.sceneNotReady", "Scene is not ready."));
     }
     stageLoadChain = Promise.resolve();
     const outputMode = getSidebarAiUpdateOutputMode();
@@ -557,7 +562,7 @@ export function createAiSidebar(host) {
     const includeFullJson = dom.includeFullJson?.checked === true;
     const includeSpatialSummary = dom.includeSpatial?.checked === true;
     if (includeFullJson && includeSpatialSummary) {
-      setMessage("已附带完整 JSON，空间摘要为可选补充。");
+      setMessage(t("editor.ai.message.fullJsonAttached", "Full JSON attached; spatial summary is optional."));
     } else {
       setMessage(statusByMode[outputMode] || statusByMode.commands);
     }
@@ -646,7 +651,7 @@ export function createAiSidebar(host) {
         );
         return;
       }
-      throw new Error("AI 调整未返回可用结果。");
+      throw new Error(t("editor.ai.error.noUsableResult", "AI adjustment did not return a usable result."));
     } finally {
       setBusy(false);
     }
@@ -679,7 +684,7 @@ export function createAiSidebar(host) {
     if (url) {
       return url;
     }
-    throw new Error("请提供图片：选择本地文件、填写 Base64，或填写 URL（优先级：文件 > Base64 > URL）。");
+    throw new Error(t("editor.ai.error.imageRequired", "Provide an image: choose a local file, enter Base64, or enter a URL (priority: file > Base64 > URL)."));
   }
 
   async function onImageGenerate() {
@@ -692,7 +697,7 @@ export function createAiSidebar(host) {
     }
     setBusy(true, "image");
     try {
-      setMessage("正在准备图片并请求 AI...");
+      setMessage(t("editor.ai.message.preparingImage", "Preparing image and requesting AI..."));
       const image = await buildImagePayloadForVision();
       const prompt = dom.imagePrompt?.value?.trim() || "";
       const imageDetail = dom.imageDetail?.value || "auto";
@@ -712,7 +717,7 @@ export function createAiSidebar(host) {
 
   async function onPickTextureDir() {
     if (!window.showDirectoryPicker) {
-      host.showMessage("当前浏览器不支持目录选择，请改用 ZIP 下载模式。", "error");
+      host.showMessage(t("editor.ai.error.directoryPickerUnsupported", "This browser does not support directory selection; use ZIP download mode instead."), "error");
       return;
     }
     try {
@@ -771,11 +776,11 @@ export function createAiSidebar(host) {
   function handleAiError(err) {
     host.clearLoadingUi?.();
     if (isAiAbortError(err)) {
-      setMessage("已中止。");
+      setMessage(t("editor.ai.message.abortedShort", "Aborted."));
       return;
     }
     const msg = String(err?.message || err);
-    setMessage(`失败：${msg}`);
+    setMessage(t("editor.ai.message.failed", "Failed: {message}", { message: msg }));
     host.showMessage(msg, "error");
     console.error(err);
   }
@@ -820,7 +825,7 @@ export function createAiSidebar(host) {
       btn.addEventListener("click", () => {
         abortController?.abort();
         setBusy(false);
-        setMessage("已中止 AI 请求。");
+        setMessage(t("editor.ai.message.aborted", "AI request aborted."));
       });
     });
     bindAiPanelSubmitShortcut(dom.generatePrompt, dom.generateBtn, onGenerate);

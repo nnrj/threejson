@@ -213,6 +213,7 @@ export function createPlayerSettingsModal({ getSettings, getFileDefaults, onSave
     if (!modal) {
       return;
     }
+    renderBody();
     refreshModalChrome();
     draft = clonePlayerSettings(getSettings());
     populateForm(draft);

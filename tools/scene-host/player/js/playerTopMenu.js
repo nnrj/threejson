@@ -1,4 +1,5 @@
 import { initTopMenubarExclusiveOpen } from "../../shared/js/topMenubarExclusiveOpen.js";
+import { t } from "../../shared/i18n/index.js";
 
 export function wirePlayerTopMenu(deps) {
   const {
@@ -77,16 +78,18 @@ export function wirePlayerTopMenu(deps) {
     }
     try {
       await navigator.clipboard.writeText(content);
-      showMessage("JSON 已复制到剪贴板。", "success");
+      showMessage(t("player.message.jsonCopied", "JSON copied to clipboard."), "success");
     } catch (error) {
       console.error(error);
-      showMessage("复制失败，请手动复制。", "warning");
+      showMessage(t("player.message.copyFailed", "Copy failed. Please copy manually."), "warning");
     }
   }
 
   function syncFullscreenToggleLabels() {
     const full = !!document.fullscreenElement;
-    const txt = full ? "退出全屏" : "全屏";
+    const txt = full
+      ? t("player.shell.fullscreenExit", "Exit Fullscreen")
+      : t("player.shell.fullscreenBtn", "Fullscreen");
     if (fullscreenBtn) {
       fullscreenBtn.textContent = txt;
     }
@@ -127,7 +130,7 @@ export function wirePlayerTopMenu(deps) {
   });
   document.getElementById("menuHelpUserManual")?.addEventListener("click", () => {
     closeAllTopMenus();
-    showMessage("正在建设中的功能，敬请期待。", "info");
+    showMessage(t("player.message.featurePending", "This feature is under construction."), "info");
   });
   document.getElementById("menuClearPlayerSettingsCache")?.addEventListener("click", async () => {
     clearPlayerSettingsCache?.();
@@ -137,7 +140,7 @@ export function wirePlayerTopMenu(deps) {
       applyPlayerSettingsFromBundle({ settings: fileDefaults, fileDefaults });
     }
     closeAllTopMenus();
-    showMessage("已清除播放器设置缓存并恢复默认。", "info");
+    showMessage(t("player.message.settingsCacheCleared", "Player settings cache cleared and defaults restored."), "info");
   });
   document.getElementById("menuHelpAbout")?.addEventListener("click", () => {
     closeAllTopMenus();

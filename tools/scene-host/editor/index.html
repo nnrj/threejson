@@ -44,24 +44,24 @@
         <summary data-i18n="editor.menu.file">文件</summary>
         <div class="topDropdown">
           <div class="topMenuNestedWrap">
-            <button type="button" class="topNestedTrigger">新建 ▸</button>
-            <div class="topDropdown topDropdownNested" role="menu" aria-label="新建">
+            <button type="button" class="topNestedTrigger" data-i18n="editor.menu.file.new">新建 ▸</button>
+            <div class="topDropdown topDropdownNested" role="menu" aria-label="新建" data-i18n-aria="editor.menu.file.new">
               <button type="button" id="menuNewBlankOrbit" data-i18n="editor.shell.menuNewBlankOrbit">普通场景</button>
             </div>
           </div>
           <button type="button" id="menuOpenScene" data-i18n="editor.shell.menuOpenScene">打开</button>
           <button type="button" id="menuSaveScene" data-i18n="editor.shell.menuSaveScene">保存场景</button>
           <div class="topMenuNestedWrap">
-            <button type="button" class="topNestedTrigger">另存为 ▸</button>
-            <div class="topDropdown topDropdownNested" role="menu" aria-label="另存为">
+            <button type="button" class="topNestedTrigger" data-i18n="editor.menu.file.saveAs">另存为 ▸</button>
+            <div class="topDropdown topDropdownNested" role="menu" aria-label="另存为" data-i18n-aria="editor.menu.file.saveAs">
               <button type="button" id="menuSaveSceneAsCopy" data-i18n="editor.shell.menuSaveSceneAsCopy">另存为副本</button>
               <button type="button" id="menuSaveScenePreset" data-i18n="editor.shell.menuSaveScenePreset">保存为预设</button>
               <button type="button" id="menuSaveCurrentView" data-i18n="editor.shell.menuSaveCurrentView">保存当前视角</button>
             </div>
           </div>
           <div class="topMenuNestedWrap">
-            <button type="button" class="topNestedTrigger">打开最近场景 ▸</button>
-            <div class="topDropdown topDropdownNested" role="menu" aria-label="打开最近场景">
+            <button type="button" class="topNestedTrigger" data-i18n="editor.menu.file.recent">打开最近场景 ▸</button>
+            <div class="topDropdown topDropdownNested" role="menu" aria-label="打开最近场景" data-i18n-aria="editor.menu.file.recent">
               <div id="menuRecentScenesList" class="topDropdownInfo" data-i18n="editor.shell.menuRecentScenesList">暂无记录</div>
               <hr class="topMenuDivider" />
               <button type="button" id="menuRecentScenesMore" data-i18n="editor.shell.menuRecentScenesMore">更多</button>
@@ -69,8 +69,8 @@
             </div>
           </div>
           <div class="topMenuNestedWrap">
-            <button type="button" class="topNestedTrigger">导入 ▸</button>
-            <div class="topDropdown topDropdownNested" role="menu" aria-label="导入">
+            <button type="button" class="topNestedTrigger" data-i18n="editor.menu.file.import">导入 ▸</button>
+            <div class="topDropdown topDropdownNested" role="menu" aria-label="导入" data-i18n-aria="editor.menu.file.import">
               <button type="button" id="menuLoadSceneJson" data-i18n="editor.shell.menuLoadSceneJson">导入 ThreeJSON</button>
               <button type="button" id="menuLoadNativeThreeJson" data-i18n="editor.shell.menuLoadNativeThreeJson">导入原生 JSON</button>
               <button type="button" id="menuLoadTjzArchive" data-i18n="editor.shell.menuLoadTjzArchive">导入 .tjz 包</button>
@@ -79,8 +79,8 @@
             </div>
           </div>
           <div class="topMenuNestedWrap">
-            <button type="button" class="topNestedTrigger">导出 ▸</button>
-            <div class="topDropdown topDropdownNested" role="menu" aria-label="导出">
+            <button type="button" class="topNestedTrigger" data-i18n="editor.menu.file.export">导出 ▸</button>
+            <div class="topDropdown topDropdownNested" role="menu" aria-label="导出" data-i18n-aria="editor.menu.file.export">
               <button type="button" id="menuExportThreeJSON" data-i18n="editor.shell.menuExportThreeJSON">导出 ThreeJSON</button>
               <button type="button" id="menuExportNativeThreeJson" data-i18n="editor.shell.menuExportNativeThreeJson">导出原生 JSON</button>
               <button type="button" id="menuExportThreeJSONWithSceneInfoList" data-i18n="editor.shell.menuExportThreeJSONWithSceneInfoList">导出 ThreeJSON（含 nativeSceneList）</button>
@@ -89,8 +89,8 @@
               <button type="button" id="menuExportTjzArchive" data-i18n="editor.shell.menuExportTjzArchive">导出 .tjz 包</button>
               <hr class="topMenuDivider" />
               <div class="topMenuNestedWrap">
-                <button type="button" class="topNestedTrigger">3D 模型 ▸</button>
-                <div class="topDropdown topDropdownNested" role="menu" aria-label="3D 模型导出">
+                <button type="button" class="topNestedTrigger" data-i18n="editor.menu.file.export.mesh3d">3D 模型 ▸</button>
+                <div class="topDropdown topDropdownNested" role="menu" aria-label="3D 模型导出" data-i18n-aria="editor.menu.file.export.mesh3d">
                   <button type="button" id="menuExportMeshGlbScene" data-i18n="editor.shell.menuExportMeshGlbScene">GLB（整场景）</button>
                   <button type="button" id="menuExportMeshGlbSelection" data-i18n="editor.shell.menuExportMeshGlbSelection">GLB（选中对象）</button>
                   <button type="button" id="menuExportMeshMore" data-i18n="editor.shell.menuExportMeshMore">更多格式…</button>
@@ -111,16 +111,16 @@
           <button type="button" id="menuReset" data-i18n="editor.shell.menuReset">重置</button>
           <hr class="topMenuDivider" />
           <div class="topMenuNestedWrap">
-            <button type="button" class="topNestedTrigger">变换 ▸</button>
-            <div class="topDropdown topDropdownNested" role="menu" aria-label="变换">
-              <button type="button" data-trans-mode="translate">移动</button>
-              <button type="button" data-trans-mode="rotate">旋转</button>
-              <button type="button" data-trans-mode="scale">缩放</button>
+            <button type="button" class="topNestedTrigger" data-i18n="editor.menu.edit.transform">变换 ▸</button>
+            <div class="topDropdown topDropdownNested" role="menu" aria-label="变换" data-i18n-aria="editor.menu.edit.transform">
+              <button type="button" data-trans-mode="translate" data-i18n="editor.menu.edit.transform.translate">移动</button>
+              <button type="button" data-trans-mode="rotate" data-i18n="editor.menu.edit.transform.rotate">旋转</button>
+              <button type="button" data-trans-mode="scale" data-i18n="editor.menu.edit.transform.scale">缩放</button>
             </div>
           </div>
           <div class="topMenuNestedWrap">
-            <button type="button" class="topNestedTrigger">捕获 ▸</button>
-            <div class="topDropdown topDropdownNested" role="menu" aria-label="捕获">
+            <button type="button" class="topNestedTrigger" data-i18n="editor.menu.edit.capture">捕获 ▸</button>
+            <div class="topDropdown topDropdownNested" role="menu" aria-label="捕获" data-i18n-aria="editor.menu.edit.capture">
               <button type="button" id="menuCaptureFrame" data-i18n="editor.shell.menuCaptureFrame">截图</button>
               <button type="button" id="menuRecordVideoToggle" data-i18n="editor.shell.menuRecordVideoToggle">开始录制</button>
             </div>
@@ -139,8 +139,8 @@
           <button type="button" id="menuCodeEditMode" data-i18n="editor.shell.menuCodeEditMode">代码编辑模式</button>
           <button type="button" id="menuFullscreenToggle" data-i18n="editor.shell.menuFullscreenToggle">全屏</button>
           <div class="topMenuNestedWrap">
-            <button type="button" class="topNestedTrigger">视图 ▸</button>
-            <div class="topDropdown topDropdownNested" role="menu" aria-label="视图">
+            <button type="button" class="topNestedTrigger" data-i18n="editor.menu.view.chrome">视图 ▸</button>
+            <div class="topDropdown topDropdownNested" role="menu" aria-label="视图" data-i18n-aria="editor.menu.view.chrome">
               <button type="button" role="menuitemcheckbox" data-view-chrome="topBar" id="menuViewChromeTopBar"
                 aria-checked="true" data-i18n="editor.shell.menuViewChromeTopBar"><span class="viewChromeCheck">✓</span><span>标题栏</span></button>
               <button type="button" role="menuitemcheckbox" data-view-chrome="leftDock" id="menuViewChromeLeftDock"
@@ -183,10 +183,10 @@
       <input id="nativeThreeJsonFileInput" type="file" accept=".json,application/json" hidden>
       <input id="tjzArchiveFileInput" type="file" accept=".tjz,.zip,.threejson,.tjson,application/zip" hidden>
       <input id="meshModelFileInput" type="file" accept=".glb,.gltf,.obj,.stl,.ply,.fbx,.usdz,.usd,model/gltf-binary,model/gltf+json" hidden>
-      <div class="editModeToggle" id="transModeToggle" role="group" aria-label="变换模式：移动 / 旋转 / 缩放" hidden data-i18n="editor.shell.transModeToggle">
-        <button type="button" class="editModeSeg editModeSegActive" data-trans-mode="translate" aria-pressed="true" title="移动">移动</button>
-        <button type="button" class="editModeSeg" data-trans-mode="rotate" aria-pressed="false" title="旋转">旋转</button>
-        <button type="button" class="editModeSeg" data-trans-mode="scale" aria-pressed="false" title="缩放">缩放</button>
+      <div class="editModeToggle" id="transModeToggle" role="group" aria-label="变换模式：移动 / 旋转 / 缩放" hidden data-i18n="editor.shell.transModeToggle" data-i18n-aria="editor.shell.transModeToggle">
+        <button type="button" class="editModeSeg editModeSegActive" data-trans-mode="translate" aria-pressed="true" title="移动" data-i18n="editor.shell.transModeToggle.translate" data-i18n-title="editor.shell.transModeToggle.translate.title">移动</button>
+        <button type="button" class="editModeSeg" data-trans-mode="rotate" aria-pressed="false" title="旋转" data-i18n="editor.shell.transModeToggle.rotate" data-i18n-title="editor.shell.transModeToggle.rotate.title">旋转</button>
+        <button type="button" class="editModeSeg" data-trans-mode="scale" aria-pressed="false" title="缩放" data-i18n="editor.shell.transModeToggle.scale" data-i18n-title="editor.shell.transModeToggle.scale.title">缩放</button>
       </div>
       <div class="editModeToggle" id="editModeToggle" role="group" aria-label="编辑模式：3D 图形 / Code 代码" data-i18n="editor.shell.editModeToggle">
         <button type="button" class="editModeSeg editModeSegActive" id="editModeSeg3d" aria-pressed="true" title="图形编辑模式（在画布中直接操作）" data-i18n="editor.shell.editModeSeg3d" data-i18n-title="editor.shell.editModeSeg3d.title">3D</button>
@@ -219,7 +219,7 @@
       <button class="toolBtn secondary" id="emptyStateOpenBtn" type="button" data-i18n="editor.shell.emptyStateOpenBtn">打开</button>
       <button class="toolBtn linkLike editorStartupSampleBtn" id="emptyStateOpenDefaultBtn" type="button" data-i18n="editor.shell.emptyStateOpenDefaultBtn">打开示例场景</button>
       <div class="editorStartupRecentWrap">
-        <div class="editorStartupRecentTitle">最近打开</div>
+        <div class="editorStartupRecentTitle" data-i18n="editor.shell.editorStartupRecentTitle">最近打开</div>
         <div id="emptyStateRecentList" class="editorStartupRecentList"></div>
       </div>
     </div>
@@ -228,11 +228,11 @@
       <div class="pipControlBarRight">
         <label class="codeEditorCheckboxLabel">
           <input id="codeEditorCameraLockCheckbox" type="checkbox" checked data-i18n="editor.shell.codeEditorCameraLockCheckbox">
-          视角保持
+          <span data-i18n="editor.shell.codeEditorCameraLockCheckbox">视角保持</span>
         </label>
         <label class="codeEditorCheckboxLabel">
           <input id="codeEditorAutoRenderCheckbox" type="checkbox" data-i18n="editor.shell.codeEditorAutoRenderCheckbox">
-          自动渲染
+          <span data-i18n="editor.shell.codeEditorAutoRenderCheckbox">自动渲染</span>
         </label>
       </div>
     </div>
@@ -250,7 +250,7 @@
 
   <section id="codeEditorStage" aria-hidden="true">
     <div id="codeEditorToolbar">
-      <span class="codeEditorStageTitle">场景 JSON · 代码编辑</span>
+      <span class="codeEditorStageTitle" data-i18n="editor.shell.codeEditorStageTitle">场景 JSON · 代码编辑</span>
     </div>
     <div id="codeEditorHost"></div>
     <textarea id="codeEditorFallbackTextarea" spellcheck="false" hidden></textarea>
@@ -266,10 +266,10 @@
       <div class="sidePanelPinRow sidePanelPinRowLeft">
         <button type="button" id="leftPanelPinBtn" class="sidePanelPinBtn" aria-pressed="true"
           title="已钉住：鼠标移开仍显示" data-i18n-title="editor.shell.leftPanelPinBtn.title"><svg class="sidePanelPinIcon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" d="M8 1.6 9.4 5.5 13.3 6.4 9.4 7.3 8 11.2 6.6 7.3 2.7 6.4 6.6 5.5 8 1.6z"/><path fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" d="M8 10.2v4.2"/></svg></button>
-        <span class="sidePanelChromeTitle">工具面板</span>
+        <span class="sidePanelChromeTitle" data-i18n="editor.shell.leftPanelTitle">工具面板</span>
       </div>
       <div class="sidePanelStack">
-      <div class="leftSubTabBar" role="tablist" aria-label="左侧功能" aria-orientation="horizontal">
+      <div class="leftSubTabBar" role="tablist" aria-label="左侧功能" aria-orientation="horizontal" data-i18n-aria="editor.shell.leftSubTabBar">
         <button type="button" class="leftSubTab" role="tab" id="leftSubTabBuiltin"
           aria-selected="false" aria-controls="leftSubPanelBuiltin" data-i18n="editor.shell.leftSubTabBuiltin">组件</button>
         <button type="button" class="leftSubTab" role="tab" id="leftSubTabAiConfig"
@@ -287,7 +287,7 @@
       <div class="leftDockTabPanels">
       <div id="leftSubPanelBuiltin" class="leftSubPanel" role="tabpanel" aria-labelledby="leftSubTabBuiltin">
         <div class="panelCard">
-          <div class="panelTitle">组件</div>
+          <div class="panelTitle" data-i18n="editor.shell.panel.leftSubPanelBuiltin.components">组件</div>
           <div id="modelGroupList" class="modelGroupList"></div>
         </div>
         <div class="panelCard">
@@ -305,7 +305,7 @@
             <select id="aiProviderSelect" data-i18n="editor.shell.aiProviderSelect">
               <option value="chatgpt" selected>chatgpt</option>
               <option value="deepseek">deepseek</option>
-              <option value="custom">自定义</option>
+              <option value="custom" data-i18n="editor.shell.aiProviderSelect.custom">自定义</option>
             </select>
           </div>
           <div id="aiCustomApiBaseWrap" class="leftPanelAiField" hidden>
@@ -321,11 +321,11 @@
           <div class="leftPanelAiField">
             <label class="leftPanelAiLabel" for="aiModelInput">Model（可选）</label>
             <input id="aiModelInput" type="text"
-              placeholder="如 gpt-4o-mini；纯文本也可用 deepseek-chat；看图生成需 Vision 模型" data-i18n="editor.shell.aiModelInput">
+              placeholder="如 gpt-4o-mini；纯文本也可用 deepseek-chat；看图生成需 Vision 模型" data-i18n="editor.shell.aiModelInput" data-i18n-placeholder="editor.shell.aiModelInput.placeholder">
           </div>
           <label class="leftPanelAiCheckboxLabel">
             <input id="aiRememberConfigCheckbox" type="checkbox" data-i18n="editor.shell.aiRememberConfigCheckbox">
-            <span>记住当前配置（仅存本机浏览器；含 API Key，共用设备请勿勾选）</span>
+            <span data-i18n="editor.shell.aiRememberConfigCheckbox">记住当前配置（仅存本机浏览器；含 API Key，共用设备请勿勾选）</span>
           </label>
           <div class="leftPanelAiHint" data-i18n="editor.shell.panel.leftSubPanelAiConfig.hint.rememberConfig">取消勾选将立即清除已保存的配置。</div>
         </div>
@@ -333,41 +333,41 @@
           <div class="panelTitle" data-i18n="editor.shell.panel.leftSubPanelAiConfig.agent">Agent（多轮）</div>
           <label class="leftPanelAiCheckboxLabel">
             <input id="aiAgentEnabledCheckbox" type="checkbox" data-i18n="editor.shell.aiAgentEnabledCheckbox">
-            <span>启用 Agent（多轮，消耗更多 Token）</span>
+            <span data-i18n="editor.shell.aiAgentEnabledCheckbox">启用 Agent（多轮，消耗更多 Token）</span>
           </label>
           <div class="leftPanelAiField">
             <label class="leftPanelAiLabel" for="aiAgentDepthSelect">思考深度</label>
             <select id="aiAgentDepthSelect" data-i18n="editor.shell.aiAgentDepthSelect">
-              <option value="simple">简单（大纲/修复较少）</option>
-              <option value="medium" selected>中等（大纲 + 校验修复）</option>
-              <option value="deep">深入（+ 布局审查 + 纹理 dry-plan）</option>
-              <option value="auto">自动（在深入预算内尽量通过校验）</option>
+              <option value="simple" data-i18n="editor.shell.aiAgentDepthSelect.simple">简单（大纲/修复较少）</option>
+              <option value="medium" selected data-i18n="editor.shell.aiAgentDepthSelect.medium">中等（大纲 + 校验修复）</option>
+              <option value="deep" data-i18n="editor.shell.aiAgentDepthSelect.deep">深入（+ 布局审查 + 纹理 dry-plan）</option>
+              <option value="auto" data-i18n="editor.shell.aiAgentDepthSelect.auto">自动（在深入预算内尽量通过校验）</option>
             </select>
           </div>
           <label class="leftPanelAiCheckboxLabel">
             <input id="aiAgentIterativeApplyCheckbox" type="checkbox" data-i18n="editor.shell.aiAgentIterativeApplyCheckbox">
-            <span>迭代应用到画布（命令/auto 调整：每轮 patch 立即上画布，再基于最新场景继续优化）</span>
+            <span data-i18n="editor.shell.aiAgentIterativeApplyCheckbox">迭代应用到画布（命令/auto 调整：每轮 patch 立即上画布，再基于最新场景继续优化）</span>
           </label>
           <label class="leftPanelAiCheckboxLabel">
             <input id="aiAgentFitViewEachRoundCheckbox" type="checkbox" data-i18n="editor.shell.aiAgentFitViewEachRoundCheckbox">
-            <span>每轮变更后自适应取景（命令迭代模式；默认关）</span>
+            <span data-i18n="editor.shell.aiAgentFitViewEachRoundCheckbox">每轮变更后自适应取景（命令迭代模式；默认关）</span>
           </label>
           <div class="leftPanelAiHint" data-i18n="editor.shell.panel.leftSubPanelAiConfig.hint.agent">未勾选 Agent 时，生成/调整/看图与原先单次调用一致。JSON 生成/全量调整的多轮主要为校验与布局审查。</div>
           <label class="leftPanelAiCheckboxLabel">
             <input id="aiFillTexturesCheckbox" type="checkbox" data-i18n="editor.shell.aiFillTexturesCheckbox">
-            <span>完成后填充纹理（与上方 LLM 相同接口根 URL；默认生图模型 dall-e-3）</span>
+            <span data-i18n="editor.shell.aiFillTexturesCheckbox">完成后填充纹理（与上方 LLM 相同接口根 URL；默认生图模型 dall-e-3）</span>
           </label>
-          <div class="leftPanelAiHint">浏览器直连生图可能受网关 <strong>CORS</strong> 限制；失败时仍会载入无纹理场景。</div>
+          <div class="leftPanelAiHint" data-i18n="editor.shell.panel.leftSubPanelAiConfig.hint.textures">浏览器直连生图可能受网关 <strong>CORS</strong> 限制；失败时仍会载入无纹理场景。</div>
           <label class="leftPanelAiCheckboxLabel">
             <input id="aiStageAutoLoadCheckbox" type="checkbox" checked data-i18n="editor.shell.aiStageAutoLoadCheckbox">
-            <span>阶段产物自动载入（JSON 生成/全量调整：校验通过的阶段预览；命令迭代模式由「迭代应用」直接改画布）</span>
+            <span data-i18n="editor.shell.aiStageAutoLoadCheckbox">阶段产物自动载入（JSON 生成/全量调整：校验通过的阶段预览；命令迭代模式由「迭代应用」直接改画布）</span>
           </label>
           <div class="leftPanelAiField">
             <label class="leftPanelAiLabel" for="aiTextureBrowserModeSelect">浏览器落盘方式</label>
             <select id="aiTextureBrowserModeSelect" data-i18n="editor.shell.aiTextureBrowserModeSelect">
-              <option value="directory" selected>授权本地目录</option>
-              <option value="upload">图床上传 URL</option>
-              <option value="zipDownload">ZIP 下载（无目录权限时）</option>
+              <option value="directory" selected data-i18n="editor.shell.aiTextureBrowserModeSelect.directory">授权本地目录</option>
+              <option value="upload" data-i18n="editor.shell.aiTextureBrowserModeSelect.upload">图床上传 URL</option>
+              <option value="zipDownload" data-i18n="editor.shell.aiTextureBrowserModeSelect.zipDownload">ZIP 下载（无目录权限时）</option>
             </select>
           </div>
           <div class="leftPanelAiActions">
@@ -380,17 +380,17 @@
           <div class="leftPanelAiHint" id="aiTextureDirHint" data-i18n="editor.shell.aiTextureDirHint">Electron 可直接写仓库 resources/textures/；浏览器请用授权目录、图床或 ZIP。外置 CLI 为可选批处理，编辑器不依赖它。</div>
           <label class="leftPanelAiCheckboxLabel">
             <input id="aiStreamPreviewCheckbox" type="checkbox" checked data-i18n="editor.shell.aiStreamPreviewCheckbox">
-            <span>流式预览 LLM 输出（默认开；生成 / 调整 / 看图 标签页同步）</span>
+            <span data-i18n="editor.shell.aiStreamPreviewCheckbox">流式预览 LLM 输出（默认开；生成 / 调整 / 看图 标签页同步）</span>
           </label>
-          <div class="leftPanelAiHint">AI 能力来自 ThreeJSON <code>core/ai</code>（浏览器直连 LLM），不读取 setting.json，不调用外置 Node/Python 工具链。</div>
+          <div class="leftPanelAiHint" data-i18n="editor.shell.panel.leftSubPanelAiConfig.hint.core">AI 能力来自 ThreeJSON <code>core/ai</code>（浏览器直连 LLM），不读取 setting.json，不调用外置 Node/Python 工具链。</div>
         </div>
       </div>
       <div id="leftSubPanelAiGenerate" class="leftSubPanel" role="tabpanel" aria-labelledby="leftSubTabAiGenerate" hidden>
         <div class="panelCard">
           <div class="panelTitle" data-i18n="editor.shell.panel.leftSubPanelAiGenerate.generate">生成场景</div>
           <div class="leftPanelAiField">
-            <label class="leftPanelAiLabel" for="aiGeneratePromptInput">提示词</label>
-            <textarea id="aiGeneratePromptInput" spellcheck="false" data-i18n="editor.shell.aiGeneratePromptInput">生成一个智慧园区场景：有地面、两栋建筑、一条道路、一个中心广场和至少一个信息面板。</textarea>
+            <label class="leftPanelAiLabel" for="aiGeneratePromptInput" data-i18n="editor.shell.aiGeneratePromptInput">提示词</label>
+            <textarea id="aiGeneratePromptInput" spellcheck="false" data-i18n-value="editor.shell.aiGeneratePromptInput.default">生成一个智慧园区场景：有地面、两栋建筑、一条道路、一个中心广场和至少一个信息面板。</textarea>
           </div>
           <div class="leftPanelAiActions leftPanelAiActionRow">
             <button class="toolBtn secondary primaryAction" type="button" id="aiGenerateBtn" data-i18n="editor.shell.aiGenerateBtn">生成并载入</button>
@@ -405,32 +405,32 @@
         <div class="panelCard">
           <div class="panelTitle" data-i18n="editor.shell.panel.leftSubPanelAiAdjust.adjust">调整当前场景</div>
           <div class="leftPanelAiField">
-            <label class="leftPanelAiLabel" for="aiUpdatePromptInput">修改说明</label>
-            <textarea id="aiUpdatePromptInput" spellcheck="false" data-i18n="editor.shell.aiUpdatePromptInput">把主楼颜色改成蓝灰色，在场景右侧增加两排设备机柜，并添加一个温度告警信息面板。</textarea>
+            <label class="leftPanelAiLabel" for="aiUpdatePromptInput" data-i18n="editor.shell.aiUpdatePromptInput">修改说明</label>
+            <textarea id="aiUpdatePromptInput" spellcheck="false" data-i18n-value="editor.shell.aiUpdatePromptInput.default">把主楼颜色改成蓝灰色，在场景右侧增加两排设备机柜，并添加一个温度告警信息面板。</textarea>
           </div>
           <div class="leftPanelAiField">
             <label class="leftPanelAiLabel" for="aiUpdateOutputModeSelect">调整输出模式</label>
             <select id="aiUpdateOutputModeSelect" data-i18n="editor.shell.aiUpdateOutputModeSelect">
-              <option value="commands">命令脚本（默认，可撤销）</option>
-              <option value="json-full">JSON 全量（重建场景）</option>
-              <option value="json-incremental">JSON 增量补丁（RFC 6902）</option>
-              <option value="auto">自动（优先命令，允许 JSON）</option>
+              <option value="commands" data-i18n="editor.shell.aiUpdateOutputModeSelect.commands">命令脚本（默认，可撤销）</option>
+              <option value="json-full" data-i18n="editor.shell.aiUpdateOutputModeSelect.json-full">JSON 全量（重建场景）</option>
+              <option value="json-incremental" data-i18n="editor.shell.aiUpdateOutputModeSelect.json-incremental">JSON 增量补丁（RFC 6902）</option>
+              <option value="auto" data-i18n="editor.shell.aiUpdateOutputModeSelect.auto">自动（优先命令，允许 JSON）</option>
             </select>
           </div>
           <label class="leftPanelAiCheckboxLabel">
             <input id="aiIncludeFullJsonCheckbox" type="checkbox" data-i18n="editor.shell.aiIncludeFullJsonCheckbox">
-            <span>附带完整 JSON（命令模式：在对象列表基础上附加完整场景；JSON 全量/增量始终附带完整场景）</span>
+            <span data-i18n="editor.shell.aiIncludeFullJsonCheckbox">附带完整 JSON（命令模式：在对象列表基础上附加完整场景；JSON 全量/增量始终附带完整场景）</span>
           </label>
           <label class="leftPanelAiCheckboxLabel">
             <input id="aiIncludeSpatialSummaryCheckbox" type="checkbox" data-i18n="editor.shell.aiIncludeSpatialSummaryCheckbox">
-            <span>附带空间摘要（命令模式：各对象位置与几何尺寸摘要 + 场景尺度概况；大场景或需完整材质/结构时可改勾完整 JSON）</span>
+            <span data-i18n="editor.shell.aiIncludeSpatialSummaryCheckbox">附带空间摘要（命令模式：各对象位置与几何尺寸摘要 + 场景尺度概况；大场景或需完整材质/结构时可改勾完整 JSON）</span>
           </label>
           <div class="leftPanelAiActions leftPanelAiActionRow">
             <button class="toolBtn secondary primaryAction" type="button" id="aiUpdateBtn" data-i18n="editor.shell.aiUpdateBtn">调整并应用</button>
             <button class="toolBtn aiStopBtn secondary" type="button" data-ai-stop hidden
               aria-label="停止生成" title="停止生成">■</button>
           </div>
-          <div class="leftPanelAiHint">在输入框中按 Ctrl+Enter（Mac：⌘+Enter）提交。</div>
+          <div class="leftPanelAiHint" data-i18n="editor.shell.panel.leftSubPanelAiAdjust.hint.submit">在输入框中按 Ctrl+Enter（Mac：⌘+Enter）提交。</div>
           <div id="aiUpdateHintSource" class="leftPanelAiHint" data-i18n="editor.shell.aiUpdateHintSource">将使用「查看 → 查看场景 JSON」同源的完整导出作为当前场景上下文。</div>
           <div id="aiUpdateHintMode" class="leftPanelAiHint" data-i18n="editor.shell.aiUpdateHintMode">命令模式就地修改场景，可通过撤销恢复；不会整包载入 JSON。</div>
           <label id="aiLastAdjustResultLabel" class="leftPanelAiLastResultLabel" for="aiLastAdjustResult" hidden data-i18n="editor.shell.aiLastAdjustResultLabel">上次 AI 产出</label>
@@ -440,7 +440,7 @@
       </div>
       <div id="leftSubPanelAiImage" class="leftSubPanel" role="tabpanel" aria-labelledby="leftSubTabAiImage" hidden>
         <div class="panelCard">
-          <div class="panelTitle">看图生成</div>
+          <div class="panelTitle" data-i18n="editor.shell.panel.leftSubPanelAiImage.vision">看图生成</div>
           <div class="leftPanelAiHint leftPanelAiHintNoTopMargin" data-i18n="editor.shell.panel.leftSubPanelAiImage.hint.vision">图片 → 新场景 JSON（需 Vision，推荐 chatgpt + gpt-4o / gpt-4o-mini）</div>
           <div class="leftPanelAiField">
             <label class="leftPanelAiLabel" for="aiImageFileInput">本地文件（优先级最高）</label>
@@ -451,7 +451,7 @@
             <textarea id="aiImageBase64Input" spellcheck="false" placeholder="data:image/png;base64,... 或裸 base64" data-i18n="editor.shell.aiImageBase64Input"></textarea>
           </div>
           <div class="leftPanelAiField">
-            <label class="leftPanelAiLabel" for="aiImageMimeSelect">裸 Base64 的 MIME</label>
+            <label class="leftPanelAiLabel" for="aiImageMimeSelect" data-i18n="editor.shell.aiImageMimeSelect">裸 Base64 的 MIME</label>
             <select id="aiImageMimeSelect" data-i18n="editor.shell.aiImageMimeSelect">
               <option value="image/png">image/png</option>
               <option value="image/jpeg">image/jpeg</option>
@@ -464,9 +464,9 @@
             <input id="aiImageUrlInput" type="url" autocomplete="off" placeholder="https://..." data-i18n="editor.shell.aiImageUrlInput">
           </div>
           <div class="leftPanelAiField">
-            <label class="leftPanelAiLabel" for="aiImagePromptInput">补充说明（可选）</label>
+            <label class="leftPanelAiLabel" for="aiImagePromptInput" data-i18n="editor.shell.aiImagePromptInput">补充说明（可选）</label>
             <textarea id="aiImagePromptInput" spellcheck="false"
-              placeholder="例如：按图还原建筑与道路大致布局，用简洁色块材质" data-i18n="editor.shell.aiImagePromptInput"></textarea>
+              placeholder="例如：按图还原建筑与道路大致布局，用简洁色块材质" data-i18n-placeholder="editor.shell.aiImagePromptInput.placeholder"></textarea>
           </div>
           <div class="leftPanelAiField">
             <label class="leftPanelAiLabel" for="aiImageDetailSelect">image_detail（OpenAI）</label>
@@ -481,9 +481,9 @@
             <button class="toolBtn aiStopBtn secondary" type="button" data-ai-stop hidden
               aria-label="停止生成" title="停止生成">■</button>
           </div>
-          <div class="leftPanelAiHint">在输入框中按 Ctrl+Enter（Mac：⌘+Enter）提交。</div>
+          <div class="leftPanelAiHint" data-i18n="editor.shell.panel.leftSubPanelAiImage.hint.submit">在输入框中按 Ctrl+Enter（Mac：⌘+Enter）提交。</div>
           <pre id="aiStreamPreviewImage" class="leftPanelAiStreamPreview" hidden spellcheck="false"></pre>
-          <div class="leftPanelAiHint">优先级：本地文件 &gt; Base64 &gt; URL。内网或 localhost 的 URL 常无法被模型服务端拉取。</div>
+          <div class="leftPanelAiHint" data-i18n="editor.shell.panel.leftSubPanelAiImage.hint.priority">优先级：本地文件 &gt; Base64 &gt; URL。内网或 localhost 的 URL 常无法被模型服务端拉取。</div>
         </div>
       </div>
       </div>
@@ -496,12 +496,12 @@
   <div id="rightDock" class="rightDock">
     <aside id="rightPanel" class="sidePanel rightDockPanel">
       <div class="sidePanelPinRow sidePanelPinRowRight">
-        <span class="sidePanelChromeTitle">属性面板</span>
+        <span class="sidePanelChromeTitle" data-i18n="editor.shell.rightPanelTitle">属性面板</span>
         <button type="button" id="rightPanelPinBtn" class="sidePanelPinBtn" aria-pressed="true"
           title="已钉住：鼠标移开仍显示" data-i18n-title="editor.shell.rightPanelPinBtn.title"><svg class="sidePanelPinIcon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" d="M8 1.6 9.4 5.5 13.3 6.4 9.4 7.3 8 11.2 6.6 7.3 2.7 6.4 6.6 5.5 8 1.6z"/><path fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" d="M8 10.2v4.2"/></svg></button>
       </div>
       <div class="sidePanelStack">
-      <div class="rightSubTabBar" role="tablist" aria-label="右侧功能" aria-orientation="horizontal">
+      <div class="rightSubTabBar" role="tablist" aria-label="右侧功能" aria-orientation="horizontal" data-i18n-aria="editor.shell.rightSubTabBar">
         <button type="button" class="rightSubTab rightSubTabSelected" role="tab" id="rightSubTabSceneTree"
           aria-selected="true" aria-controls="rightSubPanelSceneTree" data-i18n="editor.shell.rightSubTabSceneTree">对象</button>
         <button type="button" class="rightSubTab" role="tab" id="rightSubTabSceneJson"
@@ -555,7 +555,7 @@
               </div>
             </div>
             <div class="sceneTreePropSection" id="sceneTreePropInfoPanelSection" hidden>
-              <div class="sceneTreePropSectionTitle">信息面板</div>
+              <div class="sceneTreePropSectionTitle" data-i18n="editor.shell.panel.rightSubPanelSceneTree.infoPanelSection">信息面板</div>
               <div class="sceneTreePropGrid">
                 <label for="sceneTreePropDismissTrigger">dismissTrigger</label>
                 <select id="sceneTreePropDismissTrigger">
@@ -615,24 +615,24 @@
       <div id="rightSubPanelEvents" class="rightSubPanel" role="tabpanel" aria-labelledby="rightSubTabEvents" hidden>
         <div class="panelCard eventEditorPanelCard">
           <div class="panelTitle" data-i18n="editor.shell.panel.rightSubPanelEvents.title">事件</div>
-          <p id="eventEditorHint" class="sceneManageHint">请先在场景树中选中对象。</p>
-          <div id="eventEditorDomainBlank" class="sceneManageHint" hidden>域对象事件编辑将在 Phase 3 提供。</div>
+          <p id="eventEditorHint" class="sceneManageHint" data-i18n="editor.shell.eventEditorHint">请先在场景树中选中对象。</p>
+          <div id="eventEditorDomainBlank" class="sceneManageHint" hidden data-i18n="editor.shell.eventEditorDomainBlank">域对象事件编辑将在 Phase 3 提供。</div>
           <div id="eventEditorForm" class="eventEditorForm" hidden>
             <div class="sceneTreePropGrid">
-              <label for="eventEditorObjectLabel">对象</label>
+              <label for="eventEditorObjectLabel" data-i18n="editor.shell.eventEditorObjectLabel">对象</label>
               <input id="eventEditorObjectLabel" type="text" readonly>
-              <label for="eventEditorEventName">平台事件</label>
+              <label for="eventEditorEventName" data-i18n="editor.shell.eventEditorEventName">平台事件</label>
               <select id="eventEditorEventName"></select>
-              <label for="eventEditorScript">脚本（script / lib://）</label>
+              <label for="eventEditorScript" data-i18n="editor.shell.eventEditorScript">脚本（script / lib://）</label>
               <span id="eventEditorModeBadge" class="eventEditorModeBadge">dsl</span>
             </div>
-            <textarea id="eventEditorScript" class="eventEditorScript" rows="12" spellcheck="false" placeholder="EventScript DSL 或 lib://token"></textarea>
+            <textarea id="eventEditorScript" class="eventEditorScript" rows="12" spellcheck="false" placeholder="EventScript DSL 或 lib://token" data-i18n-placeholder="editor.shell.eventEditorScript.placeholder"></textarea>
             <div id="eventEditorParseStatus" class="eventEditorParseStatus" aria-live="polite"></div>
             <div class="eventEditorActions">
-              <button type="button" class="miniBtn" id="eventEditorPickLibBtn">从资源库选择 lib://</button>
-              <button type="button" class="miniBtn" id="eventEditorToggleModeBtn">切换 DSL/JS</button>
-              <button type="button" class="miniBtn" id="eventEditorResetBtn">重置</button>
-              <button type="button" class="miniBtn" id="eventEditorApplyBtn">应用并绑定</button>
+              <button type="button" class="miniBtn" id="eventEditorPickLibBtn" data-i18n="editor.shell.eventEditorPickLibBtn">从资源库选择 lib://</button>
+              <button type="button" class="miniBtn" id="eventEditorToggleModeBtn" data-i18n="editor.shell.eventEditorToggleModeBtn">切换 DSL/JS</button>
+              <button type="button" class="miniBtn" id="eventEditorResetBtn" data-i18n="editor.shell.eventEditorResetBtn">重置</button>
+              <button type="button" class="miniBtn" id="eventEditorApplyBtn" data-i18n="editor.shell.eventEditorApplyBtn">应用并绑定</button>
             </div>
           </div>
         </div>
@@ -640,7 +640,7 @@
       <div id="rightSubPanelAssetLibrary" class="rightSubPanel" role="tabpanel" aria-labelledby="rightSubTabAssetLibrary" hidden>
         <div class="panelCard assetLibraryPanelCard">
           <div class="panelTitle" data-i18n="editor.shell.panel.rightSubPanelAssetLibrary.title">资源库 assetLibrary</div>
-          <p class="propLine sceneTreeInlineTip">texture 条目参与 lib:// 解析；其它 assetKind 仅登记（未接入运行时）。</p>
+          <p class="propLine sceneTreeInlineTip" data-i18n="editor.shell.panel.rightSubPanelAssetLibrary.tip">texture 条目参与 lib:// 解析；其它 assetKind 仅登记（未接入运行时）。</p>
           <div class="assetLibraryToolbar">
             <button type="button" class="miniBtn" id="assetLibraryAddBtn" data-i18n="editor.shell.assetLibraryAddBtn">新增</button>
             <button type="button" class="miniBtn" id="assetLibraryDeleteBtn" data-i18n="editor.shell.assetLibraryDeleteBtn">删除</button>
@@ -667,9 +667,9 @@
       </div>
       <div id="rightSubPanelSceneJson" class="rightSubPanel" role="tabpanel" aria-labelledby="rightSubTabSceneJson" hidden>
         <div class="panelCard rightSceneJsonPanelCard">
-          <div class="panelTitle">场景管理</div>
+          <div class="panelTitle" data-i18n="editor.shell.panel.rightSubPanelSceneJson.title">场景管理</div>
           <div class="rightSceneManageUpper">
-            <p class="sceneManageHint">属性失焦自动写入场景 JSON；修改相机/调度等后，请点击「应用到画布」使运行时生效。完整 JSON 请使用 Code 模式编辑。</p>
+            <p class="sceneManageHint" data-i18n="editor.shell.panel.rightSubPanelSceneJson.hint">属性失焦自动写入场景 JSON；修改相机/调度等后，请点击「应用到画布」使运行时生效。完整 JSON 请使用 Code 模式编辑。</p>
             <div class="sceneTreePropScroll sceneManageSection">
               <div class="sceneTreePropSection">
                 <div class="sceneTreePropSectionTitle" data-i18n="editor.shell.panel.rightSubPanelSceneJson.identitySection">身份</div>
@@ -687,7 +687,7 @@
                 </div>
               </div>
               <details open>
-                <summary>sceneConfig 开关</summary>
+                <summary data-i18n="editor.shell.panel.rightSubPanelSceneJson.summary.sceneConfig">sceneConfig 开关</summary>
                 <div class="sceneTreePropGrid">
                   <label for="sceneManageEnableDefaultModel">enableDefaultModel</label>
                   <input id="sceneManageEnableDefaultModel" type="checkbox" data-i18n="editor.shell.sceneManageEnableDefaultModel">
@@ -707,7 +707,7 @@
                 </div>
               </details>
               <details>
-                <summary>相机 camera</summary>
+                <summary data-i18n="editor.shell.panel.rightSubPanelSceneJson.summary.camera">相机 camera</summary>
                 <div class="sceneTreePropGrid">
                   <label for="sceneManageCameraFov">fov</label>
                   <input id="sceneManageCameraFov" type="number" min="20" max="120" step="1" data-i18n="editor.shell.sceneManageCameraFov">
@@ -720,7 +720,7 @@
                 </div>
               </details>
               <details>
-                <summary>渲染器 renderer</summary>
+                <summary data-i18n="editor.shell.panel.rightSubPanelSceneJson.summary.renderer">渲染器 renderer</summary>
                 <div class="sceneTreePropGrid">
                   <label for="sceneManageRendererAntialias">antialias</label>
                   <input id="sceneManageRendererAntialias" type="checkbox" data-i18n="editor.shell.sceneManageRendererAntialias">
@@ -732,18 +732,18 @@
                   <input id="sceneManageRendererClearAlpha" type="number" step="0.05" min="0" max="1" data-i18n="editor.shell.sceneManageRendererClearAlpha">
                   <label for="sceneManageRendererRatioRate">ratioRate</label>
                   <input id="sceneManageRendererRatioRate" type="number" step="0.1" min="0.1" data-i18n="editor.shell.sceneManageRendererRatioRate">
-                  <label for="sceneManageTextureQuality">纹理采样默认</label>
+                  <label for="sceneManageTextureQuality" data-i18n="editor.sceneManage.textureQuality">纹理采样默认</label>
                   <select id="sceneManageTextureQuality">
-                    <option value="">默认(走A)</option>
-                    <option value="0">关(0)</option>
-                    <option value="1">低(1)</option>
-                    <option value="2">中(2)</option>
-                    <option value="3">高(3)</option>
+                    <option value="" data-i18n="editor.textureQuality.inherit">默认(走A)</option>
+                    <option value="0" data-i18n="editor.textureQuality.off">关(0)</option>
+                    <option value="1" data-i18n="editor.textureQuality.low">低(1)</option>
+                    <option value="2" data-i18n="editor.textureQuality.medium">中(2)</option>
+                    <option value="3" data-i18n="editor.textureQuality.high">高(3)</option>
                   </select>
                 </div>
               </details>
               <details>
-                <summary>控制器 controls</summary>
+                <summary data-i18n="editor.shell.panel.rightSubPanelSceneJson.summary.controls">控制器 controls</summary>
                 <div class="sceneTreePropGrid">
                   <label for="sceneManageCtrlDamping">enableDamping</label>
                   <input id="sceneManageCtrlDamping" type="checkbox" data-i18n="editor.shell.sceneManageCtrlDamping">
@@ -766,7 +766,7 @@
                 </div>
               </details>
               <details>
-                <summary>渲染循环 renderLoop</summary>
+                <summary data-i18n="editor.shell.panel.rightSubPanelSceneJson.summary.renderLoop">渲染循环 renderLoop</summary>
                 <div class="sceneTreePropGrid">
                   <label for="sceneManageLoopFps">fps</label>
                   <input id="sceneManageLoopFps" type="number" step="1" min="1" max="120" data-i18n="editor.shell.sceneManageLoopFps">
@@ -779,7 +779,7 @@
                 </div>
               </details>
               <details>
-                <summary>部署调度 deployScheduler</summary>
+                <summary data-i18n="editor.shell.panel.rightSubPanelSceneJson.summary.deployScheduler">部署调度 deployScheduler</summary>
                 <div class="sceneTreePropGrid">
                   <label for="sceneManageSchedEnabled">enabled</label>
                   <input id="sceneManageSchedEnabled" type="checkbox" data-i18n="editor.shell.sceneManageSchedEnabled">
@@ -802,18 +802,18 @@
                 </div>
               </details>
               <details>
-                <summary>interaction（事件绑定）</summary>
+                <summary data-i18n="editor.shell.panel.rightSubPanelSceneJson.summary.interaction">interaction（事件绑定）</summary>
                 <div class="sceneTreePropGrid">
                   <label for="sceneManageBindSceneEvents">bindSceneEvents</label>
                   <select id="sceneManageBindSceneEvents">
-                    <option value="">默认（true）</option>
-                    <option value="true">开启</option>
-                    <option value="false">关闭</option>
+                    <option value="" data-i18n="editor.sceneManage.bindSceneEvents.default">默认（true）</option>
+                    <option value="true" data-i18n="editor.sceneManage.bindSceneEvents.true">开启</option>
+                    <option value="false" data-i18n="editor.sceneManage.bindSceneEvents.false">关闭</option>
                   </select>
                 </div>
               </details>
               <details>
-                <summary>辅助线显示（sceneConfig.helpers）</summary>
+                <summary data-i18n="editor.shell.panel.rightSubPanelSceneJson.summary.helpers">辅助线显示（sceneConfig.helpers）</summary>
                 <div class="sceneTreePropGrid">
                   <label for="sceneManageGridShow">gridShow</label>
                   <input id="sceneManageGridShow" type="checkbox" data-i18n="editor.shell.sceneManageGridShow">

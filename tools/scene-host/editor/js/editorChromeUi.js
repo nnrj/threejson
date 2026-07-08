@@ -1,3 +1,5 @@
+import { t } from "../../shared/i18n/index.js";
+
 export const DEFAULT_EVENT_NOTICE =
   "操作指南：左键旋转，右键拖动，滚轮缩放；场景树单击高亮，双击高亮+描边+编辑。";
 
@@ -13,8 +15,12 @@ export function createEditorChromeUi(host) {
 
   function syncEditorMuteUi() {
     const muted = host.getAudioMuted?.() ?? false;
-    const label = muted ? "取消静音" : "静音";
-    const title = muted ? "恢复当前场景音频播放" : "暂停当前场景音频播放";
+    const label = muted
+      ? t("editor.shell.topBarBtnUnmuteAudio", "Unmute")
+      : t("editor.shell.topBarBtnMuteAudio", "Mute");
+    const title = muted
+      ? t("editor.shell.topBarBtnUnmuteAudio.title", "Resume audio playback in the current scene")
+      : t("editor.shell.topBarBtnMuteAudio.title", "Pause audio playback in the current scene");
     for (const id of ["menuMuteAudio", "topBarBtnMuteAudio"]) {
       const el = document.getElementById(id);
       if (el) {
@@ -27,7 +33,7 @@ export function createEditorChromeUi(host) {
   function toggleEditorSceneAudioMute() {
     const roots = host.getEditorAudioRoots?.() ?? {};
     if (!roots.camera && !roots.scene) {
-      host.showMessage("场景尚未就绪，无法静音。", "warning");
+      host.showMessage(t("editor.message.audioSceneNotReady", "Scene is not ready; cannot change audio mute state."), "warning");
       return;
     }
     const next = !(host.getAudioMuted?.() ?? false);
@@ -42,7 +48,9 @@ export function createEditorChromeUi(host) {
 
   function syncFullscreenToggleLabels() {
     const full = !!document.fullscreenElement;
-    const txt = full ? "退出全屏" : "全屏";
+    const txt = full
+      ? t("editor.shell.fullscreenExit", "Exit Fullscreen")
+      : t("editor.shell.fullscreenBtn", "Fullscreen");
     const toolbarBtn = document.getElementById("fullscreenBtn");
     if (toolbarBtn) {
       toolbarBtn.textContent = txt;
@@ -57,13 +65,13 @@ export function createEditorChromeUi(host) {
     try {
       if (!document.fullscreenElement) {
         await rootContainer?.requestFullscreen();
-        host.showMessage("按 ESC 可退出全屏。", "info");
+        host.showMessage(t("editor.message.fullscreenHint", "Press Esc to exit fullscreen."), "info");
       } else {
         await document.exitFullscreen();
       }
     } catch (error) {
       console.error(error);
-      host.showMessage("全屏操作失败。", "warning");
+      host.showMessage(t("editor.message.fullscreenFailed", "Fullscreen operation failed."), "warning");
     }
     syncFullscreenToggleLabels();
   }

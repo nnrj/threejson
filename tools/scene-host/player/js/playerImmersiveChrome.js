@@ -1,3 +1,5 @@
+import { t } from "../../shared/i18n/index.js";
+
 /** Immersive fullscreen chrome — edge strips reveal top/bottom/right panels. */
 export function createPlayerImmersiveChrome({
   rootContainer,
@@ -132,7 +134,9 @@ export function createPlayerImmersiveChrome({
   function syncFullscreenToggleLabels() {
     const full = document.fullscreenElement === rootContainer;
     if (bottomFullscreenBtn) {
-      bottomFullscreenBtn.title = full ? "退出全屏 (Esc)" : "全屏";
+      bottomFullscreenBtn.title = full
+        ? t("player.shell.fullscreenExitEsc", "Exit Fullscreen (Esc)")
+        : t("player.shell.fullscreenBtn", "Fullscreen");
     }
   }
 
@@ -141,7 +145,10 @@ export function createPlayerImmersiveChrome({
       if (!document.fullscreenElement) {
         await rootContainer.requestFullscreen();
         showMessage?.(
-          "全屏：指针移到上/下/右屏幕边缘可唤出标题栏、底栏与播放列表；按 ESC 退出。",
+          t(
+            "player.message.immersiveFullscreenHint",
+            "Fullscreen: move the pointer to the top, bottom, or right screen edge to reveal chrome; press Esc to exit."
+          ),
           "info"
         );
       } else {
@@ -149,7 +156,7 @@ export function createPlayerImmersiveChrome({
       }
     } catch (error) {
       console.error(error);
-      showMessage?.("全屏操作失败。", "warning");
+      showMessage?.(t("player.message.fullscreenFailed", "Fullscreen operation failed."), "warning");
     }
     syncFullscreenToggleLabels();
   }

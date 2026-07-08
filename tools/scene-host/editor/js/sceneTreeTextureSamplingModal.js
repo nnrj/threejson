@@ -7,6 +7,7 @@ import {
 } from "./sceneTreeTextureSamplingHelpers.js";
 import { syncEditorMeshVisualFromObjJson } from "./editorMeshVisualSync.js";
 import { getByPointer } from "../../../../core/util/jsonPointer.js";
+import { t } from "../../shared/i18n/index.js";
 
 const FILTER_OPTIONS = [
   "",
@@ -20,7 +21,7 @@ const FILTER_OPTIONS = [
 
 function buildFilterOptions(selected) {
   return FILTER_OPTIONS.map((v) => {
-    const label = v || "（默认）";
+    const label = v || t("editor.textureSampling.defaultOption", "(Default)");
     const sel = v === selected ? " selected" : "";
     return `<option value="${v.replace(/"/g, "&quot;")}"${sel}>${label}</option>`;
   }).join("");
@@ -57,7 +58,7 @@ export function createTextureSamplingAdvancedModal(host) {
     }
     const mat = getByPointer(session.rootData, session.pointer);
     summaryEl.textContent = mat
-      ? `当前生效：${formatEffectiveSummaryForMaterial(mat, session.profileName) || "—"}`
+      ? `${t("editor.material.effective", "Effective")}: ${formatEffectiveSummaryForMaterial(mat, session.profileName) || "—"}`
       : "";
   }
 
@@ -91,7 +92,7 @@ export function createTextureSamplingAdvancedModal(host) {
     }
     session = { pointer, profileName, slotLabel, rootData, mesh, onCommitted };
     if (titleEl) {
-      titleEl.textContent = `纹理采样 · ${slotLabel || pointer}`;
+      titleEl.textContent = `${t("editor.material.textureSampling", "Texture Sampling")} · ${slotLabel || pointer}`;
     }
     const mat = getByPointer(rootData, pointer);
     loadFormFromMaterial(mat);

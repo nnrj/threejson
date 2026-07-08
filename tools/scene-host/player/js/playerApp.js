@@ -216,7 +216,9 @@ export async function bootstrapPlayerApp() {
     const open = rootContainer?.classList.contains("rightPanelOpen");
     if (rightPanelToggleBtn) {
       rightPanelToggleBtn.setAttribute("aria-expanded", open ? "true" : "false");
-      rightPanelToggleBtn.title = open ? "折叠播放列表" : "展开播放列表";
+      rightPanelToggleBtn.title = open
+        ? t("player.shell.playlistCollapse", "Collapse playlist")
+        : t("player.shell.playlistExpand", "Expand playlist");
     }
   }
 
@@ -225,7 +227,8 @@ export async function bootstrapPlayerApp() {
       return;
     }
     const entry = playlist[index];
-    const label = entry.label || `条目 ${index + 1}`;
+    const label =
+      entry.label || t("player.shell.playlistFallbackItem", "Item {index}", { index: index + 1 });
     const wasCurrent = index === currentPlaylistIndex;
     playlist.splice(index, 1);
     if (entry.kind === "file" && entry.id) {
@@ -242,7 +245,7 @@ export async function bootstrapPlayerApp() {
       if (wasCurrent) {
         stopPlayerAndClearScene();
       }
-      showMessage(`已从播放列表移除「${label}」。`, "info");
+      showMessage(t("player.message.removedFromPlaylist", "Removed \"{label}\" from playlist.", { label }), "info");
       return;
     }
     if (currentPlaylistIndex > index) {
@@ -255,7 +258,7 @@ export async function bootstrapPlayerApp() {
       playbackRenderPaused = false;
       await activatePlaylistIndex(nextIdx);
     }
-    showMessage(`已从播放列表移除「${label}」。`, "info");
+    showMessage(t("player.message.removedFromPlaylist", "Removed \"{label}\" from playlist.", { label }), "info");
   }
 
   function showMessage(message, type = "info") {
@@ -348,8 +351,11 @@ export async function bootstrapPlayerApp() {
   function syncPlayerVolumeUi() {
     if (playerVolumeMuteBtn) {
       playerVolumeMuteBtn.textContent = playerVolumeMuted ? "\u{1F507}" : "\u{1F50A}";
-      playerVolumeMuteBtn.title = playerVolumeMuted ? "取消静音" : "静音";
-      playerVolumeMuteBtn.setAttribute("aria-label", playerVolumeMuted ? "取消静音" : "静音");
+      const muteLabel = playerVolumeMuted
+        ? t("player.shell.volumeUnmute", "Unmute")
+        : t("player.shell.volumeMute", "Mute");
+      playerVolumeMuteBtn.title = muteLabel;
+      playerVolumeMuteBtn.setAttribute("aria-label", muteLabel);
     }
     if (playerVolumeSlider && document.activeElement !== playerVolumeSlider) {
       playerVolumeSlider.value = String(Math.round(playerVolume * 100));
@@ -621,12 +627,12 @@ export async function bootstrapPlayerApp() {
 
   function onMenuFitView() {
     if (!camera || !controls || !scene) {
-      showMessage("场景尚未就绪，无法自适应。", "warning");
+      showMessage(t("player.message.fitSceneNotReady", "Scene is not ready; cannot fit view."), "warning");
       return;
     }
     const bounds = buildAdaptiveContentBoundingBoxTHREE(scene, { ignoreHelper: null });
     if (!bounds) {
-      showMessage("场景中缺少可用网格，无法进行自适应。", "warning");
+      showMessage(t("player.message.fitNoMesh", "No usable mesh found; cannot fit view."), "warning");
       return;
     }
     const ok = fitPerspectiveCameraToContentBoundsTHREE(camera, controls, bounds, {
@@ -643,10 +649,10 @@ export async function bootstrapPlayerApp() {
       }
     });
     if (!ok) {
-      showMessage("包围盒为空，无法进行自适应。", "warning");
+      showMessage(t("player.message.fitEmptyBounds", "The bounding box is empty; cannot fit view."), "warning");
       return;
     }
-    showMessage("已根据当前网格自适应相机与缩放范围。", "success");
+    showMessage(t("player.message.fitDone", "Camera and zoom range fitted to current meshes."), "success");
   }
 
   function scheduleSceneFitPasses() {
@@ -660,7 +666,7 @@ export async function bootstrapPlayerApp() {
   }
 
   function finishSceneLoad() {
-    setLoadingMessage("3D 场景加载完成。");
+    setLoadingMessage(t("player.message.sceneLoadDone", "3D scene loaded."));
     const delay = getPlayerSceneLoadDoneDelayMs(playerSettings);
     if (delay > 0) {
       window.setTimeout(() => setLoading(false), delay);
@@ -675,19 +681,19 @@ export async function bootstrapPlayerApp() {
   async function applyParsedSceneToPlayer(data, hintLabel = "") {
     const payload = resolveScenePayloadForLoad(data, { label: hintLabel });
     if (!isLoadableScenePayload(payload)) {
-      throw new Error("JSON 格式无效（需要 worldInfo 或标准 objectList）");
+      throw new Error(t("player.error.invalidSceneJson", "Invalid JSON format; worldInfo or a standard objectList is required."));
     }
     ensureThreeJsonIdsOnScenePayload(payload);
     loadedSceneJsonText = JSON.stringify(payload, null, 2);
     teardownPlayerScene();
     sysConfig.jsonData = payload;
-    setLoadingMessage("正在加载场景 JSON...");
+    setLoadingMessage(t("player.message.loadingSceneJson", "Loading scene JSON..."));
     openOrCloseProgressManager(sysConfig.progressFlag);
     await initSceneRuntime();
     currentSceneLabel =
       String(payload?.label || payload?.name || hintLabel || "").trim() ||
       fileNameFromUrl(hintLabel) ||
-      "未命名场景";
+      t("player.shell.untitledScene", "Untitled Scene");
     updatePlayerTopBarSceneTitle();
     finishSceneLoad();
   }
@@ -695,7 +701,7 @@ export async function bootstrapPlayerApp() {
   async function applyPreviewPayloadFromEditor(payload, options = {}) {
     previewBindSceneEventsOverride = options.bindSceneEvents;
     try {
-      await applyParsedSceneToPlayer(payload, options.label || "编辑器预览");
+      await applyParsedSceneToPlayer(payload, options.label || t("player.shell.editorPreviewScene", "Editor Preview"));
     } finally {
       previewBindSceneEventsOverride = undefined;
     }
@@ -704,7 +710,7 @@ export async function bootstrapPlayerApp() {
   async function applyTjzArchiveToPlayer(bytes, hintLabel = "") {
     teardownPlayerScene();
     await waitCanvasLayout();
-    setLoadingMessage("正在解压 .tjz 场景...");
+    setLoadingMessage(t("player.message.extractingTjz", "Extracting .tjz scene..."));
     openOrCloseProgressManager(sysConfig.progressFlag);
     const loadedRuntime = await createJsonSceneFromArchive(bytes, buildCreateJsonSceneOptions());
     assignRuntime(loadedRuntime);
@@ -721,7 +727,7 @@ export async function bootstrapPlayerApp() {
     window.addEventListener("resize", windowResize);
     initPlayerHighlight();
     superAnimate();
-    currentSceneLabel = String(hintLabel || "").trim() || "tjz 场景";
+    currentSceneLabel = String(hintLabel || "").trim() || t("player.shell.tjzScene", ".tjz Scene");
     updatePlayerTopBarSceneTitle();
     finishSceneLoad();
   }
@@ -769,12 +775,14 @@ export async function bootstrapPlayerApp() {
       if (noScene) {
         bottomBtnPlayPause.disabled = true;
         bottomBtnPlayPause.textContent = "▶";
-        bottomBtnPlayPause.title = "播放";
+        bottomBtnPlayPause.title = t("player.shell.play", "Play");
       } else {
         bottomBtnPlayPause.disabled = false;
         const running = Boolean(renderLoop?.isRunning?.());
         bottomBtnPlayPause.textContent = running ? "⏸" : "▶";
-        bottomBtnPlayPause.title = running ? "暂停" : "播放";
+        bottomBtnPlayPause.title = running
+          ? t("player.shell.pause", "Pause")
+          : t("player.shell.play", "Play");
       }
     }
     if (bottomBtnPrev) {
@@ -797,7 +805,7 @@ export async function bootstrapPlayerApp() {
       row.type = "button";
       row.className = `playlistRow${idx === currentPlaylistIndex ? " playlistRowActive" : ""}`;
       row.dataset.playlistIndex = String(idx);
-      row.textContent = entry.label || `条目 ${idx + 1}`;
+      row.textContent = entry.label || t("player.shell.playlistFallbackItem", "Item {index}", { index: idx + 1 });
       row.title = entry.kind === "url" ? entry.url : entry.file?.name || "";
       row.addEventListener("click", () => {
         void activatePlaylistIndex(idx);
@@ -956,21 +964,21 @@ export async function bootstrapPlayerApp() {
     setCanvasIdleOverlayVisible(false);
     const entry = playlist[index];
     try {
-      setLoadingMessage("正在读取场景...");
+      setLoadingMessage(t("player.message.readingScene", "Reading scene..."));
       openOrCloseProgressManager(sysConfig.progressFlag);
       if (entry.kind === "url" && entry.url) {
         const resolvedUrl = resolveSceneHostUrl(entry.url);
         if (isTjzSceneFileName(resolvedUrl)) {
           const response = await fetch(resolvedUrl);
           if (!response.ok) {
-            throw new Error(`加载场景失败：${response.status}`);
+            throw new Error(t("player.message.loadSceneFailed", "Failed to load scene: {message}", { message: response.status }));
           }
           const bytes = new Uint8Array(await response.arrayBuffer());
           await applyTjzArchiveToPlayer(bytes, entry.label || fileNameFromUrl(resolvedUrl));
         } else {
           const response = await fetch(resolvedUrl);
           if (!response.ok) {
-            throw new Error(`加载场景失败：${response.status}`);
+            throw new Error(t("player.message.loadSceneFailed", "Failed to load scene: {message}", { message: response.status }));
           }
           const data = JSON.parse(await response.text());
           await applyParsedSceneToPlayer(data, entry.label || fileNameFromUrl(resolvedUrl));
@@ -986,19 +994,23 @@ export async function bootstrapPlayerApp() {
           await applyParsedSceneToPlayer(data, entry.file.name);
           if (wasNative) {
             showMessage(
-              `已识别为 Three.js 原生 JSON 并载入 ${entry.file.name}（与「加载原生 JSON」等效）`,
+              t(
+                "player.message.nativeJsonDetected",
+                "Detected and loaded Three.js native JSON {name}; equivalent to Load Native JSON.",
+                { name: entry.file.name }
+              ),
               "info"
             );
           }
         }
       } else {
-        throw new Error("播放列表条目无效");
+        throw new Error(t("player.error.invalidPlaylistEntry", "Invalid playlist entry."));
       }
       return true;
     } catch (err) {
       setLoading(false);
       openOrCloseProgressManager(false);
-      showMessage(`加载场景失败：${err.message}`, "error");
+      showMessage(t("player.message.loadSceneFailed", "Failed to load scene: {message}", { message: err.message }), "error");
       console.error(err);
       if (!renderLoop) {
         setCanvasIdleOverlayVisible(true);
@@ -1085,7 +1097,7 @@ export async function bootstrapPlayerApp() {
       return;
     }
     if (!isSupportedSceneFileName(file.name)) {
-      showMessage("请选择 JSON 或 .tjz 场景文件。", "warning");
+      showMessage(t("player.message.pickSceneFile", "Please choose a JSON or .tjz scene file."), "warning");
       return;
     }
     if (activate) {
@@ -1096,7 +1108,7 @@ export async function bootstrapPlayerApp() {
       await activatePlaylistIndex(idx);
       return;
     }
-    showMessage(`已添加 ${file.name} 到播放列表。`, "success");
+    showMessage(t("player.message.fileAddedToPlaylist", "Added {name} to playlist.", { name: file.name }), "success");
   }
 
   async function handleLoadNativeThreeJsonFile(file) {
@@ -1106,17 +1118,17 @@ export async function bootstrapPlayerApp() {
     sceneSwitchLocked = true;
     setCanvasIdleOverlayVisible(false);
     try {
-      setLoadingMessage("正在读取原生 Three JSON...");
+      setLoadingMessage(t("player.message.readingNativeThreeJson", "Reading native Three JSON..."));
       openOrCloseProgressManager(sysConfig.progressFlag);
       const text = await file.text();
       const parsed = JSON.parse(text);
       const wrapped = buildMinimalWorldJsonForNativeThreeInline(parsed, { label: file.name });
       await applyParsedSceneToPlayer(wrapped, file.name);
-      showMessage(`已按原生 JSON 载入 ${file.name}`, "success");
+      showMessage(t("player.message.nativeJsonLoaded", "Loaded {name} as native JSON.", { name: file.name }), "success");
     } catch (err) {
       setLoading(false);
       openOrCloseProgressManager(false);
-      showMessage(`加载原生 JSON 失败：${err.message}`, "error");
+      showMessage(t("player.message.nativeJsonLoadFailed", "Failed to load native JSON: {message}", { message: err.message }), "error");
       console.error(err);
       if (!renderLoop) {
         setCanvasIdleOverlayVisible(true);
@@ -1130,7 +1142,7 @@ export async function bootstrapPlayerApp() {
   async function appendFilesToPlaylistOnly(files) {
     const sceneFiles = files.filter((f) => isSupportedSceneFileName(f.name));
     if (!sceneFiles.length) {
-      showMessage("未找到可添加的 JSON 或 .tjz 场景文件。", "warning");
+      showMessage(t("player.message.noSceneFilesFound", "No JSON or .tjz scene files found."), "warning");
       return 0;
     }
     sceneFiles.sort((a, b) => {
@@ -1141,7 +1153,7 @@ export async function bootstrapPlayerApp() {
     for (const f of sceneFiles) {
       await appendFileToPlaylist(f);
     }
-    showMessage(`已添加 ${sceneFiles.length} 个场景到播放列表。`, "success");
+    showMessage(t("player.message.filesAddedToPlaylist", "Added {count} scenes to playlist.", { count: sceneFiles.length }), "success");
     return sceneFiles.length;
   }
 
@@ -1156,7 +1168,7 @@ export async function bootstrapPlayerApp() {
       console.warn("[scene-host player] clearPlaylist storage", err);
     }
     stopPlayerAndClearScene();
-    showMessage("已清空播放列表并停止播放。", "info");
+    showMessage(t("player.message.playlistCleared", "Playlist cleared and playback stopped."), "info");
   }
 
   async function openDefaultExampleScene() {
@@ -1237,14 +1249,14 @@ export async function bootstrapPlayerApp() {
     const path = resolvePlaylistEntryPath(entry);
     closePlaylistContextMenu();
     if (!path) {
-      showMessage("该条目没有可复制的路径。", "warning");
+      showMessage(t("player.message.noCopyablePath", "This item has no copyable path."), "warning");
       return;
     }
     try {
       await navigator.clipboard.writeText(path);
-      showMessage("已复制路径。", "success");
+      showMessage(t("player.message.pathCopied", "Path copied."), "success");
     } catch {
-      showMessage("复制失败，请手动复制。", "warning");
+      showMessage(t("player.message.copyFailed", "Copy failed. Please copy manually."), "warning");
     }
   });
   playlistContextCopyNameBtn?.addEventListener("click", async () => {
@@ -1252,14 +1264,14 @@ export async function bootstrapPlayerApp() {
     const name = getPlaylistEntryDisplayName(entry);
     closePlaylistContextMenu();
     if (!name) {
-      showMessage("该条目没有可复制的名称。", "warning");
+      showMessage(t("player.message.noCopyableName", "This item has no copyable name."), "warning");
       return;
     }
     try {
       await navigator.clipboard.writeText(name);
-      showMessage("已复制名称。", "success");
+      showMessage(t("player.message.nameCopied", "Name copied."), "success");
     } catch {
-      showMessage("复制失败，请手动复制。", "warning");
+      showMessage(t("player.message.copyFailed", "Copy failed. Please copy manually."), "warning");
     }
   });
   playlistContextRemoveBtn?.addEventListener("click", () => {
@@ -1296,14 +1308,14 @@ export async function bootstrapPlayerApp() {
       playerSettings = next;
       persistPlayerSettingsFromRuntime();
       applyPlayerSettingsFromBundle({ settings: playerSettings, fileDefaults: playerSettingsFileDefaults });
-      showMessage("设置已保存并应用。", "success");
+      showMessage(t("player.message.settingsSaved", "Settings saved and applied."), "success");
     },
     async onReset() {
       playerSettingsFileDefaults = await fetchPlayerSettingsFileDefaults();
       playerSettings = playerSettingsFileDefaults;
       persistPlayerSettings(playerSettings);
       applyPlayerSettingsFromBundle({ settings: playerSettings, fileDefaults: playerSettingsFileDefaults });
-      showMessage("已恢复为 setting.json 默认。", "info");
+      showMessage(t("player.message.settingsResetToFile", "Restored setting.json defaults."), "info");
     }
   });
   playerTopMenuApi = wirePlayerTopMenu({

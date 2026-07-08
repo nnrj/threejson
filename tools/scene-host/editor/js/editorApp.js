@@ -738,7 +738,7 @@ export async function bootstrapSceneHostEditor() {
   }
 
   async function subInit() {
-    ui.setLoadingMessage("正在加载场景 JSON...");
+    ui.setLoadingMessage(t("editor.message.loadingSceneJson", "Loading scene JSON..."));
     await initSceneRuntime();
     editorInteraction?.initAfterSceneLoad?.();
     ensureRenderLoopStarted();
@@ -756,7 +756,7 @@ export async function bootstrapSceneHostEditor() {
   function finishEditorSceneLoad() {
     toggleStartupEmptyState(false);
     modelGroupPanel?.refreshBuiltinGroups?.();
-    ui.setLoadingMessage("3D 场景加载完成。");
+    ui.setLoadingMessage(t("editor.message.sceneLoadDone", "3D scene loaded."));
     const delay = getSceneLoadDoneDelayMs(editorSettings);
     if (delay > 0) {
       window.setTimeout(() => ui.setLoading(false), delay);
@@ -764,7 +764,7 @@ export async function bootstrapSceneHostEditor() {
       ui.setLoading(false);
     }
     openOrCloseProgressManager(false);
-    ui.showMessage("3D 场景加载完成。", "success");
+    ui.showMessage(t("editor.message.sceneLoadDone", "3D scene loaded."), "success");
   }
 
   async function completeIngestAfterRuntime(hintLabel, ingestOptions, loadGeneration) {
@@ -1639,7 +1639,7 @@ export async function bootstrapSceneHostEditor() {
       editorSettings = deepMergeEditorSettings(editorSettingsFileDefaults, draft);
       persistEditorSettings(editorSettings);
       applyEditorSettings();
-      ui.showMessage("设置已保存并应用。", "success");
+      ui.showMessage(t("editor.message.settingsSaved", "Settings saved and applied."), "success");
     },
     async onReset() {
       editorSettingsFileDefaults = await fetchEditorSettingsFileDefaults();
@@ -1647,7 +1647,7 @@ export async function bootstrapSceneHostEditor() {
       clearEditorSettingsCache();
       applyEditorSettings({ initial: true });
       settingsModal.populateForm(editorSettings);
-      ui.showMessage("已恢复为 setting.json 默认。", "info");
+      ui.showMessage(t("editor.message.settingsResetToFile", "Restored setting.json defaults."), "info");
     }
   });
 
@@ -1739,7 +1739,7 @@ export async function bootstrapSceneHostEditor() {
       editorViewChrome?.syncDockPeekClasses?.({ persist: false });
       windowResize();
       requestAnimationFrame(() => requestAnimationFrame(windowResize));
-      ui.showMessage("已清除编辑器设置缓存并恢复默认。", "info");
+      ui.showMessage(t("editor.message.settingsCacheCleared", "Editor settings cache cleared and defaults restored."), "info");
       closeAllDropdowns();
     });
     document.getElementById("fullscreenBtn")?.addEventListener("click", () => {
@@ -2055,5 +2055,5 @@ export async function bootstrapSceneHostEditor() {
   };
   window.roomedit = window.sceneEditor;
 
-  ui.showMessage("场景编辑器已就绪。", "info");
+  ui.showMessage(t("editor.message.ready", "Scene editor is ready."), "info");
 }
