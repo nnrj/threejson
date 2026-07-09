@@ -21,7 +21,7 @@
 | 绿场（历史术语） | greenfield (historical) | `tools/scene-host/` 对旧版单文件正本的模块化拆分重构，Phase 5 切换已完成，现即「正本」 | Modular refactor of the old single-file pages under `tools/scene-host/`; Phase 5 switchover is complete and it is now the canonical pages | [`docs/tools.md`](./tools.md) |
 | 集成页 / 业务演示页 | integrated demo page | 如 `room-show.html`、`port-show.html`；展示行业场景，非库 API 本身 | Industry showcase pages (e.g. room-show, port-show), not library API | [`docs/tools.md`](./tools.md) |
 | 默认零心智 | zero mental overhead by default | 未使用的可选能力不要求配置或初始化仪式 | Unused optional features need no config or init ceremony | [`docs/design-principles.md`](./design-principles.md#默认零心智) |
-| 组合根 | composition root | 编排 builder、runtime、domain 注册的入口（如 `sceneLoadHandler`） | Entry that orchestrates builders, runtime, and domain registration | [`core/BUSINESS_DOMAINS.md`](../../core/BUSINESS_DOMAINS.md) |
+| 组合根 | composition root | 编排 builder、runtime、domain 注册的入口（如 `sceneLoadHandler`） | Entry that orchestrates builders, runtime, and domain registration | [`domains/BUSINESS_DOMAINS_ZH.md`](../../domains/BUSINESS_DOMAINS_ZH.md) |
 
 ## 数据契约与 JSON 形态
 

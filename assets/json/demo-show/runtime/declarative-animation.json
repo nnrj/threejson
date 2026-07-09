@@ -1,0 +1,20 @@
+{
+  "version": "next",
+  "name": "runtime-declarative-animation",
+  "sceneConfig": {
+    "scene": { "background": "#11151b" },
+    "camera": { "fov": 50, "near": 0.1, "far": 200, "position": { "x": 0, "y": 8, "z": 14 } },
+    "renderer": { "antialias": true, "ratioRate": 1 },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 2, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 0.9 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1.1, "position": { "x": 10, "y": 14, "z": 10 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "objectList": [
+    { "threeJsonId": "spin-slow", "name": "spin-slow", "objType": "box", "position": { "x": -4, "y": 2, "z": 0 }, "geometry": { "width": 3, "height": 3, "depth": 3 }, "material": { "type": "standard", "color": "#5470c6" }, "animations": [{ "type": "rotate", "axis": "y", "speed": 0.4 }] },
+    { "threeJsonId": "spin-fast", "name": "spin-fast", "objType": "torus", "position": { "x": 4, "y": 2.5, "z": 0 }, "geometry": { "radius": 1.6, "tube": 0.5, "radialSegments": 16, "tubularSegments": 64 }, "material": { "type": "standard", "color": "#ee6666" }, "animations": [{ "type": "rotate", "axis": "x", "speed": 1.6 }] }
+  ],
+  "threeJsonId": "runtime-declarative-animation"
+}

@@ -161,6 +161,11 @@ body {
   user-select: none;
 }
 
+.appIconGlyph {
+  width: 20px;
+  height: 20px;
+}
+
 .topMenubar {
   display: flex;
   align-items: center;

@@ -1,0 +1,22 @@
+{
+  "version": "next",
+  "name": "materials-lighting-material-params",
+  "sceneConfig": {
+    "scene": { "background": "#11151b" },
+    "camera": { "fov": 50, "near": 0.1, "far": 200, "position": { "x": 0, "y": 6, "z": 16 } },
+    "renderer": { "antialias": true, "ratioRate": 1 },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 2, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 0.7 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1.2, "position": { "x": 10, "y": 14, "z": 10 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "objectList": [
+    { "threeJsonId": "mat-rough", "name": "mat-rough", "objType": "sphere", "position": { "x": -6, "y": 2, "z": 0 }, "geometry": { "radius": 1.6, "widthSegments": 32, "heightSegments": 16 }, "material": { "type": "standard", "color": "#5470c6", "roughness": 0.95, "metalness": 0 } },
+    { "threeJsonId": "mat-metal", "name": "mat-metal", "objType": "sphere", "position": { "x": -2, "y": 2, "z": 0 }, "geometry": { "radius": 1.6, "widthSegments": 32, "heightSegments": 16 }, "material": { "type": "standard", "color": "#c0c4cc", "roughness": 0.15, "metalness": 0.9 } },
+    { "threeJsonId": "mat-glossy", "name": "mat-glossy", "objType": "sphere", "position": { "x": 2, "y": 2, "z": 0 }, "geometry": { "radius": 1.6, "widthSegments": 32, "heightSegments": 16 }, "material": { "type": "standard", "color": "#91cc75", "roughness": 0.1, "metalness": 0.1 } },
+    { "threeJsonId": "mat-emissive", "name": "mat-emissive", "objType": "sphere", "position": { "x": 6, "y": 2, "z": 0 }, "geometry": { "radius": 1.6, "widthSegments": 32, "heightSegments": 16 }, "material": { "type": "standard", "color": "#442200", "emissive": "#ff9500", "emissiveIntensity": 1.1, "roughness": 0.4 } }
+  ],
+  "threeJsonId": "materials-lighting-material-params"
+}

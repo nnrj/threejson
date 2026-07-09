@@ -1,0 +1,21 @@
+{
+  "version": "next",
+  "name": "info-panels-text-label",
+  "sceneConfig": {
+    "scene": { "background": "#1e2838" },
+    "camera": { "fov": 45, "near": 0.1, "far": 200, "position": { "x": 0, "y": 6, "z": 14 } },
+    "renderer": { "antialias": true },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 3, "z": 0 } },
+    "textFont": { "preloadCharacters": "标签A" },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 0.7 },
+      { "type": "directional", "color": "#ffffff", "intensity": 0.9, "position": { "x": 10, "y": 14, "z": 10 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "objectList": [
+    { "threeJsonId": "text-target-box", "name": "text-target-box", "objType": "box", "position": { "x": 0, "y": 1.5, "z": 0 }, "geometry": { "width": 3, "height": 3, "depth": 3 }, "material": { "type": "standard", "color": "#5470c6" } },
+    { "threeJsonId": "text-label-a", "objType": "text", "content": "机柜 A", "mode": "sdf", "fontSize": 1, "color": "#ffd04b", "align": "center", "billboard": true, "position": { "x": 0, "y": 4, "z": 0 }, "sdf": { "outlineWidth": 0.05, "outlineColor": "#1a2030" } }
+  ],
+  "threeJsonId": "info-panels-text-label"
+}

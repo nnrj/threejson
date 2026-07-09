@@ -1,0 +1,31 @@
+{
+  "version": "next",
+  "name": "event-mechanism-declarative-action",
+  "sceneConfig": {
+    "scene": { "background": "#11151b" },
+    "camera": { "fov": 50, "near": 0.1, "far": 200, "position": { "x": 0, "y": 6, "z": 14 } },
+    "renderer": { "antialias": true, "ratioRate": 1 },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 2, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 1 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1.1, "position": { "x": 10, "y": 14, "z": 10 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "objectList": [
+    { "threeJsonId": "action-panel", "name": "action-panel", "objType": "box", "visible": false, "position": { "x": 0, "y": 2, "z": -3 }, "geometry": { "width": 4, "height": 2.4, "depth": 0.3 }, "material": { "type": "standard", "color": "#e6a23c" } },
+    {
+      "threeJsonId": "action-trigger",
+      "objType": "box",
+      "position": { "x": 0, "y": 1, "z": 2 },
+      "geometry": { "width": 2, "height": 2, "depth": 2 },
+      "material": { "type": "standard", "color": "#409eff" },
+      "events": {
+        "object.ready": {
+          "action": { "type": "object.toggleVisible", "target": "action-panel" }
+        }
+      }
+    }
+  ],
+  "threeJsonId": "event-mechanism-declarative-action"
+}

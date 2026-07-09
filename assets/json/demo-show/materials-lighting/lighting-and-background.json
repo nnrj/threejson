@@ -1,0 +1,22 @@
+{
+  "version": "next",
+  "name": "materials-lighting-lighting-and-background",
+  "sceneConfig": {
+    "scene": {
+      "background": { "type": "equirect", "url": "/assets/textures/environment/skybox/universe360.png", "crossOrigin": "anonymous", "colorSpace": "srgb" }
+    },
+    "camera": { "fov": 55, "near": 0.1, "far": 300, "position": { "x": 0, "y": 6, "z": 16 } },
+    "renderer": { "antialias": true, "ratioRate": 1 },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 2, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#405080", "intensity": 0.4 },
+      { "type": "point", "color": "#ff9500", "intensity": 40, "position": { "x": -6, "y": 5, "z": 4 } },
+      { "type": "point", "color": "#4bb3fd", "intensity": 40, "position": { "x": 6, "y": 5, "z": -4 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "objectList": [
+    { "threeJsonId": "lit-sphere", "name": "lit-sphere", "objType": "sphere", "position": { "x": 0, "y": 2.5, "z": 0 }, "geometry": { "radius": 2.5, "widthSegments": 32, "heightSegments": 16 }, "material": { "type": "standard", "color": "#dddddd", "roughness": 0.3, "metalness": 0.4 } }
+  ],
+  "threeJsonId": "materials-lighting-lighting-and-background"
+}

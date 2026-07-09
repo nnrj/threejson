@@ -1,0 +1,20 @@
+{
+  "version": "next",
+  "name": "business-domains-nature-sky",
+  "sceneConfig": {
+    "scene": { "background": "#0c1018" },
+    "camera": { "fov": 55, "near": 0.1, "far": 800, "position": { "x": 0, "y": 20, "z": 60 } },
+    "renderer": { "antialias": true },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 8, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#8899aa", "intensity": 0.6 }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "worldInfo": {
+    "domainModelList": [
+      { "name": "demo-sunset-sky", "domain": "nature.sky", "handler": "sunset", "geometry": { "radius": 350 }, "uniforms": { "sunDirection": [-0.62, 0.32, -0.68] } }
+    ]
+  },
+  "threeJsonId": "business-domains-nature-sky"
+}

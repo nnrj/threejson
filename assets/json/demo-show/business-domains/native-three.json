@@ -1,0 +1,22 @@
+{
+  "version": "next",
+  "name": "business-domains-native-three",
+  "sceneConfig": {
+    "scene": { "background": "#11151b" },
+    "camera": { "fov": 50, "near": 0.1, "far": 200, "position": { "x": 0, "y": 4, "z": 10 } },
+    "renderer": { "antialias": true, "ratioRate": 1 },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 1, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 1 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1.1, "position": { "x": 10, "y": 14, "z": 10 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "worldInfo": {
+    "objModelList": [],
+    "domainModelList": [
+      { "domain": "nativeThree", "handler": "loadFromUrl", "modelPath": "/assets/json/three_native.json", "position": { "x": 0, "y": 0.8, "z": 0 }, "scale": { "scaleX": 1.2, "scaleY": 1.2, "scaleZ": 1.2 } }
+    ]
+  },
+  "threeJsonId": "business-domains-native-three"
+}

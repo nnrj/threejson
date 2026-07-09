@@ -1,0 +1,22 @@
+{
+  "version": "next",
+  "name": "scene-lifecycle-ready-cascade",
+  "sceneConfig": {
+    "scene": { "background": "#11151b" },
+    "camera": { "fov": 50, "near": 0.1, "far": 200, "position": { "x": 0, "y": 8, "z": 16 } },
+    "renderer": { "antialias": true, "ratioRate": 1 },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 2, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 1 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1.1, "position": { "x": 10, "y": 14, "z": 10 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "objectList": [
+    { "threeJsonId": "cascade-1", "name": "cascade-1", "objType": "box", "position": { "x": -6, "y": -3, "z": 0 }, "geometry": { "width": 2.4, "height": 2.4, "depth": 2.4 }, "material": { "type": "standard", "color": "#5470c6" }, "events": { "object.ready": { "script": "await wait(100)\nself.moveBy(0, 5, 0)" } } },
+    { "threeJsonId": "cascade-2", "name": "cascade-2", "objType": "box", "position": { "x": -2, "y": -3, "z": 0 }, "geometry": { "width": 2.4, "height": 2.4, "depth": 2.4 }, "material": { "type": "standard", "color": "#91cc75" }, "events": { "object.ready": { "script": "await wait(350)\nself.moveBy(0, 5, 0)" } } },
+    { "threeJsonId": "cascade-3", "name": "cascade-3", "objType": "box", "position": { "x": 2, "y": -3, "z": 0 }, "geometry": { "width": 2.4, "height": 2.4, "depth": 2.4 }, "material": { "type": "standard", "color": "#fac858" }, "events": { "object.ready": { "script": "await wait(600)\nself.moveBy(0, 5, 0)" } } },
+    { "threeJsonId": "cascade-4", "name": "cascade-4", "objType": "box", "position": { "x": 6, "y": -3, "z": 0 }, "geometry": { "width": 2.4, "height": 2.4, "depth": 2.4 }, "material": { "type": "standard", "color": "#ee6666" }, "events": { "object.ready": { "script": "await wait(850)\nself.moveBy(0, 5, 0)" } } }
+  ],
+  "threeJsonId": "scene-lifecycle-ready-cascade"
+}

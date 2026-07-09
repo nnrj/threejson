@@ -1,0 +1,30 @@
+{
+  "version": "next",
+  "name": "scripts-eventscript-dsl",
+  "sceneConfig": {
+    "scene": { "background": "#11151b" },
+    "camera": { "fov": 50, "near": 0.1, "far": 200, "position": { "x": 0, "y": 6, "z": 14 } },
+    "renderer": { "antialias": true, "ratioRate": 1 },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 2, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 1 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1.1, "position": { "x": 10, "y": 14, "z": 10 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "objectList": [
+    {
+      "threeJsonId": "dsl-box",
+      "objType": "box",
+      "position": { "x": 0, "y": 2, "z": 0 },
+      "geometry": { "width": 3, "height": 3, "depth": 3 },
+      "material": { "type": "standard", "color": "#409eff" },
+      "events": {
+        "object.ready": {
+          "script": "if (self.visible) {\n  self.moveBy(-3, 0, 0)\n  await wait(400)\n  self.moveBy(3, 0, 0)\n  await wait(400)\n  self.moveBy(0, 2, 0)\n}"
+        }
+      }
+    }
+  ],
+  "threeJsonId": "scripts-eventscript-dsl"
+}

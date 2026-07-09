@@ -8,13 +8,13 @@
 
 如果你只想“按 JSON 渲染一个普通盒子/球体/组合/外部模型”，优先看 [JSON 配置手册](./json-format.md) 与 [核心 API](./api.md)。如果你希望把某类业务对象封装成可复用能力，或希望通过友好 JSON 的 `worldInfo.domainModelList`、或标准 JSON 的 `objType: "domain"` 记录做统一调度，就需要关注 `domains/`。
 
-补充说明：`core/` 下还保留了一份实现侧说明 [../core/BUSINESS_DOMAINS.md](../../core/BUSINESS_DOMAINS.md)。本文更偏调用者与扩展入口；后者更偏内部契约与设计说明。
+补充说明：`domains/` 下还保留了一份实现侧说明 [domains/BUSINESS_DOMAINS_ZH.md](../../domains/BUSINESS_DOMAINS_ZH.md)。本文更偏调用者与扩展入口；后者更偏内部契约与设计说明。
 
 ## 文档分层（库 vs 应用）
 
 `core/` 与 `domains/` 是**底层库**；任意 HTML 页、演示、RoomShow、场景编辑器等都是**宿主应用**，地位相同（例如「只渲染一个立方体」与「完整编辑工具」都同样 `import` 本库）。
 
-- 本文与 [domain-scaffold.md](./domain-scaffold.md)、[BUSINESS_DOMAINS.md](../../core/BUSINESS_DOMAINS.md) 描述的是**库契约**，默认读者为**集成方 / 通用加载器**。
+- 本文与 [domain-scaffold.md](./domain-scaffold.md)、[BUSINESS_DOMAINS.md](../../domains/BUSINESS_DOMAINS_ZH.md) 描述的是**库契约**，默认读者为**集成方 / 通用加载器**。
 - **依赖方向**（core 可改、禁止反向依赖、宿主不进 core）见 [design-principles.md §依赖方向](./design-principles.md#依赖方向coredomains-宿主)。
 - 某宿主自带的 UI（模型面板、工具栏、撤销栈等）属于**应用文档**（如 [editor-selection.md](./editor-selection.md)），**不是** domain 注册时的必选 API。
 - 部分 domain 在 `api` 上提供 `addToScene` 等便捷方法，供 `domainModelList` 的 `handler` 或宿主**自愿**调用；未提供也不影响注册。
@@ -515,7 +515,7 @@ businessDomains.demo.deployDemo({ name: "demo-03", position: { x: -120, y: 40, z
 
 ## 自定义 domain 的实践建议
 
-- **`create*Json` / `create*` / `deploy*`**：注册时强制 `create${PascalCase(leaf)}` / `deploy${PascalCase(leaf)}`（点分 id 取最后一段）；语义上仍按「纯数据 → Object3D（或等价结果）→ `scene.add` / 副作用部署」分层，见 [BUSINESS_DOMAINS.md](../../core/BUSINESS_DOMAINS.md) 中的**语义例外**说明。
+- **`create*Json` / `create*` / `deploy*`**：注册时强制 `create${PascalCase(leaf)}` / `deploy${PascalCase(leaf)}`（点分 id 取最后一段）；语义上仍按「纯数据 → Object3D（或等价结果）→ `scene.add` / 副作用部署」分层，见 [BUSINESS_DOMAINS.md](../../domains/BUSINESS_DOMAINS_ZH.md) 中的**语义例外**说明。
 - 入口 `index.js` 专注 descriptor、`resolveDomainModel` 与 `api` 暴露；复杂动画、统计视图、对象运维操作优先下沉到 `*Handler.js`。
 - 脚手架建议按复杂度分级：简单 domain（1 文件 `index.js`）、复合 domain（3 文件：`index.js` + `*Factory.js` + 模板文件）、复合+统计 domain（4 文件：再加 `*Handler.js`）。
 - 先把 domain 写成“小而完整”的单一职责模块，再考虑做成像 `port` 那样的混合型 domain。
@@ -531,4 +531,4 @@ businessDomains.demo.deployDemo({ name: "demo-03", position: { x: -120, y: 40, z
 - [Domain 脚手架模板](./domain-scaffold.md)：按 1/3/4 文件分级的创建模板与最小契约。
 - [演示页面说明](./demos.md)：可结合 [`examples/html-demo/track-03-assets/03-03-native-three-domain.html`](../../examples/html-demo/track-03-assets/03-03-native-three-domain.html)、`port-show.html` 理解不同 domain 的接入方式。
 - [嵌套子域演示](../../examples/html-demo/track-05-tooling/05-02-nested-domain.html)：`weather.rain` / `weather.wind` 点分 id 与 `businessDomains` 链式 API。
-- [../core/BUSINESS_DOMAINS.md](../../core/BUSINESS_DOMAINS.md)：更偏实现与设计约束的补充说明。
+- [domains/BUSINESS_DOMAINS_ZH.md](../../domains/BUSINESS_DOMAINS_ZH.md)：更偏实现与设计约束的补充说明。

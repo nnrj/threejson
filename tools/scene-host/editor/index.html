@@ -38,13 +38,13 @@
   <div id="topChromeWrap" class="topChromeWrap">
     <div class="chromePeekStrip chromePeekStripTop" aria-hidden="true"></div>
     <header class="topBar">
-    <div class="appIconSlot" title="Scene Editor" aria-hidden="true">◆</div>
+    <div class="appIconSlot" title="Scene Editor" aria-hidden="true"><svg class="appIconGlyph" viewBox="0 0 16 16" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" d="M8 1 14 4.2 14 10.8 8 14 2 10.8 2 4.2 8 1z"/><path fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" d="M8 7.4 14 4.2M8 7.4 2 4.2M8 7.4 8 14"/></svg></div>
     <nav class="topMenubar" data-i18n-aria="editor.shell.topMenubar" aria-label="主菜单">
       <details class="topMenu">
         <summary data-i18n="editor.menu.file">文件</summary>
         <div class="topDropdown">
           <div class="topMenuNestedWrap">
-            <button type="button" class="topNestedTrigger" data-i18n="editor.menu.file.new">新建 ▸</button>
+            <button type="button" class="topNestedTrigger" data-i18n="editor.menu.file.new">新建</button>
             <div class="topDropdown topDropdownNested" role="menu" aria-label="新建" data-i18n-aria="editor.menu.file.new">
               <button type="button" id="menuNewBlankOrbit" data-i18n="editor.shell.menuNewBlankOrbit">普通场景</button>
             </div>
@@ -52,7 +52,7 @@
           <button type="button" id="menuOpenScene" data-i18n="editor.shell.menuOpenScene">打开</button>
           <button type="button" id="menuSaveScene" data-i18n="editor.shell.menuSaveScene">保存场景</button>
           <div class="topMenuNestedWrap">
-            <button type="button" class="topNestedTrigger" data-i18n="editor.menu.file.saveAs">另存为 ▸</button>
+            <button type="button" class="topNestedTrigger" data-i18n="editor.menu.file.saveAs">另存为</button>
             <div class="topDropdown topDropdownNested" role="menu" aria-label="另存为" data-i18n-aria="editor.menu.file.saveAs">
               <button type="button" id="menuSaveSceneAsCopy" data-i18n="editor.shell.menuSaveSceneAsCopy">另存为副本</button>
               <button type="button" id="menuSaveScenePreset" data-i18n="editor.shell.menuSaveScenePreset">保存为预设</button>
@@ -60,7 +60,7 @@
             </div>
           </div>
           <div class="topMenuNestedWrap">
-            <button type="button" class="topNestedTrigger" data-i18n="editor.menu.file.recent">打开最近场景 ▸</button>
+            <button type="button" class="topNestedTrigger" data-i18n="editor.menu.file.recent">打开最近场景</button>
             <div class="topDropdown topDropdownNested" role="menu" aria-label="打开最近场景" data-i18n-aria="editor.menu.file.recent">
               <div id="menuRecentScenesList" class="topDropdownInfo" data-i18n="editor.shell.menuRecentScenesList">暂无记录</div>
               <hr class="topMenuDivider" />
@@ -69,7 +69,7 @@
             </div>
           </div>
           <div class="topMenuNestedWrap">
-            <button type="button" class="topNestedTrigger" data-i18n="editor.menu.file.import">导入 ▸</button>
+            <button type="button" class="topNestedTrigger" data-i18n="editor.menu.file.import">导入</button>
             <div class="topDropdown topDropdownNested" role="menu" aria-label="导入" data-i18n-aria="editor.menu.file.import">
               <button type="button" id="menuLoadSceneJson" data-i18n="editor.shell.menuLoadSceneJson">导入 ThreeJSON</button>
               <button type="button" id="menuLoadNativeThreeJson" data-i18n="editor.shell.menuLoadNativeThreeJson">导入原生 JSON</button>
@@ -79,7 +79,7 @@
             </div>
           </div>
           <div class="topMenuNestedWrap">
-            <button type="button" class="topNestedTrigger" data-i18n="editor.menu.file.export">导出 ▸</button>
+            <button type="button" class="topNestedTrigger" data-i18n="editor.menu.file.export">导出</button>
             <div class="topDropdown topDropdownNested" role="menu" aria-label="导出" data-i18n-aria="editor.menu.file.export">
               <button type="button" id="menuExportThreeJSON" data-i18n="editor.shell.menuExportThreeJSON">导出 ThreeJSON</button>
               <button type="button" id="menuExportNativeThreeJson" data-i18n="editor.shell.menuExportNativeThreeJson">导出原生 JSON</button>
@@ -89,7 +89,7 @@
               <button type="button" id="menuExportTjzArchive" data-i18n="editor.shell.menuExportTjzArchive">导出 .tjz 包</button>
               <hr class="topMenuDivider" />
               <div class="topMenuNestedWrap">
-                <button type="button" class="topNestedTrigger" data-i18n="editor.menu.file.export.mesh3d">3D 模型 ▸</button>
+                <button type="button" class="topNestedTrigger" data-i18n="editor.menu.file.export.mesh3d">3D 模型</button>
                 <div class="topDropdown topDropdownNested" role="menu" aria-label="3D 模型导出" data-i18n-aria="editor.menu.file.export.mesh3d">
                   <button type="button" id="menuExportMeshGlbScene" data-i18n="editor.shell.menuExportMeshGlbScene">GLB（整场景）</button>
                   <button type="button" id="menuExportMeshGlbSelection" data-i18n="editor.shell.menuExportMeshGlbSelection">GLB（选中对象）</button>
@@ -112,7 +112,7 @@
           <button type="button" id="menuReset" data-i18n="editor.shell.menuReset">重置</button>
           <hr class="topMenuDivider" />
           <div class="topMenuNestedWrap">
-            <button type="button" class="topNestedTrigger" data-i18n="editor.menu.edit.transform">变换 ▸</button>
+            <button type="button" class="topNestedTrigger" data-i18n="editor.menu.edit.transform">变换</button>
             <div class="topDropdown topDropdownNested" role="menu" aria-label="变换" data-i18n-aria="editor.menu.edit.transform">
               <button type="button" data-trans-mode="translate" data-i18n="editor.menu.edit.transform.translate">移动</button>
               <button type="button" data-trans-mode="rotate" data-i18n="editor.menu.edit.transform.rotate">旋转</button>
@@ -120,7 +120,7 @@
             </div>
           </div>
           <div class="topMenuNestedWrap">
-            <button type="button" class="topNestedTrigger" data-i18n="editor.menu.edit.capture">捕获 ▸</button>
+            <button type="button" class="topNestedTrigger" data-i18n="editor.menu.edit.capture">捕获</button>
             <div class="topDropdown topDropdownNested" role="menu" aria-label="捕获" data-i18n-aria="editor.menu.edit.capture">
               <button type="button" id="menuCaptureFrame" data-i18n="editor.shell.menuCaptureFrame">截图</button>
               <button type="button" id="menuRecordVideoToggle" data-i18n="editor.shell.menuRecordVideoToggle">开始录制</button>
@@ -140,7 +140,7 @@
           <button type="button" id="menuCodeEditMode" data-i18n="editor.shell.menuCodeEditMode">代码编辑模式</button>
           <button type="button" id="menuFullscreenToggle" data-i18n="editor.shell.menuFullscreenToggle">全屏</button>
           <div class="topMenuNestedWrap">
-            <button type="button" class="topNestedTrigger" data-i18n="editor.menu.view.chrome">视图 ▸</button>
+            <button type="button" class="topNestedTrigger" data-i18n="editor.menu.view.chrome">视图</button>
             <div class="topDropdown topDropdownNested" role="menu" aria-label="视图" data-i18n-aria="editor.menu.view.chrome">
               <button type="button" role="menuitemcheckbox" data-view-chrome="topBar" id="menuViewChromeTopBar"
                 aria-checked="true" data-i18n="editor.shell.menuViewChromeTopBar"><span class="viewChromeCheck">✓</span><span>标题栏</span></button>
@@ -285,7 +285,7 @@
     <aside id="leftPanel" class="sidePanel leftDockPanel">
       <div class="sidePanelPinRow sidePanelPinRowLeft">
         <button type="button" id="leftPanelPinBtn" class="sidePanelPinBtn" aria-pressed="true"
-          title="已钉住：鼠标移开仍显示" data-i18n-title="editor.shell.leftPanelPinBtn.title"><svg class="sidePanelPinIcon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" d="M8 1.6 9.4 5.5 13.3 6.4 9.4 7.3 8 11.2 6.6 7.3 2.7 6.4 6.6 5.5 8 1.6z"/><path fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" d="M8 10.2v4.2"/></svg></button>
+          title="已钉住：鼠标移开仍显示" data-i18n-title="editor.shell.leftPanelPinBtn.title"><svg class="sidePanelPinIcon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path fill="currentColor" stroke="none" d="M8 14.6c0-.01 4.6-5.34 4.6-8.6A4.6 4.6 0 1 0 3.4 6c0 3.26 4.6 8.59 4.6 8.6z"/></svg></button>
         <span class="sidePanelChromeTitle" data-i18n="editor.shell.leftPanelTitle">工具面板</span>
       </div>
       <div class="sidePanelStack">
@@ -518,7 +518,7 @@
       <div class="sidePanelPinRow sidePanelPinRowRight">
         <span class="sidePanelChromeTitle" data-i18n="editor.shell.rightPanelTitle">属性面板</span>
         <button type="button" id="rightPanelPinBtn" class="sidePanelPinBtn" aria-pressed="true"
-          title="已钉住：鼠标移开仍显示" data-i18n-title="editor.shell.rightPanelPinBtn.title"><svg class="sidePanelPinIcon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" d="M8 1.6 9.4 5.5 13.3 6.4 9.4 7.3 8 11.2 6.6 7.3 2.7 6.4 6.6 5.5 8 1.6z"/><path fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" d="M8 10.2v4.2"/></svg></button>
+          title="已钉住：鼠标移开仍显示" data-i18n-title="editor.shell.rightPanelPinBtn.title"><svg class="sidePanelPinIcon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path fill="currentColor" stroke="none" d="M8 14.6c0-.01 4.6-5.34 4.6-8.6A4.6 4.6 0 1 0 3.4 6c0 3.26 4.6 8.59 4.6 8.6z"/></svg></button>
       </div>
       <div class="sidePanelStack">
       <div class="rightSubTabBar" role="tablist" aria-label="右侧功能" aria-orientation="horizontal" data-i18n-aria="editor.shell.rightSubTabBar">

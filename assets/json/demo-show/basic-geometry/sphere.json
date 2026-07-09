@@ -1,27 +1,27 @@
 {
   "version": "next",
-  "name": "demo-show-sphere",
+  "name": "basic-geometry-sphere",
   "sceneConfig": {
     "scene": { "background": "#11151b" },
-    "camera": { "fov": 55, "near": 0.1, "far": 200, "position": { "x": 18, "y": 14, "z": 22 } },
+    "camera": { "fov": 55, "near": 0.1, "far": 200, "position": { "x": 16, "y": 12, "z": 18 } },
     "renderer": { "antialias": true, "ratioRate": 1 },
     "controls": { "enableDamping": true, "target": { "x": 0, "y": 3, "z": 0 } },
     "lights": [
       { "type": "ambient", "color": "#ffffff", "intensity": 1 },
-      { "type": "directional", "color": "#ffffff", "intensity": 1.35, "position": { "x": 20, "y": 30, "z": 20 } }
+      { "type": "directional", "color": "#ffffff", "intensity": 1.3, "position": { "x": 16, "y": 24, "z": 16 } }
     ],
     "renderLoop": { "autoResize": true, "firstAutoResize": true }
   },
   "worldInfo": {
     "sphereModelList": [
       {
-        "threeJsonId": "sphere-basic",
-        "name": "sphere-basic",
-        "geometry": { "radius": 4, "widthSegments": 32, "heightSegments": 18 },
-        "position": { "x": 0, "y": 4, "z": 0 },
+        "threeJsonId": "geo-sphere",
+        "name": "geo-sphere",
+        "geometry": { "radius": 3.5, "widthSegments": 32, "heightSegments": 16 },
+        "position": { "x": 0, "y": 3.5, "z": 0 },
         "material": { "type": "standard", "color": "#91cc75" }
       }
     ]
   },
-  "threeJsonId": "demo-show-02-sphere"
+  "threeJsonId": "basic-geometry-sphere"
 }

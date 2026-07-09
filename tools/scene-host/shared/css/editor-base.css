@@ -594,6 +594,11 @@ html, body {
       user-select: none;
     }
 
+    .appIconGlyph {
+      width: 20px;
+      height: 20px;
+    }
+
     .topMenubar {
       display: flex;
       align-items: center;
@@ -1854,7 +1859,10 @@ html, body {
     }
 
     .topNestedTrigger {
-      display: block;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
       width: 100%;
       margin: 0;
       padding: 6px 10px;
@@ -1871,6 +1879,14 @@ html, body {
     .topNestedTrigger:hover {
       background: rgba(64, 158, 255, 0.28);
       border-color: rgba(64, 158, 255, 0.35);
+    }
+
+    /* 子菜单项右侧箭头：表示悬停后会展开下一级菜单 */
+    .topNestedTrigger::after {
+      content: "\203A";
+      flex: 0 0 auto;
+      font-size: 12px;
+      opacity: 0.55;
     }
 
     .topDropdownNested {

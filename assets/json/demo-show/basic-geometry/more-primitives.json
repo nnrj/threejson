@@ -1,0 +1,23 @@
+{
+  "version": "next",
+  "name": "basic-geometry-more-primitives",
+  "sceneConfig": {
+    "scene": { "background": "#11151b" },
+    "camera": { "fov": 50, "near": 0.1, "far": 300, "position": { "x": 0, "y": 12, "z": 26 } },
+    "renderer": { "antialias": true, "ratioRate": 1 },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 2, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 0.9 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1.2, "position": { "x": 16, "y": 24, "z": 16 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "objectList": [
+    { "threeJsonId": "prim-cylinder", "name": "prim-cylinder", "objType": "cylinder", "position": { "x": -9, "y": 2, "z": 0 }, "geometry": { "radiusTop": 1.6, "radiusBottom": 1.6, "height": 4, "radialSegments": 32 }, "material": { "type": "standard", "color": "#5470c6" } },
+    { "threeJsonId": "prim-cone", "name": "prim-cone", "objType": "cone", "position": { "x": -4.5, "y": 2, "z": 0 }, "geometry": { "radius": 1.8, "height": 4, "radialSegments": 32 }, "material": { "type": "standard", "color": "#91cc75" } },
+    { "threeJsonId": "prim-ring", "name": "prim-ring", "objType": "ring", "position": { "x": 0, "y": 2, "z": 0 }, "rotation": { "x": 1.5708, "y": 0, "z": 0 }, "geometry": { "innerRadius": 1, "outerRadius": 2, "thetaSegments": 32 }, "material": { "type": "standard", "color": "#fac858", "side": "double" } },
+    { "threeJsonId": "prim-torus", "name": "prim-torus", "objType": "torus", "position": { "x": 4.5, "y": 2, "z": 0 }, "geometry": { "radius": 1.6, "tube": 0.5, "radialSegments": 16, "tubularSegments": 64 }, "material": { "type": "standard", "color": "#ee6666" } },
+    { "threeJsonId": "prim-capsule", "name": "prim-capsule", "objType": "capsule", "position": { "x": 9, "y": 2.5, "z": 0 }, "geometry": { "radius": 1, "length": 2, "capSegments": 8, "radialSegments": 16 }, "material": { "type": "standard", "color": "#73c0de" } }
+  ],
+  "threeJsonId": "basic-geometry-more-primitives"
+}

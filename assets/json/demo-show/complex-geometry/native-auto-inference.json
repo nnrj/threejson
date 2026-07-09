@@ -1,0 +1,39 @@
+{
+  "version": "next",
+  "name": "complex-geometry-native-auto-inference",
+  "sceneConfig": {
+    "scene": { "background": "#1a1d24" },
+    "camera": { "fov": 52, "near": 0.1, "far": 200, "position": { "x": 7, "y": 5, "z": 9 } },
+    "renderer": { "antialias": true, "ratioRate": 1 },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 1, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 0.55 },
+      { "type": "directional", "color": "#ffffff", "intensity": 0.9, "position": { "x": 4, "y": 6, "z": 4 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "objectList": [
+    {
+      "objType": "box",
+      "name": "floor",
+      "geometry": { "width": 10, "height": 0.1, "depth": 8 },
+      "material": { "type": "standard", "color": "#3d4450", "roughness": 0.95 },
+      "position": { "x": 0, "y": -0.05, "z": 0 }
+    },
+    {
+      "objType": "torusKnot",
+      "name": "native-torus-knot",
+      "geometry": { "type": "TorusKnotGeometry", "radius": 1.1, "tube": 0.3, "tubularSegments": 128, "radialSegments": 16, "p": 2, "q": 3 },
+      "material": { "type": "MeshStandardMaterial", "color": "#e76f51", "metalness": 0.35, "roughness": 0.45 },
+      "position": { "x": -2.5, "y": 1.5, "z": 0 }
+    },
+    {
+      "objType": "dodecahedronGem",
+      "name": "native-dodecahedron",
+      "geometry": { "type": "DodecahedronGeometry", "radius": 1.3, "detail": 0 },
+      "material": { "type": "MeshStandardMaterial", "color": "#457b9d", "metalness": 0.6, "roughness": 0.25 },
+      "position": { "x": 2.5, "y": 1.3, "z": 0 }
+    }
+  ],
+  "threeJsonId": "complex-geometry-native-auto-inference"
+}

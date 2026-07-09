@@ -1,0 +1,52 @@
+{
+  "version": "next",
+  "name": "complex-geometry-groups-irregular",
+  "sceneConfig": {
+    "scene": { "background": "#11151b" },
+    "camera": { "fov": 50, "near": 0.1, "far": 200, "position": { "x": 10, "y": 8, "z": 12 } },
+    "renderer": { "antialias": true, "ratioRate": 1 },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 2, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 0.9 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1.1, "position": { "x": 10, "y": 16, "z": 10 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "objectList": [
+    {
+      "threeJsonId": "signpost-group",
+      "objType": "group",
+      "name": "signpost-group",
+      "position": { "x": 0, "y": 0, "z": 0 },
+      "animations": [{ "type": "rotate", "axis": "y", "speed": 0.3 }],
+      "children": [
+        {
+          "threeJsonId": "signpost-pole",
+          "objType": "cylinder",
+          "name": "signpost-pole",
+          "geometry": { "radiusTop": 0.2, "radiusBottom": 0.2, "height": 4, "radialSegments": 16 },
+          "position": { "x": 0, "y": 2, "z": 0 },
+          "material": { "type": "standard", "color": "#8d6e63" }
+        },
+        {
+          "threeJsonId": "signpost-sign-a",
+          "objType": "box",
+          "name": "signpost-sign-a",
+          "geometry": { "width": 2.4, "height": 0.7, "depth": 0.1 },
+          "position": { "x": 1, "y": 3.4, "z": 0 },
+          "material": { "type": "standard", "color": "#5470c6" }
+        },
+        {
+          "threeJsonId": "signpost-sign-b",
+          "objType": "box",
+          "name": "signpost-sign-b",
+          "geometry": { "width": 2, "height": 0.7, "depth": 0.1 },
+          "position": { "x": -0.9, "y": 2.8, "z": 0 },
+          "rotation": { "x": 0, "y": 3.1416, "z": 0 },
+          "material": { "type": "standard", "color": "#91cc75" }
+        }
+      ]
+    }
+  ],
+  "threeJsonId": "complex-geometry-groups-irregular"
+}

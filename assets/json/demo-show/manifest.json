@@ -1,20 +1,42 @@
 [
   {
-    "section": "basic",
-    "sectionTitle": "基础几何",
-    "sectionTitleEn": "Basic Geometry",
+    "section": "minimal-scene",
+    "sectionTitle": "最小场景",
+    "sectionTitleEn": "Minimal Scene",
     "items": [
-      { "id": "box", "title": "Box 盒子", "titleEn": "Box", "desc": "一个最小盒子对象。", "descEn": "A minimal box object.", "json": "../../../assets/json/demo-show/01-box.json" },
-      { "id": "sphere", "title": "Sphere 球体", "titleEn": "Sphere", "desc": "一个基础球体对象。", "descEn": "A minimal sphere object.", "json": "../../../assets/json/demo-show/02-sphere.json" }
+      { "id": "friendly-json", "title": "友好 JSON 最小示例", "titleEn": "Minimal friendly JSON", "desc": "worldInfo.boxModelList 描述的最小友好 JSON。", "descEn": "The smallest friendly-JSON scene, using worldInfo.boxModelList.", "json": "assets/json/demo-show/minimal-scene/friendly-json.json" },
+      { "id": "standard-json", "title": "标准 JSON 最小示例", "titleEn": "Minimal standard JSON", "desc": "objectList + objType 描述的最小标准 JSON。", "descEn": "The smallest standard-JSON scene, using objectList + objType dispatch.", "json": "assets/json/demo-show/minimal-scene/standard-json.json" }
     ]
   },
   {
-    "section": "style",
-    "sectionTitle": "材质与光照",
-    "sectionTitleEn": "Materials And Lighting",
+    "section": "basic-geometry",
+    "sectionTitle": "基础几何",
+    "sectionTitleEn": "Basic Geometry",
     "items": [
-      { "id": "materials", "title": "材质参数", "titleEn": "Materials", "desc": "颜色、粗糙度、金属度和发光。", "descEn": "Color, roughness, metalness, and emissive material fields.", "json": "../../../assets/json/demo-show/03-materials.json" },
-      { "id": "lighting", "title": "灯光配置", "titleEn": "Lighting", "desc": "用 sceneConfig.lights 控制光照。", "descEn": "Control lighting through sceneConfig.lights.", "json": "../../../assets/json/demo-show/04-lighting.json" }
+      { "id": "box", "title": "Box 盒子", "titleEn": "Box", "desc": "一个最小盒子对象。", "descEn": "A minimal box object.", "json": "assets/json/demo-show/basic-geometry/box.json" },
+      { "id": "sphere", "title": "Sphere 球体", "titleEn": "Sphere", "desc": "一个基础球体对象。", "descEn": "A minimal sphere object.", "json": "assets/json/demo-show/basic-geometry/sphere.json" },
+      { "id": "plane-and-line", "title": "平面与线段", "titleEn": "Plane and lines", "desc": "plane 地面 + line/lineLoop 折线拓扑。", "descEn": "A ground plane plus line/lineLoop polyline topology.", "json": "assets/json/demo-show/basic-geometry/plane-and-line.json" },
+      { "id": "more-primitives", "title": "更多几何体", "titleEn": "More primitives", "desc": "圆柱、圆锥、圆环、圆环面、胶囊体集合展示。", "descEn": "Cylinder, cone, ring, torus, and capsule side by side.", "json": "assets/json/demo-show/basic-geometry/more-primitives.json" }
+    ]
+  },
+  {
+    "section": "complex-geometry",
+    "sectionTitle": "复杂几何",
+    "sectionTitleEn": "Complex Geometry",
+    "items": [
+      { "id": "csg-joins-holes", "title": "CSG 合并与打洞", "titleEn": "CSG joins and holes", "desc": "joins 合并体块，holes 在墙体上打洞。", "descEn": "joins merges blocks together; holes cuts an opening through a wall.", "json": "assets/json/demo-show/complex-geometry/csg-joins-holes.json" },
+      { "id": "native-auto-inference", "title": "Native 对象自动推断", "titleEn": "Native geometry auto-inference", "desc": "自定义 objType 通过 geometry.type 自动映射到 Three.js 原生几何体。", "descEn": "Custom objType names auto-map to native Three.js geometries via geometry.type.", "json": "assets/json/demo-show/complex-geometry/native-auto-inference.json" },
+      { "id": "groups-irregular", "title": "分组与不规则组合", "titleEn": "Groups and irregular composites", "desc": "objType: group 嵌套 children，组合出一个可整体旋转的路牌。", "descEn": "objType: group nests children to build a signpost that rotates as a whole.", "json": "assets/json/demo-show/complex-geometry/groups-irregular.json" }
+    ]
+  },
+  {
+    "section": "materials-lighting",
+    "sectionTitle": "材质与光照",
+    "sectionTitleEn": "Materials and Lighting",
+    "items": [
+      { "id": "material-params", "title": "材质参数", "titleEn": "Material parameters", "desc": "颜色、粗糙度、金属度和发光强度对比。", "descEn": "Compare color, roughness, metalness, and emissive intensity.", "json": "assets/json/demo-show/materials-lighting/material-params.json" },
+      { "id": "texture-url", "title": "贴图 URL", "titleEn": "Texture URL", "desc": "material.textureUrl 加载真实纹理贴图。", "descEn": "material.textureUrl loading real texture images.", "json": "assets/json/demo-show/materials-lighting/texture-url.json" },
+      { "id": "lighting-and-background", "title": "灯光与全景背景", "titleEn": "Lighting and panoramic background", "desc": "sceneConfig.lights 多光源配置 + equirect 全景背景。", "descEn": "Multiple sceneConfig.lights plus an equirectangular panoramic background.", "json": "assets/json/demo-show/materials-lighting/lighting-and-background.json" }
     ]
   },
   {
@@ -22,9 +44,99 @@
     "sectionTitle": "运行时",
     "sectionTitleEn": "Runtime",
     "items": [
-      { "id": "animation", "title": "声明式动画", "titleEn": "Declarative Animation", "desc": "通过 JSON 配置旋转动画。", "descEn": "Configure rotation animation in JSON.", "json": "../../../assets/json/demo-show/05-animation.json" },
-      { "id": "composed", "title": "组合场景", "titleEn": "Composed Scene", "desc": "把多个对象组合成一个小场景。", "descEn": "Compose several objects into a small scene.", "json": "../../../assets/json/demo-show/06-composed-scene.json" }
+      { "id": "declarative-animation", "title": "声明式动画", "titleEn": "Declarative animation", "desc": "animations: [{type: rotate}] 持续旋转，无需手写 requestAnimationFrame。", "descEn": "animations: [{type: rotate}] spins continuously with no hand-written render loop.", "json": "assets/json/demo-show/runtime/declarative-animation.json" },
+      { "id": "render-loop-fps-policy", "title": "渲染循环 FPS 策略", "titleEn": "Render loop FPS policy", "desc": "renderLoop.fps + lowFps 限制渲染帧率。", "descEn": "renderLoop.fps + lowFps caps the render frame rate.", "json": "assets/json/demo-show/runtime/render-loop-fps-policy.json" }
+    ]
+  },
+  {
+    "section": "info-panels",
+    "sectionTitle": "信息面板",
+    "sectionTitleEn": "Info Panels",
+    "items": [
+      { "id": "static-info-panel", "title": "静态信息面板", "titleEn": "Static info panels", "desc": "infoPanel 的 box / sprite / plane 三种载体对比。", "descEn": "Compare infoPanel's three carriers: box, sprite, and plane.", "json": "assets/json/demo-show/info-panels/static-info-panel.json" },
+      { "id": "css3d-panel", "title": "CSS3D 交互面板", "titleEn": "Interactive CSS3D panel", "desc": "css3dPanel 叠加真实 DOM，可点击可输入。", "descEn": "css3dPanel overlays real DOM content that is clickable and interactive.", "json": "assets/json/demo-show/info-panels/css3d-panel.json" },
+      { "id": "text-label", "title": "场景文字标签", "titleEn": "Scene text label", "desc": "objType: text 作为对象标签，无强制背板。", "descEn": "objType: text used as an object label with no backing panel.", "json": "assets/json/demo-show/info-panels/text-label.json" },
+      { "id": "sprite-marker", "title": "图标标记", "titleEn": "Sprite markers", "desc": "spriteList 单张贴图标记，常用于地图 pin。", "descEn": "spriteList single-texture markers, handy for map pins.", "json": "assets/json/demo-show/info-panels/sprite-marker.json" }
+    ]
+  },
+  {
+    "section": "text-3d",
+    "sectionTitle": "3D 字体",
+    "sectionTitleEn": "3D Text",
+    "items": [
+      { "id": "text-modes", "title": "三种渲染模式对比", "titleEn": "Three render modes compared", "desc": "objType: text 的 sdf / texture / mesh 三种 mode 并排对比。", "descEn": "Side-by-side comparison of objType: text's sdf, texture, and mesh modes.", "json": "assets/json/demo-show/text-3d/text-modes.json" },
+      { "id": "sdf-styling", "title": "SDF 描边样式", "titleEn": "SDF outline styling", "desc": "sdf.outlineWidth / outlineColor 描边变化。", "descEn": "Varying sdf.outlineWidth and outlineColor.", "json": "assets/json/demo-show/text-3d/sdf-styling.json" }
+    ]
+  },
+  {
+    "section": "object-manager",
+    "sectionTitle": "对象管理器",
+    "sectionTitleEn": "Object Manager",
+    "items": [
+      { "id": "patch-mutation", "title": "运行时 Patch 变更", "titleEn": "Runtime patch mutation", "desc": "events 脚本内用 run object.patch 修改已部署对象的位置与材质。", "descEn": "An events script uses run object.patch to mutate a deployed object's position and material.", "json": "assets/json/demo-show/object-manager/patch-mutation.json" },
+      { "id": "visibility-toggle", "title": "显隐与引用查找", "titleEn": "Visibility and object lookup", "desc": "脚本用 $('id') 查找其它对象并调用 show()。", "descEn": "A script uses $('id') to look up another object and call show() on it.", "json": "assets/json/demo-show/object-manager/visibility-toggle.json" }
+    ]
+  },
+  {
+    "section": "scene-lifecycle",
+    "sectionTitle": "场景生命周期",
+    "sectionTitleEn": "Scene Lifecycle",
+    "items": [
+      { "id": "ready-cascade", "title": "对象 ready 级联", "titleEn": "Object ready cascade", "desc": "多个对象各自绑定 object.ready，错开延时形成级联效果。", "descEn": "Multiple objects each bind object.ready with staggered delays for a cascading effect.", "json": "assets/json/demo-show/scene-lifecycle/ready-cascade.json" },
+      { "id": "scene-ready-signal", "title": "scene.ready 信号", "titleEn": "scene.ready signal", "desc": "整场景 bind 完成后触发的 scene.ready 事件。", "descEn": "The scene.ready event fires once the whole scene finishes binding.", "json": "assets/json/demo-show/scene-lifecycle/scene-ready-signal.json" }
+    ]
+  },
+  {
+    "section": "object-lifecycle",
+    "sectionTitle": "对象生命周期",
+    "sectionTitleEn": "Object Lifecycle",
+    "items": [
+      { "id": "spawn-intro", "title": "对象生成入场", "titleEn": "Spawn intro sequence", "desc": "object.ready 触发的落地 + 弹跳入场脚本。", "descEn": "An object.ready-triggered drop-and-bounce intro sequence.", "json": "assets/json/demo-show/object-lifecycle/spawn-intro.json" },
+      { "id": "independent-ready-hooks", "title": "独立 ready 钩子", "titleEn": "Independent ready hooks", "desc": "每个对象各自的 object.ready 钩子互不影响。", "descEn": "Each object's object.ready hook fires independently of the others.", "json": "assets/json/demo-show/object-lifecycle/independent-ready-hooks.json" }
+    ]
+  },
+  {
+    "section": "event-mechanism",
+    "sectionTitle": "事件机制",
+    "sectionTitleEn": "Event Mechanism",
+    "items": [
+      { "id": "declarative-action", "title": "声明式 action", "titleEn": "Declarative action", "desc": "events.action 用 object.toggleVisible 切换另一对象的显隐。", "descEn": "events.action uses object.toggleVisible to toggle another object's visibility.", "json": "assets/json/demo-show/event-mechanism/declarative-action.json" },
+      { "id": "action-and-script", "title": "action + script 组合", "titleEn": "action + script combo", "desc": "同一事件先执行 action 再执行 script。", "descEn": "The same event runs its action first, then its script.", "json": "assets/json/demo-show/event-mechanism/action-and-script.json" }
+    ]
+  },
+  {
+    "section": "scripts",
+    "sectionTitle": "脚本",
+    "sectionTitleEn": "Scripts",
+    "items": [
+      { "id": "eventscript-dsl", "title": "EventScript DSL", "titleEn": "EventScript DSL", "desc": "默认 DSL 语法：if 条件、await wait、self API。", "descEn": "The default DSL syntax: if conditions, await wait, and the self API.", "json": "assets/json/demo-show/scripts/eventscript-dsl.json" },
+      { "id": "command-microdsl", "title": "Command 微 DSL", "titleEn": "Command micro-DSL", "desc": "run object.patch 一行式调用运行时命令。", "descEn": "run object.patch invokes a runtime command in one line.", "json": "assets/json/demo-show/scripts/command-microdsl.json" }
+    ]
+  },
+  {
+    "section": "business-domains",
+    "sectionTitle": "业务域",
+    "sectionTitleEn": "Business Domains",
+    "items": [
+      { "id": "box", "title": "box 域", "titleEn": "box domain", "desc": "domainModelList 经 box 域的 addToScene 分发。", "descEn": "A domainModelList record dispatched through the box domain's addToScene.", "json": "assets/json/demo-show/business-domains/box.json" },
+      { "id": "wall-and-glass", "title": "wall / glass 域", "titleEn": "wall / glass domains", "desc": "墙体与玻璃两个内置域对比。", "descEn": "The built-in wall and glass domains side by side.", "json": "assets/json/demo-show/business-domains/wall-and-glass.json" },
+      { "id": "floor-and-door", "title": "floor / door 域", "titleEn": "floor / door domains", "desc": "地面域与门域组合。", "descEn": "The floor domain paired with the door domain.", "json": "assets/json/demo-show/business-domains/floor-and-door.json" },
+      { "id": "device-cabinet", "title": "device.cabinet 子域", "titleEn": "device.cabinet sub-domain", "desc": "device 域下的机柜子域，含门与插槽结构。", "descEn": "The cabinet sub-domain under device, with doors and slot structure.", "json": "assets/json/demo-show/business-domains/device-cabinet.json" },
+      { "id": "native-three", "title": "nativeThree 域", "titleEn": "nativeThree domain", "desc": "从外部 URL 加载原生 Three.js ObjectLoader JSON。", "descEn": "Loading a native Three.js ObjectLoader JSON from an external URL.", "json": "assets/json/demo-show/business-domains/native-three.json" },
+      { "id": "nature-sky", "title": "nature.sky 子域", "titleEn": "nature.sky sub-domain", "desc": "程序化天空着色器（sunset 预设）。", "descEn": "A procedural sky shader using the sunset preset.", "json": "assets/json/demo-show/business-domains/nature-sky.json" },
+      { "id": "port-dock-crane", "title": "port 域（岸桥）", "titleEn": "port domain (dock crane)", "desc": "港口域的 dockCrane 组合体处理器。", "descEn": "The port domain's dockCrane composite handler.", "json": "assets/json/demo-show/business-domains/port-dock-crane.json" },
+      { "id": "stat-bar", "title": "stat.bar 子域", "titleEn": "stat.bar sub-domain", "desc": "统计方柱，常用于容量/负载可视化。", "descEn": "Statistic bars, commonly used for capacity/load visualization.", "json": "assets/json/demo-show/business-domains/stat-bar.json" },
+      { "id": "weather-rain", "title": "weather 域（降雨）", "titleEn": "weather domain (rain)", "desc": "天气域的雨滴粒子效果。", "descEn": "The weather domain's rain particle effect.", "json": "assets/json/demo-show/business-domains/weather-rain.json" }
+    ]
+  },
+  {
+    "section": "extensions",
+    "sectionTitle": "插件扩展",
+    "sectionTitleEn": "Extensions",
+    "items": [
+      { "id": "fps-walk", "title": "fps-walk 第一人称漫游", "titleEn": "fps-walk first-person walk", "desc": "sceneConfig.controls.type: firstPerson + extensions.fps-walk。", "descEn": "sceneConfig.controls.type: firstPerson combined with extensions.fps-walk.", "json": "assets/json/demo-show/extensions/fps-walk.json", "bootstrap": "fps-walk" },
+      { "id": "physics-rapier", "title": "physics-rapier 物理引擎", "titleEn": "physics-rapier physics engine", "desc": "Rapier 刚体物理：地面固定，盒子受重力下落。", "descEn": "Rapier rigid-body physics: a fixed floor and a box that falls under gravity.", "json": "assets/json/demo-show/extensions/physics-rapier.json", "bootstrap": "physics-rapier" },
+      { "id": "stat-echarts", "title": "stat-echarts 图表面板", "titleEn": "stat-echarts chart panel", "desc": "CSS3D 面板内嵌 ECharts 柱状图。", "descEn": "An ECharts bar chart embedded inside a CSS3D panel.", "json": "assets/json/demo-show/extensions/stat-echarts.json", "bootstrap": "stat-echarts" }
     ]
   }
 ]
-

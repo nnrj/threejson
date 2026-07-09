@@ -18,7 +18,9 @@
         "gifuct-js": "https://esm.sh/gifuct-js@2.1.2",
         "three-mesh-bvh": "https://esm.sh/three-mesh-bvh@0.9.10?deps=three@0.184.0",
         "three-bvh-csg": "https://esm.sh/three-bvh-csg@0.0.18?deps=three@0.184.0,three-mesh-bvh@0.9.10",
-        "troika-three-text": "https://esm.sh/troika-three-text@0.52.4?deps=three@0.184.0"
+        "troika-three-text": "https://esm.sh/troika-three-text@0.52.4?deps=three@0.184.0",
+        "echarts": "https://esm.sh/echarts@5.6.0",
+        "@dimforge/rapier3d-compat": "https://esm.sh/@dimforge/rapier3d-compat@0.19.3"
       }
     }
   </script>
@@ -110,6 +112,41 @@
     </main>
   </div>
   <div id="messageToast" class="messageToast" role="status" aria-live="polite"></div>
+  <div id="templateExportModal" class="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="templateExportTitle" hidden>
+    <div class="modalDialog">
+      <div class="modalHeader" id="templateExportTitle" data-i18n="templateExportTitle">Export Template</div>
+      <div class="modalBody">
+        <label class="modalField" for="templateExportTypeSelect">
+          <span data-i18n="templateExportType">Template type</span>
+          <select id="templateExportTypeSelect">
+            <option value="html">HTML</option>
+            <option value="react">React</option>
+            <option value="vue">Vue</option>
+            <option value="electron">Electron</option>
+          </select>
+        </label>
+        <label class="modalField" for="templateExportFormatSelect">
+          <span data-i18n="templateExportFormat">JSON format</span>
+          <select id="templateExportFormatSelect">
+            <option value="standard">standard</option>
+            <option value="friendly">friendly</option>
+          </select>
+        </label>
+        <label class="modalField" for="templateExportJsonLocationSelect">
+          <span data-i18n="templateExportJsonLocation">JSON location</span>
+          <select id="templateExportJsonLocationSelect">
+            <option value="inline" data-i18n="templateExportJsonInline">Inline</option>
+            <option value="external" data-i18n="templateExportJsonExternal">External</option>
+          </select>
+        </label>
+        <p class="modalHint" data-i18n="templateExportHint">HTML + inline JSON downloads a single HTML file; other combinations download a zip template.</p>
+      </div>
+      <div class="modalFooter">
+        <button id="templateExportCancelBtn" type="button" data-i18n="cancel">Cancel</button>
+        <button id="templateExportConfirmBtn" class="primary" type="button" data-i18n="confirmExport">Export</button>
+      </div>
+    </div>
+  </div>
   <div id="modelExportModal" class="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modelExportTitle" hidden>
     <div class="modalDialog">
       <div class="modalHeader" id="modelExportTitle" data-i18n="modelExportTitle">Export Model</div>

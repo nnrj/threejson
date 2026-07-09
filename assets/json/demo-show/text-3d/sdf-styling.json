@@ -1,0 +1,22 @@
+{
+  "version": "next",
+  "name": "text-3d-sdf-styling",
+  "sceneConfig": {
+    "scene": { "background": "#11151b" },
+    "textFont": { "preloadCharacters": "警告正常离线" },
+    "camera": { "fov": 45, "position": { "x": 0, "y": 4, "z": 16 }, "near": 0.1, "far": 200 },
+    "renderer": { "antialias": true },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 2, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 0.7 },
+      { "type": "directional", "color": "#ffffff", "intensity": 0.9, "position": { "x": 10, "y": 14, "z": 10 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "objectList": [
+    { "threeJsonId": "sdf-warn", "objType": "text", "content": "警告", "mode": "sdf", "fontSize": 1.8, "color": "#ff5252", "align": "center", "billboard": true, "position": { "x": -5, "y": 2, "z": 0 }, "sdf": { "outlineWidth": 0.08, "outlineColor": "#3a0000" } },
+    { "threeJsonId": "sdf-normal", "objType": "text", "content": "正常", "mode": "sdf", "fontSize": 1.8, "color": "#67c23a", "align": "center", "billboard": true, "position": { "x": 0, "y": 2, "z": 0 }, "sdf": { "outlineWidth": 0.04, "outlineColor": "#0a2a0a" } },
+    { "threeJsonId": "sdf-offline", "objType": "text", "content": "离线", "mode": "sdf", "fontSize": 1.8, "color": "#9aa3ad", "align": "center", "billboard": true, "position": { "x": 5, "y": 2, "z": 0 }, "sdf": { "outlineWidth": 0.02, "outlineColor": "#1a2030" } }
+  ],
+  "threeJsonId": "text-3d-sdf-styling"
+}

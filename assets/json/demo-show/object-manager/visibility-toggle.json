@@ -1,0 +1,40 @@
+{
+  "version": "next",
+  "name": "object-manager-visibility-toggle",
+  "sceneConfig": {
+    "scene": { "background": "#11151b" },
+    "camera": { "fov": 50, "near": 0.1, "far": 200, "position": { "x": 0, "y": 6, "z": 14 } },
+    "renderer": { "antialias": true, "ratioRate": 1 },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 2, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 1 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1.1, "position": { "x": 10, "y": 14, "z": 10 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "objectList": [
+    {
+      "threeJsonId": "ghost-box",
+      "name": "ghost-box",
+      "objType": "box",
+      "visible": false,
+      "position": { "x": -3, "y": 2, "z": 0 },
+      "geometry": { "width": 3, "height": 3, "depth": 3 },
+      "material": { "type": "standard", "color": "#ee6666" }
+    },
+    {
+      "threeJsonId": "toggle-driver",
+      "name": "toggle-driver",
+      "objType": "sphere",
+      "position": { "x": 3, "y": 2, "z": 0 },
+      "geometry": { "radius": 1.4, "widthSegments": 24, "heightSegments": 12 },
+      "material": { "type": "standard", "color": "#5470c6" },
+      "events": {
+        "object.ready": {
+          "script": "await wait(600)\nvar ghost = $('ghost-box')\nghost.show()\nawait wait(600)\nself.moveBy(0, 0, 0)"
+        }
+      }
+    }
+  ],
+  "threeJsonId": "object-manager-visibility-toggle"
+}

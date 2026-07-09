@@ -1,0 +1,40 @@
+{
+  "version": "next",
+  "name": "complex-geometry-csg-joins-holes",
+  "sceneConfig": {
+    "scene": { "background": "#11151b" },
+    "camera": { "fov": 50, "near": 0.1, "far": 300, "position": { "x": 16, "y": 10, "z": 20 } },
+    "renderer": { "antialias": true },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 4, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 0.6 },
+      { "type": "directional", "color": "#ffffff", "intensity": 0.9, "position": { "x": 8, "y": 16, "z": 10 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "worldInfo": {
+    "boxModelList": [
+      {
+        "name": "wall-with-hole",
+        "objType": "wall",
+        "geometry": { "width": 14, "height": 9, "depth": 1.4 },
+        "position": { "x": -6, "y": 4.5, "z": 0 },
+        "material": { "type": "standard", "color": "#dcdfe6" },
+        "holes": [
+          { "geometry": { "width": 5, "height": 4, "depth": 2 }, "position": { "x": 0, "y": 4.5, "z": 0 }, "material": { "type": "standard", "color": "#ffffff" } }
+        ]
+      },
+      {
+        "name": "merged-block",
+        "objType": "box",
+        "geometry": { "width": 5, "height": 5, "depth": 5 },
+        "position": { "x": 7, "y": 2.5, "z": -2 },
+        "material": { "type": "standard", "color": "#409eff" },
+        "joins": [
+          { "geometry": { "width": 3, "height": 6, "depth": 3 }, "position": { "x": 3.5, "y": 3, "z": 0 }, "material": { "type": "standard", "color": "#67c23a" } }
+        ]
+      }
+    ]
+  },
+  "threeJsonId": "complex-geometry-csg-joins-holes"
+}

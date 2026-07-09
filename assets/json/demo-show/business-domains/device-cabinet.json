@@ -1,0 +1,21 @@
+{
+  "version": "next",
+  "name": "business-domains-device-cabinet",
+  "sceneConfig": {
+    "scene": { "background": "#11151b" },
+    "camera": { "fov": 50, "near": 0.1, "far": 200, "position": { "x": 18, "y": 14, "z": 20 } },
+    "renderer": { "antialias": true, "ratioRate": 1 },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 8, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 1 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1.1, "position": { "x": 20, "y": 30, "z": 20 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "worldInfo": {
+    "domainModelList": [
+      { "domain": "device.cabinet", "handler": "createCabinet", "payload": { "name": "cabinet-demo", "label": "机柜 13", "position": { "x": 0, "y": 0, "z": 0 } } }
+    ]
+  },
+  "threeJsonId": "business-domains-device-cabinet"
+}

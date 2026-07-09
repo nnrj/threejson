@@ -1,0 +1,23 @@
+{
+  "version": "next",
+  "name": "text-3d-text-modes",
+  "sceneConfig": {
+    "scene": { "background": "#1e2838" },
+    "textFont": { "preloadCharacters": "SDF模式网格标签" },
+    "camera": { "fov": 42, "position": { "x": 0, "y": 5, "z": 20 }, "near": 0.1, "far": 300 },
+    "renderer": { "antialias": true },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 2, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 0.6 },
+      { "type": "directional", "color": "#ffffff", "intensity": 0.9, "position": { "x": 10, "y": 16, "z": 12 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "objectList": [
+    { "threeJsonId": "floor", "objType": "floor", "geometry": { "width": 22, "height": 1, "depth": 10 }, "position": { "x": 0, "y": -0.5, "z": 0 }, "material": { "color": "#2d3a4a" } },
+    { "threeJsonId": "label-sdf", "objType": "text", "content": "SDF", "mode": "sdf", "fontSize": 1.6, "color": "#e8eaed", "align": "center", "billboard": true, "position": { "x": -7, "y": 2, "z": 0 }, "sdf": { "outlineWidth": 0.06, "outlineColor": "#1a2030" } },
+    { "threeJsonId": "label-texture", "objType": "text", "content": "Texture", "mode": "texture", "fontSize": 32, "color": "#78B83E", "align": "center", "maxWidth": 9, "billboard": true, "position": { "x": 0, "y": 2, "z": 0 }, "texture": { "padding": 12, "backgroundColor": "transparent", "textStyle": { "fontSizePx": 36, "fontFamily": "SimHei", "autoFit": true, "fitRatio": 0.82 } } },
+    { "threeJsonId": "label-mesh", "objType": "text", "content": "Mesh", "mode": "mesh", "fontSize": 1.6, "color": "#ffd04b", "align": "center", "position": { "x": 6, "y": 1, "z": 0 }, "mesh": { "fontJsonUrl": "/assets/fonts/helvetiker_bold.typeface.json", "depth": 0.4, "bevelEnabled": true, "bevelThickness": 0.05, "bevelSize": 0.03 } }
+  ],
+  "threeJsonId": "text-3d-text-modes"
+}

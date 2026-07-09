@@ -1,0 +1,43 @@
+{
+  "version": "next",
+  "name": "extensions-stat-echarts",
+  "sceneConfig": {
+    "scene": { "background": "#101820" },
+    "camera": { "fov": 52, "position": { "x": 0, "y": 30, "z": 80 }, "near": 0.1, "far": 2000 },
+    "renderer": { "antialias": true },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 14, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#9fb4c8", "intensity": 0.95 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1.15, "position": { "x": 32, "y": 60, "z": 45 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true },
+    "extensions": { "stat-echarts": { "enabled": true } }
+  },
+  "worldInfo": {
+    "boxModelList": [
+      { "name": "floor", "objType": "floor", "geometry": { "width": 80, "height": 1, "depth": 50 }, "position": { "x": 0, "y": 0, "z": 0 }, "material": { "color": "#2a3038" } }
+    ],
+    "css3dPanelList": [
+      { "name": "kpi-chart", "refName": "kpi-chart", "width": 420, "height": 280, "position": { "x": 0, "y": 16, "z": 0 }, "rotation": { "rotationX": 0, "rotationY": 0, "rotationZ": 0 }, "panelWidth": 21, "content": { "type": "html", "html": "<div id=\"kpi-chart\" style=\"width:100%;height:100%\"></div>" } }
+    ],
+    "domainModelList": [
+      {
+        "objType": "domain",
+        "domain": "stat.chart",
+        "handler": "deployStatChart",
+        "options": {
+          "panelRef": "kpi-chart",
+          "echartsOption": {
+            "backgroundColor": "transparent",
+            "textStyle": { "color": "#e8eaed" },
+            "grid": { "left": 40, "right": 20, "top": 30, "bottom": 30 },
+            "xAxis": { "type": "category", "data": ["Q1", "Q2", "Q3", "Q4"], "axisLabel": { "color": "#ccc" } },
+            "yAxis": { "type": "value", "axisLabel": { "color": "#ccc" } },
+            "series": [{ "name": "吞吐", "type": "bar", "data": [62, 78, 55, 91], "itemStyle": { "color": "#3A8798" } }]
+          }
+        }
+      }
+    ]
+  },
+  "threeJsonId": "extensions-stat-echarts"
+}

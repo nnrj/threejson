@@ -1,0 +1,30 @@
+{
+  "version": "next",
+  "name": "business-domains-port-dock-crane",
+  "sceneConfig": {
+    "scene": { "background": "#11151b" },
+    "camera": { "fov": 50, "near": 0.1, "far": 800, "position": { "x": 120, "y": 100, "z": 160 } },
+    "renderer": { "antialias": true },
+    "controls": { "enableDamping": true, "target": { "x": -80, "y": 60, "z": -250 } },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 0.9 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1.1, "position": { "x": 100, "y": 200, "z": 100 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "worldInfo": {
+    "domainModelList": [
+      {
+        "objType": "domain",
+        "domain": "port",
+        "handler": "dockCrane",
+        "name": "dock-crane",
+        "geometry": { "width": 70, "length": 90, "height": 280, "depth": 90 },
+        "position": { "x": -80, "y": 2, "z": -250 },
+        "material": { "type": "standard", "color": "#ffffff", "metalness": 0.5, "roughness": 0.5 },
+        "label": "岸桥1"
+      }
+    ]
+  },
+  "threeJsonId": "business-domains-port-dock-crane"
+}

@@ -80,7 +80,7 @@
 
 - **`handler` 不是** DOM 事件 handler，而是 **Scene Engine / Pipeline**；其中仍含不少历史上放在 handler 的 post-load API（如 `infoPanelRuntime.js`），与理想态有偏差。
 - **`builder` 与 `runtime` 不必一一配对**（例如不存在也不需要有完整的 `modelRuntime.js` 镜像 `modelBuilder.js`）。
-- **Composition root** 仍在 handler 层（如 `sceneLoadHandler` 同时 import builder 与 `runtime/deployScheduler`），与 [BUSINESS_DOMAINS.md](../../core/BUSINESS_DOMAINS.md) 一致。
+- **Composition root** 仍在 handler 层（如 `sceneLoadHandler` 同时 import builder 与 `runtime/deployScheduler`），与 [BUSINESS_DOMAINS.md](../../domains/BUSINESS_DOMAINS_ZH.md) 一致。
 
 远期整理设想与盘点细节见 [`lab/core-layering-memo.md`](../../lab/core-layering-memo.md)（**非发布承诺**）。
 
@@ -106,7 +106,7 @@ ThreeJSON 旨在消化「用 JSON 描述 Three.js 场景」的重复劳动；不
 
 ## 依赖方向：core / domains / 宿主
 
-下列约束说明 **谁可以 import 谁**、以及职责边界。与 [`core/BUSINESS_DOMAINS.md`](../../core/BUSINESS_DOMAINS.md) 的 Composition Root 说明互补。
+下列约束说明 **谁可以 import 谁**、以及职责边界。与 [`domains/BUSINESS_DOMAINS_ZH.md`](../../domains/BUSINESS_DOMAINS_ZH.md) 的 Composition Root 说明互补。
 
 1. **依赖单向**：`domains → core`；`宿主（含场景编辑器、RoomShow 等）→ core + domains`。禁止 `core → domains`（在 core 内 import 具体域模块）、禁止 `domains → 宿主`。
 2. **core 可以且应当**承载跨域通用能力（加载、导出、编辑状态机、registry、mutation）。新增能力优先做成 **通用机制 + 注册钩子**，而非在 core 写死某一 `domain` 名。

@@ -1,0 +1,31 @@
+{
+  "version": "next",
+  "name": "object-manager-patch-mutation",
+  "sceneConfig": {
+    "scene": { "background": "#11151b" },
+    "camera": { "fov": 50, "near": 0.1, "far": 200, "position": { "x": 0, "y": 6, "z": 14 } },
+    "renderer": { "antialias": true, "ratioRate": 1 },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 2, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 1 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1.1, "position": { "x": 10, "y": 14, "z": 10 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "objectList": [
+    {
+      "threeJsonId": "patch-target",
+      "name": "patch-target",
+      "objType": "box",
+      "position": { "x": 0, "y": 2, "z": 0 },
+      "geometry": { "width": 3, "height": 3, "depth": 3 },
+      "material": { "type": "standard", "color": "#909399" },
+      "events": {
+        "object.ready": {
+          "script": "await wait(500)\nrun object.patch id=patch-target partial={\"position\":{\"x\":3,\"y\":2,\"z\":0},\"material\":{\"color\":\"#67c23a\"}}"
+        }
+      }
+    }
+  ],
+  "threeJsonId": "object-manager-patch-mutation"
+}

@@ -1,5 +1,7 @@
 # 业务域与 `domainModelList`
 
+[中文](./BUSINESS_DOMAINS_ZH.md) | [English](./BUSINESS_DOMAINS.md)
+
 调用者如果想快速理解 `domains/`、`domainModelList` 和自定义业务域的创建方式，建议优先阅读 [../docs/zh/domains.md](../docs/zh/domains.md)。本文更偏实现契约与内部设计说明。
 
 **文档分层**：`core/` 与 `domains/` 为库；任意宿主（单对象 demo、RoomShow、场景编辑器等）均为平等消费者。本文不写「某编辑器专属」必选 API；宿主 UI 见各应用文档。
@@ -10,7 +12,7 @@
 
 - **业务逻辑**（`sceneLoadHandler`、`businessDomainModelDispatch`）**不** `import` 具体 `domains/port` 等；只通过 **`record.domain` + `getDomain(id)`** 调度。
 - **core 不 import domains**；内置域在 [`builtins/register.js`](../builtins/register.js) 注入（清单为 [`builtins/builtinDomainManifest.generated.js`](../builtins/builtinDomainManifest.generated.js)，`npm run generate:business-domain-manifest`）。
-- **Mesh 部署**：[`deployMeshWithDomains`](./handler/businessDomainRegistry.js) / `deployMeshListWithDomains` — legacy 映射（如 `dockCrane`）**始终**走 `resolveDomainModel`；`sceneConfig.enableComposeBoxModel === true` 时才 `tryComposeBoxModel`，否则回退 `deployMesh`。
+- **Mesh 部署**：[`deployMeshWithDomains`](../core/handler/businessDomainRegistry.js) / `deployMeshListWithDomains` — legacy 映射（如 `dockCrane`）**始终**走 `resolveDomainModel`；`sceneConfig.enableComposeBoxModel === true` 时才 `tryComposeBoxModel`，否则回退 `deployMesh`。
 - **Friendly 列表**：保留 `boxModelList`、`sphereModelList`；另支持 **`meshList`**（`objType` 须为 `box` 或 `sphere`）。port 组合体请写 **`domainModelList`**（`objType: "domain"`, `domain`, `handler`）。
 
 ## 架构原则（ThreeJSON 契约）
@@ -19,7 +21,7 @@
 权威数据来自场景 JSON。`core/` 与 `domains/` 作为解析与渲染管线：**只根据 JSON（及调用方传入的声明式参数）解析并呈现**，不把解析层当作可以改写权威 JSON 的归宿。涉及场景语义变化时，优先：**传入新的或修订后的 JSON 再走加载**；或通过 JSON 中的属性表达显隐与状态；或通过业务调度 **`invokeDomainModel` / `applyDomainModelsFromWorldInfo`**，明确 **`domain` + `handler`**（及 record 中的 `items` / `options` 等），且这些字段应尽量能追溯到 JSON 或上游配置。页面与演示代码避免散落硬编码业务流程（例如绕过调度器直接 import 域实现并写死一串专用步骤）。
 
 **域自治**  
-各 `domains/*` 彼此独立演进，不因「与另一域相似」而要求改造 `core/`。`core/` 只提供与具体业务无关的通用能力；域开发者自行决定是否使用。调用方对某一业务能力的通行方式仍是：**通过业务管理器传入业务类型（`domain`）与 `handler`**（[`businessDomains`](./handler/businessDomainRegistry.js) + [`invokeDomainModel`](./handler/businessDomainModelDispatch.js)）。业务专用的只读解析、统计辅助等留在各 `domains/*/index.js` 的 **`api`** 上，**不**作为 `core/index.js` 的独立导出堆叠。
+各 `domains/*` 彼此独立演进，不因「与另一域相似」而要求改造 `core/`。`core/` 只提供与具体业务无关的通用能力；域开发者自行决定是否使用。调用方对某一业务能力的通行方式仍是：**通过业务管理器传入业务类型（`domain`）与 `handler`**（[`businessDomains`](../core/handler/businessDomainRegistry.js) + [`invokeDomainModel`](../core/handler/businessDomainModelDispatch.js)）。业务专用的只读解析、统计辅助等留在各 `domains/*/index.js` 的 **`api`** 上，**不**作为 `core/index.js` 的独立导出堆叠。
 
 **对外的两句话**  
 要么 **拿 JSON 来**（加载 / 重载）；要么 **声明要对哪个 `domain` 做哪种 `handler`**（由调度器执行）。不在此两处之外的「悄悄改场景」应避免成为常态。
@@ -35,7 +37,7 @@
 
 ## `create*Json` / `create*` / `deploy*`（域内约定）
 
-与 [`modelBuilder.js`](./builder/modelBuilder.js) 中 **`createMesh` / `deployMesh`** 一致：**`deploy*`** = **`scene.add(create*(…))`**。
+与 [`modelBuilder.js`](../core/builder/modelBuilder.js) 中 **`createMesh` / `deployMesh`** 一致：**`deploy*`** = **`scene.add(create*(…))`**。
 
 | 层级 | 职责 |
 | ------ | ------ |
@@ -45,7 +47,7 @@
 
 ### 注册时强制 API 命名
 
-[`validateDomainDescriptor`](./handler/businessDomainRegistry.js)（`registerDomain` / `initBusinessDomains`）要求：
+[`validateDomainDescriptor`](../core/handler/businessDomainRegistry.js)（`registerDomain` / `initBusinessDomains`）要求：
 
 - **`api.create${PascalCase(leaf)}`**、**`api.deploy${PascalCase(leaf)}`** — `leaf` 为点分 `id` 的最后一段（如 `weather.rain` → `createRain`）；缺失则 **抛错**。
 - **`api.create${PascalCase(leaf)}Json`** — 缺失则 **`console.warn`**。
@@ -77,7 +79,7 @@
 
 | 字段 | 说明 |
 | ------ | ------ |
-| `domain` | **必填**。与 [`domains/*/index.js`](../domains/cabinet/index.js) 导出 descriptor 的 `id` 一致（如 `cabinet`、`port`）。 |
+| `domain` | **必填**。与 [`domains/*/index.js`](./cabinet/index.js) 导出 descriptor 的 `id` 一致（如 `cabinet`、`port`）。 |
 | `handler` | **可选**。要调用的能力名。缺省时由各域的 `defaultHandler` 或 `resolveDomainModel` 内部约定决定（例如机柜域默认 `createCabinet`）。 |
 | `items` | **可选**。由该域解释，多为对象数组（如多个机柜配置）。 |
 | `payload` | **可选**。单条数据的简写，机柜域中等价于 `items: [payload]`。 |
@@ -93,7 +95,7 @@
 - **统计方柱标签（cabinet / port 运营 overlay）**：展示文案写在 mesh 描述符的 **`businessInfo.statLabel`**（可选 **`statKind`**）。`deployGroupDescriptor` / subScene 只传递可序列化字段；**`THREE.Texture` 由各 domain 在 deploy 完成后**根据 `userData.objJson.businessInfo.statLabel` **生成并赋给 `mesh.material.map`**，勿在 JSON 描述符上预挂运行时 `material.map`。
 - **通用 stat 域（`stat.bar` / `stat.grid` / `stat.panel`）**：与 cabinet/port 业务 overlay **并行**；objType 使用 **`statBar` / `statGrid` / `statPanel`** 等，避免与 `capacity|bear|rackSpace` teardown 冲突。JSON：`domainModelList` + `domain: "stat.bar"` 等。教程 Track 6。
 - **stat.chart + extensions/stat-echarts**：2D 图表走 CSS3D 面板 + optional peer **`echarts`**；实现不在 core。
-- **CORS**：跨域图片来自其他站点时，需图片服务器返回允许当前源的 CORS（常见为 `Access-Control-Allow-Origin`）。本项目里 **`objModelList`/`nativeThree`** 记录在解析时可传 `crossOrigin`（见 [`nativeObjectLoader.js`](./builder/nativeObjectLoader.js) 中 `loadThreeNativeObjectJsonFromUrl`、`parseThreeNativeObjectJsonAndAdd`）。纹理加载可走 `setModelLoadingManager` 挂载的 LoadingManager。
+- **CORS**：跨域图片来自其他站点时，需图片服务器返回允许当前源的 CORS（常见为 `Access-Control-Allow-Origin`）。本项目里 **`objModelList`/`nativeThree`** 记录在解析时可传 `crossOrigin`（见 [`nativeObjectLoader.js`](../core/builder/nativeObjectLoader.js) 中 `loadThreeNativeObjectJsonFromUrl`、`parseThreeNativeObjectJsonAndAdd`）。纹理加载可走 `setModelLoadingManager` 挂载的 LoadingManager。
 - **`merge`** 几何与 **`joins`/`inters`/`holes`**：`materialArr` 与各 CSG 子块也会应用与六面盒一致的 `textureUrl` / 可解析 URL 的 `map` 字符串处理（参见 `ensureMaterialTextureFromJson`）。
 - **原生 Three `ObjectLoader` JSON** 离线导出：`embedPortableImageUrlsIntoThreeExportJson` 仅对 **`http(s)` / `//` / `blob:`** 等「脱离原站后通常不可用」的 `images[].url` 尝试替换为与克隆场景内存贴图一致的 **data URL**；**采集失败时保留原 URL**，不再写入占位透明 PNG。相对路径、`data:` 等保持原样。视频 / 显式 GIF 动画贴图通常无法进入该「静态 Image 内嵌」路径，导出 JSON 里仍以 URL 为主。
 - **`gifuct-js`（显式 `textureKind: "gif"`）**：浏览器示例页需在 import map 中声明 **`gifuct-js`**（与仓库根 `package.json` 的 `dependencies` 版本一致；示例 HTML 使用 `https://esm.sh/gifuct-js@…` 解析裸说明符）。
@@ -105,15 +107,15 @@
 - `applyDomainModelsFromWorldInfo(scene, worldInfo, ctx?)`：读取 `worldInfo.domainModelList` 并调度。
 - `applyDomainModelList(scene, domainModelList, ctx?)`：直接对数组调度。
 - `invokeDomainModel(scene, record, ctx?)`：单条记录便捷入口，内部等价于长度为 1 的 `applyDomainModelList`。
-- `businessDomains`：按域 id 访问各域 `api`（见 [`businessDomainRegistry.js`](./handler/businessDomainRegistry.js)）。
+- `businessDomains`：按域 id 访问各域 `api`（见 [`businessDomainRegistry.js`](../core/handler/businessDomainRegistry.js)）。
 
-上述从 [`core/index.js`](./index.js) 导出。未知 `domain` / 不支持的 `handler` 会在控制台 `console.warn`。
+上述从 [`core/index.js`](../core/index.js) 导出。未知 `domain` / 不支持的 `handler` 会在控制台 `console.warn`。
 
 **领域 `api`（经 `businessDomains.cabinet` / `businessDomains.port` 调用，实现只在 `domains/`）示例**：
 
 - **device.cabinet**：**`createCabinetJson`** / **`createCabinet`** / **`deployCabinet`**；统计视图使用单机柜 API：`showCapacityStats` / `showLoadStats` / `showRackSpaceStats` / `clearCabinetStatView`。
-- **port**：**`createPortJson`** / **`createPort`** / **`deployPort`**；`countPortStatisticsAnchors`、`createPortStatistics` 见 [`domains/port`](../domains/port/index.js)。
-- **stat**（子域 **`stat.bar`** / **`stat.grid`** / **`stat.panel`** / **`stat.chart`**）：**`createBar`** / **`deployBar`** 等（叶子段命名）；见 [`domains/stat`](../domains/stat/index.js) 与 [`extensions/stat-echarts`](../extensions/stat-echarts/README.md)。
+- **port**：**`createPortJson`** / **`createPort`** / **`deployPort`**；`countPortStatisticsAnchors`、`createPortStatistics` 见 [`domains/port`](./port/index.js)。
+- **stat**（子域 **`stat.bar`** / **`stat.grid`** / **`stat.panel`** / **`stat.chart`**）：**`createBar`** / **`deployBar`** 等（叶子段命名）；见 [`domains/stat`](./stat/index.js) 与 [`extensions/stat-echarts`](../extensions/stat-echarts/README.md)。
 - **box** / **wall** / **glass**：**`createBoxJson`**（及 **`createWallJson`**、**`createGlassJson`**）+ **`create*`** + **`deploy*`**；`addToScene` 仍为便捷封装。`domainModelList` 中 `handler` 缺省为 **`addToScene`** 时由 `resolveDomainModel` 调度。
 
 **name/label 约定补充**：机柜统一 `name: "cabinet"`（用于 `getObjectsByName` / 批量显隐），差异化文案放 `label`（如“机柜13”）。`threeJsonId` 仍是持久主键，`refName` 为可选编程别名。
@@ -134,7 +136,7 @@ API：`businessDomains.device.resolveDevicePanelRef`、`showDevicePanel`、`bind
 
 ## 注册新业务域
 
-1. 在 `domains/<name>/index.js` 导出默认描述符：`id`、`api`，以及 **`resolveDomainModel(record, scene, ctx)`** 和/或 **`domainHandlers`**、**`defaultHandler`**（见 [`businessDomainRegistry.js`](./handler/businessDomainRegistry.js) 的 JSDoc）。
+1. 在 `domains/<name>/index.js` 导出默认描述符：`id`、`api`，以及 **`resolveDomainModel(record, scene, ctx)`** 和/或 **`domainHandlers`**、**`defaultHandler`**（见 [`businessDomainRegistry.js`](../core/handler/businessDomainRegistry.js) 的 JSDoc）。
 2. 在仓库根目录执行 **`npm run generate:business-domain-manifest`**，更新 [`builtins/builtinDomainManifest.generated.js`](../builtins/builtinDomainManifest.generated.js)（勿手改）。
 3. 可选：在 [`builtins/userDomainDescriptors.js`](../builtins/userDomainDescriptors.js) 覆盖同 `id` 或追加域；应用默认 **`import { ... } from 'threejson'`**（或仓库内 `./builtins/full.js`）。仅 `threejson/core` 时需 **`import 'threejson/builtins/register'`**。
 

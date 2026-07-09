@@ -74,7 +74,7 @@
 - 帧循环与声明式动画（`frameLoopHandler`、`animationHandler`）
 - 导入导出、JSON 校验、资源回收
 
-**为何不能「清空 handler」**：composition root 必须同时协调 builder、registry、runtime 调度与 domains；见 [BUSINESS_DOMAINS.md](../core/BUSINESS_DOMAINS.md)。
+**为何不能「清空 handler」**：composition root 必须同时协调 builder、registry、runtime 调度与 domains；见 [BUSINESS_DOMAINS.md](../domains/BUSINESS_DOMAINS_ZH.md)。
 
 ### 3.4 关系示意
 

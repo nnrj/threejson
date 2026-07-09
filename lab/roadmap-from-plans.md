@@ -7,7 +7,7 @@
 以下条目在旧计划中曾为待办，当前仓库已有对应实现或文档，**保留作溯源**：
 
 - **声明式全景 / IBL 背景**：`sceneBackdropResolver` + `createSceneRuntimeAsync`；字段说明见 [`docs/zh/json-format.md`](../docs/zh/json-format.md) 中 `sceneConfig.scene` 的 `background` / `environment`（旧「360° 场景背景」评估中的多数待办已由实现替代）。
-- **材质 `textureKind`（视频 / GIF 动画）**：`modelBuilder` 中 `ensureMaterialTextureFromJson` 等路径；说明见 [`core/BUSINESS_DOMAINS.md`](../core/BUSINESS_DOMAINS.md)。
+- **材质 `textureKind`（视频 / GIF 动画）**：`modelBuilder` 中 `ensureMaterialTextureFromJson` 等路径；说明见 [`domains/BUSINESS_DOMAINS_ZH.md`](../domains/BUSINESS_DOMAINS_ZH.md)。
 - **合并盒 / CSG 子树与 `textureUrl`**：旧「core texture URL gaps」计划中的抽取与接线在 core 中已标记完成；若遇个案，优先查 CORS 与 `map` 仅写 URL 字符串的约定。
 - **npm 库形态与裸模块 import**：根目录 [`package.json`](../package.json)、`docs/zh/README.md` 安装段；旧「Phase B npm」中的技术债（仅 esm.sh 等）已按当前策略处理。
 

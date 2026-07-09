@@ -27,7 +27,7 @@
 | `material` vs `materials` 重叠 | 单贴图作者只写 `material`；运行时扩六面；六面贴图作者只写 `materials`（如 `roomShow.json`） |
 | 导出入口曾不统一 | editor `sanitizeForJson` vs core `defaultCollectWorldInfoFromScene` 直推 live record |
 
-约定见 [`core/BUSINESS_DOMAINS.md`](../core/BUSINESS_DOMAINS.md)、[`docs/zh/json-format.md`](../docs/zh/json-format.md)（持久化以 `textureUrl` 为主）。
+约定见 [`domains/BUSINESS_DOMAINS_ZH.md`](../domains/BUSINESS_DOMAINS_ZH.md)、[`docs/zh/json-format.md`](../docs/zh/json-format.md)（持久化以 `textureUrl` 为主）。
 
 ## 远期目标态
 

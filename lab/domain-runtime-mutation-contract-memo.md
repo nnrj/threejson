@@ -4,7 +4,7 @@
 **日期**：2026-06-02  
 **来源**：[core 增删对象 API 方案](file:///C:/Users/nnrj/.cursor/plans/core_增删对象_api_ed4e1c45.plan.md) 讨论 3-12 / 4-12
 
-关联：[`docs/zh/domains.md`](../docs/zh/domains.md)、[`core/BUSINESS_DOMAINS.md`](../core/BUSINESS_DOMAINS.md)、[`core/runtime/objectMutation/`](../core/runtime/objectMutation/)、拟议 `core/runtime/sceneObjectCommands.js`
+关联：[`docs/zh/domains.md`](../docs/zh/domains.md)、[`domains/BUSINESS_DOMAINS_ZH.md`](../domains/BUSINESS_DOMAINS_ZH.md)、[`core/runtime/objectMutation/`](../core/runtime/objectMutation/)、拟议 `core/runtime/sceneObjectCommands.js`
 
 与 [`docs/zh/scope.md`](../docs/zh/scope.md) 无发布承诺。
 

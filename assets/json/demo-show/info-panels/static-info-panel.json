@@ -1,0 +1,55 @@
+{
+  "version": "next",
+  "name": "info-panels-static-info-panel",
+  "sceneConfig": {
+    "scene": { "background": "#11151b" },
+    "camera": { "fov": 50, "near": 0.1, "far": 200, "position": { "x": 0, "y": 8, "z": 22 } },
+    "renderer": { "antialias": true, "ratioRate": 1 },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 6, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 1 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1.1, "position": { "x": 10, "y": 14, "z": 10 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "worldInfo": {
+    "infoPanelList": [
+      {
+        "name": "panel-box-text",
+        "type": "text",
+        "panelBoxType": "box",
+        "text": "盒体面板\npanelBoxType: box",
+        "color": "#ffffff",
+        "backColor": "#409eff",
+        "panelWidth": 10,
+        "panelHeight": 5,
+        "panelDepth": 0.4,
+        "panel": { "position": { "x": -9, "y": 6, "z": 0 } }
+      },
+      {
+        "name": "panel-sprite-text",
+        "type": "text",
+        "panelBoxType": "sprite",
+        "text": "精灵面板\n始终朝向相机",
+        "color": "#ffffff",
+        "backColor": "#303133",
+        "borderRadius": 8,
+        "panelWidth": 10,
+        "panelHeight": 5,
+        "panel": { "position": { "x": 0, "y": 6, "z": 0 } }
+      },
+      {
+        "name": "panel-plane-text",
+        "type": "text",
+        "panelBoxType": "plane",
+        "text": "平面面板\npanelBoxType: plane",
+        "color": "#ffffff",
+        "backColor": "#9c27b0",
+        "panelWidth": 10,
+        "panelHeight": 5,
+        "panel": { "position": { "x": 9, "y": 6, "z": 0 }, "material": { "side": "double" } }
+      }
+    ]
+  },
+  "threeJsonId": "info-panels-static-info-panel"
+}

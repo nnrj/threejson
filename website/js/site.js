@@ -7,6 +7,18 @@ const STORAGE = {
   theme: "threejson.site.theme"
 };
 
+const THUMB_CACHE_KEY = "threejson.examples.thumbCache.v1";
+const THUMB_CACHE_TTL_MS = 3 * 24 * 60 * 60 * 1000;
+const THUMB_WIDTH = 480;
+const THUMB_HEIGHT = 300;
+const THUMB_LOAD_TIMEOUT_MS = 8000;
+
+let thumbObserver = null;
+let thumbCanvas = null;
+let thumbQueue = [];
+let thumbQueueRunning = false;
+let thumbCoreModulePromise = null;
+
 const I18N = {
   "zh-CN": {
     "nav.home": "首页",
@@ -51,7 +63,7 @@ const I18N = {
     "home.features": "核心能力",
     "examples.title": "示例",
     "examples.desc": "每个示例聚焦一个 JSON 能力点。点击卡片后进入 shower，在左侧编辑 JSON，右侧实时渲染 ThreeJSON 场景。",
-    "examples.legacy": "旧版示例",
+    "examples.legacy": "案例教程",
     "download.title": "下载 ThreeJSON",
     "contributors.title": "贡献者",
     "deps.title": "依赖项"
@@ -99,7 +111,7 @@ const I18N = {
     "home.features": "Core Features",
     "examples.title": "Examples",
     "examples.desc": "Each example focuses on one JSON capability. Open a card in shower, edit JSON on the left, and render the ThreeJSON scene on the right.",
-    "examples.legacy": "Legacy Examples",
+    "examples.legacy": "Case Tutorials",
     "download.title": "Download ThreeJSON",
     "contributors.title": "Contributors",
     "deps.title": "Dependencies"
@@ -239,6 +251,7 @@ function switchDocPathLanguage(path, targetLang) {
 
 function renderRoute() {
   closeOpenMenus({ includePinned: true });
+  teardownExamplesThumbnails();
   const hash = decodeURIComponent(location.hash || "#/");
   const route = hash.replace(/^#/, "") || "/";
   if (route.startsWith("/reader/")) {
@@ -377,6 +390,180 @@ async function renderExamples() {
       window.open(shower.href, "_blank", "noreferrer");
     });
   });
+  initExamplesThumbnails();
+}
+
+// --- Example card thumbnail capture pipeline -------------------------------
+
+function teardownExamplesThumbnails() {
+  thumbObserver?.disconnect();
+  thumbObserver = null;
+  thumbQueue = [];
+  thumbQueueRunning = false;
+  if (thumbCanvas) {
+    thumbCanvas.remove();
+    thumbCanvas = null;
+  }
+}
+
+function initExamplesThumbnails() {
+  const cards = Array.from(app.querySelectorAll(".exampleCard"));
+  if (!cards.length || typeof IntersectionObserver === "undefined") return;
+  thumbObserver = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      thumbObserver.unobserve(entry.target);
+      enqueueThumbnail(entry.target);
+    }
+  }, { rootMargin: "200px" });
+  cards.forEach((card) => thumbObserver.observe(card));
+}
+
+function readThumbCache() {
+  try {
+    const raw = localStorage.getItem(THUMB_CACHE_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeThumbCache(cache) {
+  try {
+    localStorage.setItem(THUMB_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    try {
+      const entries = Object.entries(cache).sort((a, b) => (a[1]?.ts || 0) - (b[1]?.ts || 0));
+      const trimmed = Object.fromEntries(entries.slice(Math.ceil(entries.length / 2)));
+      localStorage.setItem(THUMB_CACHE_KEY, JSON.stringify(trimmed));
+    } catch {
+      /* give up caching silently, thumbnail already applied in-memory */
+    }
+  }
+}
+
+function enqueueThumbnail(card) {
+  const jsonPath = card.dataset.json;
+  if (!jsonPath) return;
+  const cache = readThumbCache();
+  const cached = cache[jsonPath];
+  if (cached?.dataUrl && Date.now() - (cached.ts || 0) < THUMB_CACHE_TTL_MS) {
+    applyThumbnail(card, cached.dataUrl);
+    return;
+  }
+  thumbQueue.push({ card, jsonPath });
+  void runThumbQueue();
+}
+
+function applyThumbnail(card, dataUrl) {
+  const img = card.querySelector(".exampleThumb img");
+  if (img) img.src = dataUrl;
+}
+
+async function runThumbQueue() {
+  if (thumbQueueRunning) return;
+  thumbQueueRunning = true;
+  try {
+    while (thumbQueue.length) {
+      const task = thumbQueue.shift();
+      if (!task.card.isConnected) continue;
+      try {
+        const dataUrl = await withTimeout(captureExampleThumbnail(task.jsonPath), THUMB_LOAD_TIMEOUT_MS);
+        if (dataUrl) {
+          const cache = readThumbCache();
+          cache[task.jsonPath] = { dataUrl, ts: Date.now() };
+          writeThumbCache(cache);
+          if (task.card.isConnected) applyThumbnail(task.card, dataUrl);
+        }
+      } catch (error) {
+        console.warn("[examples] thumbnail capture failed for", task.jsonPath, error);
+      }
+    }
+  } finally {
+    thumbQueueRunning = false;
+  }
+}
+
+function withTimeout(promise, ms) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("thumbnail capture timed out")), ms);
+    promise.then(
+      (value) => { clearTimeout(timer); resolve(value); },
+      (error) => { clearTimeout(timer); reject(error); }
+    );
+  });
+}
+
+function getThumbCanvas() {
+  if (thumbCanvas && thumbCanvas.isConnected) return thumbCanvas;
+  thumbCanvas = document.createElement("canvas");
+  thumbCanvas.width = THUMB_WIDTH;
+  thumbCanvas.height = THUMB_HEIGHT;
+  thumbCanvas.style.position = "fixed";
+  thumbCanvas.style.left = "-99999px";
+  thumbCanvas.style.top = "0";
+  thumbCanvas.style.width = `${THUMB_WIDTH}px`;
+  thumbCanvas.style.height = `${THUMB_HEIGHT}px`;
+  document.body.appendChild(thumbCanvas);
+  return thumbCanvas;
+}
+
+async function loadThumbCoreModule() {
+  if (!thumbCoreModulePromise) {
+    thumbCoreModulePromise = import("../../core/index.js");
+  }
+  return thumbCoreModulePromise;
+}
+
+function withReducedQuality(payload) {
+  const clone = structuredClone(payload || {});
+  clone.sceneConfig = {
+    ...clone.sceneConfig,
+    renderer: { ...clone.sceneConfig?.renderer, antialias: false, ratioRate: 0.75 },
+    textureDefaults: {
+      ...clone.sceneConfig?.textureDefaults,
+      ui: { generateMipmaps: false, anisotropy: 1, ...clone.sceneConfig?.textureDefaults?.ui },
+      imageMap: { generateMipmaps: false, anisotropy: 1, ...clone.sceneConfig?.textureDefaults?.imageMap }
+    }
+  };
+  return clone;
+}
+
+function resolveRepoRelativeUrl(value, baseUrl = ROOT) {
+  const clean = String(value || "").trim()
+    .replace(/^(\.\.\/)+/, "")
+    .replace(/^\.\//, "")
+    .replace(/^\//, "");
+  return new URL(clean, baseUrl).href;
+}
+
+async function captureExampleThumbnail(jsonPath) {
+  const { createJsonScene, captureSceneFrame } = await loadThumbCoreModule();
+  const jsonUrl = resolveRepoRelativeUrl(jsonPath);
+  const payload = await fetch(jsonUrl).then((response) => {
+    if (!response.ok) throw new Error(`fetch failed: ${response.status}`);
+    return response.json();
+  });
+  const canvas = getThumbCanvas();
+  let captured = null;
+  const runtime = await createJsonScene(withReducedQuality(payload), {
+    canvas,
+    resetScene: true,
+    assetsBase: new URL("assets/", ROOT).href,
+    onSceneReady: async (ctx) => {
+      captured = await captureSceneFrame(ctx, {
+        as: "dataUrl",
+        mimeType: "image/jpeg",
+        quality: 0.72,
+        offscreen: true,
+        offscreenWidth: THUMB_WIDTH,
+        offscreenHeight: THUMB_HEIGHT
+      });
+    }
+  });
+  runtime?.dispose?.();
+  return captured?.dataUrl || null;
 }
 
 function renderDownload() {
@@ -410,6 +597,21 @@ function renderContributors() {
     </section>`;
 }
 
+const DEP_REPOS = {
+  "three": { label: "Three.js", url: "https://github.com/mrdoob/three.js" },
+  "@tweenjs/tween.js": { url: "https://github.com/tweenjs/tween.js" },
+  "html2canvas-pro": { url: "https://github.com/yorickshan/html2canvas-pro" },
+  "gifuct-js": { url: "https://github.com/matt-way/gifuct-js" },
+  "@dimforge/rapier3d-compat": { url: "https://github.com/dimforge/rapier.js" },
+  "three-mesh-bvh": { url: "https://github.com/gkjohnson/three-mesh-bvh" },
+  "three-bvh-csg": { url: "https://github.com/gkjohnson/three-bvh-csg" },
+  "troika-three-text": { url: "https://github.com/protectwise/troika" },
+  "echarts": { url: "https://github.com/apache/echarts" },
+  "CodeMirror": { url: "https://github.com/codemirror" },
+  "fflate": { url: "https://github.com/101arrowz/fflate" },
+  "Three.js examples": { url: "https://github.com/mrdoob/three.js/tree/dev/examples/jsm" }
+};
+
 function renderDependencies() {
   app.innerHTML = `
     <section class="page">
@@ -419,11 +621,27 @@ function renderDependencies() {
         <article class="card"><h3>${lang === "zh-CN" ? "扩展依赖" : "Extensions"}</h3><div class="pillList">${["@dimforge/rapier3d-compat", "three-mesh-bvh", "three-bvh-csg", "troika-three-text", "echarts"].map(pill).join("")}</div></article>
         <article class="card"><h3>${lang === "zh-CN" ? "工具依赖" : "Tools"}</h3><div class="pillList">${["CodeMirror", "fflate", "Three.js examples", "browser APIs"].map(pill).join("")}</div></article>
       </div>
+      <article class="card threeSpotlight">
+        <h3>Three.js</h3>
+        <p>${lang === "zh-CN"
+          ? "ThreeJSON 的 3D 渲染能力构建在 <a href=\"https://threejs.org/\" target=\"_blank\" rel=\"noreferrer\">Three.js</a> 之上：ThreeJSON 是一个 JSON 驱动的中间层，负责把配置数据转换为场景图、对象与生命周期管理，最终仍由 Three.js 完成几何、材质、光照与渲染。"
+          : "ThreeJSON's 3D rendering is built on top of <a href=\"https://threejs.org/\" target=\"_blank\" rel=\"noreferrer\">Three.js</a>: ThreeJSON is a JSON-driven middle layer that turns configuration data into a scene graph, objects, and lifecycle management, while Three.js still handles geometry, materials, lighting, and rendering underneath."}</p>
+        <div class="pillList">
+          <a class="pill" href="https://threejs.org/" target="_blank" rel="noreferrer">${lang === "zh-CN" ? "Three.js 官网" : "Three.js homepage"}</a>
+          <a class="pill" href="https://github.com/mrdoob/three.js" target="_blank" rel="noreferrer">${lang === "zh-CN" ? "Three.js 仓库（GitHub）" : "Three.js repo (GitHub)"}</a>
+          <a class="pill" href="https://discourse.threejs.org/t/i-built-threejson-a-json-driven-declarative-scene-runtime-for-three-js-does-this-abstraction-make-sense/92662/8" target="_blank" rel="noreferrer">${lang === "zh-CN" ? "three.js forum 讨论帖" : "three.js forum thread"}</a>
+        </div>
+      </article>
     </section>`;
 }
 
 function pill(name) {
-  return `<span class="pill">${name}</span>`;
+  const repo = DEP_REPOS[name];
+  const label = repo?.label || name;
+  if (repo?.url) {
+    return `<a class="pill" href="${repo.url}" target="_blank" rel="noreferrer">${label}</a>`;
+  }
+  return `<span class="pill">${label}</span>`;
 }
 
 function openEditorTool(event) {

@@ -1,0 +1,31 @@
+{
+  "version": "next",
+  "name": "object-lifecycle-spawn-intro",
+  "sceneConfig": {
+    "scene": { "background": "#11151b" },
+    "camera": { "fov": 50, "near": 0.1, "far": 200, "position": { "x": 0, "y": 6, "z": 14 } },
+    "renderer": { "antialias": true, "ratioRate": 1 },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 2, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 1 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1.1, "position": { "x": 10, "y": 14, "z": 10 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "objectList": [
+    {
+      "threeJsonId": "spawn-box",
+      "name": "spawn-box",
+      "objType": "box",
+      "position": { "x": 0, "y": 10, "z": 0 },
+      "geometry": { "width": 3, "height": 3, "depth": 3 },
+      "material": { "type": "standard", "color": "#5470c6" },
+      "events": {
+        "object.ready": {
+          "script": "await wait(150)\nself.setPosition(0, 2, 0)\nawait wait(250)\nself.moveBy(0, 0.8, 0)\nawait wait(150)\nself.moveBy(0, -0.8, 0)"
+        }
+      }
+    }
+  ],
+  "threeJsonId": "object-lifecycle-spawn-intro"
+}

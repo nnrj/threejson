@@ -420,6 +420,14 @@ a { color: inherit; text-decoration: none; }
   gap: 8px;
 }
 
+.threeSpotlight {
+  margin-top: 16px;
+}
+
+.threeSpotlight .pillList {
+  margin-top: 12px;
+}
+
 .pill {
   padding: 6px 10px;
   border-radius: 999px;

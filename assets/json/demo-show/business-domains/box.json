@@ -1,0 +1,21 @@
+{
+  "version": "next",
+  "name": "business-domains-box",
+  "sceneConfig": {
+    "scene": { "background": "#11151b" },
+    "camera": { "fov": 50, "near": 0.1, "far": 200, "position": { "x": 10, "y": 8, "z": 12 } },
+    "renderer": { "antialias": true, "ratioRate": 1 },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 2, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 1 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1.1, "position": { "x": 10, "y": 14, "z": 10 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "worldInfo": {
+    "domainModelList": [
+      { "objType": "domain", "domain": "box", "handler": "addToScene", "payload": { "name": "domain-box", "geometry": { "width": 4, "height": 4, "depth": 4 }, "position": { "x": 0, "y": 2, "z": 0 }, "material": { "type": "standard", "color": "#5470c6" } } }
+    ]
+  },
+  "threeJsonId": "business-domains-box"
+}

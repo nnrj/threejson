@@ -6,13 +6,13 @@ This page explains what business domains are in ThreeJSON, when to use them, and
 
 If you only want to render ordinary boxes, spheres, groups, or external models from JSON, start with the [JSON Format Guide](./json-format.md) and the [Core API](./api.md). If you want to package business-specific behavior as reusable runtime capabilities, or drive those capabilities through friendly JSON `worldInfo.domainModelList` or standard `objType: "domain"` records, then `domains/` is the part to look at.
 
-There is also an implementation-oriented note under [`../core/BUSINESS_DOMAINS.md`](../../core/BUSINESS_DOMAINS.md). This page is the caller-facing entry point; the file under `core/` is more about internal conventions and design constraints.
+There is also an implementation-oriented note at [`domains/BUSINESS_DOMAINS.md`](../../domains/BUSINESS_DOMAINS.md). This page is the caller-facing entry point; that file is more about internal conventions and design constraints.
 
 ## Documentation layering (library vs apps)
 
 `core/` and `domains/` are the **library**. Any host app—a minimal page that renders one box, a demo, RoomShow, or a scene editor—is a **consumer on equal footing**.
 
-- This page, [domain-scaffold.md](./domain-scaffold.md), and [BUSINESS_DOMAINS.md](../../core/BUSINESS_DOMAINS.md) describe **library contracts** for integrators and generic loaders.
+- This page, [domain-scaffold.md](./domain-scaffold.md), and [BUSINESS_DOMAINS.md](../../domains/BUSINESS_DOMAINS.md) describe **library contracts** for integrators and generic loaders.
 - **Dependency direction** (core may change; no reverse imports; host UX stays in hosts) is in [design-principles.md §Dependency direction](./design-principles.md#dependency-direction-core--domains--host).
 - Host-specific UI (model palettes, toolbars, undo stacks) belongs in **application docs** (for example [editor-selection.md](./editor-selection.md)), not in required domain APIs.
 - Some domains expose convenience methods such as `addToScene` on `api` for `domainModelList` handlers or optional host use; absence does not block registration.
@@ -477,7 +477,7 @@ This matches [`modelBuilder.js`](../../core/builder/modelBuilder.js) **`ensureMa
 
 ## Practical advice for custom domains
 
-- **`create*Json` / `create*` / `deploy*`**: registration **requires** `create${PascalCase(leaf)}` and `deploy${PascalCase(leaf)}` (last segment of a dotted id); keep the semantic layering described in [BUSINESS_DOMAINS.md](../../core/BUSINESS_DOMAINS.md), including documented **semantic exceptions**.
+- **`create*Json` / `create*` / `deploy*`**: registration **requires** `create${PascalCase(leaf)}` and `deploy${PascalCase(leaf)}` (last segment of a dotted id); keep the semantic layering described in [BUSINESS_DOMAINS.md](../../domains/BUSINESS_DOMAINS.md), including documented **semantic exceptions**.
 - Keep `index.js` focused on descriptor, `resolveDomainModel`, and `api`; move complex animation/statistics/object-ops logic into `*Handler.js`.
 - Use tiered scaffolds by complexity: simple domain (1 file `index.js`), composite domain (3 files: `index.js` + `*Factory.js` + template module), composite+stats domain (4 files with `*Handler.js`).
 - Keep the first version of a domain small and self-contained before growing it into a hybrid design like `port`.
@@ -492,4 +492,4 @@ This matches [`modelBuilder.js`](../../core/builder/modelBuilder.js) **`ensureMa
 - [Core API](./api.md): `applyDomainModelsFromWorldInfo()`, `invokeDomainModel()`, `businessDomains`, and related entry points.
 - [Domain Scaffold Template](./domain-scaffold.md): tiered 1/3/4-file templates and the minimum contract.
 - [Demo Pages](./demos.md): see [`examples/html-demo/track-03-assets/03-03-native-three-domain.html`](../../examples/html-demo/track-03-assets/03-03-native-three-domain.html) and `port-show.html` for how different domains are integrated.
-- [`../core/BUSINESS_DOMAINS.md`](../../core/BUSINESS_DOMAINS.md): additional implementation-facing design notes.
+- [`domains/BUSINESS_DOMAINS.md`](../../domains/BUSINESS_DOMAINS.md): additional implementation-facing design notes.

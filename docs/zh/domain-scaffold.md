@@ -10,7 +10,7 @@
 
 ## 文档分层
 
-- **库层**（本文、`docs/domains.md`、`core/BUSINESS_DOMAINS.md`）：descriptor、`api` 命名、`resolveDomainModel`。
+- **库层**（本文、`docs/domains.md`、`domains/BUSINESS_DOMAINS_ZH.md`）：descriptor、`api` 命名、`resolveDomainModel`。
 - **应用层**：各宿主自己的 UI 与历史栈；可选调用 domain 的 `addToScene` 等便捷方法，**非**注册强制项。
 
 ## 三档模板

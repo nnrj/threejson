@@ -1,7 +1,9 @@
 import * as THREE from "three";
+import { strToU8, zipSync } from "fflate";
 import {
   buildFriendlyScenePayloadFromCanonical,
   createJsonScene,
+  createPluginHost,
   exportMesh,
   detectScenePayloadViewFormat,
   normalizeScenePayload
@@ -11,6 +13,12 @@ import {
   fitPerspectiveCameraToContentBoundsTHREE
 } from "../../../../core/util/util.js";
 import { resolveSceneHostUrl, sceneHostAssetUrl } from "../../shared/js/sceneHostPaths.js";
+import {
+  jsonStringForScript,
+  buildHtmlTemplate,
+  buildPackageJson,
+  buildTemplateFiles
+} from "../../shared/js/templateExportBuilders.js";
 
 const STORAGE = {
   autoRun: "threejson.shower.autoRun",
@@ -57,6 +65,14 @@ const labels = {
     alreadyFriendly: "当前已经是友好JSON。",
     alreadyStandard: "当前已经是标准JSON。",
     modelExportDone: "三方模型已导出。",
+    templateExportTitle: "导出模板",
+    templateExportType: "模板类型",
+    templateExportFormat: "JSON 格式",
+    templateExportJsonLocation: "JSON 位置",
+    templateExportJsonInline: "内置",
+    templateExportJsonExternal: "外置",
+    templateExportHint: "HTML + 内置 JSON 会直接下载单个 HTML；其他情况导出 zip 模板包。",
+    templateExportDone: "模板已导出。",
     catalog: "目录",
     openInEditor: "在编辑器内打开",
     editorOpenFailed: "打开编辑器失败：",
@@ -98,6 +114,14 @@ const labels = {
     alreadyFriendly: "Current JSON is already friendly JSON.",
     alreadyStandard: "Current JSON is already standard JSON.",
     modelExportDone: "Model exported.",
+    templateExportTitle: "Export Template",
+    templateExportType: "Template type",
+    templateExportFormat: "JSON format",
+    templateExportJsonLocation: "JSON location",
+    templateExportJsonInline: "Inline",
+    templateExportJsonExternal: "External",
+    templateExportHint: "HTML + inline JSON downloads a single HTML file; other combinations download a zip template.",
+    templateExportDone: "Template exported.",
     catalog: "Catalog",
     openInEditor: "Open In Editor",
     editorOpenFailed: "Failed to open editor: ",
@@ -135,6 +159,12 @@ const els = {
   modelExportFormat: document.getElementById("modelExportFormatSelect"),
   modelExportCancel: document.getElementById("modelExportCancelBtn"),
   modelExportConfirm: document.getElementById("modelExportConfirmBtn"),
+  templateExportModal: document.getElementById("templateExportModal"),
+  templateExportType: document.getElementById("templateExportTypeSelect"),
+  templateExportFormat: document.getElementById("templateExportFormatSelect"),
+  templateExportJsonLocation: document.getElementById("templateExportJsonLocationSelect"),
+  templateExportCancel: document.getElementById("templateExportCancelBtn"),
+  templateExportConfirm: document.getElementById("templateExportConfirmBtn"),
   langSelect: document.getElementById("langSelect"),
   themeSelect: document.getElementById("themeSelect")
 };
@@ -250,7 +280,7 @@ function wireControls() {
   document.getElementById("standardBtn").addEventListener("click", () => convertEditorJson("standard"));
   document.getElementById("openInEditorBtn").addEventListener("click", openCurrentSceneInEditor);
   els.catalogToggle?.addEventListener("click", toggleCatalog);
-  document.getElementById("downloadHtmlBtn").addEventListener("click", downloadHtml);
+  document.getElementById("downloadHtmlBtn").addEventListener("click", openTemplateExportModal);
   document.getElementById("exportThreeJsonBtn").addEventListener("click", () => {
     downloadText("threejson-scene.json", JSON.stringify(readCurrentScene(), null, 2));
   });
@@ -261,6 +291,12 @@ function wireControls() {
   els.modelExportModal?.addEventListener("click", (event) => {
     if (event.target === els.modelExportModal) closeModelExportModal();
   });
+  els.templateExportCancel?.addEventListener("click", closeTemplateExportModal);
+  els.templateExportConfirm?.addEventListener("click", confirmTemplateExport);
+  els.templateExportModal?.addEventListener("click", (event) => {
+    if (event.target === els.templateExportModal) closeTemplateExportModal();
+  });
+  els.templateExportType?.addEventListener("change", syncTemplateExportDefaults);
   document.getElementById("fitBtn").addEventListener("click", () => fitView(viewModes[0]));
   document.getElementById("threeViewBtn").addEventListener("click", cycleViewMode);
   document.getElementById("fullscreenBtn").addEventListener("click", () => {
@@ -538,6 +574,43 @@ async function runFromEditor() {
   }
 }
 
+function findManifestItemForJson(rawPath) {
+  if (!rawPath) return null;
+  for (const section of demoManifest) {
+    const item = section.items?.find((entry) => entry.json === rawPath);
+    if (item) return item;
+  }
+  return null;
+}
+
+async function runExampleBootstrap(kind, ctx) {
+  try {
+    if (kind === "fps-walk") {
+      const { bootstrapFirstPersonExtensionsFromScene } = await import(
+        "../../../../extensions/fps-walk/bootstrapFirstPersonExtensions.js"
+      );
+      await bootstrapFirstPersonExtensionsFromScene(ctx);
+      return;
+    }
+    if (kind === "stat-echarts") {
+      const { bootstrapStatChartsFromScene } = await import(
+        "../../../../extensions/stat-echarts/bootstrapFromScene.js"
+      );
+      await bootstrapStatChartsFromScene(ctx);
+      return;
+    }
+    if (kind === "physics-rapier") {
+      const [{ bootstrapPhysicsRapierFromScene }, rapierModule] = await Promise.all([
+        import("../../../../extensions/physics-rapier/bootstrapFromScene.js"),
+        import("@dimforge/rapier3d-compat")
+      ]);
+      await bootstrapPhysicsRapierFromScene({ ...ctx, RAPIER: rapierModule.default });
+    }
+  } catch (error) {
+    console.warn("[shower] example bootstrap failed:", kind, error);
+  }
+}
+
 async function runScene(sceneJson) {
   showLoading(true);
   clearHighlight();
@@ -548,12 +621,20 @@ async function runScene(sceneJson) {
   syncJsonFormatUi();
   fullJson.canvasWidth = Math.max(1, els.canvasWrap.clientWidth);
   fullJson.canvasHeight = Math.max(1, els.canvasWrap.clientHeight);
+  const bootstrapKind = findManifestItemForJson(currentJsonUrl)?.bootstrap;
+  const createOptions = {
+    canvas: els.canvas,
+    assetsBase: sceneHostAssetUrl("assets/"),
+    resetScene: true
+  };
+  if (bootstrapKind) {
+    createOptions.onSceneReady = (ctx) => runExampleBootstrap(bootstrapKind, ctx);
+    if (bootstrapKind === "physics-rapier") {
+      createOptions.pluginHost = createPluginHost();
+    }
+  }
   try {
-    runtime = await createJsonScene(fullJson, {
-      canvas: els.canvas,
-      assetsBase: sceneHostAssetUrl("assets/"),
-      resetScene: true
-    });
+    runtime = await createJsonScene(fullJson, createOptions);
     runtime.start?.();
     applyRuntimeCanvasThemeBackground();
     resizeRuntime();
@@ -814,52 +895,68 @@ async function exportModel(format = "glb") {
   }
 }
 
-function downloadHtml() {
-  const json = JSON.stringify(readCurrentScene(), null, 2).replace(/<\/script/gi, "<\\/script");
-  const html = `<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ThreeJSON Scene</title>
-  <link rel="icon" href="https://cdn.jsdelivr.net/npm/@threejson/assets@latest/assets/img/threejson.ico" type="image/x-icon">
-  <script type="importmap">
-    {
-      "imports": {
-        "threejson": "https://cdn.jsdelivr.net/npm/threejson/builtins/full.js",
-        "threejson/core": "https://cdn.jsdelivr.net/npm/threejson/core/index.js",
-        "three": "https://esm.sh/three@0.184.0",
-        "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
-        "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
-        "fflate": "https://esm.sh/fflate@0.8.3",
-        "html2canvas-pro": "https://esm.sh/html2canvas-pro@2.0.4",
-        "gifuct-js": "https://esm.sh/gifuct-js@2.1.2",
-        "three-mesh-bvh": "https://esm.sh/three-mesh-bvh@0.9.10?deps=three@0.184.0",
-        "three-bvh-csg": "https://esm.sh/three-bvh-csg@0.0.18?deps=three@0.184.0,three-mesh-bvh@0.9.10",
-        "troika-three-text": "https://esm.sh/troika-three-text@0.52.4?deps=three@0.184.0"
+function openTemplateExportModal() {
+  if (!els.templateExportModal) return;
+  if (els.templateExportType) els.templateExportType.value = "html";
+  syncTemplateExportDefaults();
+  els.templateExportModal.hidden = false;
+  window.requestAnimationFrame(() => els.templateExportType?.focus?.());
+}
+
+function closeTemplateExportModal() {
+  if (els.templateExportModal) els.templateExportModal.hidden = true;
+}
+
+function syncTemplateExportDefaults() {
+  const type = els.templateExportType?.value || "html";
+  if (els.templateExportJsonLocation) {
+    els.templateExportJsonLocation.value = type === "html" ? "inline" : "external";
+  }
+  if (els.templateExportFormat) {
+    els.templateExportFormat.value = currentJsonFormat === "friendly" ? "friendly" : "standard";
+  }
+}
+
+function addZipTextFile(entries, path, text) {
+  entries[path] = strToU8(text);
+}
+
+function confirmTemplateExport() {
+  const type = els.templateExportType?.value || "html";
+  const format = els.templateExportFormat?.value || "standard";
+  const jsonLocation = els.templateExportJsonLocation?.value || (type === "html" ? "inline" : "external");
+  closeTemplateExportModal();
+  try {
+    const scene = readCurrentScene();
+    const payload = format === "friendly" ? toFriendly(scene) : toStandard(scene);
+    const sceneJsonText = jsonStringForScript(payload, 2);
+    const inlineJson = jsonLocation === "inline";
+    const html = buildHtmlTemplate({ sceneJsonText, inlineJson });
+    if (type === "html" && inlineJson) {
+      downloadText("threejson-template.html", html, "text/html");
+      showMessage(t("templateExportDone"));
+      return;
+    }
+    const entries = {};
+    if (type === "html") {
+      addZipTextFile(entries, "index.html", html);
+    } else {
+      addZipTextFile(entries, "package.json", buildPackageJson(type));
+      const files = buildTemplateFiles(type);
+      for (const [path, text] of Object.entries(files)) {
+        addZipTextFile(entries, path, text);
       }
     }
-  </script>
-  <style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#11151b}canvas{display:block;width:100%;height:100%}</style>
-</head>
-<body>
-<canvas id="canvas"></canvas>
-<script type="module">
-import { createJsonScene } from "threejson/core";
-const sceneJson = ${json};
-const canvas = document.getElementById("canvas");
-const runtime = await createJsonScene(sceneJson, {
-  canvas,
-  resetScene: true,
-  assetsBase: "https://cdn.jsdelivr.net/npm/@threejson/assets@latest/assets/"
-});
-runtime.start?.();
-runtime.resize?.(innerWidth, innerHeight);
-window.addEventListener("resize", () => runtime.resize?.(innerWidth, innerHeight));
-</script>
-</body>
-</html>`;
-  downloadText("threejson-scene.html", html, "text/html");
+    if (!inlineJson || type !== "html") {
+      addZipTextFile(entries, "assets/json/scene.json", `${sceneJsonText}\n`);
+    }
+    const zip = zipSync(entries, { level: 6 });
+    downloadBlob(new Blob([zip], { type: "application/zip" }), `threejson-template-${type}.zip`);
+    showMessage(t("templateExportDone"));
+  } catch (error) {
+    console.error(error);
+    showMessage(t("exportFailed") + (error.message || error));
+  }
 }
 
 function downloadText(filename, text, type = "application/json") {

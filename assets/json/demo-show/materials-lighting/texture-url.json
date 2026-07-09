@@ -1,0 +1,34 @@
+{
+  "version": "next",
+  "name": "materials-lighting-texture-url",
+  "sceneConfig": {
+    "scene": { "background": "#11151b" },
+    "camera": { "fov": 50, "near": 0.1, "far": 200, "position": { "x": 0, "y": 8, "z": 14 } },
+    "renderer": { "antialias": true, "ratioRate": 1 },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 1, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 0.9 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1.1, "position": { "x": 10, "y": 14, "z": 10 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "objectList": [
+    {
+      "threeJsonId": "textured-floor",
+      "name": "textured-floor",
+      "objType": "plane",
+      "geometry": { "width": 12, "height": 12 },
+      "rotation": { "x": -1.5708, "y": 0, "z": 0 },
+      "material": { "textureUrl": "/assets/textures/building/floor/wood_floor.webp", "side": "double" }
+    },
+    {
+      "threeJsonId": "textured-box",
+      "name": "textured-box",
+      "objType": "box",
+      "position": { "x": 0, "y": 2, "z": 0 },
+      "geometry": { "width": 3.5, "height": 3.5, "depth": 3.5 },
+      "material": { "textureUrl": "/assets/textures/building/wall/red_brick.webp" }
+    }
+  ],
+  "threeJsonId": "materials-lighting-texture-url"
+}

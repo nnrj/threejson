@@ -80,7 +80,7 @@ Notes:
 
 - **`handler` is not** a DOM event handler; it is the **scene engine / pipeline**. Some post-load APIs still live under `handler/` historically (e.g. `infoPanelRuntime.js`).
 - **`builder` and `runtime` need not pair 1:1** (there is no requirement for a full `modelRuntime.js` mirror of `modelBuilder.js`).
-- The **composition root** remains in handler (e.g. `sceneLoadHandler` imports both builder and `runtime/deployScheduler`), consistent with [BUSINESS_DOMAINS.md](../../core/BUSINESS_DOMAINS.md).
+- The **composition root** remains in handler (e.g. `sceneLoadHandler` imports both builder and `runtime/deployScheduler`), consistent with [BUSINESS_DOMAINS.md](../../domains/BUSINESS_DOMAINS.md).
 
 Long-term cleanup ideas and audit notes: [`lab/core-layering-memo.md`](../../lab/core-layering-memo.md) (**not a release commitment**).
 
@@ -106,7 +106,7 @@ Align with conventions rather than reinvent: per-frame hooks, transforms, post-p
 
 ## Dependency direction: core / domains / host
 
-The following constraints describe **who may import whom** and responsibility boundaries. They complement the Composition Root notes in [`core/BUSINESS_DOMAINS.md`](../../core/BUSINESS_DOMAINS.md).
+The following constraints describe **who may import whom** and responsibility boundaries. They complement the Composition Root notes in [`domains/BUSINESS_DOMAINS.md`](../../domains/BUSINESS_DOMAINS.md).
 
 1. **One-way dependencies**: `domains → core`; `host (scene editor, RoomShow, etc.) → core + domains`. **Forbidden**: `core → domains` (importing concrete domain modules inside core), `domains → host`.
 2. **Core can and should** host cross-domain generic capabilities (load, export, edit state machine, registry, mutation). Prefer **generic mechanism + registration hooks** over hard-coding a `domain` name in core.

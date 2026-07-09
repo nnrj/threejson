@@ -21,7 +21,7 @@ This page defines **key concepts** used across ThreeJSON docs and code—Chinese
 | greenfield (historical) | 绿场（历史术语） | Modular refactor of the old single-file pages under `tools/scene-host/`; Phase 5 switchover is complete and it is now the canonical pages | 旧版单文件正本的模块化拆分重构，Phase 5 切换已完成 | [`docs/tools.md`](./tools.md) |
 | integrated demo page | 集成页 / 业务演示页 | Industry showcase pages (room-show, port-show), not library API | 行业场景演示页 | [`docs/tools.md`](./tools.md) |
 | zero mental overhead by default | 默认零心智 | Unused optional features need no config or init ceremony | 未用能力不要求配置仪式 | [`docs/design-principles.md`](./design-principles.md) |
-| composition root | 组合根 | Entry orchestrating builders, runtime, domain registration | 编排加载与注册的入口 | [`core/BUSINESS_DOMAINS.md`](../../core/BUSINESS_DOMAINS.md) |
+| composition root | 组合根 | Entry orchestrating builders, runtime, domain registration | 编排加载与注册的入口 | [`domains/BUSINESS_DOMAINS.md`](../../domains/BUSINESS_DOMAINS.md) |
 
 ## Data contract and JSON shapes
 

@@ -33,7 +33,7 @@
     "LICENSE",
     "package.json",
     "README.md",
-    "README_EN.md"
+    "README_ZH.md"
   ],
   "sideEffects": [
     "**/core/ai/index.js",
