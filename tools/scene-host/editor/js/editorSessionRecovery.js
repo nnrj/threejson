@@ -8,6 +8,7 @@ import {
   editorSessionIdbPut
 } from "../../shared/js/editorSessionIdb.js";
 import { fingerprintSessionJsonText } from "../../shared/js/userBaselineStore.js";
+import { t } from "../../shared/i18n/index.js";
 import {
   buildCaptureOptionsForContext,
   captureCurrentSessionJsonText,
@@ -37,12 +38,16 @@ function getOrCreateTabSessionId() {
 function formatSessionAge(updatedAt) {
   const ms = Date.now() - Number(updatedAt || 0);
   if (ms < 60_000) {
-    return "刚刚";
+    return t("editor.session.age.justNow", "刚刚");
   }
   if (ms < 3_600_000) {
-    return `${Math.round(ms / 60_000)} 分钟前`;
+    return t("editor.session.age.minutesAgo", "{count} 分钟前", {
+      count: Math.round(ms / 60_000)
+    });
   }
-  return `${Math.round(ms / 3_600_000)} 小时前`;
+  return t("editor.session.age.hoursAgo", "{count} 小时前", {
+    count: Math.round(ms / 3_600_000)
+  });
 }
 
 function resolveBootRestoreKind(recovery) {
@@ -271,7 +276,7 @@ export function createEditorSessionRecovery(host) {
     const ignoreBtn = document.createElement("button");
     ignoreBtn.type = "button";
     ignoreBtn.className = "miniBtn";
-    ignoreBtn.textContent = "忽略";
+    ignoreBtn.textContent = t("editor.shell.editorBootRestoreIgnoreBtn", "忽略");
     footerEl.appendChild(ignoreBtn);
     choices.push({ btn: ignoreBtn, value: "ignore" });
 
@@ -280,12 +285,16 @@ export function createEditorSessionRecovery(host) {
         ? formatSessionAge(recovery.autoSnapshot.updatedAt)
         : "";
       if (messageEl) {
-        messageEl.textContent = `检测到上次离开时有未保存的修改。\n是否从自动快照恢复？（${snapAge}）`;
+        messageEl.textContent = t(
+          "editor.session.bootRestore.snapshotMessage",
+          "检测到上次离开时有未保存的修改。\n是否从自动快照恢复？（{age}）",
+          { age: snapAge }
+        );
       }
       const snapBtn = document.createElement("button");
       snapBtn.type = "button";
       snapBtn.className = "miniBtn";
-      snapBtn.textContent = "从快照恢复";
+      snapBtn.textContent = t("editor.session.bootRestore.restoreFromSnapshot", "从快照恢复");
       footerEl.insertBefore(snapBtn, ignoreBtn);
       choices.unshift({ btn: snapBtn, value: "snapshot" });
     }
@@ -367,9 +376,11 @@ export function createEditorSessionRecovery(host) {
     }
     try {
       const parsed = parseSceneJsonString(payloadText);
-      const loaded = await host.ingestScenePayload(parsed, "快照恢复", {
-        skipHistoryPush: true
-      });
+      const loaded = await host.ingestScenePayload(
+        parsed,
+        t("editor.session.bootRestore.snapshotLabel", "快照恢复"),
+        { skipHistoryPush: true }
+      );
       if (!loaded) {
         host.toggleStartupEmptyState?.(true);
         return;
@@ -378,7 +389,12 @@ export function createEditorSessionRecovery(host) {
       await writeInitialAutoSnapshot(buildCaptureOptionsForContext(host, "fullReplace"));
     } catch (error) {
       console.error(error);
-      host.showMessage(`恢复失败：${error?.message || error}`, "error");
+      host.showMessage(
+        t("editor.session.bootRestore.restoreFailed", "恢复失败：{error}", {
+          error: error?.message || error
+        }),
+        "error"
+      );
       host.toggleStartupEmptyState?.(true);
     }
   }

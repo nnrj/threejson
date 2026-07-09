@@ -244,9 +244,15 @@ export function createPlayerSettingsModal({ getSettings, getFileDefaults, onSave
     close();
   });
   cancelBtn?.addEventListener("click", close);
-  resetBtn?.addEventListener("click", () => {
-    void onReset();
-    populateForm(getSettings());
+  resetBtn?.addEventListener("click", async () => {
+    resetBtn.disabled = true;
+    try {
+      await onReset();
+      draft = clonePlayerSettings(getSettings());
+      populateForm(draft);
+    } finally {
+      resetBtn.disabled = false;
+    }
   });
   modal?.addEventListener("click", (event) => {
     if (event.target === modal) {

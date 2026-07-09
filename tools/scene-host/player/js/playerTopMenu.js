@@ -97,6 +97,13 @@ export function wirePlayerTopMenu(deps) {
     if (menuBtn) {
       menuBtn.textContent = txt;
     }
+    const bottomBtn = document.getElementById("bottomBtnFullscreen");
+    if (bottomBtn) {
+      bottomBtn.textContent = "⛶";
+      bottomBtn.title = full
+        ? t("player.shell.fullscreenExitEsc", "Exit Fullscreen (Esc)")
+        : t("player.shell.bottomBtnFullscreen.title", "Fullscreen");
+    }
   }
 
   document.getElementById("menuOpenSceneJson")?.addEventListener("click", openSceneJsonPicker);

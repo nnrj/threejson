@@ -162,6 +162,40 @@ export async function bootstrapPlayerApp() {
   function closePlaylistContextMenu() {
     playlistContextMenu?.classList.remove("visible");
     playlistContextTargetIndex = -1;
+    const copyItem = document.getElementById("playlistContextCopyItem");
+    copyItem?.classList.remove("submenuFlipLeft");
+    updatePlaylistContextSubmenuArrow(copyItem);
+  }
+
+  function updatePlaylistContextSubmenuArrow(item) {
+    const arrow = item?.querySelector(".playlistContextArrow");
+    if (!arrow) {
+      return;
+    }
+    arrow.textContent = item.classList.contains("submenuFlipLeft") ? "<" : ">";
+  }
+
+  function syncPlaylistContextSubmenuFlip() {
+    const item = document.getElementById("playlistContextCopyItem");
+    const submenu = item?.querySelector(".playlistContextSubmenu");
+    if (!item || !submenu || !playlistContextMenu?.classList.contains("visible")) {
+      return;
+    }
+    const gap = 4;
+    const prevDisplay = submenu.style.display;
+    const prevVisibility = submenu.style.visibility;
+    const prevPointerEvents = submenu.style.pointerEvents;
+    submenu.style.visibility = "hidden";
+    submenu.style.display = "block";
+    submenu.style.pointerEvents = "none";
+    const submenuWidth = submenu.offsetWidth + 8;
+    submenu.style.display = prevDisplay;
+    submenu.style.visibility = prevVisibility;
+    submenu.style.pointerEvents = prevPointerEvents;
+    const itemRect = item.getBoundingClientRect();
+    const needsFlip = itemRect.right + submenuWidth + gap > window.innerWidth;
+    item.classList.toggle("submenuFlipLeft", needsFlip);
+    updatePlaylistContextSubmenuArrow(item);
   }
 
   function openPlaylistContextMenu(clientX, clientY, index) {
@@ -169,14 +203,23 @@ export async function bootstrapPlayerApp() {
       return;
     }
     playlistContextTargetIndex = index;
+    const copyItem = document.getElementById("playlistContextCopyItem");
+    copyItem?.classList.remove("submenuFlipLeft");
+    updatePlaylistContextSubmenuArrow(copyItem);
     playlistContextMenu.classList.add("visible");
     playlistContextMenu.style.left = "0px";
     playlistContextMenu.style.top = "0px";
     const menuRect = playlistContextMenu.getBoundingClientRect();
-    const left = Math.min(clientX, window.innerWidth - menuRect.width - 8);
-    const top = Math.min(clientY, window.innerHeight - menuRect.height - 8);
-    playlistContextMenu.style.left = `${Math.max(8, left)}px`;
-    playlistContextMenu.style.top = `${Math.max(8, top)}px`;
+    const maxLeft = Math.max(8, window.innerWidth - menuRect.width - 8);
+    const maxTop = Math.max(8, window.innerHeight - menuRect.height - 8);
+    const left = Math.min(Math.max(8, clientX), maxLeft);
+    const top = Math.min(Math.max(8, clientY), maxTop);
+    playlistContextMenu.style.left = `${left}px`;
+    playlistContextMenu.style.top = `${top}px`;
+    requestAnimationFrame(() => {
+      syncPlaylistContextSubmenuFlip();
+      requestAnimationFrame(syncPlaylistContextSubmenuFlip);
+    });
   }
 
   function resolvePlaylistEntryPath(entry) {
@@ -410,8 +453,14 @@ export async function bootstrapPlayerApp() {
     syncPlayerVolumeUi();
   }
 
+  function handleCanvasContextMenu(event) {
+    event.preventDefault();
+    sysConfig.rightClickedFlag = true;
+  }
+
   function teardownPlayerScene() {
     window.removeEventListener("resize", windowResize);
+    canvasContainer?.removeEventListener("contextmenu", handleCanvasContextMenu);
     renderLoop?.stop?.();
     cancelActiveDeployScheduler();
     renderLoop?.setComposer?.(null);
@@ -598,6 +647,7 @@ export async function bootstrapPlayerApp() {
       setThreeJsonSceneAudioPaused(sceneRuntime, playerVolumeMuted);
     }
     window.addEventListener("resize", windowResize);
+    canvasContainer?.addEventListener("contextmenu", handleCanvasContextMenu);
     initPlayerHighlight();
     superAnimate();
   }
@@ -724,7 +774,12 @@ export async function bootstrapPlayerApp() {
     windowResize();
     bindThreeJsonSceneAudioUnlock(canvasContainer, () => sceneRuntime);
     applyPlayerMasterVolume();
+    void resumeThreeJsonAudioContextFromCamera(camera);
+    if (sceneRuntime) {
+      setThreeJsonSceneAudioPaused(sceneRuntime, playerVolumeMuted);
+    }
     window.addEventListener("resize", windowResize);
+    canvasContainer?.addEventListener("contextmenu", handleCanvasContextMenu);
     initPlayerHighlight();
     superAnimate();
     currentSceneLabel = String(hintLabel || "").trim() || t("player.shell.tjzScene", ".tjz Scene");
@@ -1290,6 +1345,21 @@ export async function bootstrapPlayerApp() {
     }
     closePlaylistContextMenu();
   });
+  document.addEventListener("contextmenu", (event) => {
+    if (!playlistContextMenu?.classList.contains("visible")) {
+      return;
+    }
+    const target = event.target;
+    if (playlistContextMenu.contains(target)) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    if (target?.closest?.(".playlistRow")) {
+      return;
+    }
+    closePlaylistContextMenu();
+  });
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       if (document.fullscreenElement) {
@@ -1298,6 +1368,8 @@ export async function bootstrapPlayerApp() {
       closePlaylistContextMenu();
     }
   });
+  window.addEventListener("resize", closePlaylistContextMenu);
+  playlistListEl?.addEventListener("scroll", closePlaylistContextMenu, { passive: true });
 
   let playerTopMenuApi = null;
 
@@ -1313,7 +1385,7 @@ export async function bootstrapPlayerApp() {
     async onReset() {
       playerSettingsFileDefaults = await fetchPlayerSettingsFileDefaults();
       playerSettings = playerSettingsFileDefaults;
-      persistPlayerSettings(playerSettings);
+      clearPlayerSettingsCache();
       applyPlayerSettingsFromBundle({ settings: playerSettings, fileDefaults: playerSettingsFileDefaults });
       showMessage(t("player.message.settingsResetToFile", "Restored setting.json defaults."), "info");
     }

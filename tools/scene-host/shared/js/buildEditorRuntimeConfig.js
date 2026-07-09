@@ -34,18 +34,33 @@ export function buildEditorRuntimeConfig(sysConfig, editorSettings, baseSceneCon
       shadowMapEnabled: valueOr(rendererConfig.shadowMapEnabled, true),
       clearAlpha: valueOr(rendererConfig.clearAlpha, 0.1)
     },
-    controls: {
-      listenToKeyEvents: valueOr(controlsConfig.listenToKeyEvents, true),
-      enableDamping: valueOr(controlsConfig.enableDamping, true),
-      dampingFactor: valueOr(controlsConfig.dampingFactor, 0.35),
-      enableZoom: valueOr(controlsConfig.enableZoom, true),
-      autoRotate: valueOr(controlsConfig.autoRotate, sysConfig.sceneAutoRotate),
-      minDistance: valueOr(controlsConfig.minDistance, 5),
-      maxDistance: valueOr(controlsConfig.maxDistance, 2600),
-      maxPolarAngle: valueOr(controlsConfig.maxPolarAngle, Math.PI / 1.9),
-      enablePan: valueOr(controlsConfig.enablePan, true),
-      target: controlsConfig.target
-    },
+    controls: (() => {
+      const typeRaw = controlsConfig.type || "";
+      if (String(typeRaw).toLowerCase() === "firstperson") {
+        return {
+          ...controlsConfig,
+          type: "firstPerson",
+          moveSpeed: valueOr(controlsConfig.moveSpeed, 5),
+          eyeHeight: valueOr(controlsConfig.eyeHeight, 1.6),
+          lookSensitivity: valueOr(controlsConfig.lookSensitivity, 0.001),
+          pointerLock: controlsConfig.pointerLock !== false,
+          floorSnap: controlsConfig.floorSnap !== false
+        };
+      }
+      return {
+        ...controlsConfig,
+        listenToKeyEvents: valueOr(controlsConfig.listenToKeyEvents, true),
+        enableDamping: valueOr(controlsConfig.enableDamping, true),
+        dampingFactor: valueOr(controlsConfig.dampingFactor, 0.35),
+        enableZoom: valueOr(controlsConfig.enableZoom, true),
+        autoRotate: valueOr(controlsConfig.autoRotate, sysConfig.sceneAutoRotate),
+        minDistance: valueOr(controlsConfig.minDistance, 5),
+        maxDistance: valueOr(controlsConfig.maxDistance, 2600),
+        maxPolarAngle: valueOr(controlsConfig.maxPolarAngle, Math.PI / 1.9),
+        enablePan: valueOr(controlsConfig.enablePan, true),
+        target: controlsConfig.target
+      };
+    })(),
     renderLoop: (() => {
       const fpsPolicy = resolveRenderLoopFpsPolicy(renderLoopConfig, {
         fps: sysConfig.fps,

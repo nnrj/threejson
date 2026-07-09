@@ -44,6 +44,10 @@ export function clonePlayerSettings(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function isPlainPlayerSettingsObject(value) {
+  return value && typeof value === "object" && !Array.isArray(value);
+}
+
 function splitSettingsPath(path) {
   return String(path || "").split(".").filter(Boolean);
 }
@@ -66,7 +70,7 @@ export function setPlayerSettingsByPath(obj, path, value) {
   }
   let cur = obj;
   for (let i = 0; i < parts.length - 1; i++) {
-    if (!cur[parts[i]] || typeof cur[parts[i]] !== "object") {
+    if (!isPlainPlayerSettingsObject(cur[parts[i]])) {
       cur[parts[i]] = {};
     }
     cur = cur[parts[i]];
@@ -83,13 +87,16 @@ export function clearPlayerSettingsCache() {
 }
 
 export function deepMergePlayerSettings(base, patch) {
+  if (!isPlainPlayerSettingsObject(base)) {
+    return clonePlayerSettings(patch || {});
+  }
   const out = clonePlayerSettings(base);
-  if (!patch || typeof patch !== "object") {
+  if (!isPlainPlayerSettingsObject(patch)) {
     return out;
   }
   for (const key of Object.keys(patch)) {
     const pv = patch[key];
-    if (pv && typeof pv === "object" && !Array.isArray(pv) && out[key] && typeof out[key] === "object") {
+    if (isPlainPlayerSettingsObject(pv) && isPlainPlayerSettingsObject(out[key])) {
       out[key] = deepMergePlayerSettings(out[key], pv);
     } else {
       out[key] = pv;
@@ -116,7 +123,8 @@ function readPlayerSettingsCache() {
     if (!raw) {
       return null;
     }
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    return isPlainPlayerSettingsObject(parsed) ? parsed : null;
   } catch {
     return null;
   }
@@ -124,7 +132,7 @@ function readPlayerSettingsCache() {
 
 export function persistPlayerSettings(settings) {
   try {
-    localStorage.setItem(PLAYER_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+    localStorage.setItem(PLAYER_SETTINGS_STORAGE_KEY, JSON.stringify(clonePlayerSettings(settings)));
   } catch {
     /* ignore */
   }

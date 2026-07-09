@@ -516,5 +516,12 @@ export const EDITOR_SHELL_LABELS_EN = {
   "editor.shell.sceneTreeContextToggleVisibleBtn": "Hide",
   "editor.shell.sceneTreeContextDeleteBtn": "Delete",
   "editor.shell.recordStopFloatingBtn": "⏹ Stop Recording",
-  "editor.shell.recordStopFloatingBtn.title": "Stop recording"
+  "editor.shell.recordStopFloatingBtn.title": "Stop recording",
+  "editor.session.age.justNow": "just now",
+  "editor.session.age.minutesAgo": "{count} minutes ago",
+  "editor.session.age.hoursAgo": "{count} hours ago",
+  "editor.session.bootRestore.snapshotMessage": "Unsaved edits were detected from the previous session.\nRestore from the automatic snapshot? ({age})",
+  "editor.session.bootRestore.restoreFromSnapshot": "Restore from Snapshot",
+  "editor.session.bootRestore.snapshotLabel": "Snapshot Restore",
+  "editor.session.bootRestore.restoreFailed": "Restore failed: {error}"
 };
