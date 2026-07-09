@@ -280,6 +280,7 @@ export async function bootstrapSceneHostEditor() {
     getControls: () => controls,
     getRenderLoop: () => renderLoop,
     getSceneRuntime: () => sceneRuntime,
+    hasRuntimeReady,
     getSysConfig: () => sysConfig,
     getSelectedObject: () => selectedObj,
     setSelectedObject: (obj) => {
@@ -288,6 +289,7 @@ export async function bootstrapSceneHostEditor() {
     getEditorSettings: () => editorSettings,
     showMessage: (...args) => ui.showMessage(...args),
     ingestScenePayload,
+    runEditorCommands,
     fitViewToScene,
     fitViewToSelectionBounds,
     getSuppressCanvasDirty: () => suppressCanvasDirty,

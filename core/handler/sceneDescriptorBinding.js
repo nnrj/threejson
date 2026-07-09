@@ -230,6 +230,7 @@ export function redeployObject(scene, descriptorOrThreeJsonId) {
   }
   const id = normalizeText(descriptor.threeJsonId);
   const prev = id ? getObjectByThreeJsonId(id) : null;
+  const attachParent = prev?.parent || scene;
   if (prev && prev.parent) {
     prev.parent.remove(prev);
     unregisterObject(prev, { recursive: true, keepDescriptor: true });
@@ -241,11 +242,11 @@ export function redeployObject(scene, descriptorOrThreeJsonId) {
   if (hasGroupShape) {
     const group = createGroup(descriptor);
     if (group) {
-      scene.add(group);
+      attachParent.add(group);
     }
     return group;
   }
-  deployMesh(descriptor, scene);
+  deployMesh(descriptor, attachParent);
   return id ? getObjectByThreeJsonId(id) : null;
 }
 

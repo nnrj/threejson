@@ -145,6 +145,21 @@ function applyMaterialPatch(mesh, materialPatch, options = {}) {
           materialPatch.opacity < 1 || materialPatch.transparent === true;
       }
     }
+    if (typeof materialPatch.transparent === "boolean" && "transparent" in mat) {
+      mat.transparent = materialPatch.transparent;
+    }
+    if (typeof materialPatch.visible === "boolean" && "visible" in mat) {
+      mat.visible = materialPatch.visible;
+    }
+    if (typeof materialPatch.depthWrite === "boolean" && "depthWrite" in mat) {
+      mat.depthWrite = materialPatch.depthWrite;
+    }
+    if (typeof materialPatch.depthTest === "boolean" && "depthTest" in mat) {
+      mat.depthTest = materialPatch.depthTest;
+    }
+    if (Number.isFinite(materialPatch.alphaTest) && "alphaTest" in mat) {
+      mat.alphaTest = materialPatch.alphaTest;
+    }
     if (Number.isFinite(materialPatch.metalness) && "metalness" in mat) {
       mat.metalness = materialPatch.metalness;
     }
@@ -271,8 +286,8 @@ function applyObjectPartial(threeJsonId, partial, options = {}) {
   if (pending) {
     pending.catch(() => {});
   }
-  maybeAutoRedeploy(base, needsRedeploy, options);
-  return mutationResult(base, { needsRedeploy });
+  const redeployed = maybeAutoRedeploy(base, needsRedeploy, options);
+  return mutationResult(base, { needsRedeploy, object3D: redeployed || base.object3D });
 }
 
 async function applyObjectPartialAsync(threeJsonId, partial, options = {}) {
@@ -296,8 +311,8 @@ async function applyObjectPartialAsync(threeJsonId, partial, options = {}) {
   if (pending) {
     await pending;
   }
-  maybeAutoRedeploy(base, needsRedeploy, options);
-  return mutationResult(base, { needsRedeploy });
+  const redeployed = maybeAutoRedeploy(base, needsRedeploy, options);
+  return mutationResult(base, { needsRedeploy, object3D: redeployed || base.object3D });
 }
 
 function applyObjectChange(threeJsonId, path, value, options = {}) {
@@ -326,9 +341,10 @@ function applyObjectChange(threeJsonId, path, value, options = {}) {
   if (pending) {
     pending.catch(() => {});
   }
-  maybeAutoRedeploy(base, needsRedeploy, options);
+  const redeployed = maybeAutoRedeploy(base, needsRedeploy, options);
   return mutationResult(base, {
     needsRedeploy,
+    object3D: redeployed || base.object3D,
     path: normalizedPath,
     kind
   });
@@ -360,9 +376,10 @@ async function applyObjectChangeAsync(threeJsonId, path, value, options = {}) {
   if (pending) {
     await pending;
   }
-  maybeAutoRedeploy(base, needsRedeploy, options);
+  const redeployed = maybeAutoRedeploy(base, needsRedeploy, options);
   return mutationResult(base, {
     needsRedeploy,
+    object3D: redeployed || base.object3D,
     path: normalizedPath,
     kind
   });
@@ -396,8 +413,8 @@ function applyObjectSnapshot(threeJsonId, snapshot, options = {}) {
   if (pending) {
     pending.catch(() => {});
   }
-  maybeAutoRedeploy(base, needsRedeploy, options);
-  return mutationResult(base, { needsRedeploy });
+  const redeployed = maybeAutoRedeploy(base, needsRedeploy, options);
+  return mutationResult(base, { needsRedeploy, object3D: redeployed || base.object3D });
 }
 
 async function applyObjectSnapshotAsync(threeJsonId, snapshot, options = {}) {
@@ -420,8 +437,8 @@ async function applyObjectSnapshotAsync(threeJsonId, snapshot, options = {}) {
   if (pending) {
     await pending;
   }
-  maybeAutoRedeploy(base, needsRedeploy, options);
-  return mutationResult(base, { needsRedeploy });
+  const redeployed = maybeAutoRedeploy(base, needsRedeploy, options);
+  return mutationResult(base, { needsRedeploy, object3D: redeployed || base.object3D });
 }
 
 function getObjectField(threeJsonId, path) {

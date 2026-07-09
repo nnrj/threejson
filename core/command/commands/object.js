@@ -127,7 +127,13 @@ export async function handleObjectPatch(ctx, args = {}) {
       error: "object.patch requires args.id."
     });
   }
-  const options = isObjectRecord(args.options) ? args.options : {};
+  const options = isObjectRecord(args.options) ? { ...args.options } : {};
+  if (!options.scene && ctx.scene?.isScene) {
+    options.scene = ctx.scene;
+  }
+  if (options.autoRedeploy == null) {
+    options.autoRedeploy = true;
+  }
   if (isObjectRecord(args.partial)) {
     const deferAsync = options.deferAsync === true || options.awaitTextures === false;
     const res = deferAsync

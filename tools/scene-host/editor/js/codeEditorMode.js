@@ -32,6 +32,7 @@ export function createCodeEditorMode(host) {
   let modeSwitchInProgress = false;
   let pipSavedGeometry = null;
   let autoRenderTimer = null;
+  let objectPatchBaselinePayload = null;
 
   function isCodeEditMode() {
     return Boolean(rootContainer?.classList.contains("codeEditMode"));
@@ -320,6 +321,7 @@ export function createCodeEditorMode(host) {
     try {
       const text = await getSceneJsonTextForCodeView();
       setActiveCodeJsonText(text);
+      setObjectPatchBaselineFromText(text);
     } catch (error) {
       console.warn("[scene-editor] refresh code editor failed:", error);
     }
@@ -394,6 +396,7 @@ export function createCodeEditorMode(host) {
         activateCodeEditorFallback();
       }
       setActiveCodeJsonText(codeText);
+      setObjectPatchBaselineFromText(codeText);
       syncCodeModeCheckboxesFromSettings();
       rootContainer?.classList.add("codeEditMode");
       syncEditModeToggleUi();
@@ -491,18 +494,220 @@ export function createCodeEditorMode(host) {
     scheduleAutoRenderDebounced();
   }
 
+  const CODE_JSON_PATCH_STRUCTURAL_KEYS = new Set([
+    "threeJsonId",
+    "objType",
+    "children",
+    "objectList",
+    "boxModelList",
+    "sphereModelList",
+    "modelList",
+    "groupList",
+    "subSceneList",
+    "infoPanelList",
+    "css3dPanelList",
+    "spriteList",
+    "lightList",
+    "cameraList"
+  ]);
+
+  function cloneJson(value) {
+    return JSON.parse(JSON.stringify(value ?? null));
+  }
+
+  function isCodeJsonPlainObject(value) {
+    return Boolean(value && typeof value === "object" && !Array.isArray(value));
+  }
+
+  function stableStringifyCodeJson(value) {
+    return JSON.stringify(value ?? null);
+  }
+
+  function collectCodeJsonObjectsByThreeJsonId(value, map = new Map(), isRoot = true) {
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        collectCodeJsonObjectsByThreeJsonId(item, map, false);
+      }
+      return map;
+    }
+    if (!isCodeJsonPlainObject(value)) {
+      return map;
+    }
+    const id = typeof value.threeJsonId === "string" ? value.threeJsonId.trim() : "";
+    if (!isRoot && id) {
+      map.set(id, value);
+      return map;
+    }
+    for (const item of Object.values(value)) {
+      collectCodeJsonObjectsByThreeJsonId(item, map, false);
+    }
+    return map;
+  }
+
+  function stripCodeJsonObjectsForSceneCompare(value, isRoot = true) {
+    if (Array.isArray(value)) {
+      return value.map((item) => stripCodeJsonObjectsForSceneCompare(item, false));
+    }
+    if (!isCodeJsonPlainObject(value)) {
+      return value;
+    }
+    const id = typeof value.threeJsonId === "string" ? value.threeJsonId.trim() : "";
+    if (!isRoot && id) {
+      return { threeJsonId: id };
+    }
+    const out = {};
+    for (const [key, item] of Object.entries(value)) {
+      out[key] = stripCodeJsonObjectsForSceneCompare(item, false);
+    }
+    return out;
+  }
+
+  function buildCodeJsonPartialDiff(before, after) {
+    if (stableStringifyCodeJson(before) === stableStringifyCodeJson(after)) {
+      return { ok: true, changed: false };
+    }
+    if (Array.isArray(before) || Array.isArray(after)) {
+      return { ok: false, reason: "array changes need full scene reload" };
+    }
+    if (isCodeJsonPlainObject(before) && isCodeJsonPlainObject(after)) {
+      const out = {};
+      for (const key of Object.keys(before)) {
+        if (!Object.prototype.hasOwnProperty.call(after, key)) {
+          return { ok: false, reason: "property deletion needs full scene reload" };
+        }
+      }
+      for (const [key, nextValue] of Object.entries(after)) {
+        const prevValue = before[key];
+        const diff = buildCodeJsonPartialDiff(prevValue, nextValue);
+        if (!diff.ok) {
+          return diff;
+        }
+        if (diff.changed) {
+          out[key] = diff.value;
+        }
+      }
+      return Object.keys(out).length
+        ? { ok: true, changed: true, value: out }
+        : { ok: true, changed: false };
+    }
+    return { ok: true, changed: true, value: after };
+  }
+
+  function codeJsonPartialContainsStructuralChange(partial) {
+    if (!isCodeJsonPlainObject(partial)) {
+      return false;
+    }
+    for (const [key, value] of Object.entries(partial)) {
+      if (CODE_JSON_PATCH_STRUCTURAL_KEYS.has(key)) {
+        return true;
+      }
+      if (Array.isArray(value)) {
+        return true;
+      }
+      if (codeJsonPartialContainsStructuralChange(value)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function buildCodeEditorObjectPatchPlan(currentPayload, nextPayload) {
+    if (!isCodeJsonPlainObject(currentPayload) || !isCodeJsonPlainObject(nextPayload)) {
+      return { canPatch: false, reason: "payload is not an object" };
+    }
+    const currentObjects = collectCodeJsonObjectsByThreeJsonId(currentPayload);
+    const nextObjects = collectCodeJsonObjectsByThreeJsonId(nextPayload);
+    if (!currentObjects.size || currentObjects.size !== nextObjects.size) {
+      return { canPatch: false, reason: "object set changed" };
+    }
+    for (const id of currentObjects.keys()) {
+      if (!nextObjects.has(id)) {
+        return { canPatch: false, reason: "object ids changed" };
+      }
+    }
+    const currentSceneShell = stripCodeJsonObjectsForSceneCompare(currentPayload);
+    const nextSceneShell = stripCodeJsonObjectsForSceneCompare(nextPayload);
+    if (stableStringifyCodeJson(currentSceneShell) !== stableStringifyCodeJson(nextSceneShell)) {
+      return { canPatch: false, reason: "scene-level data changed" };
+    }
+    const commands = [];
+    for (const [id, currentObject] of currentObjects.entries()) {
+      const nextObject = nextObjects.get(id);
+      const diff = buildCodeJsonPartialDiff(currentObject, nextObject);
+      if (!diff.ok) {
+        return { canPatch: false, reason: diff.reason || "object diff unsupported" };
+      }
+      if (!diff.changed) {
+        continue;
+      }
+      if (codeJsonPartialContainsStructuralChange(diff.value)) {
+        return { canPatch: false, reason: "object structure changed" };
+      }
+      commands.push({
+        op: "object.patch",
+        args: {
+          id,
+          partial: diff.value,
+          options: { awaitTextures: true }
+        }
+      });
+    }
+    return { canPatch: true, commands };
+  }
+
+  function setObjectPatchBaseline(payload) {
+    objectPatchBaselinePayload = isCodeJsonPlainObject(payload) ? cloneJson(payload) : null;
+  }
+
+  function setObjectPatchBaselineFromText(text) {
+    try {
+      const raw = String(text || "").trim();
+      setObjectPatchBaseline(raw ? resolveScenePayloadForLoad(parseSceneJsonString(raw)) : null);
+    } catch (_err) {
+      setObjectPatchBaseline(null);
+    }
+  }
+
+  async function tryApplyCodeEditorObjectPatches(payload) {
+    const hasLoadedScene = host.hasRuntimeReady?.() ?? Boolean(host.getSceneRuntime?.()?.scene || host.getScene?.()?.isScene);
+    const sysConfig = host.getSysConfig?.();
+    if (!hasLoadedScene || !sysConfig?.jsonData) {
+      return { applied: false, reason: "runtime not ready" };
+    }
+    const baseline = objectPatchBaselinePayload || sysConfig.jsonData;
+    const plan = buildCodeEditorObjectPatchPlan(baseline, payload);
+    if (!plan.canPatch) {
+      return { applied: false, reason: plan.reason };
+    }
+    host.getScenePayloadFormat?.()?.recordEditorScenePayloadViewFormat?.(payload, "Code 模式");
+    if (plan.commands.length) {
+      const result = await host.runEditorCommands?.(plan.commands, {
+        label: "Code 模式局部更新"
+      });
+      if (!result?.ok) {
+        return {
+          applied: false,
+          reason: result?.results?.find((item) => !item.ok)?.error || "patch command failed"
+        };
+      }
+    }
+    sysConfig.jsonData = cloneJson(payload);
+    setObjectPatchBaseline(payload);
+    host.getSceneReserialize?.()?.markSceneNeedsReserialize?.();
+    host.getEditorInteraction?.()?.refreshMeshList?.();
+    host.getSceneTree?.()?.render?.();
+    host.getRightSidebarCache?.()?.invalidateRightSidebarSceneJsonTextCache?.();
+    host.getSceneManagePanel()?.bindFromPayload();
+    return { applied: true, commandCount: plan.commands.length };
+  }
+
   async function renderJsonToCanvas(options = {}) {
     const { silent = false, skipDirtyConfirm = false } = options;
     const aiOk = await host.getAiSidebar?.()?.interruptAiSessionIfActive?.("从 JSON 载入场景");
     if (!aiOk) {
       return false;
     }
-    if (!skipDirtyConfirm) {
-      const dirtyOk = await host.confirmOverwriteIfDirty?.({ actionLabel: "从 JSON 载入场景" });
-      if (!dirtyOk) {
-        return false;
-      }
-    }
+    const hasLoadedScene = host.hasRuntimeReady?.() ?? Boolean(host.getSceneRuntime?.()?.scene || host.getScene?.()?.isScene);
     cancelAutoRenderTimer();
     const raw = String(getActiveCodeJsonText() || "").trim();
     if (!raw) {
@@ -513,11 +718,25 @@ export function createCodeEditorMode(host) {
     if (!isLoadableScenePayload(payload)) {
       throw new Error("JSON 格式无效（需要 worldInfo 或非空 objectList）");
     }
+    const partial = await tryApplyCodeEditorObjectPatches(payload);
+    if (partial.applied) {
+      if (!silent) {
+        host.showMessage("已从 JSON 局部更新场景。", "success");
+      }
+      return true;
+    }
+    if (!skipDirtyConfirm && hasLoadedScene) {
+      const dirtyOk = await host.confirmOverwriteIfDirty?.({ actionLabel: "从 JSON 载入场景" });
+      if (!dirtyOk) {
+        return false;
+      }
+    }
     host.getScenePayloadFormat?.()?.recordEditorScenePayloadViewFormat?.(payload, "Code 模式");
     const loaded = await host.ingestScenePayload(payload, "Code 模式");
     if (!loaded) {
       throw new Error("场景载入失败。");
     }
+    setObjectPatchBaseline(payload);
     host.getSceneManagePanel()?.bindFromPayload();
     if (!silent) {
       host.showMessage("已从 JSON 载入场景。", "success");
