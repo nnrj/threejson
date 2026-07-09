@@ -13,7 +13,7 @@
 - **`electron-apps/`**：Electron 桌面壳示例，含 `electron-app`（原生）、`electron-vue`、`electron-react-app` 三个子项目（各目录内 `npm install` 与 `npm run dev`）。
 - **`script/`**：Node 辅助脚本（如 AI 更新场景）。
 
-项目根目录的 [`html-demo/demo.html`](html-demo/demo.html) 可集中切换 **`html-demo/`** 下各页，以及 `room-show.html`、`scene-editor.html`、`scene-player.html`、`port-show.html` 等根目录整合页。[`../index.html`](../index.html) 会跳转到官网 [`../website/index.html`](../website/index.html)。
+项目根目录的 [`html-demo/demo.html`](html-demo/demo.html) 可集中切换 **`html-demo/`** 下各页，以及 `room-show.html`、[`场景编辑器`](../tools/scene-host/editor/index.html)、[`场景播放器`](../tools/scene-host/player/index.html)、`port-show.html` 等整合页。[`../index.html`](../index.html) 会跳转到官网 [`../website/index.html`](../website/index.html)。
 
 ## `html-demo/` 页面（节选）
 
@@ -31,7 +31,7 @@
 
 ### Import map 与 core（裸 ESM）
 
-无打包器时，页面上的 **`<script type="importmap">` 必须覆盖 core 整条模块图里出现的裸说明符**（含 `three`、`three/examples/jsm/`、`three-mesh-bvh`、`three-bvh-csg`、`@tweenjs/tween.js`、`html2canvas-pro`、`gifuct-js` 等）。根目录的 `scene-editor.html`、`room-show.html`、`scene-player.html`、`port-show.html`、`port-show-auto.html` 与 `examples/html-demo/track-*/*.html` 均已对齐；若你复制示例自建页面，请一并复制 import map 或改用打包方案。详见 [`../docs/zh/quick-start.md`](../docs/zh/quick-start.md) 中的 import map 示例。
+无打包器时，页面上的 **`<script type="importmap">` 必须覆盖 core 整条模块图里出现的裸说明符**（含 `three`、`three/examples/jsm/`、`three-mesh-bvh`、`three-bvh-csg`、`@tweenjs/tween.js`、`html2canvas-pro`、`gifuct-js` 等）。根目录的 `room-show.html`、`port-show.html`、`port-show-auto.html`、`tools/scene-host/editor/index.html`、`tools/scene-host/player/index.html` 与 `examples/html-demo/track-*/*.html` 均已对齐；若你复制示例自建页面，请一并复制 import map 或改用打包方案。详见 [`../docs/zh/quick-start.md`](../docs/zh/quick-start.md) 中的 import map 示例。
 
 ## Node 脚本（`script/`）
 

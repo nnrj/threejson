@@ -1,5 +1,5 @@
 /**
- * Editor settings schema — copied from scene-editor.html (frozen baseline).
+ * Editor settings schema — copied from tools/old_version/scene-editor.html (frozen baseline).
  * scene-host must not import baseline HTML; keep keys/paths aligned manually.
  * Regenerate: node tools/scene-host/scripts/extract-settings-schema.mjs
  */
@@ -60,7 +60,7 @@ export const EDITOR_SETTINGS_DEFAULTS = {
     },
     sceneJson: {
       cameraLockDefault: true,
-      autoRenderDefault: false,
+      autoRenderDefault: true,
       autoRenderDelayMs: 1000,
       syncCodeAndSidebarPrefs: true,
       codeViewScope: "core",

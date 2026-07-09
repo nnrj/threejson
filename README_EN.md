@@ -136,7 +136,7 @@ Clone the repo and serve it over HTTP (e.g. Live Server). Map **`threejson`** â†
 
 ## Quick Local Preview
 
-After starting a static server, open [`index.html`](index.html) at the repo root. It redirects to [`website/index.html`](website/index.html). The tutorial index is [`examples/html-demo/demo.html`](examples/html-demo/demo.html), which aggregates the `examples/html-demo/*.html` samples together with the root-level integrated pages such as [`room-show.html`](room-show.html), [`scene-editor.html`](scene-editor.html), [`scene-player.html`](scene-player.html), and [`port-show.html`](port-show.html).
+After starting a static server, open [`index.html`](index.html) at the repo root. It redirects to [`website/index.html`](website/index.html). The tutorial index is [`examples/html-demo/demo.html`](examples/html-demo/demo.html), which aggregates the `examples/html-demo/*.html` samples together with the root-level integrated pages such as [`room-show.html`](room-show.html), [`tools/scene-host/editor/index.html`](tools/scene-host/editor/index.html), [`tools/scene-host/player/index.html`](tools/scene-host/player/index.html), and [`port-show.html`](port-show.html).
 
 ## License
 

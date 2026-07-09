@@ -7,7 +7,7 @@
 - 事件机制 lab（V2 产品大纲）：[scene-event-mechanism-evaluation.md §10](./scene-event-mechanism-evaluation.md)
 - 事件机制 engineering Plan（私有）：`core_event_mechanism_v2_88159f7d.plan.md` — **本期主线**；本文 **不在其 M1–M6 scope 内**
 - 编辑器 UI 备忘（V1）：[scene-editor-ui-memo.md](./scene-editor-ui-memo.md) §八（多场景多标签，与本备忘 **不同层级**）
-- 编辑器壳：[`scene-editor.html`](../scene-editor.html)、[`tools/scene-host/editor/index.html`](../tools/scene-host/editor/index.html)
+- 编辑器壳：[`scene-editor.html`](../tools/old_version/scene-editor.html)、[`tools/scene-host/editor/index.html`](../tools/scene-host/editor/index.html)
 
 本页为 **VB6 式事件脚本编辑体验** 的编辑器壳层备忘，**不代表当前里程碑**；与 [`docs/zh/scope.md`](../docs/zh/scope.md) 的 Core 承诺区分。
 
@@ -72,7 +72,7 @@
 
 ### 3.2 不建议：仅在 Code(JSON) 模式内嵌树 + CM 管 tab
 
-- Code 模式职责是 **整份场景 JSON**（[`#codeEditorStage`](../scene-editor.html)）；事件脚本是 **patch 片段**，持久化目标不同。
+- Code 模式职责是 **整份场景 JSON**（[`#codeEditorStage`](../tools/old_version/scene-editor.html)）；事件脚本是 **patch 片段**，持久化目标不同。
 - 编脚本时常需看 **3D**；Code 模式将 3D 收成 PiP，不适合作日常事件编辑主界面。
 - CM6 **无**内置工程树/多标签；仍要应用层 layout，绑进 JSON Code 模式职责混乱。
 

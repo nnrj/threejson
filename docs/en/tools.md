@@ -6,15 +6,16 @@
 
 This document describes **host applications** built on ThreeJSON core (scene editor, player, demo pages) and **`sysConfig`** conventions. Core callers only need [`json-format.md`](./json-format.md) and [`api.md`](./api.md); this does not replace core docs.
 
-Planned: root `scene-editor.html` / `scene-player.html` may move under [`tools/`](../../tools/); contracts stay the same.
+Done: the scene editor/player have moved from single root-level files to the modular [`tools/scene-host/`](../../tools/scene-host/) rebuild (contracts unchanged); scene-host is now the recommended entry point. The old single-file pages were relocated to [`tools/old_version/`](../../tools/old_version/) as a read-only archive.
 
 ## Ecosystem overview
 
 | Component | Path | Notes |
 |-----------|------|-------|
-| Scene editor | [`scene-editor.html`](../../scene-editor.html) | Edit, save, AI, command layer |
-| Scene player | [`scene-player.html`](../../scene-player.html) | Playlists, inspection tours |
-| Editor commands | [`tools/common/editor-single/command/`](../../tools/common/editor-single/command/) | `editor.*` commands for HTML hosts |
+| Scene editor | [`tools/scene-host/editor/index.html`](../../tools/scene-host/editor/index.html) | Edit, save, AI, command layer |
+| Scene player | [`tools/scene-host/player/index.html`](../../tools/scene-host/player/index.html) | Playlists, inspection tours |
+| Old version archive (read-only) | [`tools/old_version/`](../../tools/old_version/) | Retired; kept for historical reference |
+| Editor commands | [`tools/common/editor-single/command/`](../../tools/common/editor-single/command/) | `editor.*` commands for the archived HTML host; scene-host copies the same implementation into `editor/lib/` |
 | Business demos | [`room-show.html`](../../room-show.html), [`port-show.html`](../../port-show.html), etc. | Machine room / port dashboards |
 | External agent / MCP | [`tools/threejson-agent/`](../../tools/threejson-agent/README.md), [`mcp-cursor.md`](./mcp-cursor.md) | Does not depend on page `sysConfig` |
 
@@ -42,7 +43,7 @@ Explicit sceneConfig / JSON fields
 
 4. **Viewport integration**: `canvasWidth` / `canvasHeight` may live in JSON; tools track container size in `sysConfig` and inject **only when JSON omits them**. At runtime `autoResize: true` follows canvas DOM size (tool `windowResize` also calls `renderLoop.resize`).
 
-Implementation: `buildEditorRuntimeConfig` / `buildPlayerRuntimeConfig` (`scene-editor.html`, `scene-player.html`).
+Implementation: `buildEditorRuntimeConfig` / `buildPlayerRuntimeConfig` ([`tools/scene-host/shared/js/`](../../tools/scene-host/shared/js/); the archived [`tools/old_version/`](../../tools/old_version/) pages have inline copies of the same functions).
 
 **Canonical `objectList` only** (no top-level `sceneConfig`): do not inject a `sceneConfig` object; pass render settings via **`createJsonScene` options**.
 

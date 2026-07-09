@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>场景播放器</title>
-  <link rel="icon" href="./assets/img/threejson.ico" type="image/x-icon">
+  <link rel="icon" href="../../assets/img/threejson.ico" type="image/x-icon">
   <script type="importmap">
     
     {
       "imports": {
-        "threejson": "./builtins/full.js",
-        "threejson/core": "./core/index.js",
+        "threejson": "../../builtins/full.js",
+        "threejson/core": "../../core/index.js",
         "three": "https://esm.sh/three@0.184.0",
         "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
         "fflate": "https://esm.sh/fflate@0.8.3",
@@ -1386,7 +1386,7 @@ Powered by ThreeJSON and Three.js</div>
 <script type="module">
   import * as THREE from "three";
   import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
-  import { isLoadableScenePayload } from "./core/handler/sceneFriendlyNormalizer.js";
+  import { isLoadableScenePayload } from "../../core/handler/sceneFriendlyNormalizer.js";
 
   import {
     bindProgressElement,
@@ -1423,14 +1423,14 @@ Powered by ThreeJSON and Three.js</div>
 
   // ===== Player Settings =====
   const PLAYER_SETTINGS_STORAGE_KEY = "scenePlayer_settings_v1";
-  const PLAYER_SETTINGS_JSON_URL = "./assets/json/other/scene-player/setting.json";
+  const PLAYER_SETTINGS_JSON_URL = "../../assets/json/other/scene-player/setting.json";
 
   const PLAYER_SETTINGS_DEFAULTS = {
     version: 1,
     app: "scene-player",
     general: {
       baseTitle: "场景播放器",
-      defaultSceneUrl: "./assets/json/portShow.json",
+      defaultSceneUrl: "../../assets/json/portShow.json",
       loadingMaskText: "3D 场景加载中...",
       messageToastDurationMs: 2600,
       progressOverlayEnabled: true,
@@ -1649,10 +1649,13 @@ Powered by ThreeJSON and Three.js</div>
   function resolvePlayerPageUrl(url) {
     const value = String(url || "").trim();
     if (value === "/demo.html") {
-      return "./examples/html-demo/demo.html";
+      return "../../examples/html-demo/demo.html";
     }
     if (value.startsWith("/assets/") || value === "/examples/html-demo/demo.html") {
-      return "." + value;
+      return "../.." + value;
+    }
+    if (value.startsWith("./")) {
+      return "../../" + value.slice(2);
     }
     return value;
   }
@@ -3114,7 +3117,7 @@ Powered by ThreeJSON and Three.js</div>
       async onSceneReady(ctx) {
         try {
           const { bootstrapFirstPersonExtensionsFromScene } = await import(
-            "./extensions/fps-walk/bootstrapFirstPersonExtensions.js"
+            "../../extensions/fps-walk/bootstrapFirstPersonExtensions.js"
           );
           await bootstrapFirstPersonExtensionsFromScene(ctx);
         } catch (err) {
@@ -4210,7 +4213,7 @@ Powered by ThreeJSON and Three.js</div>
     };
     sceneRuntime = await createJsonScene(buildPlayerScenePayload(), {
       canvas: canvasContainer,
-      assetsBase: "./assets",
+      assetsBase: "../../assets",
       autoFillLights: true,
       autoFillCamera: true,
       sceneAutoRotate: sysConfig.sceneAutoRotate,
@@ -4228,7 +4231,7 @@ Powered by ThreeJSON and Three.js</div>
       async onSceneReady(ctx) {
         try {
           const { bootstrapFirstPersonExtensionsFromScene } = await import(
-            "./extensions/fps-walk/bootstrapFirstPersonExtensions.js"
+            "../../extensions/fps-walk/bootstrapFirstPersonExtensions.js"
           );
           await bootstrapFirstPersonExtensionsFromScene(ctx);
         } catch (err) {

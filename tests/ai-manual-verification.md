@@ -113,7 +113,7 @@ python -m threejson_agent --config ../../setting.json scene generate \
 | **C11** | 教程 AI 全流程 | [`05-01-ai-scene.html`](../examples/html-demo/track-05-tooling/05-01-ai-scene.html) | 静态服务、页内 Key | 生成后 canvas 有物体；调整有效 | importmap、`core/ai` |
 | **C12** | 看图生成 | 05-01 看图 Tab | 多模态模型 Key（如 gpt-4o-mini） | 参考图影响布局/物体 | 勿用纯文本模型（如 deepseek-chat） |
 | **C13** | 机位保持 | 05-01 调整后 | 同页 | 相机/controls 未异常重置 | `createJsonScene` 重载逻辑 |
-| **C14** | 编辑器生成 | [`scene-editor.html`](../scene-editor.html) 左栏 AI | localStorage Key | 场景载入画布 | 浏览器 Network |
+| **C14** | 编辑器生成 | [`tools/scene-host/editor/index.html`](../tools/scene-host/editor/index.html) 左栏 AI | localStorage Key | 场景载入画布 | 浏览器 Network |
 | **C15** | 增量+流式+中止 | editer 勾选增量/流式/中止 | 同页 | 增量仅改部分；流式有字；中止不 toast 报错 | Phase E 控件 |
 | **C16** | 纹理 sink | editer 纹理目录/ZIP + 自定义网关 | 用户授权目录；`llm.baseUrl` 与 chat 一致 | Network 请求 host 为自定义网关（非 `api.openai.com`）；fill 后材质可见；无 CORS 时仍载入场景 + warning | `browserTextureSink`、关「完成后填充纹理」或 CLI |
 | **P1** | 05-01 签收 | 上列 C11–C13 | — | 目视通过 | — |

@@ -20,7 +20,7 @@ tools/threejson-agent/
 | [`shell/py/`](shell/py/README.md) | **Python shell** — Click CLI + Gradio GUI |
 | `setting.json` | Product config (LLM keys, texture, asset) |
 
-Parallel apps (not under this folder): [`scene-editor.html`](../../scene-editor.html) (browser + localStorage), [`tools/mcp-threejson`](../mcp-threejson/) (Node MCP).
+Parallel apps (not under this folder): [`tools/scene-host/editor/`](../scene-host/editor/) (browser + localStorage), [`tools/mcp-threejson`](../mcp-threejson/) (Node MCP).
 
 ## Quick start
 

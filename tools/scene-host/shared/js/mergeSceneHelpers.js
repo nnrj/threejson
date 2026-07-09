@@ -1,6 +1,6 @@
 import { hasValue } from "threejson";
 
-/** Mirrors scene-editor.html mergeSceneHelpersFromSysConfig */
+/** Mirrors tools/old_version/scene-editor.html mergeSceneHelpersFromSysConfig */
 export function mergeSceneHelpersFromSysConfig(existingHelpers, sysConfig) {
   const out =
     existingHelpers && typeof existingHelpers === "object"

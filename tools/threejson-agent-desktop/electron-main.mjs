@@ -29,7 +29,7 @@ function startStaticServer(root) {
       try {
         const urlPath = decodeURIComponent(new URL(req.url || "/", "http://x").pathname);
         const safe = path.normalize(urlPath).replace(/^(\.\.[/\\])+/, "");
-        const filePath = path.join(root, safe === "/" ? "scene-editor.html" : safe);
+        const filePath = path.join(root, safe === "/" ? "tools/scene-host/editor/index.html" : safe);
         if (!filePath.startsWith(root)) {
           res.writeHead(403);
           res.end();
@@ -64,7 +64,7 @@ async function createWindow() {
       nodeIntegration: false
     }
   });
-  await mainWindow.loadURL(`http://127.0.0.1:${port}/scene-editor.html`);
+  await mainWindow.loadURL(`http://127.0.0.1:${port}/tools/scene-host/editor/index.html`);
 }
 
 ipcMain.handle("threejson:getProjectRoot", () => projectRoot);

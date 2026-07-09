@@ -1,7 +1,7 @@
 # 场景编辑器右侧面板 UI 备忘（非发布承诺）
 
 **状态**：`idea`（待排期）  
-**关联页面**：[`scene-editor.html`](../scene-editor.html)  
+**关联页面**：[`scene-editor.html`](../tools/old_version/scene-editor.html)  
 **记录日期**：2026-05（对话备忘整理）
 
 本页为产品/交互备忘，**不代表当前里程碑**；实现前需单独评估必要性、可行性与 JSON 写入契约。与 [`docs/zh/scope.md`](../docs/zh/scope.md) 的 Core 承诺区分。

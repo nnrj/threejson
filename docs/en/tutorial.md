@@ -92,8 +92,8 @@ After this track you should: load friendly/standard scenes with `createJsonScene
 | ID | Prereq | Title | Entry |
 |----|--------|-------|-------|
 | t05-02 | t00-04 | Core network room zone A | [room-show.html](../../room-show.html) |
-| t05-03 | t00-04 | Scene editor | [scene-editor.html](../../scene-editor.html) |
-| t05-04 | t00-04 | Scene player | [scene-player.html](../../scene-player.html) |
+| t05-03 | t00-04 | Scene editor | [tools/scene-host/editor/index.html](../../tools/scene-host/editor/index.html) |
+| t05-04 | t00-04 | Scene player | [tools/scene-host/player/index.html](../../tools/scene-host/player/index.html) |
 | t05-05 | t05-02 | Smart port | [port-show.html](../../port-show.html) |
 
 ## Track 6 · Statistics and visualization (stat domain)

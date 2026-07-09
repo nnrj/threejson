@@ -1537,12 +1537,14 @@ html, body {
       flex: 0 0 auto;
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
       gap: 8px;
+      row-gap: 6px;
       padding: 8px 12px;
       background: #2b2b2b;
       border-bottom: 1px solid #3c3c3c;
       min-width: 0;
-      overflow-x: auto;
+      overflow-x: visible;
       overflow-y: hidden;
     }
 
@@ -1608,6 +1610,15 @@ html, body {
     .codeEditorToolbarSpacer {
       flex: 1 1 auto;
       min-width: 12px;
+    }
+
+    /* 视角保持起的按钮组：横向空间不足时整体换行到第二行，左对齐 */
+    .codeEditorToolbarRight {
+      display: flex;
+      align-items: center;
+      flex-wrap: nowrap;
+      flex-shrink: 0;
+      gap: 8px;
     }
 
     /* 3D 悬浮窗顶部的控制条：渲染按钮靠左，机位保持/自动渲染靠右 */

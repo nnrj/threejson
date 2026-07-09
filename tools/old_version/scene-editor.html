@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>场景编辑器</title>
-  <link rel="icon" href="./assets/img/threejson.ico" type="image/x-icon">
+  <link rel="icon" href="../../assets/img/threejson.ico" type="image/x-icon">
   <script type="importmap">
     
     {
       "imports": {
-        "threejson": "./builtins/full.js",
-        "threejson/core": "./core/index.js",
+        "threejson": "../../builtins/full.js",
+        "threejson/core": "../../core/index.js",
         "three": "https://esm.sh/three@0.184.0",
         "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
         "fflate": "https://esm.sh/fflate@0.8.3",
@@ -4565,18 +4565,18 @@ Powered by ThreeJSON and Three.js</div>
     createJsonSceneFromObjectRecord,
     deployObjectRecordIntoRuntime,
     isObjectRecordEntry
-  } from "./core/handler/sceneLoadHandler.js";
+  } from "../../core/handler/sceneLoadHandler.js";
   import {
     getBusinessDomainApi,
     getDomain,
     resolveDomainIdForSceneDeployRoot
-  } from "./core/handler/businessDomainRegistry.js";
-  import { isLoadableScenePayload } from "./core/handler/sceneFriendlyNormalizer.js";
-  import { normalizeSubSceneHierarchy } from "./core/handler/subSceneHierarchy.js";
-  import { isScenePayloadEntry } from "./core/util/archiveEntryKind.js";
-  import { hasExplicitCameraConfig } from "./core/util/sceneRuntimeDefaults.js";
-  import { resolveTextureSource, LIB_PREFIX } from "./core/util/resolveTextureSource.js";
-  import { applyTextureRepeatToMap, isDefaultTextureRepeat, loadTextureFromMaterialJson } from "./core/util/loadTextureFromMaterialJson.js";
+  } from "../../core/handler/businessDomainRegistry.js";
+  import { isLoadableScenePayload } from "../../core/handler/sceneFriendlyNormalizer.js";
+  import { normalizeSubSceneHierarchy } from "../../core/handler/subSceneHierarchy.js";
+  import { isScenePayloadEntry } from "../../core/util/archiveEntryKind.js";
+  import { hasExplicitCameraConfig } from "../../core/util/sceneRuntimeDefaults.js";
+  import { resolveTextureSource, LIB_PREFIX } from "../../core/util/resolveTextureSource.js";
+  import { applyTextureRepeatToMap, isDefaultTextureRepeat, loadTextureFromMaterialJson } from "../../core/util/loadTextureFromMaterialJson.js";
   import {
     TEXTURE_EXPLICIT_PROP_KEYS,
     configureTextureDefaultsForDeploy,
@@ -4587,11 +4587,11 @@ Powered by ThreeJSON and Three.js</div>
     resolveEffectiveTextureSummary,
     serializeTextureFilter,
     syncTexturePropsToMap
-  } from "./core/util/textureSampling.js";
-  import { resolveBoxDefaultTextureUrl } from "./core/util/boxTextureUrl.js";
-  import { detectRuntimeMaterialsArray, sanitizeMaterialJsonForExport } from "./core/util/descriptorExportSanitize.js";
-  import { listMaterialSlotsForDescriptor } from "./core/util/materialDescriptorWalk.js";
-  import { getByPointer, setByPointer } from "./core/util/jsonPointer.js";
+  } from "../../core/util/textureSampling.js";
+  import { resolveBoxDefaultTextureUrl } from "../../core/util/boxTextureUrl.js";
+  import { detectRuntimeMaterialsArray, sanitizeMaterialJsonForExport } from "../../core/util/descriptorExportSanitize.js";
+  import { listMaterialSlotsForDescriptor } from "../../core/util/materialDescriptorWalk.js";
+  import { getByPointer, setByPointer } from "../../core/util/jsonPointer.js";
   import {
     createCommandContext,
     createCommandRegistry,
@@ -4600,9 +4600,9 @@ Powered by ThreeJSON and Three.js</div>
     normalizeCommand,
     parseCommandScript,
     looksLikeMicroDslLine
-  } from "./core/command/index.js";
-  import { registerEditorCommands } from "./tools/common/editor-single/command/index.js";
-  import { runEditorAiUpdate } from "./tools/common/editor-single/ai/index.js";
+  } from "../../core/command/index.js";
+  import { registerEditorCommands } from "../../tools/common/editor-single/command/index.js";
+  import { runEditorAiUpdate } from "../../tools/common/editor-single/ai/index.js";
   import {
     applyDomainChildEditResolution,
     collectDomainExportCaveats,
@@ -4613,27 +4613,27 @@ Powered by ThreeJSON and Three.js</div>
     resolveDomainDeployRoot,
     resolveDomainEditSettings,
     snapshotDomainChildTransforms
-  } from "./tools/common/editor-single/domainEditSession.js";
+  } from "../../tools/common/editor-single/domainEditSession.js";
   import {
     assertSceneExportable,
     SceneExportBlockedError
-  } from "./core/util/sceneToJson.js";
-  import { setDomainEditState } from "./core/handler/domainDeployDescriptor.js";
+  } from "../../core/util/sceneToJson.js";
+  import { setDomainEditState } from "../../core/handler/domainDeployDescriptor.js";
   import {
     batchResultsHaveSceneMutation,
     batchResultsHaveSuccessfulAdjustment
-  } from "./core/ai/sceneCommandSkill.js";
-  import { normalizeDismissTrigger } from "./core/runtime/eventMechanism/infoPanelDismissTrigger.js";
-  import { parseEventScript } from "./core/runtime/eventMechanism/eventScript/parser.js";
-  import { resolveEventScriptMode } from "./core/runtime/eventMechanism/eventScript/config.js";
-  import { listObjTypeEventCapabilities } from "./core/runtime/eventMechanism/objTypeEventCapabilities.js";
-  import { resolveBindSceneEvents } from "./core/runtime/eventMechanism/resolveBindSceneEvents.js";
+  } from "../../core/ai/sceneCommandSkill.js";
+  import { normalizeDismissTrigger } from "../../core/runtime/eventMechanism/infoPanelDismissTrigger.js";
+  import { parseEventScript } from "../../core/runtime/eventMechanism/eventScript/parser.js";
+  import { resolveEventScriptMode } from "../../core/runtime/eventMechanism/eventScript/config.js";
+  import { listObjTypeEventCapabilities } from "../../core/runtime/eventMechanism/objTypeEventCapabilities.js";
+  import { resolveBindSceneEvents } from "../../core/runtime/eventMechanism/resolveBindSceneEvents.js";
 
   // ===== Editor Settings: defaults & schema =====
   const EDITOR_SETTINGS_STORAGE_KEY = "sceneEditor_settings_v1";
   const OBJECT_IMPORT_SESSION_FILL_LIGHTS = "sceneEditor_objectImportFillLights";
   const OBJECT_IMPORT_SESSION_FILL_CAMERA = "sceneEditor_objectImportFillCamera";
-  const EDITOR_SETTINGS_JSON_URL = "./assets/json/other/scene-editor/setting.json";
+  const EDITOR_SETTINGS_JSON_URL = "../../assets/json/other/scene-editor/setting.json";
   const EDITOR_OPEN_SCENE_BRIDGE_PREFIX = "threejson.editor.openScene.";
   const LOADING_MASK_ACTIVITY_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
@@ -4642,9 +4642,9 @@ Powered by ThreeJSON and Three.js</div>
     app: "scene-editor",
     general: {
       baseTitle: "场景编辑器",
-      defaultSceneUrl: "./assets/json/portShow.json",
+      defaultSceneUrl: "../../assets/json/portShow.json",
       openLastSceneOnStartup: false,
-      exitNavigateUrl: "./examples/html-demo/demo.html",
+      exitNavigateUrl: "../../examples/html-demo/demo.html",
       loadingMaskText: "3D 场景加载中...",
       loadingActivityIntervalMs: 120,
       messageToastDurationMs: 2600,
@@ -5508,10 +5508,13 @@ Powered by ThreeJSON and Three.js</div>
   function resolveEditorPageUrl(url) {
     const value = String(url || "").trim();
     if (value === "/demo.html") {
-      return "./examples/html-demo/demo.html";
+      return "../../examples/html-demo/demo.html";
     }
     if (value.startsWith("/assets/") || value === "/examples/html-demo/demo.html") {
-      return "." + value;
+      return "../.." + value;
+    }
+    if (value.startsWith("./")) {
+      return "../../" + value.slice(2);
     }
     return value;
   }
@@ -6406,7 +6409,7 @@ Powered by ThreeJSON and Three.js</div>
   const EDITOR_RECENT_SCENES_KEY = "recent-scenes";
   const EDITOR_SCENE_SNAPSHOT_KEY = "scene-snapshots";
   const EDITOR_SCENE_PRESETS_KEY = "scene-presets";
-  const PRESET_SCENE_BASE_URL = "./assets/json/other/demo-json/";
+  const PRESET_SCENE_BASE_URL = "../../assets/json/other/demo-json/";
   const PRESET_MANIFEST_URL = `${PRESET_SCENE_BASE_URL}presets.manifest.json`;
   const PRESET_SCENES_FALLBACK = [
     { id: "preset-blank-orbit", file: "preset-blank-orbit.json", label: "普通场景", order: 1 },
@@ -8434,7 +8437,7 @@ Powered by ThreeJSON and Three.js</div>
     };
     const opts = {
       canvas: canvasContainer,
-      assetsBase: "./assets",
+      assetsBase: "../../assets",
       cameraFallbackPosition: editorSettings?.render?.cameraFallbackPosition,
       defaultFov: editorSettings?.render?.defaultFov,
       orbitDampingFactor: editorSettings?.render?.orbitDampingFactor,

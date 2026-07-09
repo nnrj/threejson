@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "../../..");
-const htmlPath = path.join(repoRoot, "scene-editor.html");
+const htmlPath = path.join(repoRoot, "tools/old_version/scene-editor.html");
 const outPath = path.join(repoRoot, "tools/scene-host/editor/_shell-body.html");
 
 const lines = fs.readFileSync(htmlPath, "utf8").split(/\r?\n/);

@@ -41,8 +41,8 @@ examples/html-demo/
 | 页面 | 默认 JSON | 说明 |
 |------|-----------|------|
 | [room-show.html](../../room-show.html) | `roomShow.json` | 核心网络机房 A 区：冷热通道、UPS 分区、18 机柜运维大屏 |
-| [scene-editor.html](../../scene-editor.html) | `portShow.json` | 通用场景编辑器 |
-| [scene-player.html](../../scene-player.html) | `portShow.json` | 播放列表与巡检 |
+| [tools/scene-host/editor/index.html](../../tools/scene-host/editor/index.html) | `portShow.json` | 通用场景编辑器 |
+| [tools/scene-host/player/index.html](../../tools/scene-host/player/index.html) | `portShow.json` | 播放列表与巡检 |
 | [port-show.html](../../port-show.html) | `portShow.json` | 智慧港口 |
 
 ## 编写新 demo

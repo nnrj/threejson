@@ -39,7 +39,7 @@
   },
   "sceneJson": {
     "cameraLockDefault": true,
-    "autoRenderDefault": false,
+    "autoRenderDefault": true,
     "autoRenderDelayMs": 1000,
     "syncCodeAndSidebarPrefs": true,
     "codeViewFormat": "auto",

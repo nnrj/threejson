@@ -1,7 +1,7 @@
 # 场景编辑器 · AI 生成能力增强备忘（非发布承诺）
 
 **状态**：`partial`（Phase A/B 边界与 Node 套壳已落地；增量 Patch / 流式预览 API 已进 core/ai，编辑器 UI 仍可选接入）  
-**原则**：能力先在 [`core/ai/`](../core/ai/) 完善，再由 [`scene-editor.html`](../scene-editor.html) 左侧面板（AI 配置 / AI 生成 / AI 调整等子标签）接入。  
+**原则**：能力先在 [`core/ai/`](../core/ai/) 完善，再由 [`scene-editor.html`](../tools/old_version/scene-editor.html) 左侧面板（AI 配置 / AI 生成 / AI 调整等子标签）接入。  
 **记录日期**：2026-05（对话备忘整理）
 
 本页**不代表发布承诺**；与 [`docs/zh/scope.md`](../docs/zh/scope.md) 的 Core 承诺区分。
@@ -47,7 +47,7 @@
 
 ### 2.4 AI 调整：自动附带上下文（2026-06）
 
-编辑器 [`onAiUpdateClick`](../scene-editor.html) 读取 **nested canonical**（`getScenePayloadJsonTextForPersistence()`）；Code/侧栏展示仍用 `getScenePayloadJsonTextForPersistViewEdit()`（subSceneList 等展示 layout）。**写入 LLM user message 的范围** 因输出模式而异：
+编辑器 [`onAiUpdateClick`](../tools/old_version/scene-editor.html) 读取 **nested canonical**（`getScenePayloadJsonTextForPersistence()`）；Code/侧栏展示仍用 `getScenePayloadJsonTextForPersistViewEdit()`（subSceneList 等展示 layout）。**写入 LLM user message 的范围** 因输出模式而异：
 
 | 输出模式 | 默认附带 | 「附带空间摘要」 | 「附带完整 JSON」 |
 |----------|----------|------------------|-------------------|

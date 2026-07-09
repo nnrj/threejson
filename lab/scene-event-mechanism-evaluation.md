@@ -39,8 +39,8 @@
 
 **现状痛点**：至少 4 个宿主页面重复实现相近的双击链路：
 
-- [`scene-editor.html`](../scene-editor.html) — `openOrClose` → `door.openOrCloseDoor`；`showDeviceCameraVideo` → `cabinet.getAssociatedDeviceId`；另含编辑器专属的 `transIt`、domain drill-in、属性面板
-- [`room-show.html`](../room-show.html)、[`port-show.html`](../port-show.html)、[`scene-player.html`](../scene-player.html) — 同类 door + 摄像头识别逻辑
+- [`scene-editor.html`](../tools/old_version/scene-editor.html) — `openOrClose` → `door.openOrCloseDoor`；`showDeviceCameraVideo` → `cabinet.getAssociatedDeviceId`；另含编辑器专属的 `transIt`、domain drill-in、属性面板
+- [`room-show.html`](../room-show.html)、[`port-show.html`](../port-show.html)、[`scene-player.html`](../tools/old_version/scene-player.html) — 同类 door + 摄像头识别逻辑
 
 这与「domain 行为由 JSON/运行时契约驱动，而非宿主写死」的长期方向不一致（Domain 架构核查已记录，**本期保留现状**）。
 
@@ -277,8 +277,8 @@ flowchart LR
 |------|------|
 | `createJsonScene` 自动 bind/dispose ELM | [`core/runtime/eventMechanism/attachSceneEventRuntime.js`](../core/runtime/eventMechanism/attachSceneEventRuntime.js) |
 | `interaction.bindSceneEvents`、`dismissTrigger`、per-event `mode` | [`docs/zh/event-mechanism.md`](../docs/zh/event-mechanism.md)、[`docs/zh/json-format.md`](../docs/zh/json-format.md) |
-| 通用 player 去 door 硬编码（门等 domain 事件 **三期** JSON 绑定） | [`scene-player.html`](../scene-player.html) |
-| 编辑器 `[事件]` 标签、预览/编辑器事件绑定设置、F5 运行场景 | [`scene-editor.html`](../scene-editor.html)、[`tools/scene-host/`](../tools/scene-host/) |
+| 通用 player 去 door 硬编码（门等 domain 事件 **三期** JSON 绑定） | [`scene-player.html`](../tools/old_version/scene-player.html) |
+| 编辑器 `[事件]` 标签、预览/编辑器事件绑定设置、F5 运行场景 | [`scene-editor.html`](../tools/old_version/scene-editor.html)、[`tools/scene-host/`](../tools/scene-host/) |
 | demo/tutorial `fix` → `dismissTrigger` | [`04-08-info-panel-gallery`](../examples/html-demo/track-04-interaction/04-08-info-panel-gallery.html) |
 | `.tjz` tryPack 含 eventScript（默认关） | [`core/util/archiveExportUtil.js`](../core/util/archiveExportUtil.js) |
 

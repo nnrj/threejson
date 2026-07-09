@@ -71,7 +71,7 @@ export function resolveEditorPrimitiveSpawnContext(host) {
   return { position: { x: 0, y: 1, z: 0 }, unit: 1 };
 }
 
-/** Mirrors scene-editor.html buildEditorPrimitiveDescriptor */
+/** Mirrors tools/old_version/scene-editor.html buildEditorPrimitiveDescriptor */
 export function buildEditorPrimitiveDescriptor(panelKey, host) {
   const objType = normalizeEditorPanelObjType(panelKey);
   const stamp = Date.now();

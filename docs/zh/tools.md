@@ -6,31 +6,29 @@
 
 本文描述**基于 ThreeJSON core 的宿主应用**（场景编辑器、播放器、演示页等）与 **`sysConfig`** 的约定。Core 调用者只需阅读 [`json-format.md`](./json-format.md) 与 [`api.md`](./api.md)；本文不替代 core 文档。
 
-远期规划中，根目录 `scene-editor.html` / `scene-player.html` 的逻辑将迁入 [`tools/scene-host/`](../../tools/scene-host/)（契约不变）。**当前阶段仍以根 HTML 为正本**；绿场为拆分重构版，尚在对齐与调试中。
+场景编辑器 / 播放器已完成从根目录单文件到 [`tools/scene-host/`](../../tools/scene-host/) 的模块化拆分重构（契约不变），**scene-host 现为默认推荐入口**；旧版单文件已迁移至 [`tools/old_version/`](../../tools/old_version/) 作只读归档。
 
-## scene-host 绿场（拆分重构 · 对齐中）
+## scene-host（正式版）
 
-[`tools/scene-host/`](../../tools/scene-host/) 是 [`scene-editor.html`](../../scene-editor.html)、[`scene-player.html`](../../scene-player.html) 的**模块化拆分重构**，从正本复制逻辑后整理，与正本**代码不耦合**（拆分期不修改正本 HTML 与 [`tools/common/editor-single/`](../../tools/common/editor-single/)）。
+[`tools/scene-host/`](../../tools/scene-host/) 是旧版 [`tools/old_version/scene-editor.html`](../../tools/old_version/scene-editor.html)、[`tools/old_version/scene-player.html`](../../tools/old_version/scene-player.html) 的**模块化拆分重构**，从旧版复制逻辑后整理，与旧版**代码不耦合**（不 import 旧版 HTML 与 [`tools/common/editor-single/`](../../tools/common/editor-single/)）。
 
 | 入口 | 路径 | 状态 |
 |------|------|------|
-| **正本** 编辑器 | [`scene-editor.html`](../../scene-editor.html) | **稳定版（当前推荐）** |
-| **正本** 播放器 | [`scene-player.html`](../../scene-player.html) | **稳定版（当前推荐）** |
-| 绿场 编辑器 | [`tools/scene-host/editor/index.html`](../../tools/scene-host/editor/index.html) | 对齐与调试中 |
-| 绿场 播放器 | [`tools/scene-host/player/index.html`](../../tools/scene-host/player/index.html) | 对齐与调试中 |
-| 绿场 Desktop | [`tools/scene-host/desktop/README.md`](../../tools/scene-host/desktop/README.md) | `npm run start:editor` / `start:player` |
+| 编辑器 | [`tools/scene-host/editor/index.html`](../../tools/scene-host/editor/index.html) | **稳定版（当前推荐）** |
+| 播放器 | [`tools/scene-host/player/index.html`](../../tools/scene-host/player/index.html) | **稳定版（当前推荐）** |
+| Desktop | [`tools/scene-host/desktop/README.md`](../../tools/scene-host/desktop/README.md) | `npm run start:editor` / `start:player` |
 | 说明 | [`tools/scene-host/README.md`](../../tools/scene-host/README.md) | — |
+| 旧版归档（只读对照） | [`tools/old_version/`](../../tools/old_version/) | 已退役，不再作为默认推荐 |
 
-绿场与正本 **共用** settings / localStorage / 播放列表等存储（同 key、同 `setting.json` 路径），便于并行对照。验收完成前，文档、教程与默认书签仍以 **正本 HTML** 为准。
+scene-host 与旧版归档 **共用** settings / localStorage / 播放列表等存储（同 key、同 `setting.json` 路径），便于历史数据延续与对照排查。
 
 ## 生态概览
 
 | 组件 | 路径 | 说明 |
 |------|------|------|
-| 场景编辑器（**正本**） | [`scene-editor.html`](../../scene-editor.html) | 通用场景编辑、保存、AI、命令层；**当前稳定版** |
-| 场景播放器（**正本**） | [`scene-player.html`](../../scene-player.html) | 播放列表、巡检；**当前稳定版** |
-| 编辑器 / 播放器（**绿场**） | [`tools/scene-host/`](../../tools/scene-host/README.md) | 正本的拆分重构；对齐与调试中 |
-| 编辑器命令层 | [`tools/common/editor-single/command/`](../../tools/common/editor-single/command/) | `editor.*` 命令，供 HTML 接入 |
+| 编辑器 / 播放器（**scene-host**） | [`tools/scene-host/`](../../tools/scene-host/README.md) | 通用场景编辑、保存、AI、命令层；**当前稳定版** |
+| 编辑器 / 播放器（旧版归档） | [`tools/old_version/`](../../tools/old_version/) | 已退役，只读对照 |
+| 编辑器命令层 | [`tools/common/editor-single/command/`](../../tools/common/editor-single/command/) | `editor.*` 命令，供旧版归档 HTML 接入；scene-host 复制同等实现到 `editor/lib/` |
 | 业务演示 | [`room-show.html`](../../room-show.html)、[`port-show.html`](../../port-show.html) 等 | 机房/港口等业务大屏 |
 | 外置 Agent / MCP | [`tools/threejson-agent/`](../../tools/threejson-agent/README.md)、[`docs/mcp-cursor.md`](./mcp-cursor.md) | 不依赖页面 `sysConfig` |
 
@@ -58,7 +56,7 @@ sceneConfig / JSON 显式字段
 
 4. **视口集成**：`canvasWidth` / `canvasHeight` 可选写在 JSON；工具用 `sysConfig` 跟踪容器尺寸，**仅当 JSON 未写时**注入。运行中默认 `autoResize: true`，画面跟 canvas DOM 尺寸（工具 `windowResize` 亦会 `renderLoop.resize`）。
 
-实现入口：`buildEditorRuntimeConfig` / `buildPlayerRuntimeConfig`（`scene-editor.html`、`scene-player.html`）。
+实现入口：`buildEditorRuntimeConfig` / `buildPlayerRuntimeConfig`（[`tools/scene-host/shared/js/`](../../tools/scene-host/shared/js/)，旧版归档 [`tools/old_version/`](../../tools/old_version/) 内为同名内联实现）。
 
 **canonical 纯 `objectList`**（无顶层 `sceneConfig`）：不注入 `sceneConfig` 对象；渲染类 settings 经 **`createJsonScene` options** 传入。
 

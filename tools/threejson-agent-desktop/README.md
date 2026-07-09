@@ -1,6 +1,6 @@
 # ThreeJSON Agent Desktop (Electron)
 
-Electron 壳加载仓库根目录的 `scene-editor.html`，并通过 preload 将纹理写入 `assets/textures/`。
+Electron 壳加载 [`tools/scene-host/editor/index.html`](../scene-host/editor/index.html)，并通过 preload 将纹理写入 `assets/textures/`。
 
 ## 要求
 

@@ -102,9 +102,9 @@ const result = await aiClient.runSceneAgent(
 
 浏览器内 Agent **不会**默认调用 `fillTextureUrls` 写入本地 `assets/textures/`；编辑器可配置 `texture.sink`（目录授权 / 图床 / ZIP），外置批处理见 `tools/threejson-agent/`。
 
-## 浏览器编辑器（scene-editor.html）接入
+## 浏览器编辑器（tools/scene-host/editor）接入
 
-[`scene-editor.html`](../scene-editor.html) 与 CLI/MCP **平行**：只 `import` 本模块，凭据存 **localStorage**，**不**读取 `setting.json`，**不** spawn Node 桥。
+[`tools/scene-host/editor/`](../../tools/scene-host/editor/)（当前正式版，旧版归档见 [`tools/old_version/scene-editor.html`](../../tools/old_version/scene-editor.html)）与 CLI/MCP **平行**：只 `import` 本模块，凭据存 **localStorage**，**不**读取 `setting.json`，**不** spawn Node 桥。
 
 ```js
 const client = createSceneAiClient({ provider: "chatgpt", apiKey, model });

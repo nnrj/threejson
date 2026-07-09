@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-/** 与 scene-editor.html 内 resolveBootRestoreKind 保持一致（编辑器专用，不单独抽模块）。 */
+/** 与 tools/old_version/scene-editor.html 内 resolveBootRestoreKind 保持一致（编辑器专用，不单独抽模块）。 */
 function resolveBootRestoreKind(recovery) {
   if (!recovery || recovery.sessionDirty !== true) {
     return "default";

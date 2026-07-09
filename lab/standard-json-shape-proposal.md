@@ -13,9 +13,9 @@
 
 ### 现象
 
-[`scene-editor.html`](../scene-editor.html) 自动快照 → 【从快照恢复】报错：`JSON 格式无效（需要 worldInfo 或标准 objectList）`。
+[`scene-editor.html`](../tools/old_version/scene-editor.html) 自动快照 → 【从快照恢复】报错：`JSON 格式无效（需要 worldInfo 或标准 objectList）`。
 
-涉及：[`validateLoadedScenePayload`](../scene-editor.html)、[`ingestScenePayloadFromParsedJson`](../scene-editor.html)、[`normalizeScenePayload`](../core/handler/sceneFriendlyNormalizer.js)。
+涉及：[`validateLoadedScenePayload`](../tools/old_version/scene-editor.html)、[`ingestScenePayloadFromParsedJson`](../tools/old_version/scene-editor.html)、[`normalizeScenePayload`](../core/handler/sceneFriendlyNormalizer.js)。
 
 ### 直接原因
 
@@ -267,7 +267,7 @@ flowchart TB
 | 键 | 读取逻辑 | 结论 |
 |----|----------|------|
 | `leftPanelShow` 等 UI chrome | **无** | 删；宿主 `editorSettings` / `playerSettings` |
-| `alarmList` | 仅 [`scene-player.html`](../scene-player.html) `initAlarm()` | D3 删除读取；业务用 [`domains/sceneHighlight`](../domains/sceneHighlight/) |
+| `alarmList` | 仅 [`scene-player.html`](../tools/old_version/scene-player.html) `initAlarm()` | D3 删除读取；业务用 [`domains/sceneHighlight`](../domains/sceneHighlight/) |
 | `sceneAutoRotate` | editor/player `applyWorldHintsToSysConfig` | 迁入 settings 或 `sceneConfig.controls` |
 | 机柜/盒子等场景内容 | `room-show` 等读 `worldInfo.*List` | **保留**（友好 JSON 场景本体） |
 

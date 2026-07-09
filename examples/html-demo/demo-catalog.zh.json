@@ -1598,7 +1598,7 @@
     "id": "t05-03",
     "track": "05",
     "order": "03",
-    "path": "../../scene-editor.html",
+    "path": "../../tools/scene-host/editor/index.html",
     "jsonFiles": [
       {
         "json": "../../assets/json/portShow.json"
@@ -1628,7 +1628,7 @@
     "id": "t05-04",
     "track": "05",
     "order": "04",
-    "path": "../../scene-player.html",
+    "path": "../../tools/scene-host/player/index.html",
     "jsonFiles": [
       {
         "json": "../../assets/json/portShow.json"

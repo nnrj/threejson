@@ -23,7 +23,7 @@ This handbook is written for library callers. It focuses on the scene pipeline u
 - [Demo Pages](./demos.md): what each page under `examples/html-demo/` and the repo root demonstrates.
 - [Scene load lifecycle](./scene-load-lifecycle.md): `createJsonScene` phase hooks and SDF text font preload (bilingual).
 
-The default entry page at the repo root is [`../index.html`](../../index.html), which redirects to [`website/index.html`](../../website/index.html). The tutorial index [`demo.html`](../../examples/html-demo/demo.html) lets you switch between the `examples/html-demo/` samples and the root-level integrated pages such as `room-show.html`, `scene-editor.html`, `scene-player.html`, and `port-show.html`.
+The default entry page at the repo root is [`../index.html`](../../index.html), which redirects to [`website/index.html`](../../website/index.html). The tutorial index [`demo.html`](../../examples/html-demo/demo.html) lets you switch between the `examples/html-demo/` samples and integrated pages such as `room-show.html`, the [scene editor](../../tools/scene-host/editor/index.html), the [scene player](../../tools/scene-host/player/index.html), and `port-show.html`.
 
 ## npm Install (Optional)
 

@@ -92,8 +92,8 @@
 | ID | 先修 | 标题 | 入口 |
 |----|------|------|------|
 | t05-02 | t00-04 | 核心网络机房 A 区 | [room-show.html](../../room-show.html) |
-| t05-03 | t00-04 | 场景编辑器 | [scene-editor.html](../../scene-editor.html) |
-| t05-04 | t00-04 | 场景播放器 | [scene-player.html](../../scene-player.html) |
+| t05-03 | t00-04 | 场景编辑器 | [tools/scene-host/editor/index.html](../../tools/scene-host/editor/index.html) |
+| t05-04 | t00-04 | 场景播放器 | [tools/scene-host/player/index.html](../../tools/scene-host/player/index.html) |
 | t05-05 | t05-02 | 智慧港口 | [port-show.html](../../port-show.html) |
 
 ## Track 6 · 统计与可视化（stat domain）

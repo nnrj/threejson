@@ -301,9 +301,9 @@ EventScript 内 `self.moveBy` / `self.setPosition` / `$('token').visible = …` 
 | 预览热更新 | 开 | 编辑中向已打开的播放器推送场景快照 |
 | 预览播放器地址 | 空 | 留空用内置 player 路径 |
 
-入口：**运行 → 运行场景**、标题栏 **▶ 运行**、**F5**。正本编辑器打开 [`scene-player.html`](../../scene-player.html)（`?editorPreview=1`），通过 `postMessage`（`threejson:scene-preview`）接收快照。绿场 [`tools/scene-host/`](../../tools/scene-host/) 为拆分重构版，与正本**代码隔离**，不互相 import。
+入口：**运行 → 运行场景**、标题栏 **▶ 运行**、**F5**。编辑器打开 [`tools/scene-host/player/index.html`](../../tools/scene-host/player/index.html)（`?editorPreview=1`），通过 `postMessage`（`threejson:scene-preview`）接收快照。旧版归档 [`tools/old_version/`](../../tools/old_version/) 保留同等行为，与 scene-host **代码隔离**，不互相 import。
 
-**右侧 [事件] 标签**（正本 `scene-editor.html` 与绿场编辑器 UI 对齐）：选中 plain 对象 → 平台事件下拉 → 编辑 `script` / `lib://` → **应用并绑定**（`eventMechanism.rebind()`）。域对象事件编辑 Phase 3。
+**右侧 [事件] 标签**（scene-host 编辑器与旧版归档 UI 对齐）：选中 plain 对象 → 平台事件下拉 → 编辑 `script` / `lib://` → **应用并绑定**（`eventMechanism.rebind()`）。域对象事件编辑 Phase 3。
 
 **infoPanel `fix` / `dismissTrigger`**：`fix: true` 或省略 fix → 不可通过面板事件关闭；**`fix: false`** → 默认双击关闭（ELM `infoPanel.dismiss`）；`dismissTrigger` 仅在 `fix: false` 时定制关法（`click` / `keydown` 等，Escape 为 document 级）。Core 内置 binding，不走 `events.*.handler`。无空白双击批量关闭。
 

@@ -1,5 +1,5 @@
 /**
- * One-off maintainer script: copy settings schema from frozen scene-editor.html
+ * One-off maintainer script: copy settings schema from frozen tools/old_version/scene-editor.html
  * into shared/js/editorSettingsSchema.js (do not import baseline at runtime).
  */
 import fs from "node:fs";
@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "../../..");
-const htmlPath = path.join(repoRoot, "scene-editor.html");
+const htmlPath = path.join(repoRoot, "tools/old_version/scene-editor.html");
 const outPath = path.join(repoRoot, "tools/scene-host/shared/js/editorSettingsSchema.js");
 
 const lines = fs.readFileSync(htmlPath, "utf8").split(/\r?\n/);
@@ -24,7 +24,7 @@ const body = slice
   .join("\n");
 
 const header = `/**
- * Editor settings schema — copied from scene-editor.html (frozen baseline).
+ * Editor settings schema — copied from tools/old_version/scene-editor.html (frozen baseline).
  * scene-host must not import baseline HTML; keep keys/paths aligned manually.
  * Regenerate: node tools/scene-host/scripts/extract-settings-schema.mjs
  */

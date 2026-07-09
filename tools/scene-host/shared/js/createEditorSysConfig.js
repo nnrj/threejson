@@ -1,4 +1,4 @@
-/** Default editor sysConfig — aligned with scene-editor.html baseline. */
+/** Default editor sysConfig — aligned with tools/old_version/scene-editor.html baseline. */
 export function createEditorSysConfig() {
   return {
     canvasWidth: 0,

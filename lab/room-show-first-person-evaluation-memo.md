@@ -57,7 +57,7 @@ flowchart TB
 ### 不值得做的信号
 
 - 无明确用户故事（运维多数仍俯瞰 + 双击）  
-- [`scene-player.html`](../scene-player.html) 承担巡检/播放；[`track-04` FPS](../examples/html-demo/track-04-interaction/) 已展示引擎能力  
+- [`scene-player.html`](../tools/old_version/scene-player.html) 承担巡检/播放；[`track-04` FPS](../examples/html-demo/track-04-interaction/) 已展示引擎能力  
 - FPS **不增强**热力图、告警、统计等大屏主功能  
 
 **结论**：**不必作为 room-show 默认能力**；若有「大屏 + 可选走一圈」，宜为 **HUD/菜单第二视角模式**，非全页改版。

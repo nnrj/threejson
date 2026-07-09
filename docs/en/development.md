@@ -33,7 +33,7 @@ Optional Python agent shell: **Python 3.10+**; dependencies in [`tools/threejson
 
 ## AI credentials
 
-- Browser: [`scene-editor.html`](../../scene-editor.html) / html-demo → **localStorage**
+- Browser: [`tools/scene-host/editor/index.html`](../../tools/scene-host/editor/index.html) / html-demo → **localStorage**
 - CLI / GUI: [`tools/threejson-agent/setting.json`](../../tools/threejson-agent/setting.json) (copy from `setting.example.json`)
 - MCP: [`tools/mcp-threejson/setting.json`](../../tools/mcp-threejson/setting.json) (separate file)
 
@@ -86,7 +86,7 @@ Details and an example folder: **[`docs/dev/plans/README.md`](../../dev/plans/RE
 | **[`demo.html`](../../examples/html-demo/demo.html)** | Single-page runtime i18n; `navigator.language` → `zh-CN` / `en-US`, fallback `en-US`; Chinese UI links to `docs/*.md`; English UI links to `docs/en/*.md` where mirrors exist (e.g. `event-mechanism.md` stays Chinese-only) |
 | **`html-demo` tutorial pages** | Body UI stays Chinese |
 | **`tools/scene-host` editor / player** | Application i18n (gap-fill only); settings can override locale; default follows browser, fallback `en-US` |
-| **Canonical `scene-editor.html` / `scene-player.html`** | **No UI i18n for now** (avoid drift before greenfield aligns with canonical pages) |
+| **Archived `tools/old_version/scene-editor.html` / `scene-player.html`** (retired, read-only) | **No UI i18n** (read-only archive, no new features) |
 | **`room-show.html` / `port-show.html`** | **No UI i18n for now** (business reference pages) |
 | **`core` / `domains` / `extensions`** | **No UI i18n runtime** (no `t()` / locale files); comments, JSDoc, and runtime diagnostics (`Error`, `console.*`) use **English**; scene JSON display `name`/`label` may stay Chinese; keep bilingual regex in `sceneCapability`, CJK probe in `textureUtils`, and legacy keys such as `brandName` |
 

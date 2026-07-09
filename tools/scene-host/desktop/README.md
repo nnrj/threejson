@@ -1,6 +1,6 @@
-# scene-host desktop（阶段 4/5 过渡）
+# scene-host desktop（正式版）
 
-Electron 桌面端与 `tools/scene-host/` Web 端共用 editor/player 渲染代码，Desktop 负责主进程、IPC、打包与分发。**当前阶段正本仍为**根目录 `scene-editor.html` / `scene-player.html`；scene-host desktop 已可独立打包安装，但仍处于「资源内置 + CDN fallback」的过渡状态。
+Electron 桌面端与 `tools/scene-host/` Web 端共用 editor/player 渲染代码，Desktop 负责主进程、IPC、打包与分发。scene-host（含 desktop）现为默认推荐入口；旧版单文件 `scene-editor.html` / `scene-player.html` 已迁移至 [`tools/old_version/`](../../old_version/) 作只读归档，仍处于「资源内置 + CDN fallback」的过渡状态。
 
 ## 定位：同代码库的桌面产品线
 

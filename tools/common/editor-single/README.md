@@ -1,8 +1,8 @@
-# editor-single（单文件正本编辑器依赖）
+# editor-single（单文件旧版编辑器依赖）
 
-[`scene-editor.html`](../../../scene-editor.html) 位于仓库根目录，是本仓库的**单文件正本编辑器**；本目录为其 **import 依赖**（`command/`、`ai/`、`domainEditSession.js`），**不是**模块化拆分版。
+[`scene-editor.html`](../../old_version/scene-editor.html) 位于 [`tools/old_version/`](../../old_version/)，是本仓库已退役的**单文件旧版编辑器**（只读归档）；本目录为其 **import 依赖**（`command/`、`ai/`、`domainEditSession.js`），**不是**模块化拆分版。
 
-拆分重构版在 [`tools/scene-host/editor/`](../../scene-host/editor/)（绿场），二者勿混淆。
+模块化拆分重构版在 [`tools/scene-host/editor/`](../../scene-host/editor/)，现为默认推荐入口，二者勿混淆。
 
 ## 接线
 

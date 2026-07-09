@@ -13,7 +13,7 @@ This directory contains:
 - **`electron-apps/`**: Electron desktop demos — `electron-app` (vanilla), `electron-vue`, `electron-react-app` (`npm install` and `npm run dev` in each subfolder).
 - **`script/`**: Node helper scripts (e.g. AI scene updates).
 
-The root [`html-demo/demo.html`](html-demo/demo.html) switches between pages under **`html-demo/`** and integrated root pages such as `room-show.html`, `scene-editor.html`, `scene-player.html`, and `port-show.html`. [`../index.html`](../index.html) redirects to the website at [`../website/index.html`](../website/index.html).
+The root [`html-demo/demo.html`](html-demo/demo.html) switches between pages under **`html-demo/`** and integrated pages such as `room-show.html`, the [scene editor](../tools/scene-host/editor/index.html), the [scene player](../tools/scene-host/player/index.html), and `port-show.html`. [`../index.html`](../index.html) redirects to the website at [`../website/index.html`](../website/index.html).
 
 ## `html-demo/` pages (selected)
 
@@ -31,7 +31,7 @@ Because `html-demo/` sits one level deeper than the old `demo/` folder, engine i
 
 ### Import maps and `core` (bare ESM)
 
-Without a bundler, the page's **`<script type="importmap">` must cover every bare specifier** pulled in by the full module graph (including transitive imports from `../../core/index.js`), e.g. `three`, `three/examples/jsm/`, `three-mesh-bvh`, `three-bvh-csg`, `@tweenjs/tween.js`, `html2canvas-pro`, `gifuct-js`. Root pages such as `scene-editor.html`, `room-show.html`, `scene-player.html`, `port-show.html`, and `port-show-auto.html` are kept in sync with `examples/html-demo/track-*/*.html`. If you fork a page, copy the import map or switch to a bundled setup. See [`../docs/zh/quick-start.md`](../docs/zh/quick-start.md) for the snippet.
+Without a bundler, the page's **`<script type="importmap">` must cover every bare specifier** pulled in by the full module graph (including transitive imports from `../../core/index.js`), e.g. `three`, `three/examples/jsm/`, `three-mesh-bvh`, `three-bvh-csg`, `@tweenjs/tween.js`, `html2canvas-pro`, `gifuct-js`. Pages such as `room-show.html`, `port-show.html`, `port-show-auto.html`, `tools/scene-host/editor/index.html`, and `tools/scene-host/player/index.html` are kept in sync with `examples/html-demo/track-*/*.html`. If you fork a page, copy the import map or switch to a bundled setup. See [`../docs/zh/quick-start.md`](../docs/zh/quick-start.md) for the snippet.
 
 ## Node scripts (`script/`)
 

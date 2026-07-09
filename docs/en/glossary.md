@@ -17,8 +17,8 @@ This page defines **key concepts** used across ThreeJSON docs and code—Chinese
 | host (application) | 宿主 / 宿主应用 | Concrete page or product that imports the library | 使用本库的具体页面或产品 | [`docs/domains.md`](./domains.md) |
 | business domain | 业务域 | Registered module under `domains/` dispatched via JSON `domain` + `handler` | `domains/<name>/` 下的可注册扩展模块 | [`docs/domains.md`](./domains.md) |
 | extension | 扩展 | Optional replaceable backends under `extensions/` | `extensions/` 下可选参考实现 | [`docs/extensions.md`](./extensions.md) |
-| canonical pages | 正本 | Root `scene-editor.html` / `scene-player.html`; current stable entry | 根目录编辑器/播放器稳定入口 | [`docs/tools.md`](./tools.md) |
-| greenfield (`scene-host`) | 绿场 | Modular refactor of canonical pages under `tools/scene-host/` | 正本的模块化拆分重构 | [`docs/tools.md`](./tools.md) |
+| canonical pages | 正本 | [`tools/scene-host/`](../../tools/scene-host/) editor / player; current stable entry (the legacy single-file pages are retired to [`tools/old_version/`](../../tools/old_version/)) | scene-host 编辑器/播放器稳定入口 | [`docs/tools.md`](./tools.md) |
+| greenfield (historical) | 绿场（历史术语） | Modular refactor of the old single-file pages under `tools/scene-host/`; Phase 5 switchover is complete and it is now the canonical pages | 旧版单文件正本的模块化拆分重构，Phase 5 切换已完成 | [`docs/tools.md`](./tools.md) |
 | integrated demo page | 集成页 / 业务演示页 | Industry showcase pages (room-show, port-show), not library API | 行业场景演示页 | [`docs/tools.md`](./tools.md) |
 | zero mental overhead by default | 默认零心智 | Unused optional features need no config or init ceremony | 未用能力不要求配置仪式 | [`docs/design-principles.md`](./design-principles.md) |
 | composition root | 组合根 | Entry orchestrating builders, runtime, domain registration | 编排加载与注册的入口 | [`core/BUSINESS_DOMAINS.md`](../../core/BUSINESS_DOMAINS.md) |

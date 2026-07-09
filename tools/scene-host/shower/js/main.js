@@ -467,9 +467,7 @@ function openCurrentSceneInEditor() {
       label: sceneJson?.name || sceneJson?.threeJsonId || "ThreeJSON Shower",
       sceneJson
     }));
-    const editorPath = lang === "zh-CN"
-      ? "../../../scene-editor.html"
-      : "../editor/index.html";
+    const editorPath = "../editor/index.html";
     const url = `${editorPath}?openFrom=shower&sceneKey=${encodeURIComponent(bridgeId)}`;
     window.open(url, "_blank", "noopener");
   } catch (error) {

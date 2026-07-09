@@ -5,7 +5,7 @@
 [中文](../zh/demos.md) | [English](./demos.md)
 
 - **Tutorial demos**: `examples/html-demo/track-*` with JSON under `assets/json/tutorial/`. Index: [demo.html](../../examples/html-demo/demo.html), catalog: [tutorial.md](./tutorial.md).
-- **Root integration pages**: `room-show.html`, `scene-editor.html`, `scene-player.html`, `port-show.html`.
+- **Root integration pages**: `room-show.html`, `port-show.html`; scene editor/player now live under [`tools/scene-host/`](../../tools/scene-host/).
 
 ```bash
 python -m http.server 8080
@@ -22,8 +22,8 @@ See [quick-start.md](./quick-start.md) for minimal `createJsonScene` setup. Full
 | Page | Default JSON | Notes |
 |------|--------------|-------|
 | [room-show.html](../../room-show.html) | `roomShow.json` | Core network room zone A: cold/hot aisle, UPS partition, 18-rack ops dashboard |
-| [scene-editor.html](../../scene-editor.html) | `portShow.json` | General scene editor |
-| [scene-player.html](../../scene-player.html) | `portShow.json` | Playlists and walkthrough |
+| [tools/scene-host/editor/index.html](../../tools/scene-host/editor/index.html) | `portShow.json` | General scene editor |
+| [tools/scene-host/player/index.html](../../tools/scene-host/player/index.html) | `portShow.json` | Playlists and walkthrough |
 | [port-show.html](../../port-show.html) | `portShow.json` | Smart port dashboard |
 
 ## Tutorial directory layout

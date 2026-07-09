@@ -23,7 +23,7 @@ ThreeJSON 是一个基于 Three.js 的 Web3D JSON 运行时。调用者不需要
 - [Demo 页面](./demos.md)：`examples/html-demo/` 与仓库根页面各自演示什么。
 - [场景加载生命周期](./scene-load-lifecycle.md)：`createJsonScene` 的阶段钩子与 SDF 文字字体预热（中英双语）。
 
-仓库根目录默认入口是 [`../index.html`](../../index.html)，会跳转到 [`website/index.html`](../../website/index.html)。教程索引 [`demo.html`](../../examples/html-demo/demo.html) 可以在 `examples/html-demo/` 的示例和根目录集成页之间切换，例如 `room-show.html`、`scene-editor.html`、`scene-player.html` 和 `port-show.html`。
+仓库根目录默认入口是 [`../index.html`](../../index.html)，会跳转到 [`website/index.html`](../../website/index.html)。教程索引 [`demo.html`](../../examples/html-demo/demo.html) 可以在 `examples/html-demo/` 的示例和集成页之间切换，例如 `room-show.html`、[`场景编辑器`](../../tools/scene-host/editor/index.html)、[`场景播放器`](../../tools/scene-host/player/index.html) 和 `port-show.html`。
 
 ## npm 安装（可选）
 

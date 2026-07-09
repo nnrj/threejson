@@ -1,7 +1,7 @@
 import { hasValue, isCanonicalScenePayload, resolveRenderLoopFpsPolicy, valueOr } from "threejson";
 import { mergeSceneHelpersFromSysConfig } from "./mergeSceneHelpers.js";
 
-/** Mirrors scene-editor.html buildEditorRuntimeConfig */
+/** Mirrors tools/old_version/scene-editor.html buildEditorRuntimeConfig */
 export function buildEditorRuntimeConfig(sysConfig, editorSettings, baseSceneConfig = {}) {
   const existing = baseSceneConfig && typeof baseSceneConfig === "object" ? baseSceneConfig : {};
   const cameraConfig = existing.camera && typeof existing.camera === "object" ? existing.camera : {};

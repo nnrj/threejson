@@ -428,14 +428,12 @@ function pill(name) {
 
 function openEditorTool(event) {
   event.preventDefault();
-  const href = lang === "zh-CN" ? "../../scene-editor.html" : "../../tools/scene-host/editor/index.html";
-  window.open(new URL(href, import.meta.url), "_blank", "noreferrer");
+  window.open(new URL("../../tools/scene-host/editor/index.html", import.meta.url), "_blank", "noreferrer");
 }
 
 function openPlayerTool(event) {
   event.preventDefault();
-  const href = lang === "zh-CN" ? "../../scene-player.html" : "../../tools/scene-host/player/index.html";
-  window.open(new URL(href, import.meta.url), "_blank", "noreferrer");
+  window.open(new URL("../../tools/scene-host/player/index.html", import.meta.url), "_blank", "noreferrer");
 }
 
 async function downloadSceneJsons(event) {

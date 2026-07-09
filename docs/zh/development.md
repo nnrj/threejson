@@ -33,7 +33,7 @@ Python 外置 Agent 套壳（可选）：**Python 3.10+**，依赖见 [`tools/th
 
 ## AI 凭据
 
-- 浏览器：[`scene-editor.html`](../../scene-editor.html) / html-demo → **localStorage**
+- 浏览器：[`tools/scene-host/editor/index.html`](../../tools/scene-host/editor/index.html) / html-demo → **localStorage**
 - CLI / GUI：[`tools/threejson-agent/setting.json`](../../tools/threejson-agent/setting.json)（从 `setting.example.json` 复制）
 - MCP：[`tools/mcp-threejson/setting.json`](../../tools/mcp-threejson/setting.json)（独立文件）
 
@@ -101,7 +101,7 @@ objectMutation 的贴图路径属于第 2 类：同步 API 不阻塞贴图下载
 | **[`demo.html`](../../examples/html-demo/demo.html)** | 单页运行时 i18n；`navigator.language` → `zh-CN` / `en-US`，无法识别时回退 `en-US`；中文 UI「相关文档」指向 `docs/*.md`；英文 UI 指向 `docs/en/*.md`（无英文镜像的文档仍链中文，如 `event-mechanism.md`） |
 | **`html-demo` 教程页** | 正文 UI 保持中文 |
 | **`tools/scene-host` 编辑器 / 播放器** | 应用层 i18n（补遗漏）；设置可覆盖语言；默认跟随浏览器，回退 `en-US` |
-| **正本 `scene-editor.html` / `scene-player.html`** | **暂不做 UI i18n**（绿场未与正本对齐前避免双轨漂移） |
+| **旧版归档 `tools/old_version/scene-editor.html` / `scene-player.html`**（已退役，只读对照） | **不做 UI i18n**（只读归档，不再新增功能） |
 | **`room-show.html` / `port-show.html`** | **暂不做 UI i18n**（业务参考页） |
 | **`core` / `domains` / `extensions`** | **禁止引入 UI i18n 运行时**（无 `t()`/locale 文件）；注释/JSDoc 与运行时诊断串（`Error` / `console.*`）使用 **英文**；场景 JSON 展示 `name`/`label` 可保留中文；`sceneCapability` 双语正则、`textureUtils` CJK 测字、`brandName` 历史键保留 |
 

@@ -13,7 +13,7 @@ ThreeJSON 是一个由 JSON 驱动的 [Three.js](https://threejs.org/) 场景运
 
 **npm**：[threejson - npm](https://www.npmjs.com/package/threejson) · [@threejson/assets - npm](https://www.npmjs.com/package/@threejson/assets?activeTab=versions)
 
-**示例**：[ThreeJSON 示例 ]([ThreeJSON](https://threejson.org/website/#/examples))    **场景编辑器**：[ThreeJSON 场景编辑器](https://threejson.org/scene-editor)
+**示例**：[ThreeJSON 示例 ]([ThreeJSON](https://threejson.org/website/#/examples))    **场景编辑器**：[ThreeJSON 场景编辑器](https://threejson.org/tools/scene-host/editor/index.html)
 
 
 
@@ -113,7 +113,7 @@ await createJsonScene(payload, {
 
 ## 本地快速预览
 
-启动静态服务器后，打开仓库根目录下的 [`index.html`](index.html)。它会重定向到 [`website/index.html`](website/index.html)。教程索引位于 [`examples/html-demo/demo.html`](examples/html-demo/demo.html)，该页面将 `examples/html-demo/*.html` 示例以及根目录下集成的页面汇总在一起，例如 [`room-show.html`](room-show.html)、[`scene-editor.html`](scene-editor.html)、[`scene-player.html`](scene-player.html) 和 [`port-show.html`](port-show.html)。
+启动静态服务器后，打开仓库根目录下的 [`index.html`](index.html)。它会重定向到 [`website/index.html`](website/index.html)。教程索引位于 [`examples/html-demo/demo.html`](examples/html-demo/demo.html)，该页面将 `examples/html-demo/*.html` 示例以及根目录下集成的页面汇总在一起，例如 [`room-show.html`](room-show.html)、[`tools/scene-host/editor/index.html`](tools/scene-host/editor/index.html)、[`tools/scene-host/player/index.html`](tools/scene-host/player/index.html) 和 [`port-show.html`](port-show.html)。
 
 ## 许可证
 

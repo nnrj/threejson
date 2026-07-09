@@ -32,7 +32,7 @@
   <link rel="stylesheet" href="./css/host-overrides.css">
 </head>
 <body>
-<!-- Extracted from scene-editor.html for scene-host editor (phase 2b+) -->
+<!-- Extracted from tools/old_version/scene-editor.html for scene-host editor (phase 2b+) -->
 <div id="rootContainer" class="leftDockPinned rightDockPinned topBarPinned bottomBarPinned">
   <div id="stageShell">
   <div id="topChromeWrap" class="topChromeWrap">
@@ -259,16 +259,18 @@
       </label>
       <button class="miniBtn" type="button" id="codeEditorFormatBtn">格式化</button>
       <span class="codeEditorToolbarSpacer"></span>
-      <label class="codeEditorCheckboxLabel">
-        <input id="codeEditorCameraLockCheckbox" type="checkbox" checked data-i18n="editor.shell.codeEditorCameraLockCheckbox">
-        <span data-i18n="editor.shell.codeEditorCameraLockCheckbox">视角保持</span>
-      </label>
-      <label class="codeEditorCheckboxLabel">
-        <input id="codeEditorAutoRenderCheckbox" type="checkbox" data-i18n="editor.shell.codeEditorAutoRenderCheckbox">
-        <span>实时渲染</span>
-      </label>
-      <button class="miniBtn" type="button" id="codeEditorCanvasToggleBtn">展开画布</button>
-      <button class="miniBtn primary" type="button" id="codeEditorRenderBtn" data-i18n="editor.shell.codeEditorRenderBtn">渲染</button>
+      <div class="codeEditorToolbarRight">
+        <label class="codeEditorCheckboxLabel">
+          <input id="codeEditorCameraLockCheckbox" type="checkbox" checked data-i18n="editor.shell.codeEditorCameraLockCheckbox">
+          <span data-i18n="editor.shell.codeEditorCameraLockCheckbox">视角保持</span>
+        </label>
+        <label class="codeEditorCheckboxLabel">
+          <input id="codeEditorAutoRenderCheckbox" type="checkbox" checked data-i18n="editor.shell.codeEditorAutoRenderCheckbox">
+          <span>实时渲染</span>
+        </label>
+        <button class="miniBtn" type="button" id="codeEditorCanvasToggleBtn">展开画布</button>
+        <button class="miniBtn primary" type="button" id="codeEditorRenderBtn" data-i18n="editor.shell.codeEditorRenderBtn">渲染</button>
+      </div>
     </div>
     <div id="codeEditorHost"></div>
     <textarea id="codeEditorFallbackTextarea" spellcheck="false" hidden></textarea>
