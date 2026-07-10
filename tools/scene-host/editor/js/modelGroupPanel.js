@@ -40,6 +40,10 @@ function modelLabel(key, fallback) {
   return t(`editor.model.${key}`, fallback || key);
 }
 
+function bizModelLabel(key, fallback) {
+  return t(`editor.model.biz.${key}`, fallback || key);
+}
+
 function modelGroupTitle(groupKey) {
   return t(`editor.modelGroup.${groupKey}`, MODEL_GROUP_TITLES[groupKey] || groupKey);
 }
@@ -82,7 +86,7 @@ function getModelPanelGroups() {
   ids.sort((a, b) => (MODEL_DOMAIN_META[a]?.order || 999) - (MODEL_DOMAIN_META[b]?.order || 999));
   for (const id of ids) {
     const meta = MODEL_DOMAIN_META[id] || { label: id, group: "biz", order: 999 };
-    groups.biz.push({ key: id, label: modelLabel(id, meta.label), kind: "domain" });
+    groups.biz.push({ key: id, label: bizModelLabel(id, meta.label), kind: "domain" });
   }
   return groups;
 }

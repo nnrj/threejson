@@ -1618,6 +1618,7 @@ export async function bootstrapSceneHostEditor() {
     if (locale !== lastAppliedHostLocale) {
       lastAppliedHostLocale = locale;
       settingsModal?.refreshForLocale?.(editorSettings);
+      modelGroupPanel?.refreshBuiltinGroups?.();
     }
   }
 
