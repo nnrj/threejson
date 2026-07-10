@@ -61,6 +61,7 @@ const I18N = {
     "home.quick": "快速入门",
     "home.quickEditor": "场景编辑器",
     "home.quickPlayer": "场景播放器",
+    "home.quickThreeBox": "Chat With ThreeBox &gt;",
     "home.examples": "查看示例",
     "home.features": "核心能力",
     "examples.title": "示例",
@@ -112,6 +113,7 @@ const I18N = {
     "home.quick": "Quick Start",
     "home.quickEditor": "Scene Editor",
     "home.quickPlayer": "Scene Player",
+    "home.quickThreeBox": "Chat With ThreeBox &gt;",
     "home.examples": "View Examples",
     "home.features": "Core Features",
     "examples.title": "Examples",
@@ -320,6 +322,7 @@ function renderHome() {
         <div class="heroQuickLinks">
           <a href="#" id="homeOpenEditor">${t("home.quickEditor")}</a>
           <a href="#" id="homeOpenPlayer">${t("home.quickPlayer")}</a>
+          <a href="#" id="homeOpenThreeBox">${t("home.quickThreeBox")}</a>
         </div>
       </div>
       <div class="heroVisual">
@@ -341,18 +344,19 @@ function renderHome() {
     <section class="band">
       <h2 class="sectionTitle">${t("home.features")}</h2>
       <div class="featureGrid">
-        ${featureCard("JSON Driven", "JSON 驱动场景配置、对象、材质、事件和动画。", "Scene config, objects, materials, events, and animations are data.")}
-        ${featureCard("AI Friendly", "结构化 JSON 便于生成、解释和增量 patch。", "Structured JSON is easy to generate, explain, and patch.")}
-        ${featureCard("Domains", "用 domain 描述业务对象和复合对象。", "Use domains for business objects and composed scene concepts.")}
-        ${featureCard("Runtime Mutation", "支持运行时命令和局部更新。", "Supports runtime commands and partial updates.")}
+        ${featureCard("JSON Driven", "JSON 驱动场景配置、对象、材质、事件和动画。", "Scene config, objects, materials, events, and animations are data.", "json-format.md")}
+        ${featureCard("AI Friendly", "结构化 JSON 便于生成、解释和增量 patch。", "Structured JSON is easy to generate, explain, and patch.", "features.md")}
+        ${featureCard("Domains", "用 domain 描述业务对象和复合对象。", "Use domains for business objects and composed scene concepts.", "domains.md")}
+        ${featureCard("Runtime Mutation", "支持运行时命令和局部更新。", "Supports runtime commands and partial updates.", "runtime-object-mutation-quickref.md")}
       </div>
     </section>`;
   document.getElementById("homeOpenEditor")?.addEventListener("click", openEditorTool);
   document.getElementById("homeOpenPlayer")?.addEventListener("click", openPlayerTool);
+  document.getElementById("homeOpenThreeBox")?.addEventListener("click", openThreeBoxTool);
 }
 
-function featureCard(title, zh, en) {
-  return `<article class="feature"><h3>${title}</h3><p>${lang === "zh-CN" ? zh : en}</p></article>`;
+function featureCard(title, zh, en, docFile) {
+  return `<a class="feature" href="${readerHref(docFile)}" target="_blank" rel="noreferrer"><h3>${title}</h3><p>${lang === "zh-CN" ? zh : en}</p></a>`;
 }
 
 function renderReader(src) {
@@ -770,6 +774,11 @@ function openEditorTool(event) {
 function openPlayerTool(event) {
   event.preventDefault();
   window.open(new URL("../../tools/scene-host/player/index.html", import.meta.url), "_blank", "noreferrer");
+}
+
+function openThreeBoxTool(event) {
+  event.preventDefault();
+  window.open(new URL("../../tools/scene-host/three-box/index.html", import.meta.url), "_blank", "noreferrer");
 }
 
 async function downloadSceneJsons(event) {

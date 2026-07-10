@@ -1,0 +1,37 @@
+{
+  "version": "next",
+  "name": "threebox-template-floor",
+  "sceneConfig": {
+    "scene": { "background": "#11151b" },
+    "camera": { "fov": 55, "near": 0.1, "far": 200, "position": { "x": 20, "y": 16, "z": 22 } },
+    "renderer": { "antialias": true, "ratioRate": 1 },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 0, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 1 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1.3, "position": { "x": 16, "y": 24, "z": 16 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "worldInfo": {
+    "boxModelList": [
+      {
+        "threeJsonId": "template-floor",
+        "name": "template-floor",
+        "objType": "floor",
+        "geometry": { "width": 24, "depth": 24, "height": 1 },
+        "position": { "x": 0, "y": -0.5, "z": 0 },
+        "material": {
+          "type": "standard",
+          "color": "#c8c8c8",
+          "textureUrl": "/assets/textures/building/floor/cement.png",
+          "metalness": 0.05,
+          "roughness": 0.9,
+          "textureRepeat": { "x": 6, "y": 6 }
+        }
+      }
+    ]
+  },
+  "threeJsonId": "threebox-template-floor",
+  "label": "地板",
+  "labelEn": "Floor"
+}

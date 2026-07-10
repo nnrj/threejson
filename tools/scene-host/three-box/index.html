@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThreeBox</title>
+  <link rel="icon" href="../../../assets/img/threejson.ico" type="image/x-icon">
+  <script type="importmap">
+    {
+      "imports": {
+        "threejson": "../../../builtins/full.js",
+        "threejson/core": "../../../core/index.js",
+        "three": "https://esm.sh/three@0.184.0",
+        "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
+        "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
+        "fflate": "https://esm.sh/fflate@0.8.3",
+        "html2canvas-pro": "https://esm.sh/html2canvas-pro@2.0.4",
+        "gifuct-js": "https://esm.sh/gifuct-js@2.1.2",
+        "three-mesh-bvh": "https://esm.sh/three-mesh-bvh@0.9.10?deps=three@0.184.0",
+        "three-bvh-csg": "https://esm.sh/three-bvh-csg@0.0.18?deps=three@0.184.0,three-mesh-bvh@0.9.10",
+        "troika-three-text": "https://esm.sh/troika-three-text@0.52.4?deps=three@0.184.0",
+        "echarts": "https://esm.sh/echarts@5.6.0",
+        "@dimforge/rapier3d-compat": "https://esm.sh/@dimforge/rapier3d-compat@0.19.3",
+        "marked": "https://esm.sh/marked@12.0.2",
+        "dompurify": "https://esm.sh/dompurify@3.1.6"
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="./css/threebox.css">
+</head>
+<body>
+  <div id="rootContainer">
+    <div class="flyoutHost flyoutHostLeft" id="leftFlyoutHost">
+      <div class="edgeHoverZone edgeHoverZoneLeft" id="leftEdgeHoverZone"></div>
+      <aside id="leftDock" class="leftDock">
+        <div class="sidebarHeaderRow">
+          <a class="brand" href="../../../website/index.html#/examples">
+            <img src="../../../assets/img/ThreeJSON.png" alt="ThreeJSON">
+            <span class="brandText">
+              <span class="brandTitle">ThreeBox</span>
+              <span class="brandSubtitle" id="brandSubtitle" data-i18n="threebox.shell.subtitle">Powered by ThreeJSON</span>
+            </span>
+          </a>
+        </div>
+        <div class="sidebarPinRow">
+          <button id="leftDockPinBtn" class="sidebarPinBtn" type="button" aria-pressed="true" aria-label="钉住侧栏" data-i18n-aria="threebox.shell.pinLabel">
+            <svg class="sidebarPinIcon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+              <path fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"
+                d="M8 1.6 9.4 5.5 13.3 6.4 9.4 7.3 8 11.2 6.6 7.3 2.7 6.4 6.6 5.5 8 1.6z"/>
+              <path fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" d="M8 10.2v4.2"/>
+            </svg>
+          </button>
+        </div>
+        <div id="sidebarBody" class="sidebarBody">
+          <nav class="sidebarNav">
+            <button id="navAiConfigBtn" class="sidebarNavBtn" type="button">
+              <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="2.4" fill="none" stroke="currentColor" stroke-width="1.2"/><path fill="none" stroke="currentColor" stroke-width="1.2" d="M8 1.6v1.7M8 12.7v1.7M14.4 8h-1.7M3.3 8H1.6M12.4 3.6l-1.2 1.2M4.8 11.2l-1.2 1.2M12.4 12.4l-1.2-1.2M4.8 4.8 3.6 3.6"/></svg>
+              <span data-i18n="threebox.shell.aiConfig">AI 配置</span>
+            </button>
+            <button id="navNewChatBtn" class="sidebarNavBtn" type="button">
+              <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" d="M8 2.5v11M2.5 8h11"/></svg>
+              <span data-i18n="threebox.shell.newChat">新聊天</span>
+            </button>
+            <button id="navSearchChatBtn" class="sidebarNavBtn" type="button">
+              <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="6.8" cy="6.8" r="4" fill="none" stroke="currentColor" stroke-width="1.3"/><path stroke="currentColor" stroke-width="1.3" stroke-linecap="round" d="m9.8 9.8 3.3 3.3"/></svg>
+              <span data-i18n="threebox.shell.searchChat">搜索聊天</span>
+            </button>
+          </nav>
+
+          <details class="sidebarSection" id="templateGallerySection">
+            <summary class="sidebarSectionTitle" data-i18n="threebox.shell.templateGallery">模板库</summary>
+            <div class="sidebarSectionBody">
+              <input type="search" id="templateSearchInput" class="sidebarSearchInput" data-i18n-placeholder="threebox.shell.templateSearchPlaceholder" placeholder="搜索模板...">
+              <div class="templateGrid" id="templateGrid"></div>
+            </div>
+          </details>
+
+          <details class="sidebarSection" id="appsSection">
+            <summary class="sidebarSectionTitle" data-i18n="threebox.shell.apps">应用</summary>
+            <div class="sidebarSectionBody">
+              <a class="appLinkCard" href="../editor/index.html" target="_blank" rel="noopener">
+                <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" d="M2 12.5 10.5 4 12 5.5 3.5 14H2v-1.5z"/><path fill="none" stroke="currentColor" stroke-width="1.3" d="m9.3 5.2 1.5 1.5"/></svg>
+                <span data-i18n="threebox.shell.appEditor">场景编辑器</span>
+              </a>
+              <a class="appLinkCard" href="../player/index.html" target="_blank" rel="noopener">
+                <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.3"/><path fill="currentColor" d="M6.6 5.4 11 8l-4.4 2.6V5.4z"/></svg>
+                <span data-i18n="threebox.shell.appPlayer">场景播放器</span>
+              </a>
+            </div>
+          </details>
+
+          <details class="sidebarSection" id="projectsSection">
+            <summary class="sidebarSectionTitle" data-i18n="threebox.shell.projects">项目</summary>
+            <div class="sidebarSectionBody">
+              <div class="projectList" id="projectList"></div>
+              <button id="newProjectBtn" class="sidebarInlineBtn" type="button" data-i18n="threebox.shell.newProject">+ 新建项目</button>
+            </div>
+          </details>
+
+          <div class="sidebarSectionTitle sidebarHistoryTitle" data-i18n="threebox.shell.history">聊天历史</div>
+          <div class="historyList" id="historyList"></div>
+          <details class="sidebarSection sidebarArchiveSection" id="archivedSection">
+            <summary class="sidebarSectionTitle" data-i18n="threebox.shell.archived">已归档</summary>
+            <div class="historyList" id="archivedHistoryList"></div>
+          </details>
+        </div>
+        <div class="sidebarFooter" id="sidebarFooter">
+          <button id="userMenuBtn" class="userMenuBtn" type="button">
+            <span class="userAvatar" id="userAvatar">U</span>
+            <span class="userName" id="userName" data-i18n="threebox.shell.guestUser">访客用户</span>
+          </button>
+          <div class="userMenuPanel" id="userMenuPanel" hidden>
+            <button type="button" data-action="profile" data-i18n="threebox.shell.profile">个人资料</button>
+            <button type="button" data-action="settings" data-i18n="threebox.shell.settings">设置</button>
+            <button type="button" data-action="help" data-i18n="threebox.shell.help">帮助</button>
+            <button type="button" data-action="logout" data-i18n="threebox.shell.logout">退出登录</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+    <main id="mainArea" class="mainArea">
+      <div id="chatMessages" class="chatMessages" hidden></div>
+      <button type="button" id="scrollToBottomBtn" class="scrollToBottomBtn" hidden data-i18n-title="threebox.shell.scrollToBottom" title="回到底部">
+        <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M4 6.5 8 10.5 12 6.5"/></svg>
+      </button>
+      <div id="chatHero" class="chatHero">
+        <div class="chatHeroInner">
+          <img src="../../../assets/img/ThreeJSON.png" alt="ThreeBox" class="chatHeroLogo">
+          <!-- zh copy per product decision; the (not-yet-wired) en-US catalog entry should stay
+               "Describe a world. Watch it become real." rather than a literal translation of this. -->
+          <h1 class="chatHeroTitle" data-i18n="threebox.shell.heroTitle">打开盒子，看见世界</h1>
+          <p class="chatHeroSubtitle" data-i18n="threebox.shell.heroSubtitle">描述一个世界，看它成为现实。</p>
+          <div class="chatHeroSuggestions" id="chatHeroSuggestions">
+            <button type="button" class="chatSuggestionChip" data-prompt="创建一个蓝色的立方体">添加一个立方体</button>
+            <button type="button" class="chatSuggestionChip" data-prompt="一个智慧园区场景，包含建筑、道路和绿化">智慧园区场景</button>
+            <button type="button" class="chatSuggestionChip" data-prompt="一个数据中心机房，包含多排机柜">数据中心机房</button>
+          </div>
+        </div>
+      </div>
+      <div class="chatComposerBar">
+        <div class="chatComposer" id="chatComposer">
+          <div id="attachedContextRow" class="attachedContextRow" hidden></div>
+          <div class="composerInputRow">
+            <button type="button" class="composerIconBtn" id="composerAttachBtn" data-i18n-title="threebox.shell.attach" title="上传文件或图片">
+              <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M10 4v12M4 10h12"/></svg>
+            </button>
+            <input type="file" id="composerFileInput" hidden multiple accept="image/*">
+            <textarea id="composerInput" class="composerInput" rows="1" data-i18n-placeholder="threebox.shell.composerPlaceholder" placeholder="描述你想创造的 3D 世界..."></textarea>
+            <div class="composerActions">
+              <select id="composerModelSelect" class="composerModelSelect" aria-label="模型">
+                <option value="">默认模型</option>
+              </select>
+              <button type="button" class="composerSendBtn" id="composerSendBtn" data-i18n-title="threebox.shell.send" title="发送">
+                <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path fill="currentColor" d="M10 3.5 16.5 16h-13L10 3.5z"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="composerHint" data-i18n="threebox.shell.composerHint">ThreeBox 可能会生成不准确的场景，请检查生成结果。</div>
+      </div>
+    </main>
+  </div>
+  <div id="messageToast" class="messageToast" role="status" aria-live="polite"></div>
+
+  <div id="settingsModal" class="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle" hidden>
+    <div class="modalDialog settingsDialog">
+      <div class="modalHeader" id="settingsModalTitle" data-i18n="threebox.shell.settingsTitle">设置</div>
+      <div class="settingsBody">
+        <nav class="settingsNav" id="settingsNav"></nav>
+        <div class="settingsScroll" id="settingsScroll"></div>
+      </div>
+      <div class="modalFooter">
+        <button id="settingsCancelBtn" type="button" data-i18n="threebox.shell.cancel">取消</button>
+        <button id="settingsSaveBtn" type="button" class="primary" data-i18n="threebox.shell.save">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="searchChatModal" class="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="searchChatTitle" hidden>
+    <div class="modalDialog">
+      <div class="modalHeader" id="searchChatTitle" data-i18n="threebox.shell.searchChatTitle">搜索聊天</div>
+      <div class="modalBody">
+        <input type="search" id="searchChatInput" class="sidebarSearchInput" data-i18n-placeholder="threebox.shell.searchChatPlaceholder" placeholder="按标题或摘要搜索...">
+        <div class="searchChatResults" id="searchChatResults"></div>
+      </div>
+      <div class="modalFooter">
+        <button id="searchChatCloseBtn" type="button" data-i18n="threebox.shell.close">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="historyContextMenu" class="contextMenu" hidden>
+    <button type="button" data-action="pin" data-i18n="threebox.shell.pin">置顶</button>
+    <button type="button" data-action="archive" data-i18n="threebox.shell.archive">归档</button>
+    <div class="contextMenuSubLabel" id="moveToProjectLabel" data-i18n="threebox.shell.moveToProject">移入项目</div>
+    <div id="moveToProjectList" class="contextMenuSubList"></div>
+  </div>
+
+  <script type="module" src="./js/threeBoxApp.js"></script>
+</body>
+</html>

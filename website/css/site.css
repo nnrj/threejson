@@ -317,6 +317,17 @@ a { color: inherit; text-decoration: none; }
   box-shadow: var(--shadow);
 }
 
+.feature {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.feature:hover {
+  border-color: var(--brand, #5470c6);
+  transform: translateY(-2px);
+}
+
 .feature h3,
 .card h3 { margin: 0 0 8px; }
 

@@ -1,0 +1,34 @@
+{
+  "items": [
+    {
+      "id": "cube",
+      "title": "立方体",
+      "titleEn": "Cube",
+      "json": "assets/json/other/three-box/cube.json"
+    },
+    {
+      "id": "sphere",
+      "title": "球体",
+      "titleEn": "Sphere",
+      "json": "assets/json/other/three-box/sphere.json"
+    },
+    {
+      "id": "floor",
+      "title": "地板",
+      "titleEn": "Floor",
+      "json": "assets/json/other/three-box/floor.json"
+    },
+    {
+      "id": "room",
+      "title": "机房",
+      "titleEn": "Data Center Room",
+      "json": "assets/json/roomShow.json"
+    },
+    {
+      "id": "port",
+      "title": "港口",
+      "titleEn": "Port",
+      "json": "assets/json/portShow.json"
+    }
+  ]
+}

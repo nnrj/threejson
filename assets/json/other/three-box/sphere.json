@@ -1,0 +1,29 @@
+{
+  "version": "next",
+  "name": "threebox-template-sphere",
+  "sceneConfig": {
+    "scene": { "background": "#11151b" },
+    "camera": { "fov": 55, "near": 0.1, "far": 200, "position": { "x": 16, "y": 12, "z": 18 } },
+    "renderer": { "antialias": true, "ratioRate": 1 },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 3.5, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 1 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1.3, "position": { "x": 16, "y": 24, "z": 16 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "worldInfo": {
+    "sphereModelList": [
+      {
+        "threeJsonId": "template-sphere",
+        "name": "template-sphere",
+        "geometry": { "radius": 3.5, "widthSegments": 32, "heightSegments": 16 },
+        "position": { "x": 0, "y": 3.5, "z": 0 },
+        "material": { "type": "standard", "color": "#91cc75" }
+      }
+    ]
+  },
+  "threeJsonId": "threebox-template-sphere",
+  "label": "球体",
+  "labelEn": "Sphere"
+}

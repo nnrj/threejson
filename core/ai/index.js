@@ -48,6 +48,18 @@ import {
   evaluateCapabilityFit,
   matchIntentSignals
 } from "./sceneCapability.js";
+import {
+  buildObjectSpatialCardsFromScene,
+  buildObjectSpatialCardsFromSceneJson,
+  buildSceneScaleProfile,
+  pickReferenceObjects,
+  buildPlacementHints
+} from "./sceneSpatialContext.js";
+import {
+  classifyTurnIntent,
+  summarizeSceneTurn,
+  buildStructuredTurnEnvelope
+} from "./sceneChatSession.js";
 
 /**
  * Build an AI call wrapper with default options so pages can override baseUrl, model, etc.
@@ -108,7 +120,15 @@ if (typeof window !== "undefined") {
     createDirectorySink,
     createUploadSink,
     createZipDownloadSink,
-    toSiteRelativeTexturePath
+    toSiteRelativeTexturePath,
+    buildObjectSpatialCardsFromScene,
+    buildObjectSpatialCardsFromSceneJson,
+    buildSceneScaleProfile,
+    pickReferenceObjects,
+    buildPlacementHints,
+    classifyTurnIntent,
+    summarizeSceneTurn,
+    buildStructuredTurnEnvelope
   };
 }
 
@@ -148,5 +168,13 @@ export {
   createDirectorySink,
   createUploadSink,
   createZipDownloadSink,
-  toSiteRelativeTexturePath
+  toSiteRelativeTexturePath,
+  buildObjectSpatialCardsFromScene,
+  buildObjectSpatialCardsFromSceneJson,
+  buildSceneScaleProfile,
+  pickReferenceObjects,
+  buildPlacementHints,
+  classifyTurnIntent,
+  summarizeSceneTurn,
+  buildStructuredTurnEnvelope
 };
