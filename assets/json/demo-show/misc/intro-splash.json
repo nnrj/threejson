@@ -1,0 +1,45 @@
+{
+  "version": "next",
+  "name": "misc-intro-splash",
+  "sceneConfig": {
+    "scene": { "background": "#1a1e26" },
+    "camera": { "fov": 50, "near": 0.1, "far": 200, "position": { "x": 10, "y": 7, "z": 12 } },
+    "renderer": { "antialias": true },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 2, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 0.9 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1, "position": { "x": 8, "y": 12, "z": 8 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true },
+    "intro": {
+      "enabled": true,
+      "backgroundColor": "transparent",
+      "postLoad": {
+        "slides": [
+          {
+            "type": "text",
+            "content": "demo-show · misc · intro splash",
+            "durationMs": 2200,
+            "textStyle": { "fontSizePx": 20, "color": "#e8eaed" }
+          }
+        ],
+        "fadeInMs": 300,
+        "fadeOutMs": 400,
+        "skipOnClick": true,
+        "excludeFromLoadWait": true
+      }
+    }
+  },
+  "worldInfo": {
+    "boxModelList": [
+      {
+        "name": "intro-splash-box",
+        "objType": "box",
+        "geometry": { "width": 3, "height": 3, "depth": 3 },
+        "position": { "x": 0, "y": 1.5, "z": 0 },
+        "material": { "type": "standard", "color": "#5470c6" }
+      }
+    ]
+  },
+  "threeJsonId": "misc-intro-splash"
+}

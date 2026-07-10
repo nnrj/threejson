@@ -2,23 +2,48 @@
   "version": "next",
   "name": "info-panels-css3d-panel",
   "sceneConfig": {
-    "scene": { "background": "#11151b" },
-    "camera": { "fov": 50, "near": 0.1, "far": 200, "position": { "x": 0, "y": 6, "z": 14 } },
-    "renderer": { "antialias": true, "ratioRate": 1 },
-    "controls": { "enableDamping": true, "target": { "x": 0, "y": 3, "z": 0 } },
-    "lights": [
-      { "type": "ambient", "color": "#ffffff", "intensity": 1 },
-      { "type": "directional", "color": "#ffffff", "intensity": 1.1, "position": { "x": 10, "y": 14, "z": 10 } }
-    ],
-    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+    "extensions": {
+      "css3d": { "pointerPolicy": "panel" }
+    }
   },
   "objectList": [
-    { "threeJsonId": "css3d-floor", "name": "css3d-floor", "objType": "floor", "geometry": { "width": 14, "height": 0.2, "depth": 10 }, "position": { "x": 0, "y": -0.1, "z": 0 }, "material": { "type": "standard", "color": "#2d3a4a" } },
+    { "objType": "scene", "background": "#1e2430" },
+    { "objType": "camera", "fov": 50, "near": 0.1, "far": 400, "position": { "x": 30, "y": 24, "z": 40 } },
+    { "objType": "renderer", "antialias": true, "ratioRate": 1 },
+    { "objType": "controls", "enableDamping": true, "dampingFactor": 0.08, "target": { "x": 0, "y": 6, "z": 0 } },
+    { "objType": "light", "type": "ambient", "color": "#ffffff", "intensity": 0.5 },
+    { "objType": "light", "type": "directional", "color": "#ffffff", "intensity": 0.85, "position": { "x": 20, "y": 30, "z": 16 } },
+    { "objType": "renderLoop", "autoResize": true },
+    { "threeJsonId": "css3d-floor", "name": "css3d-floor", "objType": "floor", "geometry": { "width": 50, "height": 1.5, "depth": 40 }, "position": { "x": 0, "y": -0.75, "z": 0 }, "material": { "type": "standard", "color": "#2d3a4a" } },
+    { "threeJsonId": "css3d-pedestal", "name": "css3d-pedestal", "objType": "box", "geometry": { "width": 6, "height": 10, "depth": 6 }, "position": { "x": 0, "y": 5, "z": 0 }, "material": { "type": "standard", "color": "#4a5d73" } },
     {
-      "threeJsonId": "css3d-console",
+      "threeJsonId": "css3d-html-panel",
+      "name": "css3d-html-panel",
       "objType": "css3dPanel",
-      "position": { "x": 0, "y": 3, "z": 0 },
-      "html": "<div style=\"width:220px;padding:12px;border-radius:8px;background:#1f2733;color:#e5e9ef;font:13px/1.5 sans-serif;box-shadow:0 6px 16px rgba(0,0,0,.4)\"><strong>css3dPanel</strong><br>真实 DOM，可点击/可输入<br><button style=\"margin-top:6px;padding:4px 10px\">按钮</button></div>"
+      "refName": "html-panel",
+      "width": 260,
+      "height": 150,
+      "panelWidth": 24,
+      "position": { "x": -9, "y": 13, "z": 0 },
+      "content": {
+        "type": "html",
+        "html": "<div style='padding:10px;line-height:1.5'><strong>CSS3D HTML</strong><p>真实 DOM，可点击按钮与输入框。</p><button type='button'>点我</button><input placeholder='可输入' style='margin-left:6px;width:100px'/></div>"
+      }
+    },
+    {
+      "threeJsonId": "css3d-url-panel",
+      "name": "css3d-url-panel",
+      "objType": "css3dPanel",
+      "refName": "url-panel",
+      "width": 320,
+      "height": 190,
+      "panelWidth": 30,
+      "position": { "x": 11, "y": 14, "z": 3 },
+      "rotation": { "rotationY": -16 },
+      "content": {
+        "type": "url",
+        "src": "https://example.com/"
+      }
     }
   ],
   "threeJsonId": "info-panels-css3d-panel"

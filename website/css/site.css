@@ -121,6 +121,17 @@ a { color: inherit; text-decoration: none; }
   transform: scaleX(1);
 }
 
+.mainNav > a.navActive,
+.navMenu.navActive > button {
+  background: color-mix(in srgb, var(--brand) 10%, transparent);
+  color: var(--brand);
+}
+.mainNav > a.navActive::after,
+.navMenu.navActive > button::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
 .navMenu { position: relative; display: inline-flex; align-items: center; height: 64px; }
 
 .dropdown {
@@ -408,6 +419,76 @@ a { color: inherit; text-decoration: none; }
 }
 
 .exampleCardBody h3 { margin-top: 0; }
+
+.examplesToolsHover {
+  position: fixed;
+  top: 76px;
+  right: 20px;
+  z-index: 25;
+}
+.examplesToolsTrigger {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  color: var(--muted);
+  font-size: 16px;
+}
+.examplesToolsPanel {
+  position: absolute;
+  top: 40px;
+  right: 0;
+  min-width: 240px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease;
+  pointer-events: none;
+}
+.examplesToolsHover:hover .examplesToolsPanel,
+.examplesToolsHover:focus-within .examplesToolsPanel {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.examplesToolsButtonRow { display: flex; gap: 8px; }
+.examplesToolsButtonRow button {
+  flex: 1;
+  padding: 7px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+}
+.examplesToolsButtonRow button:hover { border-color: var(--brand); color: var(--brand); }
+.examplesToolsCheckboxRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.externalLinkGlyph {
+  display: inline-block;
+  color: var(--brand);
+  font-size: 0.85em;
+  font-weight: 700;
+}
 
 .readerFrame {
   width: 100%;

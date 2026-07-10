@@ -30,10 +30,6 @@
       position: absolute; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
       color: #fff; background: rgba(0,0,0,0.55); font-size: 15px;
     }
-    #hint {
-      position: absolute; left: 12px; bottom: 12px; z-index: 25; max-width: min(820px, 92vw);
-      padding: 8px 10px; border-radius: 4px; background: rgba(10,10,10,0.55); color: #e0e0e0; font-size: 12px; line-height: 1.45;
-    }
     code { color: #b8d4ff; }
   </style>
 </head>
@@ -41,10 +37,6 @@
 <div id="rootContainer">
   <canvas id="canvasContainer">需要 WebGL</canvas>
   <div id="loadingMask">加载中…</div>
-  <div id="hint">
-    【Track 7 · text】三列对比：左 <code>sdf</code> 中文 · 中 <code>texture</code> · 右 <code>sdf</code> 英文；下方灰字为 mode 标注<br>
-    数据：<code>../../../assets/json/tutorial/track-07/07-01-text-modes.json</code>
-  </div>
 </div>
 <script type="module">
   import { createJsonScene } from "threejson";

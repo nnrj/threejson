@@ -1,0 +1,96 @@
+{
+  "version": "next",
+  "name": "preset-blank-orbit",
+  "threeJsonId": "preset-blank-orbit",
+  "canvasWidth": 1280,
+  "canvasHeight": 720,
+  "objectList": [
+    {
+      "objType": "scene",
+      "background": "#1a1a1e"
+    },
+    {
+      "objType": "camera",
+      "fov": 50,
+      "near": 0.1,
+      "far": 500,
+      "position": {
+        "x": 80,
+        "y": 60,
+        "z": 80
+      }
+    },
+    {
+      "objType": "renderer",
+      "antialias": true,
+      "ratioRate": 1
+    },
+    {
+      "objType": "controls",
+      "enableDamping": true,
+      "dampingFactor": 0.35,
+      "enableZoom": true,
+      "enablePan": true,
+      "target": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "objType": "light",
+      "type": "ambient",
+      "color": "#ffffff",
+      "intensity": 0.45
+    },
+    {
+      "objType": "light",
+      "type": "directional",
+      "color": "#ffffff",
+      "intensity": 0.85,
+      "position": {
+        "x": 40,
+        "y": 80,
+        "z": 30
+      }
+    },
+    {
+      "objType": "renderLoop",
+      "autoResize": true,
+      "firstAutoResize": true
+    },
+    {
+      "name": "room-floor",
+      "objType": "floor",
+      "refName": "floor",
+      "geometry": {
+        "width": 120,
+        "height": 1,
+        "depth": 120
+      },
+      "position": {
+        "x": 0,
+        "y": -0.5,
+        "z": 0
+      },
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "material": {
+        "type": "standard",
+        "color": "#2F3133",
+        "metalness": 0.05,
+        "roughness": 0.85
+      },
+      "label": "floor"
+    }
+  ],
+  "label": "普通场景"
+}

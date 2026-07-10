@@ -28,18 +28,12 @@
       position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
       color: #fff; background: rgba(0,0,0,0.55); font-size: 14px; z-index: 2;
     }
-    #hint {
-      position: absolute; left: 10px; bottom: 8px; color: #ccc; font-size: 11px; max-width: 92vw; z-index: 3; line-height: 1.45;
-    }
   </style>
 </head>
 <body>
 <div id="rootContainer">
   <canvas id="canvasContainer">需要 WebGL</canvas>
   <div id="loadingMask">加载 Player Rig 场景…</div>
-  <div id="hint">
-    数据：<code>../../../assets/json/tutorial/track-04/04-04-fps-player-rig.json</code> · 相机 <code>attachTo: "player"</code> · WASD 移动 Rig
-  </div>
 </div>
 <script type="module">
   import { createJsonScene } from "threejson/core";

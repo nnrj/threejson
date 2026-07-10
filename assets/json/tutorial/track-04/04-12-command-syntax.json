@@ -1,0 +1,35 @@
+{
+  "version": "next",
+  "name": "command-syntax-demo",
+  "sceneConfig": {
+    "scene": { "background": "#1a1a1a" },
+    "camera": { "fov": 50, "near": 0.1, "far": 200, "position": { "x": 10, "y": 8, "z": 12 } },
+    "renderer": { "antialias": true, "ratioRate": 1 },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 2, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 0.6 },
+      { "type": "directional", "color": "#ffffff", "intensity": 0.9, "position": { "x": 10, "y": 14, "z": 10 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "worldInfo": {
+    "boxModelList": [
+      {
+        "name": "command-demo-floor",
+        "objType": "floor",
+        "geometry": { "width": 30, "height": 1, "depth": 30 },
+        "position": { "x": 0, "y": -0.5, "z": 0 },
+        "material": { "type": "standard", "color": "#2d3a4a" }
+      },
+      {
+        "threeJsonId": "command-demo-box",
+        "name": "command-demo-box",
+        "objType": "box",
+        "geometry": { "width": 3, "height": 3, "depth": 3 },
+        "position": { "x": 0, "y": 1.5, "z": 0 },
+        "material": { "type": "standard", "color": "#409eff" }
+      }
+    ]
+  },
+  "threeJsonId": "command-syntax-demo"
+}

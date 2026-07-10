@@ -15,6 +15,7 @@
   --scrollbar-track: #171d26;
   --scrollbar-thumb: #445167;
   --scrollbar-thumb-hover: #5c6f8e;
+  --catalog-active-text: #bcd4ff;
 }
 
 :root[data-theme="light"] {
@@ -34,6 +35,7 @@
   --scrollbar-track: #edf2f8;
   --scrollbar-thumb: #b8c4d6;
   --scrollbar-thumb-hover: #8fa1bd;
+  --catalog-active-text: #1f3a7a;
 }
 
 * { box-sizing: border-box; }
@@ -61,10 +63,12 @@ button { font: inherit; }
 
 .workspace { display: grid; grid-template-columns: minmax(380px, 45vw) 1fr; min-height: 0; }
 .leftPane, .rightPane { min-width: 0; min-height: 0; }
-.leftPane { display: grid; grid-template-rows: 40px 42px 1fr; border-right: 1px solid var(--line); background: var(--panel); }
-.rightPane { display: grid; grid-template-rows: 42px 1fr; overflow: hidden; background: var(--canvas-bg); }
+.leftPane { display: grid; grid-template-rows: auto minmax(0, 1fr); border-right: 1px solid var(--line); background: var(--panel); }
+.leftPane.tutorialVisible { grid-template-rows: auto minmax(0, 1fr) minmax(120px, 20vh); }
+.rightPane { display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; background: var(--canvas-bg); }
 
-.tabs, .editorToolbar, .canvasToolbar { display: flex; align-items: center; gap: 8px; padding: 0 10px; border-bottom: 1px solid var(--line); background: var(--panel2); }
+.editorToolbar, .canvasToolbar { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--line); background: var(--panel2); flex-wrap: wrap; }
+.currentExampleLabel { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 13px; }
 .tab, .ghostButton, .editorToolbar button, .canvasToolbar button, .menu > button {
   height: 28px;
   padding: 0 10px;
@@ -112,7 +116,8 @@ button { font: inherit; }
 .catalogItem { display: block; width: 100%; margin: 0 0 6px; padding: 8px 9px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--text); text-align: left; cursor: pointer; }
 .catalogItem:hover { border-color: #5c6f8e; background: var(--button); color: var(--button-hover-text); }
 .catalogItem:active { background: var(--button-hover); }
-.catalogItem.active { border-color: var(--brand); background: rgba(84, 112, 198, 0.22); color: #bcd4ff; }
+.catalogItem.active { border-color: var(--brand); background: rgba(84, 112, 198, 0.22); color: var(--catalog-active-text); }
+.catalogItem.active .catalogItemDesc { color: var(--catalog-active-text); opacity: 0.78; }
 .catalogItemTitle { display: block; font-size: 13px; line-height: 1.35; }
 .catalogItemDesc { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; line-height: 1.35; }
 
@@ -124,6 +129,29 @@ button { font: inherit; }
 .treeNode { display: block; width: 100%; margin: 0 0 6px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 5px; background: var(--button); color: var(--text); text-align: left; cursor: pointer; }
 .treeNode:hover, .treeNode.active { border-color: var(--brand); color: #9ecbff; }
 .treeGroup h3 { margin: 0 0 8px; font-size: 13px; color: var(--muted); }
+
+.tutorialPanel {
+  display: none;
+  min-height: 0;
+  overflow: auto;
+  padding: 10px 12px;
+  border-top: 1px solid var(--line);
+  background: var(--editor-bg);
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+.leftPane.tutorialVisible .tutorialPanel { display: block; }
+.tutorialSummary { color: var(--text); }
+.tutorialDocLinks { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.tutorialDocLinks a {
+  color: #9ecbff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.tutorialDocLinks a:hover { color: #c4ddff; }
 
 .menu { position: relative; display: inline-flex; align-items: center; height: 42px; }
 .menuPanel { position: absolute; top: 32px; left: 0; z-index: 10; display: none; min-width: 140px; padding: 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }

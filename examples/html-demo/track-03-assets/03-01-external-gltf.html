@@ -84,19 +84,6 @@
       transform: translateX(-50%);
     }
 
-    #hint {
-      position: absolute;
-      left: 12px;
-      bottom: 12px;
-      z-index: 25;
-      max-width: min(620px, 92vw);
-      padding: 8px 10px;
-      border-radius: 4px;
-      background: rgba(10, 10, 10, 0.55);
-      color: #e0e0e0;
-      font-size: 12px;
-      line-height: 1.45;
-    }
   </style>
 </head>
 <body>
@@ -104,9 +91,6 @@
   <canvas id="canvasContainer">抱歉，你的浏览器不支持 WebGL。</canvas>
   <div id="loadingMask">Track 3 · glTF 外部模型加载中…</div>
   <div id="messageBox"></div>
-  <div id="hint">
-    【glTF 外部模型示例】数据文件：<code>../../../assets/json/tutorial/track-03/03-01-external-gltf.json</code>；模型文件：<code>../../../assets/model/gltf/threejson_unlit_pyramid.gltf</code>。本页使用友好分组里的 <code>worldInfo.externalModelList</code>，列表本身负责推导 <code>objType: "externalModel"</code>，单条记录继续保留 <code>modelFileType</code> 以显式控制加载器。
-  </div>
 </div>
 
 <script type="module">

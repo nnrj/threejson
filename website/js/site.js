@@ -12,12 +12,14 @@ const THUMB_CACHE_TTL_MS = 3 * 24 * 60 * 60 * 1000;
 const THUMB_WIDTH = 480;
 const THUMB_HEIGHT = 300;
 const THUMB_LOAD_TIMEOUT_MS = 8000;
+const AUTO_THUMB_CACHE_STORAGE_KEY = "threejson.examples.autoThumbCache";
 
 let thumbObserver = null;
 let thumbCanvas = null;
 let thumbQueue = [];
 let thumbQueueRunning = false;
 let thumbCoreModulePromise = null;
+let sectionScrollObserver = null;
 
 const I18N = {
   "zh-CN": {
@@ -64,6 +66,9 @@ const I18N = {
     "examples.title": "示例",
     "examples.desc": "每个示例聚焦一个 JSON 能力点。点击卡片后进入 shower，在左侧编辑 JSON，右侧实时渲染 ThreeJSON 场景。",
     "examples.legacy": "案例教程",
+    "examples.tools.rebuild": "重建示例缩略图缓存",
+    "examples.tools.clear": "清除示例缩略图缓存",
+    "examples.tools.autoBuild": "自动构建缩略图缓存",
     "download.title": "下载 ThreeJSON",
     "contributors.title": "贡献者",
     "deps.title": "依赖项"
@@ -112,6 +117,9 @@ const I18N = {
     "examples.title": "Examples",
     "examples.desc": "Each example focuses on one JSON capability. Open a card in shower, edit JSON on the left, and render the ThreeJSON scene on the right.",
     "examples.legacy": "Case Tutorials",
+    "examples.tools.rebuild": "Rebuild Thumbnail Cache",
+    "examples.tools.clear": "Clear Thumbnail Cache",
+    "examples.tools.autoBuild": "Auto-Build Thumbnail Cache",
     "download.title": "Download ThreeJSON",
     "contributors.title": "Contributors",
     "deps.title": "Dependencies"
@@ -254,6 +262,7 @@ function renderRoute() {
   teardownExamplesThumbnails();
   const hash = decodeURIComponent(location.hash || "#/");
   const route = hash.replace(/^#/, "") || "/";
+  updateActiveNav(route);
   if (route.startsWith("/reader/")) {
     renderReader(route.slice("/reader/".length));
     return;
@@ -265,6 +274,37 @@ function renderRoute() {
   else if (route === "/contributors") renderContributors();
   else if (route === "/dependencies") renderDependencies();
   else renderHome();
+}
+
+function updateActiveNav(route) {
+  document.querySelectorAll(".mainNav > a.navActive").forEach((el) => el.classList.remove("navActive"));
+  document.querySelectorAll(".navMenu.navActive").forEach((el) => el.classList.remove("navActive"));
+
+  function activateTopLink(hashSuffix) {
+    document.querySelector(`.mainNav > a[href="${hashSuffix}"]`)?.classList.add("navActive");
+  }
+  function activateMenuByChildHref(hashSuffix) {
+    document.querySelector(`.navMenu a[href="${hashSuffix}"]`)?.closest(".navMenu")?.classList.add("navActive");
+  }
+
+  if (route === "/" || route === "/home") {
+    activateTopLink("#/");
+    return;
+  }
+  if (route === "/examples") {
+    activateTopLink("#/examples");
+    return;
+  }
+  if (route === "/docs-index" || route === "/download" || route === "/contributors" || route === "/dependencies") {
+    activateMenuByChildHref(`#${route}`);
+    return;
+  }
+  if (route.startsWith("/reader/")) {
+    document
+      .querySelector(`.navMenu [data-doc][href="#${route}"]`)
+      ?.closest(".navMenu")
+      ?.classList.add("navActive");
+  }
 }
 
 function renderHome() {
@@ -350,6 +390,19 @@ async function loadManifest() {
 async function renderExamples() {
   const manifest = await loadManifest();
   app.innerHTML = `
+    <div class="examplesToolsHover">
+      <div class="examplesToolsTrigger" aria-hidden="true">&#9881;</div>
+      <div class="examplesToolsPanel">
+        <div class="examplesToolsButtonRow">
+          <button type="button" id="rebuildThumbCacheBtn">${t("examples.tools.rebuild")}</button>
+          <button type="button" id="clearThumbCacheBtn">${t("examples.tools.clear")}</button>
+        </div>
+        <label class="examplesToolsCheckboxRow">
+          <input type="checkbox" id="autoThumbCacheCheckbox">
+          <span>${t("examples.tools.autoBuild")}</span>
+        </label>
+      </div>
+    </div>
     <section class="examplesPage">
       <aside class="examplesSideList">
         ${manifest.map((section, index) => `<a href="#section-${section.section}" class="${index === 0 ? "active" : ""}" data-section="${section.section}">${lang === "zh-CN" ? section.sectionTitle : section.sectionTitleEn}</a>`).join("")}
@@ -363,10 +416,10 @@ async function renderExamples() {
             <h2>${lang === "zh-CN" ? section.sectionTitle : section.sectionTitleEn}</h2>
             <div class="exampleGrid">
               ${section.items.map((item) => `
-                <article class="card exampleCard" data-json="${item.json}">
+                <article class="card exampleCard${item.external ? " externalCard" : ""}" data-json="${item.json || ""}"${item.external ? ` data-external="${item.external}"` : ""}>
                   <div class="exampleThumb"><img src="${PLACEHOLDER_IMG}" alt=""></div>
                   <div class="exampleCardBody">
-                    <h3>${lang === "zh-CN" ? item.title : item.titleEn}</h3>
+                    <h3>${lang === "zh-CN" ? item.title : item.titleEn}${item.external ? ' <span class="externalLinkGlyph" title="' + (lang === "zh-CN" ? "在新标签页打开" : "Opens in a new tab") + '">↗</span>' : ""}</h3>
                     <p>${lang === "zh-CN" ? item.desc : item.descEn}</p>
                   </div>
                 </article>`).join("")}
@@ -384,13 +437,31 @@ async function renderExamples() {
   });
   app.querySelectorAll(".exampleCard").forEach((card) => {
     card.addEventListener("click", () => {
+      if (card.dataset.external) {
+        window.open(resolveRootAssetUrl(card.dataset.external), "_blank", "noreferrer");
+        return;
+      }
       const shower = new URL("../../tools/scene-host/shower/index.html", import.meta.url);
       shower.searchParams.set("json", card.dataset.json);
       shower.searchParams.set("lang", lang);
       window.open(shower.href, "_blank", "noreferrer");
     });
   });
+  const autoThumbCheckbox = document.getElementById("autoThumbCacheCheckbox");
+  if (autoThumbCheckbox) {
+    autoThumbCheckbox.checked = isAutoThumbCacheEnabled();
+    autoThumbCheckbox.addEventListener("change", () => {
+      try {
+        localStorage.setItem(AUTO_THUMB_CACHE_STORAGE_KEY, autoThumbCheckbox.checked ? "1" : "0");
+      } catch {
+        /* ignore */
+      }
+    });
+  }
+  document.getElementById("rebuildThumbCacheBtn")?.addEventListener("click", rebuildAllThumbnails);
+  document.getElementById("clearThumbCacheBtn")?.addEventListener("click", clearAllThumbnails);
   initExamplesThumbnails();
+  initExamplesScrollSpy();
 }
 
 // --- Example card thumbnail capture pipeline -------------------------------
@@ -404,9 +475,20 @@ function teardownExamplesThumbnails() {
     thumbCanvas.remove();
     thumbCanvas = null;
   }
+  sectionScrollObserver?.disconnect();
+  sectionScrollObserver = null;
+}
+
+function isAutoThumbCacheEnabled() {
+  try {
+    return localStorage.getItem(AUTO_THUMB_CACHE_STORAGE_KEY) !== "0";
+  } catch {
+    return true;
+  }
 }
 
 function initExamplesThumbnails() {
+  if (!isAutoThumbCacheEnabled()) return;
   const cards = Array.from(app.querySelectorAll(".exampleCard"));
   if (!cards.length || typeof IntersectionObserver === "undefined") return;
   thumbObserver = new IntersectionObserver((entries) => {
@@ -417,6 +499,40 @@ function initExamplesThumbnails() {
     }
   }, { rootMargin: "200px" });
   cards.forEach((card) => thumbObserver.observe(card));
+}
+
+function rebuildAllThumbnails() {
+  const cards = Array.from(app.querySelectorAll(".exampleCard")).filter((card) => card.dataset.json);
+  thumbQueue = cards.map((card) => ({ card, jsonPath: card.dataset.json }));
+  void runThumbQueue();
+}
+
+function clearAllThumbnails() {
+  try {
+    localStorage.removeItem(THUMB_CACHE_KEY);
+  } catch {
+    /* ignore */
+  }
+  thumbQueue = [];
+  app.querySelectorAll(".exampleThumb img").forEach((img) => {
+    img.src = PLACEHOLDER_IMG;
+    img.classList.remove("captured");
+  });
+}
+
+function initExamplesScrollSpy() {
+  const sections = Array.from(app.querySelectorAll(".exampleSection"));
+  if (!sections.length || typeof IntersectionObserver === "undefined") return;
+  sectionScrollObserver = new IntersectionObserver((entries) => {
+    const visible = entries.filter((entry) => entry.isIntersecting);
+    if (!visible.length) return;
+    visible.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+    const sectionId = visible[0].target.id.replace(/^section-/, "");
+    app.querySelectorAll(".examplesSideList a[data-section]").forEach((node) => {
+      node.classList.toggle("active", node.dataset.section === sectionId);
+    });
+  }, { rootMargin: "-72px 0px -70% 0px", threshold: [0, 1] });
+  sections.forEach((section) => sectionScrollObserver.observe(section));
 }
 
 function readThumbCache() {

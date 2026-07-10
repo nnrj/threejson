@@ -34,12 +34,6 @@
       color: #e8eaed; background: rgba(3, 4, 10, 0.88); font-size: 14px; z-index: 5;
     }
     #loadingMask small { color: #9aa0a6; font-size: 12px; max-width: 520px; text-align: center; line-height: 1.5; }
-    #hint {
-      position: absolute; left: 12px; bottom: 10px; color: #9aa0a6; font-size: 11px;
-      max-width: min(640px, 92vw); z-index: 6; line-height: 1.5;
-      background: rgba(0,0,0,0.35); padding: 8px 10px; border-radius: 8px;
-    }
-    #hint strong { color: #ffaa55; font-weight: 600; }
   </style>
 </head>
 <body>
@@ -48,10 +42,6 @@
   <div id="loadingMask">
     <div>加载 VR 曲面浏览器场景…</div>
     <small>悬空大屏嵌入 <strong>threejs.org</strong>。需联网；屏上可滚动/点击链接。拖拽空白处 Orbit 环绕观看。</small>
-  </div>
-  <div id="hint">
-    <strong>04-07 曲面屏 Three.js 官网</strong> · 数据 <code>../../../assets/json/tutorial/track-04/04-07-css3d-curved-google.json</code><br>
-    VR 悬空大荧屏 · 屏上为 threejs.org · 滚轮缩放 · 基础 demo 见 <code>04-06-css3d-panel.html</code>
   </div>
 </div>
 <script type="module">

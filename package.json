@@ -59,6 +59,7 @@
   "scripts": {
     "generate:business-domain-manifest": "node tools/dev/build/generate-business-domain-manifest.mjs",
     "generate:subdomain": "node tools/dev/build/generate-subdomain.mjs",
+    "generate:preset-manifest": "node tools/dev/build/generate-preset-manifest.mjs",
     "prepublishOnly": "npm run generate:business-domain-manifest",
     "test": "node --test tests/*.test.mjs",
     "audit:console": "node tools/dev/audit-console-usage.mjs",

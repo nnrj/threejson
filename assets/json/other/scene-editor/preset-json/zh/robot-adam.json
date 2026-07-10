@@ -1,0 +1,459 @@
+{
+  "threeJsonId": "a1b2c3d4-robot-grass-001",
+  "name": "robot-adam",
+  "version": "next",
+  "sceneConfig": {
+    "camera": {
+      "fov": 60,
+      "near": 0.1,
+      "far": 1000,
+      "position": {
+        "x": 210.97042990927454,
+        "y": 117.90434579553107,
+        "z": 281.2939065456996
+      },
+      "jsonOrigin": "config"
+    },
+    "controls": {
+      "target": {
+        "x": 0,
+        "y": 30,
+        "z": 0
+      },
+      "jsonOrigin": "config"
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "color": "#ffffff",
+        "intensity": 0.5,
+        "position": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "jsonOrigin": "config"
+      },
+      {
+        "type": "directional",
+        "color": "#ffffff",
+        "intensity": 1,
+        "position": {
+          "x": 100,
+          "y": 200,
+          "z": 100
+        },
+        "jsonOrigin": "config"
+      }
+    ]
+  },
+  "saveMeta": {
+    "exportMode": "standard_primary",
+    "exportedAt": "2026-06-08T08:40:13.683Z"
+  },
+  "objectList": [
+    {
+      "objType": "scene",
+      "background": "#87CEEB",
+      "threeJsonId": "81b3a138-aec4-4633-b2e4-5874530c1a6e"
+    },
+    {
+      "objType": "camera",
+      "fov": 60,
+      "near": 0.1,
+      "far": 1000,
+      "position": {
+        "x": 120,
+        "y": 80,
+        "z": 160
+      },
+      "threeJsonId": "4a11b671-51b7-477d-bcd3-f9365bbcf8b1"
+    },
+    {
+      "objType": "controls",
+      "enableDamping": true,
+      "target": {
+        "x": 0,
+        "y": 30,
+        "z": 0
+      },
+      "threeJsonId": "efee9f00-850a-43e8-976a-3dbac825b5a2"
+    },
+    {
+      "objType": "light",
+      "type": "ambient",
+      "color": "#ffffff",
+      "intensity": 0.5,
+      "threeJsonId": "396e83ed-579d-4b10-80bf-d2057a3e75bf"
+    },
+    {
+      "objType": "light",
+      "type": "directional",
+      "color": "#ffffff",
+      "intensity": 1,
+      "position": {
+        "x": 100,
+        "y": 200,
+        "z": 100
+      },
+      "threeJsonId": "ab2b6913-7c25-4b75-b5b7-0f379409b215"
+    },
+    {
+      "name": "room-floor",
+      "objType": "domain",
+      "geometry": {
+        "width": 300,
+        "height": 4,
+        "depth": 300
+      },
+      "position": {
+        "x": 0,
+        "y": -2,
+        "z": 0
+      },
+      "material": {
+        "type": "standard",
+        "color": "#4CAF50"
+      },
+      "threeJsonId": "18f32e77-db3f-4ad5-8e95-64ca65f0519a",
+      "domain": "floor",
+      "handler": "addToScene",
+      "boxType": "box",
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true,
+      "items": [],
+      "label": "grass"
+    },
+    {
+      "name": "robot-body",
+      "objType": "box",
+      "geometry": {
+        "width": 30,
+        "height": 40,
+        "depth": 20
+      },
+      "position": {
+        "x": 0,
+        "y": 20,
+        "z": 0
+      },
+      "material": {
+        "type": "standard",
+        "color": "#607D8B",
+        "metalness": 0.3,
+        "roughness": 0.6
+      },
+      "threeJsonId": "32da615c-9345-4c8a-bf9e-94e2a0a09214",
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "robot-head",
+      "objType": "box",
+      "geometry": {
+        "width": 24,
+        "height": 20,
+        "depth": 18
+      },
+      "position": {
+        "x": 0,
+        "y": 50,
+        "z": 0
+      },
+      "material": {
+        "type": "standard",
+        "color": "#90A4AE",
+        "metalness": 0.2,
+        "roughness": 0.5
+      },
+      "threeJsonId": "60c38363-ebb7-4820-93e7-f699fa47a0f7",
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "robot-left-arm",
+      "objType": "box",
+      "geometry": {
+        "width": 8,
+        "height": 30,
+        "depth": 8
+      },
+      "position": {
+        "x": -22,
+        "y": 30,
+        "z": 0
+      },
+      "material": {
+        "type": "standard",
+        "color": "#78909C",
+        "metalness": 0.3,
+        "roughness": 0.6
+      },
+      "threeJsonId": "91faea8b-181f-4c21-a02c-64a66e973e89",
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "robot-right-arm",
+      "objType": "box",
+      "geometry": {
+        "width": 8,
+        "height": 30,
+        "depth": 8
+      },
+      "position": {
+        "x": 22,
+        "y": 30,
+        "z": 0
+      },
+      "material": {
+        "type": "standard",
+        "color": "#78909C",
+        "metalness": 0.3,
+        "roughness": 0.6
+      },
+      "threeJsonId": "4019bba9-ffcb-4782-8039-6d0178ef73ee",
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "robot-left-leg",
+      "objType": "box",
+      "geometry": {
+        "width": 10,
+        "height": 20,
+        "depth": 10
+      },
+      "position": {
+        "x": -8,
+        "y": -10,
+        "z": 0
+      },
+      "material": {
+        "type": "standard",
+        "color": "#546E7A",
+        "metalness": 0.4,
+        "roughness": 0.5
+      },
+      "threeJsonId": "2ddcf479-8af0-4e40-8b50-694f7eb74d95",
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "robot-right-leg",
+      "objType": "box",
+      "geometry": {
+        "width": 10,
+        "height": 20,
+        "depth": 10
+      },
+      "position": {
+        "x": 8,
+        "y": -10,
+        "z": 0
+      },
+      "material": {
+        "type": "standard",
+        "color": "#546E7A",
+        "metalness": 0.4,
+        "roughness": 0.5
+      },
+      "threeJsonId": "34419a11-5d32-4b0c-b5e2-56c4169365d5",
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "robot-left-eye",
+      "geometry": {
+        "radius": 3,
+        "widthSegments": 16,
+        "heightSegments": 16
+      },
+      "position": {
+        "x": -5,
+        "y": 54,
+        "z": 10
+      },
+      "material": {
+        "type": "standard",
+        "color": "#00BCD4",
+        "emissive": "#00BCD4",
+        "emissiveIntensity": 0.5
+      },
+      "threeJsonId": "2c6c28a4-1f18-46ae-a580-8dc8c10045d8",
+      "objType": "sphere",
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "robot-right-eye",
+      "geometry": {
+        "radius": 3,
+        "widthSegments": 16,
+        "heightSegments": 16
+      },
+      "position": {
+        "x": 5,
+        "y": 54,
+        "z": 10
+      },
+      "material": {
+        "type": "standard",
+        "color": "#00BCD4",
+        "emissive": "#00BCD4",
+        "emissiveIntensity": 0.5
+      },
+      "threeJsonId": "894bebc5-170e-4aa8-8d46-5f1b8d73f4cd",
+      "objType": "sphere",
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "robot-antenna",
+      "objType": "cylinder",
+      "geometry": {
+        "radiusTop": 1,
+        "radiusBottom": 1,
+        "height": 12,
+        "radialSegments": 8
+      },
+      "position": {
+        "x": 0,
+        "y": 66,
+        "z": 0
+      },
+      "material": {
+        "type": "standard",
+        "color": "#B0BEC5",
+        "metalness": 0.5,
+        "roughness": 0.3
+      },
+      "threeJsonId": "b529a644-f636-4d92-8a57-ec29ceb50d5e",
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "robot-antenna-ball",
+      "objType": "sphere",
+      "geometry": {
+        "radius": 3,
+        "widthSegments": 16,
+        "heightSegments": 16
+      },
+      "position": {
+        "x": 0,
+        "y": 72,
+        "z": 0
+      },
+      "material": {
+        "type": "standard",
+        "color": "#FF5722",
+        "emissive": "#FF5722",
+        "emissiveIntensity": 0.4
+      },
+      "threeJsonId": "0264942f-c011-4590-9f67-2c38a881acd6",
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    }
+  ],
+  "label": "机器人 Adam"
+}

@@ -32,10 +32,6 @@
       position: absolute; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
       color: #fff; background: rgba(0,0,0,0.55); font-size: 15px;
     }
-    #hint {
-      position: absolute; left: 12px; bottom: 12px; z-index: 25; max-width: min(720px, 92vw);
-      padding: 8px 10px; border-radius: 4px; background: rgba(10,10,10,0.55); color: #e0e0e0; font-size: 12px; line-height: 1.45;
-    }
 
     .gameHud {
       position: absolute;
@@ -139,7 +135,6 @@
 <div id="rootContainer">
   <canvas id="canvasContainer">需要 WebGL</canvas>
   <div id="loadingMask">加载中…</div>
-  <div id="hint">【Track 2 · 空间音频】点击画面开始播放；右侧按钮可靠近/远离音箱，右下角调节<strong>空间音箱</strong>音量（不含环境音）</div>
   <div class="gameHud" aria-label="相机快捷操作">
     <button type="button" id="moveCloserBtn" title="沿当前视角向音箱靠近">靠近<br>音箱</button>
     <button type="button" id="moveFartherBtn" title="沿当前视角远离音箱">远离<br>音箱</button>

@@ -1,6 +1,6 @@
 {
   "threeJsonId": "robot-training-001",
-  "name": "机器人训练环境",
+  "name": "robot-training-02",
   "version": "next",
   "assetLibrary": [],
   "sceneConfig": {
@@ -1131,5 +1131,6 @@
   "saveMeta": {
     "exportMode": "standard_primary",
     "exportedAt": "2026-06-13T01:44:45.728Z"
-  }
+  },
+  "label": "Robot Training Environment"
 }

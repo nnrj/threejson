@@ -408,6 +408,24 @@
       background: #111418;
     }
 
+    #stageHint {
+      position: absolute;
+      left: 12px;
+      bottom: 12px;
+      z-index: 6;
+      max-width: min(760px, calc(100% - 24px));
+      padding: 8px 10px;
+      border-radius: 4px;
+      background: rgba(10, 10, 10, 0.62);
+      color: #e0e0e0;
+      font-size: 12px;
+      line-height: 1.45;
+      pointer-events: none;
+    }
+
+    #stageHint[hidden] { display: none; }
+    #stageHint code { color: #b8d4ff; font-size: 11px; }
+
     #frameLoadingMask {
       position: absolute;
       inset: 0;
@@ -1288,6 +1306,7 @@
       <section id="iframeStage" aria-label="演示预览区域">
         <div id="iframeWrap">
           <div id="frameLoadingMask" aria-live="polite">正在加载演示页面...</div>
+          <div id="stageHint" hidden></div>
           <iframe id="demoFrame" title="ThreeJSON Demo 预览" allowfullscreen></iframe>
         </div>
       </section>
@@ -1410,6 +1429,7 @@
   const detailTitle = document.getElementById("detailTitle");
   const detailPath = document.getElementById("detailPath");
   const detailSummary = document.getElementById("detailSummary");
+  const stageHint = document.getElementById("stageHint");
   const detailJsonPath = document.getElementById("detailJsonPath");
   const detailPrereqSection = document.getElementById("detailPrereqSection");
   const detailPrereqList = document.getElementById("detailPrereqList");
@@ -2155,6 +2175,16 @@
     detailPath.textContent = demo.path.replace(/^\.\//, "");
     detailSummary.textContent = demo.summary;
     detailGroupBadge.textContent = demo.group;
+
+    if (stageHint) {
+      if (demo.hint) {
+        stageHint.innerHTML = demo.hint;
+        stageHint.hidden = false;
+      } else {
+        stageHint.innerHTML = "";
+        stageHint.hidden = true;
+      }
+    }
 
     if (detailJsonPath) {
       const jsonFiles = resolveDemoJsonFiles(demo);

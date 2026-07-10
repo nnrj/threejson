@@ -162,5 +162,7 @@
       "subScene": [],
       "visible": true
     }
-  ]
+  ],
+  "name": "rotor",
+  "label": "旋翼场景"
 }

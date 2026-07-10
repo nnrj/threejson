@@ -1,6 +1,6 @@
 {
   "version": "next",
-  "name": "Robot Scene",
+  "name": "bot",
   "sceneConfig": {
     "scene": {
       "background": "#222"
@@ -191,5 +191,6 @@
     "audioList": [],
     "domainModelList": [],
     "externalModelList": []
-  }
+  },
+  "label": "机器人 Bot"
 }

@@ -1,0 +1,39 @@
+{
+  "version": "next",
+  "name": "external-resources-audio",
+  "sceneConfig": {
+    "scene": { "background": "#171d26" },
+    "camera": { "fov": 50, "near": 0.1, "far": 200, "position": { "x": 8, "y": 6, "z": 12 } },
+    "renderer": { "antialias": true, "ratioRate": 1 },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 2, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 0.9 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1, "position": { "x": 8, "y": 12, "z": 8 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "worldInfo": {
+    "boxModelList": [
+      {
+        "threeJsonId": "audio-speaker-box",
+        "name": "audio-speaker-box",
+        "objType": "box",
+        "geometry": { "width": 2, "height": 2, "depth": 2 },
+        "position": { "x": 0, "y": 1, "z": 0 },
+        "material": { "type": "standard", "color": "#5470c6" }
+      }
+    ],
+    "audioList": [
+      {
+        "name": "demo-ambient-bgm",
+        "mode": "ambient",
+        "audioUrl": "/assets/audio/farewell.mp3",
+        "volume": 0.5,
+        "loop": true,
+        "autoplay": true,
+        "label": "demo-ambient-bgm"
+      }
+    ]
+  },
+  "threeJsonId": "external-resources-audio"
+}

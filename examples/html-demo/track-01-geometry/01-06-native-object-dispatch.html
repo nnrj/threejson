@@ -28,22 +28,12 @@
       position: absolute; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
       color: #fff; background: rgba(0,0,0,0.55); font-size: 15px;
     }
-    #hint {
-      position: absolute; left: 12px; bottom: 12px; z-index: 25; max-width: min(820px, 94vw);
-      padding: 8px 10px; border-radius: 4px; background: rgba(10,10,10,0.62); color: #e0e0e0; font-size: 12px; line-height: 1.5;
-    }
-    #hint code { color: #b8d4ff; font-size: 11px; }
   </style>
 </head>
 <body>
 <div id="rootContainer">
   <canvas id="canvasContainer">需要 WebGL</canvas>
   <div id="loadingMask">加载中…</div>
-  <div id="hint">
-    【Track 1 · Native 通用对象】<code>../../../assets/json/tutorial/track-01/01-06-native-objects.json</code>（标准 objectList）。<br>
-    未知 objType（<code>torusKnot</code> / <code>latheVase</code> / <code>dodecahedronGem</code> / <code>tetrahedronObelisk</code>）在 <code>parseMode:auto</code> 下走 ObjectLoader；
-    <code>objType:native</code> 层级 Group；<code>parseMode:native</code> 强制 native 盒子。
-  </div>
 </div>
 <script type="module">
   import { createJsonScene } from "threejson/core";

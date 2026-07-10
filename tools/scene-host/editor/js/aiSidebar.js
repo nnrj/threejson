@@ -515,10 +515,8 @@ export function createAiSidebar(host) {
   }
 
   async function onGenerate() {
-    const prompt = dom.generatePrompt?.value?.trim() || "";
-    if (!prompt) {
-      throw new Error(t("editor.ai.error.promptRequired", "Please enter a generation prompt."));
-    }
+    const prompt = dom.generatePrompt?.value?.trim()
+      || t("editor.shell.aiGeneratePromptInput.default", "Generate a smart campus scene with ground, two buildings, one road, a central plaza, and at least one information panel.");
     const dirty = host.getEditorDocumentState?.()?.isDirty?.();
     if (dirty) {
       const ok = await host.confirmOverwriteIfDirty?.({ actionLabel: "开始 AI 生成" });

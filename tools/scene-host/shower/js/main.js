@@ -6,8 +6,12 @@ import {
   createPluginHost,
   exportMesh,
   detectScenePayloadViewFormat,
-  normalizeScenePayload
-} from "threejson/core";
+  normalizeScenePayload,
+  getThreeJsonSceneAudioRoots,
+  pauseAllThreeJsonSceneAudio,
+  resumeAllThreeJsonSceneAudio,
+  teardownThreeJsonSceneAudioFromRuntime
+} from "threejson";
 import {
   buildAdaptiveContentBoundingBoxTHREE,
   fitPerspectiveCameraToContentBoundsTHREE
@@ -26,7 +30,8 @@ const STORAGE = {
   jsonFormat: "threejson.shower.jsonFormat",
   tab: "threejson.shower.tab",
   lang: "threejson.site.lang",
-  theme: "threejson.site.theme"
+  theme: "threejson.site.theme",
+  tutorialVisible: "threejson.shower.tutorialVisible"
 };
 const STORAGE_EDITOR_BRIDGE_PREFIX = "threejson.editor.openScene.";
 const AUTO_RENDER_DELAY_MS = 700;
@@ -45,8 +50,13 @@ const labels = {
     standardJson: "标准",
     format: "格式化",
     run: "运行",
-    downloadHtml: "下载该示例",
-    export: "导出该场景",
+    showTutorial: "显示教程",
+    muteAudio: "静音",
+    unmuteAudio: "取消静音",
+    muteAudioTitle: "暂停当前场景的音频播放",
+    unmuteAudioTitle: "恢复当前场景的音频播放",
+    downloadHtml: "下载",
+    export: "导出",
     nativeJson: "原生JSON",
     modelExport: "三方模型",
     threeView: "三视图",
@@ -94,8 +104,13 @@ const labels = {
     standardJson: "Standard",
     format: "Format",
     run: "Run",
-    downloadHtml: "Download This Example",
-    export: "Export This Scene",
+    showTutorial: "Show Tutorial",
+    muteAudio: "Mute",
+    unmuteAudio: "Unmute",
+    muteAudioTitle: "Pause audio playback in the current scene",
+    unmuteAudioTitle: "Resume audio playback in the current scene",
+    downloadHtml: "Download",
+    export: "Export",
     nativeJson: "Native JSON",
     modelExport: "Model",
     threeView: "Three Views",
@@ -148,6 +163,12 @@ const els = {
   catalogToggle: document.getElementById("catalogToggleBtn"),
   jsonToolbar: document.getElementById("jsonToolbar"),
   autoRun: document.getElementById("autoRunCheckbox"),
+  tutorialCheckbox: document.getElementById("tutorialCheckbox"),
+  tutorialPanel: document.getElementById("tutorialPanel"),
+  tutorialSummary: document.getElementById("tutorialSummary"),
+  tutorialDocLinks: document.getElementById("tutorialDocLinks"),
+  currentExampleLabel: document.getElementById("currentExampleLabel"),
+  audioMuteBtn: document.getElementById("audioMuteBtn"),
   canvas: document.getElementById("canvasContainer"),
   canvasWrap: document.getElementById("canvasWrap"),
   loading: document.getElementById("loadingMask"),
@@ -174,6 +195,7 @@ let activeTab = "core";
 let editor = null;
 let runtime = null;
 let highlightHelper = null;
+let audioMuted = false;
 let runTimer = 0;
 let suppressAutoRender = false;
 let viewModeIndex = 0;
@@ -202,11 +224,21 @@ async function init() {
   els.autoRun.addEventListener("change", () => {
     localStorage.setItem(STORAGE.autoRun, els.autoRun.checked ? "1" : "0");
   });
+  if (els.tutorialCheckbox) {
+    els.tutorialCheckbox.checked = localStorage.getItem(STORAGE.tutorialVisible) !== "0";
+    applyTutorialVisibility();
+    els.tutorialCheckbox.addEventListener("change", () => {
+      localStorage.setItem(STORAGE.tutorialVisible, els.tutorialCheckbox.checked ? "1" : "0");
+      applyTutorialVisibility();
+    });
+  }
   els.langSelect.addEventListener("change", () => {
     localStorage.setItem(STORAGE.lang, els.langSelect.value);
     lang = resolveLang();
     applyI18n();
     renderCatalog();
+    updateContextPanels();
+    syncAudioMuteUi();
   });
   els.themeSelect.addEventListener("change", () => {
     theme = els.themeSelect.value;
@@ -280,6 +312,7 @@ function wireControls() {
   document.getElementById("standardBtn").addEventListener("click", () => convertEditorJson("standard"));
   document.getElementById("openInEditorBtn").addEventListener("click", openCurrentSceneInEditor);
   els.catalogToggle?.addEventListener("click", toggleCatalog);
+  els.audioMuteBtn?.addEventListener("click", toggleAudioMute);
   document.getElementById("downloadHtmlBtn").addEventListener("click", openTemplateExportModal);
   document.getElementById("exportThreeJsonBtn").addEventListener("click", () => {
     downloadText("threejson-scene.json", JSON.stringify(readCurrentScene(), null, 2));
@@ -386,6 +419,7 @@ async function loadExampleJson(raw) {
     setTab(getCachedTab(), { persist: false });
     await runScene(fullJson);
     renderCatalog();
+    updateContextPanels();
   } catch (error) {
     els.status.textContent = String(error.message || error);
   } finally {
@@ -574,13 +608,49 @@ async function runFromEditor() {
   }
 }
 
-function findManifestItemForJson(rawPath) {
+function findManifestContextForJson(rawPath) {
   if (!rawPath) return null;
   for (const section of demoManifest) {
     const item = section.items?.find((entry) => entry.json === rawPath);
-    if (item) return item;
+    if (item) return { section, item };
   }
   return null;
+}
+
+function applyTutorialVisibility() {
+  els.leftPane?.classList.toggle("tutorialVisible", Boolean(els.tutorialCheckbox?.checked));
+}
+
+function buildReaderHref(docFile) {
+  const readerUrl = new URL("../../reader/reader.html", window.location.href);
+  const src = lang === "zh-CN" ? `../../docs/zh/${docFile}` : `../../docs/en/${docFile}`;
+  readerUrl.searchParams.set("src", src);
+  return readerUrl.href;
+}
+
+function updateContextPanels() {
+  const context = findManifestContextForJson(currentJsonUrl);
+  const useZh = lang === "zh-CN";
+  if (els.currentExampleLabel) {
+    els.currentExampleLabel.textContent = context
+      ? `${useZh ? context.section.sectionTitle : context.section.sectionTitleEn} · ${useZh ? context.item.title : context.item.titleEn}`
+      : "";
+  }
+  if (els.tutorialSummary) {
+    els.tutorialSummary.textContent = context ? (useZh ? context.item.desc : context.item.descEn) || "" : "";
+  }
+  if (els.tutorialDocLinks) {
+    els.tutorialDocLinks.innerHTML = "";
+    const links = context?.section?.docLinks || [];
+    for (const link of links) {
+      const anchor = document.createElement("a");
+      anchor.href = buildReaderHref(link.file);
+      anchor.target = "_blank";
+      anchor.rel = "noreferrer";
+      anchor.textContent = useZh ? link.label : (link.labelEn || link.label);
+      els.tutorialDocLinks.appendChild(anchor);
+    }
+  }
 }
 
 async function runExampleBootstrap(kind, ctx) {
@@ -614,14 +684,16 @@ async function runExampleBootstrap(kind, ctx) {
 async function runScene(sceneJson) {
   showLoading(true);
   clearHighlight();
+  teardownThreeJsonSceneAudioFromRuntime(runtime);
   runtime?.dispose?.();
+  audioMuted = false;
   fullJson = structuredClone(sceneJson);
   currentJsonFormat = detectCurrentJsonFormat(fullJson);
   localStorage.setItem(STORAGE.jsonFormat, currentJsonFormat);
   syncJsonFormatUi();
   fullJson.canvasWidth = Math.max(1, els.canvasWrap.clientWidth);
   fullJson.canvasHeight = Math.max(1, els.canvasWrap.clientHeight);
-  const bootstrapKind = findManifestItemForJson(currentJsonUrl)?.bootstrap;
+  const bootstrapKind = findManifestContextForJson(currentJsonUrl)?.item?.bootstrap;
   const createOptions = {
     canvas: els.canvas,
     assetsBase: sceneHostAssetUrl("assets/"),
@@ -639,10 +711,41 @@ async function runScene(sceneJson) {
     applyRuntimeCanvasThemeBackground();
     resizeRuntime();
     renderTree();
+    syncAudioMuteUi();
     els.status.textContent = t("ready");
   } finally {
     showLoading(false);
   }
+}
+
+function sceneJsonHasAudio(sceneJson) {
+  try {
+    const text = JSON.stringify(sceneJson || {});
+    return /"audioList"/.test(text) || /"objType"\s*:\s*"audio"/.test(text);
+  } catch (_error) {
+    return false;
+  }
+}
+
+function syncAudioMuteUi() {
+  if (!els.audioMuteBtn) return;
+  const hasAudio = sceneJsonHasAudio(fullJson);
+  els.audioMuteBtn.hidden = !hasAudio;
+  if (!hasAudio) return;
+  els.audioMuteBtn.textContent = audioMuted ? t("unmuteAudio") : t("muteAudio");
+  els.audioMuteBtn.title = audioMuted ? t("unmuteAudioTitle") : t("muteAudioTitle");
+}
+
+function toggleAudioMute() {
+  if (!runtime?.scene) return;
+  const roots = getThreeJsonSceneAudioRoots(runtime);
+  audioMuted = !audioMuted;
+  if (audioMuted) {
+    pauseAllThreeJsonSceneAudio(roots.camera, roots.scene);
+  } else {
+    resumeAllThreeJsonSceneAudio(roots.camera, roots.scene);
+  }
+  syncAudioMuteUi();
 }
 
 function applyRuntimeCanvasThemeBackground() {

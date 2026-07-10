@@ -1,0 +1,34 @@
+{
+  "version": "next",
+  "name": "csg-merge-holes-join",
+  "sceneConfig": {
+    "scene": { "background": "#252830" },
+    "camera": { "fov": 50, "near": 0.1, "far": 200, "position": { "x": 12, "y": 9, "z": 14 } },
+    "renderer": { "antialias": true },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 3, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 0.6 },
+      { "type": "directional", "color": "#ffffff", "intensity": 0.85, "position": { "x": 8, "y": 12, "z": 8 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "worldInfo": {
+    "boxModelList": [
+      {
+        "name": "csg-join-block",
+        "objType": "box",
+        "geometry": { "width": 6, "height": 6, "depth": 6 },
+        "position": { "x": 0, "y": 3, "z": 0 },
+        "material": { "type": "standard", "color": "#409eff" },
+        "joins": [
+          {
+            "geometry": { "width": 4, "height": 8, "depth": 4 },
+            "position": { "x": 5, "y": 4, "z": 0 },
+            "material": { "type": "standard", "color": "#67c23a" }
+          }
+        ]
+      }
+    ]
+  },
+  "threeJsonId": "csg-merge-holes-join"
+}

@@ -30,20 +30,12 @@
       position: absolute; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
       color: #fff; background: rgba(47, 47, 47, 0.72); font-size: 15px; text-align: center; padding: 16px;
     }
-    #hint {
-      position: absolute; left: 12px; bottom: 12px; z-index: 25; max-width: min(720px, 92vw);
-      padding: 8px 10px; border-radius: 4px; background: rgba(10, 10, 10, 0.55); color: #e0e0e0; font-size: 12px; line-height: 1.45;
-    }
   </style>
 </head>
 <body>
 <div id="rootContainer">
   <canvas id="canvasContainer">需要 WebGL</canvas>
   <div id="loadingMask">Track 3 · glTF 动画剪辑加载中…</div>
-  <div id="hint">
-    资源：<code>../../../assets/json/tutorial/track-03/03-02-gltf-animation-mixer.json</code>；glTF 含线性 <strong>translation</strong> 剪辑（约 1s 周期上下位移），加载后由 core 注册 <code>AnimationMixer</code>。
-    可在 JSON 上改 <code>animationMode</code> 为 <code>mixer</code> / <code>basic</code> 观察与声明式 <code>animations</code> 的协调（本示例未配声明式 rotate）。
-  </div>
 </div>
 <script type="module">
   import { createJsonScene } from "threejson";

@@ -1,6 +1,6 @@
 {
   "threeJsonId": "a1b2c3d4-robot-grass-001",
-  "name": "robot-on-grass",
+  "name": "robot-eden",
   "version": "next",
   "objectList": [
     {
@@ -6527,5 +6527,6 @@
   "saveMeta": {
     "exportMode": "standard_primary",
     "exportedAt": "2026-06-08T17:20:24.755Z"
-  }
+  },
+  "label": "机器人 Eden"
 }

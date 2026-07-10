@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThreeJSON Tutorial · Track 5 · AI Scene Generation (Minimal)</title>
+  <link rel="icon" href="../../../assets/img/threejson.ico" type="image/x-icon">
+  <script type="importmap">
+    {
+      "imports": {
+        "threejson": "../../../builtins/full.js",
+        "threejson/core": "../../../core/index.js",
+        "three": "https://esm.sh/three@0.184.0",
+        "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
+        "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
+        "html2canvas-pro": "https://esm.sh/html2canvas-pro@2.0.4",
+        "gifuct-js": "https://esm.sh/gifuct-js@2.1.2",
+        "three-mesh-bvh": "https://esm.sh/three-mesh-bvh@0.9.10?deps=three@0.184.0",
+        "three-bvh-csg": "https://esm.sh/three-bvh-csg@0.0.18?deps=three@0.184.0,three-mesh-bvh@0.9.10"
+      }
+    }
+  </script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #1a1a1a;
+      --panel-bg: rgba(22, 26, 34, 0.6);
+      --panel-border: rgba(255, 255, 255, 0.1);
+      --text-main: #f3f5f7;
+      --text-muted: rgba(232, 234, 237, 0.72);
+    }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: var(--bg); font-family: Arial, "Microsoft YaHei", sans-serif; color: var(--text-main); }
+    * { box-sizing: border-box; }
+    button, input, select, textarea { font: inherit; }
+    #rootContainer { position: relative; width: 100vw; height: 100vh; }
+    #canvasContainer { display: block; width: 100%; height: 100%; background: #222; }
+    #loadingMask {
+      position: absolute; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
+      color: #fff; background: rgba(0, 0, 0, 0.55); font-size: 15px;
+    }
+    #loadingMask[hidden] { display: none; }
+    .aiPanel {
+      position: absolute; top: 18px; right: 18px; z-index: 25;
+      width: min(340px, calc(100vw - 36px));
+      padding: 14px;
+      border: 1px solid var(--panel-border);
+      border-radius: 10px;
+      background: var(--panel-bg);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+      -webkit-backdrop-filter: blur(22px) saturate(1.15);
+      backdrop-filter: blur(22px) saturate(1.15);
+    }
+    .aiPanel h2 { margin: 0 0 10px; font-size: 15px; }
+    .aiPanel label { display: block; margin: 10px 0 4px; font-size: 12px; color: var(--text-muted); }
+    .aiPanel select, .aiPanel input, .aiPanel textarea {
+      display: block; width: 100%; padding: 7px 9px; border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.14); background: rgba(8, 12, 18, 0.72);
+      color: #e8eaed; font-size: 12px;
+    }
+    .aiPanel textarea { min-height: 72px; resize: vertical; }
+    .aiPanel [hidden] { display: none !important; }
+    .aiPanel button {
+      width: 100%; margin-top: 12px; padding: 9px 12px; border-radius: 6px;
+      border: 1px solid rgba(64, 158, 255, 0.45); background: rgba(64, 158, 255, 0.22);
+      color: var(--text-main); font-size: 13px; cursor: pointer;
+    }
+    .aiPanel button:hover { background: rgba(64, 158, 255, 0.34); }
+    .aiPanel button:disabled { opacity: 0.5; cursor: not-allowed; }
+    #aiStatus { margin-top: 10px; font-size: 12px; line-height: 1.5; color: var(--text-muted); min-height: 18px; }
+  </style>
+</head>
+<body>
+<div id="rootContainer">
+  <canvas id="canvasContainer">WebGL required</canvas>
+  <div id="loadingMask">Loading…</div>
+  <aside class="aiPanel" aria-label="AI Scene Generation (Minimal)">
+    <h2>AI Scene Generation (Minimal)</h2>
+    <label for="providerSelect">Provider</label>
+    <select id="providerSelect">
+      <option value="chatgpt">ChatGPT (OpenAI)</option>
+      <option value="deepseek">DeepSeek</option>
+      <option value="custom">Custom (OpenAI-compatible gateway)</option>
+    </select>
+    <label for="apiKeyInput">API Key</label>
+    <input id="apiKeyInput" type="password" placeholder="Bearer Token" autocomplete="off">
+    <label for="baseUrlInput" id="baseUrlLabel" hidden>API Base URL</label>
+    <input id="baseUrlInput" type="text" placeholder="https://your-gateway/v1" hidden>
+    <label for="promptInput">Prompt</label>
+    <textarea id="promptInput" placeholder="e.g. a blue cube and a green sphere on a gray ground plane">A blue cube and a green sphere on a gray ground plane, plus a directional light</textarea>
+    <button type="button" id="generateBtn">Generate Scene</button>
+    <div id="aiStatus"></div>
+  </aside>
+</div>
+<script type="module">
+  import { createJsonScene, createSceneAiClient } from "threejson";
+
+  const LS_PREFIX = "threejson.demo.aiSceneMini.";
+  const canvas = document.getElementById("canvasContainer");
+  const loadingMask = document.getElementById("loadingMask");
+  const providerSelect = document.getElementById("providerSelect");
+  const apiKeyInput = document.getElementById("apiKeyInput");
+  const baseUrlLabel = document.getElementById("baseUrlLabel");
+  const baseUrlInput = document.getElementById("baseUrlInput");
+  const promptInput = document.getElementById("promptInput");
+  const generateBtn = document.getElementById("generateBtn");
+  const aiStatus = document.getElementById("aiStatus");
+
+  let sceneRuntime;
+
+  window.addEventListener("DOMContentLoaded", init);
+  window.addEventListener("beforeunload", () => sceneRuntime?.dispose?.());
+
+  function setStatus(text) {
+    aiStatus.textContent = text || "";
+  }
+
+  function syncCustomProviderUi() {
+    const isCustom = providerSelect.value === "custom";
+    baseUrlLabel.hidden = !isCustom;
+    baseUrlInput.hidden = !isCustom;
+  }
+
+  function loadCredentials() {
+    const provider = localStorage.getItem(`${LS_PREFIX}provider`);
+    if (provider) providerSelect.value = provider;
+    apiKeyInput.value = localStorage.getItem(`${LS_PREFIX}apiKey`) || "";
+    baseUrlInput.value = localStorage.getItem(`${LS_PREFIX}baseUrl`) || "";
+    syncCustomProviderUi();
+  }
+
+  function saveCredentials() {
+    localStorage.setItem(`${LS_PREFIX}provider`, providerSelect.value);
+    localStorage.setItem(`${LS_PREFIX}apiKey`, apiKeyInput.value);
+    localStorage.setItem(`${LS_PREFIX}baseUrl`, baseUrlInput.value);
+  }
+
+  function getAiClient() {
+    const provider = providerSelect.value;
+    const apiKey = apiKeyInput.value.trim();
+    if (!apiKey) {
+      throw new Error("Please enter an API key first.");
+    }
+    const opts = { provider, apiKey };
+    if (provider === "custom") {
+      const baseUrl = baseUrlInput.value.trim();
+      if (!/^https?:\/\//i.test(baseUrl)) {
+        throw new Error("For a custom provider, enter an API base URL starting with http(s)://.");
+      }
+      opts.baseUrl = baseUrl;
+    }
+    return createSceneAiClient(opts);
+  }
+
+  async function loadSceneFromJsonString(jsonString) {
+    const payload = JSON.parse(jsonString);
+    payload.canvasWidth = window.innerWidth;
+    payload.canvasHeight = window.innerHeight;
+    sceneRuntime?.dispose?.();
+    sceneRuntime = await createJsonScene(payload, {
+      canvas,
+      assetsBase: "../../../assets",
+      resetScene: true
+    });
+    sceneRuntime.start();
+  }
+
+  async function onGenerateClick() {
+    const prompt = promptInput.value.trim();
+    if (!prompt) {
+      setStatus("Please enter a prompt.");
+      return;
+    }
+    generateBtn.disabled = true;
+    saveCredentials();
+    try {
+      const client = getAiClient();
+      setStatus("Generating… AI is writing the scene JSON.");
+      const result = await client.runSceneAgent(
+        { mode: "generate", prompt },
+        { agent: { enabled: false } }
+      );
+      if (!result?.sceneJsonString) {
+        throw new Error("AI did not return scene JSON.");
+      }
+      setStatus("Generation complete, loading into the canvas…");
+      await loadSceneFromJsonString(result.sceneJsonString);
+      setStatus("Generated scene loaded.");
+    } catch (error) {
+      console.error(error);
+      setStatus("Generation failed: " + (error?.message || error));
+    } finally {
+      generateBtn.disabled = false;
+    }
+  }
+
+  async function init() {
+    loadCredentials();
+    providerSelect.addEventListener("change", syncCustomProviderUi);
+    generateBtn.addEventListener("click", () => { void onGenerateClick(); });
+    window.addEventListener("resize", () => sceneRuntime?.resize?.(window.innerWidth, window.innerHeight));
+    loadingMask.hidden = true;
+  }
+</script>
+</body>
+</html>

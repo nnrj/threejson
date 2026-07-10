@@ -1,0 +1,41 @@
+{
+  "version": "next",
+  "name": "external-resources-obj-model",
+  "sceneConfig": {
+    "scene": { "background": "#0f4a63" },
+    "camera": { "fov": 50, "near": 0.1, "far": 400, "position": { "x": 60, "y": 40, "z": 70 } },
+    "renderer": { "antialias": true, "ratioRate": 1 },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 6, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 0.8 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1, "position": { "x": 30, "y": 40, "z": 20 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "worldInfo": {
+    "boxModelList": [
+      {
+        "threeJsonId": "obj-model-sea",
+        "name": "obj-model-sea",
+        "objType": "box",
+        "geometry": { "width": 220, "height": 2, "depth": 220 },
+        "position": { "x": 0, "y": -1, "z": 0 },
+        "material": { "type": "standard", "color": "#1e6b8c", "metalness": 0, "roughness": 0.15 }
+      }
+    ],
+    "objModelList": [
+      {
+        "threeJsonId": "obj-model-ship",
+        "name": "obj-model-ship",
+        "modelPath": "/assets/model/obj/cruiser_ship_2012/Cruiser 2012.obj",
+        "mtlPath": "/assets/model/obj/cruiser_ship_2012/Cruiser_2012.mtl",
+        "fileType": "obj",
+        "position": { "x": 0, "y": 0, "z": 0 },
+        "rotation": { "rotationY": -1.5707963267948966 },
+        "scale": { "scaleX": 0.36, "scaleY": 0.36, "scaleZ": 0.36 },
+        "remark": "Third-party model cruiser_ship_2012; author Herminio Nieves (2012)."
+      }
+    ]
+  },
+  "threeJsonId": "external-resources-obj-model"
+}

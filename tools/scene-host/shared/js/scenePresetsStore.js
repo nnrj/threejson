@@ -5,12 +5,38 @@ import {
   editorSessionIdbDelete
 } from "./editorSessionIdb.js";
 import { resolveSceneHostUrl } from "./sceneHostPaths.js";
+import { getHostLocale } from "../i18n/index.js";
 
-export const PRESET_SCENE_BASE_URL = new URL(
-  "../../../../assets/json/other/demo-json/",
+const PRESET_JSON_ROOT_URL = new URL(
+  "../../../../assets/json/other/scene-editor/preset-json/",
   import.meta.url
 ).href;
-export const PRESET_MANIFEST_URL = `${PRESET_SCENE_BASE_URL}presets.manifest.json`;
+
+function resolvePresetLocale() {
+  // Read the same storage key the i18n module uses directly, rather than
+  // relying on its async-initialized in-memory locale, since preset loading
+  // can run before loadHostLocaleCatalog() resolves during app startup.
+  try {
+    const stored = localStorage.getItem("threejson.host.locale");
+    if (stored === "en-US") return "en";
+    if (stored === "zh-CN") return "zh";
+  } catch (_error) {
+    /* ignore */
+  }
+  return getHostLocale() === "en-US" ? "en" : "zh";
+}
+
+export function getPresetSceneBaseUrl(locale = resolvePresetLocale()) {
+  return `${PRESET_JSON_ROOT_URL}${locale}/`;
+}
+
+export function getPresetManifestUrl(locale = resolvePresetLocale()) {
+  return `${PRESET_JSON_ROOT_URL}presets.manifest.${locale}.json`;
+}
+
+// Back-compat constants (resolved for the locale active at module load time).
+export const PRESET_SCENE_BASE_URL = getPresetSceneBaseUrl();
+export const PRESET_MANIFEST_URL = getPresetManifestUrl();
 
 export const PRESET_SCENES_FALLBACK = [
   { id: "preset-blank-orbit", file: "preset-blank-orbit.json", label: "Preset blank orbit", order: 1 },
@@ -25,7 +51,7 @@ export const PRESET_SCENES_FALLBACK = [
 ];
 
 export function normalizePresetSceneEntries(manifest) {
-  const normalizedBase = resolveSceneHostUrl(String(manifest?.baseUrl || PRESET_SCENE_BASE_URL));
+  const normalizedBase = resolveSceneHostUrl(String(manifest?.baseUrl || getPresetSceneBaseUrl()));
   const normalizedBaseWithSlash = normalizedBase.endsWith("/") ? normalizedBase : `${normalizedBase}/`;
   const raw = Array.isArray(manifest?.entries) ? manifest.entries : PRESET_SCENES_FALLBACK;
   return raw
@@ -59,9 +85,9 @@ export async function writeScenePresetsRecord(record) {
   await editorSessionIdbPut(EDITOR_SCENE_PRESETS_KEY, record);
 }
 
-async function fetchPresetManifestForSync() {
+async function fetchPresetManifestForSync(locale) {
   try {
-    const response = await fetch(PRESET_MANIFEST_URL);
+    const response = await fetch(getPresetManifestUrl(locale));
     if (!response.ok) {
       throw new Error(String(response.status));
     }
@@ -70,21 +96,24 @@ async function fetchPresetManifestForSync() {
     console.warn("[scene-editor presets] manifest load failed:", error);
     return {
       version: 1,
-      baseUrl: PRESET_SCENE_BASE_URL,
+      baseUrl: getPresetSceneBaseUrl(locale),
       entries: PRESET_SCENES_FALLBACK
     };
   }
 }
 
 export async function syncScenePresetsFromManifest() {
-  const manifest = await fetchPresetManifestForSync();
+  const locale = resolvePresetLocale();
+  const manifest = await fetchPresetManifestForSync(locale);
   const manifestVersion = Number(manifest?.version) || 1;
   const entries = normalizePresetSceneEntries(manifest);
   const record = await readScenePresetsRecord();
-  const normalizedBase = resolveSceneHostUrl(String(manifest?.baseUrl || PRESET_SCENE_BASE_URL));
+  const normalizedBase = resolveSceneHostUrl(String(manifest?.baseUrl || getPresetSceneBaseUrl(locale)));
   const normalizedBaseWithSlash = normalizedBase.endsWith("/") ? normalizedBase : `${normalizedBase}/`;
-  const forceRefreshAllBuiltin = manifestVersion > (Number(record.manifestVersion) || 0);
-  let changed = false;
+  const localeChanged = record.locale !== locale;
+  const forceRefreshAllBuiltin = localeChanged || manifestVersion > (Number(record.manifestVersion) || 0);
+  let changed = localeChanged;
+  record.locale = locale;
 
   for (const entry of entries) {
     const existing = record.presets?.[entry.id];

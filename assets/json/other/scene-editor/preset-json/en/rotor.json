@@ -1,0 +1,168 @@
+{
+  "threeJsonId": "f4b4a055-5d8d-4b33-b66b-f04932c2a2b7",
+  "sceneConfig": {
+    "camera": {
+      "fov": 50,
+      "near": 0.15,
+      "far": 3500,
+      "position": {
+        "x": 0.049470604356351255,
+        "y": 2.0856996779660553,
+        "z": 7.129566770575877
+      },
+      "jsonOrigin": "config"
+    },
+    "controls": {
+      "target": {
+        "x": 0.006509827173026697,
+        "y": 0.25306145853523543,
+        "z": 0.0022598979878690416
+      },
+      "jsonOrigin": "config"
+    },
+    "lights": [
+      {
+        "type": "directional",
+        "color": "#ffffff",
+        "intensity": 0.41,
+        "position": {
+          "x": -34.56,
+          "y": 5.724,
+          "z": 18.900000000000002
+        },
+        "jsonOrigin": "config"
+      },
+      {
+        "type": "ambient",
+        "color": "#cccccc",
+        "intensity": 0.58,
+        "position": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "jsonOrigin": "config"
+      },
+      {
+        "type": "point",
+        "color": "#cccccc",
+        "intensity": 0.54,
+        "position": {
+          "x": 0,
+          "y": 18.900000000000002,
+          "z": 0
+        },
+        "distance": 0,
+        "decay": 2,
+        "jsonOrigin": "config"
+      }
+    ]
+  },
+  "saveMeta": {
+    "exportMode": "standard_primary",
+    "exportedAt": "2026-06-13T06:58:37.379Z"
+  },
+  "objectList": [
+    {
+      "name": "greenBoxLeft",
+      "objType": "box",
+      "geometry": {
+        "width": 1,
+        "height": 1,
+        "depth": 1
+      },
+      "position": {
+        "x": -2,
+        "y": 0,
+        "z": 0
+      },
+      "material": {
+        "type": "standard",
+        "color": "#00FF00",
+        "opacity": 1,
+        "transparent": false
+      },
+      "threeJsonId": "2f76a3ff-babd-4aef-bde8-f6719eff153f",
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "subScene": [],
+      "visible": true
+    },
+    {
+      "name": "greenBoxRight",
+      "objType": "box",
+      "geometry": {
+        "width": 1,
+        "height": 1,
+        "depth": 1
+      },
+      "position": {
+        "x": 2,
+        "y": 0,
+        "z": 0
+      },
+      "material": {
+        "type": "standard",
+        "color": "#00FF00",
+        "opacity": 1,
+        "transparent": false
+      },
+      "threeJsonId": "9b25bea8-1d75-46f1-8c1e-846eff7affb3",
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "subScene": [],
+      "visible": true
+    },
+    {
+      "name": "redBall",
+      "objType": "sphere",
+      "geometry": {
+        "radius": 0.5,
+        "widthSegments": 32,
+        "heightSegments": 32
+      },
+      "position": {
+        "x": 0,
+        "y": 1,
+        "z": 0
+      },
+      "material": {
+        "type": "standard",
+        "color": "#DC2800",
+        "opacity": 1,
+        "transparent": false
+      },
+      "threeJsonId": "09d72bd0-40d3-4e47-86ae-40f6ab45e777",
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "subScene": [],
+      "visible": true
+    }
+  ],
+  "name": "rotor",
+  "label": "Rotor Scene"
+}

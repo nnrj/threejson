@@ -43,17 +43,6 @@
       display: flex; align-items: center; justify-content: center;
       background: rgba(0,0,0,0.55);
     }
-    #hint {
-      position: absolute; left: 12px; bottom: 12px; z-index: 10;
-      max-width: min(640px, calc(100vw - 24px));
-      padding: 10px 12px;
-      background: rgba(22, 26, 34, 0.72);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 8px;
-      font-size: 13px;
-      line-height: 1.5;
-      color: var(--text-muted);
-    }
     #logPanel {
       position: absolute; top: 12px; right: 12px; z-index: 10;
       width: min(360px, calc(100vw - 24px));
@@ -74,12 +63,6 @@
 <div id="rootContainer">
   <canvas id="canvasContainer">需要 WebGL</canvas>
   <div id="loadingMask">加载中…</div>
-  <div id="hint">
-    【Track 4 · 单对象 lifecycle】<code>object.ready</code> 在 deploy 完成后执行；
-    <code>object.dispose</code> 在显式 async 删除前执行。绿色立方体加载后会弹跳。
-    按 <b>D</b> 动态创建蓝色对象，按 <b>R</b> 删除它并触发 dispose。
-    宿主 hook 日志见右侧面板。
-  </div>
   <aside id="logPanel" aria-label="lifecycle log">
     <h2>Lifecycle log</h2>
     <pre id="logOutput">—</pre>

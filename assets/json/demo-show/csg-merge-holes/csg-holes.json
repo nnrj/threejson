@@ -1,0 +1,34 @@
+{
+  "version": "next",
+  "name": "csg-merge-holes-holes",
+  "sceneConfig": {
+    "scene": { "background": "#252830" },
+    "camera": { "fov": 50, "near": 0.1, "far": 200, "position": { "x": 0, "y": 8, "z": 20 } },
+    "renderer": { "antialias": true },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 6, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 0.6 },
+      { "type": "directional", "color": "#ffffff", "intensity": 0.85, "position": { "x": 8, "y": 12, "z": 8 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "worldInfo": {
+    "boxModelList": [
+      {
+        "name": "csg-holes-wall",
+        "objType": "wall",
+        "geometry": { "width": 18, "height": 12, "depth": 2 },
+        "position": { "x": 0, "y": 6, "z": 0 },
+        "material": { "type": "standard", "color": "#dcdfe6" },
+        "holes": [
+          {
+            "geometry": { "width": 8, "height": 6, "depth": 3 },
+            "position": { "x": 0, "y": 6, "z": 0 },
+            "material": { "type": "standard", "color": "#ffffff" }
+          }
+        ]
+      }
+    ]
+  },
+  "threeJsonId": "csg-merge-holes-holes"
+}

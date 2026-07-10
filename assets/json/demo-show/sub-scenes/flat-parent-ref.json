@@ -1,0 +1,49 @@
+{
+  "version": "next",
+  "name": "sub-scenes-flat-parent-ref",
+  "sceneConfig": {
+    "scene": { "background": "#11151b" },
+    "camera": { "fov": 50, "near": 0.1, "far": 200, "position": { "x": 12, "y": 9, "z": 14 } },
+    "renderer": { "antialias": true },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 3, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 0.9 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1, "position": { "x": 8, "y": 12, "z": 8 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "objectList": [
+    { "objType": "scene", "background": "#11151b" },
+    {
+      "threeJsonId": "sub-scene-rig",
+      "objType": "group",
+      "position": { "x": 0, "y": 0, "z": 0 },
+      "animations": [{ "type": "rotate", "axis": "y", "speed": 0.35 }]
+    },
+    {
+      "threeJsonId": "sub-scene-base",
+      "objType": "cylinder",
+      "parentThreeJsonId": "sub-scene-rig",
+      "geometry": { "radiusTop": 2, "radiusBottom": 2, "height": 0.6, "radialSegments": 24 },
+      "position": { "x": 0, "y": 0.3, "z": 0 },
+      "material": { "type": "standard", "color": "#909399" }
+    },
+    {
+      "threeJsonId": "sub-scene-arm-a",
+      "objType": "box",
+      "parentThreeJsonId": "sub-scene-rig",
+      "geometry": { "width": 1.2, "height": 4, "depth": 1.2 },
+      "position": { "x": -1.6, "y": 2.6, "z": 0 },
+      "material": { "type": "standard", "color": "#5470c6" }
+    },
+    {
+      "threeJsonId": "sub-scene-arm-b",
+      "objType": "box",
+      "parentThreeJsonId": "sub-scene-rig",
+      "geometry": { "width": 1.2, "height": 4, "depth": 1.2 },
+      "position": { "x": 1.6, "y": 2.6, "z": 0 },
+      "material": { "type": "standard", "color": "#91cc75" }
+    }
+  ],
+  "threeJsonId": "sub-scenes-flat-parent-ref"
+}

@@ -28,21 +28,12 @@
       position: absolute; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
       color: #fff; background: rgba(0,0,0,0.55); font-size: 15px;
     }
-    #hint {
-      position: absolute; left: 12px; bottom: 12px; z-index: 25; max-width: min(860px, 94vw);
-      padding: 8px 10px; border-radius: 4px; background: rgba(10,10,10,0.62); color: #e0e0e0; font-size: 12px; line-height: 1.5;
-    }
-    #hint code { color: #b8d4ff; font-size: 11px; }
   </style>
 </head>
 <body>
 <div id="rootContainer">
   <canvas id="canvasContainer">需要 WebGL</canvas>
   <div id="loadingMask">加载中…</div>
-  <div id="hint">
-    【Track 1 · 正交 + Fly】<code>../../../assets/json/tutorial/track-01/01-08-ortho-fly.json</code><br>
-  正交相机 <code>lookAt</code> 对准场景中心 · <code>type: "fly"</code>：按住鼠标环顾，WASD/QE 移动
-  </div>
 </div>
 <script type="module">
   import { createJsonScene } from "threejson/core";

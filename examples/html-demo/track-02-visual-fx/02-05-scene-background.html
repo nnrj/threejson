@@ -124,19 +124,6 @@
       transform: translateX(-50%);
     }
 
-    #hint {
-      position: absolute;
-      left: 12px;
-      bottom: 12px;
-      z-index: 25;
-      max-width: min(560px, 88vw);
-      padding: 8px 10px;
-      border-radius: 4px;
-      background: rgba(10, 10, 10, 0.6);
-      color: #e0e0e0;
-      font-size: 11px;
-      line-height: 1.45;
-    }
 
     .flyoutHost {
       position: absolute;
@@ -395,9 +382,6 @@
       <canvas id="canvasContainer">抱歉，你的浏览器不支持 WebGL。</canvas>
       <div id="loadingMask">360° 全景与太阳系示例加载中…</div>
       <div id="messageBox"></div>
-      <div id="hint">
-        【360° 球形背景】等距柱状全景包裹视野。「仅演示」：星历只快照初始位置，随后为<strong>示意公转</strong>（肉眼可见、外行星更慢，非真实周期比）；取消勾选后按 UTC 用 <code>astronomy-engine</code> 星历。步进在 <code>PluginHost.beforeFrame</code>。网络 UTC 优先 <code>timeapi.io</code>。请从<strong>仓库根</strong>静态服务打开。
-      </div>
     </div>
 
     <div id="rightFlyoutHost" class="flyoutHost flyoutHostRight">

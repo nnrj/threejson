@@ -61,20 +61,22 @@
     </header>
     <main class="workspace">
       <section class="leftPane">
-        <nav class="tabs">
-          <button class="tab active" data-tab="core" type="button" data-i18n="coreJson">核心JSON</button>
-          <button class="tab" data-tab="full" type="button" data-i18n="fullJson">完整JSON</button>
-          <button class="tab" data-tab="tree" type="button" data-i18n="sceneTree">场景树</button>
-          <div class="toolbarSpacer"></div>
-          <button id="catalogToggleBtn" class="ghostButton" type="button" data-i18n="catalog">目录</button>
-        </nav>
         <div class="editorToolbar" id="jsonToolbar">
+          <button id="catalogToggleBtn" class="ghostButton" type="button" data-i18n="catalog">目录</button>
+          <div class="segmented" id="jsonScopeSwitch">
+            <button class="tab active" data-tab="core" type="button" data-i18n="coreJson">核心JSON</button>
+            <button class="tab" data-tab="full" type="button" data-i18n="fullJson">完整JSON</button>
+          </div>
           <div class="segmented" id="jsonFormatSwitch">
             <button id="friendlyBtn" type="button" data-i18n="friendlyJson">友好</button>
             <button id="standardBtn" type="button" data-i18n="standardJson">标准</button>
           </div>
-          <button id="openInEditorBtn" class="linkButton" type="button" data-i18n="openInEditor">在编辑器内打开</button>
+          <button class="tab" data-tab="tree" type="button" data-i18n="sceneTree">场景树</button>
           <div class="toolbarSpacer"></div>
+          <label class="autoRunLabel">
+            <input id="tutorialCheckbox" type="checkbox" checked>
+            <span data-i18n="showTutorial">显示教程</span>
+          </label>
           <label class="autoRunLabel">
             <input id="autoRunCheckbox" type="checkbox">
             <span data-i18n="autoRun">实时渲染</span>
@@ -87,19 +89,26 @@
           <div id="editorPanel" class="editorPanel"></div>
           <div id="treePanel" class="treePanel" hidden></div>
         </div>
+        <aside id="tutorialPanel" class="tutorialPanel">
+          <div id="tutorialSummary" class="tutorialSummary"></div>
+          <div id="tutorialDocLinks" class="tutorialDocLinks"></div>
+        </aside>
       </section>
       <section class="rightPane">
         <div class="canvasToolbar">
-          <button id="downloadHtmlBtn" type="button" data-i18n="downloadHtml">Download This Example</button>
+          <div id="currentExampleLabel" class="currentExampleLabel"></div>
+          <div class="toolbarSpacer"></div>
+          <button id="openInEditorBtn" class="linkButton" type="button" data-i18n="openInEditor">在编辑器内打开</button>
+          <button id="audioMuteBtn" type="button" hidden data-i18n="muteAudio">静音</button>
+          <button id="downloadHtmlBtn" type="button" data-i18n="downloadHtml">Download</button>
           <div class="menu">
-            <button type="button" data-i18n="export">Export This Scene</button>
+            <button type="button" data-i18n="export">Export</button>
             <div class="menuPanel">
               <button id="exportThreeJsonBtn" type="button">ThreeJSON</button>
               <button id="exportNativeBtn" type="button" data-i18n="nativeJson">原生JSON</button>
               <button id="exportModelBtn" type="button" data-i18n="modelExport">三方模型</button>
             </div>
           </div>
-          <div class="toolbarSpacer"></div>
           <button id="threeViewBtn" type="button" data-i18n="threeView">三视图</button>
           <button id="fitBtn" type="button" data-i18n="fit">自适应</button>
           <button id="fullscreenBtn" type="button" data-i18n="fullscreen">全屏</button>

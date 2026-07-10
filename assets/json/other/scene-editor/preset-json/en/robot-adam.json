@@ -1,6 +1,6 @@
 {
   "threeJsonId": "a1b2c3d4-robot-grass-001",
-  "name": "robot-on-grass",
+  "name": "robot-adam",
   "version": "next",
   "sceneConfig": {
     "camera": {
@@ -454,5 +454,6 @@
       },
       "visible": true
     }
-  ]
+  ],
+  "label": "Robot Adam"
 }

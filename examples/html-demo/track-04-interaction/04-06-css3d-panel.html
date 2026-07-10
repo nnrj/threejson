@@ -28,18 +28,12 @@
       position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
       color: #fff; background: rgba(0,0,0,0.55); font-size: 14px; z-index: 5;
     }
-    #hint {
-      position: absolute; left: 10px; bottom: 8px; color: #ccc; font-size: 11px; max-width: 92vw; z-index: 6; line-height: 1.45;
-    }
   </style>
 </head>
 <body>
 <div id="rootContainer">
   <canvas id="canvasContainer">需要 WebGL</canvas>
   <div id="loadingMask">加载 CSS3D 场景…</div>
-  <div id="hint">
-    数据：<code>../../../assets/json/tutorial/track-04/04-06-css3d-panel.json</code> · 左侧面板可点按/输入 · 右侧 iframe 需目标站允许嵌入 · 拖拽空白处 Orbit
-  </div>
 </div>
 <script type="module">
   import { createJsonScene } from "threejson/core";

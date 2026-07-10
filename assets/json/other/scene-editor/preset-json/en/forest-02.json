@@ -1,6 +1,6 @@
 {
   "threeJsonId": "forest-animals-001",
-  "name": "森林与小动物",
+  "name": "forest-02",
   "version": "next",
   "assetLibrary": [],
   "sceneConfig": {
@@ -1354,5 +1354,6 @@
       "handler": "addToScene",
       "label": "ground"
     }
-  ]
+  ],
+  "label": "Forest with Animals"
 }

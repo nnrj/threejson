@@ -1,6 +1,6 @@
 {
   "threeJsonId": "smart-campus-003",
-  "name": "智慧园区场景优化版",
+  "name": "smart-park",
   "version": "next",
   "sceneConfig": {
     "scene": {
@@ -1831,5 +1831,6 @@
       "handler": "addToScene",
       "label": "building-d-glass"
     }
-  ]
+  ],
+  "label": "Smart Park"
 }

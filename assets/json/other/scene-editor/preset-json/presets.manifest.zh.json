@@ -1,17 +1,11 @@
 {
-  "version": 3,
-  "baseUrl": "./assets/json/other/demo-json/",
+  "version": 1,
+  "baseUrl": "./assets/json/other/scene-editor/preset-json/zh/",
   "entries": [
     {
-      "id": "preset-blank-orbit",
-      "file": "preset-blank-orbit.json",
-      "label": "普通场景",
-      "order": 1
-    },
-    {
-      "id": "smart-park",
-      "file": "smart-park.json",
-      "label": "智慧园区",
+      "id": "bot",
+      "file": "bot.json",
+      "label": "机器人 Bot",
       "order": 10
     },
     {
@@ -27,9 +21,9 @@
       "order": 30
     },
     {
-      "id": "robot-training-02",
-      "file": "robot-training-02.json",
-      "label": "机器人训练环境",
+      "id": "preset-blank-orbit",
+      "file": "preset-blank-orbit.json",
+      "label": "普通场景",
       "order": 40
     },
     {
@@ -45,9 +39,9 @@
       "order": 60
     },
     {
-      "id": "bot",
-      "file": "bot.json",
-      "label": "机器人 Bot",
+      "id": "robot-training-02",
+      "file": "robot-training-02.json",
+      "label": "机器人训练环境",
       "order": 70
     },
     {
@@ -55,6 +49,12 @@
       "file": "rotor.json",
       "label": "旋翼场景",
       "order": 80
+    },
+    {
+      "id": "smart-park",
+      "file": "smart-park.json",
+      "label": "智慧园区",
+      "order": 90
     }
   ]
 }

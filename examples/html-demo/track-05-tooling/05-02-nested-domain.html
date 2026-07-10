@@ -36,10 +36,6 @@
       background: rgba(20,28,40,0.85); color: #e8f0ff; font-size: 12px; cursor: pointer;
     }
     #toolbar button:hover { background: rgba(40,56,80,0.95); }
-    #hint {
-      position: absolute; left: 12px; bottom: 12px; z-index: 25; max-width: min(760px, 92vw);
-      padding: 8px 10px; border-radius: 4px; background: rgba(10,10,10,0.55); color: #e0e0e0; font-size: 12px; line-height: 1.45;
-    }
     code { color: #b8d4ff; }
   </style>
 </head>
@@ -52,10 +48,6 @@
     <button type="button" data-mode="wind">weather.wind</button>
     <button type="button" data-mode="snow">weather + snow</button>
     <button type="button" data-mode="diag">控制台诊断</button>
-  </div>
-  <div id="hint">
-    【Track 5 · 嵌套子域】JSON 已加载 rain/wind/snow；按钮可追加 <code>invokeDomainModel</code>。
-    中间节点 <code>weather.particle</code> 仅命名空间，不可调度。
   </div>
 </div>
 <script type="module">

@@ -1,0 +1,1136 @@
+{
+  "threeJsonId": "robot-training-001",
+  "name": "robot-training-02",
+  "version": "next",
+  "assetLibrary": [],
+  "sceneConfig": {
+    "scene": {
+      "background": "#1a1a2e"
+    },
+    "camera": {
+      "fov": 60,
+      "near": 0.1,
+      "far": 1000,
+      "position": {
+        "x": 131.89921461479852,
+        "y": 228.17310726495504,
+        "z": 372.4061673326534
+      },
+      "jsonOrigin": "config"
+    },
+    "controls": {
+      "target": {
+        "x": 0,
+        "y": 20,
+        "z": 0
+      },
+      "jsonOrigin": "config"
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "color": "#ffffff",
+        "intensity": 0.4,
+        "position": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "jsonOrigin": "config"
+      },
+      {
+        "type": "directional",
+        "color": "#ffffff",
+        "intensity": 0.8,
+        "position": {
+          "x": 100,
+          "y": 200,
+          "z": 100
+        },
+        "jsonOrigin": "config"
+      }
+    ],
+    "helpers": {
+      "grid": true,
+      "axes": false
+    }
+  },
+  "objectList": [
+    {
+      "name": "obstacle-1",
+      "objType": "box",
+      "geometry": {
+        "width": 40,
+        "height": 20,
+        "depth": 40
+      },
+      "position": {
+        "x": -80,
+        "y": 10,
+        "z": -80
+      },
+      "material": {
+        "type": "standard",
+        "color": "#e6a23c",
+        "roughness": 0.5
+      },
+      "threeJsonId": "7f81fe79-1a23-462f-a4b2-657ffa8491a3",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "obstacle-2",
+      "objType": "box",
+      "geometry": {
+        "width": 30,
+        "height": 15,
+        "depth": 60
+      },
+      "position": {
+        "x": 90,
+        "y": 7.5,
+        "z": -60
+      },
+      "material": {
+        "type": "standard",
+        "color": "#e6a23c",
+        "roughness": 0.5
+      },
+      "threeJsonId": "a49ee7a7-9cd4-402f-a009-331e804d8d58",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "obstacle-3",
+      "objType": "box",
+      "geometry": {
+        "width": 50,
+        "height": 25,
+        "depth": 30
+      },
+      "position": {
+        "x": -60,
+        "y": 12.5,
+        "z": 100
+      },
+      "material": {
+        "type": "standard",
+        "color": "#e6a23c",
+        "roughness": 0.5
+      },
+      "threeJsonId": "8cd8ec4e-c737-4349-addd-305fa9682508",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "obstacle-4",
+      "objType": "box",
+      "geometry": {
+        "width": 20,
+        "height": 10,
+        "depth": 80
+      },
+      "position": {
+        "x": 120,
+        "y": 5,
+        "z": 80
+      },
+      "material": {
+        "type": "standard",
+        "color": "#e6a23c",
+        "roughness": 0.5
+      },
+      "threeJsonId": "bf398650-20ea-4004-9e3e-f93d05c511fe",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "ramp",
+      "objType": "box",
+      "geometry": {
+        "width": 60,
+        "height": 8,
+        "depth": 40
+      },
+      "position": {
+        "x": -30,
+        "y": 4,
+        "z": -140
+      },
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0.1745
+      },
+      "material": {
+        "type": "standard",
+        "color": "#67c23a",
+        "roughness": 0.7
+      },
+      "threeJsonId": "7e14a7b1-671c-4fdb-99f3-157664b8a13d",
+      "subScene": [],
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "target-ball",
+      "geometry": {
+        "radius": 8,
+        "widthSegments": 16,
+        "heightSegments": 12
+      },
+      "position": {
+        "x": 0,
+        "y": 8,
+        "z": -120
+      },
+      "material": {
+        "type": "standard",
+        "color": "#f56c6c",
+        "emissive": "#f56c6c",
+        "emissiveIntensity": 0.3
+      },
+      "animations": [
+        {
+          "type": "rotate",
+          "axis": "y",
+          "speed": 1
+        }
+      ],
+      "threeJsonId": "db20cc97-96b0-4c9b-a7b1-5c6a7d66ec8a",
+      "objType": "sphere",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 107.83299999999986,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "start-line",
+      "objType": "line",
+      "points": [
+        {
+          "x": -40,
+          "y": 0.5,
+          "z": 0
+        },
+        {
+          "x": 40,
+          "y": 0.5,
+          "z": 0
+        }
+      ],
+      "material": {
+        "color": "#67c23a",
+        "linewidth": 2
+      },
+      "threeJsonId": "eaf19229-3a95-43fb-b613-c72475f0b61e",
+      "subScene": [],
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "path-1",
+      "objType": "line",
+      "points": [
+        {
+          "x": 0,
+          "y": 0.5,
+          "z": 0
+        },
+        {
+          "x": -80,
+          "y": 0.5,
+          "z": -80
+        },
+        {
+          "x": 0,
+          "y": 0.5,
+          "z": -120
+        }
+      ],
+      "material": {
+        "color": "#e6a23c",
+        "linewidth": 1
+      },
+      "threeJsonId": "adeec962-2d73-45e8-a49f-d16704e9b152",
+      "subScene": [],
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "path-2",
+      "objType": "line",
+      "points": [
+        {
+          "x": 0,
+          "y": 0.5,
+          "z": 0
+        },
+        {
+          "x": 90,
+          "y": 0.5,
+          "z": -60
+        },
+        {
+          "x": 0,
+          "y": 0.5,
+          "z": -120
+        }
+      ],
+      "material": {
+        "color": "#e6a23c",
+        "linewidth": 1
+      },
+      "threeJsonId": "94da0071-6aba-4012-a44c-fd1328ea1913",
+      "subScene": [],
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "start-label",
+      "text": "起点",
+      "type": "text",
+      "objType": "infoPanel",
+      "panelBoxType": "sprite",
+      "panel": {
+        "geometry": {
+          "width": 40,
+          "height": 12,
+          "depth": 2
+        },
+        "position": {
+          "x": 0,
+          "y": 10,
+          "z": 0
+        },
+        "material": {
+          "color": "#67c23a",
+          "transparent": false,
+          "opacity": 0.85,
+          "map": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Texture",
+              "generator": "Texture.toJSON"
+            },
+            "uuid": "49b5a3d7-4fbb-4f05-a550-ba226fd00265",
+            "name": "",
+            "image": "a3d671a8-dc49-4915-af4a-a4c48bb67af9",
+            "mapping": 300,
+            "channel": 0,
+            "repeat": [
+              1,
+              1
+            ],
+            "offset": [
+              0,
+              0
+            ],
+            "center": [
+              0,
+              0
+            ],
+            "rotation": 0,
+            "wrap": [
+              1001,
+              1001
+            ],
+            "format": 1023,
+            "internalFormat": null,
+            "type": 1009,
+            "normalized": false,
+            "colorSpace": "",
+            "minFilter": 1008,
+            "magFilter": 1006,
+            "anisotropy": 1,
+            "flipY": true,
+            "generateMipmaps": true,
+            "premultiplyAlpha": false,
+            "unpackAlignment": 4
+          }
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 1,
+          "scaleY": 1,
+          "scaleZ": 1
+        }
+      },
+      "material": {
+        "color": "#67c23a",
+        "transparent": false,
+        "opacity": 0.85
+      },
+      "threeJsonId": "00909cdd-a106-4b40-970a-1dbd02b242b4",
+      "subScene": [],
+      "color": "#f00",
+      "font": "14px SimHei",
+      "textVerticalAlign": "top",
+      "textFace": "single",
+      "panelWidth": 40,
+      "panelHeight": 12,
+      "panelDepth": 2,
+      "backColor": "#67c23a",
+      "transparent": false,
+      "opacity": 0.85,
+      "geometry": {
+        "width": 40,
+        "height": 12,
+        "depth": 2
+      },
+      "position": {
+        "x": 0,
+        "y": 10,
+        "z": 0
+      },
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 40,
+        "scaleY": 12,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "target-label",
+      "text": "目标",
+      "type": "text",
+      "objType": "infoPanel",
+      "panelBoxType": "sprite",
+      "panel": {
+        "geometry": {
+          "width": 40,
+          "height": 12,
+          "depth": 2
+        },
+        "position": {
+          "x": 0,
+          "y": 20,
+          "z": -120
+        },
+        "material": {
+          "color": "#f56c6c",
+          "transparent": false,
+          "opacity": 0.85,
+          "map": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Texture",
+              "generator": "Texture.toJSON"
+            },
+            "uuid": "54c87477-b4a6-48e2-bc11-8ba8686094ea",
+            "name": "",
+            "image": "2d96c243-2dc7-48e9-8e3b-4f5bd6b15c7d",
+            "mapping": 300,
+            "channel": 0,
+            "repeat": [
+              1,
+              1
+            ],
+            "offset": [
+              0,
+              0
+            ],
+            "center": [
+              0,
+              0
+            ],
+            "rotation": 0,
+            "wrap": [
+              1001,
+              1001
+            ],
+            "format": 1023,
+            "internalFormat": null,
+            "type": 1009,
+            "normalized": false,
+            "colorSpace": "",
+            "minFilter": 1008,
+            "magFilter": 1006,
+            "anisotropy": 1,
+            "flipY": true,
+            "generateMipmaps": true,
+            "premultiplyAlpha": false,
+            "unpackAlignment": 4
+          }
+        },
+        "rotation": {
+          "rotationX": 0,
+          "rotationY": 0,
+          "rotationZ": 0
+        },
+        "scale": {
+          "scaleX": 1,
+          "scaleY": 1,
+          "scaleZ": 1
+        }
+      },
+      "material": {
+        "color": "#f56c6c",
+        "transparent": false,
+        "opacity": 0.85
+      },
+      "threeJsonId": "71667b7e-e704-4203-9f0c-f5270e7f3dc5",
+      "subScene": [],
+      "color": "#f00",
+      "font": "14px SimHei",
+      "textVerticalAlign": "top",
+      "textFace": "single",
+      "panelWidth": 40,
+      "panelHeight": 12,
+      "panelDepth": 2,
+      "backColor": "#f56c6c",
+      "transparent": false,
+      "opacity": 0.85,
+      "geometry": {
+        "width": 40,
+        "height": 12,
+        "depth": 2
+      },
+      "position": {
+        "x": 0,
+        "y": 20,
+        "z": -120
+      },
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 40,
+        "scaleY": 12,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "robot-body",
+      "objType": "box",
+      "geometry": {
+        "width": 30,
+        "height": 40,
+        "depth": 20
+      },
+      "position": {
+        "x": 0,
+        "y": 20,
+        "z": 0
+      },
+      "material": {
+        "type": "standard",
+        "color": "#409eff",
+        "metalness": 0.3,
+        "roughness": 0.4
+      },
+      "threeJsonId": "0d8afbe8-319b-4654-a88b-4ab997820988",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 3.14159,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "cone-obstacle",
+      "objType": "cone",
+      "geometry": {
+        "radius": 10,
+        "height": 30,
+        "radialSegments": 12
+      },
+      "position": {
+        "x": -130,
+        "y": 15,
+        "z": 60
+      },
+      "material": {
+        "type": "standard",
+        "color": "#f56c6c",
+        "roughness": 0.6
+      },
+      "threeJsonId": "cefebb52-ecab-439c-85a2-da2ea47d5e2b",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "cylinder-obstacle",
+      "objType": "cylinder",
+      "geometry": {
+        "radiusTop": 12,
+        "radiusBottom": 12,
+        "height": 25,
+        "radialSegments": 16
+      },
+      "position": {
+        "x": 140,
+        "y": 12.5,
+        "z": -100
+      },
+      "material": {
+        "type": "standard",
+        "color": "#909399",
+        "roughness": 0.5
+      },
+      "threeJsonId": "950dead9-e848-498b-9a42-d043e021a2f8",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "room-floor",
+      "objType": "domain",
+      "boxType": "box",
+      "geometry": {
+        "width": 400,
+        "height": 6,
+        "depth": 400
+      },
+      "material": {
+        "type": "standard",
+        "color": "#2d3a4a",
+        "roughness": 0.8
+      },
+      "position": {
+        "x": 0,
+        "y": -3,
+        "z": 0
+      },
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "threeJsonId": "79f7f9d0-f9a7-4643-9b95-8d3e9de020bb",
+      "subScene": [],
+      "visible": true,
+      "domain": "floor",
+      "handler": "addToScene",
+      "label": "ground"
+    },
+    {
+      "name": "room-wall",
+      "objType": "domain",
+      "boxType": "box",
+      "geometry": {
+        "width": 400,
+        "height": 60,
+        "depth": 10
+      },
+      "material": {
+        "type": "standard",
+        "color": "#4a5a6a",
+        "roughness": 0.6
+      },
+      "position": {
+        "x": 0,
+        "y": 30,
+        "z": -200
+      },
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "threeJsonId": "810eef54-98d5-4f60-a6ab-146f8f69fc60",
+      "subScene": [],
+      "visible": true,
+      "domain": "wall",
+      "handler": "addToScene",
+      "label": "wall-north"
+    },
+    {
+      "name": "room-wall",
+      "objType": "domain",
+      "boxType": "box",
+      "geometry": {
+        "width": 400,
+        "height": 60,
+        "depth": 10
+      },
+      "material": {
+        "type": "standard",
+        "color": "#4a5a6a",
+        "roughness": 0.6
+      },
+      "position": {
+        "x": 0,
+        "y": 30,
+        "z": 200
+      },
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "threeJsonId": "01958e4e-335a-429b-9060-0e4f132a4ad2",
+      "subScene": [],
+      "visible": true,
+      "domain": "wall",
+      "handler": "addToScene",
+      "label": "wall-south"
+    },
+    {
+      "name": "room-wall",
+      "objType": "domain",
+      "boxType": "box",
+      "geometry": {
+        "width": 10,
+        "height": 60,
+        "depth": 400
+      },
+      "material": {
+        "type": "standard",
+        "color": "#4a5a6a",
+        "roughness": 0.6
+      },
+      "position": {
+        "x": 200,
+        "y": 30,
+        "z": 0
+      },
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "threeJsonId": "40849983-89e0-449e-a74e-1cf930a2095f",
+      "subScene": [],
+      "visible": true,
+      "domain": "wall",
+      "handler": "addToScene",
+      "label": "wall-east"
+    },
+    {
+      "name": "room-wall",
+      "objType": "domain",
+      "boxType": "box",
+      "geometry": {
+        "width": 10,
+        "height": 60,
+        "depth": 400
+      },
+      "material": {
+        "type": "standard",
+        "color": "#4a5a6a",
+        "roughness": 0.6
+      },
+      "position": {
+        "x": -200,
+        "y": 30,
+        "z": 0
+      },
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "threeJsonId": "6290e6c1-e1d0-4650-a8bc-04367013b534",
+      "subScene": [],
+      "visible": true,
+      "domain": "wall",
+      "handler": "addToScene",
+      "label": "wall-west"
+    },
+    {
+      "name": "robot-leg-right",
+      "objType": "cylinder",
+      "geometry": {
+        "radiusTop": 4,
+        "radiusBottom": 5,
+        "height": 20,
+        "radialSegments": 8
+      },
+      "position": {
+        "x": 8,
+        "y": 10,
+        "z": 0
+      },
+      "material": {
+        "type": "standard",
+        "color": "#337ecc",
+        "metalness": 0.2,
+        "roughness": 0.5
+      },
+      "threeJsonId": "d341eaea-1654-486b-be73-2d3ddc493da7",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "robot-leg-left",
+      "objType": "cylinder",
+      "geometry": {
+        "radiusTop": 4,
+        "radiusBottom": 5,
+        "height": 20,
+        "radialSegments": 8
+      },
+      "position": {
+        "x": -8,
+        "y": 10,
+        "z": 0
+      },
+      "material": {
+        "type": "standard",
+        "color": "#337ecc",
+        "metalness": 0.2,
+        "roughness": 0.5
+      },
+      "threeJsonId": "24b5101d-b051-4d0c-9dc5-9700c3a23958",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "robot-arm-right",
+      "objType": "cylinder",
+      "geometry": {
+        "radiusTop": 3,
+        "radiusBottom": 4,
+        "height": 30,
+        "radialSegments": 8
+      },
+      "position": {
+        "x": 18,
+        "y": 30,
+        "z": 0
+      },
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": -0.1745
+      },
+      "material": {
+        "type": "standard",
+        "color": "#66b1ff",
+        "metalness": 0.2,
+        "roughness": 0.5
+      },
+      "threeJsonId": "2904c47a-3cf7-4311-8c1d-e965d5683d14",
+      "subScene": [],
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "robot-arm-left",
+      "objType": "cylinder",
+      "geometry": {
+        "radiusTop": 3,
+        "radiusBottom": 4,
+        "height": 30,
+        "radialSegments": 8
+      },
+      "position": {
+        "x": -18,
+        "y": 30,
+        "z": 0
+      },
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0.1745
+      },
+      "material": {
+        "type": "standard",
+        "color": "#66b1ff",
+        "metalness": 0.2,
+        "roughness": 0.5
+      },
+      "threeJsonId": "193f7a9f-eb7a-4558-9fc1-ef2e43fb0e0b",
+      "subScene": [],
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "robot-eye-right",
+      "objType": "sphere",
+      "geometry": {
+        "radius": 3,
+        "widthSegments": 8,
+        "heightSegments": 6
+      },
+      "position": {
+        "x": 5,
+        "y": 52,
+        "z": 10
+      },
+      "material": {
+        "type": "standard",
+        "color": "#ffffff",
+        "emissive": "#ffffff",
+        "emissiveIntensity": 0.5
+      },
+      "threeJsonId": "d1df03da-3336-4936-b631-02c44cd42d69",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "robot-eye-left",
+      "objType": "sphere",
+      "geometry": {
+        "radius": 3,
+        "widthSegments": 8,
+        "heightSegments": 6
+      },
+      "position": {
+        "x": -5,
+        "y": 52,
+        "z": 10
+      },
+      "material": {
+        "type": "standard",
+        "color": "#ffffff",
+        "emissive": "#ffffff",
+        "emissiveIntensity": 0.5
+      },
+      "threeJsonId": "996c9502-3277-4444-9af5-8fb288e45f1c",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "robot-head",
+      "objType": "box",
+      "geometry": {
+        "width": 20,
+        "height": 20,
+        "depth": 18
+      },
+      "position": {
+        "x": 0,
+        "y": 50,
+        "z": 0
+      },
+      "material": {
+        "type": "standard",
+        "color": "#409eff",
+        "metalness": 0.3,
+        "roughness": 0.4
+      },
+      "threeJsonId": "d1e88575-8a07-44af-b1a1-88602570f641",
+      "subScene": [],
+      "rotation": {
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "scale": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "ambient",
+      "objType": "audio",
+      "url": "/assets/audio/ambient_loop.mp3",
+      "volume": 0.3,
+      "loop": true,
+      "autoplay": true
+    }
+  ],
+  "saveMeta": {
+    "exportMode": "standard_primary",
+    "exportedAt": "2026-06-13T01:44:45.728Z"
+  },
+  "label": "机器人训练环境"
+}

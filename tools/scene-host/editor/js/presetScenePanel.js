@@ -6,8 +6,7 @@ import {
   renameUserScenePreset
 } from "../../shared/js/scenePresetsStore.js";
 import { openOrCloseProgressManager } from "threejson";
-
-const MODEL_GROUP_TITLE = "场景预设";
+import { t } from "../../shared/i18n/index.js";
 
 export function createPresetScenePanel(host) {
   const modelGroupList = document.getElementById("modelGroupList");
@@ -97,7 +96,7 @@ export function createPresetScenePanel(host) {
     details.open = resolveGroupOpen("presets", openState);
     const summary = document.createElement("summary");
     summary.className = "modelGroupSummary";
-    summary.textContent = MODEL_GROUP_TITLE;
+    summary.textContent = t("editor.shell.presetScenePanelTitle", "Scene Presets");
     details.appendChild(summary);
     const grid = document.createElement("div");
     grid.className = "buttonGrid";

@@ -29,19 +29,12 @@
       position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
       color: #fff; background: rgba(0,0,0,0.55); font-size: 14px; z-index: 2; text-align: center; padding: 16px;
     }
-    #hint {
-      position: absolute; left: 10px; bottom: 8px; color: #ccc; font-size: 11px; max-width: 92vw; z-index: 3; line-height: 1.45;
-    }
   </style>
 </head>
 <body>
 <div id="rootContainer">
   <canvas id="canvasContainer">需要 WebGL 与 WASM</canvas>
   <div id="loadingMask">正在加载 Rapier WASM…</div>
-  <div id="hint">
-    数据：<code>04-05-fps-rapier-collision.json</code> ·
-    SCAR-H viewmodel 已微调：更小、更远、略压低 · WASD · 点击锁定指针
-  </div>
 </div>
 <script type="module">
   import { createJsonScene } from "threejson/core";

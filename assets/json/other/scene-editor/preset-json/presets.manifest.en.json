@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "baseUrl": "./assets/json/other/scene-editor/preset-json/en/",
+  "entries": [
+    {
+      "id": "bot",
+      "file": "bot.json",
+      "label": "Robot Bot",
+      "order": 10
+    },
+    {
+      "id": "forest-02",
+      "file": "forest-02.json",
+      "label": "Forest with Animals",
+      "order": 20
+    },
+    {
+      "id": "forest",
+      "file": "forest.json",
+      "label": "Forest Scene",
+      "order": 30
+    },
+    {
+      "id": "preset-blank-orbit",
+      "file": "preset-blank-orbit.json",
+      "label": "Blank Orbit Scene",
+      "order": 40
+    },
+    {
+      "id": "robot-adam",
+      "file": "robot-adam.json",
+      "label": "Robot Adam",
+      "order": 50
+    },
+    {
+      "id": "robot-eden",
+      "file": "robot-eden.json",
+      "label": "Robot Eden",
+      "order": 60
+    },
+    {
+      "id": "robot-training-02",
+      "file": "robot-training-02.json",
+      "label": "Robot Training Environment",
+      "order": 70
+    },
+    {
+      "id": "rotor",
+      "file": "rotor.json",
+      "label": "Rotor Scene",
+      "order": 80
+    },
+    {
+      "id": "smart-park",
+      "file": "smart-park.json",
+      "label": "Smart Park",
+      "order": 90
+    }
+  ]
+}

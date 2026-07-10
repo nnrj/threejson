@@ -25,7 +25,8 @@
         "href": "../../docs/zh/json-format.md#盒子-box",
         "label": "JSON：盒子 box"
       }
-    ]
+    ],
+    "hint": "【Track 0 · 最小场景（同步）】内置 JSON + <code>createJsonSceneSimple</code>。它是 <code>createJsonScene</code> 的简化版，只保证同步加载；需要完整加载流程时请看 <code>00-01-minimal-mesh.html</code>。"
   },
   {
     "id": "t00-01",
@@ -61,7 +62,8 @@
         "href": "../../docs/zh/json-format.md#声明式动画-animations",
         "label": "声明式动画"
       }
-    ]
+    ],
+    "hint": "【Track 0 · 最小场景（异步）】数据：<code>../../../assets/json/tutorial/track-00/00-01-minimal-mesh.json</code>。单盒子 + createJsonScene + 声明式旋转"
   },
   {
     "id": "t00-02",
@@ -95,7 +97,8 @@
         "href": "../../docs/zh/json-format.md#球体-sphere",
         "label": "JSON：球体"
       }
-    ]
+    ],
+    "hint": "【Track 0 · 基础几何与材质】数据：<code>../../../assets/json/tutorial/track-00/00-02-primitives.json</code>。多 primitive、纹理地板、玻璃与 PBR"
   },
   {
     "id": "t00-03",
@@ -129,7 +132,8 @@
         "href": "../../docs/zh/json-format.md#friendlymap",
         "label": "friendlyMap"
       }
-    ]
+    ],
+    "hint": "【Track 0 · 友好 JSON 全场景】数据：<code>../../../assets/json/tutorial/track-00/00-03-friendly-full-scene.json</code>。sceneConfig + typed lists + friendlyMap"
   },
   {
     "id": "t00-04",
@@ -163,7 +167,8 @@
         "href": "../../docs/zh/json-format.md#objectlist-分发规则",
         "label": "objectList 分发"
       }
-    ]
+    ],
+    "hint": "【Track 0 · 标准 JSON 全场景】数据：<code>../../../assets/json/tutorial/track-00/00-04-standard-objectlist.json</code>。与 t00-03 同场景 · objectList 写法对照"
   },
   {
     "id": "t00-05",
@@ -197,7 +202,8 @@
         "href": "./README.md",
         "label": "html-demo README"
       }
-    ]
+    ],
+    "hint": "【Track 0 · 导入路径】本页演示<strong>拆开导入</strong>（无 import map 的 <code>threejson</code> 别名）。<br>\n    ① <code>core/index.js</code> 运行时 ② <code>builtins/register.js</code> 注册内置 domain（JSON 含 <code>domainModelList</code> 时需要）③ 多数 demo 用 import map 的 <code>from \"threejson\"</code> / <code>\"threejson/core\"</code>，见 <code>examples/html-demo/README.md</code>。"
   },
   {
     "id": "t00-06",
@@ -227,7 +233,8 @@
         "href": "./README.md",
         "label": "html-demo README"
       }
-    ]
+    ],
+    "hint": "【Track 0 · 资源回收】场景 JSON 内联在本页（无外部 tutorial JSON）。<br>\n    ① 默认：<code>createJsonScene</code> + <code>runtime.dispose()</code> 即可正常运行与整页卸载回收 ② 可选手动：<code>disposeByThreeJsonId(scene, \"cube-main\")</code> 按 <code>threeJsonId</code> 删除单对象 ③ 顶栏按钮可演示上述两种路径。"
   },
   {
     "id": "t00-07",
@@ -257,7 +264,8 @@
         "href": "../../docs/zh/json-format.md#盒子-box",
         "label": "JSON：盒子 box"
       }
-    ]
+    ],
+    "hint": "【Track 0 · 选修】先学完 t00-01。本页演示 <code>createSceneRuntime</code> + 单条 box JSON + <code>deployMesh</code>（对照 <code>docs/zh/README.md</code> 最小示例）；主线仍推荐 <code>createJsonScene</code>"
   },
   {
     "id": "t00-08",
@@ -292,7 +300,8 @@
         "href": "../../docs/zh/scene-load-lifecycle.md",
         "label": "场景加载生命周期"
       }
-    ]
+    ],
+    "hint": "【Track 0 · intro】<code>sceneConfig.intro.postLoad</code> · 部署完成后片头（Logo + 文字，点击跳过）· 数据：<code>../../../assets/json/tutorial/track-00/00-08-scene-intro.json</code>"
   },
   {
     "id": "t01-01",
@@ -334,7 +343,8 @@
         "href": "../../docs/zh/info-panels.md",
         "label": "信息面板专题"
       }
-    ]
+    ],
+    "hint": "【Track 1 · 组合线条面板】数据：<code>../../../assets/json/tutorial/track-01/01-01-group-line-panel.json</code>。groupList / lineList / infoPanelList"
   },
   {
     "id": "t01-02",
@@ -368,7 +378,8 @@
         "href": "../../docs/zh/json-format.md#line-拓扑-topology",
         "label": "line 拓扑"
       }
-    ]
+    ],
+    "hint": "【Track 1 · 平面与线拓扑】数据：<code>../../../assets/json/tutorial/track-01/01-02-plane-line-topology.json</code>。plane + line / lineSegments / lineLoop"
   },
   {
     "id": "t01-03",
@@ -398,7 +409,8 @@
         "href": "../../docs/zh/json-format.md#预设-objtypewallglass-等",
         "label": "预设 objType"
       }
-    ]
+    ],
+    "hint": "【Track 1 · 预设 objType】数据：<code>../../../assets/json/tutorial/track-01/01-03-preset-objtypes.json</code>。wall / floor / glass + friendlyMap"
   },
   {
     "id": "t01-04",
@@ -428,7 +440,8 @@
         "href": "../../docs/zh/json-format.md#csg合并相交挖洞",
         "label": "CSG"
       }
-    ]
+    ],
+    "hint": "【Track 1 · CSG 布尔】数据：<code>../../../assets/json/tutorial/track-01/01-04-csg-joins.json</code>。joins / holes 示例"
   },
   {
     "id": "t01-05",
@@ -466,7 +479,8 @@
         "href": "../../docs/zh/json-format.md#shapeextrude--irregulargeometry不规则几何体",
         "label": "shapeExtrude"
       }
-    ]
+    ],
+    "hint": "【Track 1 · Helpers 与不规则几何】数据：<code>../../../assets/json/tutorial/track-01/01-05-helpers-irregular.json</code>。\n    sceneConfig.helpers（grid + axes）· irregularPlane（shape + parallelTo:xz）· shapeExtrude · bufferMesh"
   },
   {
     "id": "t01-06",
@@ -501,7 +515,8 @@
         "href": "../../lab/native-object-dispatch-memo.md",
         "label": "lab 备忘"
       }
-    ]
+    ],
+    "hint": "【Track 1 · Native 通用对象】<code>../../../assets/json/tutorial/track-01/01-06-native-objects.json</code>（标准 objectList）。<br>\n    未知 objType（<code>torusKnot</code> / <code>latheVase</code> / <code>dodecahedronGem</code> / <code>tetrahedronObelisk</code>）在 <code>parseMode:auto</code> 下走 ObjectLoader；\n    <code>objType:native</code> 层级 Group；<code>parseMode:native</code> 强制 native 盒子。"
   },
   {
     "id": "t01-07",
@@ -535,7 +550,8 @@
         "href": "../../docs/zh/json-format.md",
         "label": "assetLibrary"
       }
-    ]
+    ],
+    "hint": "【Track 1 · jsm 几何】<code>../../../assets/json/tutorial/track-01/01-07-jsm-geometries.json</code><br>\n    <code>roundedBox</code> 别名 · <code>geometryRef</code>/<code>materialRef</code> · native Line2 · 透视相机 + Orbit 漫游（与 01-06 相同模式）"
   },
   {
     "id": "t01-08",
@@ -569,7 +585,8 @@
         "href": "../../docs/zh/json-format.md",
         "label": "controls fly"
       }
-    ]
+    ],
+    "hint": "【Track 1 · 正交 + Fly】<code>../../../assets/json/tutorial/track-01/01-08-ortho-fly.json</code><br>\n  正交相机 <code>lookAt</code> 对准场景中心 · <code>type: \"fly\"</code>：按住鼠标环顾，WASD/QE 移动"
   },
   {
     "id": "t02-01",
@@ -603,7 +620,8 @@
         "href": "../../docs/zh/json-format.md#动态平面-wind",
         "label": "动态平面 wind"
       }
-    ]
+    ],
+    "hint": "【Track 2 · 热力与风带】数据：<code>../../../assets/json/tutorial/track-02/02-01-heatmap-wind.json</code>。heatList + windList"
   },
   {
     "id": "t02-02",
@@ -633,7 +651,8 @@
         "href": "../../docs/zh/json-format.md#point点云-粒子",
         "label": "points"
       }
-    ]
+    ],
+    "hint": "【ThreeJSON 粒子】<code>objType: points</code> + <code>worldInfo.particleList</code>。右栏切换三种模式，每次只显示一组点云。阶段 2 <code>motion</code> 在 <code>animationHandler</code> 每帧更新顶点或材质。请从<strong>仓库根</strong>目录静态服务打开本页。"
   },
   {
     "id": "t02-03",
@@ -667,7 +686,8 @@
         "href": "../../docs/zh/domains.md",
         "label": "domains.md"
       }
-    ]
+    ],
+    "hint": "【Track 2 · 天气域】数据：<code>../../../assets/json/tutorial/track-02/02-03-weather-domain.json</code>。domain weather rain/snow"
   },
   {
     "id": "t02-04",
@@ -705,7 +725,8 @@
         "href": "../../docs/zh/json-format.md#instanced显式-instancedmesh",
         "label": "instanced"
       }
-    ]
+    ],
+    "hint": "【Track 2 · Sprite Tube Instanced】数据：<code>../../../assets/json/tutorial/track-02/02-04-sprite-tube-instanced.json</code>。spriteList / tubeList / instancedList"
   },
   {
     "id": "t02-05",
@@ -735,7 +756,8 @@
         "href": "../../docs/zh/json-format.md#sceneconfigscenebackground-与-environment",
         "label": "background / environment"
       }
-    ]
+    ],
+    "hint": "【360° 球形背景】等距柱状全景包裹视野。「仅演示」：星历只快照初始位置，随后为<strong>示意公转</strong>（肉眼可见、外行星更慢，非真实周期比）；取消勾选后按 UTC 用 <code>astronomy-engine</code> 星历。步进在 <code>PluginHost.beforeFrame</code>。网络 UTC 优先 <code>timeapi.io</code>。请从<strong>仓库根</strong>静态服务打开。"
   },
   {
     "id": "t02-06",
@@ -765,7 +787,8 @@
         "href": "../../docs/zh/json-format.md#audio",
         "label": "audio"
       }
-    ]
+    ],
+    "hint": "【Track 2 · 空间音频】点击画面开始播放；右侧按钮可靠近/远离音箱，右下角调节<strong>空间音箱</strong>音量（不含环境音）"
   },
   {
     "id": "t02-09",
@@ -795,7 +818,8 @@
         "href": "../../docs/zh/json-format.md#particleemitter统一粒子发射器",
         "label": "particleEmitter"
       }
-    ]
+    ],
+    "hint": "【Track 2 · particleEmitter】<code>../../../assets/json/tutorial/track-02/02-09-particle-emitter-gpu.json</code><br>\n    中央 <code>simulation: gpuCompute</code> 下落粒子 · 左侧 <code>simulation: cpu</code> twinkle 对比"
   },
   {
     "id": "t02-10",
@@ -829,7 +853,8 @@
         "href": "../../docs/zh/json-format.md#particleemitter统一粒子发射器",
         "label": "particleEmitter"
       }
-    ]
+    ],
+    "hint": "【Track 2 · 第三方粒子】<code>../../../assets/json/tutorial/track-02/02-10-particle-nebula-provider.json</code><br>\n    先 <code>threejson/core</code> 再 <code>import \"/extensions/particle-nebula/index.js\"</code> · 左侧 core · 右侧 <code>provider: \"nebula\"</code>"
   },
   {
     "id": "t02-11",
@@ -921,7 +946,8 @@
           "quality: low | medium | high | ultra 控制水面逼真度。",
           "shaderSurface solidColor 标记面。"
         ],
-        "docLinks": []
+        "docLinks": [],
+        "hint": "【Track 2 · Shader 天空与海面】<code>domainModelList</code>（<code>domain: nature.sky / nature.water</code>）+ core <code>shaderSurfaceList</code>（domain 自写 GLSL + registerShaderPreset）"
       },
       {
         "id": "t02-08",
@@ -945,9 +971,11 @@
           "syncBackground 仅对纯色 scene.background 生效。",
           "静态 dawn/noon/night 仍可用 handler 切换。"
         ],
-        "docLinks": []
+        "docLinks": [],
+        "hint": "【Track 2 · 天空昼夜循环】<code>handler: cycle</code> + <code>autoCycle</code>（180s/圈）+ 可选 <code>syncBackground</code>；静态 preset 见 02-07。"
       }
-    ]
+    ],
+    "hint": "【Track 2 · 天空昼夜循环】<code>handler: cycle</code> + <code>autoCycle</code>（180s/圈）+ 可选 <code>syncBackground</code>；静态 preset 见 02-07。"
   },
   {
     "id": "t03-01",
@@ -977,7 +1005,8 @@
         "href": "../../docs/zh/json-format.md#externalmodel",
         "label": "externalModel"
       }
-    ]
+    ],
+    "hint": "【glTF 外部模型示例】数据文件：<code>../../../assets/json/tutorial/track-03/03-01-external-gltf.json</code>；模型文件：<code>../../../assets/model/gltf/threejson_unlit_pyramid.gltf</code>。本页使用友好分组里的 <code>worldInfo.externalModelList</code>，列表本身负责推导 <code>objType: \"externalModel\"</code>，单条记录继续保留 <code>modelFileType</code> 以显式控制加载器。"
   },
   {
     "id": "t03-02",
@@ -1007,7 +1036,8 @@
         "href": "../../docs/zh/json-format.md#animationmode-可选",
         "label": "animationMode"
       }
-    ]
+    ],
+    "hint": "资源：<code>../../../assets/json/tutorial/track-03/03-02-gltf-animation-mixer.json</code>；glTF 含线性 <strong>translation</strong> 剪辑（约 1s 周期上下位移），加载后由 core 注册 <code>AnimationMixer</code>。\n    可在 JSON 上改 <code>animationMode</code> 为 <code>mixer</code> / <code>basic</code> 观察与声明式 <code>animations</code> 的协调（本示例未配声明式 rotate）。"
   },
   {
     "id": "t03-03",
@@ -1037,7 +1067,8 @@
         "href": "../../docs/zh/json-format.md#外部模型-objgltfglbthreejson",
         "label": "外部模型与原生 JSON"
       }
-    ]
+    ],
+    "hint": "【原生JSON加载示例】数据文件：<code>../../../assets/json/tutorial/track-03/03-03-native-three-domain.json</code>（内含 <code>worldInfo.domainModelList</code> 的 <code>nativeThree</code>，经 ObjectLoader 加载独立子图 <code>../../../assets/json/three_native.json</code>）；另有一条 <code>domain: &quot;box&quot;</code> 作对照。请用项目根目录静态服务打开本页。"
   },
   {
     "id": "t03-04",
@@ -1067,7 +1098,8 @@
         "href": "../../docs/zh/json-format.md#obj-同目录-maps-回退",
         "label": "OBJ maps 回退"
       }
-    ]
+    ],
+    "hint": "【Track 3 · OBJ maps】数据：<code>../../../assets/json/tutorial/track-03/03-04-obj-maps-fallback.json</code>。objModelList 加载 maps_fallback/alpaca.obj"
   },
   {
     "id": "t03-06",
@@ -1097,7 +1129,8 @@
         "href": "../../docs/zh/json-format.md#animationgraph可选gltf-动画状态机",
         "label": "animationGraph"
       }
-    ]
+    ],
+    "hint": "【Track 3 · animationGraph】<code>../../../assets/json/tutorial/track-03/03-06-animation-graph.json</code><br>\n    无 graph 时仍 play all clips；本页含 graph → 状态机 + <code>setAnimationParameter</code>"
   },
   {
     "id": "t04-01",
@@ -1161,7 +1194,8 @@
         "href": "../../extensions/physics-rapier/README.md",
         "label": "physics-rapier README"
       }
-    ]
+    ],
+    "hint": "【简易物理】右栏切换：<strong>重力演示</strong>（欧拉 y 钳制，非真实碰撞）与 <strong>碰撞检测</strong>（Rapier WASM）。请从<strong>仓库根</strong>静态服务打开。"
   },
   {
     "id": "t04-fps",
@@ -1223,7 +1257,8 @@
           "bootstrapFpsWalkFromScene。",
           "scene-player 亦支持。"
         ],
-        "docLinks": []
+        "docLinks": [],
+        "hint": "数据：<code>../../../assets/json/tutorial/track-04/04-03-fps-walk.json</code> · 点击画布锁定指针 · WASD 移动 · ESC 退出锁定"
       },
       {
         "id": "t04-04",
@@ -1247,7 +1282,8 @@
           "attachCameraToPlayerRig。",
           "与 fps-walk 贴地配合。"
         ],
-        "docLinks": []
+        "docLinks": [],
+        "hint": "数据：<code>../../../assets/json/tutorial/track-04/04-04-fps-player-rig.json</code> · 相机 <code>attachTo: \"player\"</code> · WASD 移动 Rig"
       },
       {
         "id": "t04-05",
@@ -1272,9 +1308,11 @@
           "需 @dimforge/rapier3d-compat。",
           "lab/first-person-integration。"
         ],
-        "docLinks": []
+        "docLinks": [],
+        "hint": "数据：<code>04-05-fps-rapier-collision.json</code> ·\n    SCAR-H viewmodel 已微调：更小、更远、略压低 · WASD · 点击锁定指针"
       }
-    ]
+    ],
+    "hint": "数据：<code>04-05-fps-rapier-collision.json</code> ·\n    SCAR-H viewmodel 已微调：更小、更远、略压低 · WASD · 点击锁定指针"
   },
   {
     "id": "t04-09",
@@ -1314,7 +1352,8 @@
         "href": "../../docs/zh/json-format.md",
         "label": "JSON events"
       }
-    ]
+    ],
+    "hint": "【Track 4 · 事件机制】数据：<code>../../../assets/json/tutorial/track-04/04-09-event-mechanism.json</code>\n    · 单击蓝色立方体执行 <code>events.click.script</code>\n    · 示例 1 默认简单脚本 · 示例 2 含 DSL/JS 进阶语法（Shift+单击变色）· 复位恢复初始位置"
   },
   {
     "id": "t04-10",
@@ -1344,7 +1383,8 @@
         "href": "../../docs/zh/event-mechanism.md#131-单对象-lifecycle-与场景-load-的区别",
         "label": "object lifecycle"
       }
-    ]
+    ],
+    "hint": "【Track 4 · 单对象 lifecycle】<code>object.ready</code> 在 deploy 完成后执行；\n    <code>object.dispose</code> 在显式 async 删除前执行。绿色立方体加载后会弹跳。\n    按 <b>D</b> 动态创建蓝色对象，按 <b>R</b> 删除它并触发 dispose。\n    宿主 hook 日志见右侧面板。"
   },
   {
     "id": "t04-11",
@@ -1374,7 +1414,8 @@
         "href": "../../docs/zh/event-mechanism.md#12-jsonevents-块",
         "label": "JSON actions"
       }
-    ]
+    ],
+    "hint": "【Track 4 · Declarative actions】左侧灰色方块由 <code>scene.ready</code> 改成绿色；\n    点击中间蓝色方块会先执行 <code>actions</code>（移动与改材质），再执行 <code>script</code>（短暂上移）；\n    点击右侧红色方块会通过 <code>object.toggleVisible</code> 显隐左侧方块。"
   },
   {
     "id": "t04-08",
@@ -1409,7 +1450,8 @@
         "href": "../../docs/zh/json-format.md#信息面板-infopanel",
         "label": "infoPanel JSON"
       }
-    ]
+    ],
+    "hint": "<strong>【t04-08 信息面板 Gallery】</strong> 数据：<code>../../../assets/json/tutorial/track-04/04-08-info-panel-gallery.json</code><br>\n    ① box+text(single) ② box+text(full) ③ sprite+text ④ sprite+html ⑤ sprite+img ⑥ 橙色可关闭（<code>dismissTrigger: \"dblclick\"</code>）⑦ 右上 <code>type:img</code> port360 全景贴图<br>\n    文档：<a href=\"/docs/zh/info-panels.md\" style=\"color:#79bbff\">info-panels.md</a> · 可交互 DOM 见 <a href=\"./04-06-css3d-panel.html\" style=\"color:#79bbff\">t04-06 css3dPanel</a>"
   },
   {
     "id": "t04-06",
@@ -1461,9 +1503,11 @@
           "曲面 transform + iframe 嵌入。",
           "基础用法见 04-06。"
         ],
-        "docLinks": []
+        "docLinks": [],
+        "hint": "<strong>04-07 曲面屏 Three.js 官网</strong> · 数据 <code>../../../assets/json/tutorial/track-04/04-07-css3d-curved-google.json</code><br>\n    VR 悬空大荧屏 · 屏上为 threejs.org · 滚轮缩放 · 基础 demo 见 <code>04-06-css3d-panel.html</code>"
       }
-    ]
+    ],
+    "hint": "数据：<code>../../../assets/json/tutorial/track-04/04-06-css3d-panel.json</code> · 左侧面板可点按/输入 · 右侧 iframe 需目标站允许嵌入 · 拖拽空白处 Orbit"
   },
   {
     "id": "t05-01",
@@ -1532,7 +1576,8 @@
         "href": "../../docs/zh/json-format.md#domain-weather天气粒子预设",
         "label": "weather 域"
       }
-    ]
+    ],
+    "hint": "【Track 5 · 嵌套子域】JSON 已加载 rain/wind/snow；按钮可追加 <code>invokeDomainModel</code>。\n    中间节点 <code>weather.particle</code> 仅命名空间，不可调度。"
   },
   {
     "id": "t05-02",
@@ -1710,7 +1755,8 @@
           "objType statBar / statBarGroup",
           "mapUtilizationRateToColor 色带"
         ],
-        "docLinks": []
+        "docLinks": [],
+        "hint": "【Track 6 · stat.bar】<code>domain: \"stat.bar\"</code> + <code>createStatBars</code> · 数据：<code>../../../assets/json/tutorial/track-06/06-01-stat-bar.json</code>"
       },
       {
         "id": "t06-02",
@@ -1734,7 +1780,8 @@
           "options.columns 网格布局",
           "纯 Three.js，无 ECharts"
         ],
-        "docLinks": []
+        "docLinks": [],
+        "hint": "【Track 6 · stat.grid】<code>domain: \"stat.grid\"</code> · 4×2 柱阵列 · <code>06-02-stat-grid.json</code>"
       },
       {
         "id": "t06-03",
@@ -1758,7 +1805,8 @@
           "businessInfo.statLabel 契约",
           "与 stat.bar 同场景组合"
         ],
-        "docLinks": []
+        "docLinks": [],
+        "hint": "【Track 6 · stat.panel】Canvas 贴图 KPI 看板 + stat.bar · <code>06-03-stat-panel.json</code>"
       },
       {
         "id": "t06-04",
@@ -1792,7 +1840,8 @@
             "href": "../../docs/zh/json-format.md#可交互-css3d-面板-css3dpanelcore",
             "label": "CSS3D 面板"
           }
-        ]
+        ],
+        "hint": "【Track 6 · stat.chart】CSS3D 面板 + <code>extensions/stat-echarts</code> · import map 含 <code>echarts</code>"
       },
       {
         "id": "t06-05",
@@ -1816,7 +1865,8 @@
           "Line2 linewidth + subScene dropLine/marker",
           "series[] 多序列"
         ],
-        "docLinks": []
+        "docLinks": [],
+        "hint": "【Track 6 · stat.line】<code>domain: \"stat.line\"</code> + Line2 · 顶点 label 默认 <code>labelMode: \"sdf\"</code>（亦支持 texture / mesh / box）· 数据：<code>../../../assets/json/tutorial/track-06/06-05-stat-line.json</code>"
       },
       {
         "id": "t06-06",
@@ -1840,7 +1890,8 @@
           "thetaStart / thetaLength 扇区",
           "扇区角平分线 statLabel"
         ],
-        "docLinks": []
+        "docLinks": [],
+        "hint": "【Track 6 · stat.pie】<code>domain: \"stat.pie\"</code> · 圆柱扇形 + <code>statLabel</code> · 数据：<code>../../../assets/json/tutorial/track-06/06-06-stat-pie.json</code>"
       },
       {
         "id": "t06-07",
@@ -1864,9 +1915,11 @@
           "ring 使用 holes[] CSG 内圆柱挖洞",
           "ring demo ≤6 扇区"
         ],
-        "docLinks": []
+        "docLinks": [],
+        "hint": "【Track 6 · stat.pie + stat.ring】左实心饼图 / 右 CSG 圆环 · 需 <code>three-bvh-csg</code> · 数据：<code>../../../assets/json/tutorial/track-06/06-07-stat-pie-ring.json</code>"
       }
-    ]
+    ],
+    "hint": "【Track 6 · stat.grid】<code>domain: \"stat.grid\"</code> · 4×2 柱阵列 · <code>06-02-stat-grid.json</code>"
   },
   {
     "id": "t07-text",
@@ -1924,7 +1977,8 @@
           "billboard 朝向相机",
           "import map 需 troika-three-text"
         ],
-        "docLinks": []
+        "docLinks": [],
+        "hint": "【Track 7 · text】三列对比：左 <code>sdf</code> 中文 · 中 <code>texture</code> · 右 <code>sdf</code> 英文；下方灰字为 mode 标注<br>\n    数据：<code>../../../assets/json/tutorial/track-07/07-01-text-modes.json</code>"
       },
       {
         "id": "t07-02",
@@ -1948,8 +2002,41 @@
           "bevelEnabled 倒角挤出",
           "中文需自备字体 JSON"
         ],
-        "docLinks": []
+        "docLinks": [],
+        "hint": "【Track 7 · text mesh】<code>mode: \"mesh\"</code> + <code>TextGeometry</code>（Helvetiker Bold）· 副标题为 SDF<br>\n    字体：<code>../../../assets/fonts/helvetiker_bold.typeface.json</code> · 数据：<code>../../../assets/json/tutorial/track-07/07-02-text-mesh.json</code>"
       }
-    ]
+    ],
+    "hint": "【Track 7 · text mesh】<code>mode: \"mesh\"</code> + <code>TextGeometry</code>（Helvetiker Bold）· 副标题为 SDF<br>\n    字体：<code>../../../assets/fonts/helvetiker_bold.typeface.json</code> · 数据：<code>../../../assets/json/tutorial/track-07/07-02-text-mesh.json</code>"
+  },
+  {
+    "id": "t04-12",
+    "track": "04",
+    "order": "12",
+    "path": "./track-04-interaction/04-12-command-syntax.html",
+    "jsonFiles": [
+      {
+        "json": "../../assets/json/tutorial/track-04/04-12-command-syntax.json"
+      }
+    ],
+    "prerequisites": [
+      "t04-09"
+    ],
+    "status": "stable",
+    "group": "Track 4 · 运行时交互",
+    "title": "命令语法（executeCommands）",
+    "summary": "直接调用 core 的 executeCommands(ctx, script) 按行执行命令，无需事件绑定；语法与编辑器【AI 调整】命令模式一致。",
+    "navSummary": "命令语法直接调用",
+    "highlights": [
+      "createCommandContext({ scene, camera, renderer, controls }) 构造执行上下文。",
+      "executeCommands(ctx, script) 支持多行命令脚本，一次性执行。",
+      "与 EventScript 的 run 前缀微 DSL 同源，但无需绑定到事件。"
+    ],
+    "docLinks": [
+      {
+        "href": "../../docs/zh/runtime-object-commands.md",
+        "label": "运行时命令"
+      }
+    ],
+    "hint": "【Track 4 · 命令语法】直接调用 core 的 <code>executeCommands(ctx, script)</code>，无需事件绑定；语法与编辑器【AI 调整】命令模式一致，每行一条命令。"
   }
 ]

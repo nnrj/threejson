@@ -1,0 +1,66 @@
+{
+  "version": "next",
+  "name": "composition-group-assembly",
+  "sceneConfig": {
+    "scene": { "background": "#11151b" },
+    "camera": { "fov": 50, "near": 0.1, "far": 200, "position": { "x": 12, "y": 9, "z": 14 } },
+    "renderer": { "antialias": true, "ratioRate": 1 },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 3, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#ffffff", "intensity": 0.9 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1, "position": { "x": 8, "y": 12, "z": 8 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "worldInfo": {
+    "groupList": [
+      {
+        "threeJsonId": "mini-robot",
+        "name": "mini-robot",
+        "objType": "group",
+        "position": { "x": 0, "y": 0, "z": 0 },
+        "animations": [{ "type": "rotate", "axis": "y", "speed": 0.4 }],
+        "subScene": [
+          {
+            "threeJsonId": "robot-body",
+            "objType": "box",
+            "geometry": { "width": 3, "height": 3.5, "depth": 2 },
+            "position": { "x": 0, "y": 3, "z": 0 },
+            "material": { "type": "standard", "color": "#5470c6" }
+          },
+          {
+            "threeJsonId": "robot-head",
+            "objType": "sphere",
+            "geometry": { "radius": 1.1, "widthSegments": 24, "heightSegments": 16 },
+            "position": { "x": 0, "y": 5.6, "z": 0 },
+            "material": { "type": "standard", "color": "#91cc75" }
+          },
+          {
+            "threeJsonId": "robot-arm-left",
+            "objType": "cylinder",
+            "geometry": { "radiusTop": 0.35, "radiusBottom": 0.35, "height": 2.6, "radialSegments": 12 },
+            "position": { "x": -2, "y": 3.4, "z": 0 },
+            "rotation": { "rotationZ": 0.5 },
+            "material": { "type": "standard", "color": "#e6a23c" }
+          },
+          {
+            "threeJsonId": "robot-arm-right",
+            "objType": "cylinder",
+            "geometry": { "radiusTop": 0.35, "radiusBottom": 0.35, "height": 2.6, "radialSegments": 12 },
+            "position": { "x": 2, "y": 3.4, "z": 0 },
+            "rotation": { "rotationZ": -0.5 },
+            "material": { "type": "standard", "color": "#e6a23c" }
+          },
+          {
+            "threeJsonId": "robot-base",
+            "objType": "cylinder",
+            "geometry": { "radiusTop": 1.6, "radiusBottom": 1.6, "height": 0.6, "radialSegments": 24 },
+            "position": { "x": 0, "y": 1, "z": 0 },
+            "material": { "type": "standard", "color": "#909399" }
+          }
+        ]
+      }
+    ]
+  },
+  "threeJsonId": "composition-group-assembly"
+}
