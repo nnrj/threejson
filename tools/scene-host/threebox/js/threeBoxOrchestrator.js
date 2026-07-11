@@ -15,6 +15,7 @@ import {
   createJsonScene
 } from "threejson/core";
 import { sceneHostAssetUrl } from "../../shared/js/sceneHostPaths.js";
+import { enqueueThreeBoxSceneLoad } from "./threeBoxSceneLoadQueue.js";
 
 /**
  * Resolves a saved provider config (tools/scene-host/threebox/js/threeBoxSettingsSchema.js's
@@ -186,11 +187,13 @@ async function createOffscreenRuntimeFromSceneJsonString(sceneJsonString) {
   const canvas = document.createElement("canvas");
   canvas.width = 32;
   canvas.height = 32;
-  return createJsonScene(sceneJson, {
-    canvas,
-    resetScene: true,
-    assetsBase: sceneHostAssetUrl("assets/")
-  });
+  return enqueueThreeBoxSceneLoad(() =>
+    createJsonScene(sceneJson, {
+      canvas,
+      resetScene: true,
+      assetsBase: sceneHostAssetUrl("assets/")
+    })
+  );
 }
 
 function mapThreeBoxUpdateModeToAgentInput(updateOutputMode) {

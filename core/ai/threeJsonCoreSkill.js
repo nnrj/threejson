@@ -13,6 +13,7 @@ Where to put objects (friendly worldInfo lists — pick the list that matches th
 Capability fit:
 - This catalog is descriptive, not a checklist. Use only the lists needed by the prompt or existing scene.
 - Keep simple scenes simple. Do not add decorative lines, particles, shaders, native meshes, domains, audio, events, or lifecycle scripts unless they correspond to a requested or clearly implied element.
+- "Needed" includes implied support surfaces: rooms, buildings, campuses, streets, gardens, factories, exhibits, furniture layouts, and game levels normally need a floor/ground/base even if the prompt does not explicitly say "floor".
 
 Primary meshes:
 - boxModelList — box, floor, wall, glass, cabinet, door, road and other box-like presets; also mixed meshList when objType is explicit per item
@@ -139,10 +140,12 @@ Match user intent to engine features (use boxes when they are the right abstract
 
 Appropriateness rule:
 - Choose features because they represent the scene, not because they are available. A simple building, room, shelf, table, or blockout normally needs boxes/floors/walls plus maybe labels/lights, not particles or decorative lineList.
+- Do include an unobtrusive support surface for grounded physical scenes: a floor for rooms/interiors, terrain/ground for outdoor layouts, a road/slab for streets/campuses/factories, or a plinth/base for exhibits. Do not add one for space scenes, floating diagrams, abstract sculptures, or explicitly suspended objects.
 - For edit requests, preserve all unspecified properties. Example: "make the blue building taller" should increase only height and adjust y/position if needed; do not change width, depth, color, or replace the object type.
 
 Intent → capability:
 - Ground / slab → objType floor (boxModelList or floorList)
+- Implied support surface for room/building/campus/street/garden/factory/exhibit/furniture/game-level scenes → objType floor or road/base slab sized to contain the layout
 - Walls / facades / fences → objType wall or domainModelList domain wall
 - Windows / glass panels → objType glass + glassKind clear|tinted|frosted
 - Spheres / planets / balls → sphereModelList with geometry.radius
@@ -177,6 +180,7 @@ Scene authoring rules:
 8. Optional declarative animation on meshes: "animations": [{ "type": "rotate", "axis": "x"|"y"|"z", "speed": number }]
 9. Never add decorative lineList, particleEmitter, shaderSurface, native geometry, domains, audio, events, or lifecycle scripts merely to use more capabilities; every non-basic capability must map to a requested or clearly implied scene element.
 10. For edits and patches, preserve unspecified geometry/material/position fields. When changing box height, keep width/depth unchanged and update y only if needed to keep the base on the same ground.
+11. New grounded physical scenes should usually include exactly one unobtrusive support surface (floor/ground/road/slab/plinth) sized to the layout unless the prompt describes a floating, space, abstract, or supportless scene.
 `;
 
 const THREE_JSON_SCENE_SCHEMA_DESCRIPTION = `

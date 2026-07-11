@@ -10,6 +10,7 @@ ThreeJSON capability index (choose the simplest faithful feature; this is not a 
 
 Selection principle:
 - Prefer basic primitives and semantic presets when they fully satisfy the user's scene.
+- For grounded scenes (rooms, buildings, campuses, streets, gardens, factories, exhibits, furniture layouts, game levels, dashboards standing in space), include an appropriate floor/ground/base plane even when the user does not spell out "floor"; omit it only for floating/space/abstract scenes where no support surface is implied.
 - Use advanced/native/domain/effect features only when the user explicitly asks for them or the scene clearly needs them.
 - Do not add lineList, particleEmitter, shaderSurface, native geometry, domain records, audio, or lifecycle scripts just to demonstrate capability.
 - lineList is for visible paths/routes/cables/boundaries/outlines; particleEmitter is for particles, rain, snow, dust, sparks, starfields, or similar atmospheric effects.

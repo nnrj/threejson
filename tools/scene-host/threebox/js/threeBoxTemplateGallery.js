@@ -1,6 +1,7 @@
 import { resolveSceneHostUrl, sceneHostAssetUrl } from "../../shared/js/sceneHostPaths.js";
 import { showToast } from "./threeBoxUiFeedback.js";
 import { t, getHostLocale } from "../../shared/i18n/index.js";
+import { enqueueThreeBoxSceneLoad, isThreeBoxSceneLoadBusy } from "./threeBoxSceneLoadQueue.js";
 
 /**
  * Template-card thumbnail pipeline: clone of website/js/site.js's examples-page pipeline
@@ -107,21 +108,23 @@ async function captureTemplateThumbnail(jsonUrl) {
   const payload = await response.json();
   const canvas = getThumbCanvas();
   let captured = null;
-  const runtime = await createJsonScene(withReducedQuality(payload), {
-    canvas,
-    resetScene: true,
-    assetsBase: sceneHostAssetUrl("assets/"),
-    onSceneReady: async (ctx) => {
-      captured = await captureSceneFrame(ctx, {
-        as: "dataUrl",
-        mimeType: "image/jpeg",
-        quality: 0.72,
-        offscreen: true,
-        offscreenWidth: THUMB_WIDTH,
-        offscreenHeight: THUMB_HEIGHT
-      });
-    }
-  });
+  const runtime = await enqueueThreeBoxSceneLoad(() =>
+    createJsonScene(withReducedQuality(payload), {
+      canvas,
+      resetScene: true,
+      assetsBase: sceneHostAssetUrl("assets/"),
+      onSceneReady: async (ctx) => {
+        captured = await captureSceneFrame(ctx, {
+          as: "dataUrl",
+          mimeType: "image/jpeg",
+          quality: 0.72,
+          offscreen: true,
+          offscreenWidth: THUMB_WIDTH,
+          offscreenHeight: THUMB_HEIGHT
+        });
+      }
+    })
+  );
   runtime?.dispose?.();
   return captured?.dataUrl || null;
 }
@@ -162,6 +165,11 @@ function scheduleThumbQueue() {
   }
   thumbQueueScheduled = true;
   const run = () => {
+    if (isThreeBoxSceneLoadBusy()) {
+      thumbQueueScheduled = false;
+      scheduleThumbQueue();
+      return;
+    }
     void runThumbQueue();
   };
   if (typeof window.requestIdleCallback === "function") {

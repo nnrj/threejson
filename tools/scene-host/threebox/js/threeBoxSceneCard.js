@@ -1,6 +1,7 @@
 import { sceneHostAssetUrl } from "../../shared/js/sceneHostPaths.js";
 import { showToast } from "./threeBoxUiFeedback.js";
 import { t } from "../../shared/i18n/index.js";
+import { enqueueThreeBoxSceneLoad } from "./threeBoxSceneLoadQueue.js";
 
 const EDITOR_OPEN_SCENE_BRIDGE_PREFIX = "threejson.editor.openScene.";
 const SCENE_PREVIEW_CHANNEL = "threejson:scene-preview";
@@ -78,6 +79,7 @@ export function createThreeBoxSceneCard() {
   let runtime = null;
   let liveResizeObserver = null;
   let currentSceneJson = null;
+  let renderSeq = 0;
   let currentLabel = t("threebox.sceneCard.defaultLabel", "ThreeBox 场景");
 
   /** Keeps the canvas in sync with its container's actual size after first paint (e.g. the left
@@ -120,8 +122,12 @@ export function createThreeBoxSceneCard() {
   }
 
   async function render(sceneJsonPayload, options = {}) {
+    const seq = ++renderSeq;
     const { createJsonScene } = await import("threejson/core");
+    liveResizeObserver?.disconnect();
+    liveResizeObserver = null;
     runtime?.dispose?.();
+    runtime = null;
     currentSceneJson = sceneJsonPayload;
     currentLabel =
       options.label || sceneJsonPayload?.label || sceneJsonPayload?.name || t("threebox.sceneCard.defaultLabel", "ThreeBox 场景");
@@ -133,6 +139,8 @@ export function createThreeBoxSceneCard() {
     // as-yet-unsettled ancestor can catch a stale full-viewport size on that first frame.
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
+    canvas.width = width;
+    canvas.height = height;
     const payload = structuredClone(sceneJsonPayload || {});
     payload.canvasWidth = width;
     payload.canvasHeight = height;
@@ -144,14 +152,21 @@ export function createThreeBoxSceneCard() {
       renderLoop: { ...payload.sceneConfig?.renderLoop, autoResize: false, firstAutoResize: false }
     };
     try {
-      runtime = await createJsonScene(payload, {
-        canvas,
-        resetScene: true,
-        assetsBase: sceneHostAssetUrl("assets/"),
-        autoFillLights: true,
-        autoFillCamera: true,
-        autoFitCamera: true
-      });
+      const nextRuntime = await enqueueThreeBoxSceneLoad(() =>
+        createJsonScene(payload, {
+          canvas,
+          resetScene: true,
+          assetsBase: sceneHostAssetUrl("assets/"),
+          autoFillLights: true,
+          autoFillCamera: true,
+          autoFitCamera: true
+        })
+      );
+      if (seq !== renderSeq) {
+        nextRuntime?.dispose?.();
+        return null;
+      }
+      runtime = nextRuntime;
       runtime.start?.();
       // core/handler/frameLoopHandler.js's resize(size={}) reads size.width/size.height off a
       // single options object — passing (width, height) as positional args silently falls back
@@ -159,12 +174,15 @@ export function createThreeBoxSceneCard() {
       runtime.resize?.({ width, height });
       watchLiveResize();
     } finally {
-      loadingMask.hidden = true;
+      if (seq === renderSeq) {
+        loadingMask.hidden = true;
+      }
     }
     return runtime;
   }
 
   function dispose() {
+    renderSeq += 1;
     liveResizeObserver?.disconnect();
     liveResizeObserver = null;
     runtime?.dispose?.();

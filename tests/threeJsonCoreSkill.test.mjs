@@ -32,6 +32,8 @@ test("generation system prompt covers core ThreeJSON capabilities", () => {
   assert.match(prompt, /simplest faithful/);
   assert.match(prompt, /not a checklist/);
   assert.match(prompt, /Never add decorative lineList, particleEmitter/);
+  assert.match(prompt, /grounded physical scenes should usually include/);
+  assert.match(prompt, /Implied support surface/);
   assert.match(prompt, /sceneConfig/);
   assert.match(THREE_JSON_LIST_PLACEMENT, /nativeThree/);
   assert.match(THREE_JSON_PRIMITIVE_GEOMETRY, /radiusTop/);

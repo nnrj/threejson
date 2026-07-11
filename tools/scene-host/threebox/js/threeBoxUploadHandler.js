@@ -1,5 +1,6 @@
 import { sceneHostAssetUrl } from "../../shared/js/sceneHostPaths.js";
 import { t } from "../../shared/i18n/index.js";
+import { enqueueThreeBoxSceneLoad } from "./threeBoxSceneLoadQueue.js";
 
 const ACCEPT_BY_KIND = {
   json: ".json,.threejson,.tjson,application/json",
@@ -44,10 +45,12 @@ async function processJsonFile(file) {
  * command execution, reused here purely for its archive-unpack + JSON-export side effect. */
 async function processTjzFile(file) {
   const { createJsonSceneFromArchive, sceneToStandardJsonSimple } = await import("threejson/core");
-  const runtime = await createJsonSceneFromArchive(file, {
-    canvas: createOffscreenCanvas(),
-    assetsBase: sceneHostAssetUrl("assets/")
-  });
+  const runtime = await enqueueThreeBoxSceneLoad(() =>
+    createJsonSceneFromArchive(file, {
+      canvas: createOffscreenCanvas(),
+      assetsBase: sceneHostAssetUrl("assets/")
+    })
+  );
   try {
     return sceneToStandardJsonSimple(runtime.scene, { merge: false });
   } finally {
@@ -61,10 +64,12 @@ async function processTjzFile(file) {
 async function processModelFile(file) {
   const { importMeshBlob, createJsonSceneFromObjectRecord, sceneToStandardJsonSimple } = await import("threejson/core");
   const { record } = await importMeshBlob(file, { fileName: file.name });
-  const runtime = await createJsonSceneFromObjectRecord(record, {
-    canvas: createOffscreenCanvas(),
-    assetsBase: sceneHostAssetUrl("assets/")
-  });
+  const runtime = await enqueueThreeBoxSceneLoad(() =>
+    createJsonSceneFromObjectRecord(record, {
+      canvas: createOffscreenCanvas(),
+      assetsBase: sceneHostAssetUrl("assets/")
+    })
+  );
   try {
     return sceneToStandardJsonSimple(runtime.scene, { merge: false });
   } finally {
