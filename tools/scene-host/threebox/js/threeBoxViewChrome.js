@@ -46,7 +46,8 @@ export function createThreeBoxViewChrome() {
   const mobileQuery = window.matchMedia(MOBILE_MEDIA_QUERY);
 
   let leftDockPinned = readPinnedFromStorage();
-  let leftDockPeek = false;
+  let leftDockPeek = Boolean(rootContainer?.classList.contains("leftDockPeek") || window.__threeBoxMobileMenuPreopened);
+  let handledMobilePointer = false;
   let peekHideTimer = null;
 
   function syncClasses() {
@@ -127,6 +128,8 @@ export function createThreeBoxViewChrome() {
   }
 
   function init() {
+    window.__threeBoxEarlyMobileMenu?.dispose?.();
+    window.__threeBoxEarlyMobileMenu = null;
     leftFlyoutHost?.addEventListener("mouseenter", () => {
       if (isMobileViewport()) {
         return;
@@ -143,6 +146,9 @@ export function createThreeBoxViewChrome() {
     document.addEventListener(
       "pointerdown",
       (event) => {
+        if (mobileMenuBtn?.contains(event.target)) {
+          return;
+        }
         if (!leftDockPinned && leftFlyoutHost && !leftFlyoutHost.contains(event.target)) {
           leftDockPeek = false;
           clearTimeout(peekHideTimer);
@@ -155,7 +161,25 @@ export function createThreeBoxViewChrome() {
       event.stopPropagation();
       togglePinned();
     });
+    mobileMenuBtn?.addEventListener("pointerdown", (event) => {
+      if (!isMobileViewport()) {
+        return;
+      }
+      handledMobilePointer = true;
+      event.preventDefault();
+      event.stopPropagation();
+      toggleMobilePeek();
+      window.setTimeout(() => {
+        handledMobilePointer = false;
+      }, 900);
+    });
     mobileMenuBtn?.addEventListener("click", (event) => {
+      if (handledMobilePointer) {
+        handledMobilePointer = false;
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
       event.stopPropagation();
       toggleMobilePeek();
     });

@@ -137,6 +137,35 @@
       <button type="button" id="mobileMenuBtn" class="mobileMenuBtn" aria-label="菜单">
         <svg viewBox="0 0 18 14" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M1 1.5h16M1 7h16M1 12.5h16"/></svg>
       </button>
+      <script>
+        (() => {
+          const root = document.getElementById("rootContainer");
+          const button = document.getElementById("mobileMenuBtn");
+          const mobileQuery = window.matchMedia("(max-width: 720px)");
+          if (!root || !button) return;
+
+          function sync(open) {
+            root.classList.remove("leftDockPinned");
+            root.classList.toggle("leftDockPeek", open);
+            button.setAttribute("aria-expanded", open ? "true" : "false");
+            window.__threeBoxMobileMenuPreopened = open;
+            window.dispatchEvent(new Event("resize"));
+          }
+
+          function onPointerDown(event) {
+            if (!mobileQuery.matches) return;
+            event.preventDefault();
+            event.stopPropagation();
+            sync(!root.classList.contains("leftDockPeek"));
+          }
+
+          button.addEventListener("pointerdown", onPointerDown, true);
+          window.__threeBoxEarlyMobileMenu = {
+            isOpen: () => root.classList.contains("leftDockPeek"),
+            dispose: () => button.removeEventListener("pointerdown", onPointerDown, true)
+          };
+        })();
+      </script>
       <div id="chatMessages" class="chatMessages" hidden></div>
       <button type="button" id="scrollToBottomBtn" class="scrollToBottomBtn" hidden data-i18n-title="threebox.shell.scrollToBottom" title="回到底部">
         <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M4 6.5 8 10.5 12 6.5"/></svg>

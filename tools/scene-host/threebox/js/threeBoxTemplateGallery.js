@@ -18,6 +18,7 @@ let thumbCanvas = null;
 let thumbObserver = null;
 let thumbQueue = [];
 let thumbQueueRunning = false;
+let thumbQueueScheduled = false;
 let coreModulePromise = null;
 
 function loadCoreModule() {
@@ -129,6 +130,7 @@ async function runThumbQueue() {
   if (thumbQueueRunning) {
     return;
   }
+  thumbQueueScheduled = false;
   thumbQueueRunning = true;
   const cache = readThumbCache();
   while (thumbQueue.length > 0) {
@@ -149,8 +151,24 @@ async function runThumbQueue() {
     } catch (error) {
       console.warn("[threebox template gallery] thumbnail capture failed:", task.jsonUrl, error);
     }
+    await new Promise((resolve) => setTimeout(resolve, 0));
   }
   thumbQueueRunning = false;
+}
+
+function scheduleThumbQueue() {
+  if (thumbQueueRunning || thumbQueueScheduled) {
+    return;
+  }
+  thumbQueueScheduled = true;
+  const run = () => {
+    void runThumbQueue();
+  };
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(run, { timeout: 2500 });
+  } else {
+    setTimeout(run, 600);
+  }
 }
 
 function enqueueThumbnail(jsonUrl, imgEl) {
@@ -162,7 +180,7 @@ function enqueueThumbnail(jsonUrl, imgEl) {
     return;
   }
   thumbQueue.push({ jsonUrl, imgEl });
-  void runThumbQueue();
+  scheduleThumbQueue();
 }
 
 function getThumbObserver() {

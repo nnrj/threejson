@@ -562,7 +562,7 @@ details[open] > .sidebarSectionTitle::before { transform: rotate(90deg); }
 
 /* ---- Mobile menu button (top-left of the main chat column, opens the sidebar as an overlay) ---- */
 .mobileMenuBtn {
-  display: none; position: absolute; top: 12px; left: 12px; z-index: 40;
+  display: none; position: absolute; top: 12px; left: 12px; z-index: 70;
   width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--line);
   background: var(--panel2); color: var(--text); align-items: center; justify-content: center; cursor: pointer;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.24);
@@ -584,6 +584,7 @@ details[open] > .sidebarSectionTitle::before { transform: rotate(90deg); }
   #rootContainer.leftDockPinned .mainArea { margin-left: 0; }
   .sidebarPinRow { display: none; }
   .flyoutHostLeft { width: var(--peekStripWidth); }
+  .edgeHoverZoneLeft { pointer-events: none !important; }
   #rootContainer.leftDockPinned .flyoutHostLeft,
   #rootContainer.leftDockPeek .flyoutHostLeft { width: 100vw; }
   .leftDock {
