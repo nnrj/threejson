@@ -38,7 +38,6 @@
   "viewJson": "查看JSON",
   "viewJsonN": "查看JSON {n}",
   "dataFile": "数据文件：",
-  "frameworkTitle": "关于 Vue / React 示例",
-  "frameworkNote": "需在终端进入子目录安装依赖并启动开发服务器；中央 iframe 无法嵌套运行独立 Vite 应用。",
+  "pageHintTitle": "使用提示",
   "labExtTitle": "依赖扩展或 WASM / 网络"
 }

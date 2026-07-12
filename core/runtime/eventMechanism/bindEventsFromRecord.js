@@ -85,7 +85,7 @@ export async function bindEventsFromRecord(object3D, options = {}) {
         eventConfig: config
       },
       sceneToken: sceneToken || undefined
-    });
+    }, options.runtimeScope ?? object3D);
     if (!entry) {
       continue;
     }

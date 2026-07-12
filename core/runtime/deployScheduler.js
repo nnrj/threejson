@@ -1,12 +1,158 @@
 import { log } from "../util/logger.js";
+import { resolveRuntimeContext } from "./runtimeContext.js";
 /**
  * Scene object deploy job scheduler: immediate runs straight through; scheduled supports per-frame (frameBudget), timeslot, and async concurrency pool.
+ *
+ * The "active scheduled run" slot is per RuntimeContext (see runtimeContext.js), so
+ * starting a scheduled deploy for one scene/canvas never cancels another scene's
+ * still-in-progress scheduled deploy. `runDeployJobsScheduled`/`cancelActiveDeployScheduler`
+ * take an optional trailing `runtimeScope` (Scene/RuntimeContext/ctx bag); omitting it
+ * falls back to one shared default store, matching today's single-scheduler behavior.
  */
 
 const DEPLOY_PHASES = [2, 3, 4];
 
-/** @type {{ cancelled: boolean, timers: number[], rafId: number|null, onCancel: (() => void)|null }|null} */
-let activeRun = null;
+export function createDeploySchedulerStore() {
+  /** @type {{ cancelled: boolean, timers: number[], rafId: number|null, onCancel: (() => void)|null }|null} */
+  let activeRun = null;
+
+  /**
+   * Cancel an in-flight scheduled deploy (call when switching scenes).
+   */
+  function cancelActiveDeployScheduler() {
+    if (!activeRun) {
+      return;
+    }
+    activeRun.cancelled = true;
+    for (let i = 0; i < activeRun.timers.length; i++) {
+      clearTimeout(activeRun.timers[i]);
+    }
+    if (activeRun.rafId != null && typeof cancelAnimationFrame === "function") {
+      cancelAnimationFrame(activeRun.rafId);
+    }
+    if (typeof activeRun.onCancel === "function") {
+      try {
+        activeRun.onCancel();
+      } catch (_err) {
+        /* ignore */
+      }
+    }
+    activeRun = null;
+  }
+
+  /**
+   * @param {Array<object>} jobs
+   * @param {ReturnType<typeof resolveDeploySchedulerConfig>} config
+   * @param {{ onProgress?: (info: { done: number, total: number, phase: number, id?: string }) => void }} [hooks]
+   * @returns {Promise<void>}
+   */
+  function runDeployJobsScheduled(jobs, config, hooks = {}) {
+    cancelActiveDeployScheduler();
+    const sorted = sortDeployJobs(jobs);
+    if (sorted.length === 0) {
+      return Promise.resolve();
+    }
+    const run = {
+      cancelled: false,
+      timers: [],
+      rafId: null,
+      onCancel: null
+    };
+    activeRun = run;
+    const phaseGroups = groupJobsByDeployPhase(sorted);
+    const total = sorted.length;
+    let done = 0;
+    const onProgress = typeof hooks.onProgress === "function" ? hooks.onProgress : null;
+
+    const notify = (job) => {
+      done += 1;
+      if (onProgress) {
+        onProgress({
+          done,
+          total,
+          phase: job?.phase ?? 0,
+          id: job?.id
+        });
+      }
+    };
+
+    const runSyncScheduled = (syncJobs) => {
+      if (!syncJobs.length) {
+        return Promise.resolve();
+      }
+      const wrapped = syncJobs.map((job) => ({
+        ...job,
+        run: async () => {
+          await executeJobWithRetry(job, config, run);
+          notify(job);
+        }
+      }));
+      if (config.policy === "timeslot") {
+        return runTimeslot(wrapped, config, run);
+      }
+      return runFrameBudget(wrapped, config, run);
+    };
+
+    const runPhase = async (phaseJobs) => {
+      if (run.cancelled || phaseJobs.length === 0) {
+        return;
+      }
+      const immediateJobs = [];
+      const scheduledJobs = [];
+      for (let i = 0; i < phaseJobs.length; i++) {
+        const job = phaseJobs[i];
+        if (job.forceImmediate) {
+          immediateJobs.push(job);
+        } else {
+          scheduledJobs.push(job);
+        }
+      }
+      const sortedImmediate = sortDeployJobs(immediateJobs);
+      for (let i = 0; i < sortedImmediate.length; i++) {
+        if (run.cancelled) {
+          return;
+        }
+        const job = sortedImmediate[i];
+        await executeJobWithRetry(job, config, run);
+        notify(job);
+      }
+      const asyncJobs = scheduledJobs.filter((job) => job.kind === "async");
+      const syncJobs = scheduledJobs.filter((job) => job.kind !== "async");
+      await runSyncScheduled(syncJobs);
+      if (run.cancelled) {
+        return;
+      }
+      await runAsyncJobPool(asyncJobs, config, run, notify);
+    };
+
+    return phaseGroups
+      .reduce(
+        (chain, phaseJobs) =>
+          chain.then(() => {
+            if (run.cancelled) {
+              return;
+            }
+            return runPhase(phaseJobs);
+          }),
+        Promise.resolve()
+      )
+      .then(() => {
+        if (activeRun === run) {
+          activeRun = null;
+        }
+      });
+  }
+
+  return {
+    runDeployJobsScheduled,
+    cancelActiveDeployScheduler,
+    dispose: cancelActiveDeployScheduler
+  };
+}
+
+function resolveStore(runtimeScope) {
+  return resolveRuntimeContext(runtimeScope).deployScheduler;
+}
 
 /**
  * @param {object} [sceneConfig]
@@ -289,103 +435,11 @@ export async function runDeployJobs(jobs, hooks = {}) {
  * @param {Array<object>} jobs
  * @param {ReturnType<typeof resolveDeploySchedulerConfig>} config
  * @param {{ onProgress?: (info: { done: number, total: number, phase: number, id?: string }) => void }} [hooks]
+ * @param {*} [runtimeScope]
  * @returns {Promise<void>}
  */
-export function runDeployJobsScheduled(jobs, config, hooks = {}) {
-  cancelActiveDeployScheduler();
-  const sorted = sortDeployJobs(jobs);
-  if (sorted.length === 0) {
-    return Promise.resolve();
-  }
-  const run = {
-    cancelled: false,
-    timers: [],
-    rafId: null,
-    onCancel: null
-  };
-  activeRun = run;
-  const phaseGroups = groupJobsByDeployPhase(sorted);
-  const total = sorted.length;
-  let done = 0;
-  const onProgress = typeof hooks.onProgress === "function" ? hooks.onProgress : null;
-
-  const notify = (job) => {
-    done += 1;
-    if (onProgress) {
-      onProgress({
-        done,
-        total,
-        phase: job?.phase ?? 0,
-        id: job?.id
-      });
-    }
-  };
-
-  const runSyncScheduled = (syncJobs) => {
-    if (!syncJobs.length) {
-      return Promise.resolve();
-    }
-    const wrapped = syncJobs.map((job) => ({
-      ...job,
-      run: async () => {
-        await executeJobWithRetry(job, config, run);
-        notify(job);
-      }
-    }));
-    if (config.policy === "timeslot") {
-      return runTimeslot(wrapped, config, run);
-    }
-    return runFrameBudget(wrapped, config, run);
-  };
-
-  const runPhase = async (phaseJobs) => {
-    if (run.cancelled || phaseJobs.length === 0) {
-      return;
-    }
-    const immediateJobs = [];
-    const scheduledJobs = [];
-    for (let i = 0; i < phaseJobs.length; i++) {
-      const job = phaseJobs[i];
-      if (job.forceImmediate) {
-        immediateJobs.push(job);
-      } else {
-        scheduledJobs.push(job);
-      }
-    }
-    const sortedImmediate = sortDeployJobs(immediateJobs);
-    for (let i = 0; i < sortedImmediate.length; i++) {
-      if (run.cancelled) {
-        return;
-      }
-      const job = sortedImmediate[i];
-      await executeJobWithRetry(job, config, run);
-      notify(job);
-    }
-    const asyncJobs = scheduledJobs.filter((job) => job.kind === "async");
-    const syncJobs = scheduledJobs.filter((job) => job.kind !== "async");
-    await runSyncScheduled(syncJobs);
-    if (run.cancelled) {
-      return;
-    }
-    await runAsyncJobPool(asyncJobs, config, run, notify);
-  };
-
-  return phaseGroups
-    .reduce(
-      (chain, phaseJobs) =>
-        chain.then(() => {
-          if (run.cancelled) {
-            return;
-          }
-          return runPhase(phaseJobs);
-        }),
-      Promise.resolve()
-    )
-    .then(() => {
-      if (activeRun === run) {
-        activeRun = null;
-      }
-    });
+export function runDeployJobsScheduled(jobs, config, hooks = {}, runtimeScope) {
+  return resolveStore(runtimeScope).runDeployJobsScheduled(jobs, config, hooks);
 }
 
 /**
@@ -416,26 +470,10 @@ function groupJobsByDeployPhase(jobs) {
 
 /**
  * Cancel an in-flight scheduled deploy (call when switching scenes).
+ * @param {*} [runtimeScope]
  */
-export function cancelActiveDeployScheduler() {
-  if (!activeRun) {
-    return;
-  }
-  activeRun.cancelled = true;
-  for (let i = 0; i < activeRun.timers.length; i++) {
-    clearTimeout(activeRun.timers[i]);
-  }
-  if (activeRun.rafId != null && typeof cancelAnimationFrame === "function") {
-    cancelAnimationFrame(activeRun.rafId);
-  }
-  if (typeof activeRun.onCancel === "function") {
-    try {
-      activeRun.onCancel();
-    } catch (_err) {
-      /* ignore */
-    }
-  }
-  activeRun = null;
+export function cancelActiveDeployScheduler(runtimeScope) {
+  return resolveStore(runtimeScope).cancelActiveDeployScheduler();
 }
 
 /**

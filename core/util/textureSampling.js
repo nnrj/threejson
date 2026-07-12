@@ -1,7 +1,16 @@
 /**
  * Texture sampling: preset path (A), global fields (G), quality tiers (S), explicit fields (C), opt-out.
+ *
+ * `deployTextureDefaults`/`deploySceneTextureQuality` live inside `createTextureSamplingStore()`
+ * instances, one per RuntimeContext (see core/runtime/runtimeContext.js), so configuring
+ * these for one scene's deploy never bleeds into a concurrently-loading sibling scene.
+ * `configureTextureDefaultsForDeploy` takes an optional trailing `runtimeScope`; the
+ * per-call `resolveTextureProps`/`applyTexturePropsFromRecord` family reads
+ * `context.runtimeScope` (falling back to the shared default store) to resolve the
+ * matching values set there.
  */
 import * as THREE from "three";
+import { resolveRuntimeContext } from "../runtime/runtimeContext.js";
 
 const ANISOTROPY_MIN = 1;
 const ANISOTROPY_MAX = 16;
@@ -86,11 +95,38 @@ const QUALITY_TIER_BUNDLES = {
 	}
 };
 
-/** @type {Record<string, object>|null} */
-let deployTextureDefaults = null;
+export function createTextureSamplingStore() {
+	/** @type {Record<string, object>|null} */
+	let deployTextureDefaults = null;
+	/** @type {number|null} */
+	let deploySceneTextureQuality = null;
 
-/** @type {number|null} */
-let deploySceneTextureQuality = null;
+	function reset() {
+		deployTextureDefaults = null;
+		deploySceneTextureQuality = null;
+	}
+
+	return {
+		get textureDefaults() {
+			return deployTextureDefaults;
+		},
+		set textureDefaults(value) {
+			deployTextureDefaults = value;
+		},
+		get sceneTextureQuality() {
+			return deploySceneTextureQuality;
+		},
+		set sceneTextureQuality(value) {
+			deploySceneTextureQuality = value;
+		},
+		reset,
+		dispose: reset
+	};
+}
+
+function resolveStore(runtimeScope) {
+	return resolveRuntimeContext(runtimeScope).textureSampling;
+}
 
 function hasValue(value) {
 	return value !== undefined && value !== null;
@@ -415,16 +451,17 @@ export function resolveTextureProps(profileName, record, context = {}) {
 		};
 	}
 
+	const store = resolveStore(context.runtimeScope);
 	const sceneTier = context.sceneTextureQuality !== undefined
 		? context.sceneTextureQuality
-		: deploySceneTextureQuality;
+		: store.sceneTextureQuality;
 	const effectiveTier = resolveEffectiveTextureQuality(record, sceneTier);
 
 	const builtin = BUILTIN_PROFILES[resolvedProfile] || BUILTIN_PROFILES.imageMap;
 	let settings = { ...builtin };
 
 	const globalPatch = context.textureDefaults?.[resolvedProfile]
-		?? deployTextureDefaults?.[resolvedProfile];
+		?? store.textureDefaults?.[resolvedProfile];
 	if (globalPatch) {
 		settings = mergeSettingsLayer(settings, normalizeGlobalDefaultsPatch(globalPatch));
 	}
@@ -525,39 +562,40 @@ function applySettingsToTexture(texture, settings, opts = {}) {
 
 /**
  * @param {object|null|undefined} normalized
+ * @param {*} [runtimeScope]
  */
-export function configureTextureDefaultsForDeploy(normalized) {
+export function configureTextureDefaultsForDeploy(normalized, runtimeScope) {
+	const store = resolveStore(runtimeScope);
 	const cfg = normalized?.sceneConfig?.textureDefaults;
-	deploySceneTextureQuality = resolveSceneTextureQuality(normalized);
+	store.sceneTextureQuality = resolveSceneTextureQuality(normalized);
 	if (!cfg || typeof cfg !== "object" || Array.isArray(cfg)) {
-		deployTextureDefaults = null;
+		store.textureDefaults = null;
 		return;
 	}
-	deployTextureDefaults = {};
+	const nextDefaults = {};
 	for (const key of Object.keys(cfg)) {
 		const patch = normalizeGlobalDefaultsPatch(cfg[key]);
 		if (Object.keys(patch).length) {
-			deployTextureDefaults[key] = patch;
+			nextDefaults[key] = patch;
 		}
 	}
-	if (!Object.keys(deployTextureDefaults).length) {
-		deployTextureDefaults = null;
-	}
+	store.textureDefaults = Object.keys(nextDefaults).length ? nextDefaults : null;
 }
 
 /** @internal For tests */
-export function _resetTextureSamplingForDeployForTests() {
-	deployTextureDefaults = null;
-	deploySceneTextureQuality = null;
+export function _resetTextureSamplingForDeployForTests(runtimeScope) {
+	resolveStore(runtimeScope).reset();
 }
 
 /**
+ * @param {*} [runtimeScope]
  * @returns {{ textureDefaults: Record<string, object>|null, sceneTextureQuality: number|null }}
  */
-export function getDeployTextureContext() {
+export function getDeployTextureContext(runtimeScope) {
+	const store = resolveStore(runtimeScope);
 	return {
-		textureDefaults: deployTextureDefaults,
-		sceneTextureQuality: deploySceneTextureQuality
+		textureDefaults: store.textureDefaults,
+		sceneTextureQuality: store.sceneTextureQuality
 	};
 }
 

@@ -154,7 +154,7 @@ export function deployPassRecord(record, ctx, state = {}) {
     log.warn("[pass] no EffectComposer on ctx; pass created but not added:", passId);
   }
 
-  registerDeployedPass(passId, pass, normalized, passType);
+  registerDeployedPass(passId, pass, normalized, passType, ctx?.scene);
   return pass;
 }
 
@@ -164,7 +164,7 @@ export function deployPassRecord(record, ctx, state = {}) {
  * @returns {import("three/examples/jsm/postprocessing/Pass.js").Pass[]}
  */
 export function deployPassRecordsFromObjectList(normalizedPayload, ctx) {
-  clearPassRuntimeRegistry();
+  clearPassRuntimeRegistry(ctx?.scene);
   const records = filterPassRecords(normalizedPayload?.objectList);
   records.sort(comparePassOrder);
 
@@ -189,7 +189,7 @@ export function deployPassRecordsFromObjectList(normalizedPayload, ctx) {
     const outputPass = createOutputPassFromRecord({ passType: "output", id: "__auto_output__" }, ctx);
     if (outputPass) {
       ctx.composer.addPass(outputPass);
-      registerDeployedPass("__auto_output__", outputPass, { passType: "output" }, "output");
+      registerDeployedPass("__auto_output__", outputPass, { passType: "output" }, "output", ctx?.scene);
       deployed.push(outputPass);
     }
   }

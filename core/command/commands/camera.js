@@ -12,7 +12,7 @@ import { buildCommandResult } from "../types.js";
  * @returns {import("three").Object3D | null}
  */
 function findObjectInScene(scene, threeJsonId) {
-  const fromRegistry = getObjectByThreeJsonId(threeJsonId);
+  const fromRegistry = getObjectByThreeJsonId(threeJsonId, scene);
   if (fromRegistry) {
     return fromRegistry;
   }

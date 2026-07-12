@@ -1403,10 +1403,10 @@ function finalizeSingleMaterialPrimitive(primitiveMesh, primitiveObj, materialJs
         if("dynamicBox" === primitiveObj.type){
             primitiveMesh.scale.y = 0;
             primitiveMesh.position.y = 0;
-            createTween(primitiveMesh.scale).to({
+            createTween(primitiveMesh.scale, primitiveMesh).to({
                 y: 1
             }, 1 * 1000).easing(TWEEN.Easing.Linear.None).start();
-            createTween(primitiveMesh.position).to({
+            createTween(primitiveMesh.position, primitiveMesh).to({
                 y: primitiveObj.position?.y ?? 0
             }, 1 * 1000).easing(TWEEN.Easing.Linear.None).start();
         }
@@ -1620,10 +1620,10 @@ function createNormalBox(boxObj, options = {}) {
         if("dynamicBox" === record.type){
             boxMesh.scale.y = 0
             boxMesh.position.y = 0
-            createTween(boxMesh.scale).to({
+            createTween(boxMesh.scale, boxMesh).to({
                 y:  1
             }, 1*1000).easing(TWEEN.Easing.Linear.None).start();
-            createTween(boxMesh.position).to({
+            createTween(boxMesh.position, boxMesh).to({
                 y:  record.position.y
             }, 1*1000).easing(TWEEN.Easing.Linear.None).start();
         }

@@ -25,64 +25,106 @@ import {
 	getActiveEventSceneToken
 } from '../runtime/eventMechanism/bindEventRuntime.js';
 import { wireInfoPanelDismissTriggerForObject } from '../runtime/eventMechanism/wireInfoPanelDismissTriggers.js';
+import { resolveRuntimeContext } from '../runtime/runtimeContext.js';
 
 const DEFAULT_INFO_PANEL_NAME = 'infoPanel';
 const INFO_PANEL_DEFAULT_FOREGROUND = '#E80000';
 
 const DEFAULT_INFO_PANEL_MAX_INFLIGHT_ASYNC = 4;
-let infoPanelMaxInflightAsync = DEFAULT_INFO_PANEL_MAX_INFLIGHT_ASYNC;
-let htmlTextureInflight = 0;
-const htmlTextureWaitQueue = [];
+
+/**
+ * html2canvas concurrency limiter state, per RuntimeContext (see core/runtime/runtimeContext.js),
+ * so one scene's html info-panel burst doesn't throttle a concurrently-loading sibling
+ * scene's (and vice versa). `configureInfoPanelForDeploy` takes an optional trailing
+ * `runtimeScope`; omitting it preserves today's shared-global behavior.
+ */
+export function createInfoPanelDeployStore() {
+	let maxInflightAsync = DEFAULT_INFO_PANEL_MAX_INFLIGHT_ASYNC;
+	let inflight = 0;
+	const waitQueue = [];
+
+	function reset() {
+		maxInflightAsync = DEFAULT_INFO_PANEL_MAX_INFLIGHT_ASYNC;
+	}
+
+	return {
+		get maxInflightAsync() {
+			return maxInflightAsync;
+		},
+		set maxInflightAsync(value) {
+			maxInflightAsync = value;
+		},
+		get inflight() {
+			return inflight;
+		},
+		set inflight(value) {
+			inflight = value;
+		},
+		waitQueue,
+		reset,
+		dispose: reset
+	};
+}
+
+function resolveInfoPanelStore(runtimeScope) {
+	return resolveRuntimeContext(runtimeScope).infoPanelDeploy;
+}
 
 /**
  * Read html info panel html2canvas concurrency cap from sceneConfig.infoPanel (createJsonScene / deployJsonScene path).
  * @param {object|null|undefined} normalized
+ * @param {*} [runtimeScope]
  */
-export function configureInfoPanelForDeploy(normalized) {
+export function configureInfoPanelForDeploy(normalized, runtimeScope) {
 	const infoPanelRoot =
 		normalized?.sceneConfig?.infoPanel && typeof normalized.sceneConfig.infoPanel === "object"
 			? normalized.sceneConfig.infoPanel
 			: null;
 	const raw = infoPanelRoot?.maxInFlightAsync;
-	infoPanelMaxInflightAsync = Number.isFinite(Number(raw))
+	resolveInfoPanelStore(runtimeScope).maxInflightAsync = Number.isFinite(Number(raw))
 		? Math.max(1, Math.floor(Number(raw)))
 		: DEFAULT_INFO_PANEL_MAX_INFLIGHT_ASYNC;
 }
 
-/** @returns {number} */
-export function getInfoPanelMaxInFlightAsync() {
-	return infoPanelMaxInflightAsync;
+/**
+ * @param {*} [runtimeScope]
+ * @returns {number}
+ */
+export function getInfoPanelMaxInFlightAsync(runtimeScope) {
+	return resolveInfoPanelStore(runtimeScope).maxInflightAsync;
 }
 
 /** @internal */
-export function _resetInfoPanelDeployConfigForTests() {
-	infoPanelMaxInflightAsync = DEFAULT_INFO_PANEL_MAX_INFLIGHT_ASYNC;
+export function _resetInfoPanelDeployConfigForTests(runtimeScope) {
+	resolveInfoPanelStore(runtimeScope).reset();
 }
 
 /**
  * Limit parallel html2canvas count to avoid GPU memory spikes causing WebGL context lost.
  * @param {() => Promise<THREE.Texture>} task
+ * @param {*} [runtimeScope]
  * @returns {Promise<THREE.Texture>}
  */
-function runHtmlTextureJob(task) {
+function runHtmlTextureJob(task, runtimeScope) {
+	const store = resolveInfoPanelStore(runtimeScope);
 	return new Promise((resolve, reject) => {
 		const execute = () => {
-			htmlTextureInflight += 1;
+			store.inflight += 1;
 			Promise.resolve()
 				.then(task)
 				.then(resolve, reject)
 				.finally(() => {
-					htmlTextureInflight -= 1;
-					const next = htmlTextureWaitQueue.shift();
+					store.inflight -= 1;
+					const next = store.waitQueue.shift();
 					if (next) {
 						next();
 					}
 				});
 		};
-		if (htmlTextureInflight < infoPanelMaxInflightAsync) {
+		if (store.inflight < store.maxInflightAsync) {
 			execute();
 		} else {
-			htmlTextureWaitQueue.push(execute);
+			store.waitQueue.push(execute);
 		}
 	});
 }
@@ -781,11 +823,12 @@ async function deployInfoPanel(scene, infoPanel, options = {}) {
 		parent.add(object3D);
 	}
 	registerObject(object3D, descriptor, { recursive: false });
-	const manager = getActiveEventListenerManager();
+	const manager = getActiveEventListenerManager(scene);
 	if (manager) {
 		wireInfoPanelDismissTriggerForObject(object3D, {
 			manager,
-			sceneToken: getActiveEventSceneToken() ?? ""
+			sceneToken: getActiveEventSceneToken(scene) ?? "",
+			runtimeScope: scene
 		});
 	}
 	return object3D;

@@ -38,7 +38,6 @@
   "viewJson": "View JSON",
   "viewJsonN": "View JSON {n}",
   "dataFile": "Data file: ",
-  "frameworkTitle": "About Vue / React samples",
-  "frameworkNote": "Install dependencies and start the dev server in each subfolder from a terminal; the central iframe cannot embed standalone Vite apps.",
+  "pageHintTitle": "Usage tips",
   "labExtTitle": "Requires extension, WASM, or network"
 }

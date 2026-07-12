@@ -10,8 +10,8 @@ import {
 } from "./infoPanelDismissTrigger.js";
 import { buildBindingMetadataFromObject } from "./bindingDescriptor.js";
 
-function hasDismissBinding(threeJsonId, eventName, sceneToken) {
-	const bindings = getBindings(threeJsonId, eventName);
+function hasDismissBinding(threeJsonId, eventName, sceneToken, runtimeScope) {
+	const bindings = getBindings(threeJsonId, eventName, runtimeScope);
 	return bindings.some((binding) => {
 		const payload = binding?.payload;
 		return payload && typeof payload === "object" &&
@@ -24,9 +24,10 @@ function hasDismissBinding(threeJsonId, eventName, sceneToken) {
  * @param {string} threeJsonId
  * @param {string} sceneToken
  * @param {object|null|undefined} manager
+ * @param {*} [runtimeScope]
  */
-function removeDismissBindingsForPanel(threeJsonId, sceneToken, manager) {
-	const bindings = getBindings(threeJsonId);
+function removeDismissBindingsForPanel(threeJsonId, sceneToken, manager, runtimeScope) {
+	const bindings = getBindings(threeJsonId, undefined, runtimeScope);
 	const removedEvents = new Set();
 	for (let i = 0; i < bindings.length; i++) {
 		const binding = bindings[i];
@@ -36,7 +37,7 @@ function removeDismissBindingsForPanel(threeJsonId, sceneToken, manager) {
 		if (sceneToken && binding.sceneToken !== sceneToken) {
 			continue;
 		}
-		const removed = removeBinding(binding.id);
+		const removed = removeBinding(binding.id, runtimeScope);
 		if (removed) {
 			removedEvents.add(removed.eventName);
 		}
@@ -46,7 +47,7 @@ function removeDismissBindingsForPanel(threeJsonId, sceneToken, manager) {
 	}
 }
 
-export function bindDismissTriggerForPanel(object3D, manager, sceneToken) {
+export function bindDismissTriggerForPanel(object3D, manager, sceneToken, runtimeScope) {
   const metadata = buildBindingMetadataFromObject(object3D);
   if (!metadata || metadata.objType !== "infopanel") {
     return [];
@@ -59,7 +60,8 @@ export function bindDismissTriggerForPanel(object3D, manager, sceneToken) {
   if (!eventName) {
     return [];
   }
-  if (hasDismissBinding(metadata.threeJsonId, eventName, sceneToken)) {
+  const scope = runtimeScope ?? object3D;
+  if (hasDismissBinding(metadata.threeJsonId, eventName, sceneToken, scope)) {
     return [];
   }
 
@@ -84,7 +86,7 @@ export function bindDismissTriggerForPanel(object3D, manager, sceneToken) {
       }
     },
     sceneToken
-  });
+  }, scope);
   if (!entry) {
     return [];
   }
@@ -97,19 +99,21 @@ export function bindDismissTriggerForPanel(object3D, manager, sceneToken) {
  * @param {object} options
  * @param {object} options.manager
  * @param {string} [options.sceneToken]
+ * @param {*} [options.runtimeScope]
  * @returns {string[]}
  */
 export function wireInfoPanelDismissTriggerForObject(object3D, options = {}) {
   const manager = options.manager ?? null;
   const sceneToken = typeof options.sceneToken === "string" ? options.sceneToken.trim() : "";
+  const scope = options.runtimeScope ?? object3D;
   if (!object3D || !manager) {
     return [];
   }
   const metadata = buildBindingMetadataFromObject(object3D);
   if (metadata?.threeJsonId) {
-    removeDismissBindingsForPanel(metadata.threeJsonId, sceneToken, manager);
+    removeDismissBindingsForPanel(metadata.threeJsonId, sceneToken, manager, scope);
   }
-  return bindDismissTriggerForPanel(object3D, manager, sceneToken);
+  return bindDismissTriggerForPanel(object3D, manager, sceneToken, scope);
 }
 
 /**
@@ -117,11 +121,13 @@ export function wireInfoPanelDismissTriggerForObject(object3D, options = {}) {
  * @param {object} options
  * @param {object} options.manager
  * @param {string} [options.sceneToken]
+ * @param {*} [options.runtimeScope]
  * @returns {Promise<string[]>}
  */
 export async function wireInfoPanelDismissTriggers(scene, options = {}) {
   const manager = options.manager ?? null;
   const sceneToken = typeof options.sceneToken === "string" ? options.sceneToken.trim() : "";
+  const scope = options.runtimeScope ?? scene;
   if (!scene || typeof scene.traverse !== "function" || !manager) {
     return [];
   }
@@ -145,7 +151,7 @@ export async function wireInfoPanelDismissTriggers(scene, options = {}) {
       needsEscapeDismiss = true;
       return;
     }
-    bindingIds.push(...bindDismissTriggerForPanel(object, manager, sceneToken));
+    bindingIds.push(...bindDismissTriggerForPanel(object, manager, sceneToken, scope));
   });
 
   if (needsEscapeDismiss) {

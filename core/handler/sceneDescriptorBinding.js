@@ -17,15 +17,38 @@ import {
   getObjectByThreeJsonId,
   unregisterObject
 } from "./objectRegistry.js";
+import { resolveRuntimeContext } from "../runtime/runtimeContext.js";
 
 /** @type {WeakMap<import("three").Object3D, { ldh: string; loh: string }>} */
 const transformSyncMeta = new WeakMap();
 
-/** @type {Set<string>} */
-const jsonDirtyIds = new Set();
+/**
+ * jsonDirtyIds/rebuildTimers are per RuntimeContext (see core/runtime/runtimeContext.js)
+ * so two scenes editing objects that share a threeJsonId (this experimental,
+ * off-by-default feature is keyed by author id) don't cross-cancel each other's
+ * pending rebuilds/dirty flags. Resolution is automatic via `scene`, which every
+ * entry point here already receives.
+ */
+export function createDescriptorBindingStore() {
+  /** @type {Set<string>} */
+  const jsonDirtyIds = new Set();
+  /** @type {Map<string, ReturnType<typeof setTimeout>>} */
+  const rebuildTimers = new Map();
 
-/** @type {Map<string, ReturnType<typeof setTimeout>>} */
-const rebuildTimers = new Map();
+  function dispose() {
+    for (const t of rebuildTimers.values()) {
+      clearTimeout(t);
+    }
+    rebuildTimers.clear();
+    jsonDirtyIds.clear();
+  }
+
+  return { jsonDirtyIds, rebuildTimers, dispose };
+}
+
+function resolveStore(runtimeScope) {
+  return resolveRuntimeContext(runtimeScope).descriptorBinding;
+}
 
 function normalizeText(value) {
   return typeof value === "string" ? value.trim() : "";
@@ -223,13 +246,13 @@ function disposeSubtreeGeometries(root) {
 export function redeployObject(scene, descriptorOrThreeJsonId) {
   const descriptor =
     typeof descriptorOrThreeJsonId === "string"
-      ? linkedDescriptorFromUserData(getObjectByThreeJsonId(normalizeText(descriptorOrThreeJsonId)))
+      ? linkedDescriptorFromUserData(getObjectByThreeJsonId(normalizeText(descriptorOrThreeJsonId), scene))
       : descriptorOrThreeJsonId;
   if (!scene || !descriptor || typeof descriptor !== "object") {
     return null;
   }
   const id = normalizeText(descriptor.threeJsonId);
-  const prev = id ? getObjectByThreeJsonId(id) : null;
+  const prev = id ? getObjectByThreeJsonId(id, scene) : null;
   const attachParent = prev?.parent || scene;
   if (prev && prev.parent) {
     prev.parent.remove(prev);
@@ -247,7 +270,7 @@ export function redeployObject(scene, descriptorOrThreeJsonId) {
     return group;
   }
   deployMesh(descriptor, attachParent);
-  return id ? getObjectByThreeJsonId(id) : null;
+  return id ? getObjectByThreeJsonId(id, scene) : null;
 }
 
 /**
@@ -263,7 +286,7 @@ export function scheduleDescriptorBindingRebuild(scene, descriptorOrThreeJsonId,
 
   let descriptor =
     typeof descriptorOrThreeJsonId === "string"
-      ? linkedDescriptorFromUserData(getObjectByThreeJsonId(normalizeText(descriptorOrThreeJsonId)))
+      ? linkedDescriptorFromUserData(getObjectByThreeJsonId(normalizeText(descriptorOrThreeJsonId), scene))
       : descriptorOrThreeJsonId;
   if (typeof descriptorOrThreeJsonId === "string" && !descriptor) {
     return;
@@ -271,6 +294,7 @@ export function scheduleDescriptorBindingRebuild(scene, descriptorOrThreeJsonId,
   if (!descriptor || typeof descriptor !== "object") {
     return;
   }
+  const { rebuildTimers } = resolveStore(scene);
   const id = normalizeText(descriptor.threeJsonId) || JSON.stringify(descriptor).slice(0, 80);
   const prevTimer = rebuildTimers.get(id);
   if (prevTimer) {
@@ -292,14 +316,15 @@ export function scheduleDescriptorBindingRebuild(scene, descriptorOrThreeJsonId,
 /**
  * Mark that a descriptor's transforms should be pushed from JSON to the object (handled next frame by the binding loop).
  * @param {object|string} descriptorOrThreeJsonId
+ * @param {*} [runtimeScope] Scene/Object3D/RuntimeContext to scope this to; omit for the shared default (single-scene behavior).
  */
-export function markDescriptorBindingJsonDirty(descriptorOrThreeJsonId) {
+export function markDescriptorBindingJsonDirty(descriptorOrThreeJsonId, runtimeScope) {
   const id =
     typeof descriptorOrThreeJsonId === "string"
       ? normalizeText(descriptorOrThreeJsonId)
       : normalizeText(descriptorOrThreeJsonId?.threeJsonId);
   if (id) {
-    jsonDirtyIds.add(id);
+    resolveStore(runtimeScope).jsonDirtyIds.add(id);
   }
 }
 
@@ -309,7 +334,7 @@ export function markDescriptorBindingJsonDirty(descriptorOrThreeJsonId) {
  * @param {object} descriptor
  * @param {ReturnType<typeof normalizeBindingConfig>} cfg
  */
-function syncTransformsForObject(object3D, descriptor, cfg) {
+function syncTransformsForObject(object3D, descriptor, cfg, jsonDirtyIds) {
   const id = normalizeText(descriptor?.threeJsonId);
   if (id && jsonDirtyIds.has(id)) {
     applyBoxModelTransformToObject3D(object3D);
@@ -374,6 +399,7 @@ function tickBinding(scene, cfg) {
   if (!scene || typeof scene.traverse !== "function") {
     return;
   }
+  const { jsonDirtyIds } = resolveStore(scene);
   scene.traverse((obj) => {
     if (!obj || obj === scene) {
       return;
@@ -385,7 +411,7 @@ function tickBinding(scene, cfg) {
     if (!isDescriptorBindingEnabled(descriptor, obj, cfg)) {
       return;
     }
-    syncTransformsForObject(obj, descriptor, cfg);
+    syncTransformsForObject(obj, descriptor, cfg, jsonDirtyIds);
   });
 }
 

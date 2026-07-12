@@ -51,9 +51,10 @@ import { executeActionBinding } from "./coreActions/index.js";
  * @param {import("./eventBindingRegistry.js").EventBindingEntry} binding
  * @param {EventDispatchContext} ctx
  * @param {CoreBindingExecutor|undefined} coreBindingExecutor
+ * @param {*} [runtimeScope]
  */
-async function executeDomainBinding(binding, ctx, coreBindingExecutor) {
-  const object = ctx.object ?? getObjectByThreeJsonId(binding.threeJsonId);
+async function executeDomainBinding(binding, ctx, coreBindingExecutor, runtimeScope) {
+  const object = ctx.object ?? getObjectByThreeJsonId(binding.threeJsonId, runtimeScope);
   const dispatchCtx = {
     ...ctx,
     object,
@@ -72,9 +73,10 @@ async function executeDomainBinding(binding, ctx, coreBindingExecutor) {
  * @param {import("./eventBindingRegistry.js").EventBindingEntry} binding
  * @param {EventDispatchContext} ctx
  * @param {CoreBindingExecutor|undefined} coreBindingExecutor
+ * @param {*} [runtimeScope]
  */
-async function executeHandlerBinding(binding, ctx, coreBindingExecutor) {
-  const object = ctx.object ?? getObjectByThreeJsonId(binding.threeJsonId);
+async function executeHandlerBinding(binding, ctx, coreBindingExecutor, runtimeScope) {
+  const object = ctx.object ?? getObjectByThreeJsonId(binding.threeJsonId, runtimeScope);
   const dispatchCtx = {
     ...ctx,
     object,
@@ -140,6 +142,7 @@ export function createEventListenerManager(options = {}) {
   const host = options.host ?? {};
   const coreBindingExecutor = options.coreBindingExecutor;
   const logPrefix = options.logPrefix ?? "[eventMechanism]";
+  const runtimeScope = options.runtimeScope;
 
   /** @type {Map<string, number>} */
   const activationRefcount = new Map();
@@ -263,7 +266,7 @@ export function createEventListenerManager(options = {}) {
   function resolveDispatchObject(id, ctx = {}) {
     const trimmedId = typeof id === "string" ? id.trim() : "";
     if (trimmedId) {
-      const registered = getObjectByThreeJsonId(trimmedId);
+      const registered = getObjectByThreeJsonId(trimmedId, runtimeScope);
       if (registered) {
         return registered;
       }
@@ -321,7 +324,7 @@ export function createEventListenerManager(options = {}) {
     if (!id || !isPlatformEventName(key)) {
       return false;
     }
-    const bindings = getBindings(id, key);
+    const bindings = getBindings(id, key, runtimeScope);
     if (bindings.length === 0) {
       return false;
     }
@@ -329,7 +332,7 @@ export function createEventListenerManager(options = {}) {
     const dispatchBase = { ...ctx, object, threeJsonId: id, eventName: key };
     const { domainBindings, actionBindings, scriptBindings, handlerBindings } = partitionBindingsForExecution(bindings);
     for (let i = 0; i < domainBindings.length; i++) {
-      await executeDomainBinding(domainBindings[i], dispatchBase, coreBindingExecutor);
+      await executeDomainBinding(domainBindings[i], dispatchBase, coreBindingExecutor, runtimeScope);
     }
     for (let i = 0; i < actionBindings.length; i++) {
       await executeActionBinding(actionBindings[i], dispatchBase);
@@ -338,7 +341,7 @@ export function createEventListenerManager(options = {}) {
       await executeScriptBinding(scriptBindings[i], dispatchBase, coreBindingExecutor);
     }
     for (let i = 0; i < handlerBindings.length; i++) {
-      await executeHandlerBinding(handlerBindings[i], dispatchBase, coreBindingExecutor);
+      await executeHandlerBinding(handlerBindings[i], dispatchBase, coreBindingExecutor, runtimeScope);
     }
     return true;
   }
@@ -376,7 +379,7 @@ export function createEventListenerManager(options = {}) {
       if (threeJsonId) {
         return dispatchBindingsForTarget(threeJsonId, key, ctx);
       }
-      const ids = getThreeJsonIdsWithBindingsForEvent(key);
+      const ids = getThreeJsonIdsWithBindingsForEvent(key, runtimeScope);
       let handled = false;
       for (let i = 0; i < ids.length; i++) {
         const didHandle = await dispatchBindingsForTarget(ids[i], key, ctx);

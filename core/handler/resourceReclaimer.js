@@ -76,9 +76,23 @@ function trackSceneResources(scene) {
   return scene;
 }
 
+/**
+ * Dispose only the Object3D subtree of `scene` (each node's own geometry/materials via
+ * disposeObjectTree), not the entire shared tracked-resource bucket — the bucket may also
+ * hold a concurrently-mounted sibling scene's resources (loaders, raw geometries/materials
+ * not yet attached to an Object3D), which must survive this call.
+ * @param {import("three").Scene|null|undefined} scene
+ */
 function disposeTrackedSceneResources(scene) {
-  trackSceneResources(scene);
-  disposeTrackedResources();
+  if (!scene || typeof scene.traverse !== "function") {
+    return;
+  }
+  const state = { visited: new Set() };
+  const children = Array.isArray(scene.children) ? [...scene.children] : [];
+  for (let i = 0; i < children.length; i += 1) {
+    disposeTrackedOne(children[i], state);
+    untrackDisposableResource(children[i]);
+  }
 }
 
 function mapCoreDeleteResult(core) {
@@ -125,14 +139,14 @@ function disposeSceneContent(scene, options = {}) {
     : DEFAULT_CONTENT_SYSTEM_TAGS;
   const seen = new Set();
   for (let ti = 0; ti < tags.length; ti += 1) {
-    const ids = getThreeJsonIdsInSystemBucket(tags[ti]);
+    const ids = getThreeJsonIdsInSystemBucket(tags[ti], scene);
     for (let i = 0; i < ids.length; i += 1) {
       const id = ids[i];
       if (seen.has(id)) {
         continue;
       }
       seen.add(id);
-      const object3D = getObjectByThreeJsonId(id);
+      const object3D = getObjectByThreeJsonId(id, scene);
       if (object3D) {
         disposeObjectTree(object3D);
       }

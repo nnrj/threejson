@@ -103,11 +103,11 @@ function updateSceneAnimations(scene, deltaSeconds, options = {}){
 		updateObjectAnimations(currObj, safeDeltaSeconds);
 	});
 	const animCtx = { scene, deltaSeconds: safeDeltaSeconds };
-	updatePointsMotion(safeDeltaSeconds);
-	updateParticleGpuCompute(safeDeltaSeconds);
-	updatePlaneScrollMotion(safeDeltaSeconds);
+	updatePointsMotion(safeDeltaSeconds, scene);
+	updateParticleGpuCompute(safeDeltaSeconds, scene);
+	updatePlaneScrollMotion(safeDeltaSeconds, scene);
 	updateShaderMotion(safeDeltaSeconds, animCtx);
-	updateEngineTweens();
+	updateEngineTweens(undefined, scene);
 }
 
 /**

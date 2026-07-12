@@ -1,12 +1,12 @@
 /**
  * objType → threeJsonId index.
  * Synced by objectRegistry on register/unregister.
+ *
+ * State lives inside `createObjTypeIndexStore()` instances, one per RuntimeContext
+ * (see core/runtime/runtimeContext.js). Named exports are thin wrappers taking an
+ * optional trailing `runtimeScope`; omitting it preserves today's shared-global behavior.
  */
-
-/** @type {Map<string, Set<string>>} objType key -> Set<threeJsonId> */
-const byObjType = new Map();
-/** @type {Map<string, Set<string>>} threeJsonId -> objType keys */
-const objTypeKeysByThreeJsonId = new Map();
+import { resolveRuntimeContext } from "../runtime/runtimeContext.js";
 
 function hasText(value) {
   return typeof value === "string" && value.trim().length > 0;
@@ -62,63 +62,87 @@ export function extractObjTypeIndexKeys(record) {
   return keys;
 }
 
-/**
- * @param {string} threeJsonId
- * @param {object|null|undefined} record
- */
-export function syncObjTypeIndexesForRecord(threeJsonId, record) {
-  const id = normalizeThreeJsonId(threeJsonId);
-  if (!id) {
-    return;
-  }
-  clearObjTypeIndexesForThreeJsonId(id);
-  const keys = extractObjTypeIndexKeys(record);
-  if (keys.length === 0) {
-    return;
-  }
-  let keySet = objTypeKeysByThreeJsonId.get(id);
-  if (!keySet) {
-    keySet = new Set();
-    objTypeKeysByThreeJsonId.set(id, keySet);
-  }
-  for (let i = 0; i < keys.length; i++) {
-    const key = keys[i];
-    keySet.add(key);
-    addToIdSetIndex(byObjType, key, id);
-  }
-}
+export function createObjTypeIndexStore() {
+  /** @type {Map<string, Set<string>>} objType key -> Set<threeJsonId> */
+  const byObjType = new Map();
+  /** @type {Map<string, Set<string>>} threeJsonId -> objType keys */
+  const objTypeKeysByThreeJsonId = new Map();
 
-/**
- * @param {string} threeJsonId
- */
-export function clearObjTypeIndexesForThreeJsonId(threeJsonId) {
-  const id = normalizeThreeJsonId(threeJsonId);
-  if (!id) {
-    return;
-  }
-  const keys = objTypeKeysByThreeJsonId.get(id);
-  if (keys) {
-    for (const key of keys) {
-      removeFromIdSetIndex(byObjType, key, id);
+  function syncObjTypeIndexesForRecord(threeJsonId, record) {
+    const id = normalizeThreeJsonId(threeJsonId);
+    if (!id) {
+      return;
     }
-    objTypeKeysByThreeJsonId.delete(id);
+    clearObjTypeIndexesForThreeJsonId(id);
+    const keys = extractObjTypeIndexKeys(record);
+    if (keys.length === 0) {
+      return;
+    }
+    let keySet = objTypeKeysByThreeJsonId.get(id);
+    if (!keySet) {
+      keySet = new Set();
+      objTypeKeysByThreeJsonId.set(id, keySet);
+    }
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i];
+      keySet.add(key);
+      addToIdSetIndex(byObjType, key, id);
+    }
   }
+
+  function clearObjTypeIndexesForThreeJsonId(threeJsonId) {
+    const id = normalizeThreeJsonId(threeJsonId);
+    if (!id) {
+      return;
+    }
+    const keys = objTypeKeysByThreeJsonId.get(id);
+    if (keys) {
+      for (const key of keys) {
+        removeFromIdSetIndex(byObjType, key, id);
+      }
+      objTypeKeysByThreeJsonId.delete(id);
+    }
+  }
+
+  function clearAllObjTypeIndexes() {
+    byObjType.clear();
+    objTypeKeysByThreeJsonId.clear();
+  }
+
+  function getThreeJsonIdsByObjType(objType) {
+    const key = normalizeObjTypeKey(objType);
+    if (!key) {
+      return [];
+    }
+    const bucket = byObjType.get(key);
+    return bucket ? Array.from(bucket) : [];
+  }
+
+  return {
+    syncObjTypeIndexesForRecord,
+    clearObjTypeIndexesForThreeJsonId,
+    clearAllObjTypeIndexes,
+    getThreeJsonIdsByObjType,
+    dispose: clearAllObjTypeIndexes
+  };
 }
 
-export function clearAllObjTypeIndexes() {
-  byObjType.clear();
-  objTypeKeysByThreeJsonId.clear();
+function resolveStore(runtimeScope) {
+  return resolveRuntimeContext(runtimeScope).objTypeIndex;
 }
 
-/**
- * @param {string} objType
- * @returns {string[]}
- */
-export function getThreeJsonIdsByObjType(objType) {
-  const key = normalizeObjTypeKey(objType);
-  if (!key) {
-    return [];
-  }
-  const bucket = byObjType.get(key);
-  return bucket ? Array.from(bucket) : [];
+export function syncObjTypeIndexesForRecord(threeJsonId, record, runtimeScope) {
+  return resolveStore(runtimeScope).syncObjTypeIndexesForRecord(threeJsonId, record);
+}
+
+export function clearObjTypeIndexesForThreeJsonId(threeJsonId, runtimeScope) {
+  return resolveStore(runtimeScope).clearObjTypeIndexesForThreeJsonId(threeJsonId);
+}
+
+export function clearAllObjTypeIndexes(runtimeScope) {
+  return resolveStore(runtimeScope).clearAllObjTypeIndexes();
+}
+
+export function getThreeJsonIdsByObjType(objType, runtimeScope) {
+  return resolveStore(runtimeScope).getThreeJsonIdsByObjType(objType);
 }

@@ -120,7 +120,7 @@ export async function bindSceneEventRuntime(scene, ctx = {}) {
 
   const replaceExisting = ctx.replaceExisting !== false;
   if (replaceExisting) {
-    clearBindingsForScene(sceneToken);
+    clearBindingsForScene(sceneToken, scene);
   }
 
   const sceneConfig =
@@ -132,18 +132,24 @@ export async function bindSceneEventRuntime(scene, ctx = {}) {
       mutationOptions: ctx.mutationOptions
     });
 
+  // Resolve/create a manager scoped to THIS scene's own RuntimeContext, never a
+  // sibling scene's — otherwise a second concurrently-mounted scene would either
+  // silently discard its own event host or tear down the first scene's manager
+  // on dispose (the confirmed multi-canvas event-mechanism bug).
   const manager =
     ctx.manager ??
-    getActiveEventListenerManager() ??
+    getActiveEventListenerManager(scene) ??
     createEventListenerManager({
       host: ctx.host,
-      coreBindingExecutor
+      coreBindingExecutor,
+      runtimeScope: scene
     });
-  attachEventListenerManager(manager, sceneToken);
+  attachEventListenerManager(manager, sceneToken, scene);
 
   const bindOptions = {
     manager,
     sceneToken,
+    runtimeScope: scene,
     sceneJsonRoot: ctx.sceneJsonRoot ?? ctx.jsonData,
     assetLibrary: ctx.assetLibrary ?? ctx.sceneJsonRoot?.assetLibrary ?? ctx.jsonData?.assetLibrary,
     records: listRecords(ctx)
@@ -153,7 +159,8 @@ export async function bindSceneEventRuntime(scene, ctx = {}) {
   const jsonBindingIds = await bindEventsFromScene(scene, bindOptions);
   const dismissBindingIds = await wireInfoPanelDismissTriggers(scene, {
     manager,
-    sceneToken
+    sceneToken,
+    runtimeScope: scene
   });
   await invokeAllDomainBindSceneEvents(scene, {
     ...ctx,
@@ -167,7 +174,7 @@ export async function bindSceneEventRuntime(scene, ctx = {}) {
 
   const bindingIds = [...runtimeBindingIds, ...jsonBindingIds, ...dismissBindingIds, ...domainBindingIds];
 
-  if (getThreeJsonIdsWithBindingsForEvent("scene.ready").length > 0) {
+  if (getThreeJsonIdsWithBindingsForEvent("scene.ready", scene).length > 0) {
     await manager.dispatchPlatformEvent(null, "scene.ready", {
       scene,
       sceneToken,
@@ -197,10 +204,10 @@ export async function bindSceneEventRuntime(scene, ctx = {}) {
     manager,
     bindingIds,
     async rebind() {
-      clearBindingsForScene(sceneToken);
+      clearBindingsForScene(sceneToken, scene);
       const runtimeIds = await bindRuntimeObjectEvents({ ...ctx, scene }, bindOptions);
       const ids = await bindEventsFromScene(scene, bindOptions);
-      const dismissIds = await wireInfoPanelDismissTriggers(scene, { manager, sceneToken });
+      const dismissIds = await wireInfoPanelDismissTriggers(scene, { manager, sceneToken, runtimeScope: scene });
       await invokeAllDomainBindSceneEvents(scene, {
         ...ctx,
         records: bindOptions.records ?? bindOptions.sceneJsonRoot?.objectList,
@@ -211,9 +218,9 @@ export async function bindSceneEventRuntime(scene, ctx = {}) {
       return handle.bindingIds;
     },
     async dispose() {
-      clearBindingsForScene(sceneToken);
-      if (getActiveEventListenerManager() === manager) {
-        detachEventListenerManager();
+      clearBindingsForScene(sceneToken, scene);
+      if (getActiveEventListenerManager(scene) === manager) {
+        detachEventListenerManager(scene);
       } else {
         manager.dispose();
       }

@@ -1,6 +1,5 @@
 import {
   buildAdaptiveContentBoundingBoxTHREE,
-  cancelActiveDeployScheduler,
   configureLogger,
   createJsonScene,
   createJsonSceneFromArchive,
@@ -602,7 +601,6 @@ export async function bootstrapSceneHostEditor() {
 
   function teardownGraphics() {
     renderLoop?.stop?.();
-    cancelActiveDeployScheduler();
     editorInteraction?.dispose();
     gridHelper?.dispose?.();
     try {

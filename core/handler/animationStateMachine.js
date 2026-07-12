@@ -1,5 +1,12 @@
 /**
  * glTF AnimationMixer state machine: enabled only when the record includes animationGraph.
+ *
+ * Registered machines live inside `createAnimationStateMachineStore()` instances, one
+ * per RuntimeContext (see core/runtime/runtimeContext.js), so each canvas's render loop
+ * only advances its own state machines. Functions that receive a root/target Object3D
+ * auto-resolve their scope from it (walks up to the attached scene); `updateAnimationStateMachines`
+ * takes an explicit trailing `runtimeScope` (the scene). Omitting either preserves
+ * today's shared-global behavior.
  */
 import * as THREE from "three";
 import { log } from "../util/logger.js";
@@ -9,20 +16,18 @@ import {
   pickAnimationTransition,
   resolveAnimationGraph
 } from "./animationGraphUtil.js";
-
-/** @type {Map<string, object>} */
-const machinesByRootUuid = new Map();
+import { resolveRuntimeContext } from "../runtime/runtimeContext.js";
 
 /**
  * @param {import("three").Object3D|import("three").AnimationMixer|string|null|undefined} target
  * @returns {import("three").Object3D|null}
  */
-function resolveAnimationRoot(target) {
+function resolveAnimationRoot(target, runtimeScope) {
   if (!target) {
     return null;
   }
   if (typeof target === "string") {
-    const byId = getObjectByThreeJsonId(target.trim());
+    const byId = getObjectByThreeJsonId(target.trim(), runtimeScope);
     if (byId) {
       return byId;
     }
@@ -36,23 +41,6 @@ function resolveAnimationRoot(target) {
     return root?.isObject3D ? root : null;
   }
   return null;
-}
-
-/**
- * @param {import("three").Object3D} root
- * @returns {object|null}
- */
-export function getAnimationStateMachine(root) {
-  const resolved = resolveAnimationRoot(root);
-  return resolved ? machinesByRootUuid.get(resolved.uuid) ?? null : null;
-}
-
-/**
- * @param {import("three").Object3D} root
- * @returns {boolean}
- */
-export function isAnimationStateMachineRoot(root) {
-  return Boolean(getAnimationStateMachine(root));
 }
 
 /**
@@ -176,98 +164,197 @@ function collectClipFinishedEvents(machine) {
   }
 }
 
+export function createAnimationStateMachineStore(deps = {}) {
+  const ownerRuntimeContext = deps.ownerRuntimeContext ?? null;
+  /** @type {Map<string, object>} */
+  const machinesByRootUuid = new Map();
+
+  function getAnimationStateMachine(root) {
+    const resolved = resolveAnimationRoot(root, ownerRuntimeContext);
+    return resolved ? machinesByRootUuid.get(resolved.uuid) ?? null : null;
+  }
+
+  function isAnimationStateMachineRoot(root) {
+    return Boolean(getAnimationStateMachine(root));
+  }
+
+  function registerAnimationStateMachine(root, gltf, descriptor = null) {
+    const record = descriptor && typeof descriptor === "object" ? descriptor : root?.userData?.objJson;
+    const graph = resolveAnimationGraph(record);
+    if (!root || !gltf || !graph) {
+      return null;
+    }
+
+    unregisterAnimationStateMachine(root);
+
+    const clips = Array.isArray(gltf.animations) ? gltf.animations : [];
+    if (clips.length === 0) {
+      log.warn("[animationGraph] no animation clips on glTF:", record?.name || root.name || "");
+      return null;
+    }
+
+    const mixer = new THREE.AnimationMixer(root);
+    const machine = {
+      root,
+      mixer,
+      graph,
+      clipsByName: indexClipsByName(clips),
+      parameters: buildAnimationParameterDefaults(graph),
+      pendingEvents: new Set(),
+      currentState: "",
+      activeActions: []
+    };
+
+    enterAnimationState(machine, graph.defaultState, 0);
+    machinesByRootUuid.set(root.uuid, machine);
+    return mixer;
+  }
+
+  function unregisterAnimationStateMachine(root) {
+    const resolved = resolveAnimationRoot(root, ownerRuntimeContext);
+    if (!resolved) {
+      return;
+    }
+    const machine = machinesByRootUuid.get(resolved.uuid);
+    if (!machine) {
+      return;
+    }
+    machine.mixer.stopAllAction();
+    machinesByRootUuid.delete(resolved.uuid);
+  }
+
+  function setAnimationParameter(target, name, value) {
+    const root = resolveAnimationRoot(target, ownerRuntimeContext);
+    const machine = root ? machinesByRootUuid.get(root.uuid) : null;
+    const key = typeof name === "string" ? name.trim() : "";
+    if (!machine || !key) {
+      return false;
+    }
+    const spec = machine.graph.parameters?.[key];
+    const type = typeof spec?.type === "string" ? spec.type.trim().toLowerCase() : "float";
+    if (type === "bool" || type === "boolean") {
+      machine.parameters[key] = Boolean(value);
+    } else {
+      const n = Number(value);
+      machine.parameters[key] = Number.isFinite(n) ? n : 0;
+    }
+    return true;
+  }
+
+  function fireAnimationEvent(target, eventName) {
+    const root = resolveAnimationRoot(target, ownerRuntimeContext);
+    const machine = root ? machinesByRootUuid.get(root.uuid) : null;
+    const key = typeof eventName === "string" ? eventName.trim() : "";
+    if (!machine || !key) {
+      return false;
+    }
+    machine.pendingEvents.add(key);
+    return true;
+  }
+
+  function updateAnimationStateMachines(scene, deltaSeconds) {
+    if (!Number.isFinite(deltaSeconds) || deltaSeconds <= 0 || machinesByRootUuid.size === 0) {
+      return;
+    }
+
+    for (const machine of machinesByRootUuid.values()) {
+      if (!machine?.root?.parent) {
+        unregisterAnimationStateMachine(machine.root);
+        continue;
+      }
+
+      collectClipFinishedEvents(machine);
+
+      const picked = pickAnimationTransition(
+        machine.currentState,
+        machine.graph,
+        machine.parameters,
+        machine.pendingEvents
+      );
+      machine.pendingEvents.clear();
+
+      if (picked && picked.to !== machine.currentState) {
+        enterAnimationState(machine, picked.to, picked.crossFade);
+      }
+
+      machine.mixer.update(deltaSeconds);
+    }
+  }
+
+  function clearForTests() {
+    for (const machine of machinesByRootUuid.values()) {
+      machine.mixer?.stopAllAction?.();
+    }
+    machinesByRootUuid.clear();
+  }
+
+  return {
+    getAnimationStateMachine,
+    isAnimationStateMachineRoot,
+    registerAnimationStateMachine,
+    unregisterAnimationStateMachine,
+    setAnimationParameter,
+    fireAnimationEvent,
+    updateAnimationStateMachines,
+    dispose: clearForTests
+  };
+}
+
+function resolveStore(runtimeScope) {
+  return resolveRuntimeContext(runtimeScope).animationStateMachine;
+}
+
+/**
+ * @param {import("three").Object3D} root
+ * @param {*} [runtimeScope]
+ */
+export function getAnimationStateMachine(root, runtimeScope) {
+  return resolveStore(runtimeScope ?? root).getAnimationStateMachine(root);
+}
+
+/**
+ * @param {import("three").Object3D} root
+ * @param {*} [runtimeScope]
+ */
+export function isAnimationStateMachineRoot(root, runtimeScope) {
+  return resolveStore(runtimeScope ?? root).isAnimationStateMachineRoot(root);
+}
+
 /**
  * @param {import("three").Object3D} root
  * @param {{ animations?: THREE.AnimationClip[] }} gltf
  * @param {object} [descriptor]
- * @returns {THREE.AnimationMixer|null}
+ * @param {*} [runtimeScope]
  */
-export function registerAnimationStateMachine(root, gltf, descriptor = null) {
-  const record = descriptor && typeof descriptor === "object" ? descriptor : root?.userData?.objJson;
-  const graph = resolveAnimationGraph(record);
-  if (!root || !gltf || !graph) {
-    return null;
-  }
-
-  unregisterAnimationStateMachine(root);
-
-  const clips = Array.isArray(gltf.animations) ? gltf.animations : [];
-  if (clips.length === 0) {
-    log.warn("[animationGraph] no animation clips on glTF:", record?.name || root.name || "");
-    return null;
-  }
-
-  const mixer = new THREE.AnimationMixer(root);
-  const machine = {
-    root,
-    mixer,
-    graph,
-    clipsByName: indexClipsByName(clips),
-    parameters: buildAnimationParameterDefaults(graph),
-    pendingEvents: new Set(),
-    currentState: "",
-    activeActions: []
-  };
-
-  enterAnimationState(machine, graph.defaultState, 0);
-  machinesByRootUuid.set(root.uuid, machine);
-  return mixer;
+export function registerAnimationStateMachine(root, gltf, descriptor = null, runtimeScope) {
+  return resolveStore(runtimeScope ?? root).registerAnimationStateMachine(root, gltf, descriptor);
 }
 
 /**
  * @param {import("three").Object3D|null|undefined} root
+ * @param {*} [runtimeScope]
  */
-export function unregisterAnimationStateMachine(root) {
-  const resolved = resolveAnimationRoot(root);
-  if (!resolved) {
-    return;
-  }
-  const machine = machinesByRootUuid.get(resolved.uuid);
-  if (!machine) {
-    return;
-  }
-  machine.mixer.stopAllAction();
-  machinesByRootUuid.delete(resolved.uuid);
+export function unregisterAnimationStateMachine(root, runtimeScope) {
+  return resolveStore(runtimeScope ?? root).unregisterAnimationStateMachine(root);
 }
 
 /**
  * @param {import("three").Object3D|import("three").AnimationMixer|string} target
  * @param {string} name
  * @param {boolean|number} value
- * @returns {boolean}
+ * @param {*} [runtimeScope]
  */
-export function setAnimationParameter(target, name, value) {
-  const root = resolveAnimationRoot(target);
-  const machine = root ? machinesByRootUuid.get(root.uuid) : null;
-  const key = typeof name === "string" ? name.trim() : "";
-  if (!machine || !key) {
-    return false;
-  }
-  const spec = machine.graph.parameters?.[key];
-  const type = typeof spec?.type === "string" ? spec.type.trim().toLowerCase() : "float";
-  if (type === "bool" || type === "boolean") {
-    machine.parameters[key] = Boolean(value);
-  } else {
-    const n = Number(value);
-    machine.parameters[key] = Number.isFinite(n) ? n : 0;
-  }
-  return true;
+export function setAnimationParameter(target, name, value, runtimeScope) {
+  return resolveStore(runtimeScope ?? target).setAnimationParameter(target, name, value);
 }
 
 /**
  * @param {import("three").Object3D|import("three").AnimationMixer|string} target
  * @param {string} eventName
- * @returns {boolean}
+ * @param {*} [runtimeScope]
  */
-export function fireAnimationEvent(target, eventName) {
-  const root = resolveAnimationRoot(target);
-  const machine = root ? machinesByRootUuid.get(root.uuid) : null;
-  const key = typeof eventName === "string" ? eventName.trim() : "";
-  if (!machine || !key) {
-    return false;
-  }
-  machine.pendingEvents.add(key);
-  return true;
+export function fireAnimationEvent(target, eventName, runtimeScope) {
+  return resolveStore(runtimeScope ?? target).fireAnimationEvent(target, eventName);
 }
 
 /**
@@ -275,38 +362,10 @@ export function fireAnimationEvent(target, eventName) {
  * @param {number} deltaSeconds
  */
 export function updateAnimationStateMachines(scene, deltaSeconds) {
-  if (!Number.isFinite(deltaSeconds) || deltaSeconds <= 0 || machinesByRootUuid.size === 0) {
-    return;
-  }
-
-  for (const machine of machinesByRootUuid.values()) {
-    if (!machine?.root?.parent) {
-      unregisterAnimationStateMachine(machine.root);
-      continue;
-    }
-
-    collectClipFinishedEvents(machine);
-
-    const picked = pickAnimationTransition(
-      machine.currentState,
-      machine.graph,
-      machine.parameters,
-      machine.pendingEvents
-    );
-    machine.pendingEvents.clear();
-
-    if (picked && picked.to !== machine.currentState) {
-      enterAnimationState(machine, picked.to, picked.crossFade);
-    }
-
-    machine.mixer.update(deltaSeconds);
-  }
+  return resolveStore(scene).updateAnimationStateMachines(scene, deltaSeconds);
 }
 
 /** For unit tests only */
-export function _clearAnimationStateMachinesForTests() {
-  for (const machine of machinesByRootUuid.values()) {
-    machine.mixer?.stopAllAction?.();
-  }
-  machinesByRootUuid.clear();
+export function _clearAnimationStateMachinesForTests(runtimeScope) {
+  resolveStore(runtimeScope).dispose();
 }

@@ -11,14 +11,80 @@ import { applyVisibilityFromDescriptor } from "../../util/util.js";
 import { resolvePointsBlending } from "../pointsBuilder.js";
 import { PARTICLE_EMITTER_DEFAULT_OPACITY } from "../../theme/runtimeVisualDefaults.js";
 import { resolveDriftVelocityFromRecord, resolveParticleTextureSize } from "./particleComputeUtil.js";
+import { resolveRuntimeContext } from "../../runtime/runtimeContext.js";
 
 export { resolveParticleTextureSize } from "./particleComputeUtil.js";
 
-/** @type {WeakMap<import("three").Points, object>} */
-const gpuStateByPoints = new WeakMap();
+/**
+ * Registered GPU-compute particle emitters live inside `createParticleGpuComputeStore()`
+ * instances, one per RuntimeContext (see core/runtime/runtimeContext.js), so each
+ * canvas's render loop only advances its own emitters. `deployParticleGpuEmitter`
+ * auto-resolves its scope from the target scene; `updateParticleGpuCompute` takes an
+ * explicit trailing `runtimeScope`. Omitting either preserves today's shared-global behavior.
+ */
+export function createParticleGpuComputeStore() {
+  /** @type {WeakMap<import("three").Points, object>} */
+  const gpuStateByPoints = new WeakMap();
+  /** @type {Set<import("three").Points>} */
+  const gpuMotionTargets = new Set();
 
-/** @type {Set<import("three").Points>} */
-const gpuMotionTargets = new Set();
+  function disposeParticleGpuCompute(points) {
+    if (!points) {
+      return;
+    }
+    const state = gpuStateByPoints.get(points);
+    if (!state) {
+      return;
+    }
+    if (state.onRemoved) {
+      points.removeEventListener("removed", state.onRemoved);
+    }
+    state.gpuCompute?.dispose?.();
+    gpuStateByPoints.delete(points);
+    gpuMotionTargets.delete(points);
+  }
+
+  function updateParticleGpuCompute(deltaSeconds) {
+    if (!Number.isFinite(deltaSeconds) || deltaSeconds <= 0 || gpuMotionTargets.size === 0) {
+      return;
+    }
+    for (const points of gpuMotionTargets) {
+      if (!points || !points.parent) {
+        disposeParticleGpuCompute(points);
+        continue;
+      }
+      const state = gpuStateByPoints.get(points);
+      if (!state?.gpuCompute || !state.posVar) {
+        disposeParticleGpuCompute(points);
+        continue;
+      }
+      state.posVar.material.uniforms.delta.value = deltaSeconds;
+      state.gpuCompute.compute();
+      const texture = state.gpuCompute.getCurrentRenderTarget(state.posVar).texture;
+      if (points.material?.uniforms?.texturePosition) {
+        points.material.uniforms.texturePosition.value = texture;
+      }
+    }
+  }
+
+  function registerEmitter(points, state) {
+    gpuStateByPoints.set(points, state);
+    gpuMotionTargets.add(points);
+  }
+
+  function dispose() {
+    for (const points of gpuMotionTargets) {
+      disposeParticleGpuCompute(points);
+    }
+    gpuMotionTargets.clear();
+  }
+
+  return { disposeParticleGpuCompute, updateParticleGpuCompute, registerEmitter, dispose };
+}
+
+function resolveStore(runtimeScope) {
+  return resolveRuntimeContext(runtimeScope).particleGpuCompute;
+}
 
 const DEFAULT_POSITION_COMPUTE_SHADER = /* glsl */ `
 uniform float delta;
@@ -237,47 +303,18 @@ function applyObjectTransform(object3D, record = {}) {
 
 /**
  * @param {import("three").Points} points
+ * @param {*} [runtimeScope]
  */
-export function disposeParticleGpuCompute(points) {
-  if (!points) {
-    return;
-  }
-  const state = gpuStateByPoints.get(points);
-  if (!state) {
-    return;
-  }
-  if (state.onRemoved) {
-    points.removeEventListener("removed", state.onRemoved);
-  }
-  state.gpuCompute?.dispose?.();
-  gpuStateByPoints.delete(points);
-  gpuMotionTargets.delete(points);
+export function disposeParticleGpuCompute(points, runtimeScope) {
+  return resolveStore(runtimeScope ?? points).disposeParticleGpuCompute(points);
 }
 
 /**
  * @param {number} deltaSeconds
+ * @param {*} [runtimeScope]
  */
-export function updateParticleGpuCompute(deltaSeconds) {
-  if (!Number.isFinite(deltaSeconds) || deltaSeconds <= 0 || gpuMotionTargets.size === 0) {
-    return;
-  }
-  for (const points of gpuMotionTargets) {
-    if (!points || !points.parent) {
-      disposeParticleGpuCompute(points);
-      continue;
-    }
-    const state = gpuStateByPoints.get(points);
-    if (!state?.gpuCompute || !state.posVar) {
-      disposeParticleGpuCompute(points);
-      continue;
-    }
-    state.posVar.material.uniforms.delta.value = deltaSeconds;
-    state.gpuCompute.compute();
-    const texture = state.gpuCompute.getCurrentRenderTarget(state.posVar).texture;
-    if (points.material?.uniforms?.texturePosition) {
-      points.material.uniforms.texturePosition.value = texture;
-    }
-  }
+export function updateParticleGpuCompute(deltaSeconds, runtimeScope) {
+  return resolveStore(runtimeScope).updateParticleGpuCompute(deltaSeconds);
 }
 
 /**
@@ -381,16 +418,12 @@ export function deployParticleGpuEmitter(record, scene, renderer, ctx = {}) {
     }
   };
   points.addEventListener("removed", state.onRemoved);
-  gpuStateByPoints.set(points, state);
-  gpuMotionTargets.add(points);
+  resolveStore(scene).registerEmitter(points, state);
 
   return registerObject(points, payload);
 }
 
 /** For unit tests only */
-export function _resetParticleGpuComputeForTests() {
-  for (const points of gpuMotionTargets) {
-    disposeParticleGpuCompute(points);
-  }
-  gpuMotionTargets.clear();
+export function _resetParticleGpuComputeForTests(runtimeScope) {
+  resolveStore(runtimeScope).dispose();
 }

@@ -117,6 +117,7 @@ import {
 } from "../util/cameraFactory.js";
 import { deploySubSceneChildren, deploySubSceneChildrenAsync } from "./subSceneDeploy.js";
 import { deploySubSceneUnderParent } from "./objectDispatchHandler.js";
+import { resolveRuntimeContext, createRuntimeContext, attachRuntimeContext } from "../runtime/runtimeContext.js";
 
 const CONTENT_CLEAR_SYSTEM_TAGS = [
   "objects",
@@ -234,29 +235,31 @@ function cloneIfPossible(value) {
  * Populate assetRegistry before deploy (phase 0); cleared and rebuilt on resetScene.
  * @param {object} normalized
  * @param {boolean} resetScene
+ * @param {*} [runtimeScope]
  */
-function bootstrapAssetRegistryForDeploy(normalized, resetScene) {
+function bootstrapAssetRegistryForDeploy(normalized, resetScene, runtimeScope) {
   if (resetScene !== false) {
-    clearAssetRegistry();
+    clearAssetRegistry(runtimeScope);
   }
-  configureTextureUrlCacheForDeploy(normalized);
-  configureTextureDefaultsForDeploy(normalized);
-  configureInfoPanelForDeploy(normalized);
+  configureTextureUrlCacheForDeploy(normalized, runtimeScope);
+  configureTextureDefaultsForDeploy(normalized, runtimeScope);
+  configureInfoPanelForDeploy(normalized, runtimeScope);
   const lib =
     normalized.assetLibrary ??
     normalized.worldInfo?.assetLibrary ??
     normalized.payload?.assetLibrary ??
     normalized.sourcePayload?.assetLibrary;
-  registerAssetLibrary(lib);
+  registerAssetLibrary(lib, runtimeScope);
 }
 
 /**
  * Phase 0: asset registry + on-demand jsm geometry/material register (failures isolated; do not block the whole scene).
  * @param {object} normalized
  * @param {boolean} resetScene
+ * @param {*} [runtimeScope]
  */
-async function bootstrapSceneAssetsForDeploy(normalized, resetScene) {
-  bootstrapAssetRegistryForDeploy(normalized, resetScene);
+async function bootstrapSceneAssetsForDeploy(normalized, resetScene, runtimeScope) {
+  bootstrapAssetRegistryForDeploy(normalized, resetScene, runtimeScope);
   const geometryNames = collectRequiredNativeGeometries(normalized);
   const materialNames = collectRequiredNativeMaterials(normalized);
   await ensureNativeGeometriesRegistered(geometryNames);
@@ -788,21 +791,19 @@ export function resolveLightIntensity(entry, ctx) {
   return resolveLightIntensityForContext(entry, ctx);
 }
 
-/** @type {object|undefined} */
-let activeSceneLoadContext;
-
 /**
  * @param {object|undefined} ctx
+ * @param {*} [runtimeScope]
  */
-export function setSceneLoadCompatContext(ctx) {
-  activeSceneLoadContext = ctx;
+export function setSceneLoadCompatContext(ctx, runtimeScope) {
+  resolveRuntimeContext(runtimeScope).compat.set(ctx);
 }
 
-function createManagedLight(entry) {
+function createManagedLight(entry, runtimeScope) {
   if (!entry || typeof entry !== "object" || !entry.type) {
     return [];
   }
-  const intensity = resolveLightIntensity(entry, activeSceneLoadContext);
+  const intensity = resolveLightIntensity(entry, resolveRuntimeContext(runtimeScope).compat.get());
   const color = entry.color || "#ffffff";
   const created = [];
 
@@ -878,7 +879,7 @@ function mountSceneLights(scene, lightsConfig = []) {
     return;
   }
   for (let i = 0; i < lightsConfig.length; i++) {
-    const bundle = createManagedLight(lightsConfig[i]);
+    const bundle = createManagedLight(lightsConfig[i], scene);
     for (let j = 0; j < bundle.length; j++) {
       const node = bundle[j];
       scene.add(node);
@@ -1046,12 +1047,12 @@ async function deployIntoTarget(target, normalized, options = {}) {
     sceneJsonRoot: normalized.compatPayload ?? normalized.sourcePayload ?? options.sceneJsonRoot,
     sceneConfig: normalized.sceneConfig,
     worldInfo: normalized.worldInfo
-  });
+  }, target);
   const runtime = extractDeploymentTarget(target);
   const scene = runtime.scene;
   const resetScene = options.resetScene !== false;
   const autoCleanupEnabled = isAutoResourceCleanupEnabled(normalized, options);
-  await bootstrapSceneAssetsForDeploy(normalized, resetScene);
+  await bootstrapSceneAssetsForDeploy(normalized, resetScene, scene);
 
   if (resetScene && runtime.camera) {
     cleanupThreeJsonAudioAttachments(runtime.camera);
@@ -1116,13 +1117,13 @@ function deployIntoTargetSimple(target, normalized, options = {}) {
     sceneJsonRoot: normalized.compatPayload ?? normalized.sourcePayload ?? options.sceneJsonRoot,
     sceneConfig: normalized.sceneConfig,
     worldInfo: normalized.worldInfo
-  });
+  }, target);
   const runtime = extractDeploymentTarget(target);
   const scene = runtime.scene;
   const resetScene = options.resetScene !== false;
   const autoCleanupEnabled = isAutoResourceCleanupEnabled(normalized, options);
   const strict = options.strict === true;
-  bootstrapAssetRegistryForDeploy(normalized, resetScene);
+  bootstrapAssetRegistryForDeploy(normalized, resetScene, scene);
 
   if (resetScene && runtime.camera) {
     cleanupThreeJsonAudioAttachments(runtime.camera);
@@ -1292,7 +1293,12 @@ function buildFrameHookWrappers(lifecycleBus, getRuntimeRef) {
   };
 }
 
-function attachLifecycleBusToRuntime(runtime, bus) {
+/**
+ * @param {object} runtime
+ * @param {object} bus
+ * @param {ReturnType<typeof createRuntimeContext>} [runtimeCtx]
+ */
+function attachLifecycleBusToRuntime(runtime, bus, runtimeCtx) {
   if (!runtime || !bus) {
     return;
   }
@@ -1303,6 +1309,16 @@ function attachLifecycleBusToRuntime(runtime, bus) {
       options: bus.loadOptions ?? {},
       runtime
     }));
+    // Tear down this scene's own RuntimeContext (deploy scheduler, event bindings,
+    // animation/motion registries, asset/texture caches, audio session, etc.) before
+    // the underlying THREE.js resources are disposed, so traversal-based cleanup in
+    // these stores still sees an intact object tree. Never touches a sibling canvas's
+    // context, since each createJsonScene call gets its own.
+    try {
+      runtimeCtx?.dispose();
+    } catch (err) {
+      log.warn("[createJsonScene] runtimeContext dispose failed:", err);
+    }
     innerDispose?.();
     bus.emitLoadSync(TEARDOWN_PHASE.onDisposed, createSceneLifecycleContext(TEARDOWN_PHASE.onDisposed, {
       options: bus.loadOptions ?? {},
@@ -1380,14 +1396,26 @@ async function createJsonScene(payload, options = {}) {
   eventIntegration.wireEventMechanism(bus);
   bindPluginHostToLifecycleBus(mergedLoadOptions, bus);
 
+  // Fresh per-call RuntimeContext (see core/runtime/runtimeContext.js): attached to the
+  // about-to-be-created Scene below, so this scene's object identity, deploy scheduler,
+  // event bindings, animation registries, asset/texture caches, etc. never collide with
+  // a concurrently-mounted sibling canvas's. Single-canvas callers see no behavior change.
+  const runtimeCtx = createRuntimeContext();
+
   const loadOptions = {
     ...mergedLoadOptions,
-    _lifecycleBus: bus
+    _lifecycleBus: bus,
+    _runtimeContext: runtimeCtx
   };
   loadOptions._objectLifecycle = resolveSceneLoadObjectLifecycle(mergedLoadOptions, payload);
 
   await emitTeardownBeforeCancel(bus, { options: loadOptions, payload });
-  cancelActiveDeployScheduler();
+  // No cancelActiveDeployScheduler() here: this always builds a brand-new Scene
+  // (see createSceneRuntimeFromNormalized below), so there is no prior deploy run
+  // belonging to *this* about-to-exist context to cancel. Any previous run belongs
+  // to a different (old) scene/canvas the caller already disposed before calling
+  // createJsonScene again; a global cancel here would wrongly interrupt a sibling
+  // canvas's still-in-progress scheduled deploy in multi-canvas pages.
 
   const baseCtx = createSceneLifecycleContext(LOAD_PHASE.beforeNormalize, {
     options: loadOptions,
@@ -1411,6 +1439,9 @@ async function createJsonScene(payload, options = {}) {
     await bus.emit(LOAD_PHASE.beforeRuntime, { ...baseCtx, phase: LOAD_PHASE.beforeRuntime });
 
     const runtime = createSceneRuntimeFromNormalized(normalized, loadOptions, bus);
+    if (runtime.scene) {
+      attachRuntimeContext(runtime.scene, runtimeCtx);
+    }
     Object.assign(baseCtx, buildRuntimeReadyFields(runtime, normalized, loadOptions), { runtime });
     loadOptions._lifecycleBaseCtx = baseCtx;
 
@@ -1456,7 +1487,8 @@ async function createJsonScene(payload, options = {}) {
     });
     await bus.emit(LOAD_PHASE.onSceneReady, sceneReadyCtx);
 
-    attachLifecycleBusToRuntime(deployed, bus);
+    deployed.runtimeContext = runtimeCtx;
+    attachLifecycleBusToRuntime(deployed, bus, runtimeCtx);
     return deployed;
   } catch (error) {
     await bus.emit(LOAD_PHASE.onError, {
@@ -1555,7 +1587,8 @@ async function createJsonSceneFromObjectRecord(record, options = {}) {
   try {
   const { bus } = resolveLifecycleHooks(options);
   bindPluginHostToLifecycleBus(options, bus);
-  const loadOptions = { ...options, _lifecycleBus: bus };
+  const runtimeCtx = createRuntimeContext();
+  const loadOptions = { ...options, _lifecycleBus: bus, _runtimeContext: runtimeCtx };
   loadOptions._objectLifecycle = resolveSceneLoadObjectLifecycle(options, record);
   const normalized = normalizeScenePayloadWithRuntimeDefaults(
     { worldInfo: { boxModelList: [] } },
@@ -1568,6 +1601,9 @@ async function createJsonSceneFromObjectRecord(record, options = {}) {
   });
   emitSyncLoadPhase(bus, LOAD_PHASE.afterNormalize, baseCtx);
   const runtime = createSceneRuntimeFromNormalized(normalized, loadOptions, bus);
+  if (runtime.scene) {
+    attachRuntimeContext(runtime.scene, runtimeCtx);
+  }
   Object.assign(baseCtx, buildRuntimeReadyFields(runtime, normalized, loadOptions), { runtime });
   if (bus.has(LOAD_PHASE.onRuntimeReady)) {
     await bus.emit(LOAD_PHASE.onRuntimeReady, { ...baseCtx, phase: LOAD_PHASE.onRuntimeReady });
@@ -1598,7 +1634,8 @@ async function createJsonSceneFromObjectRecord(record, options = {}) {
       runtime: result
     }));
   }
-  attachLifecycleBusToRuntime(result, bus);
+  result.runtimeContext = runtimeCtx;
+  attachLifecycleBusToRuntime(result, bus, runtimeCtx);
   return result;
   } finally {
     restoreAssetsBase();
@@ -1642,9 +1679,10 @@ async function createJsonSceneFromArchive(input, options = {}) {
 function createJsonSceneSimple(payload, options = {}) {
   const { bus } = resolveLifecycleHooks(options);
   bindPluginHostToLifecycleBus(options, bus);
-  const loadOptions = { ...options, _lifecycleBus: bus };
+  const runtimeCtx = createRuntimeContext();
+  const loadOptions = { ...options, _lifecycleBus: bus, _runtimeContext: runtimeCtx };
   loadOptions._objectLifecycle = resolveSceneLoadObjectLifecycle(options, payload);
-  cancelActiveDeployScheduler();
+  // See createJsonScene: fresh Scene per call, no prior run of *this* context to cancel.
   const normalized = normalizeScenePayloadWithRuntimeDefaults(payload, loadOptions);
   warnIntroSkippedOnSyncPath(normalized?.sceneConfig?.intro, "createJsonSceneSimple");
   const baseCtx = createSceneLifecycleContext(LOAD_PHASE.afterNormalize, {
@@ -1660,6 +1698,9 @@ function createJsonSceneSimple(payload, options = {}) {
     sceneJsonRoot: normalized.compatPayload
   });
   const runtime = createSceneRuntimeFromNormalized(normalized, loadOptions, bus);
+  if (runtime.scene) {
+    attachRuntimeContext(runtime.scene, runtimeCtx);
+  }
   Object.assign(baseCtx, buildRuntimeReadyFields(runtime, normalized, loadOptions), { runtime });
   emitSyncLoadPhase(bus, LOAD_PHASE.onRuntimeReady, baseCtx);
   const deployed = deployIntoTargetSimple(runtime, normalized, {
@@ -1680,7 +1721,8 @@ function createJsonSceneSimple(payload, options = {}) {
       runtime: deployed
     }));
   }
-  attachLifecycleBusToRuntime(deployed, bus);
+  deployed.runtimeContext = runtimeCtx;
+  attachLifecycleBusToRuntime(deployed, bus, runtimeCtx);
   return deployed;
 }
 
@@ -1691,7 +1733,9 @@ function createJsonSceneSimple(payload, options = {}) {
  * @param {{ resetScene?: boolean, context?: object }} [options]
  */
 async function deployJsonScene(target, payload, options = {}) {
-  cancelActiveDeployScheduler();
+  // Deploying into an existing target (no new Scene): only cancel *this* target's
+  // own in-flight scheduled deploy, never a sibling canvas's.
+  cancelActiveDeployScheduler(target);
   const normalized = normalizeScenePayloadWithRuntimeDefaults(payload, options);
   const deployed = await deployIntoTarget(target, normalized, options);
   const runtime = extractDeploymentTarget(deployed);
@@ -1771,7 +1815,7 @@ async function createJsonSceneFromInputFit(input, options = {}) {
  * @returns {object}
  */
 function deployJsonSceneSimple(target, payload, options = {}) {
-  cancelActiveDeployScheduler();
+  cancelActiveDeployScheduler(target);
   const normalized = normalizeScenePayloadWithRuntimeDefaults(payload, options);
   warnIntroSkippedOnSyncPath(normalized?.sceneConfig?.intro, "deployJsonSceneSimple");
   const deployed = deployIntoTargetSimple(target, normalized, options);

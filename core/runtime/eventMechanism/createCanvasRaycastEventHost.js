@@ -81,7 +81,7 @@ function isDescendantOfObject(object, ancestor) {
  * @param {(object: import("three").Object3D|null, eventName?: string|null) => string|null|undefined} resolveFromObject
  * @returns {import("three").Object3D|null}
  */
-export function pickObjectFromIntersectsForEvent(intersects, eventName, resolveFromObject) {
+export function pickObjectFromIntersectsForEvent(intersects, eventName, resolveFromObject, runtimeScope) {
   if (!Array.isArray(intersects) || intersects.length === 0) {
     return null;
   }
@@ -107,7 +107,7 @@ export function pickObjectFromIntersectsForEvent(intersects, eventName, resolveF
 
     const id = resolveFromObject(candidate, eventName);
     const hasBinding =
-      typeof id === "string" && id.trim() && getBindings(id.trim(), eventKey).length > 0;
+      typeof id === "string" && id.trim() && getBindings(id.trim(), eventKey, runtimeScope).length > 0;
 
     if (hasBinding) {
       if (activePickThroughRoot && !isDescendantOfObject(candidate, activePickThroughRoot)) {
@@ -156,7 +156,7 @@ export function pickObjectFromIntersectsForEvent(intersects, eventName, resolveF
  * @param {string|null|undefined} [eventName]
  * @returns {string|null}
  */
-export function resolveThreeJsonIdFromPick(object, eventName) {
+export function resolveThreeJsonIdFromPick(object, eventName, runtimeScope) {
   const chain = [];
   let node = object ?? null;
   while (node) {
@@ -178,7 +178,7 @@ export function resolveThreeJsonIdFromPick(object, eventName) {
   const eventKey = typeof eventName === "string" ? normalizePlatformEventName(eventName) : "";
   if (eventKey) {
     for (let i = 0; i < chain.length; i++) {
-      if (getBindings(chain[i].id, eventKey).length > 0) {
+      if (getBindings(chain[i].id, eventKey, runtimeScope).length > 0) {
         return chain[i].id;
       }
     }
@@ -271,7 +271,7 @@ export function createCanvasRaycastEventHost(options = {}) {
       resolveFromObject
     });
     lastPickedObject = picked ?? null;
-    const id = resolveFromObject(picked, eventName);
+    const id = resolveFromObject(picked, eventName, scene);
     return typeof id === "string" && id.trim() ? id.trim() : null;
   }
 
@@ -354,7 +354,7 @@ export function pickObjectFromNativeEvent(event, canvas, camera, scene, options 
   const resolveFromObject =
     typeof options.resolveFromObject === "function" ? options.resolveFromObject : resolveThreeJsonIdFromPick;
   if (typeof eventName === "string" && eventName.trim()) {
-    return pickObjectFromIntersectsForEvent(intersects, eventName, resolveFromObject);
+    return pickObjectFromIntersectsForEvent(intersects, eventName, resolveFromObject, scene);
   }
   return intersects.length > 0 ? intersects[0].object : null;
 }

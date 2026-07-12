@@ -513,7 +513,9 @@
     const intro = MODE_INTROS[mode];
     introTitle.textContent = intro.title;
     introBody.innerHTML = intro.html;
-    hintEl.innerHTML = `【简易物理】${intro.hint} 请从<strong>仓库根</strong>静态服务打开。`;
+    if (hintEl) {
+      hintEl.innerHTML = `【简易物理】${intro.hint} 请从<strong>仓库根</strong>静态服务打开。`;
+    }
     for (const btn of modeButtons) {
       const active = btn.dataset.mode === mode;
       btn.classList.toggle("primary", active);

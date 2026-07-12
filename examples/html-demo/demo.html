@@ -640,33 +640,13 @@
       min-height: 0;
     }
 
-    .rightDockPanel > .panelCard:last-of-type.frameworkHint {
+    .rightDockPanel > .panelCard:last-of-type.pageHintCard {
       flex: 0 0 auto;
       flex-shrink: 0;
     }
 
-    .panelCard.frameworkHint {
+    .panelCard.pageHintCard {
       overflow: visible;
-    }
-
-    .frameworkHintNote {
-      margin: 0 0 10px;
-      font-size: 13px;
-      line-height: 1.45;
-      color: rgba(232, 234, 237, 0.72);
-    }
-
-    .frameworkHintList {
-      margin: 0;
-      padding-left: 18px;
-      font-size: 13px;
-      line-height: 1.6;
-      color: #8ecbff;
-      word-break: break-word;
-    }
-
-    .frameworkHintList code {
-      font-size: 12px;
     }
 
     .panelCardHeader {
@@ -1197,6 +1177,24 @@
       display: contents;
     }
 
+    .detailHintBox {
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--text-muted);
+    }
+
+    .detailHintBox[hidden] {
+      display: none;
+    }
+
+    .detailHintText code {
+      color: #8fc4ff;
+      font-size: 11.5px;
+      background: rgba(143, 196, 255, 0.12);
+      padding: 1px 4px;
+      border-radius: 4px;
+    }
+
     .edgeHoverZone {
       pointer-events: none;
     }
@@ -1368,17 +1366,13 @@
             </div>
           </section>
 
-          <section class="panelCard frameworkHint" aria-labelledby="frameworkDemosTitle">
+          <section class="panelCard pageHintCard" aria-labelledby="pageHintTitle">
             <div class="panelCardHeader">
-              <div id="frameworkDemosTitle" class="panelCardTitle">关于 Vue / React 示例</div>
+              <div id="pageHintTitle" class="panelCardTitle">使用提示</div>
             </div>
-            <p class="frameworkHintNote">
-              需在终端进入子目录安装依赖并启动开发服务器；中央 iframe 无法嵌套运行独立 Vite 应用。
-            </p>
-            <ul class="frameworkHintList">
-              <li><a href="../vue-app/README.md" target="_blank" rel="noreferrer">examples/vue-app</a>：<code>npm i</code> → <code>npm run dev</code></li>
-              <li><a href="../react-app/README.md" target="_blank" rel="noreferrer">examples/react-app</a>：<code>npm i</code> → <code>npm run dev</code></li>
-            </ul>
+            <div id="detailHintBox" class="detailHintBox" hidden>
+              <div id="detailHintText" class="detailHintText"></div>
+            </div>
           </section>
         </aside>
       </div>
@@ -1419,6 +1413,8 @@
   const detailOpenLink = document.getElementById("detailOpenLink");
   const detailSourceLink = document.getElementById("detailSourceLink");
   const detailJsonLinks = document.getElementById("detailJsonLinks");
+  const detailHintBox = document.getElementById("detailHintBox");
+  const detailHintText = document.getElementById("detailHintText");
   const detailModeButtons = Array.from(document.querySelectorAll("[data-detail-mode]"));
   const contentTitle = document.getElementById("contentTitle");
   const contentSummary = document.getElementById("contentSummary");
@@ -1431,7 +1427,7 @@
   const demoFrame = document.getElementById("demoFrame");
   const frameLoadingMask = document.getElementById("frameLoadingMask");
   const demoNavTitle = document.getElementById("demoNavTitle");
-  const frameworkDemosTitle = document.getElementById("frameworkDemosTitle");
+  const pageHintTitle = document.getElementById("pageHintTitle");
 
   const FLYOUT_PEEK_HIDE_DELAY_MS = 280;
   const VIEW_CHROME_STORAGE_KEY = "demoIndex_viewChrome_v1";
@@ -2171,6 +2167,12 @@
 
     updateDetailJsonLinks(demo);
 
+    if (detailHintBox && detailHintText) {
+      const hint = demo.hint || "";
+      detailHintText.innerHTML = hint;
+      detailHintBox.hidden = !hint;
+    }
+
     if (detailPrereqSection && detailPrereqList) {
       clearNodeChildren(detailPrereqList);
       const prereqs = demo.prerequisites ?? [];
@@ -2431,12 +2433,8 @@
     if (detailSourceLink) {
       detailSourceLink.textContent = tx("viewSource");
     }
-    if (frameworkDemosTitle) {
-      frameworkDemosTitle.textContent = tx("frameworkTitle");
-    }
-    const frameworkNote = document.querySelector(".frameworkHintNote");
-    if (frameworkNote) {
-      frameworkNote.textContent = tx("frameworkNote");
+    if (pageHintTitle) {
+      pageHintTitle.textContent = tx("pageHintTitle");
     }
     syncDockPeekClasses({ persist: false });
   }

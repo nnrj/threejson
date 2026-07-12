@@ -169,7 +169,7 @@ export function handleObjectReconcile(ctx, args = {}) {
   const options = isObjectRecord(args.options) ? args.options : {};
   const id = String(args.id ?? "").trim();
   if (id) {
-    const object3D = getObjectByThreeJsonId(id);
+    const object3D = getObjectByThreeJsonId(id, ctx.scene);
     if (!object3D) {
       return buildCommandResult("object.reconcile", {
         ok: false,
@@ -219,7 +219,7 @@ export function handleObjectGet(ctx, args = {}) {
       error: "object.get requires args.id."
     });
   }
-  const object3D = getObjectByThreeJsonId(id);
+  const object3D = getObjectByThreeJsonId(id, ctx.scene);
   if (!object3D) {
     return buildCommandResult("object.get", {
       ok: false,

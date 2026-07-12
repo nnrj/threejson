@@ -3,7 +3,6 @@ import {
   bindThreeJsonSceneAudioUnlock,
   buildAdaptiveContentBoundingBoxTHREE,
   buildMinimalWorldJsonForNativeThreeInline,
-  cancelActiveDeployScheduler,
   createJsonScene,
   createJsonSceneFromArchive,
   disposeTrackedResources,
@@ -462,7 +461,6 @@ export async function bootstrapPlayerApp() {
     window.removeEventListener("resize", windowResize);
     canvasContainer?.removeEventListener("contextmenu", handleCanvasContextMenu);
     renderLoop?.stop?.();
-    cancelActiveDeployScheduler();
     renderLoop?.setComposer?.(null);
     playerHighlight.dispose();
     playerSceneInteraction.disposeHostedDoorDblclick();

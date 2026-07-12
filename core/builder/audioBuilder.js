@@ -9,16 +9,45 @@ import { registerObject } from "../handler/objectRegistry.js";
 import { setUserDataObjJson } from "../handler/objectDescriptorAttach.js";
 import { hasValue } from "../util/util.js";
 import { resolvePublicAssetUrl } from "../util/assetsBase.js";
+import { resolveRuntimeContext } from "../runtime/runtimeContext.js";
 
 const LISTENER_USERDATA_KEY = "threeJsonAudioListener";
 const SCENE_AUDIO_TAG_KEY = "threeJsonSceneAudio";
 const WAS_PLAYING_USERDATA_KEY = "threeJsonWasPlaying";
 
-/** Scene audio session generation: incremented on teardown; discards pending AudioLoader callbacks. */
-let sceneAudioSessionId = 0;
+/**
+ * Scene audio session generation + pause/volume policy, per RuntimeContext (see
+ * core/runtime/runtimeContext.js), so muting/tearing down one scene's audio doesn't
+ * affect a concurrently-mounted sibling scene's. Functions below take an optional
+ * trailing `runtimeScope` (usually the scene, already available at every call site);
+ * omitting it preserves today's shared-global behavior.
+ */
+export function createAudioSessionStore() {
+  /** Incremented on teardown; discards pending AudioLoader callbacks. */
+  let sceneAudioSessionId = 0;
+  /** @type {{ paused: boolean, masterVolume: number }} */
+  const sceneAudioPlaybackPolicy = { paused: false, masterVolume: 1 };
 
-/** @type {{ paused: boolean, masterVolume: number }} */
-let sceneAudioPlaybackPolicy = { paused: false, masterVolume: 1 };
+  function reset() {
+    sceneAudioSessionId += 1;
+  }
+
+  return {
+    get sessionId() {
+      return sceneAudioSessionId;
+    },
+    invalidateSession() {
+      sceneAudioSessionId += 1;
+      return sceneAudioSessionId;
+    },
+    policy: sceneAudioPlaybackPolicy,
+    dispose: reset
+  };
+}
+
+function resolveAudioStore(runtimeScope) {
+  return resolveRuntimeContext(runtimeScope).audioSession;
+}
 
 /** @param {import("three").Object3D|null|undefined} node */
 function isThreeJsonAudioNode(node) {
@@ -38,7 +67,8 @@ function isThreeJsonAudioListener(node) {
  * Volume and pause policy synced by player/editor before async load completes.
  * @param {{ paused?: boolean, masterVolume?: number }} [policy]
  */
-export function setThreeJsonSceneAudioPlaybackPolicy(policy = {}) {
+export function setThreeJsonSceneAudioPlaybackPolicy(policy = {}, runtimeScope) {
+  const sceneAudioPlaybackPolicy = resolveAudioStore(runtimeScope).policy;
   if (typeof policy.paused === "boolean") {
     sceneAudioPlaybackPolicy.paused = policy.paused;
   }
@@ -48,19 +78,18 @@ export function setThreeJsonSceneAudioPlaybackPolicy(policy = {}) {
 }
 
 /** @returns {{ paused: boolean, masterVolume: number }} */
-export function getThreeJsonSceneAudioPlaybackPolicy() {
-  return { ...sceneAudioPlaybackPolicy };
+export function getThreeJsonSceneAudioPlaybackPolicy(runtimeScope) {
+  return { ...resolveAudioStore(runtimeScope).policy };
 }
 
 /** @returns {number} */
-export function getThreeJsonSceneAudioSessionId() {
-  return sceneAudioSessionId;
+export function getThreeJsonSceneAudioSessionId(runtimeScope) {
+  return resolveAudioStore(runtimeScope).sessionId;
 }
 
 /** @returns {number} New session id */
-export function invalidateThreeJsonSceneAudioSession() {
-  sceneAudioSessionId += 1;
-  return sceneAudioSessionId;
+export function invalidateThreeJsonSceneAudioSession(runtimeScope) {
+  return resolveAudioStore(runtimeScope).invalidateSession();
 }
 
 function isTaggedSceneAudio(node) {
@@ -301,8 +330,8 @@ export function detachThreeJsonAudioListener(camera) {
  * @param {boolean} paused
  */
 export function setThreeJsonSceneAudioPaused(runtime, paused) {
-  setThreeJsonSceneAudioPlaybackPolicy({ paused });
   const { camera, scene } = getThreeJsonSceneAudioRoots(runtime);
+  setThreeJsonSceneAudioPlaybackPolicy({ paused }, scene);
   if (paused) {
     pauseAllThreeJsonSceneAudio(camera, scene);
   } else {
@@ -324,9 +353,10 @@ export function bindThreeJsonSceneAudioUnlock(target, getRuntime) {
     const runtime = typeof getRuntime === "function" ? getRuntime() : null;
     const { camera, scene } = getThreeJsonSceneAudioRoots(runtime);
     void resumeThreeJsonAudioContextFromCamera(camera).then(() => {
+      const { paused } = getThreeJsonSceneAudioPlaybackPolicy(scene);
       forEachThreeJsonSceneAudioNode(camera, scene, (node) => {
         const rec = node.userData?.objJson;
-        if (rec?.autoplay === true && node.isPlaying !== true && !sceneAudioPlaybackPolicy.paused) {
+        if (rec?.autoplay === true && node.isPlaying !== true && !paused) {
           const playPromise = node.play?.();
           if (playPromise && typeof playPromise.catch === "function") {
             playPromise.catch(() => {});
@@ -343,8 +373,10 @@ export function bindThreeJsonSceneAudioUnlock(target, getRuntime) {
  * @param {import("three").AudioListener} listener
  * @param {import("three").Audio} sound
  * @param {object} record
+ * @param {*} [runtimeScope]
  */
-function startSceneAudioPlayback(listener, sound, record) {
+function startSceneAudioPlayback(listener, sound, record, runtimeScope) {
+  const sceneAudioPlaybackPolicy = getThreeJsonSceneAudioPlaybackPolicy(runtimeScope);
   if (listener && typeof listener.setMasterVolume === "function") {
     listener.setMasterVolume(sceneAudioPlaybackPolicy.masterVolume);
   }
@@ -370,11 +402,11 @@ function startSceneAudioPlayback(listener, sound, record) {
  * @param {{ camera?: import("three").Camera|null, scene?: import("three").Scene|null }|null|undefined} runtime
  */
 export function teardownThreeJsonSceneAudioFromRuntime(runtime) {
-  invalidateThreeJsonSceneAudioSession();
+  const { camera, scene } = getThreeJsonSceneAudioRoots(runtime);
+  invalidateThreeJsonSceneAudioSession(scene);
   if (!runtime) {
     return;
   }
-  const { camera, scene } = getThreeJsonSceneAudioRoots(runtime);
   disposeAllThreeJsonSceneAudio(camera, scene);
   detachThreeJsonAudioListener(camera);
 }
@@ -428,12 +460,12 @@ export function deploySceneAudio(record, scene, ctx) {
   }
 
   const mode = normalizeAudioMode(record.mode);
-  const loadSession = getThreeJsonSceneAudioSessionId();
+  const loadSession = getThreeJsonSceneAudioSessionId(scene);
   const loader = new THREE.AudioLoader(loadingManager);
   loader.load(
     url,
     (buffer) => {
-      if (loadSession !== getThreeJsonSceneAudioSessionId()) {
+      if (loadSession !== getThreeJsonSceneAudioSessionId(scene)) {
         return;
       }
       const sound =
@@ -496,7 +528,7 @@ export function deploySceneAudio(record, scene, ctx) {
 
       registerObject(sound, tagged);
 
-      startSceneAudioPlayback(listener, sound, record);
+      startSceneAudioPlayback(listener, sound, record, scene);
     },
     undefined,
     (err) => {

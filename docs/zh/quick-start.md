@@ -184,6 +184,13 @@ npx serve .
 
 ## 4. React
 
+> 仓库内已经内置了可直接运行的 Vue / React 示例工程：`examples/vue-app`、`examples/react-app`。它们是各自独立的 Vite 项目，需要在终端进入子目录安装依赖并启动开发服务器；ThreeJSON Demo 首页中央的 iframe 无法嵌套运行独立 Vite 应用，所以这两个示例不会出现在 iframe 预览里：
+>
+> ```bash
+> cd examples/vue-app && npm i && npm run dev
+> cd examples/react-app && npm i && npm run dev
+> ```
+
 以 Vite React 为例：
 
 ```bash

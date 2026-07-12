@@ -176,6 +176,13 @@ Then open the printed local URL.
 
 ## 4. React
 
+> This repo already ships runnable Vue / React example projects: `examples/vue-app` and `examples/react-app`. Each is its own standalone Vite project — install dependencies and start its dev server from a terminal inside the subfolder. The central iframe on the ThreeJSON Demo index page cannot embed a standalone Vite app, so these two examples won't show up in the iframe preview:
+>
+> ```bash
+> cd examples/vue-app && npm i && npm run dev
+> cd examples/react-app && npm i && npm run dev
+> ```
+
 With Vite React:
 
 ```bash

@@ -85,9 +85,9 @@ export function createSceneHighlightBundle(scene, camera, options = {}) {
   deployPassRecord(infoRecord, ctx);
   deployPassRecord(alarmRecord, ctx);
 
-  deployed.locatePass = getDeployedPass(passIds.locate)?.pass ?? null;
-  deployed.infoPass = getDeployedPass(passIds.info)?.pass ?? null;
-  deployed.alarmPass = getDeployedPass(passIds.alarm)?.pass ?? null;
+  deployed.locatePass = getDeployedPass(passIds.locate, ctx?.scene)?.pass ?? null;
+  deployed.infoPass = getDeployedPass(passIds.info, ctx?.scene)?.pass ?? null;
+  deployed.alarmPass = getDeployedPass(passIds.alarm, ctx?.scene)?.pass ?? null;
 
   return {
     composer,
@@ -96,7 +96,7 @@ export function createSceneHighlightBundle(scene, camera, options = {}) {
     ...deployed,
     getPass(channel) {
       const id = passIds[channel];
-      return id ? getDeployedPass(id)?.pass ?? null : null;
+      return id ? getDeployedPass(id, ctx?.scene)?.pass ?? null : null;
     }
   };
 }
