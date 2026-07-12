@@ -20,7 +20,7 @@ import {
 import { createThreeBoxAttachedContext } from "./threeBoxAttachedContext.js";
 import { wireThreeBoxComposerStub } from "./threeBoxComposerStub.js";
 import { createThreeBoxResourceLibrary } from "./threeBoxResourceLibrary.js";
-import { buildStructuredTurnEnvelope } from "threejson/core";
+import { buildStructuredTurnEnvelope } from "threejson";
 import { initHostI18n, applyShellI18n, getHostLocale, normalizeLocale, t } from "../../shared/i18n/index.js";
 
 function readRequestedLocaleFromUrl() {
@@ -99,7 +99,12 @@ async function main() {
     onSave: (settings) => {
       populateComposerModelSelect(settings);
       void applyHostLocaleFromSettings(settings);
-    }
+    },
+    // `templateGallery` is declared with `const` further down in `main()` — same forward-reference
+    // pattern as `applyHostLocaleFromSettings` above, safe because these only run in response to a
+    // later button click, well after `templateGallery` has been assigned.
+    onRebuildTemplateThumbnails: () => templateGallery?.rebuildThumbnailCache(),
+    onClearTemplateThumbnails: () => templateGallery?.clearThumbnailCache()
   });
   const requestedLocale = readRequestedLocaleFromUrl();
   const currentSettingsLocale = settingsModal.getSettings()?.general?.locale || "auto";

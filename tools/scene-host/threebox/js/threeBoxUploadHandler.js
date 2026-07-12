@@ -24,7 +24,7 @@ function createOffscreenCanvas() {
 /** Parses an uploaded `.json`/`.threejson` file's text into a scene JSON object, validating it's
  * actually a loadable scene payload (not just arbitrary JSON) before treating it as one. */
 async function processJsonFile(file) {
-  const { isLoadableScenePayload } = await import("threejson/core");
+  const { isLoadableScenePayload } = await import("threejson");
   const text = await file.text();
   let sceneJson;
   try {
@@ -44,7 +44,7 @@ async function processJsonFile(file) {
  * standard scene JSON object — mirrors threeBoxOrchestrator.js's offscreen-runtime pattern for
  * command execution, reused here purely for its archive-unpack + JSON-export side effect. */
 async function processTjzFile(file) {
-  const { createJsonSceneFromArchive, sceneToStandardJsonSimple } = await import("threejson/core");
+  const { createJsonSceneFromArchive, sceneToStandardJsonSimple } = await import("threejson");
   const runtime = await enqueueThreeBoxSceneLoad(() =>
     createJsonSceneFromArchive(file, {
       canvas: createOffscreenCanvas(),
@@ -62,7 +62,7 @@ async function processTjzFile(file) {
  * `importMeshBlob`), deploys it into a throwaway offscreen runtime, then re-exports back to a
  * standard scene JSON — after this point it's indistinguishable from any other loaded scene. */
 async function processModelFile(file) {
-  const { importMeshBlob, createJsonSceneFromObjectRecord, sceneToStandardJsonSimple } = await import("threejson/core");
+  const { importMeshBlob, createJsonSceneFromObjectRecord, sceneToStandardJsonSimple } = await import("threejson");
   const { record } = await importMeshBlob(file, { fileName: file.name });
   const runtime = await enqueueThreeBoxSceneLoad(() =>
     createJsonSceneFromObjectRecord(record, {

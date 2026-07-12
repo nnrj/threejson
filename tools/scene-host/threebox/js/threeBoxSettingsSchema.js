@@ -13,7 +13,8 @@ export const THREEBOX_SETTINGS_STORAGE_KEY = "threejson.threebox.settings.v1";
 export const THREEBOX_SETTINGS_DEFAULTS = {
   general: {
     locale: "auto",
-    theme: "dark"
+    theme: "dark",
+    templateThumbnailsEnabled: true
   },
   ai: {
     providers: [],
@@ -50,6 +51,7 @@ export const THREEBOX_SETTINGS_SECTIONS = [
 export const THREEBOX_SETTINGS_FIELDS = [
   { section: "general", path: "general.locale", type: "select", label: "界面语言", options: [["auto", "跟随浏览器"], ["zh-CN", "简体中文"], ["en-US", "English"]] },
   { section: "general", path: "general.theme", type: "select", label: "主题", options: [["dark", "深色"], ["light", "浅色"]] },
+  { section: "general", path: "general.templateThumbnailsEnabled", type: "checkbox", label: "自动生成并缓存模板库缩略图" },
 
   { section: "ai", path: "ai.rememberKeys", type: "checkbox", label: "记住 API Key 到本地" },
   { section: "ai", path: "ai.updateOutputMode", type: "select", label: "调整优先方式", options: [["commands", "操作命令"], ["json-incremental", "JSON Patch"], ["json-full", "完整 JSON"]] },

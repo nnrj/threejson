@@ -13,7 +13,7 @@ import {
   createCommandContext,
   sceneToStandardJsonSimple,
   createJsonScene
-} from "threejson/core";
+} from "threejson";
 import { sceneHostAssetUrl } from "../../shared/js/sceneHostPaths.js";
 import { enqueueThreeBoxSceneLoad } from "./threeBoxSceneLoadQueue.js";
 

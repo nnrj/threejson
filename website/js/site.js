@@ -659,21 +659,41 @@ function withTimeout(promise, ms) {
 
 function getThumbCanvas() {
   if (thumbCanvas && thumbCanvas.isConnected) return thumbCanvas;
+  // The off-screen positioning lives on a wrapping host div, not the canvas itself: core's
+  // sceneConfig.intro postLoad overlay (core/runtime/sceneIntroOverlay.js) mounts into
+  // `canvas.parentElement`, not the canvas — if the canvas were appended straight to
+  // document.body (as it used to be), that overlay's parent would be document.body itself, and
+  // its `position:absolute; inset:0` would cover the real visible viewport instead of following
+  // the canvas off-screen (this is what made the port scene's model-credit slide flash on top
+  // of the real page while its thumbnail was being captured). Giving the canvas its own
+  // off-screen parent means any DOM overlay a captured scene mounts this way inherits the same
+  // off-screen positioning.
+  const host = document.createElement("div");
+  host.style.position = "fixed";
+  host.style.left = "-99999px";
+  host.style.top = "0";
+  host.style.width = `${THUMB_WIDTH}px`;
+  host.style.height = `${THUMB_HEIGHT}px`;
+  host.style.overflow = "hidden";
+  document.body.appendChild(host);
   thumbCanvas = document.createElement("canvas");
   thumbCanvas.width = THUMB_WIDTH;
   thumbCanvas.height = THUMB_HEIGHT;
-  thumbCanvas.style.position = "fixed";
-  thumbCanvas.style.left = "-99999px";
-  thumbCanvas.style.top = "0";
   thumbCanvas.style.width = `${THUMB_WIDTH}px`;
   thumbCanvas.style.height = `${THUMB_HEIGHT}px`;
-  document.body.appendChild(thumbCanvas);
+  host.appendChild(thumbCanvas);
   return thumbCanvas;
 }
 
 async function loadThumbCoreModule() {
   if (!thumbCoreModulePromise) {
-    thumbCoreModulePromise = import("../../core/index.js");
+    // Must be the full "threejson" entry (core + registered business domains), not bare
+    // "../../core/index.js": core deliberately never imports domains itself (see
+    // core/handler/businessDomainRegistry.js), so any demo whose JSON uses objType:"domain"
+    // records (device.cabinet, device.ups, ...) would silently render incomplete — every
+    // unrecognized domain record is skipped with a console warning rather than an error — if
+    // captured through the core-only entry point.
+    thumbCoreModulePromise = import("../../builtins/full.js");
   }
   return thumbCoreModulePromise;
 }
@@ -690,6 +710,14 @@ function withReducedQuality(payload) {
     }
   };
   disableAudioAutoplayForThumbnail(clone);
+  // Thumbnails are throwaway offscreen captures with no viewer — a postLoad intro overlay
+  // (welcome/credits slides, e.g. the port scene's model-credit text) has nothing to show it to,
+  // and with excludeFromLoadWait it would keep running detached (own fade timers) after this
+  // capture's runtime is disposed, potentially overlapping a later capture reusing the same
+  // offscreen canvas host.
+  if (clone.sceneConfig?.intro) {
+    clone.sceneConfig = { ...clone.sceneConfig, intro: { ...clone.sceneConfig.intro, enabled: false } };
+  }
   return clone;
 }
 

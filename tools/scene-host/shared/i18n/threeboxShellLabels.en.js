@@ -110,6 +110,7 @@ export const THREEBOX_SHELL_LABELS_EN = {
   "threebox.settings.section.io": "Import & Export",
   "threebox.settings.field.general_locale": "Interface Language",
   "threebox.settings.field.general_theme": "Theme",
+  "threebox.settings.field.general_templateThumbnailsEnabled": "Auto-generate & cache template gallery thumbnails",
   "threebox.settings.field.ai_rememberKeys": "Remember API key locally",
   "threebox.settings.field.ai_updateOutputMode": "Preferred Adjustment Method",
   "threebox.settings.field.ai_includeSpatialSummary": "Include spatial summary when adjusting",
@@ -159,6 +160,11 @@ export const THREEBOX_SHELL_LABELS_EN = {
   "threebox.settings.defaultProviderLabel": "Default Model Provider",
   "threebox.settings.behaviorHeading": "Generation & Adjustment Behavior",
   "threebox.settings.savedToast": "Settings saved.",
+  "threebox.settings.templateThumbHeading": "Template Gallery Thumbnail Cache",
+  "threebox.settings.rebuildThumbCacheBtn": "Rebuild Thumbnail Cache",
+  "threebox.settings.clearThumbCacheBtn": "Clear Thumbnail Cache",
+  "threebox.settings.rebuildThumbCacheToast": "Regenerating template thumbnails in the background…",
+  "threebox.settings.clearThumbCacheToast": "Template thumbnail cache cleared.",
 
   "threebox.resource.empty": "No resources yet. Click the \"+\" next to the input box to upload.",
   "threebox.resource.remove": "Remove",
@@ -182,6 +188,8 @@ export const THREEBOX_SHELL_LABELS_EN = {
   "threebox.attached.willUseAsContext": "Will be used as context: {label}",
   "threebox.attached.collapse": "Collapse",
   "threebox.attached.remove": "Remove",
+  "threebox.attached.fullscreen": "Fullscreen",
+  "threebox.attached.fullscreenFailed": "Failed to enter fullscreen: {error}",
   "threebox.attached.clickToExpand": "Click to expand preview",
 
   "threebox.chat.generating": "Generating…",

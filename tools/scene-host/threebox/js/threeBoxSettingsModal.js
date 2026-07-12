@@ -302,12 +302,55 @@ export function createThreeBoxSettingsModal(host = {}) {
     return wrap;
   }
 
+  /** "General" section: the schema-driven fields (locale/theme/template-thumbnail toggle) plus a
+   * hand-built sub-section with the two thumbnail-cache action buttons — these aren't settings
+   * values so they don't fit the generic field loop, they call straight into
+   * `host.onRebuildTemplateThumbnails` / `host.onClearTemplateThumbnails` (wired by threeBoxApp.js
+   * to the live template gallery instance). */
+  function buildGeneralSection() {
+    const wrap = buildGenericSection("general");
+
+    const heading = document.createElement("div");
+    heading.className = "settingsSectionHeading";
+    heading.textContent = t("threebox.settings.templateThumbHeading", "模板库缩略图缓存");
+    wrap.appendChild(heading);
+
+    const buttonRow = document.createElement("div");
+    buttonRow.className = "settingsButtonRow";
+
+    const rebuildBtn = document.createElement("button");
+    rebuildBtn.type = "button";
+    rebuildBtn.className = "settingsActionBtn";
+    rebuildBtn.textContent = t("threebox.settings.rebuildThumbCacheBtn", "重建缩略图缓存");
+    rebuildBtn.addEventListener("click", () => {
+      host.onRebuildTemplateThumbnails?.();
+      showToast(t("threebox.settings.rebuildThumbCacheToast", "正在后台重新生成模板缩略图…"), "info");
+    });
+    buttonRow.appendChild(rebuildBtn);
+
+    const clearBtn = document.createElement("button");
+    clearBtn.type = "button";
+    clearBtn.className = "settingsActionBtn";
+    clearBtn.textContent = t("threebox.settings.clearThumbCacheBtn", "清空缩略图缓存");
+    clearBtn.addEventListener("click", () => {
+      host.onClearTemplateThumbnails?.();
+      showToast(t("threebox.settings.clearThumbCacheToast", "模板缩略图缓存已清空。"), "success");
+    });
+    buttonRow.appendChild(clearBtn);
+
+    wrap.appendChild(buttonRow);
+    return wrap;
+  }
+
   function renderActiveSection() {
     if (!scroll) {
       return;
     }
     scroll.innerHTML = "";
-    const panel = activeSectionId === "ai" ? buildAiSection() : buildGenericSection(activeSectionId);
+    const panel =
+      activeSectionId === "ai" ? buildAiSection()
+      : activeSectionId === "general" ? buildGeneralSection()
+      : buildGenericSection(activeSectionId);
     scroll.appendChild(panel);
   }
 

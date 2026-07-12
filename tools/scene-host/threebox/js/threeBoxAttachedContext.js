@@ -1,5 +1,6 @@
 import { createThreeBoxSceneCard } from "./threeBoxSceneCard.js";
 import { t } from "../../shared/i18n/index.js";
+import { showToast } from "./threeBoxUiFeedback.js";
 
 /**
  * Manages the "attached scene" preview row above the composer (ChatGPT-style image-attachment
@@ -40,6 +41,27 @@ export function createThreeBoxAttachedContext() {
       render();
     });
     header.appendChild(collapseBtn);
+
+    // `canvasWrap` is declared with `const` further down this function, after `wrap.appendChild(header)`
+    // — safe to close over here since this listener only runs on click, well after it's assigned.
+    const fullscreenBtn = document.createElement("button");
+    fullscreenBtn.type = "button";
+    fullscreenBtn.className = "attachedContextHeaderBtn";
+    fullscreenBtn.title = t("threebox.attached.fullscreen", "全屏");
+    fullscreenBtn.textContent = "✥";
+    fullscreenBtn.addEventListener("click", () => {
+      if (document.fullscreenElement === canvasWrap) {
+        void document.exitFullscreen();
+        return;
+      }
+      canvasWrap.requestFullscreen?.().catch((error) => {
+        showToast(
+          t("threebox.attached.fullscreenFailed", "进入全屏失败：{error}", { error: error?.message || error }),
+          "warning"
+        );
+      });
+    });
+    header.appendChild(fullscreenBtn);
 
     const removeBtn = document.createElement("button");
     removeBtn.type = "button";

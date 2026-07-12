@@ -123,7 +123,7 @@ export function createThreeBoxSceneCard() {
 
   async function render(sceneJsonPayload, options = {}) {
     const seq = ++renderSeq;
-    const { createJsonScene } = await import("threejson/core");
+    const { createJsonScene } = await import("threejson");
     liveResizeObserver?.disconnect();
     liveResizeObserver = null;
     runtime?.dispose?.();
@@ -213,7 +213,7 @@ export function createThreeBoxSceneCard() {
     }
     exportBtn.disabled = true;
     try {
-      const { packJsonSceneArchive } = await import("threejson/core");
+      const { packJsonSceneArchive } = await import("threejson");
       const blob = await packJsonSceneArchive(sceneJson, { outputType: "blob" });
       downloadBlob(blob, `${currentLabel}.tjz`);
     } catch (error) {

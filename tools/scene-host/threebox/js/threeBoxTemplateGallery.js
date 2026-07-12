@@ -2,11 +2,16 @@ import { resolveSceneHostUrl, sceneHostAssetUrl } from "../../shared/js/sceneHos
 import { showToast } from "./threeBoxUiFeedback.js";
 import { t, getHostLocale } from "../../shared/i18n/index.js";
 import { enqueueThreeBoxSceneLoad, isThreeBoxSceneLoadBusy } from "./threeBoxSceneLoadQueue.js";
+import { loadThreeBoxSettingsBundle } from "./threeBoxSettingsStore.js";
 
 /**
  * Template-card thumbnail pipeline: clone of website/js/site.js's examples-page pipeline
  * (hidden offscreen canvas + createJsonScene + captureSceneFrame + localStorage cache +
  * IntersectionObserver lazy capture), repointed at ThreeBox's own manifest/cache namespace.
+ * Placeholder image + settings.general.templateThumbnailsEnabled gate + rebuild/clear actions
+ * also mirror that page's `PLACEHOLDER_IMG` / `AUTO_THUMB_CACHE_STORAGE_KEY` / rebuild+clear
+ * button pattern (website/js/site.js), wired through ThreeBox's own schema-driven settings
+ * store instead of a standalone localStorage flag.
  */
 const THUMB_CACHE_KEY = "threejson.threebox.thumbCache.v1";
 const THUMB_CACHE_TTL_MS = 3 * 24 * 60 * 60 * 1000;
@@ -14,6 +19,7 @@ const THUMB_WIDTH = 320;
 const THUMB_HEIGHT = 200;
 const THUMB_LOAD_TIMEOUT_MS = 8000;
 const MANIFEST_REPO_RELATIVE_PATH = "assets/json/other/threebox/manifest.json";
+const PLACEHOLDER_THUMB_URL = sceneHostAssetUrl("assets/img/ThreeJSON.png");
 
 let thumbCanvas = null;
 let thumbObserver = null;
@@ -23,7 +29,7 @@ let thumbQueueScheduled = false;
 let coreModulePromise = null;
 
 function loadCoreModule() {
-  coreModulePromise ||= import("threejson/core");
+  coreModulePromise ||= import("threejson");
   return coreModulePromise;
 }
 
@@ -31,14 +37,27 @@ function getThumbCanvas() {
   if (thumbCanvas && thumbCanvas.isConnected) {
     return thumbCanvas;
   }
+  // The off-screen positioning lives on a wrapping host div, not the canvas itself: core's
+  // sceneConfig.intro postLoad overlay (core/runtime/sceneIntroOverlay.js) mounts into
+  // `canvas.parentElement`, not the canvas — if the canvas were appended straight to
+  // document.body (as it used to be), that overlay's parent would be document.body itself,
+  // and its `position:absolute; inset:0` would cover the real visible viewport instead of
+  // following the canvas off-screen. Giving the canvas its own off-screen parent means any
+  // DOM overlay a captured scene mounts this way inherits the same off-screen positioning.
+  const host = document.createElement("div");
+  host.style.position = "fixed";
+  host.style.left = "-99999px";
+  host.style.top = "0";
+  host.style.width = `${THUMB_WIDTH}px`;
+  host.style.height = `${THUMB_HEIGHT}px`;
+  host.style.overflow = "hidden";
+  document.body.appendChild(host);
   thumbCanvas = document.createElement("canvas");
   thumbCanvas.width = THUMB_WIDTH;
   thumbCanvas.height = THUMB_HEIGHT;
-  thumbCanvas.style.position = "fixed";
-  thumbCanvas.style.left = "-99999px";
   thumbCanvas.style.width = `${THUMB_WIDTH}px`;
   thumbCanvas.style.height = `${THUMB_HEIGHT}px`;
-  document.body.appendChild(thumbCanvas);
+  host.appendChild(thumbCanvas);
   return thumbCanvas;
 }
 
@@ -58,6 +77,14 @@ function withReducedQuality(payload) {
   // entirely rather than let it start playing (and looping) the moment its card scrolls into view.
   if (clone.worldInfo?.audioList?.length) {
     clone.worldInfo = { ...clone.worldInfo, audioList: [] };
+  }
+  // Same reasoning for sceneConfig.intro postLoad slides (e.g. the port scene's model-credit
+  // text): a thumbnail has no viewer to show a welcome/credits sequence to, and with
+  // excludeFromLoadWait it would keep running detached — with its own fade timers — after this
+  // capture's runtime is disposed, potentially overlapping a later capture that reuses the same
+  // offscreen canvas host.
+  if (clone.sceneConfig?.intro) {
+    clone.sceneConfig = { ...clone.sceneConfig, intro: { ...clone.sceneConfig.intro, enabled: false } };
   }
   return clone;
 }
@@ -82,6 +109,25 @@ function writeThumbCache(cache) {
       /* give up */
     }
   }
+}
+
+/** Settings-modal toggle (general.templateThumbnailsEnabled, default on) — gates *automatic*
+ * capture/cache reads only. The manual rebuild/clear actions in the settings modal bypass this
+ * so a user who's turned auto-capture off can still populate the cache on demand. */
+function isThumbAutoCacheEnabled() {
+  try {
+    return loadThreeBoxSettingsBundle()?.general?.templateThumbnailsEnabled !== false;
+  } catch (_error) {
+    return true;
+  }
+}
+
+function resetThumbToPlaceholder(imgEl) {
+  if (!imgEl) {
+    return;
+  }
+  imgEl.src = PLACEHOLDER_THUMB_URL;
+  imgEl.classList.remove("captured");
 }
 
 /** Template titles come from manifest.json, which carries a Chinese `title` plus an optional
@@ -129,6 +175,20 @@ async function captureTemplateThumbnail(jsonUrl) {
   return captured?.dataUrl || null;
 }
 
+/** Yields to the browser's idle time between captures (rather than just the next microtask) so a
+ * multi-template capture burst (e.g. all 5 template cards after a cold cache) is spread across
+ * idle windows instead of running back-to-back — this is what keeps the UI responsive *during*
+ * the capture run itself, on top of `scheduleThumbQueue` only starting the run once idle. */
+function idleYield() {
+  return new Promise((resolve) => {
+    if (typeof window.requestIdleCallback === "function") {
+      window.requestIdleCallback(() => resolve(), { timeout: 1000 });
+    } else {
+      setTimeout(resolve, 32);
+    }
+  });
+}
+
 async function runThumbQueue() {
   if (thumbQueueRunning) {
     return;
@@ -154,7 +214,7 @@ async function runThumbQueue() {
     } catch (error) {
       console.warn("[threebox template gallery] thumbnail capture failed:", task.jsonUrl, error);
     }
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await idleYield();
   }
   thumbQueueRunning = false;
 }
@@ -242,6 +302,7 @@ export function createThreeBoxTemplateGallery(host = {}) {
     img.className = "templateCardThumb";
     img.alt = localizedTitle(item);
     img.loading = "lazy";
+    img.src = PLACEHOLDER_THUMB_URL;
     card.appendChild(img);
 
     const label = document.createElement("div");
@@ -287,11 +348,16 @@ export function createThreeBoxTemplateGallery(host = {}) {
     templateGrid.innerHTML = "";
     const q = filterQuery.trim().toLowerCase();
     const filtered = q ? items.filter((item) => localizedTitle(item).toLowerCase().includes(q)) : items;
-    const observer = getThumbObserver();
+    // Cards always render with the placeholder thumb immediately (see buildCardEl); only the
+    // *automatic* lazy-capture observation is gated by the setting, so turning it off just means
+    // cards keep the placeholder (or whatever a manual rebuild last captured) instead of
+    // recapturing on every visit.
+    const autoCaptureEnabled = isThumbAutoCacheEnabled();
+    const observer = autoCaptureEnabled ? getThumbObserver() : null;
     for (const item of filtered) {
       const card = buildCardEl(item);
       templateGrid.appendChild(card);
-      observer.observe(card);
+      observer?.observe(card);
     }
     if (filtered.length === 0) {
       const hint = document.createElement("div");
@@ -316,10 +382,48 @@ export function createThreeBoxTemplateGallery(host = {}) {
   }
 
   /** Re-renders cards after a locale switch so titles/empty-state text pick up the new language,
-   * preserving whatever search query was active. */
+   * preserving whatever search query was active. Also re-evaluates the auto-thumbnail-capture
+   * setting, so toggling it in the settings modal takes effect on the very next save (settings
+   * modal calls this via threeBoxApp.js's onSave, same as the locale-switch path). */
   function refresh() {
     renderCards(lastFilterQuery);
   }
 
-  return { init, filter, refresh };
+  /** Settings-modal "清空缩略图缓存" action: drops the cache and resets every currently-rendered
+   * card back to the placeholder image. Bypasses the auto-capture setting (it's just a cache
+   * wipe, not a capture). */
+  function clearThumbnailCache() {
+    try {
+      localStorage.removeItem(THUMB_CACHE_KEY);
+    } catch (_error) {
+      /* ignore */
+    }
+    thumbQueue = [];
+    if (!templateGrid) {
+      return;
+    }
+    templateGrid.querySelectorAll(".templateCardThumb").forEach((img) => resetThumbToPlaceholder(img));
+  }
+
+  /** Settings-modal "重建缩略图缓存" action: wipes the cache then re-queues every currently
+   * rendered card for a fresh capture — runs in the background via the same idle-scheduled
+   * queue as automatic capture, and bypasses the auto-capture setting so it works even when
+   * that's turned off. */
+  function rebuildThumbnailCache() {
+    clearThumbnailCache();
+    if (!templateGrid) {
+      return;
+    }
+    const cards = Array.from(templateGrid.querySelectorAll(".templateCard"));
+    for (const card of cards) {
+      const jsonUrl = card.dataset.jsonUrl;
+      const imgEl = card.querySelector("img");
+      if (jsonUrl && imgEl) {
+        thumbQueue.push({ jsonUrl, imgEl });
+      }
+    }
+    scheduleThumbQueue();
+  }
+
+  return { init, filter, refresh, clearThumbnailCache, rebuildThumbnailCache };
 }

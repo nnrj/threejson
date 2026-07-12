@@ -110,6 +110,7 @@
   "threebox.settings.section.io": "导入导出",
   "threebox.settings.field.general_locale": "界面语言",
   "threebox.settings.field.general_theme": "主题",
+  "threebox.settings.field.general_templateThumbnailsEnabled": "自动生成并缓存模板库缩略图",
   "threebox.settings.field.ai_rememberKeys": "记住 API Key 到本地",
   "threebox.settings.field.ai_updateOutputMode": "调整优先方式",
   "threebox.settings.field.ai_includeSpatialSummary": "调整时附带空间摘要",
@@ -159,6 +160,11 @@
   "threebox.settings.defaultProviderLabel": "默认模型供应商",
   "threebox.settings.behaviorHeading": "生成与调整行为",
   "threebox.settings.savedToast": "设置已保存。",
+  "threebox.settings.templateThumbHeading": "模板库缩略图缓存",
+  "threebox.settings.rebuildThumbCacheBtn": "重建缩略图缓存",
+  "threebox.settings.clearThumbCacheBtn": "清空缩略图缓存",
+  "threebox.settings.rebuildThumbCacheToast": "正在后台重新生成模板缩略图…",
+  "threebox.settings.clearThumbCacheToast": "模板缩略图缓存已清空。",
 
   "threebox.resource.empty": "暂无资源，点击输入框旁的「+」上传。",
   "threebox.resource.remove": "删除",
@@ -182,6 +188,8 @@
   "threebox.attached.willUseAsContext": "将作为上下文：{label}",
   "threebox.attached.collapse": "折叠",
   "threebox.attached.remove": "移除",
+  "threebox.attached.fullscreen": "全屏",
+  "threebox.attached.fullscreenFailed": "进入全屏失败：{error}",
   "threebox.attached.clickToExpand": "点击展开预览",
 
   "threebox.chat.generating": "正在生成…",
