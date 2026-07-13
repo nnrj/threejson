@@ -115,6 +115,7 @@ export const THREEBOX_SHELL_LABELS_EN = {
   "threebox.settings.field.general_theme": "Theme",
   "threebox.settings.field.general_templateThumbnailsEnabled": "Auto-generate & cache template gallery thumbnails",
   "threebox.settings.field.ai_rememberKeys": "Remember API key locally",
+  "threebox.settings.field.ai_selfName": "AI Self-Name",
   "threebox.settings.field.ai_updateOutputMode": "Preferred Adjustment Method",
   "threebox.settings.field.ai_includeSpatialSummary": "Include spatial summary when adjusting",
   "threebox.settings.field.ai_includeFullJson": "Include full JSON when adjusting (uses more tokens)",

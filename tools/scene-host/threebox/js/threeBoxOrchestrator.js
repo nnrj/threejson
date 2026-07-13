@@ -160,8 +160,8 @@ export async function classifyThreeBoxTurnIntent({ userPrompt, history }, provid
  * (e.g. "Simplified Chinese"/"English") keeps the recap's language following the host's current
  * UI locale setting rather than whatever language the user happened to type their prompt in.
  */
-export async function runThreeBoxSummary({ userPrompt, mode, targetTurnId, turnId, resultDigest, providerOptions, responseLanguage }) {
-  return summarizeSceneTurn({ userPrompt, mode, targetTurnId, turnId, resultDigest, responseLanguage }, providerOptions);
+export async function runThreeBoxSummary({ userPrompt, mode, targetTurnId, turnId, resultDigest, providerOptions, responseLanguage, selfName }) {
+  return summarizeSceneTurn({ userPrompt, mode, targetTurnId, turnId, resultDigest, responseLanguage, selfName }, providerOptions);
 }
 
 /**
@@ -171,8 +171,8 @@ export async function runThreeBoxSummary({ userPrompt, mode, targetTurnId, turnI
  * Chinese"/"English") keeps the title's language following the host's configured scene-title
  * language setting rather than whatever language the user happened to type their prompt in.
  */
-export async function runThreeBoxGenerateSceneTitle({ userPrompt, resultDigest, providerOptions, responseLanguage }) {
-  return generateSceneTitle({ userPrompt, resultDigest, responseLanguage }, providerOptions);
+export async function runThreeBoxGenerateSceneTitle({ userPrompt, resultDigest, providerOptions, responseLanguage, previousTitle }) {
+  return generateSceneTitle({ userPrompt, resultDigest, responseLanguage, previousTitle }, providerOptions);
 }
 
 /**

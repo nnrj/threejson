@@ -6,7 +6,7 @@
  */
 
 const THREE_JSON_AGENT_CAPABILITY_INDEX = `
-ThreeJSON capability index (choose the simplest faithful feature; this is not a checklist):
+ThreeJSON capability index (choose the most appropriate/specific feature for what's described; this is not a checklist):
 
 Selection principle:
 - Prefer basic primitives and semantic presets when they fully satisfy the user's scene.

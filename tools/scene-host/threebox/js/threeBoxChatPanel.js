@@ -92,6 +92,41 @@ export function createThreeBoxChatPanel(host = {}) {
     syncScrollToBottomBtn();
   }
 
+  /** Aligns `row`'s top edge to the top of the visible chat area, leaving the rest of the
+   * viewport blank below it — called right after appending the user's own message, so the
+   * assistant's reply has empty space to grow into instead of the view jumping straight to the
+   * bottom the instant Send is pressed (which is where most of the anxiety-inducing jitter during
+   * streaming actually comes from: constant small hard-scrolls as blocks are appended one by one). */
+  function pinRowNearTop(row) {
+    if (!row) {
+      return;
+    }
+    row.scrollIntoView({ block: "start", behavior: "auto" });
+    syncScrollToBottomBtn();
+  }
+
+  /** Scrolls just enough to bring `el` fully into view if it isn't already — a no-op while
+   * there's still blank space left over from pinRowNearTop (so no jitter while the reply is
+   * short), and naturally starts "following" once growing content reaches the bottom of the
+   * viewport, exactly like a normal chat's auto-scroll once there's actually something new to
+   * reveal. Used for every append *during* a turn; the turn's true end still calls the hard
+   * scrollToBottom via finishTurnScroll so the final state always lands exactly at the bottom. */
+  function revealBottomOf(el) {
+    if (!el) {
+      return;
+    }
+    el.scrollIntoView({ block: "nearest", behavior: "auto" });
+    syncScrollToBottomBtn();
+  }
+
+  /** Called once a turn (generate/adjust, success or failure/stopped) has fully finished
+   * appending content — guarantees the view ends up exactly at the bottom (not just "close
+   * enough" from revealBottomOf's nearest-edge scrolling), matching the pre-existing always-at-
+   * bottom behavior for the settled state. */
+  function finishTurnScroll() {
+    scrollToBottom();
+  }
+
   function appendMessage(role, text) {
     messages.push({ role, text });
     if (!chatMessages) {
@@ -114,7 +149,11 @@ export function createThreeBoxChatPanel(host = {}) {
     body.appendChild(textEl);
     row.appendChild(body);
     chatMessages.appendChild(row);
-    scrollToBottom();
+    if (role === "user") {
+      pinRowNearTop(row);
+    } else {
+      revealBottomOf(row);
+    }
     return textEl;
   }
 
@@ -124,7 +163,7 @@ export function createThreeBoxChatPanel(host = {}) {
     }
     textEl.classList.add("markdown-body");
     textEl.innerHTML = renderMarkdownToSafeHtml(text);
-    scrollToBottom();
+    revealBottomOf(textEl);
   }
 
   /** Appends an arbitrary element (e.g. a collapsible JSON block, or the inline scene canvas) as
@@ -134,7 +173,7 @@ export function createThreeBoxChatPanel(host = {}) {
       return;
     }
     referenceEl.parentElement.appendChild(el);
-    scrollToBottom();
+    revealBottomOf(el);
   }
 
   /** Fixed-height, auto-scrolling live preview for in-progress streamed text (raw JSON isn't
@@ -285,7 +324,8 @@ export function createThreeBoxChatPanel(host = {}) {
           createStreamingBlock,
           buildJsonCollapse,
           buildDiffCollapse,
-          buildSummaryBlock
+          buildSummaryBlock,
+          finishTurnScroll
         });
       } catch (error) {
         // Top-level safety net: onUserMessage is expected to handle its own errors, but an
@@ -296,6 +336,7 @@ export function createThreeBoxChatPanel(host = {}) {
           "assistant",
           t("threebox.app.processingFailed", "处理失败：{error}", { error: error?.message || error })
         );
+        finishTurnScroll();
       }
       return;
     }
@@ -348,6 +389,7 @@ export function createThreeBoxChatPanel(host = {}) {
     buildJsonCollapse,
     buildDiffCollapse,
     buildSummaryBlock,
+    finishTurnScroll,
     clear,
     showHeroView,
     showMessagesView

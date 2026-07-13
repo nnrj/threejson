@@ -333,7 +333,8 @@ async function main() {
               turnId,
               resultDigest: digest,
               providerOptions,
-              responseLanguage: resolveSummaryResponseLanguage()
+              responseLanguage: resolveSummaryResponseLanguage(),
+              selfName: settings.ai?.selfName || "ThreeBox"
             }).catch(() => "")
           : Promise.resolve("");
 
@@ -368,6 +369,7 @@ async function main() {
         createdAt: Date.now()
       });
       sidebar.touchActiveConversation(text);
+      api.finishTurnScroll();
     } catch (error) {
       clearBusyIfCurrent();
       streaming.remove();
@@ -378,6 +380,7 @@ async function main() {
         api.updateAssistantMessage(textEl, t("threebox.app.generateFailed", "生成失败：{error}", { error: error?.message || error }));
       }
       api.appendToBody(textEl, buildRetryButton(() => handleGenerateTurn(text, api, { conversationId, turnId })));
+      api.finishTurnScroll();
     }
   }
 
@@ -474,7 +477,11 @@ async function main() {
               userPrompt: text,
               resultDigest: digest,
               providerOptions,
-              responseLanguage: resolveSceneTitleLanguage(settings)
+              responseLanguage: resolveSceneTitleLanguage(settings),
+              // Keeps adjustment titles consistent with the scene being adjusted (e.g.
+              // "SolarSystem" -> "SolarSystem_Rev1_ImprovedTextures") instead of generating an
+              // unrelated name each round — see generateSceneTitle's previousTitle doc.
+              previousTitle: targetTurn.sceneTitle || targetTurn.userPrompt
             }).catch(() => "")
           : Promise.resolve("");
       const recapPromise =
@@ -486,7 +493,8 @@ async function main() {
               turnId,
               resultDigest: digest,
               providerOptions,
-              responseLanguage: resolveSummaryResponseLanguage()
+              responseLanguage: resolveSummaryResponseLanguage(),
+              selfName: settings.ai?.selfName || "ThreeBox"
             }).catch(() => "")
           : Promise.resolve("");
 
@@ -533,6 +541,7 @@ async function main() {
         createdAt: Date.now()
       });
       sidebar.touchActiveConversation(text);
+      api.finishTurnScroll();
     } catch (error) {
       clearBusyIfCurrent();
       streaming.remove();
@@ -546,6 +555,7 @@ async function main() {
         textEl,
         buildRetryButton(() => handleAdjustTurn(text, api, { conversationId, turnId, targetTurnId }))
       );
+      api.finishTurnScroll();
     }
   }
 
@@ -604,6 +614,7 @@ async function main() {
       // looking like it did nothing at all after Send was clicked.
       console.error("[threebox] handleUserMessage failed:", error);
       api.appendAssistantMessage(t("threebox.app.processingFailed", "处理失败：{error}", { error: error?.message || error }));
+      api.finishTurnScroll();
     }
   }
 
@@ -618,6 +629,7 @@ async function main() {
           "尚未配置可用的 AI 供应商。请点击左侧「AI 配置」，添加一个供应商并填写 API Key 后再试。"
         )
       );
+      api.finishTurnScroll();
       return;
     }
 
@@ -629,6 +641,7 @@ async function main() {
       api.appendAssistantMessage(
         t("threebox.app.loadAttachedFailed", "加载已附加的场景失败：{error}", { error: error?.message || error })
       );
+      api.finishTurnScroll();
       return;
     }
     if (seed) {
@@ -714,6 +727,11 @@ async function main() {
         chatPanel.appendToBody(textEl, chatPanel.buildSummaryBlock(turn.recapSummary));
       }
     }
+    // Replaying history re-triggers appendMessage("user", ...)'s "pin near top" scroll for every
+    // historical turn in turn — without this, the view would end up pinned near the top of the
+    // LAST historical turn (mostly blank below it) instead of landing on the true end of the
+    // conversation, which is what opening a past conversation should do.
+    chatPanel.finishTurnScroll();
   }
 
   sidebar = createThreeBoxSidebar({

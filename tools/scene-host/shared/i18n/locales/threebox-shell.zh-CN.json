@@ -115,6 +115,7 @@
   "threebox.settings.field.general_theme": "主题",
   "threebox.settings.field.general_templateThumbnailsEnabled": "自动生成并缓存模板库缩略图",
   "threebox.settings.field.ai_rememberKeys": "记住 API Key 到本地",
+  "threebox.settings.field.ai_selfName": "AI 自称",
   "threebox.settings.field.ai_updateOutputMode": "调整优先方式",
   "threebox.settings.field.ai_includeSpatialSummary": "调整时附带空间摘要",
   "threebox.settings.field.ai_includeFullJson": "调整时附带完整 JSON（更耗费 Token）",

@@ -20,6 +20,7 @@ export const THREEBOX_SETTINGS_DEFAULTS = {
     providers: [],
     defaultProviderId: "",
     rememberKeys: false,
+    selfName: "ThreeBox",
     updateOutputMode: "commands",
     includeSpatialSummary: true,
     includeFullJson: false,
@@ -57,6 +58,7 @@ export const THREEBOX_SETTINGS_FIELDS = [
   { section: "general", path: "general.templateThumbnailsEnabled", type: "checkbox", label: "自动生成并缓存模板库缩略图" },
 
   { section: "ai", path: "ai.rememberKeys", type: "checkbox", label: "记住 API Key 到本地" },
+  { section: "ai", path: "ai.selfName", type: "text", label: "AI 自称" },
   { section: "ai", path: "ai.updateOutputMode", type: "select", label: "调整优先方式", options: [["commands", "操作命令"], ["json-incremental", "JSON Patch"], ["json-full", "完整 JSON"]] },
   { section: "ai", path: "ai.includeSpatialSummary", type: "checkbox", label: "调整时附带空间摘要" },
   { section: "ai", path: "ai.includeFullJson", type: "checkbox", label: "调整时附带完整 JSON（更耗费 Token）" },

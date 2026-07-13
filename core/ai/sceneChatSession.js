@@ -136,12 +136,16 @@ async function classifyTurnIntent(input = {}, options = {}) {
   }
 }
 
-function buildSummarizeTurnSystemPrompt() {
+const DEFAULT_SELF_NAME = "ThreeBox";
+
+function buildSummarizeTurnSystemPrompt(selfName) {
+  const name = String(selfName || "").trim() || DEFAULT_SELF_NAME;
   return [
     "You write short, factual recaps of a single turn in a 3D-scene generation chat, for storage in the app's local session history.",
+    `When referring to the system that produced the scene, call it "${name}" — never "the assistant", "the AI", "the model", "ChatGPT", or any other generic/provider name. "${name}" is the chat host's own product name and this recap is shown to end users as its reply, so it must speak in its own voice.`,
     "Write 2-4 sentences in plain prose (no Markdown, no JSON), covering:",
     "- What the user asked for in this turn.",
-    "- What the assistant produced (in general terms — object types/counts/layout, not raw JSON).",
+    `- What ${name} produced (in general terms — object types/counts/layout, not raw JSON).`,
     "- If this turn adjusted a prior turn, name which prior turn id it adjusted and what changed.",
     "Do not restate the full scene JSON. Do not add commentary outside the recap."
   ].join("\n");
@@ -168,11 +172,14 @@ function buildSummarizeTurnUserMessage({ userPrompt, mode, targetTurnId, turnId,
  * Deliberately never sends/receives full scene JSON (token cost) — callers should pass a compact
  * `resultDigest` string (e.g. object-type/count summary) instead of the raw scene payload.
  *
- * @param {{ userPrompt: string, mode: "generate"|"adjust", targetTurnId?: string|null, turnId: string, resultDigest?: string, responseLanguage?: string }} input
+ * @param {{ userPrompt: string, mode: "generate"|"adjust", targetTurnId?: string|null, turnId: string, resultDigest?: string, responseLanguage?: string, selfName?: string }} input
  *   `responseLanguage` is an optional human-readable language name (e.g. "Simplified Chinese",
  *   "English") — when provided, the recap is written in that language regardless of the user
  *   request's own language, so a chat host can keep summaries consistent with its current UI
  *   locale setting rather than whatever language the user happened to type in.
+ *   `selfName` is the chat host's own product name (e.g. "ThreeBox") for the recap to refer to
+ *   itself by, rather than defaulting to generic "the assistant" wording — defaults to "ThreeBox"
+ *   when omitted.
  * @param {object} [options] requestChatCompletion transport options
  * @returns {Promise<string>} plain-text summary; empty string on failure (caller may still cache the turn without a summary)
  */
@@ -181,7 +188,7 @@ async function summarizeSceneTurn(input = {}, options = {}) {
     const content = await requestChatCompletion({
       ...pickChatCompletionOptions(options, DEFAULT_SUMMARIZE_MAX_TOKENS),
       messages: [
-        { role: "system", content: buildSummarizeTurnSystemPrompt() },
+        { role: "system", content: buildSummarizeTurnSystemPrompt(input.selfName) },
         { role: "user", content: buildSummarizeTurnUserMessage(input) }
       ]
     });
@@ -197,15 +204,20 @@ function buildGenerateTitleSystemPrompt() {
     "Output ONLY the title text itself — no quotes, no Markdown, no commentary, no trailing period.",
     "Keep it concise: roughly 2-8 words (or the equivalent length in the requested language).",
     "The title must describe the resulting SCENE (what it depicts), not the chat turn itself — never write things like \"Scene generated\" or \"Adjustment applied\".",
-    "Since the title is used verbatim as a file name, do not include characters such as / \\ : * ? \" < > |."
+    "Since the title is used verbatim as a file name, do not include characters such as / \\ : * ? \" < > |.",
+    "If a previous title is given, this turn is an ADJUSTMENT of that same scene, not a new one: keep the previous title's base name and append a revision marker plus a short description of what changed this round — e.g. \"<BaseName>_Rev2_<what changed>\" (match the previous title's own language/wording for \"revision\"; if it already ends in a revision marker, increment the number instead of adding another one). Only give it a brand-new, unrelated title if the result no longer resembles the previous scene at all — e.g. the user pivoted to a completely different subject."
   ].join("\n");
 }
 
-function buildGenerateTitleUserMessage({ userPrompt, resultDigest, responseLanguage }) {
+function buildGenerateTitleUserMessage({ userPrompt, resultDigest, responseLanguage, previousTitle }) {
   const lines = [
     `User request:\n${String(userPrompt || "").trim()}`,
     `Result digest (for your reference, not to be echoed verbatim):\n${String(resultDigest || "").trim() || "(none)"}`
   ];
+  const prevTitle = String(previousTitle || "").trim();
+  if (prevTitle) {
+    lines.push(`Previous title of the scene being adjusted: ${prevTitle}`);
+  }
   if (responseLanguage) {
     lines.push(`Write the title in ${responseLanguage}, regardless of what language the user request above is in.`);
   }
@@ -233,11 +245,14 @@ function sanitizeSceneTitleText(raw) {
  * Deliberately never sends/receives full scene JSON (token cost) — same `resultDigest` convention
  * as `summarizeSceneTurn`.
  *
- * @param {{ userPrompt: string, resultDigest?: string, responseLanguage?: string }} input
+ * @param {{ userPrompt: string, resultDigest?: string, responseLanguage?: string, previousTitle?: string }} input
  *   `responseLanguage` is an optional human-readable language name (e.g. "Simplified Chinese",
  *   "English") — when provided, the title is written in that language regardless of the user
  *   request's own language, so a chat host can keep titles consistent with a configured language
  *   setting rather than whatever language the user happened to type in.
+ *   `previousTitle`, when this is an adjustment of an existing scene, should be that scene's
+ *   current title — the new title then builds on it (e.g. "SolarSystem" -> "SolarSystem_Rev1_
+ *   ImprovedTextures") instead of generating an unrelated name for what's still the same scene.
  * @param {object} [options] requestChatCompletion transport options
  * @returns {Promise<string>} plain-text title; empty string on failure (caller should fall back to the raw user prompt)
  */

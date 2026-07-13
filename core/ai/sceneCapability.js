@@ -111,7 +111,10 @@ const INTENT_SIGNALS = [
   },
   {
     id: "particles",
-    patterns: [/particle|points|starfield|dust|spark|粒子|星尘|点云/i],
+    // Word-bounded and specific on purpose: a bare "points" (no boundary) previously matched
+    // "waypoints"/"control points"/"data points" in ordinary prompts and forced particleEmitter
+    // into unrelated scenes via the capability-fit repair pass (evaluateCapabilityFit below).
+    patterns: [/\bparticles?\b|\bpoint\s*clouds?\b|\bstarfields?\b|\bdust\b|\bsparks?\b|粒子|星尘|点云/i],
     lists: ["objectList", "particleList", "domainModelList"],
     objTypes: ["particleEmitter", "points"],
     note: "Prefer objectList objType particleEmitter (simulation cpu|gpuCompute); particleList/points is legacy."

@@ -29,7 +29,8 @@ test("generation system prompt covers core ThreeJSON capabilities", () => {
   assert.match(prompt, /device\.cabinet/);
   assert.match(prompt, /createStatBars/);
   assert.match(prompt, /Do NOT put plain objType "box" records in domainModelList/);
-  assert.match(prompt, /simplest faithful/);
+  assert.match(prompt, /most appropriate\/specific feature/);
+  assert.match(prompt, /most fitting capability/);
   assert.match(prompt, /not a checklist/);
   assert.match(prompt, /Never add decorative lineList, particleEmitter/);
   assert.match(prompt, /grounded physical scenes should usually include/);
