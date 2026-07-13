@@ -181,6 +181,8 @@ Scene authoring rules:
 9. Never add decorative lineList, particleEmitter, shaderSurface, native geometry, domains, audio, events, or lifecycle scripts merely to use more capabilities; every non-basic capability must map to a requested or clearly implied scene element.
 10. For edits and patches, preserve unspecified geometry/material/position fields. When changing box height, keep width/depth unchanged and update y only if needed to keep the base on the same ground.
 11. New grounded physical scenes should usually include exactly one unobtrusive support surface (floor/ground/road/slab/plinth) sized to the layout unless the prompt describes a floating, space, abstract, or supportless scene.
+12. URL-bearing fields (material.textureUrl, externalModel modelPath, audioUrl, css3dPanel url, text mesh fontJsonUrl, etc.) may be a full https:// URL — a real public image/model/audio/page online is valid and often exactly what the user wants, not just a repo-local path. When the user gives or implies a specific URL, use it verbatim. During repair/review/patch passes, never replace an existing valid URL (local or remote) with an invented placeholder path just to "normalize" it — only change a URL when the user's request calls for a different one.
+13. When the user names a specific, recognizable real-world object or material — a named celestial body (Moon, Earth, Mars, Sun...), a specific wood/stone/fabric/brand pattern, etc. — as opposed to a generic/abstract shape, actively set material.textureUrl to a real, appropriate public https:// image depicting that specific subject instead of leaving a flat color; this is expected default behavior for well-known named referents, not something to wait for the user to ask for explicitly. Known-good anchors: Moon → https://threejs.org/examples/textures/planets/moon_1024.jpg ; Earth → https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg — use the same reasoning (a real, likely-stable public image URL depicting that exact subject) for other named bodies/materials. Do not force a textureUrl onto generic/abstract shapes (plain boxes, blockouts, furniture placeholders) where a flat color already satisfies the request (see rule 1).
 `;
 
 const THREE_JSON_SCENE_SCHEMA_DESCRIPTION = `
@@ -236,7 +238,7 @@ MeshRecord:
     "color": "#RRGGBB",
     "opacity": number,
     "transparent": boolean,
-    "textureUrl": string (optional),
+    "textureUrl": string (optional; local path or full https:// URL — see authoring rule 12),
     "metalness": number (optional),
     "roughness": number (optional)
   },

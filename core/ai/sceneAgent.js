@@ -27,6 +27,8 @@ import {
 } from "./agentTools.js";
 import { fillTextureUrls, createOpenAiImageProvider } from "./textureAiService.js";
 import { parseSceneJsonString } from "./sceneAiService.js";
+import { matchIntentSignals } from "./sceneCapability.js";
+import { fetchReferenceMaterial } from "./sceneReferenceCatalog.js";
 
 /**
  * @typedef {object} SceneAgentProgress
@@ -80,6 +82,26 @@ function emitStagePreview({ sceneJsonString, onProgress, getStepIndex, setStepIn
   );
 }
 
+/** Best-effort, once-per-turn lookup of local docs/example material for capabilities the user's
+ * prompt needs but the always-injected system-prompt catalog only mentions in passing (event
+ * mechanism, scripts, business domains, etc. — see sceneReferenceCatalog.js). No-ops (returns "")
+ * unless the host opted in by passing `chatOptions.resolveReferenceUrl`; never throws, so a
+ * fetch failure never blocks the agent turn it was meant to help. */
+async function resolveAgentReferenceMaterial(userPrompt, chatOptions) {
+  if (typeof chatOptions?.resolveReferenceUrl !== "function") {
+    return "";
+  }
+  try {
+    const signals = matchIntentSignals(userPrompt);
+    return await fetchReferenceMaterial(signals, {
+      resolveUrl: chatOptions.resolveReferenceUrl,
+      locale: chatOptions.locale
+    });
+  } catch (_err) {
+    return "";
+  }
+}
+
 /**
  * @param {object} params
  * @returns {Promise<object>}
@@ -112,6 +134,10 @@ async function runSceneAgentCommandsUpdate(params) {
     currentSceneJsonString
   };
 
+  // Resolved once for the whole turn (not per round) — same material is relevant across repair
+  // attempts, and this avoids refetching on every round.
+  const referenceMaterial = await resolveAgentReferenceMaterial(userPrompt, chatOptions);
+
   while (round < maxCommandRounds) {
     round += 1;
     const isRepair = Boolean(lastError);
@@ -136,29 +162,34 @@ async function runSceneAgentCommandsUpdate(params) {
         ? `${userPrompt}\n\nFollow this outline:\n${outline}`
         : userPrompt;
 
+    // Always explicitly built now (previously only for repair/feedback/round>1 rounds, leaving
+    // round 1 to requestUpdatedSceneEditCommands's own internal fallback construction — which
+    // used the exact same fields, so this is behavior-preserving for round 1 except for also
+    // attaching referenceMaterial there, which is the point: proactively giving the agent
+    // relevant docs/examples from round 1 avoids burning repair rounds on gaps the base prompt
+    // catalog doesn't cover, rather than only reacting after a failure).
     const context = { ...baseContext };
-    if (isRepair || baseContext.objectGetFeedback || round > 1) {
-      context.userMessage = [
-        buildSceneCommandUpdateUserMessage({
-          modificationRequest: requestPrompt,
-          objectList: baseContext.objectListForMessage ?? baseContext.objectList,
-          selectionId: baseContext.selectionId ?? null,
-          selectionDescriptor: baseContext.selectionDescriptor ?? null,
-          fullSceneJson: baseContext.fullSceneJson,
-          objectGetFeedback: baseContext.objectGetFeedback,
-          objectSpatialCards: baseContext.objectSpatialCards,
-          sceneScaleProfile: baseContext.sceneScaleProfile,
-          referenceObjects: baseContext.referenceObjects,
-          placementHints: baseContext.placementHints,
-          assemblyIntentHints: baseContext.assemblyIntentHints,
-          singleRound: false,
-          agentRound: true
-        }),
-        lastRawContent ? `Previous invalid output:\n${lastRawContent}` : ""
-      ]
-        .filter(Boolean)
-        .join("\n\n");
-    }
+    context.userMessage = [
+      buildSceneCommandUpdateUserMessage({
+        modificationRequest: requestPrompt,
+        objectList: baseContext.objectListForMessage ?? baseContext.objectList,
+        selectionId: baseContext.selectionId ?? null,
+        selectionDescriptor: baseContext.selectionDescriptor ?? null,
+        fullSceneJson: baseContext.fullSceneJson,
+        objectGetFeedback: baseContext.objectGetFeedback,
+        objectSpatialCards: baseContext.objectSpatialCards,
+        sceneScaleProfile: baseContext.sceneScaleProfile,
+        referenceObjects: baseContext.referenceObjects,
+        placementHints: baseContext.placementHints,
+        assemblyIntentHints: baseContext.assemblyIntentHints,
+        singleRound: false,
+        agentRound: true
+      }),
+      referenceMaterial,
+      lastRawContent ? `Previous invalid output:\n${lastRawContent}` : ""
+    ]
+      .filter(Boolean)
+      .join("\n\n");
 
     let commandResult;
     try {
@@ -325,6 +356,9 @@ async function runSceneAgentCommandsUpdateIterative(params) {
   let anySceneMutated = false;
   let lastCommands = [];
 
+  // Resolved once for the whole turn — see runSceneAgentCommandsUpdate's matching comment.
+  const referenceMaterial = await resolveAgentReferenceMaterial(userPrompt, chatOptions);
+
   for (let refineRound = 1; refineRound <= maxRefineRounds; refineRound += 1) {
     setStepIndex(getStepIndex() + 1);
     emitProgress(
@@ -359,6 +393,9 @@ async function runSceneAgentCommandsUpdateIterative(params) {
       singleRound: false,
       agentRound: true
     });
+    if (referenceMaterial) {
+      context.userMessage = `${context.userMessage}\n\n${referenceMaterial}`;
+    }
     if (lastRawContent && refineRound > 1) {
       context.userMessage = `${context.userMessage}\n\nPrevious output:\n${lastRawContent}`;
     }
@@ -810,10 +847,15 @@ async function runSceneAgent(input = {}, options = {}) {
     onProgress
   );
 
+  // Resolved once for the whole agent run — see resolveAgentReferenceMaterial's docblock. Folded
+  // directly into the plain-text prompt strings below (rather than a message-builder field) since
+  // this generate/repair path already passes prompt as free text to generateSceneJsonString /
+  // updateSceneJsonString.
+  const referenceMaterial = await resolveAgentReferenceMaterial(prompt, chatOptions);
+
   const generatePrompt =
-    outline && preset.runOutline
-      ? `${prompt}\n\nFollow this outline:\n${outline}`
-      : prompt;
+    (outline && preset.runOutline ? `${prompt}\n\nFollow this outline:\n${outline}` : prompt) +
+    (referenceMaterial ? `\n\n${referenceMaterial}` : "");
 
   if (mode === "update") {
     sceneJsonString = await updateSceneJsonString(
@@ -859,7 +901,9 @@ async function runSceneAgent(input = {}, options = {}) {
       },
       onProgress
     );
-    const repairPrompt = `Fix the scene JSON so it is valid ThreeJSON. Previous error: ${validation.error}. User intent: ${prompt}`;
+    const repairPrompt =
+      `Fix the scene JSON so it is valid ThreeJSON. Previous error: ${validation.error}. User intent: ${prompt}` +
+      (referenceMaterial ? `\n\n${referenceMaterial}` : "");
     sceneJsonString = await updateSceneJsonString(repairPrompt, sceneJsonString, {
       ...chatOptionsFullUpdate,
       maxTokens: preset.repairMaxTokens

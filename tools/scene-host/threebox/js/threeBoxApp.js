@@ -11,6 +11,7 @@ import {
   runThreeBoxGenerateTurn,
   runThreeBoxAdjustTurn,
   runThreeBoxSummary,
+  runThreeBoxGenerateSceneTitle,
   classifyThreeBoxTurnIntent,
   resolveAdjustContextPayload,
   isProviderVisionCapable,
@@ -64,6 +65,21 @@ function confirmLocaleSwitch(settingsLocale, requestedLocale) {
  * of whatever language the user happened to type their request in. */
 function resolveSummaryResponseLanguage() {
   return getHostLocale() === "zh-CN" ? "Simplified Chinese" : "English";
+}
+
+/** Human-readable language name for the AI scene-title prompt (see core/ai/sceneChatSession.js's
+ * `responseLanguage`). Driven by settings.ai.sceneTitleLanguage: "auto" (the "默认" option) follows
+ * the current UI locale exactly like `resolveSummaryResponseLanguage` above; "zh-CN"/"en-US" pin
+ * the title to a specific language regardless of UI locale or what language the user typed. */
+function resolveSceneTitleLanguage(settings) {
+  const pref = settings?.ai?.sceneTitleLanguage || "auto";
+  if (pref === "zh-CN") {
+    return "Simplified Chinese";
+  }
+  if (pref === "en-US") {
+    return "English";
+  }
+  return resolveSummaryResponseLanguage();
 }
 
 function populateComposerModelSelect(settings) {
@@ -154,6 +170,13 @@ async function main() {
   // brand-new scene card for the NEW turn — an earlier turn's card is never touched.
   const sceneCardsByTurnId = new Map();
 
+  // Set for the duration of whatever generate/adjust turn is currently in flight (there is only
+  // ever one live turn at a time — the composer's send button doubles as a stop button and Enter
+  // is ignored while busy, see threeBoxChatPanel.js's setBusy). Cleared in a finally block by
+  // whichever of handleGenerateTurn/handleAdjustTurn created it, so it's always null once the
+  // composer is usable again.
+  let activeAbortController = null;
+
   function getVisionCapable() {
     const settings = settingsModal.getSettings();
     const selectedProviderId = document.getElementById("composerModelSelect")?.value;
@@ -164,6 +187,30 @@ async function main() {
     if (stage === "commands") return t("threebox.app.stageCommands", "操作命令");
     if (stage === "json-incremental") return t("threebox.app.stageJsonPatch", "JSON Patch");
     return t("threebox.app.stageFullJson", "完整 JSON");
+  }
+
+  /** `fetch`'s rejection when an AbortController fires — used to tell "user clicked stop" apart
+   * from a genuine failure so the two get different (and differently-worded) chat messages. */
+  function isAbortError(error) {
+    return error?.name === "AbortError";
+  }
+
+  const RETRY_ICON =
+    '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" d="M13 3.6v3.6h-3.6M3 12.4v-3.6h3.6"/><path fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" d="M3.6 6.6A5.2 5.2 0 0 1 13 5.3M12.4 9.4A5.2 5.2 0 0 1 3 10.7"/></svg>';
+
+  /** Builds the "重试"/"Retry" button appended below a failed or stopped turn's error text —
+   * disables itself on click (a fresh retry attempt renders into its own new message, so the
+   * stale button never needs to re-enable) and hands off to `onRetry`. */
+  function buildRetryButton(onRetry) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "chatRetryBtn";
+    btn.innerHTML = `${RETRY_ICON}<span>${t("threebox.chat.retry", "重试")}</span>`;
+    btn.addEventListener("click", () => {
+      btn.disabled = true;
+      void onRetry();
+    });
+    return btn;
   }
 
   function createAgentProgressUpdater(streaming) {
@@ -225,6 +272,20 @@ async function main() {
     const agentOptions = resolveThreeBoxAgentOptions(settings);
     const updateAgentProgress = createAgentProgressUpdater(streaming);
 
+    // Stop button: composerSendBtn doubles as stop while busy (threeBoxChatPanel.js's setBusy),
+    // wired to abort this controller via onStopRequested. Cleared as soon as the cancelable
+    // network call settles (success or failure) rather than held for the whole function — title/
+    // recap/render afterward are fast and not worth blocking a new message on.
+    const abortController = new AbortController();
+    activeAbortController = abortController;
+    chatPanel.setBusy(true);
+    const clearBusyIfCurrent = () => {
+      if (activeAbortController === abortController) {
+        activeAbortController = null;
+      }
+      chatPanel.setBusy(false);
+    };
+
     try {
       const { sceneJson, sceneJsonString, agentResult } = await runThreeBoxGenerateTurn({
         userPrompt: text,
@@ -235,8 +296,12 @@ async function main() {
           streaming.update(streamBuffer);
         },
         agentOptions,
-        onAgentProgress: updateAgentProgress
+        onAgentProgress: updateAgentProgress,
+        includeReferenceLinks: settings.ai?.attachReferenceLinks !== false,
+        locale: getHostLocale(),
+        signal: abortController.signal
       });
+      clearBusyIfCurrent();
 
       streaming.remove();
       const agentSummary = buildAgentProcessSummary(agentResult);
@@ -244,23 +309,43 @@ async function main() {
         api.appendToBody(textEl, api.buildSummaryBlock(agentSummary));
       }
       api.appendToBody(textEl, api.buildJsonCollapse(sceneJsonString));
+
+      // Title and recap are independent AI calls that both only need `digest` — kick both off
+      // together (rather than title-then-recap sequentially) so the extra title round-trip this
+      // adds doesn't compound with the existing recap latency. Title is awaited before the scene
+      // card renders (its result becomes the card's label/export file name); recap is awaited
+      // just after, exactly as before.
+      const digest = buildResultDigest(sceneJson);
+      const titlePromise =
+        settings.ai?.autoGenerateSceneTitle !== false
+          ? runThreeBoxGenerateSceneTitle({
+              userPrompt: text,
+              resultDigest: digest,
+              providerOptions,
+              responseLanguage: resolveSceneTitleLanguage(settings)
+            }).catch(() => "")
+          : Promise.resolve("");
+      const recapPromise =
+        settings.ai?.includeTurnSummary !== false
+          ? runThreeBoxSummary({
+              userPrompt: text,
+              mode: "generate",
+              turnId,
+              resultDigest: digest,
+              providerOptions,
+              responseLanguage: resolveSummaryResponseLanguage()
+            }).catch(() => "")
+          : Promise.resolve("");
+
+      const sceneTitle = await titlePromise;
       const sceneCard = createThreeBoxSceneCard();
       api.appendToBody(textEl, sceneCard.el);
-      await sceneCard.render(sceneJson, { label: text });
+      await sceneCard.render(sceneJson, { label: sceneTitle || text });
       sceneCardsByTurnId.set(turnId, sceneCard);
 
       let recap = "";
       if (settings.ai?.includeTurnSummary !== false) {
-        const digest = buildResultDigest(sceneJson);
-        recap =
-          (await runThreeBoxSummary({
-            userPrompt: text,
-            mode: "generate",
-            turnId,
-            resultDigest: digest,
-            providerOptions,
-            responseLanguage: resolveSummaryResponseLanguage()
-          }).catch(() => "")) || t("threebox.app.defaultGenerateRecap", "已根据您的描述生成场景。");
+        recap = (await recapPromise) || t("threebox.app.defaultGenerateRecap", "已根据您的描述生成场景。");
         api.appendToBody(textEl, api.buildSummaryBlock(recap));
       }
 
@@ -279,13 +364,20 @@ async function main() {
         commands: null,
         spatialSummary: "",
         recapSummary: recap,
+        sceneTitle,
         createdAt: Date.now()
       });
       sidebar.touchActiveConversation(text);
     } catch (error) {
-      console.error("[threebox] generate turn failed:", error);
+      clearBusyIfCurrent();
       streaming.remove();
-      api.updateAssistantMessage(textEl, t("threebox.app.generateFailed", "生成失败：{error}", { error: error?.message || error }));
+      if (isAbortError(error)) {
+        api.updateAssistantMessage(textEl, t("threebox.app.generateStopped", "已停止生成。"));
+      } else {
+        console.error("[threebox] generate turn failed:", error);
+        api.updateAssistantMessage(textEl, t("threebox.app.generateFailed", "生成失败：{error}", { error: error?.message || error }));
+      }
+      api.appendToBody(textEl, buildRetryButton(() => handleGenerateTurn(text, api, { conversationId, turnId })));
     }
   }
 
@@ -315,6 +407,17 @@ async function main() {
     const agentOptions = resolveThreeBoxAgentOptions(settings);
     const updateAgentProgress = createAgentProgressUpdater(streaming);
 
+    // See handleGenerateTurn's matching comment.
+    const abortController = new AbortController();
+    activeAbortController = abortController;
+    chatPanel.setBusy(true);
+    const clearBusyIfCurrent = () => {
+      if (activeAbortController === abortController) {
+        activeAbortController = null;
+      }
+      chatPanel.setBusy(false);
+    };
+
     try {
       const contextPayload = resolveAdjustContextPayload(targetSceneJson, settings.ai);
       const envelope = buildStructuredTurnEnvelope({
@@ -322,7 +425,8 @@ async function main() {
         intent: "adjust",
         targetTurnId,
         contextPayload,
-        globalPromptPrefix: settings.ai?.globalPromptPrefix
+        globalPromptPrefix: settings.ai?.globalPromptPrefix,
+        includeReferenceLinks: settings.ai?.attachReferenceLinks !== false
       });
 
       const result = await runThreeBoxAdjustTurn({
@@ -337,8 +441,11 @@ async function main() {
         onDelta: (delta) => {
           streamBuffer += delta;
           streaming.update(streamBuffer);
-        }
+        },
+        locale: getHostLocale(),
+        signal: abortController.signal
       });
+      clearBusyIfCurrent();
 
       const sceneJson = result.sceneJson;
       const sceneJsonString = result.sceneJsonString;
@@ -356,24 +463,43 @@ async function main() {
         api.appendToBody(textEl, api.buildDiffCollapse("patch", JSON.stringify(result.patch, null, 2)));
       }
       api.appendToBody(textEl, api.buildJsonCollapse(sceneJsonString));
+
+      // See handleGenerateTurn's matching comment: title + recap kicked off together (both only
+      // need `digest`), title awaited before render (becomes the card's label/export file name),
+      // recap awaited just after as before.
+      const digest = buildResultDigest(sceneJson);
+      const titlePromise =
+        settings.ai?.autoGenerateSceneTitle !== false
+          ? runThreeBoxGenerateSceneTitle({
+              userPrompt: text,
+              resultDigest: digest,
+              providerOptions,
+              responseLanguage: resolveSceneTitleLanguage(settings)
+            }).catch(() => "")
+          : Promise.resolve("");
+      const recapPromise =
+        settings.ai?.includeTurnSummary !== false
+          ? runThreeBoxSummary({
+              userPrompt: text,
+              mode: "adjust",
+              targetTurnId,
+              turnId,
+              resultDigest: digest,
+              providerOptions,
+              responseLanguage: resolveSummaryResponseLanguage()
+            }).catch(() => "")
+          : Promise.resolve("");
+
+      const sceneTitle = await titlePromise;
       const sceneCard = createThreeBoxSceneCard();
       api.appendToBody(textEl, sceneCard.el);
-      await sceneCard.render(sceneJson, { label: text });
+      await sceneCard.render(sceneJson, { label: sceneTitle || text });
       sceneCardsByTurnId.set(turnId, sceneCard);
 
       let recap = "";
       if (settings.ai?.includeTurnSummary !== false) {
-        const digest = buildResultDigest(sceneJson);
         recap =
-          (await runThreeBoxSummary({
-            userPrompt: text,
-            mode: "adjust",
-            targetTurnId,
-            turnId,
-            resultDigest: digest,
-            providerOptions,
-            responseLanguage: resolveSummaryResponseLanguage()
-          }).catch(() => "")) ||
+          (await recapPromise) ||
           t("threebox.app.defaultAdjustRecap", "已通过{stage}调整了场景。", { stage: stageResultLabel(result.stage) });
         api.appendToBody(
           textEl,
@@ -403,13 +529,23 @@ async function main() {
         patch: result.stage === "json-incremental" ? result.patch || null : null,
         spatialSummary: "",
         recapSummary: recap,
+        sceneTitle,
         createdAt: Date.now()
       });
       sidebar.touchActiveConversation(text);
     } catch (error) {
-      console.error("[threebox] adjust turn failed:", error);
+      clearBusyIfCurrent();
       streaming.remove();
-      api.updateAssistantMessage(textEl, t("threebox.app.adjustFailed", "调整失败：{error}", { error: error?.message || error }));
+      if (isAbortError(error)) {
+        api.updateAssistantMessage(textEl, t("threebox.app.adjustStopped", "已停止调整。"));
+      } else {
+        console.error("[threebox] adjust turn failed:", error);
+        api.updateAssistantMessage(textEl, t("threebox.app.adjustFailed", "调整失败：{error}", { error: error?.message || error }));
+      }
+      api.appendToBody(
+        textEl,
+        buildRetryButton(() => handleAdjustTurn(text, api, { conversationId, turnId, targetTurnId }))
+      );
     }
   }
 
@@ -451,6 +587,7 @@ async function main() {
       commands: null,
       spatialSummary: "",
       recapSummary: t("threebox.app.templateAppliedRecap", "已应用模板「{label}」。", { label: attached.label }),
+      sceneTitle: attached.label,
       createdAt: Date.now()
     });
     sidebar.touchActiveConversation(t("threebox.app.templateTouchLabel", "模板：{label}", { label: attached.label }));
@@ -518,7 +655,10 @@ async function main() {
     }
   }
 
-  const chatPanel = createThreeBoxChatPanel({ onUserMessage: handleUserMessage });
+  const chatPanel = createThreeBoxChatPanel({
+    onUserMessage: handleUserMessage,
+    onStopRequested: () => activeAbortController?.abort()
+  });
   chatPanel.init();
 
   /** Disposes every currently-tracked scene card's WebGL context before dropping the map —
@@ -568,7 +708,7 @@ async function main() {
       chatPanel.appendToBody(textEl, chatPanel.buildJsonCollapse(sceneJsonString));
       const sceneCard = createThreeBoxSceneCard();
       chatPanel.appendToBody(textEl, sceneCard.el);
-      await sceneCard.render(JSON.parse(sceneJsonString), { label: turn.userPrompt });
+      await sceneCard.render(JSON.parse(sceneJsonString), { label: turn.sceneTitle || turn.userPrompt });
       sceneCardsByTurnId.set(turn.id, sceneCard);
       if (turn.recapSummary) {
         chatPanel.appendToBody(textEl, chatPanel.buildSummaryBlock(turn.recapSummary));

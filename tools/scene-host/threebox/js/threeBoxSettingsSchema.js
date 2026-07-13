@@ -25,7 +25,10 @@ export const THREEBOX_SETTINGS_DEFAULTS = {
     includeFullJson: false,
     defaultImageModel: "dall-e-3",
     globalPromptPrefix: "",
-    includeTurnSummary: true
+    includeTurnSummary: true,
+    autoGenerateSceneTitle: true,
+    sceneTitleLanguage: "auto",
+    attachReferenceLinks: true
   },
   agent: {
     enabled: false,
@@ -67,6 +70,20 @@ export const THREEBOX_SETTINGS_FIELDS = [
     rows: 4
   },
   { section: "ai", path: "ai.includeTurnSummary", type: "checkbox", label: "场景生成后输出简短总结" },
+  { section: "ai", path: "ai.autoGenerateSceneTitle", type: "checkbox", label: "自动为场景生成标题" },
+  {
+    section: "ai",
+    path: "ai.sceneTitleLanguage",
+    type: "select",
+    label: "场景标题语言",
+    options: [["auto", "默认"], ["en-US", "English"], ["zh-CN", "中文"]]
+  },
+  {
+    section: "ai",
+    path: "ai.attachReferenceLinks",
+    type: "checkbox",
+    label: "提示词中附带 ThreeJSON 文档与示例仓库链接"
+  },
 
   { section: "agent", path: "agent.enabled", type: "checkbox", label: "开启多轮 Agent" },
   { section: "agent", path: "agent.depth", type: "select", label: "Agent 深度", options: [["simple", "简单"], ["medium", "中等"], ["deep", "深入"], ["auto", "自动"]] },

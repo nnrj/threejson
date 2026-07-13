@@ -17,12 +17,20 @@
  *    result + resolved context (spatial summary or full JSON, caller's choice) + the user's raw
  *    prompt into one structured JSON-formatted string, meant to be handed to the existing
  *    generate/update entry points as `prompt` / `context.userMessage`.
+ * 4. `generateSceneTitle` — a lightweight, separate chat call that produces a short scene title
+ *    for a completed turn, for use as a chat host's scene-card label and (via that label) its
+ *    download/export file name.
  */
 import { requestChatCompletion, extractJsonText } from "./sceneAiService.js";
 import { sanitizeAiJsonText } from "./sceneJsonSanitize.js";
 
 const DEFAULT_CLASSIFY_MAX_TOKENS = 300;
 const DEFAULT_SUMMARIZE_MAX_TOKENS = 400;
+const DEFAULT_TITLE_MAX_TOKENS = 60;
+const SCENE_TITLE_MAX_LENGTH = 80;
+/** Characters unsafe in a file/folder name across common filesystems — a generated title is used
+ * verbatim as a chat host's download/export file name (see generateSceneTitle below). */
+const SCENE_TITLE_UNSAFE_CHARS = /[\\/:*?"<>|]/g;
 
 /** Keep only chat-completion transport options (avoid leaking unrelated caller options into the HTTP body). */
 function pickChatCompletionOptions(source, fallbackMaxTokens) {
@@ -183,6 +191,71 @@ async function summarizeSceneTurn(input = {}, options = {}) {
   }
 }
 
+function buildGenerateTitleSystemPrompt() {
+  return [
+    "You write a short, descriptive title for a single turn's resulting 3D scene, for use as a chat host's scene-card label and as a downloaded/exported file name.",
+    "Output ONLY the title text itself — no quotes, no Markdown, no commentary, no trailing period.",
+    "Keep it concise: roughly 2-8 words (or the equivalent length in the requested language).",
+    "The title must describe the resulting SCENE (what it depicts), not the chat turn itself — never write things like \"Scene generated\" or \"Adjustment applied\".",
+    "Since the title is used verbatim as a file name, do not include characters such as / \\ : * ? \" < > |."
+  ].join("\n");
+}
+
+function buildGenerateTitleUserMessage({ userPrompt, resultDigest, responseLanguage }) {
+  const lines = [
+    `User request:\n${String(userPrompt || "").trim()}`,
+    `Result digest (for your reference, not to be echoed verbatim):\n${String(resultDigest || "").trim() || "(none)"}`
+  ];
+  if (responseLanguage) {
+    lines.push(`Write the title in ${responseLanguage}, regardless of what language the user request above is in.`);
+  }
+  return lines.join("\n\n");
+}
+
+/** Strips wrapping quotes/Markdown, collapses whitespace/newlines, drops characters unsafe in a
+ * file name, and caps length — the model is instructed to already produce clean output (see
+ * buildGenerateTitleSystemPrompt), but the result is used verbatim as a download file name, so it
+ * must be defensively sanitized rather than trusted outright. */
+function sanitizeSceneTitleText(raw) {
+  let text = String(raw || "").trim();
+  text = text.replace(/^[`"'“”‘’]+|[`"'“”‘’]+$/g, "").trim();
+  text = text.replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim();
+  text = text.replace(SCENE_TITLE_UNSAFE_CHARS, "").trim();
+  if (text.length > SCENE_TITLE_MAX_LENGTH) {
+    text = text.slice(0, SCENE_TITLE_MAX_LENGTH).trim();
+  }
+  return text;
+}
+
+/**
+ * Produce a short scene title for a completed generate/adjust turn — for use as a chat host's
+ * scene-card display label and, via that label, its downloaded JSON / exported .tjz file name.
+ * Deliberately never sends/receives full scene JSON (token cost) — same `resultDigest` convention
+ * as `summarizeSceneTurn`.
+ *
+ * @param {{ userPrompt: string, resultDigest?: string, responseLanguage?: string }} input
+ *   `responseLanguage` is an optional human-readable language name (e.g. "Simplified Chinese",
+ *   "English") — when provided, the title is written in that language regardless of the user
+ *   request's own language, so a chat host can keep titles consistent with a configured language
+ *   setting rather than whatever language the user happened to type in.
+ * @param {object} [options] requestChatCompletion transport options
+ * @returns {Promise<string>} plain-text title; empty string on failure (caller should fall back to the raw user prompt)
+ */
+async function generateSceneTitle(input = {}, options = {}) {
+  try {
+    const content = await requestChatCompletion({
+      ...pickChatCompletionOptions(options, DEFAULT_TITLE_MAX_TOKENS),
+      messages: [
+        { role: "system", content: buildGenerateTitleSystemPrompt() },
+        { role: "user", content: buildGenerateTitleUserMessage(input) }
+      ]
+    });
+    return sanitizeSceneTitleText(content);
+  } catch (_error) {
+    return "";
+  }
+}
+
 /**
  * Pure (no network) assembly of a "structured turn envelope" a chat-style host can send as the
  * actual generate/adjust prompt: the pre-resolved intent, the resolved context (spatial summary
@@ -200,10 +273,21 @@ async function summarizeSceneTurn(input = {}, options = {}) {
  *   targetTurnId?: string|null,
  *   contextPayload?: object|null,
  *   adjustOutputMode?: "commands"|"json-incremental"|"json-full"|null,
- *   globalPromptPrefix?: string|null
+ *   globalPromptPrefix?: string|null,
+ *   includeReferenceLinks?: boolean
  * }} input
+ *   `includeReferenceLinks`: when true, adds a `referenceLinks` block pointing at the ThreeJSON
+ *   docs site and its example-JSON repo folder — a citation only (this function does no network
+ *   I/O), for models whose training data already covers these public URLs to draw on usage not
+ *   spelled out elsewhere in the prompt. Applies to both single-round and Agent-mode turns, since
+ *   both paths ultimately send this envelope string as the user message.
  * @returns {string}
  */
+const THREE_JSON_REFERENCE_LINKS = Object.freeze({
+  docs: "https://threejson.org/website/#/docs-index",
+  examples: "https://github.com/nnrj/threejson/tree/master/assets/json"
+});
+
 function buildStructuredTurnEnvelope(input = {}) {
   const envelope = {
     intent: input?.intent === "adjust" ? "adjust" : "generate",
@@ -212,6 +296,13 @@ function buildStructuredTurnEnvelope(input = {}) {
   const globalInstructions = typeof input?.globalPromptPrefix === "string" ? input.globalPromptPrefix.trim() : "";
   if (globalInstructions) {
     envelope.globalInstructions = globalInstructions;
+  }
+  if (input?.includeReferenceLinks === true) {
+    envelope.referenceLinks = {
+      note: "If your training data covers these public resources, use them for ThreeJSON usage not otherwise spelled out in this prompt.",
+      docsIndex: THREE_JSON_REFERENCE_LINKS.docs,
+      jsonExamples: THREE_JSON_REFERENCE_LINKS.examples
+    };
   }
   if (envelope.intent === "adjust") {
     envelope.targetTurnId = typeof input?.targetTurnId === "string" ? input.targetTurnId : null;
@@ -225,4 +316,4 @@ function buildStructuredTurnEnvelope(input = {}) {
   return JSON.stringify(envelope, null, 2);
 }
 
-export { classifyTurnIntent, summarizeSceneTurn, buildStructuredTurnEnvelope };
+export { classifyTurnIntent, summarizeSceneTurn, generateSceneTitle, buildStructuredTurnEnvelope };

@@ -208,6 +208,81 @@ test("runSceneAgent update commands agent repairs invalid script", async () => {
   }
 });
 
+test("runSceneAgent attaches local reference material to an agent commands round when the prompt matches a covered signal", async () => {
+  // End-to-end wiring check: chatOptions.resolveReferenceUrl/locale (as a ThreeBox-style host
+  // would pass them) should flow all the way from runSceneAgent's options bag down into the
+  // actual chat-completion user message for a commands-mode agent round, via
+  // resolveAgentReferenceMaterial + sceneReferenceCatalog.fetchReferenceMaterial.
+  const currentScene = JSON.stringify(MINIMAL_SCENE);
+  const manifest = [
+    {
+      section: "event-mechanism",
+      sectionTitleEn: "Event Mechanism",
+      docLinks: [{ file: "event-mechanism.md" }],
+      items: [{ id: "declarative-action", json: "assets/json/demo-show/event-mechanism/declarative-action.json" }]
+    }
+  ];
+  const fakeExample = JSON.stringify({ threeJsonId: "demo", worldInfo: { boxModelList: [] } });
+  let chatMessagesLastCall = null;
+  const fetchMock = mock.fn(async (url, opts) => {
+    const href = String(url);
+    if (href === "https://ref.test/assets/json/demo-show/manifest.json") {
+      return { ok: true, async text() { return JSON.stringify(manifest); } };
+    }
+    if (href === "https://ref.test/docs/en/event-mechanism.md") {
+      return { ok: true, async text() { return "Use object events with action(s) for click/hover."; } };
+    }
+    if (href === "https://ref.test/assets/json/demo-show/event-mechanism/declarative-action.json") {
+      return { ok: true, async text() { return fakeExample; } };
+    }
+    // Chat completion endpoint
+    const body = JSON.parse(opts.body);
+    chatMessagesLastCall = body.messages;
+    return {
+      ok: true,
+      async text() { return ""; },
+      async json() {
+        return {
+          choices: [
+            { message: { content: 'object.patch id=floor partial={"material":{"color":"#336699"}}' } }
+          ]
+        };
+      }
+    };
+  });
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = fetchMock;
+  try {
+    const result = await runSceneAgent(
+      {
+        mode: "update",
+        prompt: "add a click event on the floor",
+        currentSceneJsonString: currentScene,
+        outputMode: "commands",
+        updateContext: { objectList: [{ threeJsonId: "floor", objType: "box" }] }
+      },
+      {
+        agent: { enabled: true, depth: "medium" },
+        apiKey: "test-key",
+        provider: "deepseek",
+        resolveReferenceUrl: (path) => `https://ref.test/${path}`,
+        locale: "en-US"
+      }
+    );
+    assert.equal(result.outputMode, "commands");
+    assert.ok(chatMessagesLastCall, "expected at least one chat-completion call");
+    const userMessage = chatMessagesLastCall.find((m) => m.role === "user")?.content || "";
+    assert.ok(userMessage.includes("Event Mechanism"), "user message should include the matched section title");
+    assert.ok(
+      userMessage.includes("Use object events with action(s) for click/hover."),
+      "user message should include the fetched doc excerpt"
+    );
+    assert.ok(userMessage.includes("declarative-action"), "user message should include the fetched example");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("runSceneAgent update auto accepts JSON output in agent session", async () => {
   const currentScene = JSON.stringify(MINIMAL_SCENE);
   const updatedScene = JSON.stringify({

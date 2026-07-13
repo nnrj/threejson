@@ -223,7 +223,19 @@ button { font: inherit; }
 }
 .composerSendBtn:hover { background: var(--brand-hover); }
 .composerSendBtn svg { width: 16px; height: 16px; }
+.composerSendBtnStop { background: #5a5f6b; }
+.composerSendBtnStop:hover { background: #6b7280; }
 .composerHint { margin-top: 10px; font-size: 11.5px; color: var(--muted); text-align: center; max-width: 760px; }
+
+/* ---- Chat retry button (shown below a failed/stopped assistant turn) ---- */
+.chatRetryBtn {
+  margin-top: 8px; padding: 7px 14px; border: 1px solid var(--line); border-radius: 9px;
+  background: var(--button); color: var(--text); font-size: 12.5px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.chatRetryBtn:hover { border-color: var(--brand); }
+.chatRetryBtn:disabled { opacity: 0.5; cursor: default; }
+.chatRetryBtn svg { width: 13px; height: 13px; }
 
 /* ---- Attached scene context (template picked from gallery, or a pending upload) ---- */
 .attachedContextRow { padding: 10px 10px 0; }

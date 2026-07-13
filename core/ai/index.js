@@ -62,6 +62,7 @@ import {
 import {
   classifyTurnIntent,
   summarizeSceneTurn,
+  generateSceneTitle,
   buildStructuredTurnEnvelope
 } from "./sceneChatSession.js";
 
@@ -134,6 +135,7 @@ if (typeof window !== "undefined") {
     buildPlacementHints,
     classifyTurnIntent,
     summarizeSceneTurn,
+    generateSceneTitle,
     buildStructuredTurnEnvelope
   };
 }
@@ -184,5 +186,6 @@ export {
   buildPlacementHints,
   classifyTurnIntent,
   summarizeSceneTurn,
+  generateSceneTitle,
   buildStructuredTurnEnvelope
 };

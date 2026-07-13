@@ -9,7 +9,10 @@
  *   io.turnCacheMode), commands (array|null — the operation commands that produced this turn's
  *   result, only present for stage:"commands" turns; used to reconstruct sceneJson by replaying
  *   from the nearest earlier turn that still has a full sceneJson — see
- *   threeBoxTurnReconstruction.js), spatialSummary, recapSummary, createdAt }.
+ *   threeBoxTurnReconstruction.js), spatialSummary, recapSummary, sceneTitle (string — AI-generated
+ *   short scene title when settings.ai.autoGenerateSceneTitle is on, else ""; used as the scene
+ *   card's label/download file name, both live and on conversation-switch replay — see
+ *   threeBoxApp.js), createdAt }.
  * - "resources" (keyed by resource id): user-uploaded files from the composer's attach menu —
  *   { id, kind: 'json'|'tjz'|'image'|'model'|'other', name, sceneJson (string, only for
  *   json/tjz/model — the auto-loadable kinds), blob (raw File, only for image/other/model —

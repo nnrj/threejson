@@ -4,6 +4,7 @@ import {
   runSceneAgent,
   classifyTurnIntent,
   summarizeSceneTurn,
+  generateSceneTitle,
   buildStructuredTurnEnvelope,
   buildObjectSpatialCardsFromSceneJson,
   buildSceneScaleProfile,
@@ -14,8 +15,16 @@ import {
   sceneToStandardJsonSimple,
   createJsonScene
 } from "threejson";
-import { sceneHostAssetUrl } from "../../shared/js/sceneHostPaths.js";
+import { sceneHostAssetUrl, resolveSceneHostUrl } from "../../shared/js/sceneHostPaths.js";
 import { enqueueThreeBoxSceneLoad } from "./threeBoxSceneLoadQueue.js";
+
+/** Resolves a repo-relative path (docs/zh/event-mechanism.md, assets/json/demo-show/...) to a
+ * fetchable URL for core/ai/sceneReferenceCatalog.js's local doc/example retrieval — passed as
+ * `resolveReferenceUrl` into runSceneAgent's options so the (environment-agnostic) agent loop
+ * never needs to know how ThreeBox itself is served. */
+function resolveThreeBoxReferenceUrl(repoRelativePath) {
+  return resolveSceneHostUrl(repoRelativePath);
+}
 
 /**
  * Resolves a saved provider config (tools/scene-host/threebox/js/threeBoxSettingsSchema.js's
@@ -91,10 +100,23 @@ export function buildResultDigest(sceneJson) {
 /**
  * First-turn (no prior context) generation: builds the structured JSON envelope and calls
  * core/ai's generateSceneJsonString with streaming enabled.
- * @param {{ userPrompt: string, providerOptions: object, onDelta?: (delta:string)=>void, signal?: AbortSignal, globalPromptPrefix?: string, agentOptions?: object, onAgentProgress?: (p: object)=>void }} input
+ * @param {{ userPrompt: string, providerOptions: object, onDelta?: (delta:string)=>void, signal?: AbortSignal, globalPromptPrefix?: string, agentOptions?: object, onAgentProgress?: (p: object)=>void, includeReferenceLinks?: boolean, locale?: string }} input
+ *   `includeReferenceLinks`/`locale` are threebox-shell settings (general.locale / ai.attachReferenceLinks)
+ *   forwarded into the envelope's referenceLinks block and (for agent mode) into the Agent's
+ *   local docs/example retrieval — see core/ai/sceneChatSession.js and sceneReferenceCatalog.js.
  */
-export async function runThreeBoxGenerateTurn({ userPrompt, providerOptions, onDelta, signal, globalPromptPrefix, agentOptions, onAgentProgress }) {
-  const envelope = buildStructuredTurnEnvelope({ userPrompt, intent: "generate", globalPromptPrefix });
+export async function runThreeBoxGenerateTurn({
+  userPrompt,
+  providerOptions,
+  onDelta,
+  signal,
+  globalPromptPrefix,
+  agentOptions,
+  onAgentProgress,
+  includeReferenceLinks,
+  locale
+}) {
+  const envelope = buildStructuredTurnEnvelope({ userPrompt, intent: "generate", globalPromptPrefix, includeReferenceLinks });
   if (agentOptions?.enabled) {
     const result = await runSceneAgent(
       { mode: "generate", prompt: envelope },
@@ -105,6 +127,8 @@ export async function runThreeBoxGenerateTurn({ userPrompt, providerOptions, onD
           enabled: true,
           depth: agentOptions.depth || "medium"
         },
+        resolveReferenceUrl: resolveThreeBoxReferenceUrl,
+        locale,
         onProgress: onAgentProgress
       }
     );
@@ -138,6 +162,17 @@ export async function classifyThreeBoxTurnIntent({ userPrompt, history }, provid
  */
 export async function runThreeBoxSummary({ userPrompt, mode, targetTurnId, turnId, resultDigest, providerOptions, responseLanguage }) {
   return summarizeSceneTurn({ userPrompt, mode, targetTurnId, turnId, resultDigest, responseLanguage }, providerOptions);
+}
+
+/**
+ * Best-effort scene title for the scene card's display label / download-export file name; never
+ * throws (returns "" on failure) so a failed title call never blocks the turn from rendering —
+ * callers should fall back to the raw user prompt. `responseLanguage` (e.g. "Simplified
+ * Chinese"/"English") keeps the title's language following the host's configured scene-title
+ * language setting rather than whatever language the user happened to type their prompt in.
+ */
+export async function runThreeBoxGenerateSceneTitle({ userPrompt, resultDigest, providerOptions, responseLanguage }) {
+  return generateSceneTitle({ userPrompt, resultDigest, responseLanguage }, providerOptions);
 }
 
 /**
@@ -223,7 +258,9 @@ async function runThreeBoxAgentAdjustTurn({
   agentOptions,
   updateOutputMode,
   resolveContextPayload,
-  onAgentProgress
+  onAgentProgress,
+  locale,
+  signal
 }) {
   const mode = mapThreeBoxUpdateModeToAgentInput(updateOutputMode);
   const baseSceneJson = parseSceneJsonString(targetSceneJsonString);
@@ -247,6 +284,9 @@ async function runThreeBoxAgentAdjustTurn({
         ...providerOptions,
         updateMode: mode.updateMode,
         agent: { enabled: true, depth: agentOptions.depth || "medium" },
+        resolveReferenceUrl: resolveThreeBoxReferenceUrl,
+        locale,
+        signal,
         onProgress: onAgentProgress
       }
     );
@@ -295,6 +335,9 @@ async function runThreeBoxAgentAdjustTurn({
           depth: agentOptions.depth || "medium",
           iterativeApply: agentOptions.iterativeApply !== false
         },
+        resolveReferenceUrl: resolveThreeBoxReferenceUrl,
+        locale,
+        signal,
         applyCommands,
         refreshContext,
         onProgress: onAgentProgress
@@ -346,7 +389,9 @@ async function runThreeBoxAgentAdjustTurn({
  *   agentOptions?: object,
  *   updateOutputMode?: string,
  *   resolveContextPayload?: (sceneJson: object) => object,
- *   onAgentProgress?: (p: object) => void
+ *   onAgentProgress?: (p: object) => void,
+ *   locale?: string,
+ *   signal?: AbortSignal
  * }} input
  * @returns {Promise<
  *   | { stage: "commands", commands: object[], execResult: object, sceneJson: object, sceneJsonString: string }
@@ -363,7 +408,9 @@ export async function runThreeBoxAdjustTurn({
   agentOptions,
   updateOutputMode = "commands",
   resolveContextPayload,
-  onAgentProgress
+  onAgentProgress,
+  locale,
+  signal
 }) {
   if (agentOptions?.enabled) {
     return runThreeBoxAgentAdjustTurn({
@@ -374,7 +421,9 @@ export async function runThreeBoxAdjustTurn({
       agentOptions,
       updateOutputMode,
       resolveContextPayload,
-      onAgentProgress
+      onAgentProgress,
+      locale,
+      signal
     });
   }
 
@@ -382,7 +431,7 @@ export async function runThreeBoxAdjustTurn({
     const cmdResult = await requestUpdatedSceneEditCommands(
       userPrompt,
       { userMessage: envelope, currentSceneJsonString: targetSceneJsonString, fullSceneJson: targetSceneJsonString },
-      { ...providerOptions, outputMode: "commands", fallbackToJson: false, stream: true, onDelta }
+      { ...providerOptions, outputMode: "commands", fallbackToJson: false, stream: true, onDelta, signal }
     );
     if (cmdResult.outputMode === "commands" && cmdResult.commands?.length) {
       const offscreenRuntime = await createOffscreenRuntimeFromSceneJsonString(targetSceneJsonString);
@@ -418,7 +467,8 @@ export async function runThreeBoxAdjustTurn({
       updateMode: "incremental",
       includePatch: true,
       stream: true,
-      onDelta
+      onDelta,
+      signal
     });
     return {
       stage: "json-incremental",
@@ -434,7 +484,8 @@ export async function runThreeBoxAdjustTurn({
     ...providerOptions,
     updateMode: "full",
     stream: true,
-    onDelta
+    onDelta,
+    signal
   });
   return { stage: "json-full", sceneJson: parseSceneJsonString(fullJsonString), sceneJsonString: fullJsonString };
 }

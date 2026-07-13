@@ -635,10 +635,18 @@ async function requestUpdatedSceneEditCommands(prompt, context = {}, options = {
           agentRound
         });
 
-  const systemPrompt =
-    outputMode === "auto" || agentRound || iterativeApply
-      ? buildSceneCommandAutoUpdateSystemPrompt({ agentRound: agentRound || iterativeApply, iterativeApply })
-      : buildSceneCommandUpdateSystemPrompt();
+  // Whenever the model is given the "auto" system prompt (commands preferred, full JSON allowed
+  // for large restructures), the response parser below must accept both forms too — agent/
+  // iterative rounds always get that prompt regardless of the caller's `outputMode` (ThreeBox's
+  // "commands" setting never becomes literal outputMode:"auto"), so gating the JSON-detection
+  // branch on `outputMode === "auto"` alone let the model follow its own prompt's advice and
+  // return valid scene JSON, only to have it rejected as "not a valid command script" with no
+  // fallback (agent calls always pass fallbackToJson:false) — the whole agent turn then failed
+  // after burning through every repair round on responses that were never actually invalid.
+  const allowAutoOutputKind = outputMode === "auto" || agentRound || iterativeApply;
+  const systemPrompt = allowAutoOutputKind
+    ? buildSceneCommandAutoUpdateSystemPrompt({ agentRound: agentRound || iterativeApply, iterativeApply })
+    : buildSceneCommandUpdateSystemPrompt();
 
   const content = await requestChatCompletion({
     ...options,
@@ -668,7 +676,7 @@ async function requestUpdatedSceneEditCommands(prompt, context = {}, options = {
     };
   };
 
-  if (outputMode === "auto") {
+  if (allowAutoOutputKind) {
     const kind = resolveOutputKind(content);
     if (kind === "json") {
       try {

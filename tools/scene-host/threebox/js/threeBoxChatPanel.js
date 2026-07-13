@@ -2,8 +2,15 @@ import { renderMarkdownToSafeHtml } from "./threeBoxMarkdown.js";
 import { showToast } from "./threeBoxUiFeedback.js";
 import { t } from "../../shared/i18n/index.js";
 
+const SEND_ICON =
+  '<svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path fill="currentColor" d="M10 3.5 16.5 16h-13L10 3.5z"/></svg>';
+const STOP_ICON =
+  '<svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5" fill="currentColor"/></svg>';
+
 /**
- * @param {{ onUserMessage?: (text: string, api: { appendAssistantMessage: (t: string) => HTMLElement, updateAssistantMessage: (el: HTMLElement, t: string) => void }) => Promise<void>|void }} [host]
+ * @param {{ onUserMessage?: (text: string, api: { appendAssistantMessage: (t: string) => HTMLElement, updateAssistantMessage: (el: HTMLElement, t: string) => void }) => Promise<void>|void, onStopRequested?: () => void }} [host]
+ *   `onStopRequested` is called when the composer's send button is clicked while `setBusy(true)`
+ *   is active (the button doubles as a stop button during an in-flight turn — see setBusy below).
  */
 export function createThreeBoxChatPanel(host = {}) {
   const chatHero = document.getElementById("chatHero");
@@ -11,6 +18,25 @@ export function createThreeBoxChatPanel(host = {}) {
   const composerInput = document.getElementById("composerInput");
   const composerSendBtn = document.getElementById("composerSendBtn");
   const scrollToBottomBtn = document.getElementById("scrollToBottomBtn");
+
+  let busy = false;
+
+  /** Toggles the composer's send button into a stop button for the duration of an in-flight
+   * generate/adjust turn — clicking it while busy calls `host.onStopRequested` instead of
+   * sending, and Enter is ignored (the existing text stays in the composer rather than queuing a
+   * second concurrent turn). The caller (threeBoxApp.js) is responsible for pairing every
+   * `setBusy(true)` with a `setBusy(false)` once the turn settles (success, failure, or abort). */
+  function setBusy(isBusy) {
+    busy = Boolean(isBusy);
+    if (!composerSendBtn) {
+      return;
+    }
+    composerSendBtn.innerHTML = busy ? STOP_ICON : SEND_ICON;
+    composerSendBtn.classList.toggle("composerSendBtnStop", busy);
+    const label = busy ? t("threebox.shell.stop", "停止") : t("threebox.shell.send", "发送");
+    composerSendBtn.title = label;
+    composerSendBtn.setAttribute("aria-label", label);
+  }
 
   const NEAR_BOTTOM_PX = 48;
   function isNearBottom() {
@@ -288,11 +314,18 @@ export function createThreeBoxChatPanel(host = {}) {
 
   function init() {
     composerSendBtn?.addEventListener("click", () => {
+      if (busy) {
+        host.onStopRequested?.();
+        return;
+      }
       void sendMessage(composerInput?.value);
     });
     composerInput?.addEventListener("keydown", (event) => {
       if (event.key === "Enter" && !event.shiftKey) {
         event.preventDefault();
+        if (busy) {
+          return;
+        }
         void sendMessage(composerInput?.value);
       }
     });
@@ -307,6 +340,7 @@ export function createThreeBoxChatPanel(host = {}) {
   return {
     init,
     sendMessage,
+    setBusy,
     appendMessage,
     updateAssistantMessage,
     appendToBody,
