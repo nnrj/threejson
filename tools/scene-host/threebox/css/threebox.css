@@ -92,6 +92,11 @@ button { font: inherit; }
   white-space: pre-wrap; word-break: break-word; font-size: 14.5px; line-height: 1.55;
 }
 .chatMessageAssistant .chatMessageText { font-size: 14.5px; line-height: 1.65; color: var(--text); }
+.chatTurnSpacer {
+  height: min(46vh, 420px);
+  flex: 0 0 auto;
+  pointer-events: none;
+}
 
 /* ---- Inline scene card (AI-generated scene rendered at the end of a reply) ---- */
 .sceneCard { width: 100%; margin-top: 12px; }

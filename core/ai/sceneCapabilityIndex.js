@@ -13,7 +13,8 @@ Selection principle:
 - For grounded scenes (rooms, buildings, campuses, streets, gardens, factories, exhibits, furniture layouts, game levels, dashboards standing in space), include an appropriate floor/ground/base plane even when the user does not spell out "floor"; omit it only for floating/space/abstract scenes where no support surface is implied.
 - Use advanced/native/domain/effect features only when the user explicitly asks for them or the scene clearly needs them.
 - Do not add lineList, particleEmitter, shaderSurface, native geometry, domain records, audio, or lifecycle scripts just to demonstrate capability.
-- lineList is for visible paths/routes/cables/boundaries/outlines; particleEmitter is for particles, rain, snow, dust, sparks, starfields, or similar atmospheric effects.
+- lineList is for visible paths/routes/cables/boundaries/outlines; particleEmitter is only for explicit particles, rain, snow, dust, sparks, starfields, smoke, magic, or similar requested atmospheric effects. A normal scene should not get particles as default decoration.
+- Standalone scenes should include reliable general lighting: at least ambient + directional unless the user asks for darkness. Point/spot lights are local accents and need much higher intensity than ambient/directional due to distance falloff.
 - If a requested edit targets size/color/position of an existing object, preserve unrelated dimensions and materials unless the user asks to change them.
 
 Authoring shapes:
@@ -34,7 +35,7 @@ Materials, assets, and rendering:
 - sceneConfig supports scene background/environment/fog, perspective or orthographic camera, orbit/firstPerson/fly controls, lights, helpers, renderLoop, passList/post-processing, intro.postLoad.
 
 Effects and media:
-- shaderSurface for requested custom/preset shader surfaces; particleEmitter for CPU/GPU particles when an effect/weather/particle field is actually needed; particleList/points only for legacy point clouds.
+- shaderSurface for requested custom/preset shader surfaces; particleEmitter for CPU/GPU particles only when an effect/weather/particle field is actually needed; particleList/points only for legacy point clouds.
 - windList, heatList, weather domains, nature.sky, nature.water, sprites, tubes.
 - audioList supports ambient or positional audio attached to scene/camera/object; use audioUrl and sensible playback policy fields.
 - externalModelList/objModelList load GLTF/GLB/OBJ-style assets; animationMode mixer and animationGraph support clip state machines.

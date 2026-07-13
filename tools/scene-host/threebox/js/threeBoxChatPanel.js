@@ -20,6 +20,7 @@ export function createThreeBoxChatPanel(host = {}) {
   const scrollToBottomBtn = document.getElementById("scrollToBottomBtn");
 
   let busy = false;
+  let turnSpacer = null;
 
   /** Toggles the composer's send button into a stop button for the duration of an in-flight
    * generate/adjust turn — clicking it while busy calls `host.onStopRequested` instead of
@@ -92,6 +93,25 @@ export function createThreeBoxChatPanel(host = {}) {
     syncScrollToBottomBtn();
   }
 
+  function ensureTurnSpacer() {
+    if (!chatMessages) {
+      return;
+    }
+    if (!turnSpacer) {
+      turnSpacer = document.createElement("div");
+      turnSpacer.className = "chatTurnSpacer";
+      turnSpacer.setAttribute("aria-hidden", "true");
+    }
+    if (turnSpacer.parentElement !== chatMessages) {
+      chatMessages.appendChild(turnSpacer);
+    }
+  }
+
+  function removeTurnSpacer() {
+    turnSpacer?.remove();
+    turnSpacer = null;
+  }
+
   /** Aligns `row`'s top edge to the top of the visible chat area, leaving the rest of the
    * viewport blank below it — called right after appending the user's own message, so the
    * assistant's reply has empty space to grow into instead of the view jumping straight to the
@@ -101,6 +121,7 @@ export function createThreeBoxChatPanel(host = {}) {
     if (!row) {
       return;
     }
+    ensureTurnSpacer();
     row.scrollIntoView({ block: "start", behavior: "auto" });
     syncScrollToBottomBtn();
   }
@@ -124,6 +145,7 @@ export function createThreeBoxChatPanel(host = {}) {
    * enough" from revealBottomOf's nearest-edge scrolling), matching the pre-existing always-at-
    * bottom behavior for the settled state. */
   function finishTurnScroll() {
+    removeTurnSpacer();
     scrollToBottom();
   }
 
@@ -148,7 +170,11 @@ export function createThreeBoxChatPanel(host = {}) {
     }
     body.appendChild(textEl);
     row.appendChild(body);
-    chatMessages.appendChild(row);
+    if (turnSpacer?.parentElement === chatMessages) {
+      chatMessages.insertBefore(row, turnSpacer);
+    } else {
+      chatMessages.appendChild(row);
+    }
     if (role === "user") {
       pinRowNearTop(row);
     } else {
@@ -190,6 +216,7 @@ export function createThreeBoxChatPanel(host = {}) {
       el.classList.remove("streamingPreviewPending");
       el.textContent = text;
       el.scrollTop = el.scrollHeight;
+      revealBottomOf(el);
     }
     return { el, update, remove: () => el.remove() };
   }
@@ -297,6 +324,7 @@ export function createThreeBoxChatPanel(host = {}) {
 
   function clear() {
     messages = [];
+    removeTurnSpacer();
     if (chatMessages) {
       chatMessages.innerHTML = "";
     }

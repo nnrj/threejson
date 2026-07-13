@@ -33,6 +33,8 @@ test("generation system prompt covers core ThreeJSON capabilities", () => {
   assert.match(prompt, /most fitting capability/);
   assert.match(prompt, /not a checklist/);
   assert.match(prompt, /Never add decorative lineList, particleEmitter/);
+  assert.match(prompt, /Particle emitters are opt-in effects/);
+  assert.match(prompt, /ambient 0\.45-0\.65 plus directional 0\.9-1\.2/);
   assert.match(prompt, /grounded physical scenes should usually include/);
   assert.match(prompt, /Implied support surface/);
   assert.match(prompt, /sceneConfig/);
@@ -40,7 +42,9 @@ test("generation system prompt covers core ThreeJSON capabilities", () => {
   assert.match(THREE_JSON_PRIMITIVE_GEOMETRY, /radiusTop/);
   assert.match(THREE_JSON_NATIVE_THREE, /parseMode/);
   assert.match(THREE_JSON_DOMAIN_USAGE, /dockCrane/);
-  assert.match(THREE_JSON_FEW_SHOT_EXAMPLES, /demo-css3d-particles/);
+  assert.match(THREE_JSON_FEW_SHOT_EXAMPLES, /demo-css3d-panel/);
+  assert.doesNotMatch(THREE_JSON_FEW_SHOT_EXAMPLES, /particleEmitter/);
+  assert.match(THREE_JSON_FEW_SHOT_EXAMPLES, /"type":"directional"/);
 });
 
 test("outline system prompt includes capability catalog", () => {

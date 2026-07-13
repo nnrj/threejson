@@ -14,6 +14,7 @@ Capability fit:
 - This catalog is descriptive, not a checklist. Use only the lists needed by the prompt or existing scene.
 - Keep simple scenes simple. Do not add decorative lines, particles, shaders, native meshes, domains, audio, events, or lifecycle scripts unless they correspond to a requested or clearly implied element.
 - "Needed" includes implied support surfaces: rooms, buildings, campuses, streets, gardens, factories, exhibits, furniture layouts, and game levels normally need a floor/ground/base even if the prompt does not explicitly say "floor".
+- Normal scenes should not receive particleEmitter by default. Add particles only for explicit or clearly implied particle/weather/atmospheric effects such as rain, snow, dust, sparks, smoke, magic, or starfields.
 
 Primary meshes:
 - boxModelList — box, floor, wall, glass, cabinet, door, road and other box-like presets; also mixed meshList when objType is explicit per item
@@ -33,7 +34,7 @@ Effects & visualization:
 - particleList — legacy points clouds (objType points); prefer particleEmitter for new scenes
 - windList, heatList — wind strips / heat volumes
 - spriteList, tubeList, instancedList
-- objectList — scene text (objType text): floating labels, SDF titles; also particleEmitter, css3dPanel, domain records in standard JSON
+- objectList — scene text (objType text): floating labels, SDF titles; may also hold particleEmitter, css3dPanel, domain records in standard JSON when those roles are actually needed
 
 Assets & domains:
 - externalModelList / objModelList — GLTF/OBJ paths
@@ -141,6 +142,7 @@ Match user intent to engine features (use boxes when they are the right abstract
 Appropriateness rule:
 - Choose features because they represent the scene, not because they are available. A simple building, room, shelf, table, or blockout normally needs boxes/floors/walls plus maybe labels/lights, not particles or decorative lineList.
 - Do include an unobtrusive support surface for grounded physical scenes: a floor for rooms/interiors, terrain/ground for outdoor layouts, a road/slab for streets/campuses/factories, or a plinth/base for exhibits. Do not add one for space scenes, floating diagrams, abstract sculptures, or explicitly suspended objects.
+- Do not add particleEmitter as generic ambiance. Use it only when the scene specifically contains visible particles, weather, smoke, magic, dust, sparks, or a starfield.
 - For edit requests, preserve all unspecified properties. Example: "make the blue building taller" should increase only height and adjust y/position if needed; do not change width, depth, color, or replace the object type.
 
 Intent → capability:
@@ -165,7 +167,7 @@ Intent → capability:
 - Complex Three.js shapes → native dispatch (TorusKnot, Lathe, Polyhedron, etc.)
 - GLTF/OBJ assets → externalModelList / objModelList
 - Boolean cuts on boxes → holes / joins / inters on boxModelList items (CSG)
-- Scene atmosphere → sceneConfig scene.background, lights; optional windList / heatList
+- Scene atmosphere → sceneConfig scene.background, lights; optional windList / heatList only when wind/heat is actually visible or requested
 `;
 
 const THREE_JSON_SCENE_AUTHORING_RULES = `
@@ -187,7 +189,8 @@ Scene authoring rules:
     - ambient/directional lights are NOT distance-attenuated: use small values, typically 0.4-1.3 (e.g. ambient 0.4-0.6, directional 0.8-1.3). This is the range you see in most reference scenes.
     - point/spot lights ARE distance-attenuated by inverse-square falloff ("decay" defaults to 2, i.e. physically correct) — at typical scene distances (a few meters to tens of meters) they need intensity roughly one to two orders of magnitude larger than ambient/directional, e.g. 20-60 for a light a few meters from what it's illuminating; use "unit":"candela" with a value like 2000-20000 if you want it explicitly photometric. NEVER give a point/spot light an intensity in the 0.4-1.3 range meant for ambient/directional — it will be effectively invisible.
     - Default to ambient + directional for a scene's general illumination (reliable, simple); only add point/spot lights for localized effects (a lamp, a glowing object, a spotlight beam), and always give them intensity in the tens-or-higher range above, never the ambient/directional range.
-    - Every standalone/new scene should include at least one ambient and one directional light unless the user's request clearly implies otherwise (e.g. "in total darkness except for one lamp").
+    - Every standalone/new scene should include at least one ambient and one directional light unless the user's request clearly implies otherwise (e.g. "in total darkness except for one lamp"). A good default is ambient 0.45-0.65 plus directional 0.9-1.2 from above/front/side.
+15. Particle emitters are opt-in effects, not default scene dressing. Do not include particleEmitter/particleList unless the prompt or reference clearly calls for particles/weather/smoke/magic/dust/sparks/starfield.
 `;
 
 const THREE_JSON_SCENE_SCHEMA_DESCRIPTION = `
@@ -286,8 +289,8 @@ Engine capabilities summary:
 - Native Three.js: objType native, geometry.type, parseMode auto|native; domain nativeThree
 - JSM geometry/material registry: RoundedBoxGeometry, LineGeometry, LineMaterial, and assetLibrary geometryRef/materialRef expansion
 - Groups, lines, info panels, css3d panels, shader surfaces, planes, extrude, buffer/irregular meshes
-- Particles (prefer particleEmitter), weather domains, wind, heat, sprites, tubes, instanced meshes, scene text (objType text)
-- particleEmitter: unified objType with simulation cpu|gpuCompute (gpuCompute uses GPUComputationRenderer + ShaderMaterial points)
+- Particles (prefer particleEmitter only when requested/implied), weather domains, wind, heat, sprites, tubes, instanced meshes, scene text (objType text)
+- particleEmitter: unified objType with simulation cpu|gpuCompute (gpuCompute uses GPUComputationRenderer + ShaderMaterial points); use only for explicit particle/weather/atmospheric effects
 - css3dPanel: interactive DOM overlay (distinct from static infoPanel textures)
 - sceneConfig.textureQuality optional tier; sceneConfig.extensions container (nativeGeometries, assetLibrary.textureUrlCache)
 - Optional customBucket string on descriptors for host batch visibility queries
@@ -304,16 +307,16 @@ A) Primitives showcase — sphereModelList + modelList + boxModelList floor (not
 {"threeJsonId":"demo-primitives","sceneConfig":{"scene":{"background":"#222"},"camera":{"fov":60,"position":{"x":300,"y":200,"z":400}},"controls":{"target":{"x":0,"y":40,"z":0}},"lights":[{"type":"ambient","intensity":0.45},{"type":"directional","intensity":0.9,"position":{"x":200,"y":300,"z":200}},{"type":"point","color":"#ffcc88","intensity":45,"position":{"x":-100,"y":90,"z":120},"decay":2}]},"worldInfo":{"boxModelList":[{"name":"floor","objType":"floor","geometry":{"width":400,"height":8,"depth":300},"position":{"x":0,"y":-4,"z":0},"material":{"type":"standard","color":"#3a4554"}}],"sphereModelList":[{"name":"planet","geometry":{"radius":40,"widthSegments":32,"heightSegments":16},"position":{"x":0,"y":48,"z":80},"material":{"type":"standard","color":"#409eff"}}],"modelList":[{"name":"column","objType":"cylinder","geometry":{"radiusTop":24,"radiusBottom":24,"height":100,"radialSegments":32},"position":{"x":-120,"y":50,"z":0},"material":{"type":"standard","color":"#e6a23c"}}]}}
 
 B) Campus with paths and labels — lineList + infoPanelList + wall/floor:
-{"threeJsonId":"demo-campus","worldInfo":{"boxModelList":[{"objType":"floor","geometry":{"width":600,"height":8,"depth":500},"position":{"x":0,"y":-4,"z":0},"material":{"color":"#2d3a4a"}},{"objType":"wall","name":"building-a","geometry":{"width":120,"height":80,"depth":90},"position":{"x":-100,"y":40,"z":0},"material":{"color":"#5d7084"}}],"lineList":[{"name":"main-path","objType":"line","points":[{"x":-200,"y":0,"z":200},{"x":0,"y":0,"z":0},{"x":180,"y":0,"z":-120}],"material":{"color":"#ffd04b"}}],"infoPanelList":[{"text":"Building A","type":"text","objType":"infoPanel","panelBoxType":"box","panel":{"position":{"x":-100,"y":90,"z":0},"geometry":{"width":80,"height":24,"depth":4}}}]}}
+{"threeJsonId":"demo-campus","sceneConfig":{"scene":{"background":"#20242c"},"camera":{"fov":60,"position":{"x":260,"y":190,"z":320}},"controls":{"target":{"x":0,"y":35,"z":0}},"lights":[{"type":"ambient","intensity":0.5},{"type":"directional","intensity":1.0,"position":{"x":180,"y":260,"z":160}}]},"worldInfo":{"boxModelList":[{"objType":"floor","geometry":{"width":600,"height":8,"depth":500},"position":{"x":0,"y":-4,"z":0},"material":{"color":"#2d3a4a"}},{"objType":"wall","name":"building-a","geometry":{"width":120,"height":80,"depth":90},"position":{"x":-100,"y":40,"z":0},"material":{"color":"#5d7084"}}],"lineList":[{"name":"main-path","objType":"line","points":[{"x":-200,"y":0,"z":200},{"x":0,"y":0,"z":0},{"x":180,"y":0,"z":-120}],"material":{"color":"#ffd04b"}}],"infoPanelList":[{"text":"Building A","type":"text","objType":"infoPanel","panelBoxType":"box","panel":{"position":{"x":-100,"y":90,"z":0},"geometry":{"width":80,"height":24,"depth":4}}}]}}
 
 C) Native torus knot decoration:
 {"threeJsonId":"demo-native-knot","worldInfo":{"boxModelList":[],"modelList":[{"name":"knot","objType":"native","geometry":{"type":"TorusKnotGeometry","radius":5,"tube":1.2,"tubularSegments":96,"radialSegments":12,"p":2,"q":3},"material":{"type":"MeshStandardMaterial","color":"#67c23a","metalness":0.2,"roughness":0.45},"position":{"x":0,"y":30,"z":0}}]}}
 
 D) Standard scheme B — sceneConfig + objectList (no worldInfo):
-{"threeJsonId":"demo-standard-b","sceneConfig":{"scene":{"background":"#222"},"camera":{"fov":60,"jsonOrigin":"config","position":{"x":120,"y":80,"z":160}},"controls":{"target":{"x":0,"y":20,"z":0},"jsonOrigin":"config"},"lights":[{"type":"ambient","intensity":0.5,"jsonOrigin":"config"}]},"objectList":[{"objType":"box","name":"floor","geometry":{"width":200,"height":6,"depth":140},"position":{"x":0,"y":-3,"z":0},"material":{"color":"#3a4554"}}]}
+{"threeJsonId":"demo-standard-b","sceneConfig":{"scene":{"background":"#222"},"camera":{"fov":60,"jsonOrigin":"config","position":{"x":120,"y":80,"z":160}},"controls":{"target":{"x":0,"y":20,"z":0},"jsonOrigin":"config"},"lights":[{"type":"ambient","intensity":0.5,"jsonOrigin":"config"},{"type":"directional","intensity":1.0,"position":{"x":80,"y":140,"z":120},"jsonOrigin":"config"}]},"objectList":[{"objType":"box","name":"floor","geometry":{"width":200,"height":6,"depth":140},"position":{"x":0,"y":-3,"z":0},"material":{"color":"#3a4554"}}]}
 
-E) Interactive css3dPanel + particleEmitter rain:
-{"threeJsonId":"demo-css3d-particles","sceneConfig":{"scene":{"background":"#1a1a2e"},"camera":{"fov":55,"position":{"x":0,"y":80,"z":120}},"controls":{"target":{"x":0,"y":20,"z":0}},"lights":[{"type":"ambient","intensity":0.4},{"type":"directional","intensity":0.8,"position":{"x":50,"y":100,"z":80}}]},"worldInfo":{"boxModelList":[{"objType":"floor","geometry":{"width":300,"height":6,"depth":200},"position":{"x":0,"y":-3,"z":0},"material":{"color":"#2d3a4a"}}],"css3dPanelList":[{"name":"control-panel","objType":"css3dPanel","html":"<button>Start</button>","panel":{"position":{"x":0,"y":40,"z":0},"geometry":{"width":60,"height":40,"depth":2}}}],"objectList":[{"name":"rain","objType":"particleEmitter","simulation":"cpu","position":{"x":0,"y":60,"z":0},"material":{"color":"#aaccff","size":2,"opacity":0.7}}]}}
+E) Interactive css3dPanel control surface (no particles unless requested):
+{"threeJsonId":"demo-css3d-panel","sceneConfig":{"scene":{"background":"#1a1a2e"},"camera":{"fov":55,"position":{"x":0,"y":80,"z":120}},"controls":{"target":{"x":0,"y":20,"z":0}},"lights":[{"type":"ambient","intensity":0.45},{"type":"directional","intensity":1.0,"position":{"x":50,"y":100,"z":80}}]},"worldInfo":{"boxModelList":[{"objType":"floor","geometry":{"width":300,"height":6,"depth":200},"position":{"x":0,"y":-3,"z":0},"material":{"color":"#2d3a4a"}}],"css3dPanelList":[{"name":"control-panel","objType":"css3dPanel","html":"<button>Start</button>","panel":{"position":{"x":0,"y":40,"z":0},"geometry":{"width":60,"height":40,"depth":2}}}]}}
 `;
 
 const THREE_JSON_OUTPUT_REQUIREMENT = `
