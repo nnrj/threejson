@@ -401,6 +401,50 @@ test("runSceneAgent medium agent emits stage_preview after repair", async () => 
   }
 });
 
+test("runSceneAgent optionally refines a valid draft with mixed-output protocol", async () => {
+  const initialScene = JSON.stringify(MINIMAL_SCENE);
+  const replies = [
+    initialScene,
+    '[{"op":"replace","path":"/worldInfo/boxModelList/0/material/color","value":"#224466"}]',
+    "# done"
+  ];
+  const progress = [];
+  const fetchMock = mock.fn(async () => ({
+    ok: true,
+    async text() {
+      return "";
+    },
+    async json() {
+      return { choices: [{ message: { content: replies.shift() } }] };
+    }
+  }));
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = fetchMock;
+  try {
+    const result = await runSceneAgent(
+      { mode: "generate", prompt: "make a simple blockout box" },
+      {
+        agent: {
+          enabled: true,
+          depth: "simple",
+          progressiveRefinement: true,
+          maxDraftRefinementRounds: 2
+        },
+        apiKey: "test-key",
+        provider: "deepseek",
+        onProgress: (event) => progress.push(event)
+      }
+    );
+
+    assert.equal(JSON.parse(result.sceneJsonString).worldInfo.boxModelList[0].material.color, "#224466");
+    assert.ok(result.steps.some((step) => step.kind === "draft_refinement" && step.outputMode === "patch"));
+    assert.ok(result.steps.some((step) => step.kind === "draft_refinement_done"));
+    assert.ok(progress.filter((event) => event.kind === "stage_preview").length >= 2);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("runSceneAgent iterative apply execs commands and skips final exec batch", async () => {
   const currentScene = JSON.stringify(MINIMAL_SCENE);
   let fetchCall = 0;

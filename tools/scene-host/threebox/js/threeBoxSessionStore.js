@@ -4,7 +4,8 @@
  * stores:
  * - "turns" (keyed by turn id): { id, conversationId, seq, userPrompt, mode: 'generate'|'adjust'|
  *   'template', targetTurnId, stage ('generate'|'template'|'commands'|'json-incremental'|
- *   'json-full'), sceneJson (string|null — the full scene snapshot; null when this turn was
+ *   'json-full'|'error'), status ('failed'|'stopped' for unsuccessful turns; omitted for legacy/
+ *   successful turns), errorMessage, sceneJson (string|null — the full scene snapshot; null when this turn was
  *   cached in "diff" mode as a commands-only delta, see threeBoxSettingsSchema.js's
  *   io.turnCacheMode), commands (array|null — the operation commands that produced this turn's
  *   result, only present for stage:"commands" turns; used to reconstruct sceneJson by replaying

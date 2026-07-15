@@ -176,7 +176,7 @@ Scene authoring rules:
 1. Choose the objType and worldInfo list that most faithfully and specifically matches the user's described shapes and roles — prefer the most fitting capability (native geometry, domain record, or specialized objType) over a generic primitive stand-in whenever it represents the object better; use basic geometry when it genuinely is the best fit (a plain box/blockout was asked for, or no more specific capability applies), not merely because it's simpler to emit.
 2. Put each object in the correct list (lines in lineList, static panels in infoPanelList, interactive DOM in css3dPanelList, scene text in objectList with objType text, groups in groupList, cylinders in modelList, spheres in sphereModelList, etc.).
 3. Use descriptor **name** for batch/page semantics (e.g. "room-wall", "air-conditioning"); use **label** for display text; do not invent unsupported objType strings like "container" or "ground" — use floor/wall/glass instead.
-4. Friendly JSON: worldInfo.boxModelList must exist as an array (may be [] when other lists carry all content). Standard JSON: use objectList (and sceneConfig for primary runtime) instead of worldInfo.
+4. Scene collection properties are optional and must be emitted only when they contain elements. In friendly JSON, include only the non-empty worldInfo lists actually used; do not output boxModelList: [] or placeholders for unused lists. In standard JSON, omit objectList when it would be empty (and sceneConfig alone carries the scene).
 5. Prefer friendly worldInfo + sceneConfig OR standard scheme B (sceneConfig + objectList + threeJsonId). Include reasonable camera, lights, and controls in sceneConfig for standalone scenes.
 6. Always set top-level threeJsonId (stable string or UUID). Do not use worldId or worldInfo.id.
 7. Do not embed page UI or alarmList in scene JSON.
@@ -205,6 +205,7 @@ The host disabled proactive online texture hints for this request. Do not add ne
 
 const THREE_JSON_SCENE_SCHEMA_DESCRIPTION = `
 ThreeJSON scene data schema (friendly form — preferred for AI output):
+All worldInfo list properties shown below are optional; include a list property only when its array is non-empty.
 {
   "version": "next",
   "name": string,
@@ -320,7 +321,7 @@ B) Campus with paths and labels — lineList + infoPanelList + wall/floor:
 {"threeJsonId":"demo-campus","sceneConfig":{"scene":{"background":"#20242c"},"camera":{"fov":60,"position":{"x":260,"y":190,"z":320}},"controls":{"target":{"x":0,"y":35,"z":0}},"lights":[{"type":"ambient","intensity":0.5},{"type":"directional","intensity":1.0,"position":{"x":180,"y":260,"z":160}}]},"worldInfo":{"boxModelList":[{"objType":"floor","geometry":{"width":600,"height":8,"depth":500},"position":{"x":0,"y":-4,"z":0},"material":{"color":"#2d3a4a"}},{"objType":"wall","name":"building-a","geometry":{"width":120,"height":80,"depth":90},"position":{"x":-100,"y":40,"z":0},"material":{"color":"#5d7084"}}],"lineList":[{"name":"main-path","objType":"line","points":[{"x":-200,"y":0,"z":200},{"x":0,"y":0,"z":0},{"x":180,"y":0,"z":-120}],"material":{"color":"#ffd04b"}}],"infoPanelList":[{"text":"Building A","type":"text","objType":"infoPanel","panelBoxType":"box","panel":{"position":{"x":-100,"y":90,"z":0},"geometry":{"width":80,"height":24,"depth":4}}}]}}
 
 C) Native torus knot decoration:
-{"threeJsonId":"demo-native-knot","worldInfo":{"boxModelList":[],"modelList":[{"name":"knot","objType":"native","geometry":{"type":"TorusKnotGeometry","radius":5,"tube":1.2,"tubularSegments":96,"radialSegments":12,"p":2,"q":3},"material":{"type":"MeshStandardMaterial","color":"#67c23a","metalness":0.2,"roughness":0.45},"position":{"x":0,"y":30,"z":0}}]}}
+{"threeJsonId":"demo-native-knot","worldInfo":{"modelList":[{"name":"knot","objType":"native","geometry":{"type":"TorusKnotGeometry","radius":5,"tube":1.2,"tubularSegments":96,"radialSegments":12,"p":2,"q":3},"material":{"type":"MeshStandardMaterial","color":"#67c23a","metalness":0.2,"roughness":0.45},"position":{"x":0,"y":30,"z":0}}]}}
 
 D) Standard scheme B — sceneConfig + objectList (no worldInfo):
 {"threeJsonId":"demo-standard-b","sceneConfig":{"scene":{"background":"#222"},"camera":{"fov":60,"jsonOrigin":"config","position":{"x":120,"y":80,"z":160}},"controls":{"target":{"x":0,"y":20,"z":0},"jsonOrigin":"config"},"lights":[{"type":"ambient","intensity":0.5,"jsonOrigin":"config"},{"type":"directional","intensity":1.0,"position":{"x":80,"y":140,"z":120},"jsonOrigin":"config"}]},"objectList":[{"objType":"box","name":"floor","geometry":{"width":200,"height":6,"depth":140},"position":{"x":0,"y":-3,"z":0},"material":{"color":"#3a4554"}}]}
@@ -336,7 +337,15 @@ Output requirement:
 - Do not prepend explanations.
 - Strict JSON only: every value must be a JSON literal (number, string, boolean, null, object, array).
 - Do NOT use JavaScript expressions or identifiers: no Math.PI, no 3.14 / 2, no undefined, no trailing commas, no comments.
+- Omit every unused scene collection property. Never output empty placeholder arrays such as boxModelList: [], sphereModelList: [], modelList: [], lineList: [], domainModelList: [], or objectList: [].
 - For rotations use decimal radians (e.g. rotationZ: 1.5708 for 90°, 3.14159 for 180°).
+`;
+
+const THREE_JSON_PARTICLE_DISABLED_POLICY = `
+Particle effect policy for this request:
+- No particle, precipitation, smoke, dust, spark, magic-effect, or starfield intent was detected in the user's request.
+- Therefore particle effects are forbidden in this scene: do not output particleEmitter, particleList, points-as-particles, or decorative weather particles.
+- Use ordinary geometry, materials, lighting, background, environment, or fog when those satisfy the scene. Do not add particles merely for ambience, visual richness, motion, or empty-space decoration.
 `;
 
 const THREE_JSON_IMAGE_REFERENCE_INSTRUCTION = `
@@ -355,6 +364,18 @@ function onlineTextureHintsExplicitlyEnabled(options = {}) {
   return options.onlineTextureHints === true;
 }
 
+function filterParticleCapabilityLines(text, options = {}) {
+  if (options.particleEffects !== false) {
+    return String(text || "").trim();
+  }
+  return String(text || "")
+    .split("\n")
+    .filter((line) => !/particleEmitter|particleList|ParticleEmitterItem|PointsItem|\bParticles?\b/i.test(line))
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 /** @returns {string} Shared catalog block for scene prompts. */
 function buildSceneCapabilityCatalog(options = {}) {
   return [
@@ -367,7 +388,7 @@ function buildSceneCapabilityCatalog(options = {}) {
     THREE_JSON_CORE_CAPABILITIES.trim(),
     THREE_JSON_AGENT_EXAMPLE_INDEX.trim(),
     THREE_JSON_FEW_SHOT_EXAMPLES.trim()
-  ].join("\n\n");
+  ].map((block) => filterParticleCapabilityLines(block, options)).join("\n\n");
 }
 
 /** @returns {string} Scene authoring rules plus optional host-configured online texture guidance. */
@@ -407,10 +428,11 @@ function buildSceneGenerationSystemPrompt(options = {}) {
   return [
     "You are an expert ThreeJSON scene JSON generator. ThreeJSON deploys scenes from friendly worldInfo + sceneConfig, or standard JSON (threeJsonId + sceneConfig + objectList), or all-in-objectList standard.",
     buildSceneCapabilityCatalog(promptOptions),
-    buildSceneAuthoringRules(promptOptions),
-    THREE_JSON_SCENE_SCHEMA_DESCRIPTION.trim(),
+    filterParticleCapabilityLines(buildSceneAuthoringRules(promptOptions), promptOptions),
+    filterParticleCapabilityLines(THREE_JSON_SCENE_SCHEMA_DESCRIPTION, promptOptions),
+    promptOptions.particleEffects === false ? THREE_JSON_PARTICLE_DISABLED_POLICY.trim() : "",
     THREE_JSON_OUTPUT_REQUIREMENT.trim()
-  ].join("\n\n");
+  ].filter(Boolean).join("\n\n");
 }
 
 /** @returns {string} English system prompt for generating a new scene from a reference image. */

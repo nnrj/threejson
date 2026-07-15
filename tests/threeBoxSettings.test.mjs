@@ -36,9 +36,13 @@ test("ThreeBox defaults remember API keys locally", () => {
   installMemoryLocalStorage();
   assert.equal(THREEBOX_SETTINGS_DEFAULTS.ai.rememberKeys, true);
   assert.equal(THREEBOX_SETTINGS_DEFAULTS.ai.onlineTextureHints, true);
+  assert.equal(THREEBOX_SETTINGS_DEFAULTS.ai.maxSceneSegments, 16);
+  assert.equal(THREEBOX_SETTINGS_DEFAULTS.agent.progressiveGenerate, true);
   const settings = loadThreeBoxSettingsBundle();
   assert.equal(settings.ai.rememberKeys, true);
   assert.equal(settings.ai.onlineTextureHints, true);
+  assert.equal(settings.ai.maxSceneSegments, 16);
+  assert.equal(settings.agent.progressiveGenerate, true);
 });
 
 test("ThreeBox persist keeps keys by default and clears them when rememberKeys is false", () => {

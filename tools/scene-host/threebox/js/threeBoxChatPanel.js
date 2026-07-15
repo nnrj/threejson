@@ -340,6 +340,21 @@ export function createThreeBoxChatPanel(host = {}) {
     return summary;
   }
 
+  /** Defers the expensive per-line syntax-highlight DOM until the user actually opens a JSON
+   * disclosure. Generated scenes can contain thousands of lines; eagerly building several DOM
+   * nodes per line while the <details> is still collapsed used to block insertion of the scene
+   * canvas even though none of that code was visible. */
+  function attachLazyJsonCodeBlock(details, text) {
+    let codeBlock = null;
+    details.addEventListener("toggle", () => {
+      if (!details.open || codeBlock) {
+        return;
+      }
+      codeBlock = buildJsonCodeBlock(text);
+      details.appendChild(codeBlock);
+    });
+  }
+
   /** Collapsed-by-default <details> block holding the final generated JSON (kept out of the
    * markdown-rendered recap text since it can be very long), with a copy button in its header. */
   function buildJsonCollapse(jsonString) {
@@ -352,7 +367,7 @@ export function createThreeBoxChatPanel(host = {}) {
         () => jsonString
       )
     );
-    details.appendChild(buildJsonCodeBlock(jsonString));
+    attachLazyJsonCodeBlock(details, jsonString);
     return details;
   }
 
@@ -371,7 +386,7 @@ export function createThreeBoxChatPanel(host = {}) {
     const copyTitle =
       kind === "patch" ? t("threebox.chat.copyAdjustPatch", "复制 JSON Patch") : t("threebox.chat.copyAdjustCommands", "复制调整命令");
     details.appendChild(buildCollapseSummary(label, copyTitle, () => text));
-    details.appendChild(buildJsonCodeBlock(text));
+    attachLazyJsonCodeBlock(details, text);
     return details;
   }
 

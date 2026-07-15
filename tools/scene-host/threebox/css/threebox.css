@@ -563,6 +563,22 @@ details[open] > .sidebarSectionTitle::before { transform: rotate(90deg); }
   flex: 1; min-width: 0; height: 30px; padding: 0 9px; border: 1px solid var(--line); border-radius: 7px;
   background: var(--button); color: var(--text); font-size: 12.5px;
 }
+.providerSecretControl { position: relative; flex: 1; min-width: 0; }
+.providerCardRow .providerSecretControl input {
+  width: 100%; box-sizing: border-box; padding-right: 36px;
+}
+.providerApiKeyInput::-ms-reveal { display: none; }
+.providerSecretToggle {
+  position: absolute; top: 50%; right: 4px; width: 28px; height: 26px; padding: 0;
+  transform: translateY(-50%); display: grid; place-items: center;
+  border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer;
+}
+.providerSecretToggle:hover { background: var(--button-hover); color: var(--text); }
+.providerSecretToggle:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+.providerSecretToggle svg {
+  width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.5;
+  stroke-linecap: round; stroke-linejoin: round; pointer-events: none;
+}
 .providerCardDeleteBtn {
   align-self: flex-end; border: none; background: transparent; color: var(--muted);
   font-size: 12px; cursor: pointer; padding: 3px 6px; border-radius: 6px;
@@ -793,6 +809,7 @@ details[open] > .sidebarSectionTitle::before { transform: rotate(90deg); }
     gap: 5px;
   }
   .providerCardRow label { flex: 0 0 auto; }
+  .providerSecretControl { width: 100%; }
   .modalFooter {
     padding: 10px 14px 14px;
   }

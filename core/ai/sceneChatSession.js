@@ -28,6 +28,7 @@ const DEFAULT_CLASSIFY_MAX_TOKENS = 300;
 const DEFAULT_SUMMARIZE_MAX_TOKENS = 400;
 const DEFAULT_TITLE_MAX_TOKENS = 60;
 const SCENE_TITLE_MAX_LENGTH = 80;
+const MAX_ESTIMATED_SCENE_SEGMENTS = 16;
 /** Characters unsafe in a file/folder name across common filesystems — a generated title is used
  * verbatim as a chat host's download/export file name (see generateSceneTitle below). */
 const SCENE_TITLE_UNSAFE_CHARS = /[\\/:*?"<>|]/g;
@@ -67,13 +68,14 @@ function buildClassifyIntentSystemPrompt() {
     "- \"adjust\": the user wants to modify the scene produced by a specific prior turn.",
     "",
     "Output shape (strict):",
-    '{ "intent": "generate"|"adjust", "targetTurnId": string|null, "note": string }',
+    '{ "intent": "generate"|"adjust", "targetTurnId": string|null, "note": string, "estimatedSegments": integer }',
     "",
     "Rules:",
     '- "targetTurnId" MUST be one of the provided turn ids, or null. Never invent an id.',
     '- If intent is "generate", "targetTurnId" MUST be null.',
     '- If intent is "adjust" but you cannot tell which prior turn is meant, still pick the single most recent turn as targetTurnId (most conversations continue the latest result) and explain the ambiguity in "note".',
     '- "note" is one short sentence explaining your choice.',
+    '- "estimatedSegments" estimates how many responses a FULL generated scene JSON would need at the provider output limit: 1 for ordinary/small scenes, up to 16 for unusually complex scenes. For adjust intent, still estimate the size of a full scene matching the newest request.',
     "",
     "Output requirement:",
     "Return ONLY one JSON object. No Markdown fences. No commentary before or after."
@@ -92,18 +94,18 @@ function buildClassifyIntentUserMessage(userPrompt, historyEntries) {
 /**
  * Classify whether the user's next chat message is a new-scene request or an adjustment of a
  * specific prior turn. Safe-by-default: any network/parse/validation failure resolves to
- * `{ intent: "generate", targetTurnId: null }` rather than throwing, since guessing wrong toward
+ * `{ intent: "generate", targetTurnId: null, estimatedSegments: 1 }` rather than throwing, since guessing wrong toward
  * "generate" is the least destructive failure mode for a caller (it never silently overwrites the
  * wrong prior scene).
  *
  * @param {{ userPrompt: string, history?: Array<{turnId: string, summary: string}> }} input
  * @param {object} [options] requestChatCompletion transport options (provider/apiKey/model/baseUrl/...)
- * @returns {Promise<{ intent: "generate"|"adjust", targetTurnId: string|null, note: string }>}
+ * @returns {Promise<{ intent: "generate"|"adjust", targetTurnId: string|null, note: string, estimatedSegments: number }>}
  */
 async function classifyTurnIntent(input = {}, options = {}) {
   const userPrompt = String(input?.userPrompt || "").trim();
   const historyEntries = normalizeHistoryEntries(input?.history);
-  const fallback = { intent: "generate", targetTurnId: null, note: "" };
+  const fallback = { intent: "generate", targetTurnId: null, note: "", estimatedSegments: 1 };
 
   if (!historyEntries.length) {
     return { ...fallback, note: "no prior turns; nothing to adjust" };
@@ -127,10 +129,14 @@ async function classifyTurnIntent(input = {}, options = {}) {
     const rawTargetId = typeof parsed?.targetTurnId === "string" ? parsed.targetTurnId.trim() : "";
     const targetTurnId = intent === "adjust" && validIds.has(rawTargetId) ? rawTargetId : null;
     const note = typeof parsed?.note === "string" ? parsed.note.slice(0, 300) : "";
+    const rawEstimatedSegments = Number(parsed?.estimatedSegments);
+    const estimatedSegments = Number.isFinite(rawEstimatedSegments)
+      ? Math.min(MAX_ESTIMATED_SCENE_SEGMENTS, Math.max(1, Math.round(rawEstimatedSegments)))
+      : 1;
     if (intent === "adjust" && !targetTurnId) {
       return { ...fallback, note: "fallback: model chose adjust but named an unknown targetTurnId" };
     }
-    return { intent, targetTurnId, note };
+    return { intent, targetTurnId, note, estimatedSegments };
   } catch (error) {
     return { ...fallback, note: `fallback: classification failed (${error?.message || error})` };
   }

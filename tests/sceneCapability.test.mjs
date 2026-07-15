@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { matchIntentSignals, evaluateCapabilityFit } from "../core/ai/sceneCapability.js";
+import {
+  matchIntentSignals,
+  evaluateCapabilityFit,
+  shouldAllowParticleEffects
+} from "../core/ai/sceneCapability.js";
 
 test("particles signal does not false-positive on generic 'points' phrasing", () => {
   const prompts = [
@@ -28,6 +32,29 @@ test("particles signal still matches genuine particle/point-cloud/dust/spark req
   for (const prompt of prompts) {
     const ids = matchIntentSignals(prompt).map((s) => s.id);
     assert.ok(ids.includes("particles"), `expected particles match for: ${prompt}`);
+  }
+});
+
+test("particle effects use a positive intent allow-list and honor explicit negatives", () => {
+  for (const prompt of [
+    "a modern office lobby",
+    "a quiet space station control room",
+    "an atmospheric night street",
+    "sunny weather over a small campus",
+    "a magical-looking blue building without particle effects",
+    "创建一个夜晚庭院，不要粒子效果"
+  ]) {
+    assert.equal(shouldAllowParticleEffects(prompt), false, prompt);
+  }
+  for (const prompt of [
+    "snow falling over a village",
+    "smoke and embers above a volcano",
+    "fireflies in a forest",
+    "a magic dust particle effect",
+    "夜空中有流星雨",
+    "铁匠铺飞出火花"
+  ]) {
+    assert.equal(shouldAllowParticleEffects(prompt), true, prompt);
   }
 });
 

@@ -289,7 +289,7 @@ const result = await requestUpdatedSceneEditCommands(
 ## 响应与校验说明
 
 - 系统提示要求模型只输出单个 JSON 对象；实现上仍会用 `extractJsonText()` 尝试剥离 Markdown 代码块或截取首尾 `{}`，以提高容错。
-- 解析后会校验顶层为对象且包含 `worldInfo`；若缺少 `worldInfo.boxModelList` 会自动补成空数组。
+- 解析后会校验顶层为可加载场景对象；`worldInfo` 中未使用的空集合会被省略，不再自动补充 `boxModelList: []`。
 - 生成或更新失败常见原因：HTTP 非 200、返回内容无法解析为 JSON、或结构不满足上述约束。
 
 ## 接口五：批量生成 `textureUrl`（Node 示例）

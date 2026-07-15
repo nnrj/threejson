@@ -6,6 +6,7 @@ import {
   generateSceneJsonFromImage,
   updateSceneJsonString,
   requestUpdatedSceneEditCommands,
+  requestSceneRefinementStep,
   extractJsonText,
   parseSceneJsonString,
   resolveVisionImageUrl
@@ -85,6 +86,9 @@ function createSceneAiClient(defaultOptions = {}) {
     async requestUpdatedSceneEditCommands(prompt, context = {}, options = {}) {
       return requestUpdatedSceneEditCommands(prompt, context, { ...defaultOptions, ...options });
     },
+    async requestSceneRefinementStep(prompt, currentSceneJsonString, options = {}) {
+      return requestSceneRefinementStep(prompt, currentSceneJsonString, { ...defaultOptions, ...options });
+    },
     async planTextures(sceneJsonStringOrObject, userHint, options = {}) {
       return planTextures(sceneJsonStringOrObject, userHint, { ...defaultOptions, ...options });
     },
@@ -104,6 +108,7 @@ if (typeof window !== "undefined") {
     generateSceneJsonFromImage,
     updateSceneJsonString,
     requestUpdatedSceneEditCommands,
+    requestSceneRefinementStep,
     planTextures,
     fillTextureUrls,
     createOpenAiImageProvider,
@@ -146,6 +151,7 @@ export {
   generateSceneJsonFromImage,
   updateSceneJsonString,
   requestUpdatedSceneEditCommands,
+  requestSceneRefinementStep,
   buildSceneCommandSkillFragment,
   buildSceneCommandAutoUpdateSystemPrompt,
   buildSceneCommandUpdateSystemPrompt,

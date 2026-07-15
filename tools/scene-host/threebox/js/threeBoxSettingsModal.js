@@ -184,13 +184,46 @@ export function createThreeBoxSettingsModal(host = {}) {
     keyLabel.textContent = t("threebox.settings.provider.apiKeyLabel", "API Key");
     const keyInput = document.createElement("input");
     keyInput.type = "password";
+    keyInput.className = "providerApiKeyInput";
     keyInput.value = provider.apiKey || "";
     keyInput.autocomplete = "off";
     keyInput.addEventListener("input", () => {
       provider.apiKey = keyInput.value;
     });
+
+    const keyControl = document.createElement("div");
+    keyControl.className = "providerSecretControl";
+    const keyVisibilityBtn = document.createElement("button");
+    keyVisibilityBtn.type = "button";
+    keyVisibilityBtn.className = "providerSecretToggle";
+    keyVisibilityBtn.setAttribute("aria-pressed", "false");
+
+    function updateKeyVisibilityButton(revealed) {
+      const label = revealed
+        ? t("threebox.settings.provider.hideApiKey", "隐藏 API Key")
+        : t("threebox.settings.provider.showApiKey", "显示 API Key");
+      keyVisibilityBtn.setAttribute("aria-label", label);
+      keyVisibilityBtn.title = label;
+      keyVisibilityBtn.innerHTML = revealed
+        ? '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 3l14 14M8.6 5.2A8.7 8.7 0 0 1 10 5c4.7 0 7.5 5 7.5 5a13 13 0 0 1-2.1 2.7M11.7 11.7A2.4 2.4 0 0 1 8.3 8.3M6.1 6.1C3.8 7.5 2.5 10 2.5 10s2.8 5 7.5 5c1 0 1.9-.2 2.7-.5"/></svg>'
+        : '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2.5 10s2.8-5 7.5-5 7.5 5 7.5 5-2.8 5-7.5 5-7.5-5-7.5-5z"/><circle cx="10" cy="10" r="2.5"/></svg>';
+    }
+
+    updateKeyVisibilityButton(false);
+    keyVisibilityBtn.addEventListener("click", () => {
+      const revealed = keyInput.type === "password";
+      keyInput.type = revealed ? "text" : "password";
+      keyVisibilityBtn.setAttribute("aria-pressed", String(revealed));
+      updateKeyVisibilityButton(revealed);
+      keyInput.focus({ preventScroll: true });
+      const cursor = keyInput.value.length;
+      keyInput.setSelectionRange?.(cursor, cursor);
+    });
+
+    keyControl.appendChild(keyInput);
+    keyControl.appendChild(keyVisibilityBtn);
     keyRow.appendChild(keyLabel);
-    keyRow.appendChild(keyInput);
+    keyRow.appendChild(keyControl);
     card.appendChild(keyRow);
     card.insertBefore(keyRow, modelRow);
 

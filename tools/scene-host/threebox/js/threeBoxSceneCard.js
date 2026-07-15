@@ -82,6 +82,14 @@ export function createThreeBoxSceneCard() {
   let renderSeq = 0;
   let currentLabel = t("threebox.sceneCard.defaultLabel", "ThreeBox 场景");
 
+  function setLabel(label) {
+    const nextLabel = String(label || "").trim();
+    if (nextLabel) {
+      currentLabel = nextLabel;
+    }
+    return currentLabel;
+  }
+
   /** Keeps the canvas in sync with its container's actual size after first paint (e.g. the left
    * dock being pinned/unpinned reflows the message column width) — createJsonScene's own
    * autoResize is force-disabled above so it never follows window resizes, so this is the only
@@ -121,17 +129,28 @@ export function createThreeBoxSceneCard() {
     });
   }
 
+  /** Gives the browser one real paint opportunity after the card and loading mask are laid out,
+   * before structuredClone/createJsonScene begin potentially heavy main-thread work. Two frames
+   * are intentional: an rAF callback runs before its frame is painted, so resuming on the next
+   * rAF guarantees the first frame (with the mask) had a chance to reach the screen. */
+  function waitForLoadingMaskPaint() {
+    return new Promise((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(resolve));
+    });
+  }
+
   async function render(sceneJsonPayload, options = {}) {
     const seq = ++renderSeq;
-    const { createJsonScene } = await import("threejson");
     liveResizeObserver?.disconnect();
     liveResizeObserver = null;
     runtime?.dispose?.();
     runtime = null;
     currentSceneJson = sceneJsonPayload;
-    currentLabel =
-      options.label || sceneJsonPayload?.label || sceneJsonPayload?.name || t("threebox.sceneCard.defaultLabel", "ThreeBox 场景");
+    setLabel(
+      options.label || sceneJsonPayload?.label || sceneJsonPayload?.name || t("threebox.sceneCard.defaultLabel", "ThreeBox 场景")
+    );
     loadingMask.hidden = false;
+    const { createJsonScene } = await import("threejson");
     const { width, height } = await waitForStableSize(canvasWrap);
     // Pin the canvas's own CSS box explicitly: core's render loop resizes against
     // canvas.clientWidth/clientHeight on its first frame regardless of payload.canvasWidth/Height
@@ -141,6 +160,7 @@ export function createThreeBoxSceneCard() {
     canvas.style.height = `${height}px`;
     canvas.width = width;
     canvas.height = height;
+    await waitForLoadingMaskPaint();
     const payload = structuredClone(sceneJsonPayload || {});
     payload.canvasWidth = width;
     payload.canvasHeight = height;
@@ -305,5 +325,5 @@ export function createThreeBoxSceneCard() {
     });
   });
 
-  return { el, canvas, render, dispose, getRuntime: () => runtime };
+  return { el, canvas, render, dispose, setLabel, getRuntime: () => runtime };
 }

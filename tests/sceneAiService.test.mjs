@@ -4,6 +4,7 @@ import {
   extractJsonText,
   generateSceneJsonString,
   parseSceneJsonString,
+  requestSceneRefinementStep,
   requestUpdatedSceneJsonString,
   requestChatCompletion
 } from "../core/ai/sceneAiService.js";
@@ -14,6 +15,7 @@ import {
   applySceneJsonPatch
 } from "../core/ai/scenePatch.js";
 import { listTextureUrlPointers } from "../core/ai/textureAiService.js";
+import { classifyTurnIntent } from "../core/ai/sceneChatSession.js";
 
 test("sanitizeAiJsonText folds Math.PI division expressions", () => {
   const raw =
@@ -270,6 +272,66 @@ test("requestChatCompletion respects AbortSignal", async () => {
   await assert.rejects(pending, (err) => err.name === "AbortError");
 });
 
+test("parseSceneJsonString removes unused empty scene collection arrays", () => {
+  const parsed = parseSceneJsonString(JSON.stringify({
+    threeJsonId: "compact-lists",
+    worldInfo: {
+      boxModelList: [],
+      lineList: [],
+      sphereModelList: [{ name: "ball", geometry: { radius: 1 } }]
+    },
+    objectList: [],
+    sceneConfig: { lights: [] }
+  }));
+  assert.equal("boxModelList" in parsed.worldInfo, false);
+  assert.equal("lineList" in parsed.worldInfo, false);
+  assert.equal("objectList" in parsed, false);
+  assert.equal(parsed.worldInfo.sphereModelList.length, 1);
+  assert.deepEqual(parsed.sceneConfig.lights, []);
+});
+
+test("requestChatCompletion reports a friendly error for non-header-compatible API keys", async () => {
+  let fetchCalled = false;
+  globalThis.fetch = async () => {
+    fetchCalled = true;
+    throw new Error("fetch should not be called");
+  };
+
+  await assert.rejects(
+    requestChatCompletion({
+      provider: "deepseek",
+      apiKey: "这里不是-api-key",
+      messages: [{ role: "user", content: "x" }]
+    }),
+    (error) => {
+      assert.equal(error.code, "INVALID_API_KEY_HEADER_VALUE");
+      assert.match(error.message, /API key/i);
+      return true;
+    }
+  );
+  assert.equal(fetchCalled, false);
+});
+
+test("requestChatCompletion trims a header-compatible API key without restricting its format", async () => {
+  let authorization = "";
+  globalThis.fetch = async (_url, init) => {
+    authorization = init.headers.Authorization;
+    return {
+      ok: true,
+      async json() {
+        return { choices: [{ message: { content: "ok" } }] };
+      }
+    };
+  };
+
+  await requestChatCompletion({
+    provider: "deepseek",
+    apiKey: "  custom.key_123  ",
+    messages: [{ role: "user", content: "x" }]
+  });
+  assert.equal(authorization, "Bearer custom.key_123");
+});
+
 test("generateSceneJsonString injects capability reference material when enabled", async () => {
   const requestBodies = [];
   globalThis.fetch = async (url, init = {}) => {
@@ -429,6 +491,271 @@ test("generateSceneJsonString disables proactive online texture prompt when requ
   const systemContent = requestBodies[0].messages[0].content;
   assert.match(systemContent, /host disabled proactive online texture hints/);
   assert.doesNotMatch(systemContent, /self-evidently incomplete as a flat color/);
+});
+
+test("generateSceneJsonString completes a one-segment response and strips its control marker", async () => {
+  const scene = '{"threeJsonId":"one-segment","worldInfo":{"boxModelList":[]}}';
+  let requestCount = 0;
+  globalThis.fetch = async (_url, init = {}) => {
+    requestCount += 1;
+    const body = JSON.parse(init.body);
+    assert.match(body.messages[0].content, /THREEJSON_COMPLETE/);
+    return {
+      ok: true,
+      async json() {
+        return {
+          choices: [{ message: { content: `${scene}\n<<<THREEJSON_COMPLETE>>>` } }]
+        };
+      }
+    };
+  };
+
+  const deltas = [];
+  const output = await generateSceneJsonString("a small empty scene", {
+    provider: "chatgpt",
+    apiKey: "test-key",
+    capabilityReview: false,
+    onDelta: (delta) => deltas.push(delta)
+  });
+
+  assert.equal(requestCount, 1);
+  assert.equal(JSON.parse(output).threeJsonId, "one-segment");
+  assert.equal(deltas.join(""), scene);
+  assert.doesNotMatch(output, /THREEJSON_COMPLETE/);
+});
+
+test("generateSceneJsonString hides split transport markers from streamed JSON deltas", async () => {
+  const scene = '{"threeJsonId":"streamed-segment","worldInfo":{"boxModelList":[]}}';
+  const streamedPieces = [scene, "\n<<<THREEJSON_", "COMPLETE>>>"];
+  let pieceIndex = 0;
+  globalThis.fetch = async () => ({
+    ok: true,
+    body: new ReadableStream({
+      pull(controller) {
+        if (pieceIndex < streamedPieces.length) {
+          const content = streamedPieces[pieceIndex++];
+          controller.enqueue(
+            new TextEncoder().encode(`data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n`)
+          );
+        } else {
+          controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"));
+          controller.close();
+        }
+      }
+    })
+  });
+
+  const deltas = [];
+  const output = await generateSceneJsonString("a streamed scene", {
+    provider: "chatgpt",
+    apiKey: "test-key",
+    capabilityReview: false,
+    stream: true,
+    onDelta: (delta) => deltas.push(delta)
+  });
+
+  assert.equal(JSON.parse(output).threeJsonId, "streamed-segment");
+  assert.equal(deltas.join(""), scene);
+  assert.equal(deltas.some((delta) => delta.includes("THREEJSON")), false);
+});
+
+test("generateSceneJsonString joins explicit continuation segments without repeating JSON", async () => {
+  const first = '{"threeJsonId":"two-segment","worldInfo":{"boxModelList":[';
+  const second = ']}}';
+  const requestBodies = [];
+  const replies = [
+    `${first}\n<<<THREEJSON_CONTINUE>>>`,
+    `${second}\n<<<THREEJSON_COMPLETE>>>`
+  ];
+  globalThis.fetch = async (_url, init = {}) => {
+    requestBodies.push(JSON.parse(init.body));
+    const content = replies.shift();
+    return {
+      ok: true,
+      async json() {
+        return { choices: [{ message: { content } }] };
+      }
+    };
+  };
+
+  const progress = [];
+  const output = await generateSceneJsonString("a complex scene", {
+    provider: "chatgpt",
+    apiKey: "test-key",
+    capabilityReview: false,
+    estimatedSegments: 2,
+    onSegmentProgress: (detail) => progress.push(detail.status)
+  });
+
+  assert.equal(requestBodies.length, 2);
+  assert.equal(JSON.parse(output).threeJsonId, "two-segment");
+  assert.equal(requestBodies[1].messages.at(-2).role, "assistant");
+  assert.match(requestBodies[1].messages.at(-1).content, /exact next character/);
+  assert.deepEqual(progress, ["request", "continue", "request", "complete"]);
+});
+
+test("generateSceneJsonString continues when the provider truncates before emitting a marker", async () => {
+  const replies = [
+    '{"threeJsonId":"implicit-continuation","worldInfo":{"boxModelList":',
+    '[]}}\n<<<THREEJSON_COMPLETE>>>'
+  ];
+  let requestCount = 0;
+  globalThis.fetch = async () => {
+    requestCount += 1;
+    const content = replies.shift();
+    return {
+      ok: true,
+      async json() {
+        return { choices: [{ message: { content } }] };
+      }
+    };
+  };
+
+  const output = await generateSceneJsonString("continue after truncation", {
+    provider: "chatgpt",
+    apiKey: "test-key",
+    capabilityReview: false
+  });
+
+  assert.equal(requestCount, 2);
+  assert.equal(JSON.parse(output).threeJsonId, "implicit-continuation");
+});
+
+test("generateSceneJsonString continues beyond eight responses with the new default", async () => {
+  const replies = [
+    '{\n<<<THREEJSON_CONTINUE>>>',
+    ...Array.from({ length: 8 }, () => ' \n<<<THREEJSON_CONTINUE>>>'),
+    '"threeJsonId":"beyond-eight","worldInfo":{"boxModelList":[]}}\n<<<THREEJSON_COMPLETE>>>'
+  ];
+  let requestCount = 0;
+  globalThis.fetch = async () => {
+    requestCount += 1;
+    const content = replies.shift();
+    return {
+      ok: true,
+      async json() {
+        return { choices: [{ message: { content } }] };
+      }
+    };
+  };
+
+  const output = await generateSceneJsonString("a scene requiring many segments", {
+    provider: "chatgpt",
+    apiKey: "test-key",
+    capabilityReview: false
+  });
+
+  assert.equal(requestCount, 10);
+  assert.equal(JSON.parse(output).threeJsonId, "beyond-eight");
+});
+
+test("generateSceneJsonString honors the caller maxSceneSegments option", async () => {
+  let requestCount = 0;
+  globalThis.fetch = async () => {
+    requestCount += 1;
+    return {
+      ok: true,
+      async json() {
+        return {
+          choices: [{ message: { content: '{\n<<<THREEJSON_CONTINUE>>>' } }]
+        };
+      }
+    };
+  };
+
+  await assert.rejects(
+    generateSceneJsonString("an unfinished scene", {
+      provider: "chatgpt",
+      apiKey: "test-key",
+      capabilityReview: false,
+      maxSceneSegments: 2
+    }),
+    /after 2 response segments/
+  );
+  assert.equal(requestCount, 2);
+});
+
+test("classifyTurnIntent returns a bounded scene segment estimate", async () => {
+  globalThis.fetch = async () => ({
+    ok: true,
+    async json() {
+      return {
+        choices: [
+          {
+            message: {
+              content: '{"intent":"generate","targetTurnId":null,"note":"large city","estimatedSegments":99}'
+            }
+          }
+        ]
+      };
+    }
+  });
+
+  const result = await classifyTurnIntent(
+    {
+      userPrompt: "generate a very large city",
+      history: [{ turnId: "turn-1", summary: "a prior room" }]
+    },
+    { provider: "chatgpt", apiKey: "test-key" }
+  );
+
+  assert.equal(result.intent, "generate");
+  assert.equal(result.estimatedSegments, 16);
+});
+
+test("requestSceneRefinementStep recognizes done, JSON Patch, and commands", async () => {
+  const scene = JSON.stringify({
+    threeJsonId: "refinement-scene",
+    worldInfo: {
+      boxModelList: [
+        {
+          threeJsonId: "floor",
+          name: "floor",
+          objType: "box",
+          geometry: { width: 4, height: 0.1, depth: 4 },
+          position: { x: 0, y: 0, z: 0 },
+          material: { color: "#777777" }
+        }
+      ]
+    }
+  });
+  const replies = [
+    "# done",
+    '[{"op":"replace","path":"/worldInfo/boxModelList/0/material/color","value":"#123456"}]',
+    scene.replace("#777777", "#abcdef"),
+    'object.patch id=floor partial={"position":{"x":2}}'
+  ];
+  globalThis.fetch = async () => ({
+    ok: true,
+    async json() {
+      return { choices: [{ message: { content: replies.shift() } }] };
+    }
+  });
+
+  const done = await requestSceneRefinementStep("improve it", scene, {
+    provider: "chatgpt",
+    apiKey: "test-key"
+  });
+  const patchResult = await requestSceneRefinementStep("improve it", scene, {
+    provider: "chatgpt",
+    apiKey: "test-key"
+  });
+  const fullJsonResult = await requestSceneRefinementStep("improve it", scene, {
+    provider: "chatgpt",
+    apiKey: "test-key"
+  });
+  const commandResult = await requestSceneRefinementStep("improve it", scene, {
+    provider: "chatgpt",
+    apiKey: "test-key"
+  });
+
+  assert.equal(done.outputMode, "done");
+  assert.equal(patchResult.outputMode, "patch");
+  assert.equal(JSON.parse(patchResult.sceneJsonString).worldInfo.boxModelList[0].material.color, "#123456");
+  assert.equal(fullJsonResult.outputMode, "json");
+  assert.equal(JSON.parse(fullJsonResult.sceneJsonString).worldInfo.boxModelList[0].material.color, "#abcdef");
+  assert.equal(commandResult.outputMode, "commands");
+  assert.equal(commandResult.commands[0].op, "object.patch");
 });
 
 test("requestUpdatedSceneJsonString does not carry proactive online texture prompt", async () => {

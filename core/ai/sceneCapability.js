@@ -120,7 +120,7 @@ const INTENT_SIGNALS = [
     // Word-bounded and specific on purpose: a bare "points" (no boundary) previously matched
     // "waypoints"/"control points"/"data points" in ordinary prompts and forced particleEmitter
     // into unrelated scenes via the capability-fit repair pass (evaluateCapabilityFit below).
-    patterns: [/\bparticles?\b|\bpoint\s*clouds?\b|\bstarfields?\b|\bdust\b|\bsparks?\b|粒子|星尘|点云/i],
+    patterns: [/\bparticles?\b|\bpoint\s*clouds?\b|\bstarfields?\b|\bdust\b|\bsparks?\b|\bsmoke\b|\bembers?\b|\bash\b|\bfireflies\b|\bfireworks?\b|\bmagic(?:al)?\s+(?:dust|sparkles?|effects?)\b|粒子|星尘|点云|烟雾|烟尘|火花|余烬|飞灰|萤火虫|烟花|魔法特效/i],
     lists: ["objectList", "particleList", "domainModelList"],
     objTypes: ["particleEmitter", "points"],
     note: "Prefer objectList objType particleEmitter (simulation cpu|gpuCompute); particleList/points is legacy."
@@ -500,9 +500,32 @@ function buildCapabilityFixPrompt(userPrompt, fit) {
   ].join("\n");
 }
 
+/**
+ * Decide whether a text-generation prompt should expose particle capabilities to the model.
+ * This intentionally uses a positive allow-list: generic atmosphere, ambience, space, lighting,
+ * or "weather" alone is not enough. Explicit negative requests win.
+ */
+function shouldAllowParticleEffects(prompt) {
+  const text = String(prompt || "");
+  if (!text.trim()) {
+    return false;
+  }
+  if (
+    /\b(?:no|without|avoid|disable|exclude|remove|omit)\s+(?:any\s+)?(?:particles?|particle\s+effects?|dust|sparks?|smoke)\b|(?:不要|不加|无需|禁止|移除|去掉|避免)(?:任何)?(?:粒子|粒子效果|星尘|烟尘|火花|烟雾)/i.test(text)
+  ) {
+    return false;
+  }
+  const ids = matchIntentSignals(text).map((signal) => signal.id);
+  if (ids.includes("particles")) {
+    return true;
+  }
+  return /\brain(?:ing|fall)?\b|\bsnow(?:ing|fall)?\b|\bhail\b|\bblizzard\b|\bsandstorm\b|\bmeteor\s+shower\b|下雨|雨滴|雨天|降雨|下雪|雪花|降雪|冰雹|暴风雪|沙尘暴|流星雨/i.test(text);
+}
+
 export {
   INTENT_SIGNALS,
   matchIntentSignals,
+  shouldAllowParticleEffects,
   buildIntentHints,
   buildCommandIntentHints,
   analyzeSceneUsage,

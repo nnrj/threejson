@@ -21,6 +21,11 @@ import {
 import { createThreeBoxAttachedContext } from "./threeBoxAttachedContext.js";
 import { wireThreeBoxComposerStub } from "./threeBoxComposerStub.js";
 import { createThreeBoxResourceLibrary } from "./threeBoxResourceLibrary.js";
+import {
+  createUnsuccessfulTurnRecord,
+  isSceneContextTurn,
+  isUnsuccessfulTurn
+} from "./threeBoxTurnState.js";
 import { buildStructuredTurnEnvelope } from "threejson";
 import { initHostI18n, applyShellI18n, getHostLocale, normalizeLocale, t } from "../../shared/i18n/index.js";
 
@@ -195,6 +200,43 @@ async function main() {
     return error?.name === "AbortError";
   }
 
+  function friendlyAiErrorMessage(error) {
+    if (error?.code === "INVALID_API_KEY_HEADER_VALUE") {
+      return t(
+        "threebox.app.invalidApiKeyHeader",
+        "API Key 中包含中文、emoji 等无法用于请求头的字符。请确认只粘贴了供应商提供的 API Key；请求尚未发送给供应商。"
+      );
+    }
+    return error?.message || String(error || t("threebox.app.unknownError", "未知错误"));
+  }
+
+  async function persistUnsuccessfulTurn({
+    conversationId,
+    turnId,
+    userPrompt,
+    mode,
+    targetTurnId = null,
+    error
+  }) {
+    const stopped = isAbortError(error);
+    try {
+      await putTurn(
+        createUnsuccessfulTurnRecord({
+          id: turnId,
+          conversationId,
+          userPrompt,
+          mode,
+          targetTurnId,
+          stopped,
+          errorMessage: friendlyAiErrorMessage(error)
+        })
+      );
+      sidebar.touchActiveConversation(userPrompt);
+    } catch (cacheError) {
+      console.error("[threebox] failed to persist unsuccessful turn:", cacheError);
+    }
+  }
+
   const RETRY_ICON =
     '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" d="M13 3.6v3.6h-3.6M3 12.4v-3.6h3.6"/><path fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" d="M3.6 6.6A5.2 5.2 0 0 1 13 5.3M12.4 9.4A5.2 5.2 0 0 1 3 10.7"/></svg>';
 
@@ -213,7 +255,7 @@ async function main() {
     return btn;
   }
 
-  function createAgentProgressUpdater(streaming) {
+  function createAgentProgressUpdater(streaming, onScenePreview) {
     const lines = [];
     let streamBuffer = "";
     return (progress) => {
@@ -224,6 +266,13 @@ async function main() {
         streamBuffer += progress.previewDelta;
         streaming.update(streamBuffer);
         return;
+      }
+      if (
+        typeof onScenePreview === "function" &&
+        typeof progress.sceneJsonString === "string" &&
+        (progress.kind === "stage_preview" || progress.kind === "scene_ready")
+      ) {
+        onScenePreview(progress.sceneJsonString, progress);
       }
       const label = progress.message || progress.kind || "";
       if (!label) {
@@ -260,7 +309,7 @@ async function main() {
     return resolveTurnSceneJsonString(orderedTurns, turn.id);
   }
 
-  async function handleGenerateTurn(text, api, { conversationId, turnId }) {
+  async function handleGenerateTurn(text, api, { conversationId, turnId, estimatedSegments = 1 }) {
     const settings = settingsModal.getSettings();
     const selectedProviderId = document.getElementById("composerModelSelect")?.value;
     const providerOptions = resolveProviderOptions(settings, selectedProviderId);
@@ -270,7 +319,24 @@ async function main() {
     api.appendToBody(textEl, streaming.el);
     let streamBuffer = "";
     const agentOptions = resolveThreeBoxAgentOptions(settings);
-    const updateAgentProgress = createAgentProgressUpdater(streaming);
+    const progressiveSceneCard = agentOptions.enabled ? createThreeBoxSceneCard() : null;
+    let previewRenderQueue = Promise.resolve();
+    let lastQueuedPreviewJson = "";
+    if (progressiveSceneCard) {
+      api.appendToBody(textEl, progressiveSceneCard.el);
+    }
+    const queueScenePreview = (sceneJsonString) => {
+      if (!progressiveSceneCard || !sceneJsonString || sceneJsonString === lastQueuedPreviewJson) {
+        return;
+      }
+      lastQueuedPreviewJson = sceneJsonString;
+      previewRenderQueue = previewRenderQueue
+        .catch((error) => {
+          console.warn("[threebox] previous agent preview render failed:", error);
+        })
+        .then(() => progressiveSceneCard.render(JSON.parse(sceneJsonString), { label: text }));
+    };
+    const updateAgentProgress = createAgentProgressUpdater(streaming, queueScenePreview);
 
     // Stop button: composerSendBtn doubles as stop while busy (threeBoxChatPanel.js's setBusy),
     // wired to abort this controller via onStopRequested. Cleared as soon as the cancelable
@@ -301,6 +367,8 @@ async function main() {
         locale: getHostLocale(),
         capabilityLookup: settings.ai?.capabilityLookupEnabled !== false,
         onlineTextureHints: settings.ai?.onlineTextureHints !== false,
+        estimatedSegments,
+        maxSceneSegments: settings.ai?.maxSceneSegments,
         signal: abortController.signal
       });
       clearBusyIfCurrent();
@@ -312,11 +380,10 @@ async function main() {
       }
       api.appendToBody(textEl, api.buildJsonCollapse(sceneJsonString));
 
-      // Title and recap are independent AI calls that both only need `digest` — kick both off
-      // together (rather than title-then-recap sequentially) so the extra title round-trip this
-      // adds doesn't compound with the existing recap latency. Title is awaited before the scene
-      // card renders (its result becomes the card's label/export file name); recap is awaited
-      // just after, exactly as before.
+      // Title and recap are independent AI calls that both only need `digest`. Start them in
+      // parallel, but never make the visible scene card wait for either network round-trip: the
+      // user should see the canvas and its rendering mask as soon as the JSON is ready. The title
+      // updates the card's download/export label whenever it arrives.
       const digest = buildResultDigest(sceneJson);
       const titlePromise =
         settings.ai?.autoGenerateSceneTitle !== false
@@ -340,11 +407,28 @@ async function main() {
             }).catch(() => "")
           : Promise.resolve("");
 
-      const sceneTitle = await titlePromise;
-      const sceneCard = createThreeBoxSceneCard();
-      api.appendToBody(textEl, sceneCard.el);
-      await sceneCard.render(sceneJson, { label: sceneTitle || text });
+      const sceneCard = progressiveSceneCard || createThreeBoxSceneCard();
+      if (!progressiveSceneCard) {
+        api.appendToBody(textEl, sceneCard.el);
+      }
+      const resolvedTitlePromise = titlePromise.then((title) => {
+        sceneCard.setLabel(title || text);
+        return title;
+      });
+      if (progressiveSceneCard) {
+        queueScenePreview(sceneJsonString);
+        try {
+          await previewRenderQueue;
+        } catch (error) {
+          console.warn("[threebox] final queued agent preview failed; retrying final scene:", error);
+          await sceneCard.render(sceneJson, { label: text });
+        }
+      } else {
+        await sceneCard.render(sceneJson, { label: text });
+      }
       sceneCardsByTurnId.set(turnId, sceneCard);
+
+      const sceneTitle = await resolvedTitlePromise;
 
       let recap = "";
       if (settings.ai?.includeTurnSummary !== false) {
@@ -375,13 +459,25 @@ async function main() {
     } catch (error) {
       clearBusyIfCurrent();
       streaming.remove();
+      progressiveSceneCard?.dispose();
+      progressiveSceneCard?.el.remove();
+      await persistUnsuccessfulTurn({
+        conversationId,
+        turnId,
+        userPrompt: text,
+        mode: "generate",
+        error
+      });
       if (isAbortError(error)) {
         api.updateAssistantMessage(textEl, t("threebox.app.generateStopped", "已停止生成。"));
       } else {
         console.error("[threebox] generate turn failed:", error);
-        api.updateAssistantMessage(textEl, t("threebox.app.generateFailed", "生成失败：{error}", { error: error?.message || error }));
+        api.updateAssistantMessage(textEl, t("threebox.app.generateFailed", "生成失败：{error}", { error: friendlyAiErrorMessage(error) }));
       }
-      api.appendToBody(textEl, buildRetryButton(() => handleGenerateTurn(text, api, { conversationId, turnId })));
+      api.appendToBody(
+        textEl,
+        buildRetryButton(() => handleGenerateTurn(text, api, { conversationId, turnId, estimatedSegments }))
+      );
       api.finishTurnScroll();
     }
   }
@@ -471,9 +567,8 @@ async function main() {
       }
       api.appendToBody(textEl, api.buildJsonCollapse(sceneJsonString));
 
-      // See handleGenerateTurn's matching comment: title + recap kicked off together (both only
-      // need `digest`), title awaited before render (becomes the card's label/export file name),
-      // recap awaited just after as before.
+      // Match handleGenerateTurn: title + recap start together, while the scene card is inserted
+      // and rendered immediately. A later title response only updates the card label/file name.
       const digest = buildResultDigest(sceneJson);
       const titlePromise =
         settings.ai?.autoGenerateSceneTitle !== false
@@ -502,11 +597,16 @@ async function main() {
             }).catch(() => "")
           : Promise.resolve("");
 
-      const sceneTitle = await titlePromise;
       const sceneCard = createThreeBoxSceneCard();
       api.appendToBody(textEl, sceneCard.el);
-      await sceneCard.render(sceneJson, { label: sceneTitle || text });
+      const resolvedTitlePromise = titlePromise.then((title) => {
+        sceneCard.setLabel(title || text);
+        return title;
+      });
+      await sceneCard.render(sceneJson, { label: text });
       sceneCardsByTurnId.set(turnId, sceneCard);
+
+      const sceneTitle = await resolvedTitlePromise;
 
       let recap = "";
       if (settings.ai?.includeTurnSummary !== false) {
@@ -549,11 +649,19 @@ async function main() {
     } catch (error) {
       clearBusyIfCurrent();
       streaming.remove();
+      await persistUnsuccessfulTurn({
+        conversationId,
+        turnId,
+        userPrompt: text,
+        mode: "adjust",
+        targetTurnId,
+        error
+      });
       if (isAbortError(error)) {
         api.updateAssistantMessage(textEl, t("threebox.app.adjustStopped", "已停止调整。"));
       } else {
         console.error("[threebox] adjust turn failed:", error);
-        api.updateAssistantMessage(textEl, t("threebox.app.adjustFailed", "调整失败：{error}", { error: error?.message || error }));
+        api.updateAssistantMessage(textEl, t("threebox.app.adjustFailed", "调整失败：{error}", { error: friendlyAiErrorMessage(error) }));
       }
       api.appendToBody(
         textEl,
@@ -656,10 +764,11 @@ async function main() {
 
     const conversationId = sidebar.ensureActiveConversation().id;
     const turnId = createTurnId();
-    const priorTurns = await getTurnsForConversation(conversationId).catch(() => []);
+    const allPriorTurns = await getTurnsForConversation(conversationId).catch(() => []);
+    const priorTurns = allPriorTurns.filter(isSceneContextTurn);
 
     if (!priorTurns.length) {
-      await handleGenerateTurn(text, api, { conversationId, turnId });
+      await handleGenerateTurn(text, api, { conversationId, turnId, estimatedSegments: 1 });
       return;
     }
 
@@ -668,7 +777,11 @@ async function main() {
     if (classified.intent === "adjust" && classified.targetTurnId) {
       await handleAdjustTurn(text, api, { conversationId, turnId, targetTurnId: classified.targetTurnId });
     } else {
-      await handleGenerateTurn(text, api, { conversationId, turnId });
+      await handleGenerateTurn(text, api, {
+        conversationId,
+        turnId,
+        estimatedSegments: classified.estimatedSegments
+      });
     }
   }
 
@@ -710,6 +823,40 @@ async function main() {
     for (const turn of turns) {
       chatPanel.appendMessage("user", turn.userPrompt);
       const textEl = chatPanel.appendMessage("assistant", "");
+      if (isUnsuccessfulTurn(turn)) {
+        if (turn.status === "stopped") {
+          chatPanel.updateAssistantMessage(
+            textEl,
+            turn.mode === "adjust"
+              ? t("threebox.app.adjustStopped", "已停止调整。")
+              : t("threebox.app.generateStopped", "已停止生成。")
+          );
+        } else {
+          const errorMessage = turn.errorMessage || t("threebox.app.unknownError", "未知错误");
+          chatPanel.updateAssistantMessage(
+            textEl,
+            turn.mode === "adjust"
+              ? t("threebox.app.adjustFailed", "调整失败：{error}", { error: errorMessage })
+              : t("threebox.app.generateFailed", "生成失败：{error}", { error: errorMessage })
+          );
+        }
+        chatPanel.appendToBody(
+          textEl,
+          buildRetryButton(() =>
+            turn.mode === "adjust" && turn.targetTurnId
+              ? handleAdjustTurn(turn.userPrompt, chatPanel, {
+                  conversationId,
+                  turnId: turn.id,
+                  targetTurnId: turn.targetTurnId
+                })
+              : handleGenerateTurn(turn.userPrompt, chatPanel, {
+                  conversationId,
+                  turnId: turn.id
+                })
+          )
+        );
+        continue;
+      }
       let sceneJsonString;
       try {
         // Diff-cached ("commands"-only) turns have no sceneJson of their own — reconstruct it by

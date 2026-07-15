@@ -27,12 +27,17 @@ import { extractPatchOperations, applySceneJsonPatch } from "./scenePatch.js";
 import {
   buildIntentHints,
   matchIntentSignals,
+  shouldAllowParticleEffects,
   evaluateCapabilityFit,
   buildCapabilityFixPrompt
 } from "./sceneCapability.js";
 import { fetchReferenceMaterial } from "./sceneReferenceCatalog.js";
 import { requestSceneOutline } from "./agentTools.js";
-import { buildSanitizedJsonParseErrorMessage, sanitizeAiJsonText } from "./sceneJsonSanitize.js";
+import {
+  buildSanitizedJsonParseErrorMessage,
+  isLikelyTruncatedJsonText,
+  sanitizeAiJsonText
+} from "./sceneJsonSanitize.js";
 import { isLoadableScenePayload } from "../handler/sceneFriendlyNormalizer.js";
 
 const PROVIDERS = {
@@ -92,8 +97,21 @@ function normalizeSceneJsonObject(sceneObj) {
       "Generated scene JSON must contain worldInfo or standard objectList/sceneConfig."
     );
   }
-  if (isObject(sceneObj.worldInfo) && !Array.isArray(sceneObj.worldInfo.boxModelList)) {
-    sceneObj.worldInfo.boxModelList = [];
+  // Scene collection properties are optional. Models sometimes mirror the full schema with many
+  // empty arrays; keeping those placeholders bloats segmented responses and the JSON viewer.
+  // Limit pruning to deployable collection containers so semantic arrays such as lights: [] or
+  // animation parameters are preserved.
+  if (isObject(sceneObj.worldInfo)) {
+    for (const [key, value] of Object.entries(sceneObj.worldInfo)) {
+      if (Array.isArray(value) && value.length === 0) {
+        delete sceneObj.worldInfo[key];
+      }
+    }
+  }
+  for (const key of ["objectList", "assetLibrary"]) {
+    if (Array.isArray(sceneObj[key]) && sceneObj[key].length === 0) {
+      delete sceneObj[key];
+    }
   }
   return sceneObj;
 }
@@ -231,8 +249,21 @@ async function requestChatCompletion({
 }) {
   const normalizedProvider = ensureProvider(provider);
   const providerConfig = PROVIDERS[normalizedProvider];
-  if (!apiKey) {
+  const normalizedApiKey = String(apiKey || "").trim();
+  if (!normalizedApiKey) {
     throw new Error("Missing apiKey.");
+  }
+  // Browser fetch converts header values to ByteString before sending. Characters outside
+  // ISO-8859-1 (for example Chinese text or emoji copied alongside a key) make fetch throw a
+  // cryptic TypeError before the provider receives anything. Do not otherwise prescribe a key
+  // format here: custom providers remain free to use any header-compatible credential.
+  if (Array.from(normalizedApiKey).some((char) => char.codePointAt(0) > 0xff)) {
+    const error = new Error(
+      "The API key contains characters that cannot be used in an HTTP Authorization header. " +
+      "Check that you pasted only the API key supplied by the provider."
+    );
+    error.code = "INVALID_API_KEY_HEADER_VALUE";
+    throw error;
   }
   if (!Array.isArray(messages) || messages.length === 0) {
     throw new Error("messages must be a non-empty array.");
@@ -249,7 +280,7 @@ async function requestChatCompletion({
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`
+      Authorization: `Bearer ${normalizedApiKey}`
     },
     signal,
     body: JSON.stringify({
@@ -298,6 +329,9 @@ function stripChatTransportOptions(options = {}) {
   delete next.planFirst;
   delete next.capabilityReview;
   delete next.maxCapabilityReviewAttempts;
+  delete next.estimatedSegments;
+  delete next.maxSceneSegments;
+  delete next.onSegmentProgress;
   return next;
 }
 
@@ -327,6 +361,150 @@ async function dryRunUpdateCommands(commands, sceneJsonString) {
 }
 
 const DEFAULT_GENERATE_MAX_TOKENS = 6000;
+const DEFAULT_MAX_SCENE_SEGMENTS = 16;
+const HARD_MAX_SCENE_SEGMENTS = 64;
+const SCENE_SEGMENT_CONTINUE_MARKER = "<<<THREEJSON_CONTINUE>>>";
+const SCENE_SEGMENT_COMPLETE_MARKER = "<<<THREEJSON_COMPLETE>>>";
+
+function clampInteger(value, fallback, min, max) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) {
+    return fallback;
+  }
+  return Math.min(max, Math.max(min, Math.round(number)));
+}
+
+function buildSegmentedSceneProtocolPrompt(estimatedSegments) {
+  return [
+    "SEGMENTED OUTPUT PROTOCOL (mandatory):",
+    `The host estimates that this scene may need about ${estimatedSegments} response segment(s). This is advisory only; use fewer or more when necessary.`,
+    "Write one contiguous JSON document across one or more assistant responses.",
+    "In each response, output only the next exact JSON characters. Do not use Markdown fences, explanations, labels, ellipses, or repeat earlier characters.",
+    "When you choose a segment boundary, stop only between complete array items or object properties (preferably just after a comma), never in the middle of a string, number, escape sequence, or literal.",
+    `End every response with ${SCENE_SEGMENT_CONTINUE_MARKER} on its own line when more JSON remains.`,
+    `End the response with ${SCENE_SEGMENT_COMPLETE_MARKER} on its own line only after the full JSON document is complete and valid.`,
+    "The marker is transport control text and must never appear inside the JSON document."
+  ].join("\n");
+}
+
+function buildContinueSceneSegmentMessage(segmentNumber) {
+  return [
+    `Continue with scene JSON segment ${segmentNumber}.`,
+    "Start at the exact next character after your previous JSON fragment.",
+    "Do not restart, repeat, summarize, repair, or wrap the JSON.",
+    `Finish with ${SCENE_SEGMENT_CONTINUE_MARKER} if more remains, otherwise ${SCENE_SEGMENT_COMPLETE_MARKER}.`
+  ].join("\n");
+}
+
+function splitSceneSegmentControl(rawContent) {
+  const raw = String(rawContent || "");
+  const match = raw.match(/(?:\r?\n)?<<<THREEJSON_(CONTINUE|COMPLETE)>>>\s*$/);
+  if (!match || match.index === undefined) {
+    return { fragment: raw, control: null };
+  }
+  return {
+    fragment: raw.slice(0, match.index),
+    control: match[1] === "CONTINUE" ? "continue" : "complete"
+  };
+}
+
+/**
+ * Keeps enough trailing streamed text buffered that transport markers are never shown as JSON.
+ * @param {(delta:string)=>void} [onDelta]
+ */
+function createSceneSegmentDeltaForwarder(onDelta) {
+  const markerTailLength = Math.max(
+    SCENE_SEGMENT_CONTINUE_MARKER.length,
+    SCENE_SEGMENT_COMPLETE_MARKER.length
+  ) + 4;
+  let raw = "";
+  let emittedLength = 0;
+  return {
+    push(delta) {
+      raw += String(delta || "");
+      const safeLength = Math.max(0, raw.length - markerTailLength);
+      if (safeLength > emittedLength && typeof onDelta === "function") {
+        onDelta(raw.slice(emittedLength, safeLength));
+      }
+      emittedLength = Math.max(emittedLength, safeLength);
+    },
+    finish(cleanFragment) {
+      const clean = String(cleanFragment || "");
+      if (clean.length > emittedLength && typeof onDelta === "function") {
+        onDelta(clean.slice(emittedLength));
+      }
+    }
+  };
+}
+
+function emitSceneSegmentProgress(options, detail) {
+  if (typeof options.onSegmentProgress === "function") {
+    options.onSegmentProgress(detail);
+  }
+}
+
+async function requestSegmentedSceneJsonContent(messages, options, maxTokens) {
+  const estimatedSegments = clampInteger(options.estimatedSegments, 1, 1, DEFAULT_MAX_SCENE_SEGMENTS);
+  const maxSegments = clampInteger(
+    options.maxSceneSegments,
+    DEFAULT_MAX_SCENE_SEGMENTS,
+    1,
+    HARD_MAX_SCENE_SEGMENTS
+  );
+  const conversation = messages.map((message) => ({ ...message }));
+  let assembled = "";
+
+  for (let segment = 1; segment <= maxSegments; segment += 1) {
+    emitSceneSegmentProgress(options, {
+      status: "request",
+      segment,
+      estimatedSegments,
+      maxSegments
+    });
+    const deltaForwarder = createSceneSegmentDeltaForwarder(options.onDelta);
+    const rawContent = await requestChatCompletion({
+      ...options,
+      maxTokens,
+      messages: conversation,
+      onDelta: (delta) => deltaForwarder.push(delta)
+    });
+    const { fragment, control } = splitSceneSegmentControl(rawContent);
+    deltaForwarder.finish(fragment);
+    assembled += fragment;
+
+    const detectedTruncation = isLikelyTruncatedJsonText(assembled);
+    const shouldContinue = control === "continue" || detectedTruncation;
+    if (!shouldContinue) {
+      emitSceneSegmentProgress(options, {
+        status: "complete",
+        segment,
+        estimatedSegments,
+        maxSegments,
+        explicitMarker: control === "complete"
+      });
+      return assembled;
+    }
+
+    emitSceneSegmentProgress(options, {
+      status: "continue",
+      segment,
+      estimatedSegments,
+      maxSegments,
+      implicitTruncation: detectedTruncation && control !== "continue"
+    });
+    if (segment === maxSegments) {
+      break;
+    }
+    conversation.push(
+      { role: "assistant", content: rawContent },
+      { role: "user", content: buildContinueSceneSegmentMessage(segment + 1) }
+    );
+  }
+
+  throw new Error(
+    `Scene JSON was not completed after ${maxSegments} response segments. Try a provider/model with a larger context window or raise maxSceneSegments.`
+  );
+}
 
 /**
  * @param {string} prompt
@@ -418,6 +596,7 @@ async function maybeApplyCapabilityReview(prompt, sceneJsonString, options = {})
  * Generate a formatted full-scene JSON string from natural language.
  * @param {string} prompt User requirement description
  * @param {object} [options={}] apiKey, provider, model, temperature, baseUrl, etc.; forwarded to requestChatCompletion
+ * @param {number} [options.maxSceneSegments=16] Maximum segmented responses to assemble (clamped to 1..64)
  * @returns {Promise<string>}
  */
 async function generateSceneJsonString(prompt, options = {}) {
@@ -426,25 +605,29 @@ async function generateSceneJsonString(prompt, options = {}) {
   }
 
   const trimmedPrompt = String(prompt).trim();
+  const particleEffects = shouldAllowParticleEffects(trimmedPrompt);
   const effectivePrompt = await resolveEffectiveGeneratePrompt(trimmedPrompt, options);
-  const chatOpts = stripChatTransportOptions(options);
   const maxTokens = options.maxTokens ?? DEFAULT_GENERATE_MAX_TOKENS;
   const referenceMaterial = await resolveReferenceMaterialForPrompt(effectivePrompt, options);
 
-  const content = await requestChatCompletion({
-    ...options,
-    maxTokens,
-    messages: [
+  const estimatedSegments = clampInteger(options.estimatedSegments, 1, 1, DEFAULT_MAX_SCENE_SEGMENTS);
+  const content = await requestSegmentedSceneJsonContent(
+    [
       {
         role: "system",
-        content: buildSceneGenerationSystemPrompt(options)
+        content: [
+          buildSceneGenerationSystemPrompt({ ...options, particleEffects }),
+          buildSegmentedSceneProtocolPrompt(estimatedSegments)
+        ].join("\n\n")
       },
       {
         role: "user",
         content: [buildGenerateUserMessage(effectivePrompt), referenceMaterial].filter(Boolean).join("\n\n")
       }
-    ]
-  });
+    ],
+    options,
+    maxTokens
+  );
 
   let jsonText = extractJsonText(content);
   let sceneJsonString = prettyJson(parseSceneJsonString(jsonText));
@@ -756,6 +939,114 @@ async function requestUpdatedSceneEditCommands(prompt, context = {}, options = {
   }
 }
 
+function isSceneRefinementDoneText(rawContent) {
+  const text = String(rawContent || "").trim();
+  return /^(?:```(?:command)?\s*)?#\s*(?:done|complete|finished)\s*(?:```)?$/i.test(text);
+}
+
+function isRfc6902PatchList(value) {
+  return (
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.every(
+      (operation) =>
+        operation &&
+        typeof operation === "object" &&
+        ["add", "replace", "remove"].includes(operation.op) &&
+        typeof operation.path === "string"
+    )
+  );
+}
+
+/**
+ * Ask an agent for one optional refinement of an already-valid scene draft. The model may stop,
+ * replace the full JSON, return RFC 6902 JSON Patch, or return executable core commands.
+ * @param {string} userPrompt Original user intent
+ * @param {string} currentSceneJsonString Current valid full scene JSON
+ * @param {object} [options]
+ */
+async function requestSceneRefinementStep(userPrompt, currentSceneJsonString, options = {}) {
+  if (!String(userPrompt || "").trim()) {
+    throw new Error("userPrompt is required.");
+  }
+  const currentSceneObj = parseSceneJsonString(String(currentSceneJsonString || ""));
+  const currentScenePrettyJson = prettyJson(currentSceneObj);
+  const feedback = String(options.feedback || "").trim();
+  const allowCommands = options.allowCommands !== false;
+  const particleEffects = shouldAllowParticleEffects(userPrompt);
+  const systemPrompt = [
+    buildSceneCommandAutoUpdateSystemPrompt({
+      agentRound: true,
+      iterativeApply: true,
+      onlineTextureHints: options.onlineTextureHints
+    }),
+    "",
+    "Optional draft-refinement protocol:",
+    "- Inspect the current rendered draft against the original user intent.",
+    "- If it is already satisfactory, output exactly: # done",
+    "- Otherwise output exactly ONE useful refinement using full scene JSON, RFC 6902 JSON Patch, or executable commands.",
+    "- Make a meaningful but bounded improvement per round. Do not output explanations or combine formats.",
+    particleEffects
+      ? "- Particle effects may be used only where they directly implement the original user intent."
+      : "- Particle effects are forbidden for this request. Do not add particleEmitter, particleList, points-as-particles, precipitation, smoke, dust, sparks, or decorative weather effects during refinement.",
+    allowCommands
+      ? "- Command output is supported and will be applied before the next round."
+      : "- Command output is unavailable in this host; use full JSON or JSON Patch instead."
+  ].join("\n");
+  const content = await requestChatCompletion({
+    ...options,
+    ...stripChatTransportOptions(options),
+    messages: [
+      { role: "system", content: systemPrompt },
+      {
+        role: "user",
+        content: [
+          `Original user intent:\n${String(userPrompt).trim()}`,
+          feedback ? `Previous refinement feedback:\n${feedback}` : "",
+          `Current scene JSON:\n${currentScenePrettyJson}`
+        ]
+          .filter(Boolean)
+          .join("\n\n")
+      }
+    ]
+  });
+
+  if (isSceneRefinementDoneText(content)) {
+    return { outputMode: "done", rawContent: content };
+  }
+
+  if (resolveOutputKind(content) === "json") {
+    const sceneJsonString = prettyJson(parseSceneJsonString(extractJsonText(content)));
+    return { outputMode: "json", sceneJsonString, rawContent: content };
+  }
+
+  try {
+    const patch = extractPatchOperations(content);
+    if (isRfc6902PatchList(patch)) {
+      const applied = applySceneJsonPatch(currentSceneObj, patch);
+      if (!applied.ok) {
+        throw new Error(applied.error || "JSON Patch application failed.");
+      }
+      const sceneJsonString = prettyJson(normalizeSceneJsonObject(applied.scene));
+      return { outputMode: "patch", patch, sceneJsonString, rawContent: content };
+    }
+  } catch (_patchError) {
+    /* Try command parsing below. */
+  }
+
+  if (allowCommands) {
+    const commandScript = extractCommandScriptText(content);
+    if (isLikelyCommandScriptText(commandScript)) {
+      const commands = filterCoreUpdateCommands(parseCommandScript(commandScript));
+      if (commands.length > 0) {
+        return { outputMode: "commands", commandScript, commands, rawContent: content };
+      }
+    }
+  }
+
+  throw new Error("AI refinement response is not # done, full scene JSON, JSON Patch, or supported commands.");
+}
+
 export {
   generateSceneJsonString,
   generateSceneJsonFromImage,
@@ -763,6 +1054,7 @@ export {
   requestChatCompletion,
   requestUpdatedSceneJsonString,
   requestUpdatedSceneEditCommands,
+  requestSceneRefinementStep,
   dryRunUpdateCommands,
   extractJsonText,
   parseSceneJsonString,

@@ -31,12 +31,14 @@ export const THREEBOX_SETTINGS_DEFAULTS = {
     sceneTitleLanguage: "auto",
     attachReferenceLinks: true,
     capabilityLookupEnabled: true,
-    onlineTextureHints: true
+    onlineTextureHints: true,
+    maxSceneSegments: 16
   },
   agent: {
     enabled: false,
     depth: "medium",
-    iterativeAdjust: true
+    iterativeAdjust: true,
+    progressiveGenerate: true
   },
   io: {
     exportJsonIndent: 2,
@@ -92,10 +94,19 @@ export const THREEBOX_SETTINGS_FIELDS = [
   },
   { section: "ai", path: "ai.capabilityLookupEnabled", type: "checkbox", label: "按意图查阅 ThreeJSON 能力示例" },
   { section: "ai", path: "ai.onlineTextureHints", type: "checkbox", label: "为适合的物体自动添加在线纹理" },
+  {
+    section: "ai",
+    path: "ai.maxSceneSegments",
+    type: "number",
+    label: "场景 JSON 最大续写轮数",
+    min: 1,
+    max: 64
+  },
 
   { section: "agent", path: "agent.enabled", type: "checkbox", label: "开启多轮 Agent" },
   { section: "agent", path: "agent.depth", type: "select", label: "Agent 深度", options: [["simple", "简单"], ["medium", "中等"], ["deep", "深入"], ["auto", "自动"]] },
   { section: "agent", path: "agent.iterativeAdjust", type: "checkbox", label: "调整时逐轮应用到离屏场景" },
+  { section: "agent", path: "agent.progressiveGenerate", type: "checkbox", label: "允许生成草稿后自主多轮细化" },
 
   { section: "io", path: "io.exportJsonIndent", type: "number", label: "导出 JSON 缩进", min: 0, max: 4 },
   { section: "io", path: "io.copyFriendlyJson", type: "checkbox", label: "复制 JSON 时使用友好格式" },

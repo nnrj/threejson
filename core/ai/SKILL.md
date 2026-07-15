@@ -85,7 +85,7 @@ AI output should satisfy:
 
 - A single JSON object representing the **full** scene (no prose outside JSON).
 - Top-level **`threeJsonId`** (stable string; no `worldId`).
-- **Friendly form** (preferred for rich hand-authored scenes): `worldInfo` + `sceneConfig`; `worldInfo.boxModelList` is an array (may be empty).
+- **Friendly form** (preferred for rich hand-authored scenes): `worldInfo` + `sceneConfig`; include only non-empty `worldInfo` lists actually used and omit unused list properties.
 - **Standard form** (scheme B): `sceneConfig` + `objectList` (see few-shot D in `threeJsonCoreSkill.js`); all-in-`objectList` is also valid.
 - Geometry fields for generic boxes use `width`, `height`, `depth` (not `length`).
 - Do not embed `alarmList` or page UI chrome in scene JSON.

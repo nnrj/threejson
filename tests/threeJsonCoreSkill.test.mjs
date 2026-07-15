@@ -37,6 +37,8 @@ test("generation system prompt covers core ThreeJSON capabilities", () => {
   assert.match(prompt, /ambient 0\.45-0\.65 plus directional 0\.9-1\.2/);
   assert.match(prompt, /point\/spot lights/);
   assert.match(prompt, /grounded physical scenes should usually include/);
+  assert.match(prompt, /Never output empty placeholder arrays/);
+  assert.match(prompt, /include only the non-empty worldInfo lists actually used/);
   assert.match(prompt, /Implied support surface/);
   assert.match(prompt, /renderLoop\.updateAnimations/);
   assert.match(prompt, /motion perceptible/);
@@ -53,6 +55,7 @@ test("generation system prompt covers core ThreeJSON capabilities", () => {
   assert.match(THREE_JSON_DOMAIN_USAGE, /dockCrane/);
   assert.match(THREE_JSON_FEW_SHOT_EXAMPLES, /demo-css3d-panel/);
   assert.doesNotMatch(THREE_JSON_FEW_SHOT_EXAMPLES, /particleEmitter/);
+  assert.doesNotMatch(THREE_JSON_FEW_SHOT_EXAMPLES, /boxModelList"\s*:\s*\[\]/);
   assert.match(THREE_JSON_FEW_SHOT_EXAMPLES, /"type":"directional"/);
 });
 
@@ -62,6 +65,17 @@ test("outline system prompt includes capability catalog", () => {
   assert.match(prompt, /particleList/);
   assert.match(prompt, /plan only the capabilities needed/);
   assert.match(prompt, /Why any non-basic capability is necessary/);
+});
+
+test("generation prompt hides particle capabilities when particle intent is absent", () => {
+  const prompt = buildSceneGenerationSystemPrompt({ particleEffects: false });
+  assert.equal((prompt.match(/particleEmitter/g) || []).length, 1);
+  assert.equal((prompt.match(/particleList/g) || []).length, 1);
+  assert.doesNotMatch(prompt, /ParticleEmitterItem|"particleList"\s*:\s*\[/);
+  assert.match(prompt, /particle effects are forbidden/i);
+
+  const enabled = buildSceneGenerationSystemPrompt({ particleEffects: true });
+  assert.match(enabled, /particleEmitter/);
 });
 
 test("online texture hints can be disabled in scene prompts", () => {

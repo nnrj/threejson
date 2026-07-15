@@ -72,8 +72,28 @@ export function resolveThreeBoxAgentOptions(settings = {}) {
   return {
     enabled: agent.enabled === true,
     depth: agent.depth || settings?.ai?.agentDepth || "medium",
-    iterativeApply: agent.iterativeAdjust !== false
+    iterativeApply: agent.iterativeAdjust !== false,
+    progressiveGenerate: agent.progressiveGenerate !== false
   };
+}
+
+async function applyThreeBoxDraftCommands(commands, { sceneJsonString }) {
+  const runtime = await createOffscreenRuntimeFromSceneJsonString(sceneJsonString);
+  try {
+    const ctx = createCommandContextForRuntime(runtime);
+    const execResult = await executeCommands(ctx, commands);
+    const results = Array.isArray(execResult.results) ? execResult.results : [];
+    const ok = results.length ? results.every((item) => item.ok !== false) : execResult.ok !== false;
+    if (!ok) {
+      return {
+        ok: false,
+        error: results.find((item) => item.ok === false)?.error || "Draft refinement commands failed."
+      };
+    }
+    return { ok: true, sceneJsonString: exportRuntimeSceneJsonString(runtime) };
+  } finally {
+    runtime.dispose?.();
+  }
 }
 
 /** Compact, token-cheap description of a generated scene (object-type counts), for the summary call. */
@@ -100,7 +120,7 @@ export function buildResultDigest(sceneJson) {
 /**
  * First-turn (no prior context) generation: builds the structured JSON envelope and calls
  * core/ai's generateSceneJsonString with streaming enabled.
- * @param {{ userPrompt: string, providerOptions: object, onDelta?: (delta:string)=>void, signal?: AbortSignal, globalPromptPrefix?: string, agentOptions?: object, onAgentProgress?: (p: object)=>void, includeReferenceLinks?: boolean, locale?: string, onlineTextureHints?: boolean }} input
+ * @param {{ userPrompt: string, providerOptions: object, onDelta?: (delta:string)=>void, signal?: AbortSignal, globalPromptPrefix?: string, agentOptions?: object, onAgentProgress?: (p: object)=>void, includeReferenceLinks?: boolean, locale?: string, onlineTextureHints?: boolean, estimatedSegments?: number, maxSceneSegments?: number }} input
  *   `includeReferenceLinks`/`locale` are threebox-shell settings (general.locale / ai.attachReferenceLinks)
  *   forwarded into the envelope's referenceLinks block and (for agent mode) into the Agent's
  *   local docs/example retrieval — see core/ai/sceneChatSession.js and sceneReferenceCatalog.js.
@@ -116,7 +136,9 @@ export async function runThreeBoxGenerateTurn({
   includeReferenceLinks,
   locale,
   capabilityLookup,
-  onlineTextureHints
+  onlineTextureHints,
+  estimatedSegments,
+  maxSceneSegments
 }) {
   const envelope = buildStructuredTurnEnvelope({ userPrompt, intent: "generate", globalPromptPrefix, includeReferenceLinks });
   if (agentOptions?.enabled) {
@@ -127,11 +149,15 @@ export async function runThreeBoxGenerateTurn({
         signal,
         agent: {
           enabled: true,
-          depth: agentOptions.depth || "medium"
+          depth: agentOptions.depth || "medium",
+          progressiveRefinement: agentOptions.progressiveGenerate !== false
         },
         resolveReferenceUrl: resolveThreeBoxReferenceUrl,
         capabilityLookup,
         onlineTextureHints,
+        estimatedSegments,
+        maxSceneSegments,
+        applyDraftCommands: applyThreeBoxDraftCommands,
         locale,
         onProgress: onAgentProgress
       }
@@ -147,6 +173,8 @@ export async function runThreeBoxGenerateTurn({
     resolveReferenceUrl: resolveThreeBoxReferenceUrl,
     capabilityLookup,
     onlineTextureHints,
+    estimatedSegments,
+    maxSceneSegments,
     locale
   });
   const sceneJson = parseSceneJsonString(sceneJsonString);

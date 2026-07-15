@@ -6,6 +6,7 @@ import {
   generateSceneJsonFromImage,
   updateSceneJsonString,
   requestUpdatedSceneEditCommands,
+  requestSceneRefinementStep,
   dryRunUpdateCommands
 } from "./sceneAiService.js";
 import {
@@ -556,6 +557,113 @@ async function runSceneAgentCommandsUpdateIterative(params) {
   throw new Error(lastError || "Iterative agent finished without applying changes.");
 }
 
+async function runOptionalDraftRefinement(params) {
+  const {
+    userPrompt,
+    initialSceneJsonString,
+    preset,
+    chatOptions,
+    onProgress,
+    steps,
+    getStepIndex,
+    setStepIndex,
+    applyDraftCommands,
+    maxRounds
+  } = params;
+  let current = initialSceneJsonString;
+  let feedback = "";
+
+  for (let round = 1; round <= maxRounds; round += 1) {
+    setStepIndex(getStepIndex() + 1);
+    emitProgress(
+      {
+        step: getStepIndex(),
+        kind: "draft_refinement",
+        message: `Optional draft refinement ${round}/${maxRounds}...`
+      },
+      onProgress
+    );
+
+    let refinement;
+    try {
+      refinement = await requestSceneRefinementStep(userPrompt, current, {
+        ...chatOptions,
+        feedback,
+        allowCommands: typeof applyDraftCommands === "function",
+        maxTokens: preset.repairMaxTokens || preset.generateMaxTokens
+      });
+    } catch (error) {
+      feedback = String(error?.message || error);
+      steps.push({ kind: "draft_refinement", round, ok: false, error: feedback });
+      continue;
+    }
+
+    if (refinement.outputMode === "done") {
+      steps.push({ kind: "draft_refinement_done", round, ok: true });
+      break;
+    }
+
+    let candidate = refinement.sceneJsonString || "";
+    if (refinement.outputMode === "commands") {
+      try {
+        const applied = await applyDraftCommands(refinement.commands, {
+          round,
+          sceneJsonString: current,
+          commandScript: refinement.commandScript
+        });
+        candidate =
+          typeof applied === "string"
+            ? applied
+            : String(applied?.sceneJsonString || "");
+        if (applied && typeof applied === "object" && applied.ok === false) {
+          throw new Error(applied.error || "Draft refinement commands failed.");
+        }
+      } catch (error) {
+        feedback = String(error?.message || error);
+        steps.push({
+          kind: "draft_refinement",
+          round,
+          outputMode: "commands",
+          ok: false,
+          error: feedback
+        });
+        continue;
+      }
+    }
+
+    const validation = await validateSceneJsonWithNormalizer(candidate);
+    steps.push({
+      kind: "draft_refinement",
+      round,
+      outputMode: refinement.outputMode,
+      count:
+        refinement.outputMode === "commands"
+          ? refinement.commands?.length
+          : refinement.outputMode === "patch"
+            ? refinement.patch?.length
+            : undefined,
+      ok: validation.ok,
+      error: validation.error
+    });
+    if (!validation.ok) {
+      feedback = validation.error || "Refined scene JSON is invalid.";
+      continue;
+    }
+
+    current = candidate;
+    feedback = "The previous refinement was applied successfully. Continue only if another meaningful improvement is needed.";
+    emitStagePreview({
+      sceneJsonString: current,
+      onProgress,
+      getStepIndex,
+      setStepIndex,
+      message: `Draft refinement preview ${round} (${refinement.outputMode}).`
+    });
+  }
+
+  return current;
+}
+
 /**
  * @param {object} input
  * @param {string} input.mode generate | update | fromImage
@@ -589,11 +697,13 @@ async function runSceneAgent(input = {}, options = {}) {
         : options.onDelta
   };
   const chatOptions = { ...options, ...chatTransport };
+  const applyDraftCommands = options.applyDraftCommands;
   const textureOptions = options.texture || {};
   delete chatOptions.agent;
   delete chatOptions.onProgress;
   delete chatOptions.texture;
   delete chatOptions.streamPreview;
+  delete chatOptions.applyDraftCommands;
 
   /** Agent repair/layout steps always use full-scene JSON, not incremental patch. */
   const chatOptionsFullUpdate = { ...chatOptions };
@@ -929,6 +1039,34 @@ async function runSceneAgent(input = {}, options = {}) {
     if (validation.ok && preset.stopWhenValid) {
       break;
     }
+  }
+
+  if (
+    validation.ok &&
+    mode === "generate" &&
+    options.agent?.progressiveRefinement === true
+  ) {
+    const maxDraftRefinementRounds = Math.max(
+      1,
+      Math.round(
+        Number(options.agent?.maxDraftRefinementRounds) || preset.maxRefineRounds || 2
+      )
+    );
+    sceneJsonString = await runOptionalDraftRefinement({
+      userPrompt: prompt,
+      initialSceneJsonString: sceneJsonString,
+      preset,
+      chatOptions,
+      onProgress,
+      steps,
+      getStepIndex: () => stepIndex,
+      setStepIndex: (value) => {
+        stepIndex = value;
+      },
+      applyDraftCommands,
+      maxRounds: maxDraftRefinementRounds
+    });
+    validation = await validateSceneJsonWithNormalizer(sceneJsonString);
   }
 
   if (validation.ok && preset.runCapabilityReview) {
