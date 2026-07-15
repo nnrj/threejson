@@ -79,14 +79,16 @@ test("fetchReferenceMaterial fetches doc + example for an 'events' signal", asyn
     "https://example.test/assets/json/demo-show/manifest.json": JSON.stringify(MANIFEST),
     "https://example.test/docs/en/event-mechanism.md": "# Event Mechanism\nUse object events with action(s).",
     "https://example.test/assets/json/demo-show/event-mechanism/declarative-action.json":
-      '{"threeJsonId":"demo","worldInfo":{"boxModelList":[]}}'
+      '{"threeJsonId":"demo","worldInfo":{"boxModelList":[{"threeJsonId":"box-1","objType":"box","geometry":{"width":1,"height":1,"depth":1}}]}}'
   });
   try {
     const result = await fetchReferenceMaterial(signals, { resolveUrl, locale: "en-US" });
     assert.ok(result.includes("Event Mechanism"));
     assert.ok(result.includes("Use object events with action(s)."));
     assert.ok(result.includes("declarative-action"));
-    assert.ok(result.includes("boxModelList"));
+    assert.ok(result.includes('"objectList"'));
+    assert.ok(result.includes('"objType": "box"'));
+    assert.equal(result.includes("boxModelList"), false);
   } finally {
     restore();
   }

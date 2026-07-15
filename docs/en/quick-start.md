@@ -95,7 +95,7 @@ const sceneJson = {
 };
 ```
 
-`worldInfo` is the friendly JSON shape. It is convenient for hand-written examples and AI-generated scenes. During loading, ThreeJSON normalizes it into the standard `objectList` shape.
+`worldInfo` is the human-friendly JSON shape and remains convenient for hand-written examples. For programmatic or AI generation, prefer the uniform standard `objectList` shape; ThreeJSON normalizes either form for loading.
 
 ## 3. Plain HTML
 

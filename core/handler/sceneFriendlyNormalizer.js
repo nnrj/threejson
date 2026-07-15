@@ -978,22 +978,22 @@ function buildCompatPayloadFromCanonical(sourcePayload, canonicalPayload, splitS
     sceneConfig.canvasHeight = Number(canonicalPayload.canvasHeight);
   }
   if (splitState.runtime.scene) {
-    sceneConfig.scene = stripObjType(splitState.runtime.scene);
+    sceneConfig.scene = stripSerializationHints(splitState.runtime.scene);
   }
   if (splitState.runtime.camera) {
-    sceneConfig.camera = stripObjType(splitState.runtime.camera);
+    sceneConfig.camera = stripSerializationHints(splitState.runtime.camera);
   }
   if (splitState.runtime.renderer) {
-    sceneConfig.renderer = stripObjType(splitState.runtime.renderer);
+    sceneConfig.renderer = stripSerializationHints(splitState.runtime.renderer);
   }
   if (splitState.runtime.controls) {
-    sceneConfig.controls = stripObjType(splitState.runtime.controls);
+    sceneConfig.controls = stripSerializationHints(splitState.runtime.controls);
   }
   if (splitState.runtime.lights.length > 0) {
-    sceneConfig.lights = splitState.runtime.lights.map(stripObjType);
+    sceneConfig.lights = splitState.runtime.lights.map(stripSerializationHints);
   }
   if (splitState.runtime.renderLoop) {
-    sceneConfig.renderLoop = stripObjType(splitState.runtime.renderLoop);
+    sceneConfig.renderLoop = stripSerializationHints(splitState.runtime.renderLoop);
   }
   const helpersConfig = normalizeHelpersConfig(sourcePayload.sceneConfig, worldInfoSource);
   const canonicalHelpers = canonicalizeHelpersForSceneConfig(helpersConfig);
@@ -1211,6 +1211,117 @@ function createFriendlyWorldInfoBase(sourceWorldInfo = {}) {
   return next;
 }
 
+function cloneNonStructuralSceneRoot(sourcePayload = {}) {
+  const next = {};
+  const friendlyListNames = new Set(
+    getFriendlySceneListEntries(sourcePayload).map((definition) => definition.listName)
+  );
+  for (const key of Object.keys(sourcePayload)) {
+    if (
+      key === "worldInfo" ||
+      key === "objectList" ||
+      key === "sceneConfig" ||
+      key === "friendlyMap" ||
+      key === "subSceneList" ||
+      friendlyListNames.has(key)
+    ) {
+      continue;
+    }
+    next[key] = clonePlainValue(sourcePayload[key]);
+  }
+  return next;
+}
+
+function stripSerializationHints(record) {
+  const next = stripObjType(record);
+  delete next.jsonOrigin;
+  return next;
+}
+
+/**
+ * Project canonical all-record objectList data into the public standard scheme B used by the
+ * editor and AI: runtime configuration in sceneConfig, deployable records in objectList.
+ */
+function buildStandardScenePayloadFromCanonical(sourcePayload = {}, canonicalPayload = {}) {
+  const root = cloneNonStructuralSceneRoot(sourcePayload);
+  const sceneConfig = isPlainObject(sourcePayload.sceneConfig)
+    ? clonePlainValue(sourcePayload.sceneConfig)
+    : {};
+  const objectList = [];
+  const claimedConfigTypes = new Set();
+  let configLightsInitialized = false;
+  let configPassesInitialized = false;
+  const runtimeFieldByType = {
+    scene: "scene",
+    camera: "camera",
+    renderer: "renderer",
+    controls: "controls",
+    renderloop: "renderLoop"
+  };
+  const records = listOr(canonicalPayload.objectList);
+
+  for (let i = 0; i < records.length; i += 1) {
+    const record = clonePlainValue(records[i]);
+    const objType = normalizeSceneObjType(record?.objType);
+    if (objType === "pass") {
+      if (!configPassesInitialized) {
+        sceneConfig.passList = [];
+        configPassesInitialized = true;
+      }
+      sceneConfig.passList.push(stripSerializationHints(record));
+      continue;
+    }
+    if (objType === "light") {
+      const fromConfig = record.jsonOrigin === JSON_ORIGIN_CONFIG || record.jsonOrigin !== JSON_ORIGIN_LIST;
+      if (fromConfig) {
+        if (!configLightsInitialized) {
+          sceneConfig.lights = [];
+          configLightsInitialized = true;
+        }
+        sceneConfig.lights.push(stripSerializationHints(record));
+      } else {
+        delete record.jsonOrigin;
+        objectList.push(record);
+      }
+      continue;
+    }
+    const runtimeField = runtimeFieldByType[objType];
+    if (runtimeField) {
+      const fromConfig =
+        record.jsonOrigin === JSON_ORIGIN_CONFIG ||
+        (record.jsonOrigin !== JSON_ORIGIN_LIST && !claimedConfigTypes.has(objType));
+      if (fromConfig) {
+        sceneConfig[runtimeField] = stripSerializationHints(record);
+        claimedConfigTypes.add(objType);
+      } else {
+        delete record.jsonOrigin;
+        objectList.push(record);
+      }
+      continue;
+    }
+    delete record.jsonOrigin;
+    objectList.push(record);
+  }
+
+  const payload = {
+    ...root,
+    version: canonicalPayload.version || sourcePayload.version || "next"
+  };
+  if (Object.keys(sceneConfig).length > 0) {
+    payload.sceneConfig = sceneConfig;
+  }
+  if (objectList.length > 0) {
+    payload.objectList = objectList;
+  }
+  if (typeof canonicalPayload.name === "string" && canonicalPayload.name) {
+    payload.name = canonicalPayload.name;
+  }
+  if (typeof canonicalPayload.threeJsonId === "string" && canonicalPayload.threeJsonId) {
+    payload.threeJsonId = canonicalPayload.threeJsonId;
+  }
+  return payload;
+}
+
 function buildFriendlyScenePayloadFromCanonical(sourcePayload = {}, canonicalPayload = {}, options = {}) {
   const splitState = splitCanonicalObjectList(canonicalPayload.objectList);
   const sourceWorldInfo = sourcePayload.worldInfo && typeof sourcePayload.worldInfo === "object"
@@ -1242,7 +1353,9 @@ function buildFriendlyScenePayloadFromCanonical(sourcePayload = {}, canonicalPay
     worldInfo[targetListName].push(pruneFriendlyExportRecord(record, definition));
   }
 
-  const sceneConfig = {};
+  const sceneConfig = isPlainObject(sourcePayload.sceneConfig)
+    ? clonePlainValue(sourcePayload.sceneConfig)
+    : {};
   if (isFiniteNumber(canonicalPayload.canvasWidth)) {
     sceneConfig.canvasWidth = Number(canonicalPayload.canvasWidth);
   }
@@ -1250,22 +1363,22 @@ function buildFriendlyScenePayloadFromCanonical(sourcePayload = {}, canonicalPay
     sceneConfig.canvasHeight = Number(canonicalPayload.canvasHeight);
   }
   if (splitState.runtime.scene) {
-    sceneConfig.scene = stripObjType(splitState.runtime.scene);
+    sceneConfig.scene = stripSerializationHints(splitState.runtime.scene);
   }
   if (splitState.runtime.camera) {
-    sceneConfig.camera = stripObjType(splitState.runtime.camera);
+    sceneConfig.camera = stripSerializationHints(splitState.runtime.camera);
   }
   if (splitState.runtime.renderer) {
-    sceneConfig.renderer = stripObjType(splitState.runtime.renderer);
+    sceneConfig.renderer = stripSerializationHints(splitState.runtime.renderer);
   }
   if (splitState.runtime.controls) {
-    sceneConfig.controls = stripObjType(splitState.runtime.controls);
+    sceneConfig.controls = stripSerializationHints(splitState.runtime.controls);
   }
   if (splitState.runtime.lights.length > 0) {
-    sceneConfig.lights = splitState.runtime.lights.map(stripObjType);
+    sceneConfig.lights = splitState.runtime.lights.map(stripSerializationHints);
   }
   if (splitState.runtime.renderLoop) {
-    sceneConfig.renderLoop = stripObjType(splitState.runtime.renderLoop);
+    sceneConfig.renderLoop = stripSerializationHints(splitState.runtime.renderLoop);
   }
   const helpersFromSource = normalizeHelpersConfig(sourcePayload?.sceneConfig, sourcePayload?.worldInfo);
   const canonicalHelpers = canonicalizeHelpersForSceneConfig(helpersFromSource);
@@ -1286,6 +1399,7 @@ function buildFriendlyScenePayloadFromCanonical(sourcePayload = {}, canonicalPay
   }
 
   const friendlyPayload = {
+    ...cloneNonStructuralSceneRoot(sourcePayload),
     version: canonicalPayload.version || sourcePayload.version || "next",
     sceneConfig,
     worldInfo
@@ -1462,6 +1576,7 @@ function normalizeScenePayload(payload = {}, options = {}) {
 export {
   CANONICAL_PRIMITIVE_OBJ_TYPES,
   buildFriendlyScenePayloadFromCanonical,
+  buildStandardScenePayloadFromCanonical,
   detectScenePayloadViewFormat,
   hasSceneConfigPrimaryRuntime,
   isCanonicalScenePayload,

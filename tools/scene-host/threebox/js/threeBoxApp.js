@@ -26,7 +26,7 @@ import {
   isSceneContextTurn,
   isUnsuccessfulTurn
 } from "./threeBoxTurnState.js";
-import { buildStructuredTurnEnvelope } from "threejson";
+import { buildStructuredTurnEnvelope, projectSceneJsonString } from "threejson";
 import { initHostI18n, applyShellI18n, getHostLocale, normalizeLocale, t } from "../../shared/i18n/index.js";
 
 function readRequestedLocaleFromUrl() {
@@ -198,6 +198,11 @@ async function main() {
    * from a genuine failure so the two get different (and differently-worded) chat messages. */
   function isAbortError(error) {
     return error?.name === "AbortError";
+  }
+
+  function projectSceneForUser(sceneJsonString, settings = settingsModal.getSettings()) {
+    const outputFormat = settings?.io?.sceneJsonFormat === "friendly" ? "friendly" : "standard";
+    return projectSceneJsonString(sceneJsonString, outputFormat);
   }
 
   function friendlyAiErrorMessage(error) {
@@ -373,12 +378,15 @@ async function main() {
       });
       clearBusyIfCurrent();
 
+      const outputSceneJsonString = projectSceneForUser(sceneJsonString, settings);
+      const outputSceneJson = JSON.parse(outputSceneJsonString);
+
       streaming.remove();
       const agentSummary = buildAgentProcessSummary(agentResult);
       if (agentSummary) {
         api.appendToBody(textEl, api.buildSummaryBlock(agentSummary));
       }
-      api.appendToBody(textEl, api.buildJsonCollapse(sceneJsonString));
+      api.appendToBody(textEl, api.buildJsonCollapse(outputSceneJsonString));
 
       // Title and recap are independent AI calls that both only need `digest`. Start them in
       // parallel, but never make the visible scene card wait for either network round-trip: the
@@ -416,15 +424,15 @@ async function main() {
         return title;
       });
       if (progressiveSceneCard) {
-        queueScenePreview(sceneJsonString);
+        queueScenePreview(outputSceneJsonString);
         try {
           await previewRenderQueue;
         } catch (error) {
           console.warn("[threebox] final queued agent preview failed; retrying final scene:", error);
-          await sceneCard.render(sceneJson, { label: text });
+          await sceneCard.render(outputSceneJson, { label: text });
         }
       } else {
-        await sceneCard.render(sceneJson, { label: text });
+        await sceneCard.render(outputSceneJson, { label: text });
       }
       sceneCardsByTurnId.set(turnId, sceneCard);
 
@@ -552,6 +560,8 @@ async function main() {
 
       const sceneJson = result.sceneJson;
       const sceneJsonString = result.sceneJsonString;
+      const outputSceneJsonString = projectSceneForUser(sceneJsonString, settings);
+      const outputSceneJson = JSON.parse(outputSceneJsonString);
 
       streaming.remove();
       const agentSummary = buildAgentProcessSummary(result.agentResult);
@@ -565,7 +575,7 @@ async function main() {
       } else if (result.stage === "json-incremental" && result.patch) {
         api.appendToBody(textEl, api.buildDiffCollapse("patch", JSON.stringify(result.patch, null, 2)));
       }
-      api.appendToBody(textEl, api.buildJsonCollapse(sceneJsonString));
+      api.appendToBody(textEl, api.buildJsonCollapse(outputSceneJsonString));
 
       // Match handleGenerateTurn: title + recap start together, while the scene card is inserted
       // and rendered immediately. A later title response only updates the card label/file name.
@@ -603,7 +613,7 @@ async function main() {
         sceneCard.setLabel(title || text);
         return title;
       });
-      await sceneCard.render(sceneJson, { label: text });
+      await sceneCard.render(outputSceneJson, { label: text });
       sceneCardsByTurnId.set(turnId, sceneCard);
 
       const sceneTitle = await resolvedTitlePromise;
@@ -876,10 +886,11 @@ async function main() {
       } else if (turn.patch) {
         chatPanel.appendToBody(textEl, chatPanel.buildDiffCollapse("patch", JSON.stringify(turn.patch, null, 2)));
       }
-      chatPanel.appendToBody(textEl, chatPanel.buildJsonCollapse(sceneJsonString));
+      const outputSceneJsonString = projectSceneForUser(sceneJsonString);
+      chatPanel.appendToBody(textEl, chatPanel.buildJsonCollapse(outputSceneJsonString));
       const sceneCard = createThreeBoxSceneCard();
       chatPanel.appendToBody(textEl, sceneCard.el);
-      await sceneCard.render(JSON.parse(sceneJsonString), { label: turn.sceneTitle || turn.userPrompt });
+      await sceneCard.render(JSON.parse(outputSceneJsonString), { label: turn.sceneTitle || turn.userPrompt });
       sceneCardsByTurnId.set(turn.id, sceneCard);
       if (turn.recapSummary) {
         chatPanel.appendToBody(textEl, chatPanel.buildSummaryBlock(turn.recapSummary));

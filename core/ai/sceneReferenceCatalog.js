@@ -17,6 +17,8 @@
  * hardcodes a base URL. A caller that doesn't pass `resolveUrl` gets "" back — a silent no-op,
  * not an error — since this is a best-effort enhancement, not a required capability.
  */
+import { convertFriendlyJsonToStandardJson } from "../util/util.js";
+
 const MANIFEST_RELATIVE_PATH = "assets/json/demo-show/manifest.json";
 const DOC_LOCALE_DIR = { "zh-CN": "docs/zh", "en-US": "docs/en" };
 const PUBLIC_REFERENCE_LINKS = {
@@ -108,6 +110,16 @@ function truncate(text, maxChars) {
   return `${s.slice(0, maxChars)}\n...(truncated)`;
 }
 
+async function normalizeExampleJsonForAi(text) {
+  try {
+    const parsed = JSON.parse(String(text || ""));
+    const standard = await convertFriendlyJsonToStandardJson(parsed);
+    return JSON.stringify(standard, null, 2);
+  } catch (_error) {
+    return String(text || "");
+  }
+}
+
 /**
  * @param {Array<{id?: string}>} matchedSignals result of sceneCapability.js's matchIntentSignals
  * @param {{ resolveUrl?: (repoRelativePath: string) => string, locale?: string }} [options]
@@ -163,7 +175,8 @@ export async function fetchReferenceMaterial(matchedSignals, options = {}) {
         );
         const exampleText = await fetchTextCached(resolveUrl(exampleItem.json));
         if (exampleText) {
-          parts.push(`Example JSON (${exampleItem.id}):\n${truncate(exampleText, MAX_EXAMPLE_CHARS)}`);
+          const standardExampleText = await normalizeExampleJsonForAi(exampleText);
+          parts.push(`Standard objectList example JSON (${exampleItem.id}):\n${truncate(standardExampleText, MAX_EXAMPLE_CHARS)}`);
         }
       }
 
@@ -176,7 +189,7 @@ export async function fetchReferenceMaterial(matchedSignals, options = {}) {
       return "";
     }
     return [
-      `Reference material retrieved from this project's own docs/examples for capabilities this request needs (follow the syntax shown; do not copy unrelated fields verbatim). Public docs: ${PUBLIC_REFERENCE_LINKS.docsIndex}`,
+      `Reference material retrieved from this project's own docs/examples for capabilities this request needs. Always author the result as standard sceneConfig + objectList JSON; friendly worldInfo syntax mentioned in prose is compatibility documentation only. Do not copy unrelated fields verbatim. Public docs: ${PUBLIC_REFERENCE_LINKS.docsIndex}`,
       ...blocks
     ].join("\n\n");
   } catch (_err) {

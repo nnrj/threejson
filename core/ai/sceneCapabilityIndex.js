@@ -18,8 +18,8 @@ Selection principle:
 - If a requested edit targets size/color/position of an existing object, preserve unrelated dimensions and materials unless the user asks to change them.
 
 Authoring shapes:
-- Friendly JSON: sceneConfig + worldInfo lists; best for hand-authored and AI scenes.
-- Standard JSON: threeJsonId + sceneConfig + objectList; best for diffs, commands, editor/API flows.
+- Standard AI JSON: threeJsonId + sceneConfig + one heterogeneous objectList; every item has an explicit objType. This is the required generation/editing format.
+- Friendly worldInfo lists are a human-facing compatibility projection only; do not emit them unless the host converts the final standard result.
 - objectList may also include runtime records: scene, camera, renderer, controls, light, renderLoop, pass.
 
 Geometry and composition:
@@ -72,7 +72,7 @@ const THREE_JSON_AGENT_CAPABILITY_INDEX = buildAgentCapabilityIndex();
 
 const THREE_JSON_AGENT_EXAMPLE_INDEX = `
 Capability patterns:
-- Domain object: worldInfo.domainModelList item with domain + handler + payload/items/options; do not use objType box in domainModelList.
+- Domain object: objectList item with objType domain + domain + handler + payload/items/options.
 - Interactive object: add events.click.actions with object.toggleVisible / object.moveBy, or events.click.script for short EventScript.
 - Lifecycle intro/spawn: use sceneConfig.intro.postLoad for a splash; use events["object.ready"] for per-object creation motion.
 - Animated imported model: externalModel with animationMode "mixer", renderLoop.updateAnimations true, and animationGraph { parameters, states, transitions }.

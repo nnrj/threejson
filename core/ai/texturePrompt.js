@@ -20,10 +20,10 @@ Output shape (strict):
 Rules for "pointer":
 - Use JSON Pointer (RFC 6901): path segments separated by "/", optional leading "/".
 - Each pointer MUST target a "textureUrl" leaf that already exists or will be created on a material object.
-  Valid parents are "material" or entries inside a "materials" array under BoxModel nodes under worldInfo.boxModelList (including nested joins, inters, holes arrays).
-- Example: "/worldInfo/boxModelList/0/material/textureUrl"
-- Example: "/worldInfo/boxModelList/2/materials/1/textureUrl"
-- Example nested: "/worldInfo/boxModelList/0/joins/1/material/textureUrl"
+  Standard JSON uses /objectList/{index}/material/textureUrl (or materials/{faceIndex}); friendly JSON may use /worldInfo/{listName}/{index}/.... Nested joins, inters, and holes are supported.
+- Standard example: "/objectList/0/material/textureUrl"
+- Standard six-face example: "/objectList/2/materials/1/textureUrl"
+- Friendly compatibility example: "/worldInfo/boxModelList/0/material/textureUrl"
 
 Rules for "prompt":
 - Describe a seamless/tileable texture suitable for 3D UV mapping when the surface is large (floors, walls).

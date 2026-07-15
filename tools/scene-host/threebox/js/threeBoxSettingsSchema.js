@@ -42,7 +42,7 @@ export const THREEBOX_SETTINGS_DEFAULTS = {
   },
   io: {
     exportJsonIndent: 2,
-    copyFriendlyJson: false,
+    sceneJsonFormat: "standard",
     tjzAssetPolicy: "preserve",
     turnCacheMode: "full",
     jsonViewerLineNumbers: true,
@@ -109,7 +109,7 @@ export const THREEBOX_SETTINGS_FIELDS = [
   { section: "agent", path: "agent.progressiveGenerate", type: "checkbox", label: "允许生成草稿后自主多轮细化" },
 
   { section: "io", path: "io.exportJsonIndent", type: "number", label: "导出 JSON 缩进", min: 0, max: 4 },
-  { section: "io", path: "io.copyFriendlyJson", type: "checkbox", label: "复制 JSON 时使用友好格式" },
+  { section: "io", path: "io.sceneJsonFormat", type: "select", label: "JSON 输出格式", options: [["standard", "标准格式"], ["friendly", "友好格式"]] },
   { section: "io", path: "io.tjzAssetPolicy", type: "select", label: ".tjz 资源策略", options: [["preserve", "保留原始 URL"], ["tryPack", "尝试打包资源"]] },
   { section: "io", path: "io.jsonViewerLineNumbers", type: "checkbox", label: "JSON 查看显示行号" },
   { section: "io", path: "io.jsonViewerHighlight", type: "checkbox", label: "JSON 查看代码高亮" },

@@ -213,6 +213,10 @@ test("listTextureUrlPointers finds material.textureUrl", () => {
     }
   });
   assert.ok(ptrs.length >= 1);
+  const standardPointers = listTextureUrlPointers({
+    objectList: [{ material: { textureUrl: "/standard.png" } }]
+  });
+  assert.equal(standardPointers[0], "/objectList/0/material/textureUrl");
 });
 
 const originalFetch = globalThis.fetch;
@@ -493,8 +497,54 @@ test("generateSceneJsonString disables proactive online texture prompt when requ
   assert.doesNotMatch(systemContent, /self-evidently incomplete as a flat color/);
 });
 
+test("generateSceneJsonString authors standard JSON and projects friendly output only at return", async () => {
+  const requestBodies = [];
+  const standardScene = JSON.stringify({
+    threeJsonId: "format-scene",
+    sceneConfig: { scene: { background: "#111111" } },
+    objectList: [
+      {
+        threeJsonId: "box-1",
+        objType: "box",
+        geometry: { width: 1, height: 1, depth: 1 },
+        material: { color: "#ffffff" }
+      }
+    ]
+  });
+  globalThis.fetch = async (_url, init = {}) => {
+    requestBodies.push(JSON.parse(init.body));
+    return {
+      ok: true,
+      async json() {
+        return { choices: [{ message: { content: `${standardScene}\n<<<THREEJSON_COMPLETE>>>` } }] };
+      }
+    };
+  };
+
+  const standardOutput = JSON.parse(await generateSceneJsonString("a box", {
+    provider: "chatgpt",
+    apiKey: "test-key",
+    capabilityReview: false
+  }));
+  const friendlyOutput = JSON.parse(await generateSceneJsonString("a box", {
+    provider: "chatgpt",
+    apiKey: "test-key",
+    capabilityReview: false,
+    outputFormat: "friendly"
+  }));
+
+  assert.equal(standardOutput.worldInfo, undefined);
+  assert.equal(standardOutput.objectList[0].objType, "box");
+  assert.equal(friendlyOutput.objectList, undefined);
+  assert.equal(friendlyOutput.worldInfo.meshList[0].objType, "box");
+  for (const body of requestBodies) {
+    assert.match(body.messages[0].content, /standard scheme-B JSON only/);
+    assert.doesNotMatch(body.messages[0].content, /"worldInfo"\s*:/);
+  }
+});
+
 test("generateSceneJsonString completes a one-segment response and strips its control marker", async () => {
-  const scene = '{"threeJsonId":"one-segment","worldInfo":{"boxModelList":[]}}';
+  const scene = '{"threeJsonId":"one-segment","sceneConfig":{"scene":{"background":"#111111"}}}';
   let requestCount = 0;
   globalThis.fetch = async (_url, init = {}) => {
     requestCount += 1;
@@ -525,7 +575,7 @@ test("generateSceneJsonString completes a one-segment response and strips its co
 });
 
 test("generateSceneJsonString hides split transport markers from streamed JSON deltas", async () => {
-  const scene = '{"threeJsonId":"streamed-segment","worldInfo":{"boxModelList":[]}}';
+  const scene = '{"threeJsonId":"streamed-segment","sceneConfig":{"scene":{"background":"#111111"}}}';
   const streamedPieces = [scene, "\n<<<THREEJSON_", "COMPLETE>>>"];
   let pieceIndex = 0;
   globalThis.fetch = async () => ({
@@ -560,8 +610,8 @@ test("generateSceneJsonString hides split transport markers from streamed JSON d
 });
 
 test("generateSceneJsonString joins explicit continuation segments without repeating JSON", async () => {
-  const first = '{"threeJsonId":"two-segment","worldInfo":{"boxModelList":[';
-  const second = ']}}';
+  const first = '{"threeJsonId":"two-segment","objectList":[';
+  const second = '{"threeJsonId":"box-1","objType":"box","geometry":{"width":1,"height":1,"depth":1}}]}';
   const requestBodies = [];
   const replies = [
     `${first}\n<<<THREEJSON_CONTINUE>>>`,
@@ -596,8 +646,8 @@ test("generateSceneJsonString joins explicit continuation segments without repea
 
 test("generateSceneJsonString continues when the provider truncates before emitting a marker", async () => {
   const replies = [
-    '{"threeJsonId":"implicit-continuation","worldInfo":{"boxModelList":',
-    '[]}}\n<<<THREEJSON_COMPLETE>>>'
+    '{"threeJsonId":"implicit-continuation","sceneConfig":{"scene":',
+    '{"background":"#111111"}}}\n<<<THREEJSON_COMPLETE>>>'
   ];
   let requestCount = 0;
   globalThis.fetch = async () => {
@@ -625,7 +675,7 @@ test("generateSceneJsonString continues beyond eight responses with the new defa
   const replies = [
     '{\n<<<THREEJSON_CONTINUE>>>',
     ...Array.from({ length: 8 }, () => ' \n<<<THREEJSON_CONTINUE>>>'),
-    '"threeJsonId":"beyond-eight","worldInfo":{"boxModelList":[]}}\n<<<THREEJSON_COMPLETE>>>'
+    '"threeJsonId":"beyond-eight","sceneConfig":{"scene":{"background":"#111111"}}}\n<<<THREEJSON_COMPLETE>>>'
   ];
   let requestCount = 0;
   globalThis.fetch = async () => {
@@ -751,9 +801,9 @@ test("requestSceneRefinementStep recognizes done, JSON Patch, and commands", asy
 
   assert.equal(done.outputMode, "done");
   assert.equal(patchResult.outputMode, "patch");
-  assert.equal(JSON.parse(patchResult.sceneJsonString).worldInfo.boxModelList[0].material.color, "#123456");
+  assert.equal(JSON.parse(patchResult.sceneJsonString).objectList[0].material.color, "#123456");
   assert.equal(fullJsonResult.outputMode, "json");
-  assert.equal(JSON.parse(fullJsonResult.sceneJsonString).worldInfo.boxModelList[0].material.color, "#abcdef");
+  assert.equal(JSON.parse(fullJsonResult.sceneJsonString).objectList[0].material.color, "#abcdef");
   assert.equal(commandResult.outputMode, "commands");
   assert.equal(commandResult.commands[0].op, "object.patch");
 });

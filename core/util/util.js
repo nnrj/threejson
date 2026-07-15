@@ -1144,8 +1144,14 @@ function buildEditorSceneTreePlain(scene, options = {}) {
  */
 async function convertFriendlyJsonToStandardJson(payload) {
   const sourcePayload = sanitizePlainData(payload || {}) || {};
-  const { normalizeScenePayload } = await import('../handler/sceneFriendlyNormalizer.js');
-  return sanitizePlainData(normalizeScenePayload(sourcePayload).payload) || {};
+  const {
+    buildStandardScenePayloadFromCanonical,
+    normalizeScenePayload
+  } = await import('../handler/sceneFriendlyNormalizer.js');
+  const normalized = normalizeScenePayload(sourcePayload);
+  return sanitizePlainData(
+    buildStandardScenePayloadFromCanonical(sourcePayload, normalized.payload)
+  ) || {};
 }
 
 /**

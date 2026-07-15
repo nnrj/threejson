@@ -164,6 +164,9 @@ function listTextureUrlPointers(sceneObj) {
   if (Array.isArray(root)) {
     walkBoxModelsForTextureUrlPointers(root, "/worldInfo/boxModelList", out);
   }
+  if (Array.isArray(sceneObj?.objectList)) {
+    walkBoxModelsForTextureUrlPointers(sceneObj.objectList, "/objectList", out);
+  }
   return out;
 }
 

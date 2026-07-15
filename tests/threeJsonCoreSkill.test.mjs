@@ -7,7 +7,8 @@ import {
   THREE_JSON_PRIMITIVE_GEOMETRY,
   THREE_JSON_LIST_PLACEMENT,
   THREE_JSON_DOMAIN_USAGE,
-  THREE_JSON_FEW_SHOT_EXAMPLES
+  THREE_JSON_FEW_SHOT_EXAMPLES,
+  THREE_JSON_STANDARD_FEW_SHOT_EXAMPLES
 } from "../core/ai/threeJsonCoreSkill.js";
 import {
   buildIntentHints,
@@ -17,20 +18,19 @@ import {
 
 test("generation system prompt covers core ThreeJSON capabilities", () => {
   const prompt = buildSceneGenerationSystemPrompt();
-  assert.match(prompt, /sphereModelList/);
-  assert.match(prompt, /modelList/);
-  assert.match(prompt, /lineList/);
-  assert.match(prompt, /infoPanelList/);
-  assert.match(prompt, /css3dPanelList/);
-  assert.match(prompt, /shaderSurfaceList/);
+  assert.match(prompt, /standard scheme-B JSON only/);
+  assert.match(prompt, /heterogeneous objectList/);
+  assert.match(prompt, /explicit objType/);
+  assert.match(prompt, /objType":"sphere"/);
+  assert.match(prompt, /objType":"infoPanel"/);
+  assert.match(prompt, /objType":"css3dPanel"/);
+  assert.match(prompt, /shaderSurface/);
   assert.match(prompt, /particleEmitter/);
   assert.match(prompt, /textureQuality/);
   assert.match(prompt, /TorusKnotGeometry/);
   assert.match(prompt, /device\.cabinet/);
   assert.match(prompt, /createStatBars/);
-  assert.match(prompt, /Do NOT put plain objType "box" records in domainModelList/);
   assert.match(prompt, /most appropriate\/specific feature/);
-  assert.match(prompt, /most fitting capability/);
   assert.match(prompt, /not a checklist/);
   assert.match(prompt, /Never add decorative lineList, particleEmitter/);
   assert.match(prompt, /Particle emitters are opt-in effects/);
@@ -38,11 +38,9 @@ test("generation system prompt covers core ThreeJSON capabilities", () => {
   assert.match(prompt, /point\/spot lights/);
   assert.match(prompt, /grounded physical scenes should usually include/);
   assert.match(prompt, /Never output empty placeholder arrays/);
-  assert.match(prompt, /include only the non-empty worldInfo lists actually used/);
-  assert.match(prompt, /Implied support surface/);
+  assert.match(prompt, /single standard objectList/);
   assert.match(prompt, /renderLoop\.updateAnimations/);
   assert.match(prompt, /motion perceptible/);
-  assert.match(prompt, /distribution \{type:"sphere"\|"shell"\|"halo"/);
   assert.match(prompt, /self-evidently incomplete as a flat color/);
   assert.match(prompt, /reachable online image URL/);
   assert.match(prompt, /not limited to CDNs/);
@@ -57,12 +55,14 @@ test("generation system prompt covers core ThreeJSON capabilities", () => {
   assert.doesNotMatch(THREE_JSON_FEW_SHOT_EXAMPLES, /particleEmitter/);
   assert.doesNotMatch(THREE_JSON_FEW_SHOT_EXAMPLES, /boxModelList"\s*:\s*\[\]/);
   assert.match(THREE_JSON_FEW_SHOT_EXAMPLES, /"type":"directional"/);
+  assert.match(THREE_JSON_STANDARD_FEW_SHOT_EXAMPLES, /"objectList"/);
+  assert.doesNotMatch(THREE_JSON_STANDARD_FEW_SHOT_EXAMPLES, /"worldInfo"/);
 });
 
 test("outline system prompt includes capability catalog", () => {
   const prompt = buildSceneOutlineSystemPrompt();
   assert.match(prompt, /Do NOT output JSON/);
-  assert.match(prompt, /particleList/);
+  assert.match(prompt, /standard objectList objTypes/);
   assert.match(prompt, /plan only the capabilities needed/);
   assert.match(prompt, /Why any non-basic capability is necessary/);
 });

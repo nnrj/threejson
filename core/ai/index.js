@@ -9,6 +9,7 @@ import {
   requestSceneRefinementStep,
   extractJsonText,
   parseSceneJsonString,
+  projectSceneJsonString,
   resolveVisionImageUrl
 } from "./sceneAiService.js";
 import {
@@ -109,6 +110,7 @@ if (typeof window !== "undefined") {
     updateSceneJsonString,
     requestUpdatedSceneEditCommands,
     requestSceneRefinementStep,
+    projectSceneJsonString,
     planTextures,
     fillTextureUrls,
     createOpenAiImageProvider,
@@ -161,6 +163,7 @@ export {
   resolveOutputKind,
   extractJsonText,
   parseSceneJsonString,
+  projectSceneJsonString,
   planTextures,
   fillTextureUrls,
   createOpenAiImageProvider,

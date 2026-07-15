@@ -43,7 +43,7 @@ test("resolveAgentDepth auto allows multiple repair attempts", () => {
 
 test("runSceneAgent medium agent repairs invalid JSON once", async () => {
   const validScene = JSON.stringify(MINIMAL_SCENE);
-  const invalidScene = JSON.stringify({ threeJsonId: "invalid", worldInfo: { boxModelList: [] } });
+  const invalidScene = JSON.stringify({ threeJsonId: "invalid", objectList: [] });
   let call = 0;
   const fetchMock = mock.fn(async () => {
     call += 1;
@@ -71,7 +71,7 @@ test("runSceneAgent medium agent repairs invalid JSON once", async () => {
       }
     );
     assert.equal(result.agentUsed, true);
-    assert.ok(result.sceneJsonString.includes("worldInfo"));
+    assert.ok(result.sceneJsonString.includes("objectList"));
     assert.ok(result.steps.some((s) => s.kind === "repair"));
     assert.ok(fetchMock.mock.calls.length >= 2);
   } finally {
@@ -105,7 +105,7 @@ test("runSceneAgent with agent disabled uses single-shot and agentUsed false", a
       }
     );
     assert.equal(result.agentUsed, false);
-    assert.ok(result.sceneJsonString.includes("worldInfo"));
+    assert.ok(result.sceneJsonString.includes("objectList"));
     assert.equal(fetchMock.mock.calls.length, 1);
   } finally {
     globalThis.fetch = originalFetch;
@@ -147,7 +147,7 @@ test("runSceneAgent texture fill soft-fails and keeps scene JSON", async () => {
         }
       }
     );
-    assert.ok(result.sceneJsonString.includes("worldInfo"));
+    assert.ok(result.sceneJsonString.includes("objectList"));
     assert.ok(result.textureFillWarning);
     assert.ok(result.steps.some((s) => s.kind === "fill_textures" && s.ok === false));
   } finally {
@@ -365,7 +365,7 @@ test("runSceneAgent emits scene_ready before texture fill", async () => {
 
 test("runSceneAgent medium agent emits stage_preview after repair", async () => {
   const validScene = JSON.stringify(MINIMAL_SCENE);
-  const invalidScene = JSON.stringify({ threeJsonId: "invalid", worldInfo: { boxModelList: [] } });
+  const invalidScene = JSON.stringify({ threeJsonId: "invalid", objectList: [] });
   const progress = [];
   let call = 0;
   const fetchMock = mock.fn(async () => {
@@ -405,7 +405,7 @@ test("runSceneAgent optionally refines a valid draft with mixed-output protocol"
   const initialScene = JSON.stringify(MINIMAL_SCENE);
   const replies = [
     initialScene,
-    '[{"op":"replace","path":"/worldInfo/boxModelList/0/material/color","value":"#224466"}]',
+    '[{"op":"replace","path":"/objectList/0/material/color","value":"#224466"}]',
     "# done"
   ];
   const progress = [];
@@ -436,7 +436,7 @@ test("runSceneAgent optionally refines a valid draft with mixed-output protocol"
       }
     );
 
-    assert.equal(JSON.parse(result.sceneJsonString).worldInfo.boxModelList[0].material.color, "#224466");
+    assert.equal(JSON.parse(result.sceneJsonString).objectList[0].material.color, "#224466");
     assert.ok(result.steps.some((step) => step.kind === "draft_refinement" && step.outputMode === "patch"));
     assert.ok(result.steps.some((step) => step.kind === "draft_refinement_done"));
     assert.ok(progress.filter((event) => event.kind === "stage_preview").length >= 2);

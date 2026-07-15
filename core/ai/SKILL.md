@@ -37,7 +37,7 @@ Runtime exports: npm **`threejson`** (built-in domains + core) or **`threejson/c
 
 From **`threejson`** / **`threejson/core`** / **`core/index.js`** (ESM named exports):
 
-1. `generateSceneJsonString(prompt, options?)` — full scene JSON string.
+1. `generateSceneJsonString(prompt, options?)` — full scene JSON string. AI authoring and the default return use standard scheme B (`sceneConfig` + `objectList`); pass `outputFormat: "friendly"` to project only the final return to `worldInfo` lists.
 2. `generateSceneJsonFromImage({ prompt?, image }, options?)` — same output shape as (1); `image` is an `http(s)` URL, `data:image/*` string, or `{ base64, mimeType? }`. Uses multimodal Chat Completions (same `fetch` helper as text chat). Supports `options.imageDetail`: `auto` | `low` | `high` (OpenAI `image_url.detail`). Prefer vision-capable models (for example GPT-4o class); `deepseek-chat` commonly cannot consume images here.
 3. `updateSceneJsonString(prompt, currentSceneJsonString, options?)` — updated full scene JSON string; optional `updateMode: "incremental"` for RFC 6902 patch array output (`scenePatch.js`).
 4. `requestUpdatedSceneEditCommands(prompt, context?, options?)` — LLM outputs core command scripts; `outputMode: "commands"|"json"`; context may include `objectList`, spatial cards, selection, `fullSceneJson`.
@@ -46,7 +46,7 @@ From **`threejson`** / **`threejson/core`** / **`core/index.js`** (ESM named exp
 7. `fillTextureUrls(sceneJsonStringOrObject, options?)` — optionally calls `planTextures`, then runs `imageProvider.generateImage` per task, normalizes `url` / `b64_json` / bytes, writes strings via **`sink.saveLocal` / `sink.upload`** (required for persistence). External Node tools may pass `localOutputDir` only if wrapped with `core/util/nodeTextureSink.withNodeTextureSink`. Returns `{ scene, sceneJsonString, tasks, skipped, taskResults }`.
 8. `createOpenAiImageProvider({ apiKey, baseUrl?, model?, defaultSize?, responseFormat? })` — reference `fetch` implementation for OpenAI `/v1/images/generations` (DALL·E-style `response_format`: `url` or `b64_json`).
 9. `normalizeImageRawToBlob(raw)` — unify provider output before sinks.
-10. `listTextureUrlPointers(sceneObj)` — list valid `/worldInfo/boxModelList/.../textureUrl` targets (includes `material`, `materials[]`, nested `joins` / `inters` / `holes`).
+10. `listTextureUrlPointers(sceneObj)` — list valid `/objectList/.../textureUrl` targets, with friendly `/worldInfo/boxModelList/...` compatibility (includes `material`, `materials[]`, nested `joins` / `inters` / `holes`).
 11. `parseSceneJsonString(str)` / `extractJsonText(str)` / `resolveVisionImageUrl(image)` — parsing and image URL normalization for vision chat.
 12. `createSceneAiClient(defaultOptions?)` — merges defaults into generate/update/plan/fill/agent methods (no file I/O).
 13. `runSceneAgent(input, options?)` — optional multi-step agent; **requires `options.agent.enabled === true`**; default is single-shot. Depth: `simple` | `medium` | `deep` | `auto`. Browser agent does not persist textures to disk.
@@ -85,8 +85,8 @@ AI output should satisfy:
 
 - A single JSON object representing the **full** scene (no prose outside JSON).
 - Top-level **`threeJsonId`** (stable string; no `worldId`).
-- **Friendly form** (preferred for rich hand-authored scenes): `worldInfo` + `sceneConfig`; include only non-empty `worldInfo` lists actually used and omit unused list properties.
-- **Standard form** (scheme B): `sceneConfig` + `objectList` (see few-shot D in `threeJsonCoreSkill.js`); all-in-`objectList` is also valid.
+- **Standard form** (required for AI authoring and the default API result): `sceneConfig` + one heterogeneous `objectList`; every deployable item has an explicit `objType`.
+- **Friendly form** (human-facing compatibility projection): request it with `outputFormat: "friendly"`; include only non-empty `worldInfo` lists actually used and omit unused list properties.
 - Geometry fields for generic boxes use `width`, `height`, `depth` (not `length`).
 - Do not embed `alarmList` or page UI chrome in scene JSON.
 - Numeric values are finite and practical for scene rendering.

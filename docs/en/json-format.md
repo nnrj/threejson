@@ -9,8 +9,8 @@ ThreeJSON JSON is a declarative description of a Three.js scene. It contains:
 
 ThreeJSON supports two equivalent authoring shapes:
 
-- Standard JSON: centered on `objectList`; good for generated data, storage, and diffs.
-- Friendly JSON: centered on typed lists under `worldInfo`; good for examples, hand editing, and AI generation.
+- Standard JSON: centered on one heterogeneous `objectList`; recommended for program and AI generation, storage, and diffs.
+- Friendly JSON: centered on typed lists under `worldInfo`; good for human-readable examples and hand editing.
 
 During loading, friendly JSON is normalized into the standard object list. Export APIs can also convert between the two shapes.
 

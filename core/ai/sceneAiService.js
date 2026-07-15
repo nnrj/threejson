@@ -38,7 +38,12 @@ import {
   isLikelyTruncatedJsonText,
   sanitizeAiJsonText
 } from "./sceneJsonSanitize.js";
-import { isLoadableScenePayload } from "../handler/sceneFriendlyNormalizer.js";
+import {
+  buildFriendlyScenePayloadFromCanonical,
+  buildStandardScenePayloadFromCanonical,
+  isLoadableScenePayload,
+  normalizeScenePayload
+} from "../handler/sceneFriendlyNormalizer.js";
 
 const PROVIDERS = {
   chatgpt: {
@@ -128,8 +133,49 @@ function parseSceneJsonString(sceneJsonString) {
   return normalizeSceneJsonObject(parsed);
 }
 
+function parseJsonObjectWithoutSceneValidation(sceneJsonString) {
+  const parsed = JSON.parse(sanitizeAiJsonText(String(sceneJsonString || "").trim()));
+  if (!isObject(parsed)) {
+    throw new Error("Generated scene JSON must be an object.");
+  }
+  return parsed;
+}
+
 function prettyJson(sceneObj) {
   return JSON.stringify(sceneObj, null, 2);
+}
+
+function normalizeOutputFormat(value) {
+  return value === "friendly" ? "friendly" : "standard";
+}
+
+function projectSceneOutputObject(sceneObj, outputFormat = "standard", options = {}) {
+  const normalized = normalizeScenePayload(sceneObj);
+  const standard = normalizeSceneJsonObject(
+    buildStandardScenePayloadFromCanonical(sceneObj, normalized.payload)
+  );
+  if (normalizeOutputFormat(outputFormat) !== "friendly") {
+    return standard;
+  }
+  return normalizeSceneJsonObject(
+    buildFriendlyScenePayloadFromCanonical(standard, normalized.payload, {
+      friendlyMap: options.friendlyMap
+    })
+  );
+}
+
+function projectSceneJsonString(sceneJsonString, outputFormat = "standard", options = {}) {
+  const parsed = parseSceneJsonString(String(sceneJsonString || ""));
+  return prettyJson(projectSceneOutputObject(parsed, outputFormat, options));
+}
+
+function projectSceneDraftJsonString(sceneJsonString, outputFormat, options = {}) {
+  try {
+    return projectSceneJsonString(sceneJsonString, outputFormat, options);
+  } catch (error) {
+    if (options.allowInvalidSceneDraft !== true) throw error;
+    return prettyJson(parseJsonObjectWithoutSceneValidation(sceneJsonString));
+  }
 }
 
 function normalizeMimeTypeForDataUrl(mimeType) {
@@ -332,6 +378,9 @@ function stripChatTransportOptions(options = {}) {
   delete next.estimatedSegments;
   delete next.maxSceneSegments;
   delete next.onSegmentProgress;
+  delete next.outputFormat;
+  delete next.friendlyMap;
+  delete next.allowInvalidSceneDraft;
   return next;
 }
 
@@ -630,16 +679,23 @@ async function generateSceneJsonString(prompt, options = {}) {
   );
 
   let jsonText = extractJsonText(content);
-  let sceneJsonString = prettyJson(parseSceneJsonString(jsonText));
+  let sceneJsonString = projectSceneDraftJsonString(jsonText, "standard", options);
+  if (options.allowInvalidSceneDraft === true) {
+    try {
+      parseSceneJsonString(sceneJsonString);
+    } catch (_error) {
+      return sceneJsonString;
+    }
+  }
   sceneJsonString = await maybeApplyCapabilityReview(trimmedPrompt, sceneJsonString, {
     ...options,
     maxTokens
   });
-  return sceneJsonString;
+  return projectSceneJsonString(sceneJsonString, options.outputFormat, options);
 }
 
 const DEFAULT_SCENE_IMAGE_PROMPT =
-  "Recreate the spatial layout and main visible objects from the reference image as a ThreeJSON scene. Map visible shapes to appropriate lists and objTypes (floor, wall, glass, sphere, modelList primitives, line, infoPanel, group, points, native, etc.). Use reasonable approximate sizes and positions.";
+  "Recreate the spatial layout and main visible objects from the reference image as a standard ThreeJSON scene. Map visible shapes to objectList records with explicit objTypes (floor, wall, glass, sphere, line, infoPanel, group, points, native, externalModel, etc.). Use reasonable approximate sizes and positions.";
 
 /**
  * Generate a formatted full-scene JSON string from a reference image (URL, data URL, or raw base64 object).
@@ -690,12 +746,12 @@ async function generateSceneJsonFromImage(input = {}, options = {}) {
   });
 
   let jsonText = extractJsonText(content);
-  let sceneJsonString = prettyJson(parseSceneJsonString(jsonText));
+  let sceneJsonString = projectSceneJsonString(jsonText, "standard");
   sceneJsonString = await maybeApplyCapabilityReview(trimmedPrompt, sceneJsonString, {
     ...options,
     maxTokens
   });
-  return sceneJsonString;
+  return projectSceneJsonString(sceneJsonString, options.outputFormat, options);
 }
 
 /**
@@ -717,7 +773,16 @@ async function requestUpdatedSceneJsonString(prompt, currentSceneJsonString, opt
   const updateMode = options.updateMode === "incremental" ? "incremental" : "full";
   const includePatch = options.includePatch === true;
   const chatOpts = stripChatTransportOptions(options);
-  const currentSceneObj = parseSceneJsonString(String(currentSceneJsonString));
+  let currentSceneObj;
+  try {
+    currentSceneObj = projectSceneOutputObject(
+      parseSceneJsonString(String(currentSceneJsonString)),
+      "standard"
+    );
+  } catch (error) {
+    if (options.allowInvalidSceneDraft !== true) throw error;
+    currentSceneObj = parseJsonObjectWithoutSceneValidation(currentSceneJsonString);
+  }
   const referenceMaterial = await resolveReferenceMaterialForPrompt(prompt, options);
 
   if (updateMode === "incremental") {
@@ -745,14 +810,9 @@ async function requestUpdatedSceneJsonString(prompt, currentSceneJsonString, opt
     if (!applied.ok) {
       throw new Error(`incremental patch failed: ${applied.error}`);
     }
-    let sceneJsonString;
-    try {
-      const { normalizeScenePayload } = await import("../handler/sceneFriendlyNormalizer.js");
-      const normalized = normalizeScenePayload(applied.scene);
-      sceneJsonString = prettyJson(normalized.compatPayload || normalized.sourcePayload || applied.scene);
-    } catch {
-      sceneJsonString = prettyJson(applied.scene);
-    }
+    const sceneJsonString = prettyJson(
+      projectSceneOutputObject(applied.scene, options.outputFormat, options)
+    );
     return includePatch ? { sceneJsonString, patch } : sceneJsonString;
   }
 
@@ -777,8 +837,11 @@ async function requestUpdatedSceneJsonString(prompt, currentSceneJsonString, opt
   });
 
   const updatedJsonText = extractJsonText(content);
-  const updatedSceneObj = parseSceneJsonString(updatedJsonText);
-  const sceneJsonString = prettyJson(updatedSceneObj);
+  const sceneJsonString = projectSceneDraftJsonString(
+    updatedJsonText,
+    options.outputFormat,
+    options
+  );
   return includePatch ? { sceneJsonString, patch: null } : sceneJsonString;
 }
 
@@ -1016,7 +1079,11 @@ async function requestSceneRefinementStep(userPrompt, currentSceneJsonString, op
   }
 
   if (resolveOutputKind(content) === "json") {
-    const sceneJsonString = prettyJson(parseSceneJsonString(extractJsonText(content)));
+    const sceneJsonString = projectSceneJsonString(
+      extractJsonText(content),
+      options.outputFormat,
+      options
+    );
     return { outputMode: "json", sceneJsonString, rawContent: content };
   }
 
@@ -1027,7 +1094,9 @@ async function requestSceneRefinementStep(userPrompt, currentSceneJsonString, op
       if (!applied.ok) {
         throw new Error(applied.error || "JSON Patch application failed.");
       }
-      const sceneJsonString = prettyJson(normalizeSceneJsonObject(applied.scene));
+      const sceneJsonString = prettyJson(
+        projectSceneOutputObject(applied.scene, options.outputFormat, options)
+      );
       return { outputMode: "patch", patch, sceneJsonString, rawContent: content };
     }
   } catch (_patchError) {
@@ -1060,5 +1129,6 @@ export {
   parseSceneJsonString,
   resolveVisionImageUrl,
   buildGenerateUserMessage,
+  projectSceneJsonString,
   maybeApplyCapabilityReview
 };

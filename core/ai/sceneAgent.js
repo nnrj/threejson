@@ -7,7 +7,9 @@ import {
   updateSceneJsonString,
   requestUpdatedSceneEditCommands,
   requestSceneRefinementStep,
-  dryRunUpdateCommands
+  dryRunUpdateCommands,
+  projectSceneJsonString,
+  parseSceneJsonString
 } from "./sceneAiService.js";
 import {
   buildSceneCommandUpdateUserMessage,
@@ -27,7 +29,6 @@ import {
   buildCapabilityFixPrompt
 } from "./agentTools.js";
 import { fillTextureUrls, createOpenAiImageProvider } from "./textureAiService.js";
-import { parseSceneJsonString } from "./sceneAiService.js";
 import { matchIntentSignals } from "./sceneCapability.js";
 import { fetchReferenceMaterial } from "./sceneReferenceCatalog.js";
 
@@ -683,6 +684,7 @@ async function runSceneAgent(input = {}, options = {}) {
   const steps = [];
   let stepIndex = 0;
   const streamPreview = options.streamPreview === true;
+  const requestedOutputFormat = options.outputFormat === "friendly" ? "friendly" : "standard";
   const chatTransport = {
     stream: options.stream === true,
     signal: options.signal,
@@ -704,15 +706,22 @@ async function runSceneAgent(input = {}, options = {}) {
   delete chatOptions.texture;
   delete chatOptions.streamPreview;
   delete chatOptions.applyDraftCommands;
+  // Every agent step operates on the same standard scheme-B representation. A friendly
+  // projection is applied only once, at the public return boundary.
+  chatOptions.outputFormat = "standard";
+
+  const projectFinalScene = (sceneJsonString) =>
+    projectSceneJsonString(sceneJsonString, requestedOutputFormat);
 
   /** Agent repair/layout steps always use full-scene JSON, not incremental patch. */
-  const chatOptionsFullUpdate = { ...chatOptions };
+  const chatOptionsFullUpdate = { ...chatOptions, allowInvalidSceneDraft: enabled };
   delete chatOptionsFullUpdate.updateMode;
 
   /** Avoid duplicate capability review inside generate when agent loop handles it. */
   const chatOptionsGenerate = {
     ...chatOptions,
     capabilityReview: false,
+    allowInvalidSceneDraft: true,
     planFirst: chatOptions.planFirst === true && !enabled
   };
 
@@ -840,7 +849,7 @@ async function runSceneAgent(input = {}, options = {}) {
     emitSceneReady(sceneJsonString);
     const fillResult = await maybeFillTextures(sceneJsonString);
     return {
-      sceneJsonString: fillResult.sceneJsonString,
+      sceneJsonString: projectFinalScene(fillResult.sceneJsonString),
       textureFillWarning: fillResult.textureFillWarning,
       steps,
       agentUsed: false,
@@ -912,7 +921,7 @@ async function runSceneAgent(input = {}, options = {}) {
       const fillResult = await maybeFillTextures(commandResult.sceneJsonString);
       return {
         ...commandResult,
-        sceneJsonString: fillResult.sceneJsonString,
+        sceneJsonString: projectFinalScene(fillResult.sceneJsonString),
         textureFillWarning: fillResult.textureFillWarning,
         tokenHint: commandResult.tokenHint
       };
@@ -1203,7 +1212,7 @@ async function runSceneAgent(input = {}, options = {}) {
   const fillResult = await maybeFillTextures(sceneJsonString);
 
   return {
-    sceneJsonString: fillResult.sceneJsonString,
+    sceneJsonString: projectFinalScene(fillResult.sceneJsonString),
     textureFillWarning: fillResult.textureFillWarning,
     steps,
     agentUsed: true,

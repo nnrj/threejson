@@ -83,6 +83,9 @@ export function saveThreeBoxSettingsCache(settings) {
 export function loadThreeBoxSettingsBundle() {
   const cached = readThreeBoxSettingsCache();
   const merged = deepMergeThreeBoxSettings(THREEBOX_SETTINGS_DEFAULTS, cached || {});
+  if (cached?.io?.sceneJsonFormat !== "standard" && cached?.io?.sceneJsonFormat !== "friendly") {
+    merged.io.sceneJsonFormat = cached?.io?.copyFriendlyJson === true ? "friendly" : "standard";
+  }
   if (!cached?.agent && cached?.ai?.agentDepth && !merged.agent?.depth) {
     merged.agent = { ...(merged.agent || {}), depth: cached.ai.agentDepth };
   } else if (!cached?.agent && cached?.ai?.agentDepth) {

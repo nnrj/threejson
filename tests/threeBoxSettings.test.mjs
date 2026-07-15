@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
 
-import { THREEBOX_SETTINGS_DEFAULTS } from "../tools/scene-host/threebox/js/threeBoxSettingsSchema.js";
+import {
+  THREEBOX_SETTINGS_DEFAULTS,
+  THREEBOX_SETTINGS_STORAGE_KEY
+} from "../tools/scene-host/threebox/js/threeBoxSettingsSchema.js";
 import {
   loadThreeBoxSettingsBundle,
   persistThreeBoxSettings
@@ -37,12 +40,20 @@ test("ThreeBox defaults remember API keys locally", () => {
   assert.equal(THREEBOX_SETTINGS_DEFAULTS.ai.rememberKeys, true);
   assert.equal(THREEBOX_SETTINGS_DEFAULTS.ai.onlineTextureHints, true);
   assert.equal(THREEBOX_SETTINGS_DEFAULTS.ai.maxSceneSegments, 16);
+  assert.equal(THREEBOX_SETTINGS_DEFAULTS.io.sceneJsonFormat, "standard");
   assert.equal(THREEBOX_SETTINGS_DEFAULTS.agent.progressiveGenerate, true);
   const settings = loadThreeBoxSettingsBundle();
   assert.equal(settings.ai.rememberKeys, true);
   assert.equal(settings.ai.onlineTextureHints, true);
   assert.equal(settings.ai.maxSceneSegments, 16);
+  assert.equal(settings.io.sceneJsonFormat, "standard");
   assert.equal(settings.agent.progressiveGenerate, true);
+});
+
+test("ThreeBox migrates the legacy friendly-copy preference to the JSON format setting", () => {
+  const store = installMemoryLocalStorage();
+  store.set(THREEBOX_SETTINGS_STORAGE_KEY, JSON.stringify({ io: { copyFriendlyJson: true } }));
+  assert.equal(loadThreeBoxSettingsBundle().io.sceneJsonFormat, "friendly");
 });
 
 test("ThreeBox persist keeps keys by default and clears them when rememberKeys is false", () => {

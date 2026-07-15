@@ -11,6 +11,8 @@ import {
 import { initBusinessDomains } from "../core/handler/businessDomainRegistry.js";
 import {
   detectScenePayloadViewFormat,
+  buildFriendlyScenePayloadFromCanonical,
+  buildStandardScenePayloadFromCanonical,
   isCanonicalScenePayload,
   isLoadableScenePayload,
   normalizeScenePayload
@@ -34,6 +36,53 @@ function makeSceneWithBox() {
   scene.add(mesh);
   return scene;
 }
+
+test("standard and friendly projections preserve root metadata and extended sceneConfig", () => {
+  const standard = {
+    version: "next",
+    threeJsonId: "projection-scene",
+    label: "Projection scene",
+    businessInfo: { project: "demo" },
+    sceneConfig: {
+      assetsBase: "/assets/",
+      textureQuality: { anisotropy: 8 },
+      textFont: { url: "/fonts/demo.woff2" },
+      interaction: { enabled: true },
+      passList: [{ type: "bloom", strength: 0.5 }],
+      scene: { background: "#101010" },
+      camera: { position: { x: 4, y: 3, z: 6 } }
+    },
+    objectList: [
+      {
+        threeJsonId: "box-1",
+        objType: "box",
+        geometry: { width: 1, height: 2, depth: 3 },
+        material: { color: "#ffffff" }
+      }
+    ]
+  };
+
+  const canonical = normalizeScenePayload(standard).payload;
+  const friendly = buildFriendlyScenePayloadFromCanonical(standard, canonical);
+  assert.equal(friendly.businessInfo.project, "demo");
+  assert.equal(friendly.label, "Projection scene");
+  assert.equal(friendly.sceneConfig.assetsBase, "/assets/");
+  assert.equal(friendly.sceneConfig.textureQuality.anisotropy, 8);
+  assert.equal(friendly.sceneConfig.textFont.url, "/fonts/demo.woff2");
+  assert.equal(friendly.sceneConfig.interaction.enabled, true);
+  assert.equal(friendly.sceneConfig.passList[0].type, "bloom");
+  assert.equal(friendly.sceneConfig.camera.jsonOrigin, undefined);
+  assert.equal(friendly.worldInfo.meshList[0].objType, "box");
+
+  const roundTripCanonical = normalizeScenePayload(friendly).payload;
+  const roundTrip = buildStandardScenePayloadFromCanonical(friendly, roundTripCanonical);
+  assert.equal(roundTrip.worldInfo, undefined);
+  assert.equal(roundTrip.businessInfo.project, "demo");
+  assert.equal(roundTrip.sceneConfig.assetsBase, "/assets/");
+  assert.equal(roundTrip.sceneConfig.passList[0].type, "bloom");
+  assert.equal(roundTrip.objectList[0].threeJsonId, "box-1");
+  assert.equal(roundTrip.objectList[0].objType, "box");
+});
 
 test("collectObjectListFromScene reads deploy root objJson", () => {
   const scene = makeSceneWithBox();

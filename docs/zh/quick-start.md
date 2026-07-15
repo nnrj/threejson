@@ -103,7 +103,7 @@ const sceneJson = {
 };
 ```
 
-`worldInfo` 是友好 JSON 写法，适合手写和给 AI 生成；ThreeJSON 加载时会归一化为标准 `objectList`。
+`worldInfo` 是面向人类的友好 JSON 写法，适合手写示例。程序或 AI 生成推荐使用结构统一的标准 `objectList`；ThreeJSON 加载时会归一化这两种格式。
 
 ## 3. 原生 HTML
 

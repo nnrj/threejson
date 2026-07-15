@@ -61,27 +61,27 @@ Standard alternative (still valid): all objTypes in a single top-level objectLis
 `;
 
 const THREE_JSON_PRIMITIVE_GEOMETRY = `
-Primitive geometry fields (use in modelList / sphereModelList / boxModelList as appropriate):
+Primitive geometry fields (use in standard objectList records with an explicit objType):
 
 box | floor | wall | glass | cabinet | door:
   geometry: { "width", "height", "depth" }
 
-sphere (sphereModelList or objType sphere):
+sphere:
   geometry: { "radius", "widthSegments", "heightSegments" }
 
-cylinder (modelList, objType cylinder):
+cylinder:
   geometry: { "radiusTop", "radiusBottom", "height", "radialSegments" }
 
-cone (modelList, objType cone):
+cone:
   geometry: { "radius", "height", "radialSegments" }
 
-torus (modelList, objType torus):
+torus:
   geometry: { "radius", "tube", "radialSegments", "tubularSegments" }
 
-ring (modelList, objType ring):
+ring:
   geometry: { "innerRadius", "outerRadius", "thetaSegments" }
 
-capsule (modelList, objType capsule):
+capsule:
   geometry: { "radius", "length", "capSegments", "radialSegments" }
 
 Never use geometry field "length" for boxes — use width/height/depth. Capsule uses "length" for the cylindrical mid section.
@@ -173,11 +173,11 @@ Intent → capability:
 
 const THREE_JSON_SCENE_AUTHORING_RULES = `
 Scene authoring rules:
-1. Choose the objType and worldInfo list that most faithfully and specifically matches the user's described shapes and roles — prefer the most fitting capability (native geometry, domain record, or specialized objType) over a generic primitive stand-in whenever it represents the object better; use basic geometry when it genuinely is the best fit (a plain box/blockout was asked for, or no more specific capability applies), not merely because it's simpler to emit.
-2. Put each object in the correct list (lines in lineList, static panels in infoPanelList, interactive DOM in css3dPanelList, scene text in objectList with objType text, groups in groupList, cylinders in modelList, spheres in sphereModelList, etc.).
+1. Choose the objType that most faithfully and specifically matches the user's described shape or role. Use a specialized objType/domain/native geometry when it represents the object better; use a basic primitive when it genuinely is the best fit.
+2. Put every deployable content record in the single standard objectList and always set objType explicitly (box, sphere, line, group, infoPanel, css3dPanel, text, domain, externalModel, particleEmitter, etc.). Do not create worldInfo category lists in AI output.
 3. Use descriptor **name** for batch/page semantics (e.g. "room-wall", "air-conditioning"); use **label** for display text; do not invent unsupported objType strings like "container" or "ground" — use floor/wall/glass instead.
-4. Scene collection properties are optional and must be emitted only when they contain elements. In friendly JSON, include only the non-empty worldInfo lists actually used; do not output boxModelList: [] or placeholders for unused lists. In standard JSON, omit objectList when it would be empty (and sceneConfig alone carries the scene).
-5. Prefer friendly worldInfo + sceneConfig OR standard scheme B (sceneConfig + objectList + threeJsonId). Include reasonable camera, lights, and controls in sceneConfig for standalone scenes.
+4. AI output uses standard scheme B only: top-level threeJsonId + sceneConfig + objectList. Do not output worldInfo, friendlyMap, or category lists such as boxModelList/sphereModelList/modelList/lineList.
+5. Keep the primary scene, camera, renderer, controls, lights, renderLoop, helpers, intro, and extensions in sceneConfig. Keep deployable content in objectList. Include reasonable camera, lights, and controls for standalone scenes.
 6. Always set top-level threeJsonId (stable string or UUID). Do not use worldId or worldInfo.id.
 7. Do not embed page UI or alarmList in scene JSON.
 8. Optional declarative animation on meshes: "animations": [{ "type": "rotate", "axis": "x"|"y"|"z", "speed": number }]. For any scene that relies on these animations, include sceneConfig.renderLoop.updateAnimations: true (or omit renderLoop.updateAnimations, whose runtime default is true). Use a speed and camera distance that make the motion perceptible for the object scale.
@@ -351,9 +351,83 @@ Particle effect policy for this request:
 const THREE_JSON_IMAGE_REFERENCE_INSTRUCTION = `
 You will receive ONE reference image embedded in the user message.
 Use it as the primary spatial/visual reference alongside the user's text prompt:
-- Infer layout, proportions, and element types; map visible shapes to the appropriate lists and objTypes above.
-- Flat ground → floor; vertical planes → wall or glass; curved/ball shapes → sphere or modelList primitives; paths/outlines → lineList; static panel signs → infoPanelList; clickable UI → css3dPanelList; floating titles → objectList objType text.
+- Infer layout, proportions, and element types; map every visible element to a standard objectList record with an explicit objType.
+- Flat ground → floor; vertical planes → wall or glass; curved/ball shapes → sphere or another primitive; paths/outlines → line; static panel signs → infoPanel; clickable UI → css3dPanel; floating titles → text.
 Keep the same JSON compatibility rules; output only the full scene object.
+`;
+
+const THREE_JSON_STANDARD_AI_CAPABILITY_CATALOG = `
+Standard ThreeJSON AI authoring contract:
+- Output standard scheme B only: { threeJsonId, sceneConfig, objectList }.
+- objectList is the single heterogeneous collection for deployable content. Every item must have a unique threeJsonId and an explicit objType.
+- Never output worldInfo, friendlyMap, or category lists such as boxModelList, sphereModelList, modelList, lineList, domainModelList, or particleList.
+- Keep runtime configuration in sceneConfig: scene, camera, renderer, controls, lights, renderLoop, helpers, intro, extensions, textureQuality, textFont, interaction, passList, and other supported runtime options.
+
+Common content objType values:
+- Geometry: box, floor, wall, glass, door, cabinet, road, sphere, cylinder, cone, torus, ring, capsule, plane.
+- Structure: group (nested children in subScene), line, tube, instanced, sprite, text.
+- Panels/effects: infoPanel, css3dPanel, shaderSurface, particleEmitter, points, wind, heatMap, audio.
+- Advanced/assets: native, shapePlane, shapeExtrude, irregularPlane, irregularGeometry, bufferMesh, skinned, externalModel.
+- Business features: domain with domain + handler + payload/items/options.
+
+Selection rules:
+- Use line only for a visible route, cable, boundary, outline, or path—not as generic decoration.
+- Use group.subScene for assemblies and instanced.transforms for many repeated objects.
+- Use infoPanel for static rendered signage, css3dPanel for interactive DOM, and text for floating/mesh/SDF scene text.
+- Use externalModel with modelPath for GLTF/GLB/OBJ assets; use native with geometry.type for Three.js-native geometry.
+- Use domain records for supported business objects such as device.cabinet, stat.bar, port, nature.sky/water, and weather.
+- Use particleEmitter only for explicit or clearly implied particle/weather/smoke/dust/spark/magic/starfield effects.
+- Preserve every unrelated field during edits. Target objects by threeJsonId whenever possible.
+`;
+
+const THREE_JSON_STANDARD_SCENE_SCHEMA_DESCRIPTION = `
+Standard ThreeJSON scheme B (the only format permitted for AI output):
+{
+  "version": "next",
+  "threeJsonId": string,
+  "name": string (optional),
+  "sceneConfig": {
+    "scene": { "background": "#RRGGBB", "environment"?: object|string, "fog"?: object },
+    "camera": { "type"?: "perspective"|"orthographic", "fov"?: number, "near"?: number, "far"?: number, "position": { "x": number, "y": number, "z": number } },
+    "renderer": { "antialias"?: boolean },
+    "controls": { "type"?: "orbit"|"firstPerson"|"fly", "target"?: { "x": number, "y": number, "z": number }, "enableDamping"?: boolean },
+    "lights": [{ "type": "ambient"|"directional"|"point"|"spot", "color"?: "#RRGGBB", "intensity": number, "position"?: { "x": number, "y": number, "z": number } }],
+    "renderLoop"?: { "autoResize"?: boolean, "updateAnimations"?: boolean },
+    "helpers"?: { "grid"?: boolean, "axes"?: boolean },
+    "intro"?: object,
+    "extensions"?: object
+  },
+  "objectList": [
+    {
+      "threeJsonId": string,
+      "name"?: string,
+      "label"?: string,
+      "objType": string,
+      "geometry"?: object,
+      "position"?: { "x": number, "y": number, "z": number },
+      "rotation"?: { "rotationX": number, "rotationY": number, "rotationZ": number },
+      "scale"?: { "scaleX": number, "scaleY": number, "scaleZ": number },
+      "material"?: object,
+      "events"?: object,
+      "animations"?: array,
+      "subScene"?: array
+    }
+  ]
+}
+Omit unused optional properties. objectList must contain only actual records and must never contain placeholder empty records.
+`;
+
+const THREE_JSON_STANDARD_FEW_SHOT_EXAMPLES = `
+Compact standard-format reference patterns (copy only relevant patterns):
+
+A) Grounded primitives:
+{"version":"next","threeJsonId":"demo-primitives","sceneConfig":{"scene":{"background":"#222222"},"camera":{"fov":60,"position":{"x":18,"y":12,"z":22}},"controls":{"target":{"x":0,"y":2,"z":0}},"lights":[{"type":"ambient","intensity":0.5},{"type":"directional","intensity":1,"position":{"x":10,"y":16,"z":12}}]},"objectList":[{"threeJsonId":"floor-1","objType":"floor","geometry":{"width":20,"height":0.4,"depth":16},"position":{"x":0,"y":-0.2,"z":0},"material":{"type":"standard","color":"#3a4554"}},{"threeJsonId":"sphere-1","objType":"sphere","geometry":{"radius":2},"position":{"x":-3,"y":2,"z":0},"material":{"type":"standard","color":"#409eff"}},{"threeJsonId":"column-1","objType":"cylinder","geometry":{"radiusTop":1.2,"radiusBottom":1.2,"height":4},"position":{"x":3,"y":2,"z":0},"material":{"type":"standard","color":"#e6a23c"}}]}
+
+B) Domain object and static label:
+{"version":"next","threeJsonId":"demo-cabinet","sceneConfig":{"camera":{"fov":55,"position":{"x":12,"y":9,"z":15}},"controls":{"target":{"x":0,"y":2,"z":0}},"lights":[{"type":"ambient","intensity":0.55},{"type":"directional","intensity":1,"position":{"x":8,"y":14,"z":10}}]},"objectList":[{"threeJsonId":"rack-a","objType":"domain","domain":"device.cabinet","handler":"createCabinet","payload":{"name":"rack-a","label":"Rack A","position":{"x":0,"y":0,"z":0}}},{"threeJsonId":"rack-label","objType":"infoPanel","text":"Rack A","panelBoxType":"box","panel":{"position":{"x":0,"y":5,"z":0},"geometry":{"width":3,"height":1,"depth":0.1}}}]}
+
+C) Interactive panel:
+{"version":"next","threeJsonId":"demo-panel","sceneConfig":{"scene":{"background":"#1a1a2e"},"camera":{"fov":55,"position":{"x":0,"y":6,"z":12}},"controls":{"target":{"x":0,"y":2,"z":0}},"lights":[{"type":"ambient","intensity":0.5},{"type":"directional","intensity":1,"position":{"x":5,"y":10,"z":8}}]},"objectList":[{"threeJsonId":"panel-1","objType":"css3dPanel","html":"<button>Start</button>","panel":{"position":{"x":0,"y":2,"z":0},"geometry":{"width":4,"height":3,"depth":0.1}}}]}
 `;
 
 function onlineTextureHintsEnabled(options = {}) {
@@ -380,14 +454,10 @@ function filterParticleCapabilityLines(text, options = {}) {
 function buildSceneCapabilityCatalog(options = {}) {
   return [
     buildAgentCapabilityIndex({ onlineTextureHints: onlineTextureHintsExplicitlyEnabled(options) }).trim(),
-    THREE_JSON_LIST_PLACEMENT.trim(),
+    THREE_JSON_STANDARD_AI_CAPABILITY_CATALOG.trim(),
     THREE_JSON_PRIMITIVE_GEOMETRY.trim(),
-    THREE_JSON_NATIVE_THREE.trim(),
-    THREE_JSON_DOMAIN_USAGE.trim(),
-    THREE_JSON_INTENT_GUIDE.trim(),
-    THREE_JSON_CORE_CAPABILITIES.trim(),
     THREE_JSON_AGENT_EXAMPLE_INDEX.trim(),
-    THREE_JSON_FEW_SHOT_EXAMPLES.trim()
+    THREE_JSON_STANDARD_FEW_SHOT_EXAMPLES.trim()
   ].map((block) => filterParticleCapabilityLines(block, options)).join("\n\n");
 }
 
@@ -411,7 +481,7 @@ function buildSceneOutlineSystemPrompt(options = {}) {
     "",
     "Output a concise bullet outline (English or Chinese) listing:",
     "- Major objects and spatial layout",
-    "- Which worldInfo lists and objTypes to use for each element",
+    "- Which standard objectList objTypes to use for each element",
     "- Why any non-basic capability is necessary, or omit it",
     "- Materials / colors / optional sceneConfig (camera, lights, background)",
     "Do NOT output JSON."
@@ -426,10 +496,10 @@ function buildSceneGenerationSystemPrompt(options = {}) {
     includeOnlineTextureDisabledRule: true
   };
   return [
-    "You are an expert ThreeJSON scene JSON generator. ThreeJSON deploys scenes from friendly worldInfo + sceneConfig, or standard JSON (threeJsonId + sceneConfig + objectList), or all-in-objectList standard.",
+    "You are an expert ThreeJSON scene JSON generator. Author standard scheme-B JSON only: threeJsonId + sceneConfig + one heterogeneous objectList with an explicit objType on every item.",
     buildSceneCapabilityCatalog(promptOptions),
     filterParticleCapabilityLines(buildSceneAuthoringRules(promptOptions), promptOptions),
-    filterParticleCapabilityLines(THREE_JSON_SCENE_SCHEMA_DESCRIPTION, promptOptions),
+    filterParticleCapabilityLines(THREE_JSON_STANDARD_SCENE_SCHEMA_DESCRIPTION, promptOptions),
     promptOptions.particleEffects === false ? THREE_JSON_PARTICLE_DISABLED_POLICY.trim() : "",
     THREE_JSON_OUTPUT_REQUIREMENT.trim()
   ].filter(Boolean).join("\n\n");
@@ -446,7 +516,7 @@ function buildSceneImageGenerationSystemPrompt(options = {}) {
     "You are an expert ThreeJSON scene JSON generator. Combine the user's text prompt with the embedded reference image.",
     buildSceneCapabilityCatalog(promptOptions),
     buildSceneAuthoringRules(promptOptions),
-    THREE_JSON_SCENE_SCHEMA_DESCRIPTION.trim(),
+    THREE_JSON_STANDARD_SCENE_SCHEMA_DESCRIPTION.trim(),
     THREE_JSON_IMAGE_REFERENCE_INSTRUCTION.trim(),
     THREE_JSON_OUTPUT_REQUIREMENT.trim()
   ].join("\n\n");
@@ -458,11 +528,11 @@ function buildSceneUpdateSystemPrompt(options = {}) {
     "You are a ThreeJSON scene JSON editor.",
     "You will receive an existing JSON scene and a user modification request.",
     "Return the FULL updated JSON scene object after applying the requested changes.",
-    "When adding objects, use the most appropriate list/objType/geometry fields from the capability catalog.",
+    "When adding objects, append standard objectList records with the most appropriate explicit objType and geometry fields.",
     "When editing existing objects, preserve every unrelated property. Size edits should change only the requested dimension(s); for a box height change, keep width/depth and material unchanged unless requested.",
-    buildSceneCapabilityCatalog(),
-    buildSceneAuthoringRules(),
-    THREE_JSON_SCENE_SCHEMA_DESCRIPTION.trim(),
+    buildSceneCapabilityCatalog(options),
+    buildSceneAuthoringRules(options),
+    THREE_JSON_STANDARD_SCENE_SCHEMA_DESCRIPTION.trim(),
     THREE_JSON_OUTPUT_REQUIREMENT.trim()
   ].join("\n\n");
 }
@@ -473,13 +543,11 @@ function buildSceneIncrementalUpdateSystemPrompt(options = {}) {
     "You are a ThreeJSON scene editor. Apply the user request with minimal changes.",
     "Output ONLY a JSON array of RFC 6902 operations (add | replace | remove) against the scene root.",
     "Patch only the fields needed by the request; preserve unrelated geometry dimensions, materials, object types, lists, and positions.",
-    "Allowed path prefixes: /worldInfo, /threeJsonId, /sceneConfig, /controlsConfig, /businessInfo, /objectList, /extensions.",
-    "Use slash-separated JSON Pointer paths only (not dots). Example: [{\"op\":\"add\",\"path\":\"/worldInfo/sphereModelList/-\",\"value\":{...}}]",
+    "Allowed path prefixes: /threeJsonId, /sceneConfig, /businessInfo, /objectList, /extensions.",
+    "Use slash-separated JSON Pointer paths only (not dots). Example: [{\"op\":\"add\",\"path\":\"/objectList/-\",\"value\":{\"threeJsonId\":\"ball-2\",\"objType\":\"sphere\",...}}]",
     "Do NOT return the full scene object. No markdown fences unless wrapping the array.",
-    buildAgentCapabilityIndex().trim(),
-    THREE_JSON_LIST_PLACEMENT.trim(),
-    THREE_JSON_PRIMITIVE_GEOMETRY.trim(),
-    buildSceneAuthoringRules()
+    buildSceneCapabilityCatalog(options),
+    buildSceneAuthoringRules(options)
   ].join("\n\n");
 }
 
@@ -487,10 +555,10 @@ function buildSceneIncrementalUpdateSystemPrompt(options = {}) {
 function buildSceneReviewSystemPrompt(options = {}) {
   return [
     "You are a ThreeJSON scene reviewer. Improve layout, scale, material consistency, and capability fit.",
-    "Use appropriate lists and objTypes when the user intent calls for non-box shapes; keep box-based content when it fits the prompt.",
+    "Use the appropriate explicit objType in standard objectList when the user intent calls for non-box shapes; keep box-based content when it fits the prompt.",
     "Do not add complexity during review unless it fixes a real user-intent or capability gap.",
-    buildSceneCapabilityCatalog(),
-    buildSceneAuthoringRules(),
+    buildSceneCapabilityCatalog(options),
+    buildSceneAuthoringRules(options),
     THREE_JSON_OUTPUT_REQUIREMENT.trim()
   ].join("\n\n");
 }
@@ -505,8 +573,10 @@ export {
   THREE_JSON_ONLINE_TEXTURE_RULE,
   THREE_JSON_ONLINE_TEXTURE_DISABLED_RULE,
   THREE_JSON_SCENE_SCHEMA_DESCRIPTION,
+  THREE_JSON_STANDARD_SCENE_SCHEMA_DESCRIPTION,
   THREE_JSON_CORE_CAPABILITIES,
   THREE_JSON_FEW_SHOT_EXAMPLES,
+  THREE_JSON_STANDARD_FEW_SHOT_EXAMPLES,
   THREE_JSON_OUTPUT_REQUIREMENT,
   THREE_JSON_AGENT_CAPABILITY_INDEX,
   THREE_JSON_AGENT_EXAMPLE_INDEX,
