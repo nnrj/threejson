@@ -68,14 +68,16 @@ function buildClassifyIntentSystemPrompt() {
     "- \"adjust\": the user wants to modify the scene produced by a specific prior turn.",
     "",
     "Output shape (strict):",
-    '{ "intent": "generate"|"adjust", "targetTurnId": string|null, "note": string, "estimatedSegments": integer }',
+    '{ "intent": "generate"|"adjust", "targetTurnId": string|null, "note": string, "generationStrategy": "single"|"segmented"|"compact", "estimatedSegments": integer }',
     "",
     "Rules:",
     '- "targetTurnId" MUST be one of the provided turn ids, or null. Never invent an id.',
     '- If intent is "generate", "targetTurnId" MUST be null.',
     '- If intent is "adjust" but you cannot tell which prior turn is meant, still pick the single most recent turn as targetTurnId (most conversations continue the latest result) and explain the ambiguity in "note".',
     '- "note" is one short sentence explaining your choice.',
-    '- "estimatedSegments" controls whether an expensive multi-response continuation protocol is activated. Use 1 by default for ordinary requests, including polished scenes made from a modest number of objects. Use 2-16 only when the requested FULL JSON is clearly too large for one provider response (for example, explicitly requested very large object populations or unusually detailed city-scale layouts). Complexity features are optional safeguards, not a quality setting: never increase this value merely to improve quality, reasoning, correctness, or visual detail. For adjust intent, still estimate the size of a full scene matching the newest request.',
+    '- Choose "generationStrategy" before generation starts. "single" means the complete JSON clearly fits one response. "segmented" means the request genuinely needs multiple responses AND you can follow the host segmented-output protocol from the first response. "compact" means a literal/full expansion is too large or segmented output is unsuitable; preserve the visual intent with instancing, bounded representative populations, and fewer explicit records so complete JSON fits one response.',
+    '- Complexity features are optional safeguards, not a quality setting. Never choose "segmented" merely to improve quality, reasoning, correctness, or visual detail. Never begin a large one-shot response expecting the host to repair an arbitrary cutoff later.',
+    '- For "single" or "compact", estimatedSegments MUST be 1. For "segmented", use 2-16 and only when the requested JSON is clearly too large for one provider response. If you are not confident that strict segmented output is supported, choose "compact" instead.',
     "",
     "Output requirement:",
     "Return ONLY one JSON object. No Markdown fences. No commentary before or after."
@@ -94,22 +96,24 @@ function buildClassifyIntentUserMessage(userPrompt, historyEntries) {
 /**
  * Classify whether the user's next chat message is a new-scene request or an adjustment of a
  * specific prior turn. Safe-by-default: any network/parse/validation failure resolves to
- * `{ intent: "generate", targetTurnId: null, estimatedSegments: 1 }` rather than throwing, since guessing wrong toward
+ * `{ intent: "generate", targetTurnId: null, generationStrategy: "single", estimatedSegments: 1 }` rather than throwing, since guessing wrong toward
  * "generate" is the least destructive failure mode for a caller (it never silently overwrites the
  * wrong prior scene).
  *
  * @param {{ userPrompt: string, history?: Array<{turnId: string, summary: string}> }} input
  * @param {object} [options] requestChatCompletion transport options (provider/apiKey/model/baseUrl/...)
- * @returns {Promise<{ intent: "generate"|"adjust", targetTurnId: string|null, note: string, estimatedSegments: number }>}
+ * @returns {Promise<{ intent: "generate"|"adjust", targetTurnId: string|null, note: string, generationStrategy: "single"|"segmented"|"compact", estimatedSegments: number }>}
  */
 async function classifyTurnIntent(input = {}, options = {}) {
   const userPrompt = String(input?.userPrompt || "").trim();
   const historyEntries = normalizeHistoryEntries(input?.history);
-  const fallback = { intent: "generate", targetTurnId: null, note: "", estimatedSegments: 1 };
-
-  if (!historyEntries.length) {
-    return { ...fallback, note: "no prior turns; nothing to adjust" };
-  }
+  const fallback = {
+    intent: "generate",
+    targetTurnId: null,
+    note: "",
+    generationStrategy: "single",
+    estimatedSegments: 1
+  };
 
   try {
     const content = await requestChatCompletion({
@@ -130,13 +134,20 @@ async function classifyTurnIntent(input = {}, options = {}) {
     const targetTurnId = intent === "adjust" && validIds.has(rawTargetId) ? rawTargetId : null;
     const note = typeof parsed?.note === "string" ? parsed.note.slice(0, 300) : "";
     const rawEstimatedSegments = Number(parsed?.estimatedSegments);
-    const estimatedSegments = Number.isFinite(rawEstimatedSegments)
+    const boundedSegments = Number.isFinite(rawEstimatedSegments)
       ? Math.min(MAX_ESTIMATED_SCENE_SEGMENTS, Math.max(1, Math.round(rawEstimatedSegments)))
       : 1;
+    const parsedStrategy = ["single", "segmented", "compact"].includes(parsed?.generationStrategy)
+      ? parsed.generationStrategy
+      : boundedSegments > 1
+        ? "segmented"
+        : "single";
+    const generationStrategy = parsedStrategy;
+    const estimatedSegments = generationStrategy === "segmented" ? Math.max(2, boundedSegments) : 1;
     if (intent === "adjust" && !targetTurnId) {
       return { ...fallback, note: "fallback: model chose adjust but named an unknown targetTurnId" };
     }
-    return { intent, targetTurnId, note, estimatedSegments };
+    return { intent, targetTurnId, note, generationStrategy, estimatedSegments };
   } catch (error) {
     return { ...fallback, note: `fallback: classification failed (${error?.message || error})` };
   }
@@ -295,7 +306,8 @@ async function generateSceneTitle(input = {}, options = {}) {
  *   contextPayload?: object|null,
  *   adjustOutputMode?: "commands"|"json-incremental"|"json-full"|null,
  *   globalPromptPrefix?: string|null,
- *   includeReferenceLinks?: boolean
+ *   includeReferenceLinks?: boolean,
+ *   generationStrategy?: "single"|"segmented"|"compact"
  * }} input
  *   `includeReferenceLinks`: when true, adds a `referenceLinks` block pointing at the ThreeJSON
  *   docs site and its example-JSON repo folder — a citation only (this function does no network
@@ -324,6 +336,18 @@ function buildStructuredTurnEnvelope(input = {}) {
       docsIndex: THREE_JSON_REFERENCE_LINKS.docs,
       jsonExamples: THREE_JSON_REFERENCE_LINKS.examples
     };
+  }
+  if (envelope.intent === "generate") {
+    const strategy = ["single", "segmented", "compact"].includes(input?.generationStrategy)
+      ? input.generationStrategy
+      : "single";
+    envelope.generationStrategy = strategy;
+    if (strategy === "compact") {
+      envelope.generationConstraints = {
+        completeJsonInOneResponse: true,
+        instruction: "Preserve the requested visual story while keeping the JSON compact. Use instancedList/transforms for repeated props, represent words such as many with a bounded varied sample, reuse materials and simple assemblies, omit optional detail, and close a valid complete JSON document. Do not expand every implied object into a separate record."
+      };
+    }
   }
   if (envelope.intent === "adjust") {
     envelope.targetTurnId = typeof input?.targetTurnId === "string" ? input.targetTurnId : null;

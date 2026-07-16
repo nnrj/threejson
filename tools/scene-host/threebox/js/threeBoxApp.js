@@ -320,7 +320,12 @@ async function main() {
     return resolveTurnSceneJsonString(orderedTurns, turn.id);
   }
 
-  async function handleGenerateTurn(text, api, { conversationId, turnId, estimatedSegments = 1 }) {
+  async function handleGenerateTurn(text, api, {
+    conversationId,
+    turnId,
+    generationStrategy = "single",
+    estimatedSegments = 1
+  }) {
     const settings = settingsModal.getSettings();
     const selectedProviderId = document.getElementById("composerModelSelect")?.value;
     const providerOptions = resolveProviderOptions(settings, selectedProviderId);
@@ -373,7 +378,14 @@ async function main() {
           streaming.update(streamBuffer);
         },
         onGenerationPhase: async (phase) => {
-          if (phase?.phase === "processing") {
+          if (phase?.phase === "compact-retry") {
+            streamBuffer = "";
+            streaming.update("");
+            if (typeof streaming.processing === "function") {
+              streaming.processing(t("threebox.app.compactRetry", "输出过长，正在简化场景并重新生成…"));
+            }
+            await waitForStatusPaint();
+          } else if (phase?.phase === "processing") {
             streaming.processing();
             await waitForStatusPaint();
           }
@@ -384,6 +396,7 @@ async function main() {
         locale: getHostLocale(),
         capabilityLookup: settings.ai?.capabilityLookupEnabled !== false,
         onlineTextureHints: settings.ai?.onlineTextureHints !== false,
+        generationStrategy,
         estimatedSegments,
         maxSceneSegments: settings.ai?.maxSceneSegments,
         signal: abortController.signal
@@ -496,7 +509,12 @@ async function main() {
       }
       api.appendToBody(
         textEl,
-        buildRetryButton(() => handleGenerateTurn(text, api, { conversationId, turnId, estimatedSegments }))
+        buildRetryButton(() => handleGenerateTurn(text, api, {
+          conversationId,
+          turnId,
+          generationStrategy,
+          estimatedSegments
+        }))
       );
       api.finishTurnScroll();
     }
@@ -789,11 +807,6 @@ async function main() {
     const allPriorTurns = await getTurnsForConversation(conversationId).catch(() => []);
     const priorTurns = allPriorTurns.filter(isSceneContextTurn);
 
-    if (!priorTurns.length) {
-      await handleGenerateTurn(text, api, { conversationId, turnId, estimatedSegments: 1 });
-      return;
-    }
-
     const history = priorTurns.map((t) => ({ turnId: t.id, summary: t.recapSummary || t.userPrompt }));
     const classified = await classifyThreeBoxTurnIntent({ userPrompt: text, history }, providerOptions);
     if (classified.intent === "adjust" && classified.targetTurnId) {
@@ -802,6 +815,7 @@ async function main() {
       await handleGenerateTurn(text, api, {
         conversationId,
         turnId,
+        generationStrategy: classified.generationStrategy,
         estimatedSegments: classified.estimatedSegments
       });
     }

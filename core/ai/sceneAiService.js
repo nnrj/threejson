@@ -240,13 +240,15 @@ function resolveVisionImageUrl(image) {
 /**
  * @param {ReadableStream<Uint8Array>} body
  * @param {(chunk: string) => void} [onDelta]
+ * @param {(metadata:{finishReason:string|null})=>void} [onCompletionMetadata]
  * @returns {Promise<string>}
  */
-async function readSseChatCompletionStream(body, onDelta) {
+async function readSseChatCompletionStream(body, onDelta, onCompletionMetadata) {
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
   let content = "";
+  let finishReason = null;
   while (true) {
     const { done, value } = await reader.read();
     if (done) {
@@ -266,7 +268,11 @@ async function readSseChatCompletionStream(body, onDelta) {
       }
       try {
         const json = JSON.parse(payload);
-        const delta = json?.choices?.[0]?.delta?.content;
+        const choice = json?.choices?.[0];
+        const delta = choice?.delta?.content;
+        if (typeof choice?.finish_reason === "string" && choice.finish_reason) {
+          finishReason = choice.finish_reason;
+        }
         if (typeof delta === "string" && delta.length > 0) {
           content += delta;
           if (typeof onDelta === "function") {
@@ -277,6 +283,9 @@ async function readSseChatCompletionStream(body, onDelta) {
         /* ignore malformed SSE chunks */
       }
     }
+  }
+  if (typeof onCompletionMetadata === "function") {
+    onCompletionMetadata({ finishReason });
   }
   return content;
 }
@@ -291,7 +300,8 @@ async function requestChatCompletion({
   baseUrl,
   stream = false,
   signal,
-  onDelta
+  onDelta,
+  onCompletionMetadata
 }) {
   const normalizedProvider = ensureProvider(provider);
   const providerConfig = PROVIDERS[normalizedProvider];
@@ -344,7 +354,7 @@ async function requestChatCompletion({
   }
 
   if (stream === true && response.body) {
-    const content = await readSseChatCompletionStream(response.body, onDelta);
+    const content = await readSseChatCompletionStream(response.body, onDelta, onCompletionMetadata);
     if (!content.trim()) {
       throw new Error("AI stream response content is empty.");
     }
@@ -355,6 +365,9 @@ async function requestChatCompletion({
   const content = data?.choices?.[0]?.message?.content;
   if (typeof content !== "string" || !content.trim()) {
     throw new Error("AI response content is empty.");
+  }
+  if (typeof onCompletionMetadata === "function") {
+    onCompletionMetadata({ finishReason: data?.choices?.[0]?.finish_reason || null });
   }
   return content;
 }
@@ -380,6 +393,7 @@ function stripChatTransportOptions(options = {}) {
   delete next.onSegmentProgress;
   delete next.segmentedOutput;
   delete next.onGenerationPhase;
+  delete next.onCompletionMetadata;
   delete next.outputFormat;
   delete next.friendlyMap;
   delete next.allowInvalidSceneDraft;
@@ -414,6 +428,7 @@ async function dryRunUpdateCommands(commands, sceneJsonString) {
 const DEFAULT_GENERATE_MAX_TOKENS = 6000;
 const DEFAULT_MAX_SCENE_SEGMENTS = 16;
 const HARD_MAX_SCENE_SEGMENTS = 64;
+const DEFAULT_AUTO_CONTINUE_MIN_CHARS = 8000;
 const SCENE_SEGMENT_CONTINUE_MARKER = "<<<THREEJSON_CONTINUE>>>";
 const SCENE_SEGMENT_COMPLETE_MARKER = "<<<THREEJSON_COMPLETE>>>";
 
@@ -510,6 +525,38 @@ function shouldUseSegmentedSceneOutput(options, estimatedSegments) {
   return estimatedSegments > 1;
 }
 
+function isLengthFinishReason(value) {
+  const reason = String(value || "").trim().toLowerCase();
+  return reason === "length" || reason === "max_tokens" || reason === "max_output_tokens";
+}
+
+function shouldRetryCompactSceneOutput(content, completionMetadata, options) {
+  if (options.compactRetryOnTruncation === false || !isLikelyTruncatedJsonText(content)) {
+    return false;
+  }
+  if (isLengthFinishReason(completionMetadata?.finishReason)) {
+    return true;
+  }
+  const minChars = clampInteger(
+    options.compactRetryMinChars,
+    DEFAULT_AUTO_CONTINUE_MIN_CHARS,
+    1000,
+    1000000
+  );
+  return String(content || "").length >= minChars;
+}
+
+function buildCompactSceneRetryMessage(prompt, referenceMaterial = "") {
+  return [
+    buildGenerateUserMessage(prompt),
+    referenceMaterial,
+    "COMPACT FULL-REGENERATION REQUIREMENT:",
+    "The previous one-response attempt exceeded the provider output limit. Generate the complete scene again from the beginning; do not continue, quote, or repair the previous fragment.",
+    "Preserve the visual story, but reduce explicit JSON size aggressively: use instancedList/transforms for repeated objects, use a bounded varied sample for words such as many, reuse materials and simple assemblies, omit optional details, and close every array/object in this response.",
+    "Return one complete valid standard scheme-B JSON document only."
+  ].filter(Boolean).join("\n\n");
+}
+
 async function requestSegmentedSceneJsonContent(messages, options, maxTokens) {
   const estimatedSegments = clampInteger(options.estimatedSegments, 1, 1, DEFAULT_MAX_SCENE_SEGMENTS);
   const maxSegments = clampInteger(
@@ -540,8 +587,7 @@ async function requestSegmentedSceneJsonContent(messages, options, maxTokens) {
     assembled += fragment;
 
     const detectedTruncation = isLikelyTruncatedJsonText(assembled);
-    const shouldContinue = control === "continue" || detectedTruncation;
-    if (!shouldContinue) {
+    if (!detectedTruncation) {
       emitSceneSegmentProgress(options, {
         status: "complete",
         segment,
@@ -666,6 +712,7 @@ async function maybeApplyCapabilityReview(prompt, sceneJsonString, options = {})
  * @param {"auto"|boolean} [options.segmentedOutput="auto"] Use multi-response output explicitly,
  *   disable it explicitly, or in auto mode use it only when estimatedSegments is greater than 1
  * @param {number} [options.maxSceneSegments=16] Maximum responses when segmented output is active (clamped to 1..64)
+ * @param {boolean} [options.compactRetryOnTruncation=true] Retry once from scratch with compact-scene constraints after a genuine one-shot cutoff
  * @returns {Promise<string>}
  */
 async function generateSceneJsonString(prompt, options = {}) {
@@ -694,9 +741,50 @@ async function generateSceneJsonString(prompt, options = {}) {
       content: [buildGenerateUserMessage(effectivePrompt), referenceMaterial].filter(Boolean).join("\n\n")
     }
   ];
-  const content = segmentedOutput
-    ? await requestSegmentedSceneJsonContent(messages, options, maxTokens)
-    : await requestChatCompletion({ ...options, maxTokens, messages });
+  let content;
+  if (segmentedOutput) {
+    content = await requestSegmentedSceneJsonContent(messages, options, maxTokens);
+  } else {
+    let completionMetadata = { finishReason: null };
+    content = await requestChatCompletion({
+      ...options,
+      maxTokens,
+      messages,
+      onCompletionMetadata: (metadata) => {
+        completionMetadata = { ...completionMetadata, ...metadata };
+        if (typeof options.onCompletionMetadata === "function") {
+          options.onCompletionMetadata(metadata);
+        }
+      }
+    });
+    if (shouldRetryCompactSceneOutput(content, completionMetadata, options)) {
+      await emitSceneGenerationPhase(options, {
+        phase: "compact-retry",
+        reason: "provider-output-limit"
+      });
+      let retryMetadata = { finishReason: null };
+      content = await requestChatCompletion({
+        ...options,
+        maxTokens,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: buildCompactSceneRetryMessage(effectivePrompt, referenceMaterial) }
+        ],
+        onCompletionMetadata: (metadata) => {
+          retryMetadata = { ...retryMetadata, ...metadata };
+          if (typeof options.onCompletionMetadata === "function") {
+            options.onCompletionMetadata(metadata);
+          }
+        }
+      });
+      if (shouldRetryCompactSceneOutput(content, retryMetadata, { ...options, compactRetryOnTruncation: true })) {
+        throw new Error(
+          "Scene JSON exceeded the provider output limit even after one compact full-regeneration attempt. " +
+          "Use planned segmented output or simplify the requested scene."
+        );
+      }
+    }
+  }
 
   // Network/token generation has finished. Let browser hosts paint a parsing/rendering status
   // before the synchronous JSON normalization below; non-UI callers pay no extra delay.

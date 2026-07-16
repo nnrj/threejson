@@ -119,7 +119,7 @@ const result = await aiClient.runSceneAgent(
 - `apiKey`: required
 - `model`, `baseUrl`, `temperature` (default `0.2`)
 - `maxTokens`: default `4000` for updates/textures; generation often uses **6000**
-- `segmentedOutput`: generation-only, `"auto"` by default. Ordinary scenes use one response; auto enables continuation only when `estimatedSegments > 1`. `true`/`false` explicitly enable/disable it, and `maxSceneSegments` only caps an enabled segmented run.
+- `segmentedOutput`: generation-only, `"auto"` by default. The pre-generation negotiation chooses `single`, `segmented`, or `compact`. Planned `segmented` generation starts the continuation/stitching protocol in the first response and uses `maxSceneSegments` (default 16, hard maximum 64); ordinary and compact scenes stay single-response. If an unsegmented response unexpectedly hits the provider output limit, the host performs at most one complete compact regeneration instead of blindly appending arbitrary cutoff fragments (`compactRetryOnTruncation: false` disables that retry).
 - `imageDetail`: `auto` | `low` | `high` (image-to-scene only)
 
 ## Validation

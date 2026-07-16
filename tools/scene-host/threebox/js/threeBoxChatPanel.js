@@ -219,9 +219,9 @@ export function createThreeBoxChatPanel(host = {}) {
       el.scrollTop = el.scrollHeight;
       revealBottomOf(el);
     }
-    function processing() {
+    function processing(message = "") {
       el.classList.add("streamingPreviewPending", "streamingPreviewProcessing");
-      el.textContent = t(
+      el.textContent = message || t(
         "threebox.chat.preparingScene",
         "JSON 已生成，正在解析并准备场景预览（不消耗 Token）…"
       );

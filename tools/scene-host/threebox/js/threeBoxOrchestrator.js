@@ -120,7 +120,7 @@ export function buildResultDigest(sceneJson) {
 /**
  * First-turn (no prior context) generation: builds the structured JSON envelope and calls
  * core/ai's generateSceneJsonString with streaming enabled.
- * @param {{ userPrompt: string, providerOptions: object, onDelta?: (delta:string)=>void, onGenerationPhase?: (phase:object)=>void|Promise<void>, signal?: AbortSignal, globalPromptPrefix?: string, agentOptions?: object, onAgentProgress?: (p: object)=>void, includeReferenceLinks?: boolean, locale?: string, onlineTextureHints?: boolean, estimatedSegments?: number, maxSceneSegments?: number }} input
+ * @param {{ userPrompt: string, providerOptions: object, onDelta?: (delta:string)=>void, onGenerationPhase?: (phase:object)=>void|Promise<void>, signal?: AbortSignal, globalPromptPrefix?: string, agentOptions?: object, onAgentProgress?: (p: object)=>void, includeReferenceLinks?: boolean, locale?: string, onlineTextureHints?: boolean, generationStrategy?: "single"|"segmented"|"compact", estimatedSegments?: number, maxSceneSegments?: number }} input
  *   `includeReferenceLinks`/`locale` are threebox-shell settings (general.locale / ai.attachReferenceLinks)
  *   forwarded into the envelope's referenceLinks block and (for agent mode) into the Agent's
  *   local docs/example retrieval — see core/ai/sceneChatSession.js and sceneReferenceCatalog.js.
@@ -138,10 +138,17 @@ export async function runThreeBoxGenerateTurn({
   locale,
   capabilityLookup,
   onlineTextureHints,
+  generationStrategy = "single",
   estimatedSegments,
   maxSceneSegments
 }) {
-  const envelope = buildStructuredTurnEnvelope({ userPrompt, intent: "generate", globalPromptPrefix, includeReferenceLinks });
+  const envelope = buildStructuredTurnEnvelope({
+    userPrompt,
+    intent: "generate",
+    globalPromptPrefix,
+    includeReferenceLinks,
+    generationStrategy
+  });
   if (agentOptions?.enabled) {
     const result = await runSceneAgent(
       { mode: "generate", prompt: envelope },
@@ -157,6 +164,7 @@ export async function runThreeBoxGenerateTurn({
         capabilityLookup,
         onlineTextureHints,
         estimatedSegments,
+        segmentedOutput: generationStrategy === "segmented",
         maxSceneSegments,
         onGenerationPhase,
         applyDraftCommands: applyThreeBoxDraftCommands,
@@ -177,6 +185,7 @@ export async function runThreeBoxGenerateTurn({
     capabilityLookup,
     onlineTextureHints,
     estimatedSegments,
+    segmentedOutput: generationStrategy === "segmented",
     maxSceneSegments,
     locale
   });

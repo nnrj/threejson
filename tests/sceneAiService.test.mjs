@@ -229,6 +229,7 @@ test("requestChatCompletion stream aggregates SSE deltas", async () => {
   const sseLines = [
     'data: {"choices":[{"delta":{"content":"Hello"}}]}\n\n',
     'data: {"choices":[{"delta":{"content":" world"}}]}\n\n',
+    'data: {"choices":[{"delta":{},"finish_reason":"length"}]}\n\n',
     "data: [DONE]\n\n"
   ];
   let i = 0;
@@ -246,15 +247,20 @@ test("requestChatCompletion stream aggregates SSE deltas", async () => {
   });
 
   const deltas = [];
+  let completionMetadata = null;
   const content = await requestChatCompletion({
     provider: "deepseek",
     apiKey: "test-key",
     messages: [{ role: "user", content: "hi" }],
     stream: true,
-    onDelta: (d) => deltas.push(d)
+    onDelta: (d) => deltas.push(d),
+    onCompletionMetadata: (metadata) => {
+      completionMetadata = metadata;
+    }
   });
   assert.equal(content, "Hello world");
   assert.deepEqual(deltas, ["Hello", " world"]);
+  assert.equal(completionMetadata?.finishReason, "length");
 });
 
 test("requestChatCompletion respects AbortSignal", async () => {
@@ -597,6 +603,81 @@ test("generateSceneJsonString does not silently turn a malformed ordinary respon
   assert.equal(requestCount, 1);
 });
 
+test("generateSceneJsonString regenerates a truncated one-shot forest once with compact constraints", async () => {
+  const first = '{"threeJsonId":"forest","objectList":[';
+  const second = '{"threeJsonId":"forest-compact","objectList":[{"threeJsonId":"robot-1","objType":"box"}]}';
+  const requestBodies = [];
+  globalThis.fetch = async (_url, init = {}) => {
+    const body = JSON.parse(init.body);
+    requestBodies.push(body);
+    const compactRetry = requestBodies.length > 1;
+    return {
+      ok: true,
+      async json() {
+        return {
+          choices: [{
+            message: { content: compactRetry ? second : first },
+            finish_reason: compactRetry ? "stop" : "length"
+          }]
+        };
+      }
+    };
+  };
+
+  const progress = [];
+  const output = await generateSceneJsonString(
+    "生成一片森林，森林里有许多小动物，天上飞的地上跑的，有个小木屋，小木屋旁边站着一个机器人。",
+    {
+      provider: "chatgpt",
+      apiKey: "test-key",
+      capabilityReview: false,
+      estimatedSegments: 1,
+      onGenerationPhase: (detail) => progress.push(detail.phase)
+    }
+  );
+
+  assert.equal(requestBodies.length, 2);
+  assert.doesNotMatch(requestBodies[0].messages[0].content, /SEGMENTED OUTPUT PROTOCOL/);
+  assert.equal(requestBodies[1].messages.length, 2);
+  assert.equal(requestBodies[1].messages.some((message) => message.role === "assistant"), false);
+  assert.match(requestBodies[1].messages.at(-1).content, /Generate the complete scene again from the beginning/);
+  assert.equal(JSON.parse(output).threeJsonId, "forest-compact");
+  assert.deepEqual(progress, ["compact-retry", "processing"]);
+});
+
+test("a compact full-regeneration cutoff fails after two requests instead of blind continuation", async () => {
+  let requestCount = 0;
+  globalThis.fetch = async () => {
+    requestCount += 1;
+    return {
+      ok: true,
+      async json() {
+        return {
+          choices: [{
+            message: {
+              content: requestCount === 1
+                ? '{"threeJsonId":"forest","objectList":['
+                : '{"threeJsonId":"forest-compact","objectList":['
+            },
+            finish_reason: "length"
+          }]
+        };
+      }
+    };
+  };
+
+  await assert.rejects(
+    generateSceneJsonString("a forest with many animals", {
+      provider: "chatgpt",
+      apiKey: "test-key",
+      capabilityReview: false,
+      estimatedSegments: 1
+    }),
+    /after one compact full-regeneration attempt/
+  );
+  assert.equal(requestCount, 2);
+});
+
 test("generateSceneJsonString streams an ordinary scene directly without marker buffering", async () => {
   const scene = '{"threeJsonId":"streamed-segment","sceneConfig":{"scene":{"background":"#111111"}}}';
   const streamedPieces = [scene.slice(0, 30), scene.slice(30)];
@@ -758,7 +839,7 @@ test("classifyTurnIntent returns a bounded scene segment estimate", async () => 
         choices: [
           {
             message: {
-              content: '{"intent":"generate","targetTurnId":null,"note":"large city","estimatedSegments":99}'
+              content: '{"intent":"generate","targetTurnId":null,"note":"large city","generationStrategy":"segmented","estimatedSegments":99}'
             }
           }
         ]
@@ -775,7 +856,37 @@ test("classifyTurnIntent returns a bounded scene segment estimate", async () => 
   );
 
   assert.equal(result.intent, "generate");
+  assert.equal(result.generationStrategy, "segmented");
   assert.equal(result.estimatedSegments, 16);
+});
+
+test("classifyTurnIntent negotiates a compact strategy even when there are no prior turns", async () => {
+  let requestBody;
+  globalThis.fetch = async (_url, init = {}) => {
+    requestBody = JSON.parse(init.body);
+    return {
+      ok: true,
+      async json() {
+        return {
+          choices: [{
+            message: {
+              content: '{"intent":"generate","targetTurnId":null,"note":"compact forest","generationStrategy":"compact","estimatedSegments":8}'
+            }
+          }]
+        };
+      }
+    };
+  };
+
+  const result = await classifyTurnIntent(
+    { userPrompt: "a forest with many animals", history: [] },
+    { provider: "chatgpt", apiKey: "test-key" }
+  );
+
+  assert.match(requestBody.messages[1].content, /\(no prior turns\)/);
+  assert.match(requestBody.messages[0].content, /If you are not confident that strict segmented output is supported, choose "compact"/);
+  assert.equal(result.generationStrategy, "compact");
+  assert.equal(result.estimatedSegments, 1);
 });
 
 test("requestSceneRefinementStep recognizes done, JSON Patch, and commands", async () => {

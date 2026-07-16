@@ -165,3 +165,14 @@ test("buildStructuredTurnEnvelope adds referenceLinks when includeReferenceLinks
     "https://github.com/nnrj/threejson/tree/master/assets/json"
   );
 });
+
+test("buildStructuredTurnEnvelope carries the negotiated compact generation strategy", () => {
+  const envelope = JSON.parse(buildStructuredTurnEnvelope({
+    userPrompt: "a forest with many animals",
+    intent: "generate",
+    generationStrategy: "compact"
+  }));
+  assert.equal(envelope.generationStrategy, "compact");
+  assert.equal(envelope.generationConstraints.completeJsonInOneResponse, true);
+  assert.match(envelope.generationConstraints.instruction, /instancedList\/transforms/);
+});
