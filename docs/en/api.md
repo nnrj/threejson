@@ -329,7 +329,7 @@ const result = await exportMesh(runtime.scene, { format: "glb" });
 const blob = result.data;
 ```
 
-Supported formats are defined by `SUPPORTED_MESH_FORMATS`.
+Supported formats are defined by `SUPPORTED_MESH_FORMATS`. Before GLB/GLTF/USDZ export, pending online textures are prepared for export. Textures that cannot be read because of CORS or decoding failures are omitted from the export clone and reported through `result.warnings`; the live scene is not modified. Pass `textureFailurePolicy: "error"` for strict failure instead.
 
 ## 9. Assets
 

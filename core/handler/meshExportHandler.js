@@ -216,6 +216,136 @@ function buildFileNameHint(format, options = {}) {
   return `${stem}.${meta.extension}`;
 }
 
+function isUsableTextureImage(image) {
+  if (!image) {
+    return false;
+  }
+  if (image.data !== undefined) {
+    return Number(image.width) > 0 && Number(image.height) > 0;
+  }
+  return Number(image.width || image.videoWidth || image.naturalWidth) > 0
+    && Number(image.height || image.videoHeight || image.naturalHeight) > 0;
+}
+
+function listMaterialTextureSlots(root) {
+  const slots = [];
+  root?.traverse?.((object3D) => {
+    const materials = Array.isArray(object3D?.material)
+      ? object3D.material
+      : object3D?.material
+        ? [object3D.material]
+        : [];
+    for (const material of materials) {
+      for (const key of Object.keys(material || {})) {
+        const texture = material[key];
+        if (texture?.isTexture === true) {
+          slots.push({ material, key, texture });
+        }
+      }
+    }
+  });
+  return slots;
+}
+
+async function loadExportableTextureImage(url, options = {}) {
+  const fetchFn = options.fetchTexture || globalThis.fetch;
+  if (typeof fetchFn !== "function") {
+    throw new Error("fetch is unavailable");
+  }
+  const response = await fetchFn(url, { mode: "cors", signal: options.signal });
+  if (!response?.ok) {
+    throw new Error(`HTTP ${response?.status || "error"}`);
+  }
+  const blob = await response.blob();
+  const createBitmap = options.createImageBitmap || globalThis.createImageBitmap;
+  if (typeof createBitmap === "function") {
+    return createBitmap(blob);
+  }
+  if (typeof document === "undefined" || typeof Image === "undefined") {
+    throw new Error("no browser image decoder is available");
+  }
+  const objectUrl = URL.createObjectURL(blob);
+  try {
+    return await new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error("image decode failed"));
+      image.src = objectUrl;
+    });
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+/**
+ * Makes asynchronously-loaded URL textures exportable without mutating the live scene. The root
+ * passed here is the cloned export root produced by prepareMeshExportRoot.
+ */
+async function prepareMeshExportTextures(root, options = {}) {
+  const slots = listMaterialTextureSlots(root);
+  const byTexture = new Map();
+  for (const slot of slots) {
+    if (!byTexture.has(slot.texture)) {
+      byTexture.set(slot.texture, []);
+    }
+    byTexture.get(slot.texture).push(slot);
+  }
+
+  const warnings = [];
+  const createdImages = [];
+  try {
+    await Promise.all(Array.from(byTexture.entries(), async ([texture, textureSlots]) => {
+      if (isUsableTextureImage(texture.image)) {
+        return;
+      }
+      const sourceImage = texture.source?.data;
+      const url = String(
+        texture.userData?.threeJsonResolvedUrl || sourceImage?.currentSrc || sourceImage?.src || ""
+      ).trim();
+      try {
+        if (!url) {
+          throw new Error("texture has no resolved source URL");
+        }
+        const image = await loadExportableTextureImage(url, options);
+        if (!isUsableTextureImage(image)) {
+          throw new Error("decoded image has no dimensions");
+        }
+        texture.image = image;
+        texture.needsUpdate = true;
+        if (typeof image.close === "function") {
+          createdImages.push(image);
+        }
+      } catch (error) {
+        if (options.textureFailurePolicy === "error") {
+          throw error;
+        }
+        for (const slot of textureSlots) {
+          slot.material[slot.key] = null;
+        }
+        warnings.push({
+          code: "texture_unavailable",
+          message: `Omitted an unreadable texture during model export${url ? `: ${url}` : "."}`,
+          url,
+          cause: error
+        });
+      }
+    }));
+  } catch (error) {
+    for (const image of createdImages) {
+      image.close?.();
+    }
+    throw error;
+  }
+  return {
+    warnings,
+    cleanup() {
+      for (const image of createdImages) {
+        image.close?.();
+      }
+    }
+  };
+}
+
 /**
  * @param {import("three").Scene | { scene: import("three").Scene } | import("three").Object3D} target
  * @param {object} [options]
@@ -226,11 +356,17 @@ async function exportMesh(target, options = {}) {
   const outputType = resolveOutputType(format, options);
   const prepared = prepareMeshExportRoot(target, options);
   const exportStarted = Date.now();
-  const { raw, durationMs: exporterDurationMs } = await runFormatExporter(
-    format,
-    prepared.exportRoot,
-    options
-  );
+  const texturePreparation = (format === "glb" || format === "gltf" || format === "usdz")
+    ? await prepareMeshExportTextures(prepared.exportRoot, options)
+    : { warnings: [], cleanup() {} };
+  prepared.warnings.push(...texturePreparation.warnings);
+  let exporterResult;
+  try {
+    exporterResult = await runFormatExporter(format, prepared.exportRoot, options);
+  } finally {
+    texturePreparation.cleanup();
+  }
+  const { raw, durationMs: exporterDurationMs } = exporterResult;
   const meta = FORMAT_META[format];
   const data = toOutputData(raw, outputType, options);
 
@@ -282,5 +418,6 @@ export {
   FORMAT_META,
   exportMesh,
   exportMeshObject,
+  prepareMeshExportTextures,
   normalizeMeshFormat
 };

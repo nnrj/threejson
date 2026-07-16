@@ -120,6 +120,7 @@ async function main() {
     onSave: (settings) => {
       populateComposerModelSelect(settings);
       void applyHostLocaleFromSettings(settings);
+      syncPreviewAuxiliaryLightsFromSettings(settings);
     },
     // `templateGallery` is declared with `const` further down in `main()` — same forward-reference
     // pattern as `applyHostLocaleFromSettings` above, safe because these only run in response to a
@@ -159,7 +160,12 @@ async function main() {
   const viewChrome = createThreeBoxViewChrome();
   viewChrome.init();
 
-  const attachedContext = createThreeBoxAttachedContext();
+  const attachedContext = createThreeBoxAttachedContext({
+    sceneCardOptions: {
+      shouldUsePreviewAuxiliaryLights: () =>
+        settingsModal.getSettings()?.general?.previewAuxiliaryLights !== false
+    }
+  });
   const templateGallery = createThreeBoxTemplateGallery({
     onSelectTemplate: (item, payload) => attachedContext.setTemplate(item, payload)
   });
@@ -174,6 +180,21 @@ async function main() {
   // its own private offscreen runtime (see threeBoxOrchestrator.js) and renders the result into a
   // brand-new scene card for the NEW turn — an earlier turn's card is never touched.
   const sceneCardsByTurnId = new Map();
+
+  const createConfiguredSceneCard = () => createThreeBoxSceneCard({
+    shouldShowMeshExportWarnings: () =>
+      settingsModal.getSettings()?.io?.showMeshExportWarnings !== false,
+    shouldUsePreviewAuxiliaryLights: () =>
+      settingsModal.getSettings()?.general?.previewAuxiliaryLights !== false
+  });
+
+  function syncPreviewAuxiliaryLightsFromSettings(settings = settingsModal.getSettings()) {
+    const enabled = settings?.general?.previewAuxiliaryLights !== false;
+    attachedContext?.setPreviewAuxiliaryLightsEnabled?.(enabled);
+    for (const sceneCard of sceneCardsByTurnId.values()) {
+      sceneCard?.setPreviewAuxiliaryLightsEnabled?.(enabled);
+    }
+  }
 
   // Set for the duration of whatever generate/adjust turn is currently in flight (there is only
   // ever one live turn at a time — the composer's send button doubles as a stop button and Enter
@@ -335,7 +356,7 @@ async function main() {
     api.appendToBody(textEl, streaming.el);
     let streamBuffer = "";
     const agentOptions = resolveThreeBoxAgentOptions(settings);
-    const progressiveSceneCard = agentOptions.enabled ? createThreeBoxSceneCard() : null;
+    const progressiveSceneCard = agentOptions.enabled ? createConfiguredSceneCard() : null;
     let previewRenderQueue = Promise.resolve();
     let lastQueuedPreviewJson = "";
     if (progressiveSceneCard) {
@@ -440,7 +461,7 @@ async function main() {
             }).catch(() => "")
           : Promise.resolve("");
 
-      const sceneCard = progressiveSceneCard || createThreeBoxSceneCard();
+      const sceneCard = progressiveSceneCard || createConfiguredSceneCard();
       if (!progressiveSceneCard) {
         api.appendToBody(textEl, sceneCard.el);
       }
@@ -506,6 +527,9 @@ async function main() {
       } else {
         console.error("[threebox] generate turn failed:", error);
         api.updateAssistantMessage(textEl, t("threebox.app.generateFailed", "生成失败：{error}", { error: friendlyAiErrorMessage(error) }));
+      }
+      if (streamBuffer.trim()) {
+        api.appendToBody(textEl, api.buildJsonCollapse(streamBuffer, { failed: true }));
       }
       api.appendToBody(
         textEl,
@@ -637,7 +661,7 @@ async function main() {
             }).catch(() => "")
           : Promise.resolve("");
 
-      const sceneCard = createThreeBoxSceneCard();
+      const sceneCard = createConfiguredSceneCard();
       api.appendToBody(textEl, sceneCard.el);
       const resolvedTitlePromise = titlePromise.then((title) => {
         sceneCard.setLabel(title || text);
@@ -703,6 +727,9 @@ async function main() {
         console.error("[threebox] adjust turn failed:", error);
         api.updateAssistantMessage(textEl, t("threebox.app.adjustFailed", "调整失败：{error}", { error: friendlyAiErrorMessage(error) }));
       }
+      if (streamBuffer.trim()) {
+        api.appendToBody(textEl, api.buildJsonCollapse(streamBuffer, { failed: true }));
+      }
       api.appendToBody(
         textEl,
         buildRetryButton(() => handleAdjustTurn(text, api, { conversationId, turnId, targetTurnId }))
@@ -730,7 +757,7 @@ async function main() {
     const textEl = api.appendAssistantMessage(
       t("threebox.app.templateAppliedMessage", "已应用模板「{label}」作为上下文。", { label: attached.label })
     );
-    const sceneCard = createThreeBoxSceneCard();
+    const sceneCard = createConfiguredSceneCard();
     api.appendToBody(textEl, sceneCard.el);
     await sceneCard.render(attached.sceneJson, { label: attached.label });
     sceneCardsByTurnId.set(seedTurnId, sceneCard);
@@ -914,7 +941,7 @@ async function main() {
       }
       const outputSceneJsonString = projectSceneForUser(sceneJsonString);
       chatPanel.appendToBody(textEl, chatPanel.buildJsonCollapse(outputSceneJsonString));
-      const sceneCard = createThreeBoxSceneCard();
+      const sceneCard = createConfiguredSceneCard();
       chatPanel.appendToBody(textEl, sceneCard.el);
       await sceneCard.render(JSON.parse(outputSceneJsonString), { label: turn.sceneTitle || turn.userPrompt });
       sceneCardsByTurnId.set(turn.id, sceneCard);

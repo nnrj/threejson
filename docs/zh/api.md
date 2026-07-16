@@ -329,7 +329,7 @@ const result = await exportMesh(runtime.scene, { format: "glb" });
 const blob = result.data;
 ```
 
-支持格式以 `SUPPORTED_MESH_FORMATS` 为准。导出器通常需要浏览器环境和对应 Three.js exporter 能力。
+支持格式以 `SUPPORTED_MESH_FORMATS` 为准。导出器通常需要浏览器环境和对应 Three.js exporter 能力。GLB/GLTF/USDZ 导出前会准备仍在异步加载的在线纹理；无法跨域读取或解码的纹理默认仅从导出副本中省略，并通过 `result.warnings` 报告，不会修改实时场景。传入 `textureFailurePolicy: "error"` 可改为严格失败。
 
 ## 9. 资源路径
 

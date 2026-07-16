@@ -57,6 +57,7 @@ if (typeof globalThis.FileReader === "undefined" && typeof globalThis.Blob !== "
 import {
   exportMesh,
   exportMeshObject,
+  prepareMeshExportTextures,
   normalizeMeshFormat
 } from "../core/handler/meshExportHandler.js";
 import { prepareMeshExportRoot } from "../core/util/meshExportPrepare.js";
@@ -168,4 +169,46 @@ test("exportMesh throws E_MESH_EXPORT_EMPTY when no mesh geometry", () => {
     () => prepareMeshExportRoot(scene, { scope: "scene" }),
     (error) => error.code === "E_MESH_EXPORT_EMPTY"
   );
+});
+
+test("prepareMeshExportTextures rehydrates a pending URL texture on the export clone only", async () => {
+  const { scene, mesh } = makeSceneWithBox("online-texture");
+  const liveTexture = new THREE.Texture();
+  liveTexture.userData.threeJsonResolvedUrl = "https://example.test/texture.png";
+  mesh.material.map = liveTexture;
+  const prepared = prepareMeshExportRoot(scene, { scope: "scene" });
+  const exportMeshNode = prepared.exportRoot.children[0];
+  let closed = false;
+  const bitmap = { width: 16, height: 8, close: () => { closed = true; } };
+  const result = await prepareMeshExportTextures(prepared.exportRoot, {
+    fetchTexture: async () => ({ ok: true, blob: async () => new Blob(["png"]) }),
+    createImageBitmap: async () => bitmap
+  });
+
+  assert.notEqual(exportMeshNode.material, mesh.material);
+  assert.notEqual(exportMeshNode.material.map, liveTexture);
+  assert.equal(exportMeshNode.material.map.image, bitmap);
+  assert.equal(liveTexture.image, null);
+  assert.deepEqual(result.warnings, []);
+  result.cleanup();
+  assert.equal(closed, true);
+});
+
+test("exportMesh omits an unreadable pending URL texture instead of failing the GLB export", async () => {
+  const { scene, mesh } = makeSceneWithBox("unreadable-online-texture");
+  const liveTexture = new THREE.Texture();
+  liveTexture.userData.threeJsonResolvedUrl = "https://example.test/unreadable.png";
+  mesh.material.map = liveTexture;
+
+  const result = await exportMesh(scene, {
+    format: "glb",
+    scope: "scene",
+    fetchTexture: async () => ({ ok: false, status: 403 })
+  });
+
+  assert.ok(result.data instanceof ArrayBuffer);
+  assert.ok(result.data.byteLength > 20);
+  assert.ok(result.warnings.some((warning) => warning.code === "texture_unavailable"));
+  assert.equal(mesh.material.map, liveTexture);
+  assert.equal(liveTexture.image, null);
 });

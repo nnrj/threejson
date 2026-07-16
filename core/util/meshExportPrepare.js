@@ -1,3 +1,4 @@
+import { Source } from "three";
 import { shouldSkipSceneExportNode } from "./sceneExportNode.js";
 import {
   cloneSceneGraphForNativeExport,
@@ -92,6 +93,39 @@ function removeSkippedTopLevelChildren(root, shouldSkip) {
   return removed;
 }
 
+/** Give the export clone independent materials/textures so recovery or omission never mutates the live scene. */
+function cloneMeshExportMaterialsAndTextures(root) {
+  const materialClones = new Map();
+  const textureClones = new Map();
+  const cloneTexture = (texture) => {
+    if (!texture?.isTexture) return texture;
+    if (textureClones.has(texture)) return textureClones.get(texture);
+    const cloned = texture.clone();
+    cloned.source = new Source(texture.source?.data ?? texture.image ?? null);
+    textureClones.set(texture, cloned);
+    return cloned;
+  };
+  const cloneMaterial = (material) => {
+    if (!material?.isMaterial) return material;
+    if (materialClones.has(material)) return materialClones.get(material);
+    const cloned = material.clone();
+    materialClones.set(material, cloned);
+    for (const key of Object.keys(cloned)) {
+      if (cloned[key]?.isTexture === true) {
+        cloned[key] = cloneTexture(cloned[key]);
+      }
+    }
+    return cloned;
+  };
+  root?.traverse?.((object3D) => {
+    if (Array.isArray(object3D?.material)) {
+      object3D.material = object3D.material.map(cloneMaterial);
+    } else if (object3D?.material) {
+      object3D.material = cloneMaterial(object3D.material);
+    }
+  });
+}
+
 /**
  * Prepare a cloned root for mesh export (does not modify the live scene).
  *
@@ -150,6 +184,8 @@ function prepareMeshExportRoot(target, options = {}) {
     }
   }
 
+  cloneMeshExportMaterialsAndTextures(exportRoot);
+
   const externalModelPolicy = options.externalModelPolicy === "omitHeavy" ? "omitHeavy" : "include";
   if (externalModelPolicy === "omitHeavy") {
     const omitResult = omitExternalFileModelsForNativeExport(exportRoot, options.omitOptions || {});
@@ -180,6 +216,7 @@ function prepareMeshExportRoot(target, options = {}) {
 
 export {
   measureMeshExportRootStats,
+  cloneMeshExportMaterialsAndTextures,
   normalizeScope,
   prepareMeshExportRoot,
   resolveSceneFromTarget

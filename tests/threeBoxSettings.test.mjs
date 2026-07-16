@@ -40,13 +40,17 @@ test("ThreeBox defaults remember API keys locally", () => {
   assert.equal(THREEBOX_SETTINGS_DEFAULTS.ai.rememberKeys, true);
   assert.equal(THREEBOX_SETTINGS_DEFAULTS.ai.onlineTextureHints, true);
   assert.equal(THREEBOX_SETTINGS_DEFAULTS.ai.maxSceneSegments, 16);
+  assert.equal(THREEBOX_SETTINGS_DEFAULTS.general.previewAuxiliaryLights, true);
   assert.equal(THREEBOX_SETTINGS_DEFAULTS.io.sceneJsonFormat, "standard");
+  assert.equal(THREEBOX_SETTINGS_DEFAULTS.io.showMeshExportWarnings, true);
   assert.equal(THREEBOX_SETTINGS_DEFAULTS.agent.progressiveGenerate, true);
   const settings = loadThreeBoxSettingsBundle();
   assert.equal(settings.ai.rememberKeys, true);
   assert.equal(settings.ai.onlineTextureHints, true);
   assert.equal(settings.ai.maxSceneSegments, 16);
+  assert.equal(settings.general.previewAuxiliaryLights, true);
   assert.equal(settings.io.sceneJsonFormat, "standard");
+  assert.equal(settings.io.showMeshExportWarnings, true);
   assert.equal(settings.agent.progressiveGenerate, true);
 });
 
@@ -54,6 +58,18 @@ test("ThreeBox migrates the legacy friendly-copy preference to the JSON format s
   const store = installMemoryLocalStorage();
   store.set(THREEBOX_SETTINGS_STORAGE_KEY, JSON.stringify({ io: { copyFriendlyJson: true } }));
   assert.equal(loadThreeBoxSettingsBundle().io.sceneJsonFormat, "friendly");
+});
+
+test("ThreeBox persists the model-export warning dialog preference", () => {
+  installMemoryLocalStorage();
+  persistThreeBoxSettings({ io: { showMeshExportWarnings: false } });
+  assert.equal(loadThreeBoxSettingsBundle().io.showMeshExportWarnings, false);
+});
+
+test("ThreeBox persists the preview auxiliary-lights preference", () => {
+  installMemoryLocalStorage();
+  persistThreeBoxSettings({ general: { previewAuxiliaryLights: false } });
+  assert.equal(loadThreeBoxSettingsBundle().general.previewAuxiliaryLights, false);
 });
 
 test("ThreeBox persist keeps keys by default and clears them when rememberKeys is false", () => {

@@ -366,12 +366,14 @@ export function createThreeBoxChatPanel(host = {}) {
 
   /** Collapsed-by-default <details> block holding the final generated JSON (kept out of the
    * markdown-rendered recap text since it can be very long), with a copy button in its header. */
-  function buildJsonCollapse(jsonString) {
+  function buildJsonCollapse(jsonString, options = {}) {
     const details = document.createElement("details");
-    details.className = "jsonCollapse";
+    details.className = options.failed === true ? "jsonCollapse failedJsonCollapse" : "jsonCollapse";
     details.appendChild(
       buildCollapseSummary(
-        t("threebox.chat.viewGeneratedJson", "查看生成的 JSON"),
+        options.failed === true
+          ? t("threebox.chat.viewFailedJson", "查看失败时的 JSON")
+          : t("threebox.chat.viewGeneratedJson", "查看生成的 JSON"),
         t("threebox.chat.copyJson", "复制 JSON"),
         () => jsonString
       )

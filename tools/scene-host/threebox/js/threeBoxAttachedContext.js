@@ -9,7 +9,7 @@ import { showToast } from "./threeBoxUiFeedback.js";
  * The attached scene is consumed as context for the NEXT message the user sends (threeBoxApp.js
  * reads `get()` when handling a send) — this module only owns the preview UI, not the send flow.
  */
-export function createThreeBoxAttachedContext() {
+export function createThreeBoxAttachedContext(options = {}) {
   const row = document.getElementById("attachedContextRow");
   let current = null;
   let expanded = true;
@@ -79,7 +79,7 @@ export function createThreeBoxAttachedContext() {
     row.appendChild(wrap);
 
     disposeSceneCard();
-    sceneCard = createThreeBoxSceneCard();
+    sceneCard = createThreeBoxSceneCard(options.sceneCardOptions || {});
     canvasWrap.appendChild(sceneCard.el);
     void sceneCard.render(current.sceneJson);
   }
@@ -152,5 +152,11 @@ export function createThreeBoxAttachedContext() {
     return current;
   }
 
-  return { setTemplate, clear, get };
+  return {
+    setTemplate,
+    clear,
+    get,
+    setPreviewAuxiliaryLightsEnabled: (enabled) =>
+      sceneCard?.setPreviewAuxiliaryLightsEnabled?.(enabled)
+  };
 }

@@ -2,6 +2,11 @@ import { sceneHostAssetUrl } from "../../shared/js/sceneHostPaths.js";
 import { showToast } from "./threeBoxUiFeedback.js";
 import { t } from "../../shared/i18n/index.js";
 import { enqueueThreeBoxSceneLoad } from "./threeBoxSceneLoadQueue.js";
+import {
+  openThreeBoxMeshExportDialog,
+  showThreeBoxMeshExportWarningDialog
+} from "./threeBoxMeshExportDialog.js";
+import { syncThreeBoxPreviewAuxiliaryLights } from "./threeBoxPreviewLights.js";
 
 const EDITOR_OPEN_SCENE_BRIDGE_PREFIX = "threejson.editor.openScene.";
 const SCENE_PREVIEW_CHANNEL = "threejson:scene-preview";
@@ -43,12 +48,12 @@ function actionBtnHtml(title, glyph) {
 
 /**
  * Inline scene canvas embedded at the end of an AI-generated chat reply, with an always-visible
- * action bar below the canvas (download JSON / export .tjz / open in editor / open in player /
+ * action bar below the canvas (download JSON / export .tjz / export 3D model / open in editor / open in player /
  * fullscreen). Placed below rather than as a canvas hover overlay so it stays reliably reachable
  * regardless of pointer/touch input and doesn't compete with orbit-control drag gestures on the
  * canvas itself.
  */
-export function createThreeBoxSceneCard() {
+export function createThreeBoxSceneCard(cardOptions = {}) {
   const el = document.createElement("div");
   el.className = "sceneCard";
   const canvasWrap = document.createElement("div");
@@ -67,13 +72,14 @@ export function createThreeBoxSceneCard() {
   actionBar.innerHTML = [
     actionBtnHtml(t("threebox.sceneCard.downloadJson", "下载 JSON"), "&#8681;"),
     actionBtnHtml(t("threebox.sceneCard.exportTjz", "导出 .tjz 场景包"), "&#128230;"),
+    actionBtnHtml(t("threebox.sceneCard.exportMesh", "导出三方模型"), "&#9672;"),
     actionBtnHtml(t("threebox.sceneCard.openInEditor", "在编辑器内打开"), "&#9998;"),
     actionBtnHtml(t("threebox.sceneCard.openInPlayer", "在播放器内打开"), "&#9654;"),
     actionBtnHtml(t("threebox.sceneCard.refresh", "刷新画布"), "&#8635;"),
     actionBtnHtml(t("threebox.sceneCard.fullscreen", "全屏"), "&#10021;")
   ].join("");
   el.appendChild(actionBar);
-  const [downloadBtn, exportBtn, openEditorBtn, openPlayerBtn, refreshBtn, fullscreenBtn] =
+  const [downloadBtn, exportBtn, exportMeshBtn, openEditorBtn, openPlayerBtn, refreshBtn, fullscreenBtn] =
     actionBar.querySelectorAll(".sceneCardActionBtn");
 
   let runtime = null;
@@ -188,6 +194,10 @@ export function createThreeBoxSceneCard() {
         return null;
       }
       runtime = nextRuntime;
+      const auxiliaryLightsEnabled = typeof cardOptions.shouldUsePreviewAuxiliaryLights === "function"
+        ? cardOptions.shouldUsePreviewAuxiliaryLights() !== false
+        : cardOptions.previewAuxiliaryLights !== false;
+      syncThreeBoxPreviewAuxiliaryLights(runtime.scene, auxiliaryLightsEnabled);
       runtime.start?.();
       // core/handler/frameLoopHandler.js's resize(size={}) reads size.width/size.height off a
       // single options object — passing (width, height) as positional args silently falls back
@@ -241,6 +251,56 @@ export function createThreeBoxSceneCard() {
       showToast(t("threebox.sceneCard.exportFailed", "导出失败：{error}", { error: error?.message || error }), "error");
     } finally {
       exportBtn.disabled = false;
+    }
+  });
+
+  exportMeshBtn.addEventListener("click", async () => {
+    const sceneJson = requireSceneJson();
+    if (!sceneJson) {
+      return;
+    }
+    const format = await openThreeBoxMeshExportDialog();
+    if (!format) {
+      return;
+    }
+    if (!runtime?.scene?.isScene) {
+      showToast(t("threebox.sceneCard.modelNotReady", "画布场景尚未渲染完成。"), "warning");
+      return;
+    }
+    exportMeshBtn.disabled = true;
+    const formatLabel = format.toUpperCase();
+    showToast(t("threebox.sceneCard.exportMeshStarted", "正在导出 {format}…", { format: formatLabel }), "info");
+    try {
+      const { exportMesh } = await import("threejson");
+      const result = await exportMesh(runtime.scene, {
+        format,
+        scope: "scene",
+        externalModelPolicy: "include",
+        renderer: runtime.renderer,
+        fileNameStem: currentLabel
+      });
+      const payload = result.data instanceof ArrayBuffer ? result.data : String(result.data || "");
+      const blob = new Blob([payload], { type: result.mimeType || "application/octet-stream" });
+      downloadBlob(blob, result.fileNameHint || `${currentLabel}.${result.extension || format}`);
+      const warnings = Array.isArray(result.warnings)
+        ? result.warnings.filter((entry) => String(entry?.message || "").trim())
+        : [];
+      const showWarningDialog = typeof cardOptions.shouldShowMeshExportWarnings === "function"
+        ? cardOptions.shouldShowMeshExportWarnings() !== false
+        : cardOptions.showMeshExportWarnings !== false;
+      if (warnings.length && showWarningDialog) {
+        await showThreeBoxMeshExportWarningDialog(warnings);
+      } else {
+        showToast(t("threebox.sceneCard.exportMeshSuccess", "三方模型已导出。"), "success");
+      }
+    } catch (error) {
+      console.error("[threebox] mesh export failed:", error);
+      showToast(
+        t("threebox.sceneCard.exportMeshFailed", "导出三方模型失败：{error}", { error: error?.message || error }),
+        "error"
+      );
+    } finally {
+      exportMeshBtn.disabled = false;
     }
   });
 
@@ -326,5 +386,14 @@ export function createThreeBoxSceneCard() {
     });
   });
 
-  return { el, canvas, render, dispose, setLabel, getRuntime: () => runtime };
+  return {
+    el,
+    canvas,
+    render,
+    dispose,
+    setLabel,
+    setPreviewAuxiliaryLightsEnabled: (enabled) =>
+      syncThreeBoxPreviewAuxiliaryLights(runtime?.scene, enabled !== false),
+    getRuntime: () => runtime
+  };
 }

@@ -525,6 +525,23 @@ details[open] > .sidebarSectionTitle::before { transform: rotate(90deg); }
 .modalFooter button { height: 34px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--button); color: var(--text); cursor: pointer; }
 .modalFooter button.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
 
+/* ---- Scene-card third-party model export ---- */
+.threeBoxMeshExportDialog { width: min(480px, 100%); }
+.threeBoxMeshExportBody { gap: 14px; }
+.threeBoxMeshExportField { display: grid; grid-template-columns: 104px minmax(0, 1fr); align-items: center; gap: 12px; color: var(--muted); font-size: 13px; }
+.threeBoxMeshExportField select {
+  width: 100%; height: 38px; padding: 0 34px 0 11px; border: 1px solid var(--line); border-radius: 9px;
+  background: var(--button); color: var(--text); font: inherit; outline: none;
+}
+.threeBoxMeshExportField select:focus { border-color: var(--brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 20%, transparent); }
+.threeBoxMeshExportScope { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 12px; font-size: 13px; color: var(--muted); }
+.threeBoxMeshExportScope strong { color: var(--text); font-weight: 600; }
+.threeBoxMeshExportHint { margin: 2px 0 0; padding: 11px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); color: var(--muted); font-size: 12px; line-height: 1.55; }
+.threeBoxMeshExportWarningDialog .modalHeader { color: #f4c46b; }
+.threeBoxMeshExportWarningIntro { margin: 0; color: var(--text); font-size: 13px; line-height: 1.55; }
+.threeBoxMeshExportWarningList { margin: 0; padding: 10px 10px 10px 30px; max-height: min(42vh, 320px); overflow: auto; border: 1px solid color-mix(in srgb, #f4c46b 35%, var(--line)); border-radius: 9px; background: color-mix(in srgb, #f4c46b 7%, var(--panel)); color: var(--muted); font-size: 12px; line-height: 1.55; }
+.threeBoxMeshExportWarningList li { padding: 3px 0; overflow-wrap: anywhere; }
+
 /* ---- Settings modal ---- */
 .settingsDialog { width: min(680px, 100%); height: min(560px, 84vh); }
 .settingsBody { flex: 1; min-height: 0; display: flex; }
@@ -649,6 +666,8 @@ details[open] > .sidebarSectionTitle::before { transform: rotate(90deg); }
 @media (max-width: 720px) {
   html, body { height: 100dvh; }
   #rootContainer { height: 100dvh; }
+  .threeBoxMeshExportField,
+  .threeBoxMeshExportScope { grid-template-columns: 1fr; gap: 6px; }
   .mobileMenuBtn { display: flex; }
   #rootContainer.leftDockPeek .mobileMenuBtn {
     left: calc(min(88vw, 360px) + 8px);

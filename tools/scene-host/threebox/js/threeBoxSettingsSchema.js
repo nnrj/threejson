@@ -14,7 +14,8 @@ export const THREEBOX_SETTINGS_DEFAULTS = {
   general: {
     locale: "auto",
     theme: "dark",
-    templateThumbnailsEnabled: true
+    templateThumbnailsEnabled: true,
+    previewAuxiliaryLights: true
   },
   ai: {
     providers: [],
@@ -44,6 +45,7 @@ export const THREEBOX_SETTINGS_DEFAULTS = {
     exportJsonIndent: 2,
     sceneJsonFormat: "standard",
     tjzAssetPolicy: "preserve",
+    showMeshExportWarnings: true,
     turnCacheMode: "full",
     jsonViewerLineNumbers: true,
     jsonViewerHighlight: true
@@ -62,6 +64,7 @@ export const THREEBOX_SETTINGS_FIELDS = [
   { section: "general", path: "general.locale", type: "select", label: "界面语言", options: [["auto", "跟随浏览器"], ["zh-CN", "简体中文"], ["en-US", "English"]] },
   { section: "general", path: "general.theme", type: "select", label: "主题", options: [["dark", "深色"], ["light", "浅色"]] },
   { section: "general", path: "general.templateThumbnailsEnabled", type: "checkbox", label: "自动生成并缓存模板库缩略图" },
+  { section: "general", path: "general.previewAuxiliaryLights", type: "checkbox", label: "ThreeBox 画布启用辅助光源" },
 
   { section: "ai", path: "ai.rememberKeys", type: "checkbox", label: "记住 API Key 到本地" },
   { section: "ai", path: "ai.selfName", type: "text", label: "AI 自称" },
@@ -111,6 +114,7 @@ export const THREEBOX_SETTINGS_FIELDS = [
   { section: "io", path: "io.exportJsonIndent", type: "number", label: "导出 JSON 缩进", min: 0, max: 4 },
   { section: "io", path: "io.sceneJsonFormat", type: "select", label: "JSON 输出格式", options: [["standard", "标准格式"], ["friendly", "友好格式"]] },
   { section: "io", path: "io.tjzAssetPolicy", type: "select", label: ".tjz 资源策略", options: [["preserve", "保留原始 URL"], ["tryPack", "尝试打包资源"]] },
+  { section: "io", path: "io.showMeshExportWarnings", type: "checkbox", label: "导出三方模型后显示警告弹窗" },
   { section: "io", path: "io.jsonViewerLineNumbers", type: "checkbox", label: "JSON 查看显示行号" },
   { section: "io", path: "io.jsonViewerHighlight", type: "checkbox", label: "JSON 查看代码高亮" },
   {
