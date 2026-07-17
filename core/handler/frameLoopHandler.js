@@ -28,9 +28,18 @@ function getConfigValue(config, key, defaultValue){
  */
 function resizeRendererToDisplaySize(renderer, camera, composer){
 	const canvas = renderer.domElement;
-	const width = canvas.clientWidth;
-	const height = canvas.clientHeight;
-	const needResize = canvas.width !== width || canvas.height !== height;
+	const width = Math.max(0, Math.round(Number(canvas.clientWidth) || 0));
+	const height = Math.max(0, Math.round(Number(canvas.clientHeight) || 0));
+	if(width < 1 || height < 1){
+		return false;
+	}
+	// canvas.width/height are drawing-buffer pixels, while clientWidth/clientHeight
+	// are CSS pixels. Comparing them directly makes every frame look stale on a
+	// high-DPI display and can leave a camera with an intermediate layout aspect.
+	const pixelRatio = Math.max(0.01, Number(renderer.getPixelRatio?.()) || 1);
+	const displayWidth = Math.max(1, Math.floor(width * pixelRatio));
+	const displayHeight = Math.max(1, Math.floor(height * pixelRatio));
+	const needResize = canvas.width !== displayWidth || canvas.height !== displayHeight;
 	if(needResize){
 		renderer.setSize(width, height, false);
 		if(composer && typeof composer.setSize === 'function'){
@@ -160,10 +169,16 @@ function createRenderLoop(options = {}){
 		if(!renderer || !camera){
 			return;
 		}
-		const width = size.width || window.innerWidth;
-		const height = size.height || window.innerHeight;
-		renderer.setSize(width, height);
-		renderer.setPixelRatio(window.devicePixelRatio * getConfigValue(config, 'ratioRate', 1));
+		const width = Math.max(1, Math.round(Number(size.width) || window.innerWidth || 1));
+		const height = Math.max(1, Math.round(Number(size.height) || window.innerHeight || 1));
+		const updateStyle = size.updateStyle !== false;
+		const pixelRatio = Math.max(
+			0.01,
+			(Number(window.devicePixelRatio) || 1) * getConfigValue(config, 'ratioRate', 1)
+		);
+		// Set DPR first so this resize produces the final drawing-buffer dimensions.
+		renderer.setPixelRatio(pixelRatio);
+		renderer.setSize(width, height, updateStyle);
 		if(activeComposer && typeof activeComposer.setSize === 'function'){
 			activeComposer.setSize(width, height);
 		}

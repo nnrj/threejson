@@ -502,6 +502,15 @@ export function createCodeEditorMode(host) {
     return true;
   }
 
+  async function syncViewportAfterModeChange() {
+    if (typeof host.syncCanvasViewportAfterLayout === "function") {
+      await host.syncCanvasViewportAfterLayout();
+      return;
+    }
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    host.windowResize?.();
+  }
+
   async function enterCodeMode(options = {}) {
     const split = Boolean(options.split);
     if (modeSwitchInProgress) {
@@ -514,7 +523,7 @@ export function createCodeEditorMode(host) {
         restorePipGeometryForCodeMode();
       }
       syncEditModeToggleUi();
-      requestAnimationFrame(() => host.windowResize?.());
+      await syncViewportAfterModeChange();
       return;
     }
     beginModeSwitch("正在切换到代码编辑模式…");
@@ -543,19 +552,14 @@ export function createCodeEditorMode(host) {
       if (!split) {
         restorePipGeometryForCodeMode();
       }
-      requestAnimationFrame(() => {
-        host.windowResize?.();
-        requestAnimationFrame(() => {
-          host.windowResize?.();
-          if (codeMirrorView) {
-            codeMirrorView.requestMeasure();
-            codeMirrorView.focus();
-          } else {
-            codeEditorFallbackTextarea?.focus();
-          }
-          endModeSwitch();
-        });
-      });
+      await syncViewportAfterModeChange();
+      if (codeMirrorView) {
+        codeMirrorView.requestMeasure();
+        codeMirrorView.focus();
+      } else {
+        codeEditorFallbackTextarea?.focus();
+      }
+      endModeSwitch();
     } catch (error) {
       console.warn("[scene-editor] enter code mode failed:", error);
       endModeSwitch();
@@ -582,18 +586,16 @@ export function createCodeEditorMode(host) {
       return;
     }
     beginModeSwitch("正在切换到 3D 编辑模式…");
-    cancelAutoRenderTimer();
-    rootContainer?.classList.remove("codeEditMode");
-    rootContainer?.classList.remove("codeAllMode");
-    clearPipInlineGeometry();
-    syncEditModeToggleUi();
-    requestAnimationFrame(() => {
-      host.windowResize?.();
-      requestAnimationFrame(() => {
-        host.windowResize?.();
-        endModeSwitch();
-      });
-    });
+    try {
+      cancelAutoRenderTimer();
+      rootContainer?.classList.remove("codeEditMode");
+      rootContainer?.classList.remove("codeAllMode");
+      clearPipInlineGeometry();
+      syncEditModeToggleUi();
+      await syncViewportAfterModeChange();
+    } finally {
+      endModeSwitch();
+    }
   }
 
   function toggleEditMode() {

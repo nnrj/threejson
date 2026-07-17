@@ -696,19 +696,61 @@ export async function bootstrapSceneHostEditor() {
   }
 
   function windowResize() {
-    const myWidth =
+    const wrapRect = canvasWrap?.getBoundingClientRect?.();
+    const myWidth = Math.round(
+      (wrapRect?.width > 0 ? wrapRect.width : 0) ||
       canvasWrap?.clientWidth ||
       canvasContainer?.clientWidth ||
-      Math.max(100, stageShell?.clientWidth ?? rootContainer?.clientWidth ?? window.innerWidth);
-    const myHeight = canvasWrap?.clientHeight || canvasContainer?.clientHeight || window.innerHeight;
+      Math.max(100, stageShell?.clientWidth ?? rootContainer?.clientWidth ?? window.innerWidth)
+    );
+    const myHeight = Math.round(
+      (wrapRect?.height > 0 ? wrapRect.height : 0) ||
+      canvasWrap?.clientHeight ||
+      canvasContainer?.clientHeight ||
+      window.innerHeight
+    );
+    if (!Number.isFinite(myWidth) || !Number.isFinite(myHeight) || myWidth < 1 || myHeight < 1) {
+      return false;
+    }
     sysConfig.windowSizeNow.width = myWidth;
     sysConfig.windowSizeNow.height = myHeight;
     sysConfig.canvasWidth = myWidth;
     sysConfig.canvasHeight = myHeight;
-    renderLoop?.resize({ width: myWidth, height: myHeight });
+    // canvasWrap owns the responsive CSS size. Do not let WebGLRenderer replace
+    // the canvas' 100% sizing with a stale inline pixel width during mode changes.
+    renderLoop?.resize({ width: myWidth, height: myHeight, updateStyle: false });
     editorThreeView?.onWindowResize?.();
+    return true;
   }
   host.windowResize = windowResize;
+
+  async function syncCanvasViewportAfterLayout(options = {}) {
+    const maxFrames = Math.max(2, Number(options.maxFrames) || 8);
+    let previous = null;
+    let stableFrames = 0;
+    for (let frame = 0; frame < maxFrames; frame += 1) {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const rect = canvasWrap?.getBoundingClientRect?.();
+      const width = Math.round(rect?.width || canvasWrap?.clientWidth || 0);
+      const height = Math.round(rect?.height || canvasWrap?.clientHeight || 0);
+      if (width < 1 || height < 1) {
+        previous = null;
+        stableFrames = 0;
+        continue;
+      }
+      if (previous && previous.width === width && previous.height === height) {
+        stableFrames += 1;
+      } else {
+        previous = { width, height };
+        stableFrames = 0;
+      }
+      if (stableFrames >= 1) {
+        break;
+      }
+    }
+    return windowResize();
+  }
+  host.syncCanvasViewportAfterLayout = syncCanvasViewportAfterLayout;
 
   function buildCreateJsonSceneOptions(flags = {}, extra = {}) {
     const renderLoopUserPolicy = {
@@ -1029,8 +1071,20 @@ export async function bootstrapSceneHostEditor() {
       }
       return false;
     }
+    const aspectHints = getEditorFitViewAspectHints();
+    const viewport = aspectHints.threeViewActive && aspectHints.mainViewRect?.width > 2
+      && aspectHints.mainViewRect?.height > 2
+      ? aspectHints.mainViewRect
+      : {
+          width: canvasWrap?.clientWidth || renderer?.domElement?.clientWidth,
+          height: canvasWrap?.clientHeight || renderer?.domElement?.clientHeight
+        };
+    if (camera && Number(viewport?.width) > 2 && Number(viewport?.height) > 2) {
+      camera.aspect = Number(viewport.width) / Number(viewport.height);
+      camera.updateProjectionMatrix?.();
+    }
     const ok = fitPerspectiveCameraToContentBoundsTHREE(camera, controls, bounds, {
-      aspectHints: getEditorFitViewAspectHints()
+      aspectHints
     });
     if (!ok) {
       if (!silent) {
