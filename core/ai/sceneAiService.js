@@ -62,7 +62,7 @@ const PROVIDERS = {
     defaultModel: "gpt-4o-mini"
   },
   // ThreeBox's built-in trial provider (tools/scene-host/threebox/js/threeBoxBuiltinProvider.js):
-  // a Cloudflare Worker proxy the user configures a base URL for (default https://threebox.org/api,
+  // a Cloudflare Worker proxy the user configures a base URL for (default https://api.threebox.org,
   // see threebox-server's README), never a hardcoded upstream — behaves like "custom" except the
   // frontend fills baseUrl automatically instead of asking the user to type it. Unlike the other
   // entries, `endpoint` includes the "/v1" segment: threebox-server's chat-completions route lives

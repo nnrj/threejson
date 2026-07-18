@@ -21,9 +21,10 @@ export const THREEBOX_SETTINGS_DEFAULTS = {
     providers: [],
     defaultProviderId: "",
     rememberKeys: true,
-    // Base URL for the built-in trial provider's backend (tmpserver/threebox-server). Exposed as
-    // a setting rather than hardcoded because ThreeBox is open source — anyone can run their own.
-    builtinBackendUrl: "https://threebox.org/api",
+    // Base URL for the built-in trial provider's backend (threebox-server, deployed as a
+    // dedicated Cloudflare Worker subdomain rather than a path under the main site). Exposed as a
+    // setting rather than hardcoded because ThreeBox is open source — anyone can run their own.
+    builtinBackendUrl: "https://api.threebox.org",
     selfName: "ThreeBox",
     updateOutputMode: "commands",
     includeSpatialSummary: true,
@@ -81,7 +82,7 @@ export const THREEBOX_SETTINGS_FIELDS = [
     path: "ai.builtinBackendUrl",
     type: "text",
     label: "内置供应商后端地址",
-    placeholder: "https://threebox.org/api"
+    placeholder: "https://api.threebox.org"
   },
   { section: "ai", path: "ai.selfName", type: "text", label: "AI 自称" },
   { section: "ai", path: "ai.updateOutputMode", type: "select", label: "调整优先方式", options: [["commands", "操作命令"], ["json-incremental", "JSON Patch"], ["json-full", "完整 JSON"]] },
