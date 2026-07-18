@@ -88,6 +88,48 @@ function ensureProvider(provider) {
   return normalized;
 }
 
+/** Shared mutable state for every provider request spawned by one user-authored ThreeBox turn. */
+function createThreeBoxTurnContext(turnId, originalPrompt) {
+  return {
+    turnId: String(turnId || "").trim(),
+    originalPrompt: String(originalPrompt || ""),
+    moderationStatus: "pending",
+    moderationReceipt: "",
+    originalPromptHash: ""
+  };
+}
+
+function buildThreeBoxRequestContext(context) {
+  if (!isObject(context) || !String(context.turnId || "").trim()) {
+    return undefined;
+  }
+  const hasReceipt = Boolean(String(context.moderationReceipt || "").trim());
+  return {
+    protocol_version: 1,
+    turn_id: String(context.turnId).trim(),
+    original_prompt: hasReceipt
+      ? { included: false }
+      : { included: true, text: String(context.originalPrompt || "") },
+    moderation: {
+      status: hasReceipt ? String(context.moderationStatus || "allowed") : "pending",
+      ...(hasReceipt ? { receipt: String(context.moderationReceipt) } : {}),
+      ...(context.originalPromptHash ? { prompt_hash: String(context.originalPromptHash) } : {})
+    }
+  };
+}
+
+function applyThreeBoxModerationHeaders(context, headers) {
+  if (!isObject(context) || !headers?.get) {
+    return;
+  }
+  const status = String(headers.get("X-ThreeBox-Moderation-Status") || "").trim();
+  const receipt = String(headers.get("X-ThreeBox-Moderation-Receipt") || "").trim();
+  const promptHash = String(headers.get("X-ThreeBox-Moderation-Prompt-Hash") || "").trim();
+  if (status) context.moderationStatus = status;
+  if (receipt) context.moderationReceipt = receipt;
+  if (promptHash) context.originalPromptHash = promptHash;
+}
+
 function extractJsonText(rawText) {
   if (typeof rawText !== "string") {
     throw new Error("AI response is not a string.");
@@ -314,7 +356,8 @@ async function requestChatCompletion({
   signal,
   onDelta,
   onCompletionMetadata,
-  extraHeaders
+  extraHeaders,
+  threeBoxTurnContext
 }) {
   const normalizedProvider = ensureProvider(provider);
   const providerConfig = PROVIDERS[normalizedProvider];
@@ -345,6 +388,9 @@ async function requestChatCompletion({
     );
   }
   const url = `${endpointBase}${providerConfig.endpoint}`;
+  const threeBoxContext = normalizedProvider === "threebox-builtin"
+    ? buildThreeBoxRequestContext(threeBoxTurnContext)
+    : undefined;
   const response = await fetch(url, {
     method: "POST",
     headers: {
@@ -358,9 +404,11 @@ async function requestChatCompletion({
       temperature,
       max_tokens: maxTokens,
       messages,
-      stream: stream === true
+      stream: stream === true,
+      ...(threeBoxContext ? { threebox_context: threeBoxContext } : {})
     })
   });
+  applyThreeBoxModerationHeaders(threeBoxTurnContext, response.headers);
 
   if (!response.ok) {
     const detail = await response.text();
@@ -372,6 +420,8 @@ async function requestChatCompletion({
       const parsed = JSON.parse(detail);
       if (parsed && parsed.error === "QUOTA_EXCEEDED") {
         errorCode = "BUILTIN_QUOTA_EXCEEDED";
+      } else if (parsed && ["DEVICE_BANNED", "DEVICE_MUTED", "SAFETY_POLICY_WARNING"].includes(parsed.error)) {
+        errorCode = "BUILTIN_MODERATION_BLOCKED";
       }
     } catch {
       /* not JSON, ignore */
@@ -1288,5 +1338,8 @@ export {
   resolveVisionImageUrl,
   buildGenerateUserMessage,
   projectSceneJsonString,
-  maybeApplyCapabilityReview
+  maybeApplyCapabilityReview,
+  createThreeBoxTurnContext,
+  buildThreeBoxRequestContext,
+  applyThreeBoxModerationHeaders
 };

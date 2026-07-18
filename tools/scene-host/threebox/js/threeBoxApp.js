@@ -27,7 +27,7 @@ import {
   isSceneContextTurn,
   isUnsuccessfulTurn
 } from "./threeBoxTurnState.js";
-import { buildStructuredTurnEnvelope, projectSceneJsonString } from "threejson";
+import { buildStructuredTurnEnvelope, createThreeBoxTurnContext, projectSceneJsonString } from "threejson";
 import { initHostI18n, applyShellI18n, getHostLocale, normalizeLocale, t } from "../../shared/i18n/index.js";
 
 function readRequestedLocaleFromUrl() {
@@ -379,6 +379,7 @@ async function main() {
   async function handleGenerateTurn(text, api, {
     conversationId,
     turnId,
+    turnContext = createThreeBoxTurnContext(turnId, text),
     generationStrategy = "single",
     estimatedSegments = 1,
     selectedCapabilityIds = [],
@@ -386,7 +387,10 @@ async function main() {
   }) {
     const settings = settingsModal.getSettings();
     const selectedProviderId = document.getElementById("composerModelSelect")?.value;
-    const providerOptions = resolveProviderOptions(settings, selectedProviderId);
+    const providerOptions = {
+      ...resolveProviderOptions(settings, selectedProviderId),
+      threeBoxTurnContext: turnContext
+    };
 
     const textEl = api.appendAssistantMessage("");
     const streaming = api.createStreamingBlock();
@@ -573,6 +577,7 @@ async function main() {
       appendRetryControls(api, textEl, error, () => handleGenerateTurn(text, api, {
         conversationId,
         turnId,
+        turnContext,
         generationStrategy,
         estimatedSegments,
         selectedCapabilityIds,
@@ -582,22 +587,32 @@ async function main() {
     }
   }
 
-  async function handleAdjustTurn(text, api, { conversationId, turnId, targetTurnId, selectedCapabilityIds = [], requiresAnimation = false }) {
+  async function handleAdjustTurn(text, api, {
+    conversationId,
+    turnId,
+    targetTurnId,
+    turnContext = createThreeBoxTurnContext(turnId, text),
+    selectedCapabilityIds = [],
+    requiresAnimation = false
+  }) {
     const settings = settingsModal.getSettings();
     const selectedProviderId = document.getElementById("composerModelSelect")?.value;
-    const providerOptions = resolveProviderOptions(settings, selectedProviderId);
+    const providerOptions = {
+      ...resolveProviderOptions(settings, selectedProviderId),
+      threeBoxTurnContext: turnContext
+    };
 
     const targetTurn = await getTurn(targetTurnId);
     if (!targetTurn) {
       // Safe fallback: target turn vanished from cache (e.g. cleared) — treat as a fresh generate.
-      return handleGenerateTurn(text, api, { conversationId, turnId });
+      return handleGenerateTurn(text, api, { conversationId, turnId, turnContext });
     }
     let targetSceneJsonString;
     try {
       targetSceneJsonString = await resolveSceneJsonStringForTurn(targetTurn, conversationId);
     } catch (error) {
       console.error("[threebox] failed to resolve target scene JSON:", error);
-      return handleGenerateTurn(text, api, { conversationId, turnId });
+      return handleGenerateTurn(text, api, { conversationId, turnId, turnContext });
     }
     const targetSceneJson = JSON.parse(targetSceneJsonString);
 
@@ -772,7 +787,14 @@ async function main() {
       if (streamBuffer.trim()) {
         api.appendToBody(textEl, api.buildJsonCollapse(streamBuffer, { failed: true }));
       }
-      appendRetryControls(api, textEl, error, () => handleAdjustTurn(text, api, { conversationId, turnId, targetTurnId }));
+      appendRetryControls(api, textEl, error, () => handleAdjustTurn(text, api, {
+        conversationId,
+        turnId,
+        targetTurnId,
+        turnContext,
+        selectedCapabilityIds,
+        requiresAnimation
+      }));
       api.finishTurnScroll();
     }
   }
@@ -875,25 +897,37 @@ async function main() {
     }
     if (seed) {
       const turnId = createTurnId();
-      await handleAdjustTurn(text, api, { conversationId: seed.conversationId, turnId, targetTurnId: seed.seedTurnId });
+      const turnContext = createThreeBoxTurnContext(turnId, text);
+      await handleAdjustTurn(text, api, {
+        conversationId: seed.conversationId,
+        turnId,
+        targetTurnId: seed.seedTurnId,
+        turnContext
+      });
       return;
     }
 
     const conversationId = sidebar.ensureActiveConversation().id;
     const turnId = createTurnId();
+    const turnContext = createThreeBoxTurnContext(turnId, text);
     const allPriorTurns = await getTurnsForConversation(conversationId).catch(() => []);
     const priorTurns = allPriorTurns.filter(isSceneContextTurn);
 
     const history = priorTurns.map((t) => ({ turnId: t.id, summary: t.recapSummary || t.userPrompt }));
     const classified = await classifyThreeBoxTurnIntent(
       { userPrompt: text, history },
-      { ...providerOptions, animationCapabilityMode: settings.ai?.animationCapabilityMode || "auto" }
+      {
+        ...providerOptions,
+        threeBoxTurnContext: turnContext,
+        animationCapabilityMode: settings.ai?.animationCapabilityMode || "auto"
+      }
     );
     if (classified.intent === "adjust" && classified.targetTurnId) {
       await handleAdjustTurn(text, api, {
         conversationId,
         turnId,
         targetTurnId: classified.targetTurnId,
+        turnContext,
         selectedCapabilityIds: classified.selectedCapabilityIds,
         requiresAnimation: classified.requiresAnimation
       });
@@ -901,6 +935,7 @@ async function main() {
       await handleGenerateTurn(text, api, {
         conversationId,
         turnId,
+        turnContext,
         generationStrategy: classified.generationStrategy,
         estimatedSegments: classified.estimatedSegments,
         selectedCapabilityIds: classified.selectedCapabilityIds,

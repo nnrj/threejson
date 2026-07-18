@@ -6,7 +6,10 @@ import {
   parseSceneJsonString,
   requestSceneRefinementStep,
   requestUpdatedSceneJsonString,
-  requestChatCompletion
+  requestChatCompletion,
+  createThreeBoxTurnContext,
+  buildThreeBoxRequestContext,
+  applyThreeBoxModerationHeaders
 } from "../core/ai/sceneAiService.js";
 import { sanitizeAiJsonText, isLikelyTruncatedJsonText } from "../core/ai/sceneJsonSanitize.js";
 import { validateSceneJson } from "../core/ai/agentTools.js";
@@ -16,6 +19,32 @@ import {
 } from "../core/ai/scenePatch.js";
 import { listTextureUrlPointers } from "../core/ai/textureAiService.js";
 import { classifyTurnIntent } from "../core/ai/sceneChatSession.js";
+
+test("ThreeBox turn context sends the original prompt once, then uses the signed moderation receipt", () => {
+  const context = createThreeBoxTurnContext("turn-1", "raw user prompt");
+  assert.deepEqual(buildThreeBoxRequestContext(context), {
+    protocol_version: 1,
+    turn_id: "turn-1",
+    original_prompt: { included: true, text: "raw user prompt" },
+    moderation: { status: "pending" }
+  });
+
+  applyThreeBoxModerationHeaders(context, new Headers({
+    "X-ThreeBox-Moderation-Status": "allowed",
+    "X-ThreeBox-Moderation-Receipt": "tbm_receipt",
+    "X-ThreeBox-Moderation-Prompt-Hash": "prompt-hash"
+  }));
+  assert.deepEqual(buildThreeBoxRequestContext(context), {
+    protocol_version: 1,
+    turn_id: "turn-1",
+    original_prompt: { included: false },
+    moderation: {
+      status: "allowed",
+      receipt: "tbm_receipt",
+      prompt_hash: "prompt-hash"
+    }
+  });
+});
 
 test("sanitizeAiJsonText folds Math.PI division expressions", () => {
   const raw =

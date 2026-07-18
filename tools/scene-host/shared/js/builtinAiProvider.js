@@ -20,15 +20,15 @@ export const DEFAULT_BUILTIN_BACKEND_URL = "https://api.threebox.org";
 export const KEY_REISSUE_MARGIN_MS = 24 * 60 * 60 * 1000;
 
 /**
- * Shared HMAC secret used to sign `/v1/auth/issue` requests to threebox-server (see its README
- * for the matching `REQUEST_SIGNING_SECRET`). This is a deterrent against scripted abuse (proves
- * the caller has this client secret, not just a spoofable Origin header), not a hard guarantee:
- * both apps are open source, so the secret is technically extractable. The real backstop is the
+ * Shared public HMAC key used to sign `/v1/auth/issue` requests to threebox-server (see its README
+ * for the matching `PUBLIC_REQUEST_SIGNING_KEY`). This is a deterrent against scripted abuse (proves
+ * the caller has this client key, not just a spoofable Origin header), not a hard guarantee:
+ * both apps are open source, so the key is extractable. The real backstop is the
  * backend's per-device quota and ban policy. Self-hosting your own backend? Change this to match
- * your own deployed `REQUEST_SIGNING_SECRET`, or leave the official default and just override the
+ * your own deployed `PUBLIC_REQUEST_SIGNING_KEY`, or leave the official default and just override the
  * backend URL setting if you only want to swap the endpoint.
  */
-const REQUEST_SIGNING_SECRET = "threebox-public-client-2024";
+const PUBLIC_REQUEST_SIGNING_KEY = "threebox-public-client-2024";
 
 let cachedFingerprintPromise = null;
 
@@ -142,7 +142,7 @@ function randomNonce() {
 async function signIssueRequest(deviceId) {
   const ts = Date.now();
   const nonce = randomNonce();
-  const sig = await hmacSha256Hex(REQUEST_SIGNING_SECRET, `${deviceId}.${ts}.${nonce}`);
+  const sig = await hmacSha256Hex(PUBLIC_REQUEST_SIGNING_KEY, `${deviceId}.${ts}.${nonce}`);
   return { deviceId, ts, nonce, sig };
 }
 
@@ -171,8 +171,20 @@ export async function issueBuiltinApiKey(backendUrl) {
     body: JSON.stringify(signed)
   });
   if (!res.ok) {
-    const error = new Error(`Built-in provider key issuance failed (${res.status}).`);
+    let payload = null;
+    try {
+      payload = await res.json();
+    } catch {
+      /* The status remains useful when a proxy returns a non-JSON error page. */
+    }
+    const serverCode = String(payload?.error || "").trim();
+    const serverMessage = String(payload?.message || "").trim();
+    const detail = serverCode || serverMessage
+      ? `: ${[serverCode, serverMessage && serverMessage !== serverCode ? serverMessage : ""].filter(Boolean).join(" - ")}`
+      : "";
+    const error = new Error(`Built-in provider key issuance failed (${res.status})${detail}.`);
     error.status = res.status;
+    error.code = serverCode;
     throw error;
   }
   return res.json();

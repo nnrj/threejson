@@ -10,7 +10,8 @@ import {
   extractJsonText,
   parseSceneJsonString,
   projectSceneJsonString,
-  resolveVisionImageUrl
+  resolveVisionImageUrl,
+  createThreeBoxTurnContext
 } from "./sceneAiService.js";
 import {
   buildSceneCommandSkillFragment,
@@ -196,5 +197,6 @@ export {
   classifyTurnIntent,
   summarizeSceneTurn,
   generateSceneTitle,
-  buildStructuredTurnEnvelope
+  buildStructuredTurnEnvelope,
+  createThreeBoxTurnContext
 };

@@ -36,7 +36,7 @@ const SCENE_TITLE_UNSAFE_CHARS = /[\\/:*?"<>|]/g;
 
 /** Keep only chat-completion transport options (avoid leaking unrelated caller options into the HTTP body). */
 function pickChatCompletionOptions(source, fallbackMaxTokens) {
-  const keys = ["provider", "apiKey", "model", "baseUrl", "temperature", "signal"];
+  const keys = ["provider", "apiKey", "model", "baseUrl", "temperature", "signal", "threeBoxTurnContext"];
   const out = {};
   for (const k of keys) {
     if (source && Object.prototype.hasOwnProperty.call(source, k)) {
@@ -169,6 +169,9 @@ async function classifyTurnIntent(input = {}, options = {}) {
     }
     return { intent, targetTurnId, note, generationStrategy, estimatedSegments, selectedCapabilityIds, requiresAnimation };
   } catch (error) {
+    if (error?.code === "BUILTIN_MODERATION_BLOCKED") {
+      throw error;
+    }
     return { ...fallback, note: `fallback: classification failed (${error?.message || error})` };
   }
 }
