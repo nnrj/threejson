@@ -1,6 +1,6 @@
 {
   "name": "@threejson/assets",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Static textures, models, fonts, audio, and scene JSON for ThreeJSON",
   "license": "MIT",
   "repository": {
