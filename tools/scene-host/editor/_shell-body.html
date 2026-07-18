@@ -238,17 +238,12 @@
       <div class="leftSubTabBar" role="tablist" aria-label="左侧功能" aria-orientation="horizontal">
         <button type="button" class="leftSubTab" role="tab" id="leftSubTabBuiltin"
           aria-selected="false" aria-controls="leftSubPanelBuiltin">组件</button>
-        <button type="button" class="leftSubTab" role="tab" id="leftSubTabAiConfig"
-          aria-selected="false" aria-controls="leftSubPanelAiConfig">AI配置</button>
+        <button type="button" class="leftSubTab" role="tab" id="leftSubTabAssetLibrary"
+          aria-selected="false" aria-controls="leftSubPanelAssetLibrary">资源</button>
         <button type="button" class="leftSubTab" role="tab" id="leftSubTabAiGenerate"
-          aria-selected="false" aria-controls="leftSubPanelAiGenerate">AI生成</button>
+          aria-selected="false" aria-controls="leftSubPanelAiGenerate">AI 生成</button>
         <button type="button" class="leftSubTab" role="tab" id="leftSubTabAiAdjust"
-          aria-selected="false" aria-controls="leftSubPanelAiAdjust">AI调整</button>
-        <button type="button" class="leftSubTab" role="tab" id="leftSubTabAiImage"
-          aria-selected="false" aria-controls="leftSubPanelAiImage">看图生成</button>
-      </div>
-      <div id="aiSceneMessageWrap" class="aiSceneMessageWrap">
-        <div id="aiSceneMessage"></div>
+          aria-selected="false" aria-controls="leftSubPanelAiAdjust">AI 调整</button>
       </div>
       <div class="leftDockTabPanels">
       <div id="leftSubPanelBuiltin" class="leftSubPanel" role="tabpanel" aria-labelledby="leftSubTabBuiltin">
@@ -263,193 +258,136 @@
           <div class="propLine">Esc：退出浏览器全屏</div>
         </div>
       </div>
-      <div id="leftSubPanelAiConfig" class="leftSubPanel" role="tabpanel" aria-labelledby="leftSubTabAiConfig" hidden>
-        <div class="panelCard">
-          <div class="panelTitle">AI 凭据</div>
-          <div class="leftPanelAiField">
-            <label class="leftPanelAiLabel" for="aiProviderSelect">Provider</label>
-            <select id="aiProviderSelect">
-              <option value="chatgpt" selected>chatgpt</option>
-              <option value="deepseek">deepseek</option>
-              <option value="custom">自定义</option>
+      <div id="leftSubPanelAssetLibrary" class="leftSubPanel" role="tabpanel" aria-labelledby="leftSubTabAssetLibrary" hidden>
+        <div class="panelCard assetLibraryPanelCard">
+          <div class="panelTitle">资源库 assetLibrary</div>
+          <p class="propLine sceneTreeInlineTip">texture 条目参与 lib:// 解析；其它 assetKind 仅登记（未接入运行时）。支持直接上传图片/音频文件。</p>
+          <div class="assetLibraryToolbar">
+            <button type="button" class="miniBtn" id="assetLibraryUploadBtn">上传文件</button>
+            <input type="file" id="assetLibraryFileInput" accept="image/*,audio/*" hidden>
+            <button type="button" class="miniBtn" id="assetLibraryAddBtn">新增</button>
+            <button type="button" class="miniBtn" id="assetLibraryDeleteBtn">删除</button>
+            <button type="button" class="miniBtn" id="assetLibrarySaveBtn">保存条目</button>
+          </div>
+          <div id="assetLibraryList" class="assetLibraryList" role="listbox" aria-label="资源库条目"></div>
+          <div class="assetLibraryForm" id="assetLibraryForm">
+            <label for="assetLibraryFormId">threeJsonId</label>
+            <input id="assetLibraryFormId" type="text" autocomplete="off" spellcheck="false">
+            <label for="assetLibraryFormName">name（可选）</label>
+            <input id="assetLibraryFormName" type="text" autocomplete="off" spellcheck="false">
+            <label for="assetLibraryFormKind">assetKind</label>
+            <select id="assetLibraryFormKind">
+              <option value="texture">texture</option>
+              <option value="image">image</option>
+              <option value="audio">audio</option>
+              <option value="materialPreset">materialPreset</option>
+              <option value="geometryPreset">geometryPreset</option>
             </select>
+            <label for="assetLibraryFormUrl">url / textureUrl（texture）</label>
+            <input id="assetLibraryFormUrl" type="text" autocomplete="off" spellcheck="false" placeholder="/assets/... 或 https://... 或上传后自动填充">
+            <label for="assetLibraryFormExtra">扩展 JSON（非 texture，可选）</label>
+            <textarea id="assetLibraryFormExtra" spellcheck="false" placeholder='{"material":{...}}'></textarea>
           </div>
-          <div id="aiCustomApiBaseWrap" class="leftPanelAiField" hidden>
-            <label class="leftPanelAiLabel" for="aiCustomApiBaseInput">接口根 URL</label>
-            <input id="aiCustomApiBaseInput" type="text" autocomplete="off"
-              placeholder="例如 https://api.openai.com/v1（末尾自动拼接 /chat/completions）">
-            <div class="leftPanelAiHint">须兼容 OpenAI Chat Completions；若粘贴路径含 <code>/chat/completions</code>，将自动裁成根前缀。</div>
-          </div>
-          <div class="leftPanelAiField">
-            <label class="leftPanelAiLabel" for="aiApiKeyInput">API Key</label>
-            <input id="aiApiKeyInput" type="password" autocomplete="off" placeholder="ChatGPT（OpenAI）/ DeepSeek / 网关 Bearer Token">
-          </div>
-          <div class="leftPanelAiField">
-            <label class="leftPanelAiLabel" for="aiModelInput">Model（可选）</label>
-            <input id="aiModelInput" type="text"
-              placeholder="如 gpt-4o-mini；纯文本也可用 deepseek-chat；看图生成需 Vision 模型">
-          </div>
-          <label class="leftPanelAiCheckboxLabel">
-            <input id="aiRememberConfigCheckbox" type="checkbox">
-            <span>记住当前配置（仅存本机浏览器；含 API Key，共用设备请勿勾选）</span>
-          </label>
-          <div class="leftPanelAiHint">取消勾选将立即清除已保存的配置。</div>
-        </div>
-        <div class="panelCard">
-          <div class="panelTitle">Agent（多轮）</div>
-          <label class="leftPanelAiCheckboxLabel">
-            <input id="aiAgentEnabledCheckbox" type="checkbox">
-            <span>启用 Agent（多轮，消耗更多 Token）</span>
-          </label>
-          <div class="leftPanelAiField">
-            <label class="leftPanelAiLabel" for="aiAgentDepthSelect">思考深度</label>
-            <select id="aiAgentDepthSelect">
-              <option value="simple">简单（大纲/修复较少）</option>
-              <option value="medium" selected>中等（大纲 + 校验修复）</option>
-              <option value="deep">深入（+ 布局审查 + 纹理 dry-plan）</option>
-              <option value="auto">自动（在深入预算内尽量通过校验）</option>
-            </select>
-          </div>
-          <label class="leftPanelAiCheckboxLabel">
-            <input id="aiAgentIterativeApplyCheckbox" type="checkbox">
-            <span>迭代应用到画布（命令/auto 调整：每轮 patch 立即上画布，再基于最新场景继续优化）</span>
-          </label>
-          <label class="leftPanelAiCheckboxLabel">
-            <input id="aiAgentFitViewEachRoundCheckbox" type="checkbox">
-            <span>每轮变更后自适应取景（命令迭代模式；默认关）</span>
-          </label>
-          <div class="leftPanelAiHint">未勾选 Agent 时，生成/调整/看图与原先单次调用一致。JSON 生成/全量调整的多轮主要为校验与布局审查。</div>
-          <label class="leftPanelAiCheckboxLabel">
-            <input id="aiFillTexturesCheckbox" type="checkbox">
-            <span>完成后填充纹理（与上方 LLM 相同接口根 URL；默认生图模型 dall-e-3）</span>
-          </label>
-          <div class="leftPanelAiHint">浏览器直连生图可能受网关 <strong>CORS</strong> 限制；失败时仍会载入无纹理场景。</div>
-          <label class="leftPanelAiCheckboxLabel">
-            <input id="aiStageAutoLoadCheckbox" type="checkbox" checked>
-            <span>阶段产物自动载入（JSON 生成/全量调整：校验通过的阶段预览；命令迭代模式由「迭代应用」直接改画布）</span>
-          </label>
-          <div class="leftPanelAiField">
-            <label class="leftPanelAiLabel" for="aiTextureBrowserModeSelect">浏览器落盘方式</label>
-            <select id="aiTextureBrowserModeSelect">
-              <option value="directory" selected>授权本地目录</option>
-              <option value="upload">图床上传 URL</option>
-              <option value="zipDownload">ZIP 下载（无目录权限时）</option>
-            </select>
-          </div>
-          <div class="leftPanelAiActions">
-            <button class="toolBtn secondary" type="button" id="aiPickTextureDirBtn">选择纹理输出目录</button>
-          </div>
-          <div class="leftPanelAiField" id="aiTextureUploadWrap" hidden>
-            <label class="leftPanelAiLabel" for="aiTextureUploadEndpoint">图床 endpoint（POST multipart）</label>
-            <input id="aiTextureUploadEndpoint" type="url" autocomplete="off" placeholder="https://your-host/upload">
-          </div>
-          <div class="leftPanelAiHint" id="aiTextureDirHint">Electron 可直接写仓库 resources/textures/；浏览器请用授权目录、图床或 ZIP。外置 CLI 为可选批处理，编辑器不依赖它。</div>
-          <label class="leftPanelAiCheckboxLabel">
-            <input id="aiStreamPreviewCheckbox" type="checkbox" checked>
-            <span>流式预览 LLM 输出（默认开；生成 / 调整 / 看图 标签页同步）</span>
-          </label>
-          <div class="leftPanelAiHint">AI 能力来自 ThreeJSON <code>core/ai</code>（浏览器直连 LLM），不读取 setting.json，不调用外置 Node/Python 工具链。</div>
         </div>
       </div>
       <div id="leftSubPanelAiGenerate" class="leftSubPanel" role="tabpanel" aria-labelledby="leftSubTabAiGenerate" hidden>
-        <div class="panelCard">
-          <div class="panelTitle">生成场景</div>
-          <div class="leftPanelAiField">
-            <label class="leftPanelAiLabel" for="aiGeneratePromptInput">提示词</label>
-            <textarea id="aiGeneratePromptInput" spellcheck="false" placeholder="示例：生成一个智慧园区场景：有地面、两栋建筑、一条道路、一个中心广场和至少一个信息面板。"></textarea>
+        <div class="panelCard aiEditPanelCard">
+          <div class="panelTitle">AI 生成</div>
+          <p class="propLine sceneTreeInlineTip">生成一个新场景并直接载入（若当前有未保存修改会先确认覆盖）。</p>
+          <div id="aiGenerateMessages" class="aiEditMessages" aria-live="polite"></div>
+          <div id="aiGenerateAttachedRow" class="aiEditAttachedRow" hidden></div>
+          <div class="aiEditComposer">
+            <textarea id="aiGeneratePromptInput" class="aiEditPromptInput" rows="2" spellcheck="false" placeholder="描述你想生成的场景..."></textarea>
+            <div class="aiEditComposerActionsRow">
+              <button type="button" class="aiEditAttachBtn" id="aiGenerateAttachBtn" title="添加图片/文件" aria-haspopup="true" aria-expanded="false">+</button>
+              <div class="aiEditComposerActionsSpacer"></div>
+              <button type="button" class="toolBtn secondary primaryAction" id="aiGenerateSendBtn">发送</button>
+              <button type="button" class="toolBtn aiStopBtn secondary" id="aiGenerateStopBtn" data-ai-stop hidden
+                aria-label="停止生成" title="停止生成">■</button>
+            </div>
+            <div class="leftPanelAiHint">在输入框中按 Ctrl+Enter（Mac：⌘+Enter）提交。</div>
           </div>
-          <div class="leftPanelAiActions leftPanelAiActionRow">
-            <button class="toolBtn secondary primaryAction" type="button" id="aiGenerateBtn">生成并载入</button>
-            <button class="toolBtn aiStopBtn secondary" type="button" data-ai-stop hidden
-              aria-label="停止生成" title="停止生成">■</button>
+          <div id="aiGenerateAttachMenu" class="aiEditAttachMenu" hidden>
+            <button type="button" data-action="image">上传图片</button>
+            <button type="button" data-action="json">上传场景 JSON</button>
+            <button type="button" data-action="tjz">上传 .tjz 包</button>
+            <button type="button" data-action="library">从资源库选择</button>
           </div>
-          <div class="leftPanelAiHint">在输入框中按 Ctrl+Enter（Mac：⌘+Enter）提交。</div>
-          <pre id="aiStreamPreviewGenerate" class="leftPanelAiStreamPreview" hidden spellcheck="false"></pre>
+          <input type="file" id="aiGenerateImageFileInput" accept="image/*" hidden>
+          <input type="file" id="aiGenerateJsonFileInput" accept=".json,.threejson,.tjson,application/json" hidden>
+          <input type="file" id="aiGenerateTjzFileInput" accept=".tjz" hidden>
+          <div id="aiGenerateImageLibraryPicker" class="aiEditAttachMenu aiEditImageLibraryPicker" hidden></div>
+          <label class="aiEditQuickCheckboxLabel">
+            <input id="aiGenerateImageModeCheckbox" type="checkbox">
+            <span>看图生成（附加图片后，让 AI 参考图片生成场景）</span>
+          </label>
+          <div id="aiGenerateImageArea" class="aiEditImageUploadArea" hidden>
+            <textarea id="aiGenerateImageBase64Input" class="aiEditImageBase64Input" rows="2" spellcheck="false"
+              placeholder="或将图片的 Base64 / Data URL 字符串粘贴到此处..."></textarea>
+            <div class="aiEditImageBase64Hint" id="aiGenerateImageBase64Hint">粘贴 Base64 图片会显著增加请求体积与 Token 消耗，建议优先使用上方「+」中的「上传图片」或「从资源库选择」。</div>
+          </div>
+          <div class="aiEditQuickOptions">
+            <div class="aiEditQuickOptionRow aiEditProviderRow">
+              <label for="aiGenerateProviderSelect">供应商</label>
+              <div class="aiEditProviderRowControl">
+                <select id="aiGenerateProviderSelect"></select>
+                <button type="button" class="aiEditProviderSettingsBtn" id="aiGenerateProviderSettingsBtn"
+                  title="前往供应商设置" aria-label="前往供应商设置">⚙</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       <div id="leftSubPanelAiAdjust" class="leftSubPanel" role="tabpanel" aria-labelledby="leftSubTabAiAdjust" hidden>
-        <div class="panelCard">
-          <div class="panelTitle">调整当前场景</div>
-          <div class="leftPanelAiField">
-            <label class="leftPanelAiLabel" for="aiUpdatePromptInput">修改说明</label>
-            <textarea id="aiUpdatePromptInput" spellcheck="false" placeholder="请输入调整提示词..."></textarea>
+        <div class="panelCard aiEditPanelCard">
+          <div class="panelTitle">AI 调整</div>
+          <p class="propLine sceneTreeInlineTip">在当前场景基础上调整（可撤销），需要先有已载入的场景。</p>
+          <div id="aiAdjustMessages" class="aiEditMessages" aria-live="polite"></div>
+          <div id="aiAdjustAttachedRow" class="aiEditAttachedRow" hidden></div>
+          <div class="aiEditComposer">
+            <textarea id="aiAdjustPromptInput" class="aiEditPromptInput" rows="2" spellcheck="false" placeholder="描述你想调整的内容..."></textarea>
+            <div class="aiEditComposerActionsRow">
+              <button type="button" class="aiEditAttachBtn" id="aiAdjustAttachBtn" title="添加参考文件" aria-haspopup="true" aria-expanded="false">+</button>
+              <div class="aiEditComposerActionsSpacer"></div>
+              <button type="button" class="toolBtn secondary primaryAction" id="aiAdjustSendBtn">发送</button>
+              <button type="button" class="toolBtn aiStopBtn secondary" id="aiAdjustStopBtn" data-ai-stop hidden
+                aria-label="停止生成" title="停止生成">■</button>
+            </div>
+            <div class="leftPanelAiHint">在输入框中按 Ctrl+Enter（Mac：⌘+Enter）提交。</div>
           </div>
-          <div class="leftPanelAiField">
-            <label class="leftPanelAiLabel" for="aiUpdateOutputModeSelect">调整输出模式</label>
-            <select id="aiUpdateOutputModeSelect">
-              <option value="commands">命令脚本（默认，可撤销）</option>
-              <option value="json-full">JSON 全量（重建场景）</option>
-              <option value="json-incremental">JSON 增量补丁（RFC 6902）</option>
-              <option value="auto">自动（优先命令，允许 JSON）</option>
-            </select>
+          <div id="aiAdjustAttachMenu" class="aiEditAttachMenu" hidden>
+            <button type="button" data-action="file">上传文件</button>
+            <button type="button" data-action="library">从资源库选择</button>
           </div>
-          <label class="leftPanelAiCheckboxLabel">
-            <input id="aiIncludeFullJsonCheckbox" type="checkbox">
-            <span>附带完整 JSON（命令模式：在对象列表基础上附加完整场景；JSON 全量/增量始终附带完整场景）</span>
-          </label>
-          <label class="leftPanelAiCheckboxLabel">
-            <input id="aiIncludeSpatialSummaryCheckbox" type="checkbox">
-            <span>附带空间摘要（命令模式：各对象位置与几何尺寸摘要 + 场景尺度概况；大场景或需完整材质/结构时可改勾完整 JSON）</span>
-          </label>
-          <div class="leftPanelAiActions leftPanelAiActionRow">
-            <button class="toolBtn secondary primaryAction" type="button" id="aiUpdateBtn">调整并应用</button>
-            <button class="toolBtn aiStopBtn secondary" type="button" data-ai-stop hidden
-              aria-label="停止生成" title="停止生成">■</button>
+          <input type="file" id="aiAdjustFileInput" hidden>
+          <div id="aiAdjustLibraryPicker" class="aiEditAttachMenu aiEditImageLibraryPicker" hidden></div>
+          <div class="aiEditQuickOptions">
+            <div class="aiEditQuickOptionRow">
+              <label for="aiAdjustOutputModeSelect">调整输出模式</label>
+              <select id="aiAdjustOutputModeSelect">
+                <option value="auto">自动（由 AI 自行决定）</option>
+                <option value="commands">命令脚本</option>
+                <option value="json-full">JSON 全量</option>
+                <option value="json-incremental">JSON 增量</option>
+              </select>
+            </div>
+            <label class="aiEditQuickCheckboxLabel">
+              <input id="aiAdjustIncludeFullJsonCheckbox" type="checkbox">
+              <span>附带完整 JSON</span>
+            </label>
+            <label class="aiEditQuickCheckboxLabel">
+              <input id="aiAdjustIncludeSpatialSummaryCheckbox" type="checkbox">
+              <span>附带空间摘要</span>
+            </label>
+            <div class="aiEditQuickOptionRow aiEditProviderRow">
+              <label for="aiAdjustProviderSelect">供应商</label>
+              <div class="aiEditProviderRowControl">
+                <select id="aiAdjustProviderSelect"></select>
+                <button type="button" class="aiEditProviderSettingsBtn" id="aiAdjustProviderSettingsBtn"
+                  title="前往供应商设置" aria-label="前往供应商设置">⚙</button>
+              </div>
+            </div>
           </div>
-          <div class="leftPanelAiHint">在输入框中按 Ctrl+Enter（Mac：⌘+Enter）提交。</div>
-          <div id="aiUpdateHintSource" class="leftPanelAiHint">将使用「查看 → 查看场景 JSON」同源的完整导出作为当前场景上下文。</div>
-          <div id="aiUpdateHintMode" class="leftPanelAiHint">命令模式就地修改场景，可通过撤销恢复；不会整包载入 JSON。</div>
-          <label id="aiLastAdjustResultLabel" class="leftPanelAiLastResultLabel" for="aiLastAdjustResult" hidden>上次 AI 产出</label>
-          <pre id="aiLastAdjustResult" class="leftPanelAiStreamPreview leftPanelAiLastResult" hidden spellcheck="false"></pre>
-          <pre id="aiStreamPreviewAdjust" class="leftPanelAiStreamPreview" hidden spellcheck="false"></pre>
-        </div>
-      </div>
-      <div id="leftSubPanelAiImage" class="leftSubPanel" role="tabpanel" aria-labelledby="leftSubTabAiImage" hidden>
-        <div class="panelCard">
-          <div class="panelTitle">看图生成</div>
-          <div class="leftPanelAiHint leftPanelAiHintNoTopMargin">图片 → 新场景 JSON（需 Vision，推荐 chatgpt + gpt-4o / gpt-4o-mini）</div>
-          <div class="leftPanelAiField">
-            <label class="leftPanelAiLabel" for="aiImageFileInput">本地文件（优先级最高）</label>
-            <input id="aiImageFileInput" type="file" accept="image/*">
-          </div>
-          <div class="leftPanelAiField">
-            <label class="leftPanelAiLabel" for="aiImageBase64Input">Base64（未选文件时使用）</label>
-            <textarea id="aiImageBase64Input" spellcheck="false" placeholder="data:image/png;base64,... 或裸 base64"></textarea>
-          </div>
-          <div class="leftPanelAiField">
-            <label class="leftPanelAiLabel" for="aiImageMimeSelect">裸 Base64 的 MIME</label>
-            <select id="aiImageMimeSelect">
-              <option value="image/png">image/png</option>
-              <option value="image/jpeg">image/jpeg</option>
-              <option value="image/webp">image/webp</option>
-              <option value="image/gif">image/gif</option>
-            </select>
-          </div>
-          <div class="leftPanelAiField">
-            <label class="leftPanelAiLabel" for="aiImageUrlInput">在线图片 URL（前两者都空时使用）</label>
-            <input id="aiImageUrlInput" type="url" autocomplete="off" placeholder="https://...">
-          </div>
-          <div class="leftPanelAiField">
-            <label class="leftPanelAiLabel" for="aiImagePromptInput">补充说明（可选）</label>
-            <textarea id="aiImagePromptInput" spellcheck="false"
-              placeholder="例如：按图还原建筑与道路大致布局，用简洁色块材质"></textarea>
-          </div>
-          <div class="leftPanelAiField">
-            <label class="leftPanelAiLabel" for="aiImageDetailSelect">image_detail（OpenAI）</label>
-            <select id="aiImageDetailSelect">
-              <option value="auto" selected>auto</option>
-              <option value="low">low</option>
-              <option value="high">high</option>
-            </select>
-          </div>
-          <div class="leftPanelAiActions leftPanelAiActionRow">
-            <button class="toolBtn secondary primaryAction" type="button" id="aiGenerateFromImageBtn">根据图片生成并载入</button>
-            <button class="toolBtn aiStopBtn secondary" type="button" data-ai-stop hidden
-              aria-label="停止生成" title="停止生成">■</button>
-          </div>
-          <div class="leftPanelAiHint">在输入框中按 Ctrl+Enter（Mac：⌘+Enter）提交。</div>
-          <pre id="aiStreamPreviewImage" class="leftPanelAiStreamPreview" hidden spellcheck="false"></pre>
-          <div class="leftPanelAiHint">优先级：本地文件 &gt; Base64 &gt; URL。内网或 localhost 的 URL 常无法被模型服务端拉取。</div>
         </div>
       </div>
       </div>
@@ -474,8 +412,6 @@
           aria-selected="false" aria-controls="rightSubPanelSceneJson">场景</button>
         <button type="button" class="rightSubTab" role="tab" id="rightSubTabEvents"
           aria-selected="false" aria-controls="rightSubPanelEvents">事件</button>
-        <button type="button" class="rightSubTab" role="tab" id="rightSubTabAssetLibrary"
-          aria-selected="false" aria-controls="rightSubPanelAssetLibrary">资源</button>
       </div>
       <div class="rightDockTabPanels">
       <div id="rightSubPanelSceneTree" class="rightSubPanel" role="tabpanel" aria-labelledby="rightSubTabSceneTree">
@@ -600,34 +536,6 @@
               <button type="button" class="miniBtn" id="eventEditorResetBtn">重置</button>
               <button type="button" class="miniBtn" id="eventEditorApplyBtn">应用并绑定</button>
             </div>
-          </div>
-        </div>
-      </div>
-      <div id="rightSubPanelAssetLibrary" class="rightSubPanel" role="tabpanel" aria-labelledby="rightSubTabAssetLibrary" hidden>
-        <div class="panelCard assetLibraryPanelCard">
-          <div class="panelTitle">资源库 assetLibrary</div>
-          <p class="propLine sceneTreeInlineTip">texture 条目参与 lib:// 解析；其它 assetKind 仅登记（未接入运行时）。</p>
-          <div class="assetLibraryToolbar">
-            <button type="button" class="miniBtn" id="assetLibraryAddBtn">新增</button>
-            <button type="button" class="miniBtn" id="assetLibraryDeleteBtn">删除</button>
-            <button type="button" class="miniBtn" id="assetLibrarySaveBtn">保存条目</button>
-          </div>
-          <div id="assetLibraryList" class="assetLibraryList" role="listbox" aria-label="资源库条目"></div>
-          <div class="assetLibraryForm" id="assetLibraryForm">
-            <label for="assetLibraryFormId">threeJsonId</label>
-            <input id="assetLibraryFormId" type="text" autocomplete="off" spellcheck="false">
-            <label for="assetLibraryFormName">name（可选）</label>
-            <input id="assetLibraryFormName" type="text" autocomplete="off" spellcheck="false">
-            <label for="assetLibraryFormKind">assetKind</label>
-            <select id="assetLibraryFormKind">
-              <option value="texture">texture</option>
-              <option value="materialPreset">materialPreset</option>
-              <option value="geometryPreset">geometryPreset</option>
-            </select>
-            <label for="assetLibraryFormUrl">url / textureUrl（texture）</label>
-            <input id="assetLibraryFormUrl" type="text" autocomplete="off" spellcheck="false" placeholder="/assets/... 或 https://...">
-            <label for="assetLibraryFormExtra">扩展 JSON（非 texture，可选）</label>
-            <textarea id="assetLibraryFormExtra" spellcheck="false" placeholder='{"material":{...}}'></textarea>
           </div>
         </div>
       </div>
@@ -910,6 +818,18 @@
       </div>
     </div>
   </div>
+  <div id="editorConfirmModal" role="dialog" aria-modal="true" aria-label="确认">
+    <div class="tjzExportDialog">
+      <div class="tjzExportHeader" id="editorConfirmModalTitle">确认</div>
+      <div class="tjzExportBody">
+        <div id="editorConfirmModalMessage" class="editorConfirmMessage"></div>
+      </div>
+      <div class="tjzExportFooter">
+        <button class="miniBtn" id="editorConfirmModalCancelBtn" type="button">取消</button>
+        <button class="miniBtn" id="editorConfirmModalConfirmBtn" type="button">确定</button>
+      </div>
+    </div>
+  </div>
   <div id="editorBootRestoreModal" role="dialog" aria-modal="true" aria-label="恢复未保存场景">
     <div class="tjzExportDialog">
       <div class="tjzExportHeader">发现未保存的编辑</div>
@@ -941,6 +861,7 @@
         <label class="leftPanelAiCheckboxLabel"><input id="clearCacheScopeRecent" type="checkbox" checked> 最近打开列表</label>
         <label class="leftPanelAiCheckboxLabel"><input id="clearCacheScopeBaseline" type="checkbox" checked> 场景基线与场景快照</label>
         <label class="leftPanelAiCheckboxLabel"><input id="clearCacheScopePresets" type="checkbox" checked> 场景预设缓存（含用户保存）</label>
+        <label class="leftPanelAiCheckboxLabel"><input id="clearCacheScopeAiChat" type="checkbox" checked> AI 对话记录</label>
         <label class="leftPanelAiCheckboxLabel"><input id="clearCacheScopeSettings" type="checkbox"> 设置缓存（localStorage）</label>
       </div>
       <div class="tjzExportFooter">

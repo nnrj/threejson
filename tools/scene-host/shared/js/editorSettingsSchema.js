@@ -8,6 +8,7 @@ import {
   HIGHLIGHT_ALARM_RED,
   HIGHLIGHT_LOCATE_AMBER
 } from "../../../../domains/sceneHighlight/channels.js";
+import { BUILTIN_PROVIDER_TYPE, DEFAULT_BUILTIN_BACKEND_URL } from "./builtinAiProvider.js";
 
 export const EDITOR_SETTINGS_STORAGE_KEY = "sceneEditor_settings_v1";
 export const OBJECT_IMPORT_SESSION_FILL_LIGHTS = "sceneEditor_objectImportFillLights";
@@ -140,17 +141,16 @@ export const EDITOR_SETTINGS_DEFAULTS = {
       previewHotReload: true
     },
     ai: {
-      rememberConfig: false,
-      provider: "chatgpt",
-      model: "",
-      apiKey: "",
-      customApiBase: "",
+      rememberConfig: true,
+      providers: [],
+      defaultProviderId: "",
+      builtinBackendUrl: DEFAULT_BUILTIN_BACKEND_URL,
       agentEnabled: false,
       agentDepth: "medium",
       agentIterativeApply: false,
       agentFitViewEachRound: false,
       incrementalUpdate: false,
-      updateOutputMode: "commands",
+      updateOutputMode: "auto",
       includeFullJson: false,
       includeSpatialSummary: false,
       streamPreview: true,
@@ -159,6 +159,22 @@ export const EDITOR_SETTINGS_DEFAULTS = {
       textureBrowserMode: "directory"
     }
   };
+
+/** The provider id/type reserved for the auto-seeded built-in trial provider — mirrors
+ * THREEBOX_BUILTIN_PROVIDER_ID (tools/scene-host/threebox/js/threeBoxSettingsSchema.js). Kept as
+ * its own constant (rather than importing ThreeBox's) since the two apps' provider arrays are
+ * fully independent storage. */
+export const EDITOR_BUILTIN_PROVIDER_ID = "builtin-default";
+
+/** Selectable provider types for a manually-added provider card — mirrors
+ * THREEBOX_PROVIDER_TYPES. The built-in type is listed here only for buildBuiltinProviderCard's
+ * special-casing; it's never offered as a choice on a manually-added card (see settingsModal.js). */
+export const EDITOR_PROVIDER_TYPES = [
+  [BUILTIN_PROVIDER_TYPE, "内置供应商（限额体验）"],
+  ["chatgpt", "ChatGPT (OpenAI)"],
+  ["deepseek", "DeepSeek"],
+  ["custom", "自定义 (OpenAI 兼容)"]
+];
 
 export const EDITOR_SETTINGS_SECTIONS = [
     { id: "general", title: "General" },
@@ -800,18 +816,11 @@ export const EDITOR_SETTINGS_FIELDS = [
     },
     {
       section: "ai",
-      path: "ai.provider",
-      type: "select",
-      label: "默认 Provider",
-      options: [
-        { value: "chatgpt", label: "ChatGPT" },
-        { value: "deepseek", label: "DeepSeek" },
-        { value: "custom", label: "自定义" }
-      ]
+      path: "ai.builtinBackendUrl",
+      type: "text",
+      label: "内置供应商后端地址",
+      placeholder: "https://api.threebox.org"
     },
-    { section: "ai", path: "ai.model", type: "text", label: "默认文本模型" },
-    { section: "ai", path: "ai.apiKey", type: "password", label: "API Key" },
-    { section: "ai", path: "ai.customApiBase", type: "text", label: "自定义 API Base" },
     { section: "ai", path: "ai.agentEnabled", type: "checkbox", label: "启用 Agent" },
     { section: "ai", path: "ai.agentIterativeApply", type: "checkbox", label: "迭代应用到画布" },
     { section: "ai", path: "ai.agentFitViewEachRound", type: "checkbox", label: "每轮变更后自适应取景" },
@@ -833,11 +842,23 @@ export const EDITOR_SETTINGS_FIELDS = [
       type: "select",
       label: "默认调整输出模式",
       options: [
+        { value: "auto", label: "自动（由 AI 自行决定）" },
         { value: "commands", label: "命令脚本" },
         { value: "json-full", label: "JSON 全量" },
-        { value: "json-incremental", label: "JSON 增量" },
-        { value: "auto", label: "自动" }
+        { value: "json-incremental", label: "JSON 增量" }
       ]
+    },
+    {
+      section: "ai",
+      path: "ai.includeFullJson",
+      type: "checkbox",
+      label: "调整时附带完整 JSON（命令模式在对象列表基础上附加；JSON 全量/增量始终附带）"
+    },
+    {
+      section: "ai",
+      path: "ai.includeSpatialSummary",
+      type: "checkbox",
+      label: "调整时附带空间摘要（命令模式：各对象位置与几何尺寸摘要；大场景或需完整结构时可改勾完整 JSON）"
     },
     { section: "ai", path: "ai.streamPreview", type: "checkbox", label: "默认流式预览" },
     { section: "ai", path: "ai.stageAutoLoad", type: "checkbox", label: "生成后自动载入场景" },

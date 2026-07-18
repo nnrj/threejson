@@ -611,8 +611,9 @@ export function createEditorHistory(host) {
       host.showMessage("尚无可用初始场景，无法重置。", "warning");
       return { ok: false };
     }
-    const ok = window.confirm(
-      "将场景恢复为当前场景打开时的状态，并清空撤销/重做记录。是否继续？"
+    const ok = await host.confirmYesNo(
+      "将场景恢复为当前场景打开时的状态，并清空撤销/重做记录。是否继续？",
+      { title: "重置场景" }
     );
     if (!ok) {
       return { ok: false, cancelled: true };

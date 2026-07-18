@@ -124,12 +124,13 @@ export function createSceneTreeContextMenu(host) {
     host.getSceneTree()?.render?.();
   }
 
-  function deleteSceneObject(target) {
+  async function deleteSceneObject(target) {
     const scene = host.getScene();
     if (!target?.uuid || !scene?.isScene) {
       return;
     }
-    if (!window.confirm(`是否确认删除对象 [${target.name || target.uuid}] ?`)) {
+    const ok = await host.confirmYesNo(`是否确认删除对象 [${target.name || target.uuid}] ?`, { title: "删除对象" });
+    if (!ok) {
       return;
     }
     const threeJsonId = String(target.userData?.objJson?.threeJsonId || "").trim();
@@ -190,7 +191,7 @@ export function createSceneTreeContextMenu(host) {
         host.showMessage("未定位到要删除的对象。", "warning");
         return;
       }
-      deleteSceneObject(targetObj);
+      void deleteSceneObject(targetObj);
     });
 
     document.addEventListener("click", (event) => {

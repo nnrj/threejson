@@ -394,7 +394,8 @@ button { font: inherit; }
 #navNewChatBtn svg { color: var(--brand); }
 
 /* ---- Collapsible sections (template gallery / projects / apps) ---- */
-.sidebarSection { padding: 2px 4px; }
+.sidebarSection { padding: 2px 4px; border-radius: 8px; transition: background-color 0.3s ease; }
+.sidebarSectionHighlight { background-color: var(--brand-soft, rgba(99, 102, 241, 0.15)); }
 .sidebarSectionTitle {
   display: flex; align-items: center; gap: 6px; padding: 10px 12px; font-size: 12px; font-weight: 700;
   color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; cursor: pointer; user-select: none;

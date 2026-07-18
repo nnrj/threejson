@@ -5,6 +5,7 @@ import {
 import { clearEditorSettingsCache } from "../../shared/js/editorSettingsStore.js";
 import { clearScenePresetsCache } from "../../shared/js/scenePresetsStore.js";
 import { EDITOR_USER_BASELINE_KEY } from "../../shared/js/userBaselineStore.js";
+import { clearAllAiChatHistory } from "./editorAiChatStore.js";
 
 export function createEditorCacheClear(host) {
   const modal = document.getElementById("clearCacheModal");
@@ -14,6 +15,7 @@ export function createEditorCacheClear(host) {
   const scopeRecent = document.getElementById("clearCacheScopeRecent");
   const scopeBaseline = document.getElementById("clearCacheScopeBaseline");
   const scopePresets = document.getElementById("clearCacheScopePresets");
+  const scopeAiChat = document.getElementById("clearCacheScopeAiChat");
   const scopeSettings = document.getElementById("clearCacheScopeSettings");
 
   async function clearSceneBaselineAndSnapshots() {
@@ -37,6 +39,9 @@ export function createEditorCacheClear(host) {
     }
     if (scopes.presets) {
       await clearScenePresetsCache();
+    }
+    if (scopes.aiChat) {
+      await clearAllAiChatHistory();
     }
     if (scopes.settings) {
       clearEditorSettingsCache();
@@ -66,6 +71,7 @@ export function createEditorCacheClear(host) {
         recent: scopeRecent?.checked !== false,
         baseline: scopeBaseline?.checked !== false,
         presets: scopePresets?.checked !== false,
+        aiChat: scopeAiChat?.checked !== false,
         settings: scopeSettings?.checked === true
       });
       closeModal();

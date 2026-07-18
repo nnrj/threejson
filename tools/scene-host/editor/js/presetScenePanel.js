@@ -182,7 +182,7 @@ export function createPresetScenePanel(host) {
         if (!preset || preset.source !== "user") {
           return;
         }
-        const ok = window.confirm(`确定删除预设「${preset.label}」？此操作不可恢复。`);
+        const ok = await host.confirmYesNo(`确定删除预设「${preset.label}」？此操作不可恢复。`, { title: "删除预设" });
         if (!ok) {
           return;
         }

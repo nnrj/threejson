@@ -11,6 +11,7 @@ export const THREEBOX_SHELL_LABELS_EN = {
   "threebox.shell.attachKindModel": "3rd-Party Model",
   "threebox.shell.attachKindImage": "Image",
   "threebox.shell.attachKindOther": "Other File",
+  "threebox.shell.attachKindLibrary": "Choose from Library",
   "threebox.shell.templateGallery": "Template Gallery",
   "threebox.shell.templateSearchPlaceholder": "Search templates...",
   "threebox.shell.apps": "Apps",
@@ -110,6 +111,7 @@ export const THREEBOX_SHELL_LABELS_EN = {
   "threebox.composer.savedToLibrary": "Saved \"{name}\" to the resource library.",
   "threebox.composer.processing": "Processing \"{name}\"…",
   "threebox.composer.processingFailed": "Failed to process \"{name}\": {error}",
+  "threebox.composer.pickFromLibraryHint": "Click an item in the resource library to attach it directly, no re-upload needed.",
 
   "threebox.upload.jsonParseFailed": "JSON parsing failed: {error}",
   "threebox.upload.notLoadableScene": "Not a valid ThreeJSON scene (missing worldInfo or objectList).",

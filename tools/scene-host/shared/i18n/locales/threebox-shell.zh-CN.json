@@ -11,6 +11,7 @@
   "threebox.shell.attachKindModel": "三方模型",
   "threebox.shell.attachKindImage": "图片",
   "threebox.shell.attachKindOther": "其他文件",
+  "threebox.shell.attachKindLibrary": "从资源库选择",
   "threebox.shell.templateGallery": "模板库",
   "threebox.shell.templateSearchPlaceholder": "搜索模板...",
   "threebox.shell.apps": "应用",
@@ -110,6 +111,7 @@
   "threebox.composer.savedToLibrary": "已保存「{name}」到资源库。",
   "threebox.composer.processing": "正在处理「{name}」…",
   "threebox.composer.processingFailed": "处理「{name}」失败：{error}",
+  "threebox.composer.pickFromLibraryHint": "点击资源库中的条目即可直接附加，无需重新上传。",
 
   "threebox.upload.jsonParseFailed": "JSON 解析失败：{error}",
   "threebox.upload.notLoadableScene": "不是有效的 ThreeJSON 场景（缺少 worldInfo 或 objectList）。",

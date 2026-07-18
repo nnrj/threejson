@@ -10,6 +10,8 @@ export function createAssetLibraryPanel(host) {
   const addBtn = document.getElementById("assetLibraryAddBtn");
   const deleteBtn = document.getElementById("assetLibraryDeleteBtn");
   const saveBtn = document.getElementById("assetLibrarySaveBtn");
+  const uploadBtn = document.getElementById("assetLibraryUploadBtn");
+  const fileInput = document.getElementById("assetLibraryFileInput");
 
   let selectedIndex = -1;
 
@@ -153,6 +155,61 @@ export function createAssetLibraryPanel(host) {
     host.showMessage("已删除资源库条目。", "success");
   }
 
+  function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(reader.error || new Error("读取文件失败"));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function inferKindFromFile(file) {
+    const type = String(file?.type || "").toLowerCase();
+    if (type.startsWith("audio/")) return "audio";
+    return "image";
+  }
+
+  async function addEntryFromFile(file) {
+    if (!file) {
+      return null;
+    }
+    const dataUrl = await readFileAsDataUrl(file);
+    const entry = {
+      threeJsonId: `asset-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      assetKind: inferKindFromFile(file),
+      name: file.name || "",
+      url: dataUrl
+    };
+    const lib = ensureLibraryArray();
+    lib.push(entry);
+    selectedIndex = lib.length - 1;
+    host.getSceneReserialize?.()?.markSceneNeedsReserialize?.();
+    host.getRightSidebarCache?.()?.invalidateRightSidebarSceneJsonTextCache?.();
+    render();
+    fillForm(entry);
+    return entry;
+  }
+
+  async function handleUploadedFile(file) {
+    if (!file) {
+      return;
+    }
+    try {
+      const entry = await addEntryFromFile(file);
+      host.showMessage(`已上传「${entry.name || entry.threeJsonId}」到资源库。`, "success");
+    } catch (error) {
+      host.showMessage(`上传文件失败：${error?.message || error}`, "error");
+    }
+  }
+
+  uploadBtn?.addEventListener("click", () => fileInput?.click());
+  fileInput?.addEventListener("change", () => {
+    const file = fileInput.files?.[0];
+    fileInput.value = "";
+    void handleUploadedFile(file);
+  });
+
   addBtn?.addEventListener("click", () => {
     selectedIndex = -1;
     if (form.id) form.id.value = `asset-${Date.now()}`;
@@ -167,6 +224,8 @@ export function createAssetLibraryPanel(host) {
 
   return {
     render,
+    addEntryFromFile,
+    listEntries: () => ensureLibraryArray().slice(),
     clear() {
       selectedIndex = -1;
       if (listEl) listEl.innerHTML = "";

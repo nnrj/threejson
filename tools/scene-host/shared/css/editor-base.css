@@ -1036,6 +1036,280 @@ html, body {
       cursor: pointer;
     }
 
+    /* ---- AI 编辑标签页（editorAiEditPanel.js） ---- */
+    .aiEditPanelCard {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .aiEditMessages {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 120px;
+      max-height: min(50vh, 420px);
+      overflow-y: auto;
+      padding: 4px 2px;
+      margin-top: 4px;
+    }
+
+    .aiEditMsg {
+      display: flex;
+      max-width: 100%;
+    }
+
+    .aiEditMsgUser {
+      justify-content: flex-end;
+    }
+
+    .aiEditMsgAssistant {
+      justify-content: flex-start;
+    }
+
+    .aiEditMsgBody {
+      max-width: 92%;
+      padding: 7px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .aiEditMsgUser .aiEditMsgBody {
+      background: #3a6ea5;
+      color: #f2f6fb;
+      border-bottom-right-radius: 2px;
+    }
+
+    .aiEditMsgAssistant .aiEditMsgBody {
+      background: rgba(255, 255, 255, 0.06);
+      color: #d6dae0;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-bottom-left-radius: 2px;
+    }
+
+    .aiEditAttachedRow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .aiEditAttachedChip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      font-size: 11px;
+      color: #c5cad3;
+    }
+
+    .aiEditAttachedChip button {
+      border: none;
+      background: transparent;
+      color: #9a9a9a;
+      cursor: pointer;
+      font-size: 13px;
+      line-height: 1;
+      padding: 0;
+    }
+
+    .aiEditAttachedChip button:hover {
+      color: #f28b82;
+    }
+
+    .aiEditComposer {
+      margin-top: 6px;
+    }
+
+    .aiEditComposerInputRow {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+    }
+
+    .aiEditComposerActionsRow {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .aiEditComposerActionsSpacer {
+      flex: 1;
+    }
+
+    .aiEditAttachBtn {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.04);
+      color: #c5cad3;
+      font-size: 16px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .aiEditAttachBtn:hover {
+      background: rgba(255, 255, 255, 0.09);
+    }
+
+    .aiEditPromptInput {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      flex: 1;
+      min-width: 0;
+      resize: vertical;
+      border-radius: 6px;
+      padding: 6px 8px;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .aiEditAttachMenu {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-top: 4px;
+      padding: 4px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: #333438;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .aiEditAttachMenu button {
+      text-align: left;
+      padding: 6px 8px;
+      border-radius: 4px;
+      border: none;
+      background: transparent;
+      color: #c5cad3;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .aiEditAttachMenu button:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .aiEditAttachMenuEmpty {
+      padding: 6px 8px;
+      font-size: 11px;
+      color: #8b949e;
+    }
+
+    .aiEditQuickOptions {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .aiEditQuickOptionRow {
+      display: grid;
+      grid-template-columns: minmax(60px, 34%) 1fr;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: #b8b8b8;
+    }
+
+    .aiEditQuickOptionRow select {
+      width: 100%;
+      border-radius: 5px;
+      padding: 4px 6px;
+      font-size: 11px;
+    }
+
+    .aiEditQuickCheckboxLabel {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #b8b8b8;
+      cursor: pointer;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .aiEditQuickCheckboxLabel input[type="checkbox"] {
+      width: auto;
+      cursor: pointer;
+    }
+
+    .aiEditProviderRowControl {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .aiEditProviderRowControl select {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .aiEditProviderSettingsBtn {
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      border-radius: 5px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.04);
+      color: #c5cad3;
+      cursor: pointer;
+      font-size: 12px;
+      line-height: 1;
+    }
+
+    .aiEditProviderSettingsBtn:hover {
+      background: rgba(255, 255, 255, 0.09);
+    }
+
+    .aiEditImageUploadArea {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin: 4px 0 8px;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .aiEditImageUploadRow {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .aiEditImageBase64Input {
+      width: 100%;
+      box-sizing: border-box;
+      resize: vertical;
+      border-radius: 5px;
+      padding: 5px 7px;
+      font-size: 11px;
+      font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+    }
+
+    .aiEditImageBase64Hint {
+      font-size: 10px;
+      color: #e0b15c;
+      line-height: 1.4;
+    }
+
     .aiSceneMessageWrap {
       flex-shrink: 0;
       margin-bottom: 8px;
@@ -2821,6 +3095,132 @@ html, body {
       grid-column: 2;
     }
 
+    .editorProviderList {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .editorProviderCard {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 10px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .editorProviderCardRow {
+      display: grid;
+      grid-template-columns: minmax(90px, 30%) 1fr;
+      gap: 8px 12px;
+      align-items: center;
+      font-size: 12px;
+    }
+
+    .editorProviderCardRow label {
+      color: #c5cad3;
+    }
+
+    .editorProviderCardRow input[type="text"],
+    .editorProviderCardRow input[type="password"],
+    .editorProviderCardRow select {
+      width: 100%;
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: 12px;
+    }
+
+    .editorProviderBuiltinHeading {
+      grid-template-columns: 1fr;
+      font-weight: 600;
+      color: #e8ecf0;
+    }
+
+    .editorProviderBuiltinIdControl {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .editorProviderBuiltinIdControl code {
+      font-size: 11px;
+      color: #c5cad3;
+    }
+
+    .editorProviderSecretControl {
+      position: relative;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .editorProviderCardRow .editorProviderSecretControl input {
+      width: 100%;
+      box-sizing: border-box;
+      padding-right: 34px;
+    }
+
+    .editorProviderApiKeyInput::-ms-reveal {
+      display: none;
+    }
+
+    .editorProviderSecretToggle {
+      position: absolute;
+      top: 50%;
+      right: 4px;
+      width: 26px;
+      height: 24px;
+      padding: 0;
+      transform: translateY(-50%);
+      display: grid;
+      place-items: center;
+      border: 0;
+      border-radius: 5px;
+      background: transparent;
+      color: #8b949e;
+      cursor: pointer;
+    }
+
+    .editorProviderSecretToggle:hover {
+      background: rgba(255, 255, 255, 0.09);
+      color: #c5cad3;
+    }
+
+    .editorProviderSecretToggle svg {
+      width: 15px;
+      height: 15px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      pointer-events: none;
+    }
+
+    .editorProviderCardDeleteBtn,
+    .editorSettingsActionBtn {
+      align-self: flex-start;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 6px;
+      background: transparent;
+      color: #c5cad3;
+      font-size: 11px;
+      padding: 4px 10px;
+      cursor: pointer;
+    }
+
+    .editorProviderCardDeleteBtn {
+      align-self: flex-end;
+      color: #f28b82;
+      border-color: rgba(242, 139, 130, 0.4);
+    }
+
+    .addProviderBtn {
+      margin-bottom: 12px;
+    }
+
     .editorSettingsFooter {
       flex-shrink: 0;
       padding: 10px 14px 12px;
@@ -3225,7 +3625,8 @@ html, body {
     #recentScenesModal,
     #clearCacheModal,
     #scenePresetNameModal,
-    #sceneSaveAsCopyModal {
+    #sceneSaveAsCopyModal,
+    #editorConfirmModal {
       position: fixed;
       inset: 0;
       z-index: 12000;
@@ -3240,7 +3641,8 @@ html, body {
     #recentScenesModal.visible,
     #clearCacheModal.visible,
     #scenePresetNameModal.visible,
-    #sceneSaveAsCopyModal.visible {
+    #sceneSaveAsCopyModal.visible,
+    #editorConfirmModal.visible {
       display: flex;
     }
 

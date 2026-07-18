@@ -54,7 +54,10 @@ import { createSettingsModalController } from "./settingsModal.js";
 import { createUiFeedback } from "./uiFeedback.js";
 import { createSceneTreePanel } from "./sceneTreePanel.js";
 import { createCommandLayer } from "./commandLayer.js";
-import { createAiSidebar } from "./aiSidebar.js";
+import { createEditorAiGeneratePanel } from "./editorAiGeneratePanel.js";
+import { createEditorAiAdjustPanel } from "./editorAiAdjustPanel.js";
+import { createLeftDockPanel } from "./leftDockPanel.js";
+import { ensureEditorBuiltinApiKey } from "./editorBuiltinAiProvider.js";
 import { createEditorInteraction } from "./editorInteraction.js";
 import { createEditorHistory } from "./editorHistory.js";
 import { createRightDockPanel } from "./rightDockPanel.js";
@@ -69,6 +72,7 @@ import { createModelGroupPanel } from "./modelGroupPanel.js";
 import { createPresetScenePanel } from "./presetScenePanel.js";
 import { createSceneDocumentOps } from "./sceneDocumentOps.js";
 import { createEditorSceneNameModals } from "./editorSceneNameModals.js";
+import { createEditorConfirmModal } from "./editorConfirmModal.js";
 import { createEditorSessionRecovery } from "./editorSessionRecovery.js";
 import { createEditorCacheClear } from "./editorCacheClear.js";
 import { createEditorDomainExport } from "./editorDomainExport.js";
@@ -241,7 +245,9 @@ export async function bootstrapSceneHostEditor() {
   let selectedObj = null;
   let sceneTree = null;
   let commandLayer = null;
-  let aiSidebar = null;
+  let aiGeneratePanel = null;
+  let aiAdjustPanel = null;
+  let leftDockPanel = null;
   let editorInteraction = null;
   let editorHistory = null;
   let rightDockPanel = null;
@@ -253,6 +259,7 @@ export async function bootstrapSceneHostEditor() {
   let codeEditor = null;
   let sceneDocumentOps = null;
   let sceneNameModals = null;
+  let editorConfirmModal = null;
   let presetScenePanel = null;
   let modelGroupPanel = null;
   let editorDocumentState = null;
@@ -294,6 +301,7 @@ export async function bootstrapSceneHostEditor() {
       selectedObj = obj;
     },
     getEditorSettings: () => editorSettings,
+    openEditorSettings: (sectionId) => settingsModal?.open?.(editorSettings, sectionId),
     showMessage: (...args) => ui.showMessage(...args),
     ingestScenePayload,
     runEditorCommands,
@@ -322,9 +330,19 @@ export async function bootstrapSceneHostEditor() {
         persistEditorSettings(editorSettings);
       }
     },
+    // Bypasses the "记住配置" gate that strips ai.apiKey on persist — the built-in trial provider's
+    // auto-issued key is a low-value, backend-revocable credential, not a user-owned secret, so it
+    // should survive regardless of that privacy toggle (see editorBuiltinAiProvider.js).
+    persistSettingsRememberingAiKey: () => {
+      if (editorSettings) {
+        persistEditorSettings(editorSettings, { rememberAiKey: true });
+      }
+    },
     getSceneTree: () => sceneTree,
     getCommandLayer: () => commandLayer,
-    getAiSidebar: () => aiSidebar,
+    getAiGeneratePanel: () => aiGeneratePanel,
+    getAiAdjustPanel: () => aiAdjustPanel,
+    getLeftDockPanel: () => leftDockPanel,
     getEditorThreeView: () => editorThreeView,
     getEditorInteraction: () => editorInteraction,
     getSceneReserialize: () => sceneReserialize,
@@ -349,6 +367,8 @@ export async function bootstrapSceneHostEditor() {
     getPresetScenePanel: () => presetScenePanel,
     getModelGroupPanel: () => modelGroupPanel,
     getSceneNameModals: () => sceneNameModals,
+    getEditorConfirmModal: () => editorConfirmModal,
+    confirmYesNo: (message, options) => editorConfirmModal?.openConfirmModalAndWait(message, options) ?? Promise.resolve(false),
     getSceneDocumentOps: () => sceneDocumentOps,
     getExportDownload: () => editorExportDownload,
     getEditorChromeUi: () => editorChromeUi,
@@ -882,7 +902,7 @@ export async function bootstrapSceneHostEditor() {
     if (ingestOptions.keepDirtyAfterLoad) {
       editorDocumentState?.markDirty?.();
       editorSessionRecovery?.onDirty?.();
-    } else if (!aiSidebar?.isAgentSessionActive?.()) {
+    } else if (!aiGeneratePanel?.isBusy?.() && !aiAdjustPanel?.isBusy?.()) {
       editorDocumentState?.markDirty?.();
       editorSessionRecovery?.onDirty?.();
     }
@@ -1722,7 +1742,19 @@ export async function bootstrapSceneHostEditor() {
     editorViewChrome?.syncFromSettings?.();
     editorChromeUi?.applyStatusBarHintFromSettings?.(editorSettings);
     editorHistory?.applySettingsFromEditor?.(editorSettings);
-    aiSidebar?.applySettingsFromEditor?.();
+    // Fire-and-forget: issues (or silently re-issues, ahead of expiry) the built-in trial
+    // provider's API key whenever ai.provider is the built-in type — covers both first boot
+    // (initial === true) and the user switching to it from Settings and saving. Never blocks
+    // first paint or the settings-save flow on a network round trip.
+    void ensureEditorBuiltinApiKey({
+      getEditorSettings: () => editorSettings,
+      persistSettings: () => host.persistSettingsRememberingAiKey?.(),
+      onUnavailable: () =>
+        host.showMessage(
+          t("editor.ai.builtin.unavailableToast", "内置供应商无法访问，请在「设置 → AI 助手」配置供应商。"),
+          "info"
+        )
+    });
     codeEditor?.syncCodeModeCheckboxesFromSettings?.();
     editorCapture?.applyCaptureDefaultsFromSettings?.();
     editorInteraction?.syncDragControlsFromSettings?.();
@@ -1747,10 +1779,17 @@ export async function bootstrapSceneHostEditor() {
   }
 
   const settingsModal = createSettingsModalController({
+    host,
     onSave(draft) {
       editorSettings = deepMergeEditorSettings(editorSettingsFileDefaults, draft);
       persistEditorSettings(editorSettings);
       applyEditorSettings();
+      // AI-generate/adjust tabs each keep their own provider <select>+quick-options snapshot
+      // populated on tab-show — without this, saving Settings while sitting on one of those tabs
+      // silently goes stale until the user switches tabs away and back (bug report: 已经切换了
+      // 供应商，左侧面板 AI 生成中未自动刷新).
+      aiGeneratePanel?.onSettingsSaved?.();
+      aiAdjustPanel?.onSettingsSaved?.();
       ui.showMessage(t("editor.message.settingsSaved", "Settings saved and applied."), "success");
     },
     async onReset() {
@@ -2014,7 +2053,8 @@ export async function bootstrapSceneHostEditor() {
   sceneTree = createSceneTreePanel(host);
   commandLayer = createCommandLayer(host);
   commandLayer.ensure();
-  aiSidebar = createAiSidebar(host);
+  aiGeneratePanel = createEditorAiGeneratePanel(host);
+  aiAdjustPanel = createEditorAiAdjustPanel(host);
   editorInteraction = createEditorInteraction(host);
   sceneReserialize = createEditorSceneReserialize(host);
   gridHelper = createEditorGridHelper(host);
@@ -2027,9 +2067,11 @@ export async function bootstrapSceneHostEditor() {
   eventEditorPanel = createEventEditorPanel(host);
   assetLibraryPanel = createAssetLibraryPanel(host);
   rightDockPanel = createRightDockPanel(host);
+  leftDockPanel = createLeftDockPanel(host);
   runScenePreview = createRunScenePreviewController(host);
   recentScenes = createRecentScenesController(host);
   sceneNameModals = createEditorSceneNameModals(host);
+  editorConfirmModal = createEditorConfirmModal();
   sceneDocumentOps = createSceneDocumentOps(host);
   editorSessionRecovery = createEditorSessionRecovery(host);
   editorCacheClear = createEditorCacheClear(host);
@@ -2051,8 +2093,9 @@ export async function bootstrapSceneHostEditor() {
   await recentScenes.loadFromStorage();
   await presetScenePanel.init();
   codeEditor.init();
-  aiSidebar.init();
-  aiSidebar.applySettingsFromEditor();
+  aiGeneratePanel.init();
+  aiAdjustPanel.init();
+  leftDockPanel.init();
   editorDomainDrillIn.init();
   editorMeshExportModal.init();
   editorTjzExportModal.init();

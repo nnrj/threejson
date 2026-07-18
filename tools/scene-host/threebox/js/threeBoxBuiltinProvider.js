@@ -1,135 +1,18 @@
 import { THREEBOX_BUILTIN_PROVIDER_ID, THREEBOX_BUILTIN_PROVIDER_TYPE } from "./threeBoxSettingsSchema.js";
+import {
+  KEY_REISSUE_MARGIN_MS,
+  computeDeviceFingerprint,
+  fetchBuiltinQuota as fetchBuiltinQuotaRaw,
+  getDisplayDeviceId as getDisplayDeviceIdShared,
+  issueBuiltinApiKey
+} from "../../shared/js/builtinAiProvider.js";
 import { showToast } from "./threeBoxUiFeedback.js";
 import { t } from "../../shared/i18n/index.js";
 
-/**
- * Shared HMAC secret used to sign `/v1/auth/issue` requests to the built-in provider's backend
- * (tmpserver/threebox-server — see its README for the matching `REQUEST_SIGNING_SECRET`). This is
- * a deterrent against scripted abuse (proves the caller has ThreeBox's client secret, not just a
- * spoofable Origin header), not a hard guarantee: ThreeBox is open source, so the secret is
- * technically extractable from this file. The real backstop is the backend's per-device quota and
- * ban policy. Self-hosting your own backend? Change this to match your own deployed
- * `REQUEST_SIGNING_SECRET`, or leave the official threebox.org default and just override
- * `ai.builtinBackendUrl` in Settings if you only want to swap the endpoint.
- */
-const REQUEST_SIGNING_SECRET = "threebox-public-client-2024";
-
-const KEY_REISSUE_MARGIN_MS = 24 * 60 * 60 * 1000; // re-issue a day before actual expiry
-
-let cachedFingerprintPromise = null;
-
-function toHex(buffer) {
-  return Array.from(new Uint8Array(buffer))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-async function sha256Hex(text) {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
-  return toHex(digest);
-}
-
-async function hmacSha256Hex(secret, message) {
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(message));
-  return toHex(signature);
-}
-
-/** Best-effort, low-churn canvas signal — wrapped in try/catch because privacy-hardened browsers
- * (e.g. Brave) may block or randomize canvas reads; a blank fallback just means this device leans
- * more on its other signals. */
-function canvasSignal() {
-  try {
-    const canvas = document.createElement("canvas");
-    canvas.width = 220;
-    canvas.height = 40;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return "";
-    ctx.textBaseline = "top";
-    ctx.font = "14px 'Arial'";
-    ctx.fillStyle = "#f60";
-    ctx.fillRect(0, 0, 80, 20);
-    ctx.fillStyle = "#069";
-    ctx.fillText("ThreeBox device signal", 2, 15);
-    return canvas.toDataURL();
-  } catch {
-    return "";
-  }
-}
-
-function webglSignal() {
-  try {
-    const canvas = document.createElement("canvas");
-    const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
-    if (!gl) return "";
-    const info = gl.getExtension("WEBGL_debug_renderer_info");
-    if (!info) return "";
-    return `${gl.getParameter(info.UNMASKED_VENDOR_WEBGL)}::${gl.getParameter(info.UNMASKED_RENDERER_WEBGL)}`;
-  } catch {
-    return "";
-  }
-}
-
-/**
- * Computes a stable per-device fingerprint by hashing low-churn browser/hardware signals — never
- * read from storage, so the same browser reproduces the same value even after clearing all site
- * data. Deliberately excludes `navigator.userAgent` (its version segment changes on every browser
- * auto-update, which would silently rotate the "identity" and defeat the point). Not
- * cryptographically unique across all devices — it doesn't need to be; see threebox-server's
- * README for how the backend treats this as a soft identity signal, not a hard guarantee.
- */
-export function computeDeviceFingerprint() {
-  if (!cachedFingerprintPromise) {
-    cachedFingerprintPromise = (async () => {
-      let timeZone = "";
-      try {
-        timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
-      } catch {
-        /* ignore */
-      }
-      const parts = [
-        String(screen.width || ""),
-        String(screen.height || ""),
-        String(screen.colorDepth || ""),
-        String(navigator.hardwareConcurrency || ""),
-        navigator.language || "",
-        navigator.platform || "",
-        timeZone,
-        canvasSignal(),
-        webglSignal()
-      ];
-      return sha256Hex(parts.join("|"));
-    })();
-  }
-  return cachedFingerprintPromise;
-}
-
-/** Short, shareable form for support requests — must match threebox-server's
- * `shortDeviceId()` (src/lib/deviceId.ts) exactly so what the user sees in Settings matches what
- * you search for in the admin dashboard. */
-export async function getDisplayDeviceId() {
-  const deviceId = await computeDeviceFingerprint();
-  return `TB-${deviceId.slice(0, 10).toUpperCase()}`;
-}
-
-function randomNonce() {
-  const bytes = new Uint8Array(8);
-  crypto.getRandomValues(bytes);
-  return toHex(bytes.buffer);
-}
-
-async function signIssueRequest(deviceId) {
-  const ts = Date.now();
-  const nonce = randomNonce();
-  const sig = await hmacSha256Hex(REQUEST_SIGNING_SECRET, `${deviceId}.${ts}.${nonce}`);
-  return { deviceId, ts, nonce, sig };
-}
+// Re-exported so existing ThreeBox imports of `getDisplayDeviceId` from this module keep working
+// unchanged — the actual fingerprinting/hashing now lives in the shared module (see
+// tools/scene-host/shared/js/builtinAiProvider.js), used identically by editor/.
+export const getDisplayDeviceId = getDisplayDeviceIdShared;
 
 function findBuiltinProvider(settings) {
   const providers = Array.isArray(settings?.ai?.providers) ? settings.ai.providers : [];
@@ -180,29 +63,8 @@ async function ensureBuiltinApiKeyInternal(settingsModal) {
     return;
   }
 
-  const base = backendUrl(settings);
-  if (!base) {
-    if (!provider.apiKey) {
-      notifyBuiltinProviderUnavailable();
-    }
-    return;
-  }
   try {
-    const deviceId = await computeDeviceFingerprint();
-    const signed = await signIssueRequest(deviceId);
-    const res = await fetch(`${base}/v1/auth/issue`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(signed)
-    });
-    if (!res.ok) {
-      console.warn(`[threebox] built-in provider key issuance failed (${res.status}).`);
-      if (!provider.apiKey) {
-        notifyBuiltinProviderUnavailable();
-      }
-      return;
-    }
-    const body = await res.json();
+    const body = await issueBuiltinApiKey(backendUrl(settings));
     settingsModal.updateSettings(
       (draft) => {
         const draftProvider = findBuiltinProvider(draft);
@@ -255,18 +117,11 @@ export function ensureBuiltinApiKey(settingsModal) {
 export async function refreshBuiltinQuota(settingsModal) {
   const settings = settingsModal.getSettings();
   const provider = findBuiltinProvider(settings);
-  const base = backendUrl(settings);
-  if (!provider?.apiKey || !base) {
+  if (!provider?.apiKey) {
     return provider?.builtinQuota || null;
   }
   try {
-    const res = await fetch(`${base}/v1/quota`, {
-      headers: { Authorization: `Bearer ${provider.apiKey}` }
-    });
-    if (!res.ok) {
-      return provider.builtinQuota || null;
-    }
-    const body = await res.json();
+    const body = await fetchBuiltinQuotaRaw(backendUrl(settings), provider.apiKey);
     const changed =
       JSON.stringify(body.quota) !== JSON.stringify(provider.builtinQuota) ||
       body.shortId !== provider.builtinShortId;
@@ -286,6 +141,10 @@ export async function refreshBuiltinQuota(settingsModal) {
     return provider.builtinQuota || null;
   }
 }
+
+// computeDeviceFingerprint is re-exported for parity with the pre-refactor module surface, even
+// though no current ThreeBox call site imports it directly (getDisplayDeviceId is what's used).
+export { computeDeviceFingerprint };
 
 export function isBuiltinProviderId(id) {
   return id === THREEBOX_BUILTIN_PROVIDER_ID;

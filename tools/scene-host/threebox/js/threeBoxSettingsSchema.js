@@ -8,6 +8,8 @@
  * saved provider configs (`ai.providers`) since the composer lets the user pick per-message.
  */
 
+import { BUILTIN_PROVIDER_TYPE, DEFAULT_BUILTIN_BACKEND_URL } from "../../shared/js/builtinAiProvider.js";
+
 export const THREEBOX_SETTINGS_STORAGE_KEY = "threejson.threebox.settings.v1";
 
 export const THREEBOX_SETTINGS_DEFAULTS = {
@@ -24,7 +26,7 @@ export const THREEBOX_SETTINGS_DEFAULTS = {
     // Base URL for the built-in trial provider's backend (threebox-server, deployed as a
     // dedicated Cloudflare Worker subdomain rather than a path under the main site). Exposed as a
     // setting rather than hardcoded because ThreeBox is open source — anyone can run their own.
-    builtinBackendUrl: "https://api.threebox.org",
+    builtinBackendUrl: DEFAULT_BUILTIN_BACKEND_URL,
     selfName: "ThreeBox",
     updateOutputMode: "commands",
     includeSpatialSummary: true,
@@ -154,7 +156,7 @@ export const THREEBOX_SETTINGS_FIELDS = [
 ];
 
 export const THREEBOX_PROVIDER_TYPES = [
-  ["threebox-builtin", "内置供应商（限额体验）"],
+  [BUILTIN_PROVIDER_TYPE, "内置供应商（限额体验）"],
   ["chatgpt", "ChatGPT (OpenAI)"],
   ["deepseek", "DeepSeek"],
   ["custom", "自定义 (OpenAI 兼容)"]
@@ -162,6 +164,8 @@ export const THREEBOX_PROVIDER_TYPES = [
 
 /** The provider id/type reserved for the auto-seeded built-in trial provider — used by
  * threeBoxSettingsStore.js (first-run seeding), threeBoxSettingsModal.js (special-cased card
- * rendering) and threeBoxOrchestrator.js (baseUrl/key resolution). */
-export const THREEBOX_BUILTIN_PROVIDER_TYPE = "threebox-builtin";
+ * rendering) and threeBoxOrchestrator.js (baseUrl/key resolution). `THREEBOX_BUILTIN_PROVIDER_TYPE`
+ * re-exports the shared constant (see tools/scene-host/shared/js/builtinAiProvider.js) under its
+ * original name so existing ThreeBox imports don't need to change. */
+export const THREEBOX_BUILTIN_PROVIDER_TYPE = BUILTIN_PROVIDER_TYPE;
 export const THREEBOX_BUILTIN_PROVIDER_ID = "builtin-default";

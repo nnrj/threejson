@@ -1,8 +1,10 @@
 import {
+  EDITOR_BUILTIN_PROVIDER_ID,
   EDITOR_SETTINGS_DEFAULTS,
   EDITOR_SETTINGS_JSON_URL,
   EDITOR_SETTINGS_STORAGE_KEY
 } from "./editorSettingsSchema.js";
+import { BUILTIN_PROVIDER_TYPE } from "./builtinAiProvider.js";
 import { resolveSceneHostUrl } from "./sceneHostPaths.js";
 
 export function cloneEditorSettings(value) {
@@ -107,19 +109,51 @@ export function clearEditorSettingsCache() {
   }
 }
 
+/** Seeds the built-in trial provider on first-ever load (no cached settings) or whenever the
+ * provider list has otherwise ended up empty (e.g. the user deleted their only provider) — mirrors
+ * ThreeBox's ensureBuiltinProviderSeeded (threeBoxSettingsStore.js). editorBuiltinAiProvider.js's
+ * `ensureEditorBuiltinApiKey` fills in the actual trial `apiKey` shortly after boot; this only
+ * creates the provider entry shell. */
+function ensureBuiltinProviderSeeded(merged) {
+  if (!Array.isArray(merged.ai.providers)) {
+    merged.ai.providers = [];
+  }
+  if (merged.ai.providers.length > 0) {
+    return merged;
+  }
+  merged.ai.providers.push({
+    id: EDITOR_BUILTIN_PROVIDER_ID,
+    label: "内置试用（限额）",
+    provider: BUILTIN_PROVIDER_TYPE,
+    model: "",
+    apiKey: "",
+    baseUrl: ""
+  });
+  merged.ai.defaultProviderId = EDITOR_BUILTIN_PROVIDER_ID;
+  return merged;
+}
+
 export async function loadEditorSettingsBundle() {
   const fileDefaults = await fetchEditorSettingsFileDefaults();
   const cached = readEditorSettingsCache();
+  const merged = deepMergeEditorSettings(fileDefaults, cached || {});
+  ensureBuiltinProviderSeeded(merged);
   return {
     fileDefaults,
-    settings: deepMergeEditorSettings(fileDefaults, cached || {})
+    settings: merged
   };
 }
 
+/** Strips provider API keys before persisting, unless ai.rememberConfig is true (or the caller
+ * passes rememberAiKey — used for the built-in trial key, see editorBuiltinAiProvider.js). The
+ * built-in provider's key is exempt from stripping either way: it's a backend-revocable,
+ * device-fingerprint-tied credential, not a user-owned secret. */
 export function persistEditorSettings(settings, { rememberAiKey = false } = {}) {
   const toSave = cloneEditorSettings(settings);
-  if (!toSave.ai?.rememberConfig && !rememberAiKey) {
-    toSave.ai = { ...toSave.ai, apiKey: "" };
+  if (!toSave.ai?.rememberConfig && !rememberAiKey && Array.isArray(toSave.ai?.providers)) {
+    toSave.ai.providers = toSave.ai.providers.map((p) =>
+      p.provider === BUILTIN_PROVIDER_TYPE ? p : { ...p, apiKey: "" }
+    );
   }
   saveEditorSettingsCache(toSave);
 }

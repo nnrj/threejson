@@ -1,80 +1,50 @@
-import { sceneHostAssetUrl } from "../../shared/js/sceneHostPaths.js";
 import { t } from "../../shared/i18n/index.js";
+import {
+  acceptForKind,
+  parseUploadedModelFile,
+  parseUploadedSceneJsonFile,
+  parseUploadedTjzFile
+} from "../../shared/js/sceneFileUpload.js";
 import { enqueueThreeBoxSceneLoad } from "./threeBoxSceneLoadQueue.js";
 
-const ACCEPT_BY_KIND = {
-  json: ".json,.threejson,.tjson,application/json",
-  tjz: ".tjz",
-  image: "image/*",
-  model: ".gltf,.glb,.obj,.fbx",
-  other: "*/*"
-};
+export { acceptForKind };
 
-export function acceptForKind(kind) {
-  return ACCEPT_BY_KIND[kind] || "*/*";
-}
-
-function createOffscreenCanvas() {
-  const canvas = document.createElement("canvas");
-  canvas.width = 32;
-  canvas.height = 32;
-  return canvas;
-}
-
-/** Parses an uploaded `.json`/`.threejson` file's text into a scene JSON object, validating it's
- * actually a loadable scene payload (not just arbitrary JSON) before treating it as one. */
-async function processJsonFile(file) {
-  const { isLoadableScenePayload } = await import("threejson");
-  const text = await file.text();
-  let sceneJson;
-  try {
-    sceneJson = JSON.parse(text);
-  } catch (error) {
-    throw new Error(t("threebox.upload.jsonParseFailed", "JSON 解析失败：{error}", { error: error?.message || error }));
+/** Re-localizes a shared-parser error by its `.code` (see sceneFileUpload.js) rather than the
+ * plain hardcoded message the shared module throws — keeps ThreeBox's existing i18n behavior
+ * (threebox.upload.*) unchanged after the parsing logic moved to shared/js/. */
+function localizeJsonParseError(error) {
+  if (error?.code === "JSON_PARSE_FAILED") {
+    return new Error(
+      t("threebox.upload.jsonParseFailed", "JSON 解析失败：{error}", {
+        error: error.cause?.message || error.cause || error.message
+      })
+    );
   }
-  if (!isLoadableScenePayload(sceneJson)) {
-    throw new Error(
+  if (error?.code === "NOT_LOADABLE_SCENE") {
+    return new Error(
       t("threebox.upload.notLoadableScene", "不是有效的 ThreeJSON 场景（缺少 worldInfo 或 objectList）。")
     );
   }
-  return sceneJson;
+  return error;
 }
 
-/** Unpacks a `.tjz` archive via a throwaway offscreen runtime, then re-exports it back to a
- * standard scene JSON object — mirrors threeBoxOrchestrator.js's offscreen-runtime pattern for
- * command execution, reused here purely for its archive-unpack + JSON-export side effect. */
+async function processJsonFile(file) {
+  try {
+    return await parseUploadedSceneJsonFile(file);
+  } catch (error) {
+    throw localizeJsonParseError(error);
+  }
+}
+
+/** Wraps the shared .tjz parser in ThreeBox's scene-load busy tracker (threebox:scene-load-busy —
+ * used by background work like template-thumbnail generation to wait for a quiet moment). */
 async function processTjzFile(file) {
-  const { createJsonSceneFromArchive, sceneToStandardJsonSimple } = await import("threejson");
-  const runtime = await enqueueThreeBoxSceneLoad(() =>
-    createJsonSceneFromArchive(file, {
-      canvas: createOffscreenCanvas(),
-      assetsBase: sceneHostAssetUrl("assets/")
-    })
-  );
-  try {
-    return sceneToStandardJsonSimple(runtime.scene, { merge: false });
-  } finally {
-    runtime.dispose?.();
-  }
+  return enqueueThreeBoxSceneLoad(() => parseUploadedTjzFile(file));
 }
 
-/** Wraps a 3rd-party model file (glTF/OBJ/FBX) as an `externalModel` object record (core's
- * `importMeshBlob`), deploys it into a throwaway offscreen runtime, then re-exports back to a
- * standard scene JSON — after this point it's indistinguishable from any other loaded scene. */
+/** Wraps the shared model parser in the same busy tracker as processTjzFile. */
 async function processModelFile(file) {
-  const { importMeshBlob, createJsonSceneFromObjectRecord, sceneToStandardJsonSimple } = await import("threejson");
-  const { record } = await importMeshBlob(file, { fileName: file.name });
-  const runtime = await enqueueThreeBoxSceneLoad(() =>
-    createJsonSceneFromObjectRecord(record, {
-      canvas: createOffscreenCanvas(),
-      assetsBase: sceneHostAssetUrl("assets/")
-    })
-  );
-  try {
-    return sceneToStandardJsonSimple(runtime.scene, { merge: false });
-  } finally {
-    runtime.dispose?.();
-  }
+  return enqueueThreeBoxSceneLoad(() => parseUploadedModelFile(file));
 }
 
 /**

@@ -161,6 +161,10 @@ export function wireThreeBoxComposerStub(host = {}) {
     btn.addEventListener("click", () => {
       const kind = btn.dataset.kind;
       closeAttachTypeMenu();
+      if (kind === "library") {
+        revealResourceLibrary();
+        return;
+      }
       if (kind === "image" && !checkVisionGate()) {
         return;
       }
@@ -171,6 +175,24 @@ export function wireThreeBoxComposerStub(host = {}) {
       }
     });
   });
+
+  /** "从资源库选择": rather than re-uploading, points the user at the already-visible sidebar
+   * resource library (threeBoxResourceLibrary.js) where loadable resources (json/tjz/model) can
+   * be clicked directly to attach as context — same click handler the library already has. */
+  function revealResourceLibrary() {
+    const section = document.getElementById("resourceLibrarySection");
+    if (!section) {
+      return;
+    }
+    section.open = true;
+    section.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    section.classList.add("sidebarSectionHighlight");
+    window.setTimeout(() => section.classList.remove("sidebarSectionHighlight"), 1500);
+    showToast(
+      t("threebox.composer.pickFromLibraryHint", "点击资源库中的条目即可直接附加，无需重新上传。"),
+      "info"
+    );
+  }
 
   document.addEventListener("click", (event) => {
     if (attachTypeMenu && !attachTypeMenu.hidden && !attachTypeMenu.contains(event.target) && event.target !== composerAttachBtn) {

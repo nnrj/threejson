@@ -112,30 +112,6 @@ async function captureSessionJsonText(host, captureOptions = {}) {
 
 
 
-function promptSceneLabel(defaultName, title = "场景名称") {
-
-  const raw = window.prompt(title, String(defaultName || "").trim());
-
-  if (raw == null) {
-
-    return null;
-
-  }
-
-  const label = String(raw).trim();
-
-  if (!label) {
-
-    return null;
-
-  }
-
-  return label;
-
-}
-
-
-
 async function askSceneLabel(host, defaultName, modalOptions) {
 
   const modals = host.getSceneNameModals?.();
@@ -146,7 +122,9 @@ async function askSceneLabel(host, defaultName, modalOptions) {
 
   }
 
-  return promptSceneLabel(defaultName, modalOptions?.title || "场景名称");
+  console.warn("[editor] scene name modal not available; scene label prompt skipped.");
+
+  return null;
 
 }
 
@@ -162,7 +140,9 @@ async function askSaveAsCopyLabel(host, defaultName) {
 
   }
 
-  return promptSceneLabel(defaultName, "请输入副本名称");
+  console.warn("[editor] scene name modal not available; save-as-copy label prompt skipped.");
+
+  return null;
 
 }
 
