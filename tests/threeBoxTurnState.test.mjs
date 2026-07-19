@@ -4,7 +4,8 @@ import { test } from "node:test";
 import {
   createUnsuccessfulTurnRecord,
   isSceneContextTurn,
-  isUnsuccessfulTurn
+  isUnsuccessfulTurn,
+  resolveThreeBoxNegotiatedRoute
 } from "../tools/scene-host/threebox/js/threeBoxTurnState.js";
 
 test("failed ThreeBox turns persist replayable error state but are not scene context", () => {
@@ -42,4 +43,42 @@ test("stopped adjustment turns retain their target for retry", () => {
 test("successful full and diff-cached turns remain usable scene context", () => {
   assert.equal(isSceneContextTurn({ sceneJson: '{"worldInfo":{}}' }), true);
   assert.equal(isSceneContextTurn({ sceneJson: null, commands: [{ op: "object.patch" }] }), true);
+});
+
+test("ThreeBox routes model-negotiated follow-ups to an existing scene", () => {
+  const turns = [
+    { id: "turn-base", sceneJson: "{}", mode: "generate" },
+    { id: "turn-latest", commands: [{ op: "object.patch" }], mode: "adjust" }
+  ];
+  assert.deepEqual(
+    resolveThreeBoxNegotiatedRoute(
+      { intent: "adjust", targetTurnId: "turn-base", classificationFailed: false },
+      turns
+    ),
+    { intent: "adjust", targetTurnId: "turn-base" }
+  );
+  assert.deepEqual(
+    resolveThreeBoxNegotiatedRoute(
+      { intent: "adjust", targetTurnId: null, classificationFailed: false },
+      turns
+    ),
+    { intent: "adjust", targetTurnId: "turn-latest" }
+  );
+});
+
+test("ThreeBox never silently converts a failed negotiation into a new scene", () => {
+  assert.throws(
+    () => resolveThreeBoxNegotiatedRoute(
+      { intent: "generate", classificationFailed: true, note: "provider output was truncated" },
+      [{ id: "turn-base", sceneJson: "{}", mode: "generate" }]
+    ),
+    (error) => error?.code === "THREEBOX_INTENT_CLASSIFICATION_FAILED"
+  );
+  assert.deepEqual(
+    resolveThreeBoxNegotiatedRoute(
+      { intent: "generate", classificationFailed: true },
+      []
+    ),
+    { intent: "generate", targetTurnId: null }
+  );
 });

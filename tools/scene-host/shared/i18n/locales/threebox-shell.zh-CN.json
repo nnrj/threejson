@@ -67,7 +67,7 @@
   "threebox.app.templateTouchLabel": "模板：{label}",
   "threebox.app.processingFailed": "处理失败：{error}",
   "threebox.chat.preparingScene": "JSON 已生成，正在解析并准备场景预览（不消耗 Token）…",
-  "threebox.chat.preparingRequest": "正在分析需求并与 AI 协商生成方案…",
+  "threebox.chat.preparingRequest": "正在结合会话上下文分析请求，并判断是新建还是调整场景…",
   "threebox.chat.preparingAction": "正在准备…",
   "threebox.chat.adjusting": "正在调整…",
   "threebox.chat.noProcessingResult": "处理已结束，但没有返回可显示的结果。",
@@ -272,5 +272,6 @@
   "threebox.chat.copyAdjustPatch": "复制 JSON Patch",
   "threebox.chat.copyAdjustCommands": "复制调整命令",
   "threebox.chat.demoReply": "这是一个演示回复，用于验证 Markdown 渲染管线（真正的 AI 对话生成将在下一个里程碑接入）。",
-  "threebox.chat.demoJsonNote": "占位 JSON 代码块"
+  "threebox.chat.demoJsonNote": "占位 JSON 代码块",
+  "threebox.app.intentClassificationFailed": "未能可靠判断本次请求是新建场景还是调整现有场景，已停止本轮操作以避免错误地生成新场景。请重试。"
 }

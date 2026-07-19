@@ -912,10 +912,66 @@ test("classifyTurnIntent negotiates a compact strategy even when there are no pr
     { provider: "chatgpt", apiKey: "test-key" }
   );
 
-  assert.match(requestBody.messages[1].content, /\(no prior turns\)/);
+  assert.deepEqual(JSON.parse(requestBody.messages[1].content).priorSceneTurns, []);
   assert.match(requestBody.messages[0].content, /If you are not confident that strict segmented output is supported, choose "compact"/);
   assert.equal(result.generationStrategy, "compact");
   assert.equal(result.estimatedSegments, 1);
+});
+
+test("classifyTurnIntent preserves an adjust decision when the model omits its target id", async () => {
+  let requestBody;
+  globalThis.fetch = async (_url, init = {}) => {
+    requestBody = JSON.parse(init.body);
+    return {
+      ok: true,
+      async json() {
+        return {
+          choices: [{
+            message: {
+              content: '{"intent":"adjust","targetTurnId":null,"note":"continue latest","generationStrategy":"single","estimatedSegments":1}'
+            }
+          }]
+        };
+      }
+    };
+  };
+
+  const result = await classifyTurnIntent(
+    {
+      userPrompt: "把机器人改成红色",
+      history: [
+        { turnId: "turn-forest", userPrompt: "生成森林和机器人", summary: "森林里有一个机器人", mode: "generate" },
+        { turnId: "turn-cabin", userPrompt: "再加一个木屋", summary: "在森林里增加了木屋", mode: "adjust", targetTurnId: "turn-forest" }
+      ]
+    },
+    { provider: "chatgpt", apiKey: "test-key" }
+  );
+
+  const negotiationInput = JSON.parse(requestBody.messages[1].content);
+  assert.equal(requestBody.max_tokens, 800);
+  assert.equal(negotiationInput.priorSceneTurns[1].isLatestScene, true);
+  assert.equal(negotiationInput.priorSceneTurns[1].originalRequest, "再加一个木屋");
+  assert.match(requestBody.messages[0].content, /Conversation continuity is the default/);
+  assert.equal(result.intent, "adjust");
+  assert.equal(result.targetTurnId, "turn-cabin");
+  assert.equal(result.classificationFailed, false);
+});
+
+test("classifyTurnIntent marks provider or parse fallback instead of disguising it as generation", async () => {
+  globalThis.fetch = async () => {
+    throw new Error("negotiation unavailable");
+  };
+
+  const result = await classifyTurnIntent(
+    {
+      userPrompt: "再加一棵树",
+      history: [{ turnId: "turn-forest", summary: "森林场景" }]
+    },
+    { provider: "chatgpt", apiKey: "test-key" }
+  );
+
+  assert.equal(result.classificationFailed, true);
+  assert.match(result.note, /classification failed/);
 });
 
 test("classifyTurnIntent returns model-negotiated capability ids and animation decision", async () => {

@@ -25,7 +25,8 @@ import { createThreeBoxResourceLibrary } from "./threeBoxResourceLibrary.js";
 import {
   createUnsuccessfulTurnRecord,
   isSceneContextTurn,
-  isUnsuccessfulTurn
+  isUnsuccessfulTurn,
+  resolveThreeBoxNegotiatedRoute
 } from "./threeBoxTurnState.js";
 import { buildStructuredTurnEnvelope, createThreeBoxTurnContext, projectSceneJsonString } from "threejson";
 import { initHostI18n, applyShellI18n, getHostLocale, normalizeLocale, t } from "../../shared/i18n/index.js";
@@ -260,6 +261,12 @@ async function main() {
       return t(
         "threebox.app.builtinQuotaExceeded",
         "内置供应商的限额体验已用完。可以配置自己的供应商继续使用。"
+      );
+    }
+    if (error?.code === "THREEBOX_INTENT_CLASSIFICATION_FAILED") {
+      return t(
+        "threebox.app.intentClassificationFailed",
+        "未能可靠判断本次请求是新建场景还是调整现有场景，已停止本轮操作以避免错误地生成新场景。请重试。"
       );
     }
     return error?.message || String(error || t("threebox.app.unknownError", "未知错误"));
@@ -885,7 +892,7 @@ async function main() {
       // user instead of vanishing — an unhandled rejection here would otherwise leave the chat
       // looking like it did nothing at all after Send was clicked.
       console.error("[threebox] handleUserMessage failed:", error);
-      const message = t("threebox.app.processingFailed", "处理失败：{error}", { error: error?.message || error });
+      const message = t("threebox.app.processingFailed", "处理失败：{error}", { error: friendlyAiErrorMessage(error) });
       if (!api.finishInitialActivity?.(message)) {
         api.appendAssistantMessage(message);
       }
@@ -956,7 +963,14 @@ async function main() {
     const allPriorTurns = await getTurnsForConversation(conversationId).catch(() => []);
     const priorTurns = allPriorTurns.filter(isSceneContextTurn);
 
-    const history = priorTurns.map((t) => ({ turnId: t.id, summary: t.recapSummary || t.userPrompt }));
+    const history = priorTurns.map((t) => ({
+      turnId: t.id,
+      summary: t.recapSummary || t.userPrompt,
+      userPrompt: t.userPrompt,
+      mode: t.mode,
+      targetTurnId: t.targetTurnId,
+      sceneTitle: t.sceneTitle
+    }));
     const classified = await classifyThreeBoxTurnIntent(
       { userPrompt: text, history },
       {
@@ -965,11 +979,12 @@ async function main() {
         animationCapabilityMode: settings.ai?.animationCapabilityMode || "auto"
       }
     );
-    if (classified.intent === "adjust" && classified.targetTurnId) {
+    const route = resolveThreeBoxNegotiatedRoute(classified, priorTurns);
+    if (route.intent === "adjust") {
       await handleAdjustTurn(text, api, {
         conversationId,
         turnId,
-        targetTurnId: classified.targetTurnId,
+        targetTurnId: route.targetTurnId,
         turnContext,
         selectedCapabilityIds: classified.selectedCapabilityIds,
         requiresAnimation: classified.requiresAnimation

@@ -25,7 +25,11 @@ import { requestChatCompletion, extractJsonText } from "./sceneAiService.js";
 import { sanitizeAiJsonText } from "./sceneJsonSanitize.js";
 import { THREE_JSON_AGENT_CAPABILITY_INDEX } from "./sceneCapabilityIndex.js";
 
-const DEFAULT_CLASSIFY_MAX_TOKENS = 300;
+// Intent negotiation now also returns generation strategy, capability ids and animation intent.
+// 300 tokens was enough for the original two-field route response, but can truncate the expanded
+// structured response (especially on reasoning providers), which used to silently route every
+// failed classification to a brand-new scene.
+const DEFAULT_CLASSIFY_MAX_TOKENS = 800;
 const DEFAULT_SUMMARIZE_MAX_TOKENS = 400;
 const DEFAULT_TITLE_MAX_TOKENS = 60;
 const SCENE_TITLE_MAX_LENGTH = 80;
@@ -56,7 +60,14 @@ function normalizeHistoryEntries(history) {
     if (!turnId) {
       continue;
     }
-    out.push({ turnId, summary: typeof entry?.summary === "string" ? entry.summary : "" });
+    out.push({
+      turnId,
+      summary: typeof entry?.summary === "string" ? entry.summary.slice(0, 1200) : "",
+      userPrompt: typeof entry?.userPrompt === "string" ? entry.userPrompt.slice(0, 800) : "",
+      mode: entry?.mode === "adjust" ? "adjust" : entry?.mode === "template" ? "template" : "generate",
+      targetTurnId: typeof entry?.targetTurnId === "string" ? entry.targetTurnId.trim() : null,
+      sceneTitle: typeof entry?.sceneTitle === "string" ? entry.sceneTitle.slice(0, 160) : ""
+    });
   }
   return out;
 }
@@ -75,6 +86,8 @@ function buildClassifyIntentSystemPrompt(animationCapabilityMode = "auto") {
     '- "targetTurnId" MUST be one of the provided turn ids, or null. Never invent an id.',
     '- If intent is "generate", "targetTurnId" MUST be null.',
     '- If intent is "adjust" but you cannot tell which prior turn is meant, still pick the single most recent turn as targetTurnId (most conversations continue the latest result) and explain the ambiguity in "note".',
+    '- Conversation continuity is the default when prior scene turns exist. Requests to add, remove, replace, recolor, resize, move, rotate, animate, label, improve, simplify, or otherwise change something normally mean "adjust"—including short follow-ups such as "再加一棵树", "把它改成红色", or "让机器人挥手".',
+    '- Choose "generate" with prior turns only when the user clearly asks for a new/separate scene, asks to start over, or the newest request is clearly unrelated to every prior scene. Do not classify a follow-up as "generate" merely because it contains enough detail to describe a complete scene.',
     '- "note" is one short sentence explaining your choice.',
     '- Choose "generationStrategy" before generation starts. "single" means the complete JSON clearly fits one response. "segmented" means the request genuinely needs multiple responses AND you can follow the host segmented-output protocol from the first response. "compact" means a literal/full expansion is too large or segmented output is unsuitable; preserve the visual intent with instancing, bounded representative populations, and fewer explicit records so complete JSON fits one response.',
     '- Complexity features are optional safeguards, not a quality setting. Never choose "segmented" merely to improve quality, reasoning, correctness, or visual detail. Never begin a large one-shot response expecting the host to repair an arbitrary cutoff later.',
@@ -95,24 +108,34 @@ function buildClassifyIntentSystemPrompt(animationCapabilityMode = "auto") {
 }
 
 function buildClassifyIntentUserMessage(userPrompt, historyEntries) {
-  const historyBlock = historyEntries.length
-    ? historyEntries
-        .map((entry, index) => `${index + 1}. turnId=${entry.turnId} :: ${entry.summary || "(no summary)"}`)
-        .join("\n")
-    : "(no prior turns)";
-  return [`User's newest message:\n${String(userPrompt || "").trim()}`, "", "Prior turns:", historyBlock].join("\n");
+  return JSON.stringify(
+    {
+      newestUserMessage: String(userPrompt || "").trim(),
+      priorSceneTurns: historyEntries.map((entry, index) => ({
+        turnId: entry.turnId,
+        chronologicalIndex: index + 1,
+        isLatestScene: index === historyEntries.length - 1,
+        mode: entry.mode,
+        targetTurnId: entry.targetTurnId,
+        sceneTitle: entry.sceneTitle,
+        originalRequest: entry.userPrompt,
+        resultSummary: entry.summary
+      }))
+    },
+    null,
+    2
+  );
 }
 
 /**
  * Classify whether the user's next chat message is a new-scene request or an adjustment of a
  * specific prior turn. Safe-by-default: any network/parse/validation failure resolves to
- * `{ intent: "generate", targetTurnId: null, generationStrategy: "single", estimatedSegments: 1 }` rather than throwing, since guessing wrong toward
- * "generate" is the least destructive failure mode for a caller (it never silently overwrites the
- * wrong prior scene).
+ * a marked fallback result rather than throwing. Chat hosts with prior scene context must inspect
+ * `classificationFailed` and avoid silently treating that fallback as a new-scene request.
  *
  * @param {{ userPrompt: string, history?: Array<{turnId: string, summary: string}> }} input
  * @param {object} [options] requestChatCompletion transport options (provider/apiKey/model/baseUrl/...)
- * @returns {Promise<{ intent: "generate"|"adjust", targetTurnId: string|null, note: string, generationStrategy: "single"|"segmented"|"compact", estimatedSegments: number }>}
+ * @returns {Promise<{ intent: "generate"|"adjust", targetTurnId: string|null, note: string, classificationFailed: boolean, generationStrategy: "single"|"segmented"|"compact", estimatedSegments: number }>}
  */
 async function classifyTurnIntent(input = {}, options = {}) {
   const userPrompt = String(input?.userPrompt || "").trim();
@@ -121,6 +144,7 @@ async function classifyTurnIntent(input = {}, options = {}) {
     intent: "generate",
     targetTurnId: null,
     note: "",
+    classificationFailed: true,
     generationStrategy: "single",
     estimatedSegments: 1,
     selectedCapabilityIds: [],
@@ -143,7 +167,15 @@ async function classifyTurnIntent(input = {}, options = {}) {
     }
     const validIds = new Set(historyEntries.map((entry) => entry.turnId));
     const rawTargetId = typeof parsed?.targetTurnId === "string" ? parsed.targetTurnId.trim() : "";
-    const targetTurnId = intent === "adjust" && validIds.has(rawTargetId) ? rawTargetId : null;
+    const latestTurnId = historyEntries.length ? historyEntries[historyEntries.length - 1].turnId : null;
+    // Once the model has semantically chosen "adjust", a missing or slightly malformed target id
+    // must not reverse that decision into "generate". The negotiation prompt explicitly defines
+    // the latest scene as the ambiguity fallback, so enforce that contract here.
+    const targetTurnId = intent === "adjust"
+      ? validIds.has(rawTargetId)
+        ? rawTargetId
+        : latestTurnId
+      : null;
     const note = typeof parsed?.note === "string" ? parsed.note.slice(0, 300) : "";
     const rawEstimatedSegments = Number(parsed?.estimatedSegments);
     const boundedSegments = Number.isFinite(rawEstimatedSegments)
@@ -165,9 +197,18 @@ async function classifyTurnIntent(input = {}, options = {}) {
         ? false
         : parsed?.requiresAnimation === true;
     if (intent === "adjust" && !targetTurnId) {
-      return { ...fallback, note: "fallback: model chose adjust but named an unknown targetTurnId" };
+      return { ...fallback, note: "fallback: model chose adjust without any prior scene turn" };
     }
-    return { intent, targetTurnId, note, generationStrategy, estimatedSegments, selectedCapabilityIds, requiresAnimation };
+    return {
+      intent,
+      targetTurnId,
+      note,
+      classificationFailed: false,
+      generationStrategy,
+      estimatedSegments,
+      selectedCapabilityIds,
+      requiresAnimation
+    };
   } catch (error) {
     if (error?.code === "BUILTIN_MODERATION_BLOCKED") {
       throw error;

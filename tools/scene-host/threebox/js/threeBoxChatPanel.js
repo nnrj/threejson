@@ -526,7 +526,7 @@ export function createThreeBoxChatPanel(host = {}) {
       const initialTextEl = appendMessage("assistant", "");
       const initialStreaming = createStreamingBlock();
       initialStreaming.processing(
-        t("threebox.chat.preparingRequest", "正在分析需求并与 AI 协商生成方案…")
+        t("threebox.chat.preparingRequest", "正在结合会话上下文分析请求，并判断是新建还是调整场景…")
       );
       appendToBody(initialTextEl, initialStreaming.el);
       let initialActivityState = "pending";

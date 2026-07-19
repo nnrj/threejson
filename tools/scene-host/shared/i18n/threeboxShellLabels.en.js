@@ -1,4 +1,5 @@
 export const THREEBOX_SHELL_LABELS_EN = {
+  "threebox.app.intentClassificationFailed": "Could not reliably determine whether this request should create a new scene or adjust the current one. This turn was stopped to avoid generating the wrong scene. Please retry.",
   "threebox.shell.subtitle": "Powered by ThreeJSON",
   "threebox.shell.pinLabel": "Pin sidebar",
   "threebox.shell.aiConfig": "AI Settings",
@@ -67,7 +68,7 @@ export const THREEBOX_SHELL_LABELS_EN = {
   "threebox.app.templateTouchLabel": "Template: {label}",
   "threebox.app.processingFailed": "Processing failed: {error}",
   "threebox.chat.preparingScene": "JSON generated. Parsing and preparing the scene preview (no tokens used)…",
-  "threebox.chat.preparingRequest": "Analyzing your request and negotiating a generation plan with AI…",
+  "threebox.chat.preparingRequest": "Analyzing this request with conversation context and deciding whether to create or adjust a scene…",
   "threebox.chat.preparingAction": "Preparing…",
   "threebox.chat.adjusting": "Adjusting…",
   "threebox.chat.noProcessingResult": "Processing finished without a displayable result.",
