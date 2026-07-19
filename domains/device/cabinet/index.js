@@ -25,11 +25,20 @@ import {
   getSlotOccupancy,
   removeDevice
 } from "./cabinetRuntime.js";
+import { flattenDomainRecord } from "../deviceBoxFactory.js";
+
+export function normalizeCabinetDomainRecord(record) {
+  const cabinetRecord = flattenDomainRecord(record);
+  if (typeof record?.threeJsonId === "string" && record.threeJsonId.trim()) {
+    cabinetRecord.threeJsonId = record.threeJsonId.trim();
+  }
+  return cabinetRecord;
+}
 
 function resolveCabinetDomainModel(record, scene) {
   const handler = record.handler ?? "deployCabinet";
   if (handler === "deployCabinet" || handler === "createCabinet") {
-    deployCabinet(record, scene);
+    deployCabinet(normalizeCabinetDomainRecord(record), scene);
     return;
   }
   log.warn("[device.cabinet] unknown handler:", handler);

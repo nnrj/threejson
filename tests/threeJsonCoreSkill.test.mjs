@@ -15,6 +15,9 @@ import {
   evaluateCapabilityFit,
   matchIntentSignals
 } from "../core/ai/sceneCapability.js";
+import {
+  THREE_JSON_DOMAIN_CAPABILITY_INDEX
+} from "../core/ai/sceneDomainCapability.js";
 
 test("generation system prompt covers core ThreeJSON capabilities", () => {
   const prompt = buildSceneGenerationSystemPrompt();
@@ -82,6 +85,31 @@ test("scene text guidance prefers visible SDF TextItem records", () => {
 
   const outline = buildSceneOutlineSystemPrompt({ selectedCapabilityIds: ["sceneText"] });
   assert.match(outline, /Negotiated ThreeJSON scene-text capability/);
+});
+
+test("negotiated device domain injects correct machine-room scale and layout guidance", () => {
+  const basePrompt = buildSceneGenerationSystemPrompt();
+  assert.doesNotMatch(basePrompt, /Negotiated device-domain capability/);
+  assert.doesNotMatch(basePrompt, /"domain":"device\.cabinet"[^\n]+"payload"/);
+  assert.match(basePrompt, /coherent spatial scale/);
+
+  for (const selectedCapabilityIds of [["deviceDomain"], ["deviceCabinetDomain"]]) {
+    const prompt = buildSceneGenerationSystemPrompt({ selectedCapabilityIds });
+    assert.match(prompt, /Negotiated device-domain capability/);
+    assert.match(prompt, /width 6, length 12, height 20/);
+    assert.match(prompt, /distinct x\/z center/);
+    assert.match(prompt, /mental collision pass/);
+    assert.match(prompt, /"handler":"deployCabinet"/);
+    assert.doesNotMatch(prompt, /"handler":"deployCabinet"[^\n]+"payload"/);
+  }
+});
+
+test("domain negotiation index exposes specific domain and subdomain capability ids", () => {
+  assert.match(THREE_JSON_DOMAIN_CAPABILITY_INDEX, /deviceCabinetDomain \(runtime domain device\.cabinet\)/);
+  assert.match(THREE_JSON_DOMAIN_CAPABILITY_INDEX, /deviceAirConditionerDomain \(device\.airConditioner\)/);
+  assert.match(THREE_JSON_DOMAIN_CAPABILITY_INDEX, /statPieDomain/);
+  assert.match(THREE_JSON_DOMAIN_CAPABILITY_INDEX, /natureWaterDomain/);
+  assert.match(THREE_JSON_DOMAIN_CAPABILITY_INDEX, /most specific id/);
 });
 
 test("generation prompt hides particle capabilities when particle intent is absent", () => {
@@ -157,6 +185,67 @@ test("matchIntentSignals finds lighting and declarative animation intents", () =
   const signals = matchIntentSignals("make the scene brighter with a point light and rotate the sun");
   assert.ok(signals.some((s) => s.id === "lighting"));
   assert.ok(signals.some((s) => s.id === "declarativeAnimation"));
+});
+
+test("matchIntentSignals recognizes Chinese machine-room domain intent", () => {
+  const signals = matchIntentSignals("生成一个有多排机柜和精密空调的数据中心机房");
+  assert.ok(signals.some((signal) => signal.id === "deviceDomain"));
+});
+
+test("device-domain capability review catches overlapping cabinets and undersized floors", () => {
+  const scene = {
+    objectList: [
+      {
+        threeJsonId: "floor-1",
+        objType: "floor",
+        geometry: { width: 10, height: 0.5, depth: 10 },
+        position: { x: 0, y: -0.25, z: 0 }
+      },
+      {
+        threeJsonId: "rack-1",
+        objType: "domain",
+        domain: "device.cabinet",
+        geometry: { width: 6, length: 12, height: 20 },
+        position: { x: 0, y: 0, z: 0 }
+      },
+      {
+        threeJsonId: "rack-2",
+        objType: "domain",
+        domain: "device.cabinet",
+        payload: {
+          geometry: { width: 6, length: 12, height: 20 },
+          position: { x: 0, y: 0, z: 0 }
+        }
+      }
+    ]
+  };
+  const fit = evaluateCapabilityFit("生成一个有两排机柜的数据中心机房", scene);
+  assert.equal(fit.ok, false);
+  assert.ok(fit.gaps.some((gap) => /non-overlapping|intersect/i.test(gap)));
+  assert.ok(fit.gaps.some((gap) => /floor.*contain|cabinet-grid bounds/i.test(gap)));
+});
+
+test("device-domain capability review accepts a contained non-overlapping rack grid", () => {
+  const scene = {
+    objectList: [
+      {
+        threeJsonId: "floor-1",
+        objType: "floor",
+        geometry: { width: 50, height: 0.5, depth: 44 },
+        position: { x: 0, y: -0.25, z: 0 }
+      },
+      ...[-6, 0, 6].map((x, index) => ({
+        threeJsonId: `rack-${index + 1}`,
+        objType: "domain",
+        domain: "device.cabinet",
+        geometry: { width: 6, length: 12, height: 20 },
+        position: { x, y: 0, z: -10 }
+      }))
+    ]
+  };
+  const fit = evaluateCapabilityFit("生成一个有一排机柜的数据中心机房", scene);
+  assert.equal(fit.ok, true);
+  assert.deepEqual(fit.gaps, []);
 });
 
 test("buildIntentHints maps css3d panel prompt", () => {

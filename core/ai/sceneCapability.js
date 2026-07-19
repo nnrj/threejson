@@ -234,28 +234,28 @@ const INTENT_SIGNALS = [
   {
     id: "statDomain",
     patterns: [/stat|chart|dashboard|gauge|pie chart|ring chart|bar chart|line chart|ECharts/i],
-    lists: ["domainModelList"],
+    lists: ["domainModelList", "objectList"],
     objTypes: ["domain", "statBar", "statPanel", "statPie", "statRing", "statLine"],
     note: "Use stat domain records (stat.bar/grid/panel/chart/line/pie/ring) for dashboards and charts."
   },
   {
     id: "deviceDomain",
-    patterns: [/cabinet|rack|server|UPS|switch|air conditioner|data center/i],
-    lists: ["domainModelList"],
+    patterns: [/cabinet|rack|server|UPS|switch|air conditioner|data center|机房|数据中心|机柜|服务器|交换机|不间断电源|精密空调/i],
+    lists: ["domainModelList", "objectList"],
     objTypes: ["domain", "deviceCabinet", "server", "ups", "switch"],
-    note: "Use device domain records for cabinets, servers, UPS, switches, and data-center equipment."
+    note: "Use device domain records for cabinets, servers, UPS, switches, and data-center equipment; keep one coherent room/equipment scale and give repeated cabinets distinct non-overlapping positions."
   },
   {
     id: "natureDomain",
     patterns: [/sky|water|ocean|atmosphere|sunset|dawn|nature/i],
-    lists: ["domainModelList", "shaderSurfaceList"],
+    lists: ["domainModelList", "shaderSurfaceList", "objectList"],
     objTypes: ["domain", "shaderSurface"],
     note: "Use nature.sky / nature.water domains or shaderSurface for sky, water, ocean, and atmosphere scenes."
   },
   {
     id: "portDomain",
     patterns: [/port|harbor|dock crane|container yard|quay crane/i],
-    lists: ["domainModelList"],
+    lists: ["domainModelList", "objectList"],
     objTypes: ["domain"],
     note: "Use port domain records such as handler dockCrane for port/logistics scenes."
   },
@@ -441,6 +441,116 @@ function signalSatisfied(signal, usage) {
   return listHit && typeHit;
 }
 
+function collectTopLevelSceneRecords(sceneObj) {
+  const records = [];
+  if (Array.isArray(sceneObj?.objectList)) {
+    records.push(...sceneObj.objectList);
+  }
+  const worldInfo = sceneObj?.worldInfo;
+  if (worldInfo && typeof worldInfo === "object") {
+    for (const value of Object.values(worldInfo)) {
+      if (Array.isArray(value)) {
+        records.push(...value);
+      }
+    }
+  }
+  return records.filter((record) => record && typeof record === "object");
+}
+
+function readDomainRecordField(record, key) {
+  if (record?.[key] != null) {
+    return record[key];
+  }
+  if (record?.payload && typeof record.payload === "object" && record.payload[key] != null) {
+    return record.payload[key];
+  }
+  if (Array.isArray(record?.items) && record.items[0]?.[key] != null) {
+    return record.items[0][key];
+  }
+  return undefined;
+}
+
+function readPositiveNumber(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : fallback;
+}
+
+function readFiniteNumber(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
+function analyzeDeviceCabinetLayout(sceneObj) {
+  const records = collectTopLevelSceneRecords(sceneObj);
+  const cabinets = records
+    .filter((record) => {
+      const domain = String(record.domain || "").trim();
+      const objType = String(record.objType || "").trim().toLowerCase();
+      return domain === "device.cabinet" || objType === "devicecabinet";
+    })
+    .map((record) => {
+      const geometry = readDomainRecordField(record, "geometry") || {};
+      const position = readDomainRecordField(record, "position") || {};
+      return {
+        x: readFiniteNumber(position.x),
+        z: readFiniteNumber(position.z),
+        width: readPositiveNumber(geometry.width, 6),
+        depth: readPositiveNumber(geometry.length ?? geometry.depth, 12)
+      };
+    });
+
+  if (cabinets.length === 0) {
+    return [];
+  }
+
+  const gaps = [];
+  let overlaps = false;
+  for (let i = 0; i < cabinets.length && !overlaps; i += 1) {
+    for (let j = i + 1; j < cabinets.length; j += 1) {
+      const a = cabinets[i];
+      const b = cabinets[j];
+      const overlapX = Math.abs(a.x - b.x) < (a.width + b.width) / 2 - 1e-6;
+      const overlapZ = Math.abs(a.z - b.z) < (a.depth + b.depth) / 2 - 1e-6;
+      if (overlapX && overlapZ) {
+        overlaps = true;
+        break;
+      }
+    }
+  }
+  if (overlaps) {
+    gaps.push(
+      "Re-layout device.cabinet records on distinct non-overlapping x/z centers; repeated full-size cabinets currently intersect or share a position."
+    );
+  }
+
+  const floors = records.filter(
+    (record) => String(record.objType || "").trim().toLowerCase() === "floor"
+  );
+  const containsAllCabinets = floors.some((floor) => {
+    const geometry = floor.geometry || {};
+    const position = floor.position || {};
+    const width = readPositiveNumber(geometry.width, 0);
+    const depth = readPositiveNumber(geometry.depth ?? geometry.length, 0);
+    if (!(width > 0 && depth > 0)) {
+      return false;
+    }
+    const x = readFiniteNumber(position.x);
+    const z = readFiniteNumber(position.z);
+    return cabinets.every((cabinet) =>
+      cabinet.x - cabinet.width / 2 >= x - width / 2 - 1e-6 &&
+      cabinet.x + cabinet.width / 2 <= x + width / 2 + 1e-6 &&
+      cabinet.z - cabinet.depth / 2 >= z - depth / 2 - 1e-6 &&
+      cabinet.z + cabinet.depth / 2 <= z + depth / 2 + 1e-6
+    );
+  });
+  if (!containsAllCabinets) {
+    gaps.push(
+      "Size and position a floor from the complete cabinet-grid bounds plus aisle/wall margins; the current floor is missing or does not contain every cabinet footprint."
+    );
+  }
+  return gaps;
+}
+
 /**
  * @param {string} prompt
  * @param {object} sceneObj
@@ -473,6 +583,9 @@ function evaluateCapabilityFit(prompt, sceneObj) {
     if (!signalSatisfied(signal, usage)) {
       gaps.push(signal.note);
     }
+  }
+  if (matched.some((signal) => signal.id === "deviceDomain")) {
+    gaps.push(...analyzeDeviceCabinetLayout(sceneObj));
   }
 
   return {

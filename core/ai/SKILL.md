@@ -31,6 +31,8 @@ Generation/update prompts (`threeJsonCoreSkill.js`) include a compact runtime in
 
 Use `THREE_JSON_AGENT_CAPABILITY_INDEX` as the token-cheap multi-turn lookup surface. Do not paste all docs into every turn; use the index first, then retrieve docs/examples only for a specific capability.
 
+Business domains have their own compact lookup ids (`deviceCabinetDomain`, `deviceUpsDomain`, `statBarDomain`, `natureSkyDomain`, and so on). These negotiation ids are deliberately distinct from runtime domain strings such as `device.cabinet`. Negotiation should select the most specific relevant id; the generation prompt then injects only that domain's detailed contract. For machine-room/data-center scenes, device-domain guidance requires a coherent room/equipment scale, derives floors and walls from rack-grid bounds, and gives every full-size cabinet a distinct non-overlapping position. A practical cabinet geometry is `{ width: 6, length: 12, height: 20 }` with base-anchored `position.y: 0`; do not mix that with a generic 10-unit room. Prefer direct domain-specific fields on standard `objectList` records so `threeJsonId`, geometry, and position remain unambiguous.
+
 ## Core Interfaces
 
 Runtime exports: npm **`threejson`** (built-in domains + core) or **`threejson/core`**; in-repo [`../index.js`](../index.js) / [`../core/index.js`](../core/index.js) (pure core). AI helpers are re-exported from core; [`index.js`](./index.js) in this folder remains an internal aggregator and browser `window.ThreeJsonAI` side-effect entry.

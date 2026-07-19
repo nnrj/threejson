@@ -4,6 +4,7 @@
  * Keep this file concise: it is sent to LLMs more often than human docs. Longer explanations and
  * runnable examples stay in docs/ and assets/json/tutorial/.
  */
+import { THREE_JSON_DOMAIN_CAPABILITY_INDEX } from "./sceneDomainCapability.js";
 
 const THREE_JSON_AGENT_CAPABILITY_INDEX_BASE = `
 ThreeJSON capability index (choose the most appropriate/specific feature for what's described; this is not a checklist):
@@ -42,8 +43,10 @@ Effects and media:
 
 Domains:
 - domainModelList / objType domain dispatches built-in domains: floor, wall, glass, door, box, nativeThree, weather(.rain/.wind), nature(.sky/.water), stat(.bar/.grid/.panel/.chart/.line/.pie/.ring), device(.cabinet/.server/.ups/.switch/.airConditioner), port, sceneHighlight.
-- A domain item is a record like { objType:"domain", domain:"device.cabinet", handler:"createCabinet", payload:{...} } or { domain:"stat.bar", handler:"createStatBars", items:[...] }. It is not a box record inside domainModelList.
+- A domain item is a record like { objType:"domain", domain:"device.cabinet", handler:"deployCabinet", geometry:{width:6,length:12,height:20}, position:{x:0,y:0,z:0} } or { domain:"stat.bar", handler:"createStatBars", items:[...] }. Domain-specific fields may be direct or use payload only when that domain documents it. It is not a box record inside domainModelList.
 - Use domain records when the user asks for business objects (cabinet, server rack, UPS, switch, port crane, stat panel/chart, sky/water/weather) instead of hand-building only boxes.
+
+${THREE_JSON_DOMAIN_CAPABILITY_INDEX.trim()}
 
 Interaction and lifecycle:
 - Use events on deployable objects for click/dblclick/pointer/keyboard plus scene.ready, scene.dispose, object.ready, object.dispose.

@@ -136,6 +136,36 @@ test("fetchReferenceMaterial maps lighting and animation signals to focused refe
   }
 });
 
+test("device-domain lookup selects the cabinet example instead of the first business example", async () => {
+  const restore = installFetchMock({
+    "https://example.test/assets/json/demo-show/manifest.json": JSON.stringify([
+      {
+        section: "business-domains",
+        sectionTitleEn: "Business Domains",
+        docLinks: [{ file: "domains.md" }],
+        items: [
+          { id: "box", json: "assets/json/demo-show/business-domains/box.json" },
+          { id: "device-cabinet", json: "assets/json/demo-show/business-domains/device-cabinet.json" }
+        ]
+      }
+    ]),
+    "https://example.test/docs/en/domains.md": "# Domains\nUse qualified domain ids.",
+    "https://example.test/assets/json/demo-show/business-domains/device-cabinet.json":
+      '{"threeJsonId":"rack-demo","objectList":[{"threeJsonId":"rack-1","objType":"domain","domain":"device.cabinet","handler":"deployCabinet","geometry":{"width":6,"length":12,"height":20},"position":{"x":0,"y":0,"z":0}}]}'
+  });
+  try {
+    const result = await fetchReferenceMaterial([{ id: "deviceCabinetDomain" }], {
+      resolveUrl,
+      locale: "en-US"
+    });
+    assert.match(result, /device-cabinet/);
+    assert.match(result, /deployCabinet/);
+    assert.doesNotMatch(result, /business-domains\/box\.json/);
+  } finally {
+    restore();
+  }
+});
+
 test("fetchReferenceMaterial degrades to '' on fetch failure, never throws", async () => {
   const signals = matchIntentSignals("add a click event handler");
   const originalFetch = globalThis.fetch;

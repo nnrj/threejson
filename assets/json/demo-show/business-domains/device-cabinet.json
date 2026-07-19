@@ -14,7 +14,7 @@
   },
   "worldInfo": {
     "domainModelList": [
-      { "domain": "device.cabinet", "handler": "createCabinet", "payload": { "name": "cabinet-demo", "label": "机柜 13", "position": { "x": 0, "y": 0, "z": 0 } } }
+      { "threeJsonId": "cabinet-demo", "objType": "domain", "domain": "device.cabinet", "handler": "deployCabinet", "name": "cabinet", "label": "机柜 13", "geometry": { "width": 6, "length": 12, "height": 20 }, "position": { "x": 0, "y": 0, "z": 0 } }
     ]
   },
   "threeJsonId": "business-domains-device-cabinet"

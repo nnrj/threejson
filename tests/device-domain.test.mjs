@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import { generatedBusinessDomainDescriptors } from "../builtins/builtinDomainManifest.generated.js";
 import { createCabinetJson } from "../domains/device/cabinet/cabinetFactory.js";
+import { normalizeCabinetDomainRecord } from "../domains/device/cabinet/index.js";
 import {
   computeDeviceCenterY,
   getUUsage,
@@ -45,6 +46,24 @@ test("createCabinetJson builds deviceCabinet group", () => {
   });
   assert.equal(json.objType, "deviceCabinet");
   assert.ok(Array.isArray(json.subScene) && json.subScene.length > 0);
+});
+
+test("device.cabinet dispatcher preserves payload position and outer identity", () => {
+  const normalized = normalizeCabinetDomainRecord({
+    threeJsonId: "rack-payload-1",
+    objType: "domain",
+    domain: "device.cabinet",
+    handler: "createCabinet",
+    payload: {
+      name: "cabinet",
+      geometry: { width: 6, length: 12, height: 20 },
+      position: { x: 18, y: 0, z: -12 }
+    }
+  });
+  assert.equal(normalized.threeJsonId, "rack-payload-1");
+  assert.deepEqual(normalized.geometry, { width: 6, length: 12, height: 20 });
+  assert.deepEqual(normalized.position, { x: 18, y: 0, z: -12 });
+  assert.equal(normalized.payload, undefined);
 });
 
 test("createUpsJson with glass door", () => {

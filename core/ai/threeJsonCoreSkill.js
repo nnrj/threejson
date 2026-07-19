@@ -7,6 +7,7 @@ import {
   THREE_JSON_AGENT_EXAMPLE_INDEX,
   buildAgentCapabilityIndex
 } from "./sceneCapabilityIndex.js";
+import { resolveSelectedDomainCapabilityBlocks } from "./sceneDomainCapability.js";
 
 const THREE_JSON_LIST_PLACEMENT = `
 Where to put objects (friendly worldInfo lists — pick the list that matches the shape/role):
@@ -125,7 +126,7 @@ Rules:
 
 Common patterns:
 - Device cabinet/rack:
-  { "objType":"domain", "domain":"device.cabinet", "handler":"createCabinet", "payload": { "name":"rack-a", "label":"Rack A", "position": { "x":0, "y":0, "z":0 } } }
+  { "threeJsonId":"rack-a", "objType":"domain", "domain":"device.cabinet", "handler":"deployCabinet", "name":"cabinet", "label":"Rack A", "geometry": { "width":6, "length":12, "height":20 }, "position": { "x":0, "y":0, "z":0 } }
 - Stat bars/dashboard:
   { "objType":"domain", "domain":"stat.bar", "handler":"createStatBars", "items":[ { "name":"cpu", "value":72, "max":100, "label":"CPU", "position":{ "x":-10, "y":0, "z":0 } } ] }
 - Nature sky/water:
@@ -192,6 +193,7 @@ Scene authoring rules:
     - Default to ambient + directional for a scene's general illumination (reliable, simple); only add point/spot lights for localized effects (a lamp, a glowing object, a spotlight beam), and always give them intensity in the tens-or-higher range above, never the ambient/directional range.
     - Every standalone/new scene should include at least one ambient and one directional light unless the user's request clearly implies otherwise (e.g. "in total darkness except for one lamp"). A good default is ambient 0.45-0.65 plus directional 0.9-1.2 from above/front/side.
 15. Particle emitters are opt-in effects, not default scene dressing. Do not include particleEmitter/particleList unless the prompt or reference clearly calls for particles/weather/smoke/magic/dust/sparks/starfield.
+16. Keep one coherent spatial scale across the whole scene. Estimate the real relative dimensions of the largest container (room/site/floor) and its contents before writing records; size the support surface from the occupied bounds plus margins, not from an unrelated primitive example. Repeated full-size objects must have distinct planned positions. Before output, check object footprints for accidental overlap, confirm that walls/ceilings contain their contents, and fit camera position/target to the complete scene bounds. Domain defaults and generic primitive examples may use different scales, so never mix them blindly.
 `;
 
 const THREE_JSON_ONLINE_TEXTURE_RULE = `
@@ -425,7 +427,7 @@ A) Grounded primitives:
 {"version":"next","threeJsonId":"demo-primitives","sceneConfig":{"scene":{"background":"#222222"},"camera":{"fov":60,"position":{"x":18,"y":12,"z":22}},"controls":{"target":{"x":0,"y":2,"z":0}},"lights":[{"type":"ambient","intensity":0.5},{"type":"directional","intensity":1,"position":{"x":10,"y":16,"z":12}}]},"objectList":[{"threeJsonId":"floor-1","objType":"floor","geometry":{"width":20,"height":0.4,"depth":16},"position":{"x":0,"y":-0.2,"z":0},"material":{"type":"standard","color":"#3a4554"}},{"threeJsonId":"sphere-1","objType":"sphere","geometry":{"radius":2},"position":{"x":-3,"y":2,"z":0},"material":{"type":"standard","color":"#409eff"}},{"threeJsonId":"column-1","objType":"cylinder","geometry":{"radiusTop":1.2,"radiusBottom":1.2,"height":4},"position":{"x":3,"y":2,"z":0},"material":{"type":"standard","color":"#e6a23c"}}]}
 
 B) Domain object and explicitly panel-backed sign:
-{"version":"next","threeJsonId":"demo-cabinet","sceneConfig":{"camera":{"fov":55,"position":{"x":12,"y":9,"z":15}},"controls":{"target":{"x":0,"y":2,"z":0}},"lights":[{"type":"ambient","intensity":0.55},{"type":"directional","intensity":1,"position":{"x":8,"y":14,"z":10}}]},"objectList":[{"threeJsonId":"rack-a","objType":"domain","domain":"device.cabinet","handler":"createCabinet","payload":{"name":"rack-a","label":"Rack A","position":{"x":0,"y":0,"z":0}}},{"threeJsonId":"rack-label","objType":"infoPanel","text":"Rack A","panelBoxType":"box","panel":{"position":{"x":0,"y":5,"z":0},"geometry":{"width":3,"height":1,"depth":0.1}}}]}
+{"version":"next","threeJsonId":"demo-cabinet","sceneConfig":{"camera":{"fov":55,"position":{"x":24,"y":18,"z":28}},"controls":{"target":{"x":0,"y":10,"z":0}},"lights":[{"type":"ambient","intensity":0.55},{"type":"directional","intensity":1,"position":{"x":18,"y":28,"z":20}}]},"objectList":[{"threeJsonId":"rack-floor","objType":"floor","geometry":{"width":30,"height":0.4,"depth":28},"position":{"x":0,"y":-0.2,"z":0},"material":{"type":"standard","color":"#454b54"}},{"threeJsonId":"rack-a","objType":"domain","domain":"device.cabinet","handler":"deployCabinet","name":"cabinet","label":"Rack A","geometry":{"width":6,"length":12,"height":20},"position":{"x":0,"y":0,"z":0}},{"threeJsonId":"rack-label","objType":"infoPanel","text":"Rack A","panelBoxType":"box","panel":{"position":{"x":0,"y":22,"z":0},"geometry":{"width":5,"height":1.5,"depth":0.1}}}]}
 
 C) Interactive panel:
 {"version":"next","threeJsonId":"demo-panel","sceneConfig":{"scene":{"background":"#1a1a2e"},"camera":{"fov":55,"position":{"x":0,"y":6,"z":12}},"controls":{"target":{"x":0,"y":2,"z":0}},"lights":[{"type":"ambient","intensity":0.5},{"type":"directional","intensity":1,"position":{"x":5,"y":10,"z":8}}]},"objectList":[{"threeJsonId":"panel-1","objType":"css3dPanel","html":"<button>Start</button>","panel":{"position":{"x":0,"y":2,"z":0},"geometry":{"width":4,"height":3,"depth":0.1}}}]}
@@ -496,6 +498,7 @@ function buildSceneCapabilityCatalog(options = {}) {
   ) {
     blocks.push(THREE_JSON_SCENE_TEXT_CAPABILITY.trim());
   }
+  blocks.push(...resolveSelectedDomainCapabilityBlocks(options.selectedCapabilityIds));
   return blocks.map((block) => filterParticleCapabilityLines(block, options)).join("\n\n");
 }
 

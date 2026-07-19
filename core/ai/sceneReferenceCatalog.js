@@ -49,6 +49,51 @@ const SIGNAL_TO_SECTIONS = {
   portDomain: ["business-domains"]
 };
 
+const DOMAIN_PREFIX_TO_SECTIONS = [
+  ["domain.device.", ["business-domains"]],
+  ["domain.stat.", ["business-domains"]],
+  ["domain.nature.", ["business-domains"]],
+  ["domain.weather.", ["business-domains"]]
+];
+
+const SIGNAL_TO_EXAMPLE_IDS = {
+  deviceDomain: ["device-cabinet"],
+  deviceCabinetDomain: ["device-cabinet"],
+  deviceServerDomain: ["device-cabinet"],
+  deviceSwitchDomain: ["device-cabinet"],
+  deviceUpsDomain: ["device-cabinet"],
+  deviceAirConditionerDomain: ["device-cabinet"],
+  "domain.device.cabinet": ["device-cabinet"],
+  "domain.device.server": ["device-cabinet"],
+  "domain.device.switch": ["device-cabinet"],
+  "domain.device.ups": ["device-cabinet"],
+  "domain.device.airConditioner": ["device-cabinet"],
+  statDomain: ["stat-bar"],
+  "domain.stat.bar": ["stat-bar"],
+  natureDomain: ["nature-sky"],
+  "domain.nature.sky": ["nature-sky"],
+  portDomain: ["port-dock-crane"],
+  "domain.port": ["port-dock-crane"]
+};
+
+function resolveSectionsForSignal(signalId) {
+  if (SIGNAL_TO_SECTIONS[signalId]) {
+    return SIGNAL_TO_SECTIONS[signalId];
+  }
+  if (signalId === "domain.port") {
+    return ["business-domains"];
+  }
+  if (/^(?:device(?:Cabinet|Server|Switch|Ups|AirConditioner)|stat(?:Bar|Grid|Panel|Chart|Line|Pie|Ring)|nature(?:Sky|Water)|weather(?:Rain|Wind)|nativeThree|sceneHighlight|building)Domain$/.test(signalId)) {
+    return ["business-domains"];
+  }
+  for (const [prefix, sections] of DOMAIN_PREFIX_TO_SECTIONS) {
+    if (signalId.startsWith(prefix)) {
+      return sections;
+    }
+  }
+  return null;
+}
+
 const MAX_SECTIONS_PER_TURN = 2;
 const MAX_DOC_CHARS = 2400;
 const MAX_EXAMPLE_CHARS = 3000;
@@ -132,11 +177,19 @@ export async function fetchReferenceMaterial(matchedSignals, options = {}) {
   }
 
   const sectionIds = new Set();
+  const preferredExampleIds = new Set();
   for (const signal of matchedSignals) {
-    const mapped = SIGNAL_TO_SECTIONS[signal?.id];
+    const signalId = String(signal?.id || "").trim();
+    const mapped = resolveSectionsForSignal(signalId);
     if (mapped) {
       for (const sectionId of mapped) {
         sectionIds.add(sectionId);
+      }
+    }
+    const examples = SIGNAL_TO_EXAMPLE_IDS[signalId];
+    if (examples) {
+      for (const exampleId of examples) {
+        preferredExampleIds.add(exampleId);
       }
     }
   }
@@ -167,7 +220,9 @@ export async function fetchReferenceMaterial(matchedSignals, options = {}) {
       }
 
       const exampleItem = Array.isArray(section.items)
-        ? section.items.find((item) => typeof item.json === "string" && item.json)
+        ? section.items.find(
+          (item) => preferredExampleIds.has(item?.id) && typeof item.json === "string" && item.json
+        ) || section.items.find((item) => typeof item.json === "string" && item.json)
         : null;
       if (exampleItem) {
         parts.push(
