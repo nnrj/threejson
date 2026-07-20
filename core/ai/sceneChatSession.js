@@ -40,7 +40,7 @@ const SCENE_TITLE_UNSAFE_CHARS = /[\\/:*?"<>|]/g;
 
 /** Keep only chat-completion transport options (avoid leaking unrelated caller options into the HTTP body). */
 function pickChatCompletionOptions(source, fallbackMaxTokens) {
-  const keys = ["provider", "apiKey", "model", "baseUrl", "temperature", "signal", "threeBoxTurnContext"];
+  const keys = ["provider", "apiKey", "model", "baseUrl", "temperature", "signal", "threeBoxTurnContext", "userId"];
   const out = {};
   for (const k of keys) {
     if (source && Object.prototype.hasOwnProperty.call(source, k)) {
@@ -210,7 +210,21 @@ async function classifyTurnIntent(input = {}, options = {}) {
       requiresAnimation
     };
   } catch (error) {
-    if (error?.code === "BUILTIN_MODERATION_BLOCKED") {
+    // Transport/API failures already carry structured status and provider error metadata for the
+    // host UI. Do not turn them into an intent-classification fallback, otherwise a moderation
+    // ban, quota error, or invalid credential is mislabeled as "could not determine operation".
+    if (
+      Number.isFinite(Number(error?.httpStatus))
+      || [
+        "BUILTIN_MODERATION_BLOCKED",
+        "BUILTIN_SAFETY_WARNING",
+        "BUILTIN_DEVICE_BANNED",
+        "BUILTIN_DEVICE_PERMANENTLY_BANNED",
+        "BUILTIN_DEVICE_MUTED",
+        "BUILTIN_QUOTA_EXCEEDED",
+        "INVALID_API_KEY_HEADER_VALUE"
+      ].includes(error?.code)
+    ) {
       throw error;
     }
     return { ...fallback, note: `fallback: classification failed (${error?.message || error})` };

@@ -1052,6 +1052,33 @@ test("classifyTurnIntent marks provider or parse fallback instead of disguising 
   assert.match(result.note, /classification failed/);
 });
 
+test("classifyTurnIntent propagates structured moderation failures to the host UI", async () => {
+  globalThis.fetch = async () => ({
+    ok: false,
+    status: 403,
+    headers: new Headers(),
+    async text() {
+      return JSON.stringify({
+        error: "DEVICE_PERMANENTLY_BANNED",
+        message: "This device has been permanently banned for violating the safety policy.",
+        safety_enforcement: { action: "banned", permanent: true }
+      });
+    }
+  });
+
+  await assert.rejects(
+    classifyTurnIntent(
+      { userPrompt: "try again", history: [{ turnId: "turn-base", summary: "scene" }] },
+      { provider: "threebox-builtin", baseUrl: "https://builtin.example/v1", apiKey: "test-key" }
+    ),
+    (error) => {
+      assert.equal(error.code, "BUILTIN_DEVICE_PERMANENTLY_BANNED");
+      assert.equal(error.providerError.error, "DEVICE_PERMANENTLY_BANNED");
+      return true;
+    }
+  );
+});
+
 test("classifyTurnIntent returns model-negotiated capability ids and animation decision", async () => {
   const originalFetch = global.fetch;
   global.fetch = async () => ({

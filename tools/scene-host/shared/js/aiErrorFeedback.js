@@ -11,9 +11,13 @@ const PROVIDER_CODE_BY_CLIENT_CODE = {
 function parseEmbeddedPayload(message) {
   const text = String(message || "");
   const start = text.indexOf("{");
-  if (start < 0) return null;
+  const end = text.lastIndexOf("}");
+  if (start < 0 || end < start) return null;
   try {
-    const parsed = JSON.parse(text.slice(start));
+    // Wrapped errors such as `fallback: classification failed (... {json})` have a trailing
+    // parenthesis after the response body. Parse only the JSON span instead of requiring the
+    // entire remainder of the outer message to be JSON.
+    const parsed = JSON.parse(text.slice(start, end + 1));
     return parsed && typeof parsed === "object" ? parsed : null;
   } catch {
     return null;
@@ -24,7 +28,10 @@ function safeTechnicalDetail(error, payload, providerCode) {
   const lines = [];
   if (Number.isFinite(Number(error?.httpStatus))) lines.push(`HTTP ${Number(error.httpStatus)}`);
   if (providerCode) lines.push(`error: ${providerCode}`);
-  if (typeof payload?.message === "string" && payload.message.trim()) lines.push(`message: ${payload.message.trim()}`);
+  const providerMessage = typeof payload?.message === "string"
+    ? payload.message
+    : typeof payload?.error?.message === "string" ? payload.error.message : "";
+  if (providerMessage.trim()) lines.push(`message: ${providerMessage.trim()}`);
   const turnId = payload?.threebox_moderation?.turn_id;
   if (typeof turnId === "string" && turnId.trim()) lines.push(`turn_id: ${turnId.trim()}`);
   if (lines.length) return lines.join("\n");
@@ -35,7 +42,10 @@ function safeTechnicalDetail(error, payload, providerCode) {
  * status/code/general message/turn id into the expandable detail and ignores rule/keyword fields. */
 export function getAiErrorFeedback(error) {
   const payload = error?.providerError || parseEmbeddedPayload(error?.message);
-  const providerCode = String(payload?.error || PROVIDER_CODE_BY_CLIENT_CODE[error?.code] || "");
+  const payloadCode = typeof payload?.error === "string"
+    ? payload.error
+    : typeof payload?.error?.code === "string" ? payload.error.code : "";
+  const providerCode = String(payloadCode || PROVIDER_CODE_BY_CLIENT_CODE[error?.code] || "");
   const warningCount = Number(payload?.safety_enforcement?.warning_count);
   let tone = "error";
   let message;

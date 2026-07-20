@@ -31,6 +31,15 @@ test("AI error feedback distinguishes immediate and permanent bans", () => {
   assert.notEqual(immediate.message, permanent.message);
 });
 
+test("AI error feedback recovers a ban payload from a legacy classification wrapper", () => {
+  const feedback = getAiErrorFeedback(new Error(
+    'fallback: classification failed (AI request failed (403): {"error":"DEVICE_BANNED","message":"Prompt blocked.","matched_terms":["must-not-leak"]})'
+  ));
+  assert.equal(feedback.code, "DEVICE_BANNED");
+  assert.equal(feedback.tone, "banned");
+  assert.doesNotMatch(feedback.detail, /must-not-leak/);
+});
+
 test("AI error feedback gives unknown failures a friendly message", () => {
   const feedback = getAiErrorFeedback(new Error("low-level failure"));
   assert.equal(feedback.tone, "error");
