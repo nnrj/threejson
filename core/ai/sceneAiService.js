@@ -497,6 +497,7 @@ function stripChatTransportOptions(options = {}) {
   delete next.onSegmentProgress;
   delete next.segmentedOutput;
   delete next.onGenerationPhase;
+  delete next.onSceneDraft;
   delete next.onCompletionMetadata;
   delete next.outputFormat;
   delete next.friendlyMap;
@@ -912,6 +913,15 @@ async function generateSceneJsonString(prompt, options = {}) {
       parseSceneJsonString(sceneJsonString);
     } catch (_error) {
       return sceneJsonString;
+    }
+  }
+  if (typeof options.onSceneDraft === "function") {
+    try {
+      // Start host-side preview work without delaying the final post-processing path. Hosts may
+      // render this validated draft immediately and replace it with the reviewed final JSON later.
+      void Promise.resolve(options.onSceneDraft(sceneJsonString)).catch(() => {});
+    } catch {
+      /* A preview must never make generation fail. */
     }
   }
   sceneJsonString = await maybeApplyCapabilityReview(trimmedPrompt, sceneJsonString, {

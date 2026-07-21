@@ -699,6 +699,28 @@ test("generateSceneJsonString uses the single-response fast path for an ordinary
   assert.doesNotMatch(output, /THREEJSON_COMPLETE/);
 });
 
+test("generateSceneJsonString exposes a validated draft before final post-processing", async () => {
+  const scene = '{"threeJsonId":"draft-scene","objectList":[{"objType":"box"}]}'
+  const drafts = [];
+  globalThis.fetch = async () => ({
+    ok: true,
+    async json() {
+      return { choices: [{ message: { content: scene } }] };
+    }
+  });
+
+  const output = await generateSceneJsonString("a box", {
+    provider: "chatgpt",
+    apiKey: "test-key",
+    capabilityReview: false,
+    onSceneDraft: (draft) => drafts.push(draft)
+  });
+
+  assert.equal(drafts.length, 1);
+  assert.equal(JSON.parse(drafts[0]).threeJsonId, "draft-scene");
+  assert.equal(JSON.parse(output).threeJsonId, "draft-scene");
+});
+
 test("generateSceneJsonString does not silently turn a malformed ordinary response into 16 requests", async () => {
   let requestCount = 0;
   globalThis.fetch = async () => {

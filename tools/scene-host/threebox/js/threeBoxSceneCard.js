@@ -122,16 +122,43 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
    * `hidden` toggle) has actually settled — ResizeObserver's first callback fires with the real
    * computed size, whereas a fixed number of rAFs can still race ahead of layout in some cases. */
   function waitForStableSize(target) {
+    const readSize = () => {
+      const rect = target?.getBoundingClientRect?.();
+      const width = Math.round(rect?.width || target?.clientWidth || 0);
+      const height = Math.round(rect?.height || target?.clientHeight || 0);
+      return width > 0 && height > 0 ? { width, height } : null;
+    };
+    const immediate = readSize();
+    if (immediate) {
+      return Promise.resolve(immediate);
+    }
     return new Promise((resolve) => {
+      let settled = false;
+      const finish = (size) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        ro.disconnect();
+        clearTimeout(timeoutId);
+        resolve(size);
+      };
       const ro = new ResizeObserver((entries) => {
         const entry = entries[0];
         const box = entry.contentBoxSize?.[0];
         const width = box ? Math.round(box.inlineSize) : Math.round(entry.contentRect.width);
         const height = box ? Math.round(box.blockSize) : Math.round(entry.contentRect.height);
-        ro.disconnect();
-        resolve({ width: Math.max(1, width), height: Math.max(1, height) });
+        if (width > 0 && height > 0) {
+          finish({ width, height });
+        }
       });
       ro.observe(target);
+      // A hidden/collapsed chat container should not hold scene startup forever. The aspect-ratio
+      // CSS gives us a safe fallback until the live ResizeObserver catches the real size later.
+      const timeoutId = setTimeout(() => {
+        const fallback = readSize() || { width: 320, height: 180 };
+        finish(fallback);
+      }, 250);
     });
   }
 
@@ -141,7 +168,7 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
    * rAF guarantees the first frame (with the mask) had a chance to reach the screen. */
   function waitForLoadingMaskPaint() {
     return new Promise((resolve) => {
-      requestAnimationFrame(() => requestAnimationFrame(resolve));
+      requestAnimationFrame(resolve);
     });
   }
 

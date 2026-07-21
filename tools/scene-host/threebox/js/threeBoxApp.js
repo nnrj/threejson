@@ -418,11 +418,18 @@ async function main() {
     let streamBuffer = "";
     const agentOptions = resolveThreeBoxAgentOptions(settings);
     const progressiveSceneCard = agentOptions.enabled ? createConfiguredSceneCard() : null;
+    const sceneCard = progressiveSceneCard || createConfiguredSceneCard();
+    let draftPreviewStarted = false;
+    let draftPreviewPromise = null;
     let previewRenderQueue = Promise.resolve();
     let previewQueueOpen = true;
     let lastQueuedPreviewJson = "";
     if (progressiveSceneCard) {
       api.appendToBody(textEl, progressiveSceneCard.el);
+    } else {
+      // Mount the card before the final AI post-processing finishes. A validated draft can begin
+      // deploying while capability review / final projection continues in the background.
+      api.appendToBody(textEl, sceneCard.el);
     }
     const queueScenePreview = (sceneJsonString) => {
       if (!progressiveSceneCard || !sceneJsonString || sceneJsonString === lastQueuedPreviewJson) {
@@ -478,6 +485,20 @@ async function main() {
             await waitForStatusPaint();
           }
         },
+        onSceneDraft: !agentOptions.enabled
+          ? (draftJsonString) => {
+              if (draftPreviewStarted || !draftJsonString) {
+                return;
+              }
+              draftPreviewStarted = true;
+              draftPreviewPromise = Promise.resolve()
+                .then(() => sceneCard.render(JSON.parse(draftJsonString), { label: text }))
+                .catch((error) => {
+                  console.warn("[threebox] draft preview render failed:", error);
+                  return null;
+                });
+            }
+          : undefined,
         agentOptions,
         onAgentProgress: updateAgentProgress,
         includeReferenceLinks: settings.ai?.attachReferenceLinks !== false,
@@ -530,9 +551,8 @@ async function main() {
             }).catch(() => "")
           : Promise.resolve("");
 
-      const sceneCard = progressiveSceneCard || createConfiguredSceneCard();
-      if (!progressiveSceneCard) {
-        api.appendToBody(textEl, sceneCard.el);
+      if (draftPreviewPromise) {
+        await draftPreviewPromise;
       }
       const resolvedTitlePromise = titlePromise.then((title) => {
         sceneCard.setLabel(title || text);
@@ -583,8 +603,8 @@ async function main() {
     } catch (error) {
       clearBusyIfCurrent();
       streaming.remove();
-      progressiveSceneCard?.dispose();
-      progressiveSceneCard?.el.remove();
+      sceneCard?.dispose?.();
+      sceneCard?.el.remove();
       await persistUnsuccessfulTurn({
         conversationId,
         turnId,
@@ -954,6 +974,22 @@ async function main() {
     const turnContext = createThreeBoxTurnContext(turnId, text);
     const allPriorTurns = await getTurnsForConversation(conversationId).catch(() => []);
     const priorTurns = allPriorTurns.filter(isSceneContextTurn);
+
+    // A conversation with no scene context can only be a new generation. Avoid spending a full
+    // provider round-trip on intent negotiation in this unambiguous case; follow-up turns retain
+    // the classifier so generate-vs-adjust routing remains conservative.
+    if (priorTurns.length === 0) {
+      await handleGenerateTurn(text, api, {
+        conversationId,
+        turnId,
+        turnContext,
+        generationStrategy: "single",
+        estimatedSegments: 1,
+        selectedCapabilityIds: [],
+        requiresAnimation: settings.ai?.animationCapabilityMode === "on"
+      });
+      return;
+    }
 
     const history = priorTurns.map((t) => ({
       turnId: t.id,
