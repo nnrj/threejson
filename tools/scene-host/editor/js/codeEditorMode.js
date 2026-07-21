@@ -466,12 +466,12 @@ export function createCodeEditorMode(host) {
   }
 
   async function codeJsonDiffersFromScene() {
-    if (!host.getScene()?.isScene) {
-      return false;
-    }
     const codeRaw = String(getActiveCodeJsonText() || "").trim();
     if (!codeRaw) {
       return false;
+    }
+    if (!host.getScene()?.isScene) {
+      return true;
     }
     try {
       const sceneText = await getSceneJsonTextForCodeView();
@@ -600,6 +600,9 @@ export function createCodeEditorMode(host) {
     if (!isCodeEditMode() || modeSwitchInProgress) {
       return;
     }
+    if (!(await confirmLeaveCodeModeIfNeeded())) {
+      return;
+    }
     const preservedView = captureCameraView();
     beginModeSwitch("正在切换到 3D 编辑模式…");
     try {
@@ -639,10 +642,12 @@ export function createCodeEditorMode(host) {
       autoRenderTimer = null;
       void (async () => {
         try {
-          await host.runWithLoadingMask?.("正在自动渲染 JSON...", () =>
+          const rendered = await host.runWithLoadingMask?.("正在自动渲染 JSON...", () =>
             renderJsonToCanvas({ silent: true })
           );
-          host.showMessage("自动渲染完成。", "success");
+          if (rendered) {
+            host.showMessage("自动渲染完成。", "success");
+          }
         } catch (error) {
           host.showMessage(`自动渲染失败：${error?.message || error}`, "warning");
           console.warn(error);
@@ -875,7 +880,7 @@ export function createCodeEditorMode(host) {
   async function renderJsonToCanvas(options = {}) {
     const { silent = false, skipDirtyConfirm = false } = options;
     const aiOk = await host.getAiSidebar?.()?.interruptAiSessionIfActive?.("从 JSON 载入场景");
-    if (!aiOk) {
+    if (aiOk === false) {
       return false;
     }
     const hasLoadedScene = host.hasRuntimeReady?.() ?? Boolean(host.getSceneRuntime?.()?.scene || host.getScene?.()?.isScene);
