@@ -22,6 +22,7 @@ test("ThreeBox can start a draft preview before final AI post-processing complet
   assert.match(coreSource, /options\.onSceneDraft\(sceneJsonString\)/);
   assert.match(cardSource, /onRuntimeReady:/);
   assert.match(cardSource, /showCompactLoadingProgress\(\)/);
+  assert.match(appSource, /insertBeforeBody\(textEl, api\.buildJsonCollapse\(outputSceneJsonString\), sceneCard\.el\)/);
 });
 
 test("ThreeBox scene-card size startup has a bounded fallback", async () => {

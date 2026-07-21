@@ -522,7 +522,7 @@ async function main() {
       if (agentSummary) {
         api.appendToBody(textEl, api.buildSummaryBlock(agentSummary));
       }
-      api.appendToBody(textEl, api.buildJsonCollapse(outputSceneJsonString));
+      api.insertBeforeBody(textEl, api.buildJsonCollapse(outputSceneJsonString), sceneCard.el);
 
       // Title and recap are independent AI calls that both only need `digest`. Start them in
       // parallel, but never make the visible scene card wait for either network round-trip: the
@@ -737,7 +737,7 @@ async function main() {
       } else if (result.stage === "json-incremental" && result.patch) {
         api.appendToBody(textEl, api.buildDiffCollapse("patch", JSON.stringify(result.patch, null, 2)));
       }
-      api.appendToBody(textEl, api.buildJsonCollapse(outputSceneJsonString));
+      api.insertBeforeBody(textEl, api.buildJsonCollapse(outputSceneJsonString), sceneCard.el);
 
       // Match handleGenerateTurn: title + recap start together, while the scene card is inserted
       // and rendered immediately. A later title response only updates the card label/file name.

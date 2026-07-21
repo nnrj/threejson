@@ -196,6 +196,31 @@ function cloneRecord(record) {
   return record && typeof record === "object" ? { ...record } : null;
 }
 
+/** Normalize the common Three.js-shaped material.map.url spelling to ThreeJSON's
+ * canonical material.textureUrl field. Native Three.js export payloads use a separate
+ * loader and do not pass through this friendly-record normalizer. */
+function normalizeMaterialTextureAlias(material) {
+  if (!isPlainObject(material)) {
+    return material;
+  }
+  const next = { ...material };
+  const map = isPlainObject(next.map) ? next.map : null;
+  if (!hasValue(next.textureUrl) && typeof map?.url === "string" && map.url.trim()) {
+    next.textureUrl = map.url.trim();
+    if (!hasOwn(next, "textureRepeat") && isPlainObject(map.repeat)) {
+      next.textureRepeat = {
+        x: Number.isFinite(Number(map.repeat.x)) ? Number(map.repeat.x) : 1,
+        y: Number.isFinite(Number(map.repeat.y)) ? Number(map.repeat.y) : 1
+      };
+    }
+    const remainingMapKeys = Object.keys(map).filter((key) => key !== "url" && key !== "repeat");
+    if (remainingMapKeys.length === 0) {
+      delete next.map;
+    }
+  }
+  return next;
+}
+
 function normalizeSceneObjType(value) {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
@@ -471,6 +496,15 @@ function normalizeCanonicalObjectRecord(record, options = {}) {
   }
   record = applyLegacyGeometryObjTypeAlias(record) ?? record;
   record = cloneRecord(record) ?? record;
+  const isNativeRecord = normalizeSceneObjType(record.objType) === "native" || record.parseMode === "native";
+  if (!isNativeRecord && hasOwn(record, "material")) {
+    record.material = Array.isArray(record.material)
+      ? record.material.map(normalizeMaterialTextureAlias)
+      : normalizeMaterialTextureAlias(record.material);
+  }
+  if (!isNativeRecord && hasOwn(record, "materialOverrides")) {
+    record.materialOverrides = normalizeMaterialTextureAlias(record.materialOverrides);
+  }
   if (hasOwn(record, "position")) record.position = resolvePosition(record.position);
   if (hasOwn(record, "rotation")) record.rotation = resolveRotation(record.rotation);
   if (hasOwn(record, "scale")) record.scale = resolveScale(record.scale);

@@ -217,6 +217,20 @@ export function createThreeBoxChatPanel(host = {}) {
     revealBottomOf(el);
   }
 
+  /** Inserts an element immediately before an already-mounted child of the assistant body. */
+  function insertBeforeBody(referenceEl, el, anchorEl) {
+    const body = referenceEl?.parentElement;
+    if (!body || !el) {
+      return;
+    }
+    if (anchorEl?.parentElement === body) {
+      body.insertBefore(el, anchorEl);
+    } else {
+      body.appendChild(el);
+    }
+    revealBottomOf(el);
+  }
+
   /** Fixed-height, auto-scrolling live preview for in-progress streamed text (raw JSON isn't
    * valid/formattable mid-stream, so this deliberately does NOT run it through the markdown
    * renderer). Click toggles between the compact scroll view and a taller expanded view. */
@@ -665,6 +679,7 @@ export function createThreeBoxChatPanel(host = {}) {
     appendMessage,
     updateAssistantMessage,
     appendToBody,
+    insertBeforeBody,
     createStreamingBlock,
     buildJsonCollapse,
     buildDiffCollapse,
