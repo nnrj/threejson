@@ -252,6 +252,7 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
           canvas,
           resetScene: true,
           assetsBase: sceneHostAssetUrl("assets/"),
+          assetGateway: typeof cardOptions.assetGateway === "function" ? cardOptions.assetGateway() : cardOptions.assetGateway,
           autoFillLights: true,
           autoFillCamera: true,
           autoFitCamera: true,

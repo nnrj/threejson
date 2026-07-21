@@ -594,6 +594,7 @@ export async function bootstrapPlayerApp() {
     const opts = {
       canvas: canvasContainer,
       assetsBase: sceneHostAssetUrl("assets/"),
+      assetGateway: playerSettings?.general?.assetGatewayUrl ? { baseUrl: playerSettings.general.assetGatewayUrl } : undefined,
       autoFillLights: true,
       autoFillCamera: true,
       sceneAutoRotate: sysConfig.sceneAutoRotate,

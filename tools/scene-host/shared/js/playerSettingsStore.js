@@ -22,7 +22,8 @@ export const PLAYER_SETTINGS_DEFAULTS = {
     loadingMaskText: "Loading 3D scene…",
     messageToastDurationMs: 2600,
     progressOverlayEnabled: true,
-    sceneLoadDoneDelayMs: 300
+    sceneLoadDoneDelayMs: 300,
+    assetGatewayUrl: ""
   },
   layout: { rightPanelOpenByDefault: true, playlistListMinHeightPx: 120 },
   audio: { defaultVolumePercent: 100, defaultMuted: false, rememberVolume: true },

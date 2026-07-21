@@ -17,7 +17,8 @@ export const THREEBOX_SETTINGS_DEFAULTS = {
     locale: "auto",
     theme: "dark",
     templateThumbnailsEnabled: true,
-    previewAuxiliaryLights: true
+    previewAuxiliaryLights: true,
+    assetGatewayUrl: ""
   },
   ai: {
     providers: [],
@@ -73,6 +74,7 @@ export const THREEBOX_VERSION = "0.1.0-alpha.5";
 
 /** Generic (non-"ai.providers") fields — rendered by the same simple field-loop the editor uses. */
 export const THREEBOX_SETTINGS_FIELDS = [
+  { section: "general", path: "general.assetGatewayUrl", type: "text", label: "Static asset gateway URL", placeholder: "https://your-server.example.com" },
   { section: "general", path: "general.locale", type: "select", label: "界面语言", options: [["auto", "跟随浏览器"], ["zh-CN", "简体中文"], ["en-US", "English"]] },
   { section: "general", path: "general.theme", type: "select", label: "主题", options: [["dark", "深色"], ["light", "浅色"]] },
   { section: "general", path: "general.templateThumbnailsEnabled", type: "checkbox", label: "自动生成并缓存模板库缩略图" },

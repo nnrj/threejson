@@ -34,7 +34,8 @@ export const EDITOR_SETTINGS_DEFAULTS = {
       messageToastDurationMs: 2600,
       progressOverlayEnabled: true,
       sceneLoadDoneDelayMs: 300,
-      debugLogging: false
+      debugLogging: false,
+      assetGatewayUrl: ""
     },
     layout: {
       topBarPinned: true,
@@ -191,6 +192,7 @@ export const EDITOR_SETTINGS_SECTIONS = [
   ];
 
 export const EDITOR_SETTINGS_FIELDS = [
+    { section: "general", path: "general.assetGatewayUrl", type: "text", label: "Static asset gateway URL", placeholder: "https://your-server.example.com" },
     {
       section: "general",
       path: "general.locale",

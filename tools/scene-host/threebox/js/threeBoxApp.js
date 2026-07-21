@@ -211,7 +211,11 @@ async function main() {
     shouldShowMeshExportWarnings: () =>
       settingsModal.getSettings()?.io?.showMeshExportWarnings !== false,
     shouldUsePreviewAuxiliaryLights: () =>
-      settingsModal.getSettings()?.general?.previewAuxiliaryLights !== false
+      settingsModal.getSettings()?.general?.previewAuxiliaryLights !== false,
+    assetGateway: () => {
+      const baseUrl = settingsModal.getSettings()?.general?.assetGatewayUrl?.trim();
+      return baseUrl ? { baseUrl } : null;
+    }
   });
 
   function syncPreviewAuxiliaryLightsFromSettings(settings = settingsModal.getSettings()) {

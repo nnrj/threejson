@@ -9,6 +9,7 @@ export const PLAYER_SETTINGS_SECTIONS = [
 ];
 
 export const PLAYER_SETTINGS_FIELDS = [
+  { section: "general", path: "general.assetGatewayUrl", type: "text", label: "Static asset gateway URL", placeholder: "https://your-server.example.com" },
   {
     section: "general",
     path: "general.locale",

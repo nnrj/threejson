@@ -797,6 +797,7 @@ export async function bootstrapSceneHostEditor() {
     const opts = {
       canvas: canvasContainer,
       assetsBase: sceneHostAssetUrl("assets/"),
+      assetGateway: editorSettings?.general?.assetGatewayUrl ? { baseUrl: editorSettings.general.assetGatewayUrl } : undefined,
       cameraFallbackPosition: editorSettings?.render?.cameraFallbackPosition,
       defaultFov: editorSettings?.render?.defaultFov,
       orbitDampingFactor: editorSettings?.render?.orbitDampingFactor,

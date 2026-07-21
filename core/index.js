@@ -282,6 +282,7 @@ export {
   isTextureUrlCacheEnabled,
   clearTextureUrlCache
 } from "./cache/textureUrlCache.js";
+export { applyAssetGatewayToPayload, resolveAssetUrl } from "./util/assetGateway.js";
 export {
   configureTextureDefaultsForDeploy,
   configureTextureSamplingForDeploy,

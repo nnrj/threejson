@@ -103,6 +103,7 @@ import {
 } from "../builder/sceneHelperBuilder.js";
 import { clearAssetRegistry, registerAssetLibrary } from "../cache/assetRegistry.js";
 import { configureTextureUrlCacheForDeploy } from "../cache/textureUrlCache.js";
+import { applyAssetGatewayToPayload } from "../util/assetGateway.js";
 import { configureInfoPanelForDeploy } from "../builder/infoPanelBuilder.js";
 import { configureTextureDefaultsForDeploy } from "../util/textureSampling.js";
 import {
@@ -1364,6 +1365,7 @@ function emitSyncLoadPhase(bus, phase, ctx) {
  *   autoFitCamera?: boolean,
  *   autoFitCameraMode?: 'positionAndTarget'|'targetOnly',
  *   autoFillSceneBackground?: boolean,
+ *   assetGateway?: { enabled?: boolean, baseUrl?: string, endpoint?: string, resolveUrl?: (url: string, context: object) => string },
  *   extentInclude?: { objTypes?: string[], threeJsonIds?: string[], listNames?: string[] }
  * }} [options]
  */
@@ -1374,6 +1376,7 @@ function normalizeScenePayloadWithRuntimeDefaults(payload, options = {}) {
     normalizeOpts.subSceneNormalizePolicy = options.subSceneNormalizePolicy;
   }
   const normalized = normalizeScenePayload(payload, normalizeOpts);
+  applyAssetGatewayToPayload(normalized, options.assetGateway ?? options.resourceProxy);
   applySceneRuntimeDefaults(normalized, runtimeOptions);
   normalized.runtimeLoadOptions = runtimeOptions;
   return normalized;
