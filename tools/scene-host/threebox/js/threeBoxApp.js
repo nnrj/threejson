@@ -36,6 +36,7 @@ import {
   isBuiltinPrivacyAccepted
 } from "../../shared/js/builtinProviderPrivacy.js";
 import { getAiErrorFeedback } from "../../shared/js/aiErrorFeedback.js";
+import { probeEndpoint } from "../../shared/js/endpointProbe.js";
 
 function readRequestedLocaleFromUrl() {
   try {
@@ -138,8 +139,14 @@ async function main() {
     // later button click, well after `templateGallery` has been assigned.
     onRebuildTemplateThumbnails: () => templateGallery?.rebuildThumbnailCache(),
     onClearTemplateThumbnails: () => templateGallery?.clearThumbnailCache(),
-    onOpenBuiltinPrivacy: () => builtinPrivacyController?.open()
+    onOpenBuiltinPrivacy: () => builtinPrivacyController?.open(),
+    onTestEndpoint: (kind, value) => probeEndpoint(value, "/health")
   });
+  if (!settingsModal.getSettings()?.general?.assetGatewayUrl && settingsModal.getSettings()?.ai?.providers?.some((provider) => provider.provider === "threebox-builtin" && provider.enabled !== false)) {
+    settingsModal.updateSettings((next) => {
+      next.general = { ...(next.general || {}), assetGatewayUrl: next.ai?.builtinBackendUrl || "https://api.threebox.org" };
+    }, { notify: false, toast: false, closeModal: false });
+  }
   const requestedLocale = readRequestedLocaleFromUrl();
   const currentSettingsLocale = settingsModal.getSettings()?.general?.locale || "auto";
   if (shouldPromptLocaleSwitch(currentSettingsLocale, requestedLocale) && confirmLocaleSwitch(currentSettingsLocale, requestedLocale)) {

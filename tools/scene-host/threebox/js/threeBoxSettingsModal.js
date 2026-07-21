@@ -108,6 +108,25 @@ export function createThreeBoxSettingsModal(host = {}) {
       input.addEventListener("change", () => setSettingsByPath(draft, field.path, input.value));
     }
     controlWrap.appendChild(input);
+    if (field.testEndpoint) {
+      const testBtn = document.createElement("button");
+      testBtn.type = "button";
+      testBtn.className = "settingsActionBtn settingsTestEndpointBtn";
+      testBtn.textContent = t("threebox.settings.testEndpoint", "Test");
+      testBtn.addEventListener("click", async () => {
+        testBtn.disabled = true;
+        testBtn.textContent = t("threebox.settings.testEndpointTesting", "Testing…");
+        try {
+          const result = await host.onTestEndpoint?.(field.testEndpoint, String(input?.value || "").trim());
+          testBtn.textContent = t(result?.ok ? "threebox.settings.testEndpointSuccess" : "threebox.settings.testEndpointFailed", result?.ok ? "Connected" : `Failed: ${result?.message || "unreachable"}`);
+        } catch (error) {
+          testBtn.textContent = t("threebox.settings.testEndpointFailed", `Failed: ${error?.message || "unreachable"}`);
+        } finally {
+          setTimeout(() => { testBtn.disabled = false; testBtn.textContent = t("threebox.settings.testEndpoint", "Test"); }, 2200);
+        }
+      });
+      controlWrap.appendChild(testBtn);
+    }
     row.appendChild(controlWrap);
     return row;
   }

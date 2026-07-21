@@ -72,7 +72,7 @@ function readSettingsFieldValueFromInput(field, inputEl) {
   return inputEl.value;
 }
 
-export function createSettingsModalController({ host, onSave, onReset }) {
+export function createSettingsModalController({ host, onSave, onReset, onTestEndpoint }) {
   const modal = document.getElementById("editorSettingsModal");
   const nav = document.getElementById("editorSettingsNav");
   const scroll = document.getElementById("editorSettingsScroll");
@@ -528,11 +528,33 @@ export function createSettingsModalController({ host, onSave, onReset }) {
           if (field.max != null) inputEl.max = String(field.max);
           if (field.step != null) inputEl.step = String(field.step);
         }
+        if (field.placeholder) {
+          inputEl.placeholder = settingsText(`settings.placeholders.${field.path}`, field.placeholder);
+        }
         if (field.type !== "checkbox") {
           row.appendChild(label);
           row.appendChild(inputEl);
         } else {
           row.appendChild(label);
+        }
+        if (field.testEndpoint) {
+          const testBtn = document.createElement("button");
+          testBtn.type = "button";
+          testBtn.className = "editorSettingsActionBtn editorSettingsTestEndpointBtn";
+          testBtn.textContent = settingsText("settings.testEndpoint", "Test");
+          testBtn.addEventListener("click", async () => {
+            testBtn.disabled = true;
+            testBtn.textContent = settingsText("settings.testEndpointTesting", "Testing…");
+            try {
+              const result = await onTestEndpoint?.(field.testEndpoint, String(inputEl?.value || "").trim());
+              testBtn.textContent = settingsText(result?.ok ? "settings.testEndpointSuccess" : "settings.testEndpointFailed", result?.ok ? "Connected" : `Failed: ${result?.message || "unreachable"}`);
+            } catch (error) {
+              testBtn.textContent = settingsText("settings.testEndpointFailed", `Failed: ${error?.message || "unreachable"}`);
+            } finally {
+              setTimeout(() => { testBtn.disabled = false; testBtn.textContent = settingsText("settings.testEndpoint", "Test"); }, 2200);
+            }
+          });
+          row.appendChild(testBtn);
         }
         if (field.hint) {
           row.classList.add("editorSettingsFieldWithHint");

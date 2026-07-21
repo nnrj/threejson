@@ -51,6 +51,7 @@ import { initHostI18n, applyShellI18n, t } from "../../shared/i18n/index.js";
 import { resolveEditorRuntimeFlags, resolveEditorRuntimeFlagsSync } from "./runtimeFlags.js";
 import { createRunScenePreviewController } from "../../shared/js/runSceneViaPlayer.js";
 import { createSettingsModalController } from "./settingsModal.js";
+import { probeEndpoint } from "../../shared/js/endpointProbe.js";
 import { createUiFeedback } from "./uiFeedback.js";
 import { createSceneTreePanel } from "./sceneTreePanel.js";
 import { createCommandLayer } from "./commandLayer.js";
@@ -1802,7 +1803,8 @@ export async function bootstrapSceneHostEditor() {
       applyEditorSettings({ initial: true });
       settingsModal.populateForm(editorSettings);
       ui.showMessage(t("editor.message.settingsResetToFile", "Restored setting.json defaults."), "info");
-    }
+    },
+    onTestEndpoint: (kind, value) => probeEndpoint(value, "/health")
   });
 
   builtinPrivacyController = createBuiltinProviderPrivacyController({

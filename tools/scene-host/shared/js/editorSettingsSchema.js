@@ -192,7 +192,7 @@ export const EDITOR_SETTINGS_SECTIONS = [
   ];
 
 export const EDITOR_SETTINGS_FIELDS = [
-    { section: "general", path: "general.assetGatewayUrl", type: "text", label: "Static asset gateway URL", placeholder: "https://your-server.example.com" },
+    { section: "general", path: "general.assetGatewayUrl", type: "text", label: "Static asset gateway URL", placeholder: "https://api.threebox.org", testEndpoint: "assetGateway" },
     {
       section: "general",
       path: "general.locale",
@@ -811,7 +811,8 @@ export const EDITOR_SETTINGS_FIELDS = [
       path: "ai.builtinBackendUrl",
       type: "text",
       label: "内置供应商后端地址",
-      placeholder: "https://api.threebox.org"
+      placeholder: "https://api.threebox.org",
+      testEndpoint: "builtinBackend"
     },
     { section: "ai", path: "ai.agentEnabled", type: "checkbox", label: "启用 Agent" },
     { section: "ai", path: "ai.agentIterativeApply", type: "checkbox", label: "迭代应用到画布" },

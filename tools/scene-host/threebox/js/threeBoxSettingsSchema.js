@@ -85,7 +85,8 @@ export const THREEBOX_SETTINGS_FIELDS = [
     path: "ai.builtinBackendUrl",
     type: "text",
     label: "内置供应商后端地址",
-    placeholder: "https://api.threebox.org"
+    placeholder: "https://api.threebox.org",
+    testEndpoint: "builtinBackend"
   },
   { section: "ai", path: "ai.selfName", type: "text", label: "AI 自称" },
   { section: "ai", path: "ai.updateOutputMode", type: "select", label: "调整优先方式", options: [["commands", "操作命令"], ["json-incremental", "JSON Patch"], ["json-full", "完整 JSON"]] },
@@ -154,7 +155,7 @@ export const THREEBOX_SETTINGS_FIELDS = [
       ["diff", "仅保存差异（命令调整只存调整命令，重新打开时按需重放）"]
     ]
   },
-  { section: "general", path: "general.assetGatewayUrl", type: "text", label: "Static asset gateway URL", placeholder: "https://your-server.example.com" }
+  { section: "general", path: "general.assetGatewayUrl", type: "text", label: "Static asset gateway URL", placeholder: "https://api.threebox.org", testEndpoint: "assetGateway" }
 ];
 
 export const THREEBOX_PROVIDER_TYPES = [
