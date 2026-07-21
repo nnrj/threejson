@@ -103,6 +103,7 @@ export function createThreeBoxSettingsModal(host = {}) {
     } else {
       input = document.createElement("input");
       input.type = "text";
+      input.placeholder = field.placeholder ? t(fieldPlaceholderKey(field), field.placeholder) : "";
       input.value = value ?? "";
       input.addEventListener("change", () => setSettingsByPath(draft, field.path, input.value));
     }
