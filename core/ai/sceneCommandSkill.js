@@ -9,7 +9,7 @@ import {
 } from "../command/index.js";
 import { getObjectByThreeJsonId } from "../handler/objectRegistry.js";
 import { isLoadableScenePayload } from "../handler/sceneFriendlyNormalizer.js";
-import { sanitizeAiJsonText } from "./sceneJsonSanitize.js";
+import { sanitizeAiJsonText, stripMarkdownCodeFence } from "./sceneJsonSanitize.js";
 
 const UPDATE_COMMAND_OPS = new Set([
   "scene.list",
@@ -578,8 +578,8 @@ export function extractCommandScriptText(rawText) {
   if (!text) {
     return "";
   }
-  const fenced = text.match(/```(?:command|commands|threejson|json)?\s*([\s\S]*?)\s*```/i);
-  return (fenced && fenced[1] ? fenced[1] : text).trim();
+  const fenced = text.match(/```[ \t]*(?:command|commands|threejson|json)?[ \t]*(?:\r?\n|$)([\s\S]*?)(?:\r?\n)?[ \t]*```/i);
+  return (fenced && fenced[1] ? fenced[1] : stripMarkdownCodeFence(text)).trim();
 }
 
 /**
@@ -636,9 +636,13 @@ function extractJsonLikeText(rawText) {
   if (!text) {
     return "";
   }
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  const fenced = text.match(/```[ \t]*(?:json|threejson)?[ \t]*(?:\r?\n|$)([\s\S]*?)(?:\r?\n)?[ \t]*```/i);
   if (fenced && fenced[1]) {
     return fenced[1].trim();
+  }
+  const unfenced = stripMarkdownCodeFence(text);
+  if (unfenced !== text) {
+    return unfenced;
   }
   const firstBrace = text.indexOf("{");
   const lastBrace = text.lastIndexOf("}");

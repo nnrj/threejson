@@ -11,7 +11,11 @@ import {
   buildThreeBoxRequestContext,
   applyThreeBoxModerationHeaders
 } from "../core/ai/sceneAiService.js";
-import { sanitizeAiJsonText, isLikelyTruncatedJsonText } from "../core/ai/sceneJsonSanitize.js";
+import {
+  sanitizeAiJsonText,
+  isLikelyTruncatedJsonText,
+  stripMarkdownCodeFence
+} from "../core/ai/sceneJsonSanitize.js";
 import { validateSceneJson } from "../core/ai/agentTools.js";
 import {
   extractPatchOperations,
@@ -246,6 +250,14 @@ test("listTextureUrlPointers finds material.textureUrl", () => {
     objectList: [{ material: { textureUrl: "/standard.png" } }]
   });
   assert.equal(standardPointers[0], "/objectList/0/material/textureUrl");
+});
+
+test("AI JSON sanitization strips optional markdown fences", () => {
+  const json = '{"worldInfo":{"boxModelList":[]}}';
+  assert.equal(stripMarkdownCodeFence(json), json);
+  assert.equal(stripMarkdownCodeFence("```json\n" + json + "\n```"), json);
+  assert.equal(stripMarkdownCodeFence("``` json\n" + json + "\n```"), json);
+  assert.equal(sanitizeAiJsonText("```\n" + json + "\n```"), json);
 });
 
 const originalFetch = globalThis.fetch;

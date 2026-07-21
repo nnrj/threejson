@@ -19,6 +19,21 @@ const SIMPLE_NUMBER_RE = /^[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?$/;
 const NUMERIC_EXPR_CHAR_RE = /[\d.eE+\-*/().\s]/;
 
 /**
+ * Remove an optional Markdown code fence around an LLM response. Models may emit
+ * ```json, ``` json, or a bare ``` fence; the fence is transport decoration, not
+ * part of the JSON document. Only anchored fences are removed so embedded text is
+ * left untouched.
+ * @param {string} rawText
+ * @returns {string}
+ */
+function stripMarkdownCodeFence(rawText) {
+  let text = String(rawText || "").trim();
+  text = text.replace(/^```[ \t]*(?:json|threejson|javascript|js|command|commands)?[ \t]*(?:\r?\n|$)/i, "");
+  text = text.replace(/(?:\r?\n|^)[ \t]*```[ \t]*$/i, "");
+  return text.trim();
+}
+
+/**
  * @param {string} expr
  * @returns {number|null}
  */
@@ -332,7 +347,7 @@ function buildSanitizedJsonParseErrorMessage(sanitized, err) {
  * @returns {string}
  */
 function sanitizeAiJsonText(rawText) {
-  let text = String(rawText || "");
+  let text = stripMarkdownCodeFence(rawText);
   text = stripCommentsOutsideStrings(text);
 
   text = replaceMathConstantsOutsideStrings(text);
@@ -365,6 +380,7 @@ function parseAiJsonFragment(rawText) {
 }
 
 export {
+  stripMarkdownCodeFence,
   sanitizeAiJsonText,
   parseAiJsonFragment,
   safeEvalNumericExpression,

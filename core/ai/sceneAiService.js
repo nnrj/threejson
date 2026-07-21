@@ -36,7 +36,8 @@ import { requestSceneOutline } from "./agentTools.js";
 import {
   buildSanitizedJsonParseErrorMessage,
   isLikelyTruncatedJsonText,
-  sanitizeAiJsonText
+  sanitizeAiJsonText,
+  stripMarkdownCodeFence
 } from "./sceneJsonSanitize.js";
 import {
   buildFriendlyScenePayloadFromCanonical,
@@ -134,9 +135,14 @@ function extractJsonText(rawText) {
   if (typeof rawText !== "string") {
     throw new Error("AI response is not a string.");
   }
-  const fenced = rawText.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  const fenced = rawText.match(/```[ \t]*(?:json|threejson)?[ \t]*(?:\r?\n|$)([\s\S]*?)(?:\r?\n)?[ \t]*```/i);
   if (fenced && fenced[1]) {
     return fenced[1].trim();
+  }
+
+  const unfenced = stripMarkdownCodeFence(rawText);
+  if (unfenced !== rawText.trim()) {
+    return unfenced;
   }
 
   const firstBrace = rawText.indexOf("{");

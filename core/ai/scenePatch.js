@@ -2,7 +2,7 @@
  * Scene-level RFC 6902 patch helpers for optional incremental AI updates.
  */
 import { applyJsonPatchToJsonDocument } from "../handler/jsonPatchApplyCore.js";
-import { sanitizeAiJsonText } from "./sceneJsonSanitize.js";
+import { sanitizeAiJsonText, stripMarkdownCodeFence } from "./sceneJsonSanitize.js";
 
 /** Paths the scene editor / normalizer accept for AI incremental edits. */
 const SCENE_PATCH_ALLOWED_PREFIXES = [
@@ -23,8 +23,8 @@ function extractPatchOperations(rawText) {
   if (typeof rawText !== "string" || !rawText.trim()) {
     throw new Error("AI patch response is empty.");
   }
-  const fenced = rawText.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-  const body = sanitizeAiJsonText((fenced && fenced[1] ? fenced[1] : rawText).trim());
+  const fenced = rawText.match(/```[ \t]*(?:json|threejson)?[ \t]*(?:\r?\n|$)([\s\S]*?)(?:\r?\n)?[ \t]*```/i);
+  const body = sanitizeAiJsonText((fenced && fenced[1] ? fenced[1] : stripMarkdownCodeFence(rawText)).trim());
   let parsed;
   try {
     parsed = JSON.parse(body);
