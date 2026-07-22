@@ -1,6 +1,6 @@
 {
   "name": "threejson",
-  "version": "0.1.0-alpha.7",
+  "version": "0.1.0-alpha.8",
   "description": "JSON-driven Three.js scene runtime: declarative 3D scenes, builders, and handlers.",
   "author": "nnrj <tianhehechu2017@gmail.com>",
   "repository": {
