@@ -1,4 +1,9 @@
 export const THREEBOX_SHELL_LABELS_EN = {
+  "threebox.settings.section.sync": "Sync",
+  "threebox.settings.field.sync_enabled": "Enable self-hosted conversation sync",
+  "threebox.settings.field.sync_endpoint": "Sync server URL",
+  "threebox.settings.field.sync_accessToken": "Sync access token",
+  "threebox.settings.field.sync_rememberAccessToken": "Remember sync access token on this device",
   "threebox.app.intentClassificationFailed": "Could not reliably determine whether this request should create a new scene or adjust the current one. This turn was stopped to avoid generating the wrong scene. Please retry.",
   "threebox.shell.subtitle": "Powered by ThreeJSON",
   "threebox.shell.pinLabel": "Pin sidebar",

@@ -69,7 +69,6 @@ export const THREEBOX_SETTINGS_DEFAULTS = {
 };
 
 export const THREEBOX_SETTINGS_SECTIONS = [
-  { id: "sync", title: "Sync" },
   { id: "general", title: "通用" },
   { id: "ai", title: "AI 配置" },
   { id: "agent", title: "Agent" },
@@ -79,6 +78,9 @@ export const THREEBOX_SETTINGS_SECTIONS = [
 
 /** Displayed in the "关于" settings section — bump alongside the root package.json version on
  * release (no build step wires this up automatically since threebox is a plain static app). */
+// Keep optional self-hosted sync adjacent to, but before, the informational About section.
+THREEBOX_SETTINGS_SECTIONS.splice(-1, 0, { id: "sync", title: "同步" });
+
 export const THREEBOX_VERSION = "0.1.0-alpha.5";
 
 /** Generic (non-"ai.providers") fields — rendered by the same simple field-loop the editor uses. */
@@ -164,10 +166,10 @@ export const THREEBOX_SETTINGS_FIELDS = [
       ["diff", "仅保存差异（命令调整只存调整命令，重新打开时按需重放）"]
     ]
   },
-  { section: "sync", path: "sync.enabled", type: "checkbox", label: "Enable self-hosted conversation sync" },
-  { section: "sync", path: "sync.endpoint", type: "text", label: "Sync server URL", placeholder: "https://your-server.example/api", testEndpoint: "selfHostedSync" },
-  { section: "sync", path: "sync.accessToken", type: "password", label: "Sync access token" },
-  { section: "sync", path: "sync.rememberAccessToken", type: "checkbox", label: "Remember sync access token on this device" },
+  { section: "sync", path: "sync.enabled", type: "checkbox", label: "启用自建会话同步" },
+  { section: "sync", path: "sync.endpoint", type: "text", label: "同步服务器地址", placeholder: "https://your-server.example/api", testEndpoint: "selfHostedSync" },
+  { section: "sync", path: "sync.accessToken", type: "password", label: "同步访问令牌" },
+  { section: "sync", path: "sync.rememberAccessToken", type: "checkbox", label: "在此设备保存同步访问令牌" },
   { section: "general", path: "general.builtinNotificationsEnabled", type: "checkbox", label: "接收内置供应商通知" },
   { section: "general", path: "general.assetGatewayUrl", type: "text", label: "Static asset gateway URL", placeholder: "https://api.threebox.org", testEndpoint: "assetGateway" }
 ];

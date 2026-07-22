@@ -8,6 +8,7 @@ import { putTurn as putTurnRaw, getTurn, getTurnsForConversation, getAllConversa
 import { createThreeBoxSelfHostedSync } from "./threeBoxSelfHostedSync.js";
 import { createThreeBoxCloudMigration } from "./threeBoxCloudMigration.js";
 import { createThreeBoxBuiltinNotifications } from "./threeBoxBuiltinNotifications.js";
+import { requestBuiltinNotificationConsent } from "./threeBoxBuiltinNotificationConsentDialog.js";
 import {
   resolveProviderOptions,
   buildResultDigest,
@@ -223,7 +224,7 @@ async function main() {
     void ensureBuiltinApiKey(settingsModal).then(() => builtinNotifications?.refresh());
   }
   if (builtinPrivacyDecision === BUILTIN_PRIVACY_ACCEPTED && !settingsModal.getSettings()?.general?.builtinNotificationsDecisionMade) {
-    const enabled = window.confirm("是否接收内置供应商的重要通知？你可以随时在设置中关闭。");
+    const enabled = await requestBuiltinNotificationConsent();
     settingsModal.updateSettings((next) => {
       next.general.builtinNotificationsEnabled = enabled;
       next.general.builtinNotificationsDecisionMade = true;

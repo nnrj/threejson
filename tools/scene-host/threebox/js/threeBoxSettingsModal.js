@@ -102,7 +102,7 @@ export function createThreeBoxSettingsModal(host = {}) {
       input.addEventListener("change", () => setSettingsByPath(draft, field.path, input.value));
     } else {
       input = document.createElement("input");
-      input.type = "text";
+      input.type = field.type === "password" ? "password" : "text";
       input.placeholder = field.placeholder ? t(fieldPlaceholderKey(field), field.placeholder) : "";
       input.value = value ?? "";
       input.addEventListener("change", () => setSettingsByPath(draft, field.path, input.value));
