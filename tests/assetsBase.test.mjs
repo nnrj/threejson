@@ -18,6 +18,20 @@ import {
   setAssetsBaseUrl
 } from "../core/util/assetsBase.js";
 import { loadTextureFromMaterialJson } from "../core/util/loadTextureFromMaterialJson.js";
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+
+test("ASSETS_PACKAGE_VERSION matches the installed @threejson/assets devDependency", () => {
+  // Catches exactly the drift that once let this go stale (pinned to 1.0.0 well after 1.1.2 had
+  // shipped, silently missing files the newer version had) — see assetsBase.js's docblock.
+  const installedVersion = require("@threejson/assets/package.json").version;
+  assert.equal(
+    ASSETS_PACKAGE_VERSION,
+    installedVersion,
+    `ASSETS_PACKAGE_VERSION ("${ASSETS_PACKAGE_VERSION}") in core/util/assetsBase.js no longer matches the "@threejson/assets" devDependency ("${installedVersion}") in package.json — update whichever one is behind.`
+  );
+});
 
 test("default assets base is base-first with jsDelivr fallback", () => {
   assert.equal(getAssetsBaseUrl(), LOCAL_ASSETS_BASE);

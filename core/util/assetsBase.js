@@ -2,8 +2,23 @@
  * Public asset URL base: base-first by default; npm/CDN fallback covers installs without local assets.
  */
 
-/** Pin to published @threejson/assets version used in default CDN URLs. */
-export const ASSETS_PACKAGE_VERSION = "1.0.0";
+/**
+ * Pin to the published @threejson/assets version used in default CDN URLs. This is a plain literal
+ * rather than something read off `@threejson/assets`'s own package.json at runtime: this module
+ * never imports asset *contents* from that package (only builds a jsDelivr URL string pointing at
+ * it), and `threejson` itself is loaded directly via unbundled browser `<script type="module">`/
+ * dynamic `import()` in several consumers (community ThreeBox, the editor, the player) where a JSON
+ * import would need import-attribute syntax that isn't universally supported — a literal is the one
+ * representation guaranteed to work in every runtime this module ships to.
+ *
+ * `@threejson/assets` IS still tracked as a real dependency, just a devDependency (see package.json)
+ * — that keeps it out of downstream installs (devDependencies never propagate to consumers of a
+ * published package) while still surfacing version bumps to `npm outdated`/Dependabot/Renovate.
+ * tests/assetsBase.test.mjs asserts this literal matches the installed devDependency's actual
+ * version, so a bump to one without the other fails the test suite instead of silently going stale
+ * (as happened once already — 1.0.0 was pinned here well after 1.1.2 had shipped).
+ */
+export const ASSETS_PACKAGE_VERSION = "1.1.2";
 
 export const DEFAULT_CDN_ASSETS_BASE =
   `https://cdn.jsdelivr.net/npm/@threejson/assets@${ASSETS_PACKAGE_VERSION}`;

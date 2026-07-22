@@ -94,6 +94,7 @@
   },
   "devDependencies": {
     "@dimforge/rapier3d-compat": "^0.19.3",
+    "@threejson/assets": "^1.1.2",
     "@tweenjs/tween.js": "^25.0.0",
     "html2canvas-pro": "^2.0.0",
     "three": "^0.184.0",
