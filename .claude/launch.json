@@ -6,6 +6,12 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "8532"],
       "port": 8532
+    },
+    {
+      "name": "threebox-cloud-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "servertmp/threebox-cloud"],
+      "port": 5175
     }
   ]
 }

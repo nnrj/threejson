@@ -13,6 +13,7 @@ sync.ffs_db
 .vscode/
 .vs/
 .cursor/
+.claude/
 servertmp/
 *.suo
 *.ntvs*
