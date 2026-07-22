@@ -109,6 +109,10 @@ export async function getTurnsForConversation(conversationId) {
   });
 }
 
+export async function getAllTurns() {
+  return getAll(STORE_TURNS);
+}
+
 export async function deleteTurnsForConversation(conversationId) {
   const turns = await getTurnsForConversation(conversationId);
   await withStore(STORE_TURNS, "readwrite", (store) => {

@@ -135,5 +135,8 @@ export function persistThreeBoxSettings(settings) {
       p.provider === THREEBOX_BUILTIN_PROVIDER_TYPE ? p : { ...p, apiKey: "" }
     );
   }
+  if (!toSave.sync?.rememberAccessToken && toSave.sync) {
+    toSave.sync.accessToken = "";
+  }
   saveThreeBoxSettingsCache(toSave);
 }

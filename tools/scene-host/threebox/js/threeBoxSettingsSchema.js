@@ -18,7 +18,9 @@ export const THREEBOX_SETTINGS_DEFAULTS = {
     theme: "dark",
     templateThumbnailsEnabled: true,
     previewAuxiliaryLights: true,
-    assetGatewayUrl: ""
+    assetGatewayUrl: "",
+    builtinNotificationsEnabled: false,
+    builtinNotificationsDecisionMade: false
   },
   ai: {
     providers: [],
@@ -57,10 +59,17 @@ export const THREEBOX_SETTINGS_DEFAULTS = {
     turnCacheMode: "full",
     jsonViewerLineNumbers: true,
     jsonViewerHighlight: true
+  },
+  sync: {
+    enabled: false,
+    endpoint: "",
+    accessToken: "",
+    rememberAccessToken: false
   }
 };
 
 export const THREEBOX_SETTINGS_SECTIONS = [
+  { id: "sync", title: "Sync" },
   { id: "general", title: "通用" },
   { id: "ai", title: "AI 配置" },
   { id: "agent", title: "Agent" },
@@ -155,6 +164,11 @@ export const THREEBOX_SETTINGS_FIELDS = [
       ["diff", "仅保存差异（命令调整只存调整命令，重新打开时按需重放）"]
     ]
   },
+  { section: "sync", path: "sync.enabled", type: "checkbox", label: "Enable self-hosted conversation sync" },
+  { section: "sync", path: "sync.endpoint", type: "text", label: "Sync server URL", placeholder: "https://your-server.example/api", testEndpoint: "selfHostedSync" },
+  { section: "sync", path: "sync.accessToken", type: "password", label: "Sync access token" },
+  { section: "sync", path: "sync.rememberAccessToken", type: "checkbox", label: "Remember sync access token on this device" },
+  { section: "general", path: "general.builtinNotificationsEnabled", type: "checkbox", label: "接收内置供应商通知" },
   { section: "general", path: "general.assetGatewayUrl", type: "text", label: "Static asset gateway URL", placeholder: "https://api.threebox.org", testEndpoint: "assetGateway" }
 ];
 

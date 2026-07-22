@@ -518,6 +518,10 @@ export function createThreeBoxSidebar(host = {}) {
           openHelpModal();
           return;
         }
+        if (action === "cloud") {
+          void host.openCloud?.();
+          return;
+        }
         showToast(t("threebox.sidebar.toastFeatureComingSoon", "该功能将在后续里程碑接入。"), "info");
       });
     });

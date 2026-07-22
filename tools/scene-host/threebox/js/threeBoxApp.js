@@ -4,7 +4,10 @@ import { createThreeBoxTemplateGallery } from "./threeBoxTemplateGallery.js";
 import { createThreeBoxSettingsModal } from "./threeBoxSettingsModal.js";
 import { createThreeBoxChatPanel } from "./threeBoxChatPanel.js";
 import { createThreeBoxSceneCard } from "./threeBoxSceneCard.js";
-import { putTurn, getTurn, getTurnsForConversation, createTurnId } from "./threeBoxSessionStore.js";
+import { putTurn as putTurnRaw, getTurn, getTurnsForConversation, getAllConversations, createTurnId } from "./threeBoxSessionStore.js";
+import { createThreeBoxSelfHostedSync } from "./threeBoxSelfHostedSync.js";
+import { createThreeBoxCloudMigration } from "./threeBoxCloudMigration.js";
+import { createThreeBoxBuiltinNotifications } from "./threeBoxBuiltinNotifications.js";
 import {
   resolveProviderOptions,
   buildResultDigest,
@@ -123,6 +126,13 @@ function populateComposerModelSelect(settings) {
 }
 
 async function main() {
+  let selfHostedSync = null;
+  let builtinNotifications = null;
+  const putTurn = async (turn) => {
+    const stored = await putTurnRaw(turn);
+    selfHostedSync?.scheduleSync();
+    return stored;
+  };
   const currentAiUserIdPromise = getDisplayDeviceId();
   // `createThreeBoxSettingsModal` reads persisted settings synchronously (no `.init()` needed to
   // call `.getSettings()`), so it's constructed first purely to read `general.locale` for the
@@ -133,6 +143,7 @@ async function main() {
       populateComposerModelSelect(settings);
       void applyHostLocaleFromSettings(settings);
       syncPreviewAuxiliaryLightsFromSettings(settings);
+      builtinNotifications?.start();
     },
     // `templateGallery` is declared with `const` further down in `main()` — same forward-reference
     // pattern as `applyHostLocaleFromSettings` above, safe because these only run in response to a
@@ -140,8 +151,12 @@ async function main() {
     onRebuildTemplateThumbnails: () => templateGallery?.rebuildThumbnailCache(),
     onClearTemplateThumbnails: () => templateGallery?.clearThumbnailCache(),
     onOpenBuiltinPrivacy: () => builtinPrivacyController?.open(),
-    onTestEndpoint: (kind, value) => probeEndpoint(value, "/health")
+    onTestEndpoint: (kind, value) => kind === "selfHostedSync"
+      ? selfHostedSync?.syncNow()
+      : probeEndpoint(value, "/health")
   });
+  selfHostedSync = createThreeBoxSelfHostedSync(() => settingsModal.getSettings());
+  builtinNotifications = createThreeBoxBuiltinNotifications(() => settingsModal.getSettings());
   if (!settingsModal.getSettings()?.general?.assetGatewayUrl && settingsModal.getSettings()?.ai?.providers?.some((provider) => provider.provider === "threebox-builtin" && provider.enabled !== false)) {
     settingsModal.updateSettings((next) => {
       next.general = { ...(next.general || {}), assetGatewayUrl: next.ai?.builtinBackendUrl || "https://api.threebox.org" };
@@ -182,6 +197,7 @@ async function main() {
       populateComposerModelSelect(settingsModal.getSettings());
       if (decision === BUILTIN_PRIVACY_ACCEPTED) {
         await ensureBuiltinApiKey(settingsModal);
+        builtinNotifications?.refresh();
         populateComposerModelSelect(settingsModal.getSettings());
       }
     }
@@ -204,8 +220,16 @@ async function main() {
   populateComposerModelSelect(settingsModal.getSettings());
   const builtinPrivacyDecision = await builtinPrivacyController.promptIfNeeded();
   if (builtinPrivacyDecision === BUILTIN_PRIVACY_ACCEPTED) {
-    void ensureBuiltinApiKey(settingsModal);
+    void ensureBuiltinApiKey(settingsModal).then(() => builtinNotifications?.refresh());
   }
+  if (builtinPrivacyDecision === BUILTIN_PRIVACY_ACCEPTED && !settingsModal.getSettings()?.general?.builtinNotificationsDecisionMade) {
+    const enabled = window.confirm("是否接收内置供应商的重要通知？你可以随时在设置中关闭。");
+    settingsModal.updateSettings((next) => {
+      next.general.builtinNotificationsEnabled = enabled;
+      next.general.builtinNotificationsDecisionMade = true;
+    }, { toast: false, closeModal: false });
+  }
+  builtinNotifications.start();
 
   let sidebar;
   // Each rendered scene card stays live in the DOM for the lifetime of the conversation (turns
@@ -1156,6 +1180,17 @@ async function main() {
       settingsModal.open("general");
       viewChrome.closeLeftDock();
     },
+    openCloud: async () => {
+      // Cloud migration is an account-service operation, deliberately independent from the
+      // configurable built-in-provider endpoint.
+      const cloud = createThreeBoxCloudMigration({ apiBaseUrl: "https://api.threebox.org", cloudUrl: "https://cloud.threebox.org" });
+      const conversations = await getAllConversations();
+      if (conversations.length && window.confirm("将本机对话加密转交给 ThreeBox Cloud，并在登录后导入？")) {
+        await cloud.migrate();
+      } else {
+        window.location.assign("https://cloud.threebox.org");
+      }
+    },
     closeLeftDock: () => viewChrome.closeLeftDock(),
     onNewChat: () => {
       disposeAllSceneCards();
@@ -1178,6 +1213,7 @@ async function main() {
     }
   });
   await sidebar.init();
+  if (selfHostedSync.isConfigured()) void selfHostedSync.syncNow().catch((error) => console.warn("[threebox sync]", error));
   await templateGallery.init();
 
   wireThreeBoxComposerStub({
