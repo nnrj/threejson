@@ -20,6 +20,8 @@ import {
   registerObject
 } from "../core/handler/objectRegistry.js";
 import { attachRuntimeContext, createRuntimeContext } from "../core/runtime/runtimeContext.js";
+import { createJsonSceneSimple } from "../core/handler/sceneLoadHandler.js";
+import { sceneToStandardJsonSimple } from "../core/util/sceneToJson.js";
 
 function buildBoxDescriptor(overrides = {}) {
   return {
@@ -201,6 +203,59 @@ test("scene.load sync populates context scene", async () => {
   const listed = await executeCommand(ctx, { op: "scene.list", args: {} });
   assert.equal(listed.ok, true);
   assert.ok(listed.data.count >= 1);
+  clearObjectRegistry();
+});
+
+test("scene.load reuses an owned runtime instead of detaching the hosted canvas", async () => {
+  clearObjectRegistry();
+  const runtime = createJsonSceneSimple(buildMinimalScenePayload());
+  const originalScene = runtime.scene;
+  const ctx = createCommandContext({
+    runtime,
+    scene: runtime.scene,
+    camera: runtime.camera,
+    renderer: runtime.renderer,
+    controls: runtime.controls,
+    document: buildMinimalScenePayload()
+  });
+  const replacement = buildMinimalScenePayload();
+  replacement.worldInfo.boxModelList[0].threeJsonId = "replacement-box";
+  replacement.sceneConfig.lights = [
+    { type: "ambient", color: "#ddeeff", intensity: 0.42 },
+    {
+      type: "directional",
+      color: "#ffffff",
+      intensity: 1.1,
+      position: { x: 4, y: 7, z: 3 }
+    }
+  ];
+
+  const loaded = await executeCommand(ctx, {
+    op: "scene.load",
+    args: { sync: true, json: replacement }
+  });
+
+  assert.equal(loaded.ok, true);
+  assert.equal(ctx.runtime, runtime);
+  assert.equal(ctx.scene, originalScene);
+  let replacementObject = null;
+  ctx.scene.traverse((child) => {
+    if (child.userData?.objJson?.threeJsonId === "replacement-box") replacementObject = child;
+  });
+  assert.ok(replacementObject);
+  const saved = sceneToStandardJsonSimple(runtime.scene, {
+    merge: false,
+    runtimeTarget: runtime,
+    basePayload: ctx.document
+  });
+  assert.deepEqual(
+    saved.sceneConfig.lights.map(({ type, color, intensity }) => ({ type, color, intensity })),
+    [
+      { type: "ambient", color: "#ddeeff", intensity: 0.42 },
+      { type: "directional", color: "#ffffff", intensity: 1.1 }
+    ]
+  );
+  runtime.dispose();
   clearObjectRegistry();
 });
 

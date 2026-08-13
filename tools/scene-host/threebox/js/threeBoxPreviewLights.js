@@ -26,6 +26,8 @@ function syncThreeBoxPreviewAuxiliaryLights(scene, enabled = true) {
   group.name = THREEBOX_PREVIEW_LIGHTS_NAME;
   group.userData = {
     __threeBoxPreviewOnly: true,
+    __threeJsonRuntimeOnly: true,
+    __threeJsonExportExcluded: true,
     objJson: { objType: "light", type: "threebox-preview-auxiliary" }
   };
 

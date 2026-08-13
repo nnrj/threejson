@@ -132,21 +132,32 @@ export async function resolveTurnSceneJsonString(orderedTurns, targetTurnId) {
     throw new Error(`resolveTurnSceneJsonString: no earlier full-JSON turn found to reconstruct ${targetTurnId} from`);
   }
 
+  let baseSceneJson = JSON.parse(orderedTurns[baseIndex].sceneJson);
   const offscreenRuntime = await createOffscreenRuntimeFromSceneJsonString(orderedTurns[baseIndex].sceneJson);
   try {
     const ctx = createCommandContext({
       scene: offscreenRuntime.scene,
       camera: offscreenRuntime.camera,
       renderer: offscreenRuntime.renderer,
-      controls: offscreenRuntime.controls
+      controls: offscreenRuntime.controls,
+      runtime: offscreenRuntime,
+      document: baseSceneJson
     });
     for (let i = baseIndex + 1; i <= targetIndex; i += 1) {
       const commands = orderedTurns[i].commands;
       if (commands?.length) {
-        await executeCommands(ctx, commands);
+        const replayResult = await executeCommands(ctx, commands);
+        if (replayResult?.ok === false) {
+          const failed = replayResult.results?.find((entry) => entry?.ok === false);
+          throw new Error(
+            `resolveTurnSceneJsonString: failed to replay turn ${orderedTurns[i].id}: ${failed?.error || "command execution failed"}`
+          );
+        }
+        baseSceneJson = JSON.parse(exportRuntimeSceneJsonString(offscreenRuntime, baseSceneJson));
+        ctx.document = baseSceneJson;
       }
     }
-    return exportRuntimeSceneJsonString(offscreenRuntime);
+    return JSON.stringify(baseSceneJson, null, 2);
   } finally {
     offscreenRuntime.dispose?.();
   }

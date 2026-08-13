@@ -16,6 +16,13 @@ export function shouldSkipSceneExportNode(obj) {
   if (obj.userData?.type === "helperBoxEdge") {
     return true;
   }
+  if (
+    obj.userData?.__threeJsonRuntimeOnly === true
+    || obj.userData?.__threeJsonExportExcluded === true
+    || obj.userData?.__threeBoxPreviewOnly === true
+  ) {
+    return true;
+  }
   if (obj.type === "AxesHelper" || obj.type === "GridHelper" || obj.type === "BoxHelper") {
     return true;
   }

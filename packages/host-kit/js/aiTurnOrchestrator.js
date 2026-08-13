@@ -60,9 +60,10 @@ export function isProviderVisionCapable(provider) {
 }
 
 async function applyAiDraftCommands(commands, { sceneJsonString }) {
+  const baseSceneJson = parseSceneJsonString(sceneJsonString);
   const runtime = await createOffscreenRuntimeFromSceneJsonString(sceneJsonString);
   try {
-    const ctx = createCommandContextForRuntime(runtime);
+    const ctx = createCommandContextForRuntime(runtime, baseSceneJson);
     const execResult = await executeCommands(ctx, commands);
     const results = Array.isArray(execResult.results) ? execResult.results : [];
     const ok = results.length ? results.every((item) => item.ok !== false) : execResult.ok !== false;
@@ -72,7 +73,7 @@ async function applyAiDraftCommands(commands, { sceneJsonString }) {
         error: results.find((item) => item.ok === false)?.error || "Draft refinement commands failed."
       };
     }
-    return { ok: true, sceneJsonString: exportRuntimeSceneJsonString(runtime) };
+    return { ok: true, sceneJsonString: exportRuntimeSceneJsonString(runtime, baseSceneJson) };
   } finally {
     runtime.dispose?.();
   }
@@ -352,9 +353,13 @@ export function resolveAiAdjustContextPayload(targetSceneJson, settings = {}) {
  * internally) because ThreeBox's turn-store diff-reconstruction (`resolveTurnSceneJsonString` in
  * threeBoxOrchestrator.js) needs the exact same offscreen-runtime-to-JSON round trip outside of
  * any of the run*Turn functions above. */
-export function exportRuntimeSceneJsonString(runtime) {
+export function exportRuntimeSceneJsonString(runtime, basePayload = null) {
   return JSON.stringify(
-    sceneToStandardJsonSimple(runtime.scene, { merge: false, runtimeTarget: runtime }),
+    sceneToStandardJsonSimple(runtime.scene, {
+      merge: false,
+      runtimeTarget: runtime,
+      ...(basePayload && typeof basePayload === "object" ? { basePayload } : {})
+    }),
     null,
     2
   );
@@ -389,12 +394,14 @@ function mapUpdateOutputModeToAgentInput(updateOutputMode) {
   return { outputMode: "commands", updateMode: undefined, stage: "commands" };
 }
 
-function createCommandContextForRuntime(runtime) {
+function createCommandContextForRuntime(runtime, documentPayload = null) {
   return createCommandContext({
     scene: runtime.scene,
     camera: runtime.camera,
     renderer: runtime.renderer,
-    controls: runtime.controls
+    controls: runtime.controls,
+    runtime,
+    document: documentPayload
   });
 }
 
@@ -503,9 +510,15 @@ async function runAiAgentAdjustTurn({
   const usesHostRuntime =
     typeof hostApplyCommands === "function" && typeof hostRefreshContext === "function";
   let offscreenRuntime = null;
+  let offscreenBaseSceneJson = baseSceneJson;
+  let offscreenCommandContext = null;
   const getOffscreenRuntime = async () => {
     if (!offscreenRuntime) {
       offscreenRuntime = await createOffscreenRuntimeFromSceneJsonString(targetSceneJsonString);
+      offscreenCommandContext = createCommandContextForRuntime(
+        offscreenRuntime,
+        offscreenBaseSceneJson
+      );
     }
     return offscreenRuntime;
   };
@@ -518,7 +531,11 @@ async function runAiAgentAdjustTurn({
         return latestRefreshContext;
       }
       const runtime = await getOffscreenRuntime();
-      latestSceneJsonString = exportRuntimeSceneJsonString(runtime);
+      latestSceneJsonString = exportRuntimeSceneJsonString(runtime, offscreenBaseSceneJson);
+      offscreenBaseSceneJson = parseSceneJsonString(latestSceneJsonString);
+      if (offscreenCommandContext) {
+        offscreenCommandContext.document = offscreenBaseSceneJson;
+      }
       const latestSceneJson = parseSceneJsonString(latestSceneJsonString);
       const contextPayload = resolveContextPayload?.(latestSceneJson) || {};
       latestRefreshContext = {
@@ -528,9 +545,8 @@ async function runAiAgentAdjustTurn({
       return latestRefreshContext;
     };
     const applyCommands = usesHostRuntime ? hostApplyCommands : async (commands) => {
-      const runtime = await getOffscreenRuntime();
-      const ctx = createCommandContextForRuntime(runtime);
-      const execResult = await executeCommands(ctx, commands);
+      await getOffscreenRuntime();
+      const execResult = await executeCommands(offscreenCommandContext, commands);
       const results = Array.isArray(execResult.results) ? execResult.results : [];
       const ok = results.length ? results.every((r) => r.ok !== false) : execResult.ok !== false;
       const sceneMutated = results.some((r) => r.ok);
@@ -739,17 +755,18 @@ export async function runAiAdjustTurn({
     }
     const offscreenRuntime = await createOffscreenRuntimeFromSceneJsonString(targetSceneJsonString);
     try {
-      const ctx = createCommandContext({
-        scene: offscreenRuntime.scene,
-        camera: offscreenRuntime.camera,
-        renderer: offscreenRuntime.renderer,
-        controls: offscreenRuntime.controls
-      });
+      const ctx = createCommandContextForRuntime(
+        offscreenRuntime,
+        parseSceneJsonString(targetSceneJsonString)
+      );
       const execResult = await executeCommands(ctx, cmdResult.commands);
       if (!execResult.results.some((r) => r.ok)) {
         throw new Error(execResult.results.find((r) => !r.ok)?.error || "命令执行失败。");
       }
-      const sceneJsonString = exportRuntimeSceneJsonString(offscreenRuntime);
+      const sceneJsonString = exportRuntimeSceneJsonString(
+        offscreenRuntime,
+        parseSceneJsonString(targetSceneJsonString)
+      );
       return {
         stage: "commands",
         commands: cmdResult.commands,

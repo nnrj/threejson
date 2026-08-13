@@ -812,6 +812,12 @@ function createManagedLight(entry, runtimeScope) {
   let light = null;
   if (entry.type === "ambient") {
     light = new THREE.AmbientLight(color, intensity);
+  } else if (entry.type === "hemisphere") {
+    light = new THREE.HemisphereLight(
+      entry.skyColor || color,
+      entry.groundColor || "#444444",
+      intensity
+    );
   } else if (entry.type === "directional") {
     light = new THREE.DirectionalLight(color, intensity);
   } else if (entry.type === "point") {

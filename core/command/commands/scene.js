@@ -1,5 +1,10 @@
 import { validateSceneJson } from "../../handler/sceneJsonValidate.js";
-import { createJsonScene, createJsonSceneSimple } from "../../handler/sceneLoadHandler.js";
+import {
+  createJsonScene,
+  createJsonSceneSimple,
+  deployJsonScene,
+  deployJsonSceneSimple
+} from "../../handler/sceneLoadHandler.js";
 import { resolveParentThreeJsonId } from "../../runtime/sceneObjectCommands.js";
 import { sceneToStandardJsonSimple } from "../../util/sceneToJson.js";
 import { buildCommandResult } from "../types.js";
@@ -17,7 +22,8 @@ function cloneJson(value) {
  * @param {object} deployed
  * @param {object} payload
  */
-function updateContextFromDeployed(ctx, deployed, payload) {
+function updateContextFromDeployed(ctx, deployed, payload, runtimeOwner = deployed) {
+  ctx.runtime = runtimeOwner || null;
   if (deployed?.scene?.isScene) {
     ctx.scene = deployed.scene;
   }
@@ -33,6 +39,19 @@ function updateContextFromDeployed(ctx, deployed, payload) {
   ctx.document = cloneJson(
     deployed?.normalizedPayload || deployed?.sceneJson || payload || ctx.document
   );
+}
+
+/** Apply a full-scene load to an existing hosted runtime when one is supplied. This preserves the
+ * canvas, render loop and host lifecycle; standalone command contexts still create a new runtime. */
+function deployIntoCommandContextRuntime(ctx, payload, loadOptions, sync) {
+  const ownedRuntime = ctx.runtime;
+  if (!ownedRuntime?.scene?.isScene) {
+    return null;
+  }
+  if (sync === true) {
+    return deployJsonSceneSimple(ownedRuntime, payload, { ...loadOptions, resetScene: true });
+  }
+  return deployJsonScene(ownedRuntime, payload, { ...loadOptions, resetScene: true });
 }
 
 /**
@@ -64,12 +83,20 @@ export async function handleSceneLoad(ctx, args = {}) {
   }
 
   const loadOptions = isObjectRecord(args.options) ? args.options : {};
+  const previousRuntime = ctx.runtime;
   try {
-    const deployed =
+    const deployedIntoExisting = await deployIntoCommandContextRuntime(
+      ctx,
+      payload,
+      loadOptions,
+      args.sync === true
+    );
+    const deployed = deployedIntoExisting || (
       args.sync === true
         ? createJsonSceneSimple(payload, loadOptions)
-        : await createJsonScene(payload, loadOptions);
-    updateContextFromDeployed(ctx, deployed, payload);
+        : await createJsonScene(payload, loadOptions)
+    );
+    updateContextFromDeployed(ctx, deployed, payload, deployedIntoExisting ? previousRuntime : deployed);
     return buildCommandResult("scene.load", {
       ok: true,
       mode: "runtime",

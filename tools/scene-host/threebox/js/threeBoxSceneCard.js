@@ -153,6 +153,7 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
     actionBar.querySelectorAll(".sceneCardActionBtn");
 
   let runtime = null;
+  let commandContext = null;
   let liveResizeObserver = null;
   let currentSceneJson = null;
   let renderSeq = 0;
@@ -264,6 +265,7 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
     liveResizeObserver = null;
     runtime?.dispose?.();
     runtime = null;
+    commandContext = null;
     currentSceneJson = sceneJsonPayload;
     setDraftState(options.draft === true);
     setLabel(
@@ -360,7 +362,12 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
   }
 
   function updateSceneJson(sceneJson) {
-    if (sceneJson && typeof sceneJson === "object") currentSceneJson = sceneJson;
+    if (sceneJson && typeof sceneJson === "object") {
+      currentSceneJson = sceneJson;
+      if (commandContext) {
+        commandContext.document = sceneJson;
+      }
+    }
   }
 
   async function executeCommandBatch(commands, options = {}) {
@@ -368,13 +375,31 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
       return { ok: false, sceneMutated: false, results: [], error: "Scene preview runtime is not ready." };
     }
     const { createCommandContext, executeCommands } = await import("threejson");
-    const ctx = createCommandContext({
-      scene: runtime.scene,
-      camera: runtime.camera,
-      renderer: runtime.renderer,
-      controls: runtime.controls
-    });
-    const execResult = await executeCommands(ctx, commands);
+    if (!commandContext || commandContext.scene !== runtime.scene) {
+      commandContext = createCommandContext({
+        scene: runtime.scene,
+        camera: runtime.camera,
+        renderer: runtime.renderer,
+        controls: runtime.controls,
+        runtime,
+        // Keep the declarative document beside the live runtime. Document-level commands and a
+        // later runtime snapshot can then preserve sceneConfig (notably authored lights) instead
+        // of reconstructing it from preview-only objects.
+        document: currentSceneJson
+      });
+    }
+    const execResult = await executeCommands(commandContext, commands);
+    if (commandContext.runtime && commandContext.runtime !== runtime) {
+      runtime = commandContext.runtime;
+      runtime.start?.();
+      watchLiveResize();
+      syncThreeBoxPreviewAuxiliaryLights(
+        runtime.scene,
+        typeof cardOptions.shouldUsePreviewAuxiliaryLights === "function"
+          ? cardOptions.shouldUsePreviewAuxiliaryLights() !== false
+          : cardOptions.previewAuxiliaryLights !== false
+      );
+    }
     const results = Array.isArray(execResult?.results) ? execResult.results : [];
     const failed = results.find((entry) => entry?.ok === false);
     const ok = !failed && execResult?.ok !== false;
@@ -389,6 +414,9 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
     }
     if (options.sceneJson && typeof options.sceneJson === "object") {
       currentSceneJson = options.sceneJson;
+      if (commandContext) {
+        commandContext.document = options.sceneJson;
+      }
     }
     setLabel(options.label);
     setDraftState(options.draft === true);
@@ -443,11 +471,18 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
       return "";
     }
     const { sceneToStandardJsonSimple } = await import("threejson");
+    const basePayload = commandContext?.document && typeof commandContext.document === "object"
+      ? commandContext.document
+      : currentSceneJson;
     const sceneJson = sceneToStandardJsonSimple(runtime.scene, {
       merge: false,
-      runtimeTarget: runtime
+      runtimeTarget: runtime,
+      basePayload
     });
     currentSceneJson = sceneJson;
+    if (commandContext) {
+      commandContext.document = sceneJson;
+    }
     setLabel(options.label);
     if (Object.prototype.hasOwnProperty.call(options, "draft")) {
       setDraftState(options.draft === true);
@@ -477,6 +512,7 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
     liveResizeObserver = null;
     runtime?.dispose?.();
     runtime = null;
+    commandContext = null;
   }
 
   function requireSceneJson() {

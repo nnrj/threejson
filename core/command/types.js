@@ -8,6 +8,7 @@
  * @property {object | null} [controls]
  * @property {object | null} [document] Scene JSON payload when no live runtime is required.
  * @property {object} [options]
+ * @property {object | null} [runtime] Owning scene runtime, when commands operate on a hosted canvas.
  */
 
 /**
@@ -64,7 +65,8 @@ export function createCommandContext(init = {}) {
     renderer: init.renderer ?? null,
     controls: init.controls ?? null,
     document: init.document ?? null,
-    options: init.options && typeof init.options === "object" ? { ...init.options } : {}
+    options: init.options && typeof init.options === "object" ? { ...init.options } : {},
+    runtime: init.runtime ?? null
   };
 }
 

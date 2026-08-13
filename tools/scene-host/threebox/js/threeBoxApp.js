@@ -242,9 +242,10 @@ async function main() {
 
   let sidebar;
   // Each rendered scene card stays live in the DOM for the lifetime of the conversation (turns
-  // are never disposed until "新聊天"/clear). History is immutable: an adjust turn always builds
-  // its own private offscreen runtime (see threeBoxOrchestrator.js) and renders the result into a
-  // brand-new scene card for the NEW turn — an earlier turn's card is never touched.
+  // are never disposed until "新聊天"/clear). History is immutable: an adjust turn owns the
+  // brand-new scene card created for that turn and never mutates an earlier turn's card. The new
+  // card's runtime is also the authoritative adjustment runtime, so preview and persisted JSON
+  // stay in sync without a second hidden scene.
   const sceneCardsByTurnId = new Map();
 
   const createConfiguredSceneCard = () => createThreeBoxSceneCard({

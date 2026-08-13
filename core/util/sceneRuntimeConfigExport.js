@@ -62,6 +62,9 @@ function classifyLightType(light) {
   if (light.isAmbientLight) {
     return "ambient";
   }
+  if (light.isHemisphereLight) {
+    return "hemisphere";
+  }
   if (light.isDirectionalLight) {
     return "directional";
   }
@@ -75,6 +78,30 @@ function classifyLightType(light) {
 }
 
 /**
+ * Runtime-only host helpers (ThreeBox preview fill lights, editor helpers, etc.) must never become
+ * authored sceneConfig.lights during a scene snapshot. Checking every ancestor is intentional:
+ * ThreeBox keeps the marker on a Group while the actual Ambient/DirectionalLight nodes are its
+ * children.
+ *
+ * @param {import("three").Object3D|null|undefined} object
+ * @returns {boolean}
+ */
+function isRuntimeOnlyLight(object) {
+  let current = object;
+  while (current) {
+    if (
+      current.userData?.__threeBoxPreviewOnly === true
+      || current.userData?.__threeJsonRuntimeOnly === true
+      || current.userData?.__threeJsonExportExcluded === true
+    ) {
+      return true;
+    }
+    current = current.parent;
+  }
+  return false;
+}
+
+/**
  * @param {import("three").Scene|null|undefined} scene
  * @returns {object[]}
  */
@@ -84,6 +111,9 @@ export function extractLightsConfigFromScene(scene) {
   }
   const out = [];
   scene.traverse((obj) => {
+    if (isRuntimeOnlyLight(obj)) {
+      return;
+    }
     const type = classifyLightType(obj);
     if (!type) {
       return;
@@ -98,6 +128,10 @@ export function extractLightsConfigFromScene(scene) {
         z: safeNum(obj.position?.z, 0)
       }
     };
+    if (type === "hemisphere") {
+      entry.skyColor = `#${obj.color?.getHexString?.() || "ffffff"}`;
+      entry.groundColor = `#${obj.groundColor?.getHexString?.() || "444444"}`;
+    }
     if (type === "point" || type === "spot") {
       entry.distance = safeNum(obj.distance, 0);
       entry.decay = safeNum(obj.decay, 2);
@@ -147,6 +181,12 @@ export function applyRuntimeSceneConfigToPayload(payload, target, scene) {
       ...entry,
       jsonOrigin: JSON_ORIGIN_CONFIG
     }));
+  } else if (Array.isArray(payload.sceneConfig.lights)) {
+    // Preserve an explicit empty list from basePayload. It is an author decision to keep the
+    // scene unlit; deleting it would make the next load inject default lights and change meaning.
+    payload.sceneConfig.lights = [];
+  } else {
+    delete payload.sceneConfig.lights;
   }
 }
 
