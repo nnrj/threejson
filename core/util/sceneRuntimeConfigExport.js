@@ -78,10 +78,9 @@ function classifyLightType(light) {
 }
 
 /**
- * Runtime-only host helpers (ThreeBox preview fill lights, editor helpers, etc.) must never become
- * authored sceneConfig.lights during a scene snapshot. Checking every ancestor is intentional:
- * ThreeBox keeps the marker on a Group while the actual Ambient/DirectionalLight nodes are its
- * children.
+ * Runtime-only host helpers must never become authored sceneConfig.lights during a scene
+ * snapshot. Checking every ancestor is intentional because a host may mark a container while
+ * the actual light nodes are its children.
  *
  * @param {import("three").Object3D|null|undefined} object
  * @returns {boolean}
@@ -90,8 +89,7 @@ function isRuntimeOnlyLight(object) {
   let current = object;
   while (current) {
     if (
-      current.userData?.__threeBoxPreviewOnly === true
-      || current.userData?.__threeJsonRuntimeOnly === true
+      current.userData?.__threeJsonRuntimeOnly === true
       || current.userData?.__threeJsonExportExcluded === true
     ) {
       return true;

@@ -1,7 +1,7 @@
 const NATIVE_SCENE_ROOT_NAME = "__threejson_native_scene__";
 
 /**
- * Export skip rules aligned with editor `isRuntimeOnlyObject` / `defaultShouldSkipEditorSceneTreeNode`.
+ * Export skip rules for runtime-only helpers and non-persistent scene nodes.
  *
  * @param {import("three").Object3D|null|undefined} obj
  * @returns {boolean} true = skip (exclude from scene→JSON reverse-scan)
@@ -19,7 +19,6 @@ export function shouldSkipSceneExportNode(obj) {
   if (
     obj.userData?.__threeJsonRuntimeOnly === true
     || obj.userData?.__threeJsonExportExcluded === true
-    || obj.userData?.__threeBoxPreviewOnly === true
   ) {
     return true;
   }
