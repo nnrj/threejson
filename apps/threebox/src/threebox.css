@@ -547,11 +547,33 @@ details[open] > .sidebarSectionTitle::before { transform: rotate(90deg); }
 .modalFooter { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 18px 16px; }
 .modalFooter button { height: 34px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--button); color: var(--text); cursor: pointer; }
 .modalFooter button.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
-.threeboxNotificationBell { position: fixed; top: 16px; right: 18px; z-index: 91; width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 50%; background: var(--panel2); color: var(--text); font-size: 19px; cursor: pointer; box-shadow: 0 7px 22px rgba(0,0,0,.28); }
+.threeboxNotificationBell { position: fixed; top: 16px; right: 18px; z-index: 91; display: grid; place-items: center; width: 38px; height: 38px; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: var(--panel2); color: var(--text); cursor: pointer; box-shadow: 0 7px 22px rgba(0,0,0,.28); }
+.threeboxNotificationBell:hover { background: var(--button-hover); }
+.threeboxNotificationBell:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.threeboxNotificationBell svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
 .threeboxNotificationBell em { position: absolute; top: -5px; right: -5px; min-width: 17px; padding: 1px 4px; border-radius: 10px; background: #e35d6a; color: #fff; font: 700 10px/15px system-ui; font-style: normal; }
 .threeboxNotificationInbox { position: fixed; top: 62px; right: 18px; z-index: 91; width: min(380px,calc(100vw - 36px)); max-height: min(540px,calc(100vh - 84px)); overflow: auto; padding: 13px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel2); box-shadow: 0 14px 42px rgba(0,0,0,.42); }
-.threeboxNoticeItem { display: grid; gap: 6px; margin-top: 10px; padding: 11px; border: 1px solid var(--line); border-radius: 9px; cursor: pointer; }.threeboxNoticeItem.read { opacity: .65; }.threeboxNoticeItem small { color: var(--muted); }.threeboxNoticeBody { line-height: 1.5; }.threeboxNoticeBody h2,.threeboxNoticeBody h3,.threeboxNoticeBody h4 { margin: 2px 0; font-size: 14px; }
-.threeboxBuiltinNotice { position: fixed; top: 68px; right: 18px; z-index: 92; display: grid; gap: 4px; width: min(360px,calc(100vw - 36px)); padding: 14px; border: 1px solid #6575bd; border-radius: 11px; background: #26355a; color: #fff; text-align: left; cursor: pointer; box-shadow: 0 10px 30px #0008; }.threeboxBuiltinNotice span { opacity: .9; line-height: 1.4; }
+.threeboxNoticeHeader { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 2px 2px 4px; }
+.threeboxNoticeHeader span,.threeboxNoticeEmpty { color: var(--muted); font-size: 12px; }
+.threeboxNoticeEmpty { margin: 18px 4px; text-align: center; }
+.threeboxNoticeItem { position: relative; display: grid; gap: 6px; margin-top: 10px; padding: 11px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); cursor: pointer; }
+.threeboxNoticeItem:hover { border-color: var(--brand); }
+.threeboxNoticeItem:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+.threeboxNoticeItem.unread { border-left: 3px solid var(--brand); }
+.threeboxNoticeItem.level-warning { border-left-color: #e9a43a; }
+.threeboxNoticeItem.level-important { border-left-color: #e35d6a; }
+.threeboxNoticeItem.read { opacity: .66; }
+.threeboxNoticeItem small { color: var(--muted); }
+.threeboxNoticeBody,.threeboxBuiltinNoticeBody { min-width: 0; line-height: 1.5; overflow-wrap: anywhere; }
+.threeboxNoticeBody > :first-child,.threeboxBuiltinNoticeBody > :first-child { margin-top: 0; }
+.threeboxNoticeBody > :last-child,.threeboxBuiltinNoticeBody > :last-child { margin-bottom: 0; }
+.threeboxNoticeBody p,.threeboxBuiltinNoticeBody p { margin: 5px 0; }
+.threeboxNoticeBody h1,.threeboxNoticeBody h2,.threeboxNoticeBody h3,.threeboxNoticeBody h4,.threeboxBuiltinNoticeBody h1,.threeboxBuiltinNoticeBody h2,.threeboxBuiltinNoticeBody h3,.threeboxBuiltinNoticeBody h4 { margin: 6px 0 3px; font-size: 14px; }
+.threeboxNoticeBody pre,.threeboxBuiltinNoticeBody pre { max-width: 100%; overflow: auto; padding: 7px; border-radius: 6px; background: #0003; }
+.threeboxNoticeBody a,.threeboxBuiltinNoticeBody a { color: #88aaff; }
+.threeboxBuiltinNotice { position: fixed; top: 68px; right: 18px; z-index: 92; display: grid; gap: 7px; width: min(360px,calc(100vw - 36px)); max-height: min(300px,calc(100vh - 92px)); overflow: auto; padding: 14px; border: 1px solid #6575bd; border-radius: 11px; background: #26355a; color: #fff; text-align: left; cursor: pointer; box-shadow: 0 10px 30px #0008; }
+.threeboxBuiltinNotice.level-warning { border-color: #e9a43a; }
+.threeboxBuiltinNotice.level-important { border-color: #e35d6a; }
 .helpContactList { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; font-size: 13px; }
 .helpContactList a { color: var(--brand); }
 
