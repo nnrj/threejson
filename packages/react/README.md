@@ -125,30 +125,9 @@ reached its second consumer.
 The load is kicked off lazily from the hook rather than at module scope, so importing the package
 performs no I/O and touches no browser storage.
 
-## `useConversations()`
-
-React binding for host-kit's ThreeBox session store — persisted chat history.
-
-```jsx
-const history = useConversations();
-await history.create({ title: "A green box" });
-await history.appendTurn(history.activeId, { userPrompt, sceneJson, mode: "generate" });
-const turns = await history.loadTurns(id);
-```
-
-Unlike `usePlaylist`, the store underneath is a plain async CRUD module with no subscription — it is
-the database, not an observable — so this hook owns the cached list and re-reads after each write.
-That keeps IndexedDB authoritative instead of maintaining a parallel copy that can drift.
-
-Turns are **not** loaded with the list. A turn holds a full scene snapshot, often hundreds of KB, so
-loading every conversation's turns to draw a sidebar would pull the whole database into memory. Call
-`loadTurns(id)` for the active conversation only.
-
-`seq` is assigned from the stored turn count, not a render-time counter, so a reopened conversation
-continues numbering instead of restarting at 0 and colliding.
-
-Where IndexedDB is unavailable (SSR, some privacy modes) the hook still renders and reports
-`persistent: false`, so an app can warn that the session will not be saved rather than crash.
+Conversational scene-authoring hooks are intentionally separate from these general engine bindings.
+Use `useSceneConversations()` from [`@threejson/react-scene-agent`](../react-scene-agent/README.md)
+with a repository created by `@threejson/scene-agent-kit`.
 
 ## Status
 

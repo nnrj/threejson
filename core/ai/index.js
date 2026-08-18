@@ -11,6 +11,7 @@ import {
   parseSceneJsonString,
   projectSceneJsonString,
   resolveVisionImageUrl,
+  createSceneAiTurnContext,
   createThreeBoxTurnContext
 } from "./sceneAiService.js";
 import {
@@ -117,7 +118,8 @@ if (typeof window !== "undefined") {
     classifyTurnIntent,
     summarizeSceneTurn,
     generateSceneTitle,
-    buildStructuredTurnEnvelope
+    buildStructuredTurnEnvelope,
+    createSceneAiTurnContext
   };
 }
 
@@ -162,5 +164,6 @@ export {
   summarizeSceneTurn,
   generateSceneTitle,
   buildStructuredTurnEnvelope,
+  createSceneAiTurnContext,
   createThreeBoxTurnContext
 };

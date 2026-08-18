@@ -115,8 +115,8 @@ function buildDeepSeekThinkingOptions(preference) {
   return { thinking: { type: "enabled" }, reasoning_effort: normalized };
 }
 
-/** Shared mutable state for every provider request spawned by one user-authored ThreeBox turn. */
-function createThreeBoxTurnContext(turnId, originalPrompt) {
+/** Shared mutable state for every provider request spawned by one user-authored scene turn. */
+function createSceneAiTurnContext(turnId, originalPrompt) {
   return {
     turnId: String(turnId || "").trim(),
     originalPrompt: String(originalPrompt || ""),
@@ -161,6 +161,9 @@ function buildThreeBoxRequestContext(context, options = {}) {
     } : {})
   };
 }
+
+// Retained for existing ThreeBox hosts; reusable packages use the product-neutral name above.
+const createThreeBoxTurnContext = createSceneAiTurnContext;
 
 function applyThreeBoxModerationHeaders(context, headers) {
   if (!isObject(context) || !headers?.get) {
@@ -1791,6 +1794,7 @@ export {
   buildGenerateUserMessage,
   projectSceneJsonString,
   maybeApplyCapabilityReview,
+  createSceneAiTurnContext,
   createThreeBoxTurnContext,
   buildThreeBoxRequestContext,
   applyThreeBoxModerationHeaders

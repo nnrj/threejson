@@ -1,5 +1,5 @@
 /**
- * React binding for @threejson/host-kit's ThreeBox session store (IndexedDB).
+ * React binding for an injected scene-agent repository.
  *
  * Unlike usePlaylist, the underlying store is a plain async CRUD module with no subscription — it is
  * the database, not an observable. So this hook owns the cached list and re-reads after each write,
@@ -11,14 +11,7 @@
  * would pull the entire database into memory. Call `loadTurns(id)` for the active conversation only.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  createConversationId,
-  deleteConversation as deleteConversationRecord,
-  getAllConversations,
-  getTurnsForConversation,
-  putConversation,
-  putTurn
-} from "@threejson/host-kit/js/threeBoxSessionStore.js";
+import { createConversationId } from "@threejson/scene-agent-kit/repository";
 
 /** Most recently touched first; pinned conversations always above the rest. */
 function sortConversations(list) {
@@ -34,7 +27,7 @@ function sortConversations(list) {
  * @param {object} [options]
  * @param {boolean} [options.includeArchived=false]
  */
-export function useConversations({ includeArchived = false } = {}) {
+export function useSceneConversations({ repository = null, includeArchived = false } = {}) {
   const [conversations, setConversations] = useState([]);
   const [activeId, setActiveId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -42,7 +35,7 @@ export function useConversations({ includeArchived = false } = {}) {
 
   // IndexedDB is unavailable in SSR and in some privacy modes; the app should degrade to a
   // session-only history rather than fail to render.
-  const available = typeof indexedDB !== "undefined";
+  const available = Boolean(repository?.available?.());
 
   const refresh = useCallback(async () => {
     if (!available) {
@@ -50,7 +43,7 @@ export function useConversations({ includeArchived = false } = {}) {
       return [];
     }
     try {
-      const all = await getAllConversations();
+      const all = await repository.getAllConversations();
       const visible = includeArchived ? all : all.filter((c) => !c.archived);
       const sorted = sortConversations(visible);
       setConversations(sorted);
@@ -62,7 +55,7 @@ export function useConversations({ includeArchived = false } = {}) {
     } finally {
       setLoading(false);
     }
-  }, [available, includeArchived]);
+  }, [available, includeArchived, repository]);
 
   const mountedRef = useRef(false);
   useEffect(() => {
@@ -84,7 +77,7 @@ export function useConversations({ includeArchived = false } = {}) {
         projectId
       };
       if (available) {
-        await putConversation(record);
+        await repository.putConversation(record);
         await refresh();
       } else {
         setConversations((prev) => sortConversations([record, ...prev]));
@@ -92,7 +85,7 @@ export function useConversations({ includeArchived = false } = {}) {
       setActiveId(record.id);
       return record;
     },
-    [available, refresh]
+    [available, refresh, repository]
   );
 
   /** Partial update; always bumps `updatedAt` so the list re-orders the way a user expects. */
@@ -104,20 +97,20 @@ export function useConversations({ includeArchived = false } = {}) {
       }
       const next = { ...current, ...partial, updatedAt: Date.now() };
       if (available) {
-        await putConversation(next);
+        await repository.putConversation(next);
         await refresh();
       } else {
         setConversations((prev) => sortConversations(prev.map((c) => (c.id === id ? next : c))));
       }
       return next;
     },
-    [conversations, available, refresh]
+    [conversations, available, refresh, repository]
   );
 
   const remove = useCallback(
     async (id) => {
       if (available) {
-        await deleteConversationRecord(id);
+        await repository.deleteConversation(id);
         await refresh();
       } else {
         setConversations((prev) => prev.filter((c) => c.id !== id));
@@ -126,7 +119,7 @@ export function useConversations({ includeArchived = false } = {}) {
       // UI showing a conversation that no longer exists.
       setActiveId((prev) => (prev === id ? null : prev));
     },
-    [available, refresh]
+    [available, refresh, repository]
   );
 
   const loadTurns = useCallback(
@@ -135,13 +128,13 @@ export function useConversations({ includeArchived = false } = {}) {
         return [];
       }
       try {
-        return await getTurnsForConversation(id);
+        return await repository.getTurnsForConversation(id);
       } catch (err) {
         setError(String(err?.message || err));
         return [];
       }
     },
-    [available]
+    [available, repository]
   );
 
   /**
@@ -155,7 +148,7 @@ export function useConversations({ includeArchived = false } = {}) {
       if (!available || !conversationId) {
         return null;
       }
-      const existing = await getTurnsForConversation(conversationId);
+      const existing = await repository.getTurnsForConversation(conversationId);
       const record = {
         createdAt: Date.now(),
         ...turn,
@@ -163,11 +156,11 @@ export function useConversations({ includeArchived = false } = {}) {
         conversationId,
         seq: existing.length
       };
-      await putTurn(record);
+      await repository.putTurn(record);
       await update(conversationId, {});
       return record;
     },
-    [available, update]
+    [available, update, repository]
   );
 
   const active = useMemo(

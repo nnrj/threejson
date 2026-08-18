@@ -45,7 +45,10 @@ export function getAiErrorFeedback(error) {
   const payloadCode = typeof payload?.error === "string"
     ? payload.error
     : typeof payload?.error?.code === "string" ? payload.error.code : "";
-  const providerCode = String(payloadCode || PROVIDER_CODE_BY_CLIENT_CODE[error?.code] || "");
+  const directTransportCode = typeof error?.code === "string" && error.code.startsWith("UPSTREAM_")
+    ? error.code
+    : "";
+  const providerCode = String(payloadCode || PROVIDER_CODE_BY_CLIENT_CODE[error?.code] || directTransportCode);
   const warningCount = Number(payload?.safety_enforcement?.warning_count);
   let tone = "error";
   let message;
@@ -74,6 +77,16 @@ export function getAiErrorFeedback(error) {
     message = t("ai.error.invalidApiKeyHeader", "API Key 包含无法用于请求头的字符，请检查配置后重试。");
   } else if (error?.code === "THREEBOX_INTENT_CLASSIFICATION_FAILED") {
     message = t("ai.error.intentClassificationFailed", "未能可靠判断本次请求的操作类型，已停止本轮操作以避免错误修改场景，请重试。");
+  } else if (providerCode === "UPSTREAM_REASONING_EXHAUSTED") {
+    message = t("ai.error.reasoningExhausted", "供应商的思考过程耗尽了输出额度，尚未生成场景内容。请关闭或降低思考模式后重试。");
+  } else if (providerCode === "UPSTREAM_OUTPUT_LIMIT") {
+    message = t("ai.error.upstreamOutputLimit", "供应商在生成正文前达到输出长度上限，请降低场景复杂度或改用增量构建。");
+  } else if (providerCode === "UPSTREAM_CONTENT_FILTERED") {
+    message = t("ai.error.upstreamContentFiltered", "供应商过滤了本次输出，未返回可用场景内容。");
+  } else if (providerCode === "UPSTREAM_RESOURCE_UNAVAILABLE") {
+    message = t("ai.error.upstreamResourceUnavailable", "供应商当前推理资源不足，请稍后重试或切换供应商。");
+  } else if (providerCode === "UPSTREAM_EMPTY_COMPLETION") {
+    message = t("ai.error.upstreamEmptyCompletion", "供应商结束了响应，但没有返回可用内容。请重试或切换供应商。");
   } else if (providerCode || Number.isFinite(Number(error?.httpStatus))) {
     message = t("ai.error.failed", "处理失败，发生错误。");
   } else if (error?.code) {

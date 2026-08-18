@@ -1,0 +1,37 @@
+{
+  "name": "@threejson/scene-agent-kit",
+  "version": "0.1.0-alpha.1",
+  "description": "Framework-neutral conversational ThreeJSON scene authoring: routing, generation and adjustment orchestration, settings, progress contracts, and persistence adapters.",
+  "author": "nnrj <tianhehechu2017@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nnrj/threejson.git",
+    "directory": "packages/scene-agent-kit"
+  },
+  "homepage": "https://github.com/nnrj/threejson#readme",
+  "bugs": { "url": "https://github.com/nnrj/threejson/issues" },
+  "type": "module",
+  "exports": {
+    ".": { "types": "./index.d.ts", "default": "./js/index.js" },
+    "./contracts": { "types": "./contracts.d.ts", "default": "./js/contracts.js" },
+    "./controller": { "types": "./controller.d.ts", "default": "./js/controller.js" },
+    "./repository": { "types": "./repository.d.ts", "default": "./js/repository.js" },
+    "./settings": { "types": "./settings.d.ts", "default": "./js/settings.js" },
+    "./turn-state": { "types": "./turn-state.d.ts", "default": "./js/turnState.js" },
+    "./package.json": "./package.json",
+    "./js/*.js": "./js/*.js"
+  },
+  "types": "./index.d.ts",
+  "files": ["js", "*.d.ts", "LICENSE", "README.md"],
+  "peerDependencies": {
+    "@threejson/host-kit": "^0.1.0-alpha.1",
+    "threejson": "^0.1.0-alpha.9"
+  },
+  "devDependencies": {
+    "@threejson/host-kit": "file:../host-kit",
+    "threejson": "file:../.."
+  },
+  "engines": { "node": ">=24.0.0" },
+  "keywords": ["threejson", "scene-agent", "ai", "3d"],
+  "license": "MIT"
+}

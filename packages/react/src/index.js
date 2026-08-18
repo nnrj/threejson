@@ -10,4 +10,3 @@ export { useScenePlayer } from "./useScenePlayer.js";
 export { useHostI18n, setHostLocale } from "./i18n.js";
 export { usePlayerSettings } from "./usePlayerSettings.js";
 export { usePlaylist } from "./usePlaylist.js";
-export { useConversations } from "./useConversations.js";

@@ -1,0 +1,151 @@
+.sceneAgentSceneCard {
+  --scene-agent-line: var(--line, #343842);
+  --scene-agent-panel: var(--panel2, #202329);
+  --scene-agent-canvas: var(--canvas-bg, #050608);
+  --scene-agent-text: var(--text, #f2f4f8);
+  --scene-agent-muted: var(--muted, #9da7b7);
+  --scene-agent-hover: var(--button-hover, #303541);
+}
+:where(.sceneAgentSceneCard) {
+  width: 100%;
+  margin-top: 12px;
+}
+:where(.sceneAgentSceneCard) :where(.sceneCardCanvasWrap) {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  max-height: 420px;
+  overflow: hidden;
+  border: 1px solid var(--scene-agent-line);
+  border-radius: 14px 14px 0 0;
+  background: var(--scene-agent-canvas);
+}
+:where(.sceneAgentSceneCard) :where(.sceneCardCanvasWrap:fullscreen) {
+  max-height: none;
+  border-radius: 0;
+  aspect-ratio: auto;
+}
+:where(.sceneAgentSceneCard) :where(.sceneCardCanvas) {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+:where(.sceneAgentSceneCard) :where(.sceneCardLoadingMask) {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  background: rgb(0 0 0 / 45%);
+  color: var(--scene-agent-muted);
+  font-size: 13px;
+}
+:where(.sceneAgentSceneCard) :where(.sceneCardLoadingMaskCompact) {
+  inset: 10px 10px auto auto;
+  max-width: calc(100% - 20px);
+  border: 1px solid var(--scene-agent-line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--scene-agent-panel) 86%, transparent);
+  color: var(--scene-agent-text);
+  font-size: 12px;
+  pointer-events: none;
+  backdrop-filter: blur(7px);
+}
+:where(.sceneAgentSceneCard) :where(.sceneCardLoadingMask)::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  margin-right: 9px;
+  flex: 0 0 auto;
+  border: 2px solid color-mix(in srgb, currentColor 30%, transparent);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: sceneAgentSpin 0.8s linear infinite;
+}
+:where(.sceneAgentSceneCard) :where(.sceneCardActionBar) {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  overflow-x: auto;
+  border: 1px solid var(--scene-agent-line);
+  border-top: 0;
+  border-radius: 0 0 14px 14px;
+  background: var(--scene-agent-panel);
+}
+:where(.sceneAgentSceneCard) :where(.sceneCardActionBtn) {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--scene-agent-muted);
+  cursor: pointer;
+}
+:where(.sceneAgentSceneCard) :where(.sceneCardActionBtn:hover) {
+  background: var(--scene-agent-hover);
+  color: var(--scene-agent-text);
+}
+:where(.sceneAgentSceneCard) :where(.sceneCardActionBtn:disabled) {
+  opacity: 0.5;
+  cursor: default;
+}
+.sceneAgentProgress {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: center;
+  color: var(--scene-agent-muted, #9da7b7);
+}
+.sceneAgentProgressSpinner {
+  width: 0.9rem;
+  height: 0.9rem;
+  border: 2px solid color-mix(in srgb, currentColor 35%, transparent);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: sceneAgentSpin 0.8s linear infinite;
+}
+.sceneAgentProgressStream {
+  grid-column: 1 / -1;
+  max-height: 12rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  margin: 0;
+}
+.sceneCardDraftBadge,
+.sceneCardTextureBadge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 3;
+  max-width: calc(100% - 20px);
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: color-mix(in srgb, var(--panel, #1c1d20) 88%, transparent);
+  color: var(--text, #f2f4f8);
+  font-size: 12px;
+  line-height: 1.2;
+  backdrop-filter: blur(8px);
+}
+.sceneCardTextureBadge { top: 42px; }
+.sceneCardTextureBadge[data-state="working"]::before {
+  content: "";
+  display: inline-block;
+  width: 0.65em;
+  height: 0.65em;
+  margin-right: 0.45em;
+  border: 1.5px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: sceneAgentSpin 0.8s linear infinite;
+}
+.sceneCardTextureBadge[data-state="warning"],
+.sceneCardTextureBadge[data-state="failed"] { color: var(--warning, #f3b15c); }
+@keyframes sceneAgentSpin { to { transform: rotate(360deg); } }

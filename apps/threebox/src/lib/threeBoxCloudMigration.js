@@ -5,7 +5,7 @@
  * per-transfer key that is itself RSA-OAEP wrapped with the server's public key, and the envelope is
  * POSTed; the user completes the transfer after Cloud login (we redirect with the returned id).
  */
-import { getAllConversations, getTurnsForConversation } from "@threejson/host-kit/js/threeBoxSessionStore.js";
+import { getAllConversations, getTurnsForConversation } from "./sceneAgentRepository.js";
 
 const bytesToBase64 = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes)));
 

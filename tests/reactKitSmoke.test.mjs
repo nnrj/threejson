@@ -73,15 +73,18 @@ test("setHostLocale switches the host-kit catalog and is observable through it",
   assert.equal(t("player.shell.play", "FALLBACK"), "Play");
 });
 
-test("useConversations degrades to session-only history when IndexedDB is absent", async () => {
-  const { useConversations } = await import("@threejson/react");
+test("useSceneConversations degrades to session-only history when IndexedDB is absent", async () => {
+  const { useSceneConversations } = await import("@threejson/react-scene-agent/conversations");
+  const { createSceneAgentRepository } = await import("@threejson/scene-agent-kit/repository");
   const { createElement: h } = await import("react");
 
   // Node has no indexedDB. The hook must render rather than throw, and must say so via
   // `persistent: false` so an app can warn the user their history will not be saved.
   let observed = null;
   function Probe() {
-    observed = useConversations();
+    observed = useSceneConversations({
+      repository: createSceneAgentRepository({ dbName: "react-scene-agent-ssr-test", indexedDb: null })
+    });
     return h("div", null, String(observed.persistent));
   }
   const html = renderToStaticMarkup(h(Probe));

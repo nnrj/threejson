@@ -116,8 +116,13 @@ test("React packages publish stable capability subpaths", () => {
   const uiManifest = JSON.parse(
     fs.readFileSync(path.join(REPO_ROOT, "packages", "react-ui", "package.json"), "utf8")
   );
+  const sceneAgentManifest = JSON.parse(
+    fs.readFileSync(path.join(REPO_ROOT, "packages", "scene-agent-kit", "package.json"), "utf8")
+  );
+  const reactSceneAgentManifest = JSON.parse(
+    fs.readFileSync(path.join(REPO_ROOT, "packages", "react-scene-agent", "package.json"), "utf8")
+  );
   for (const subpath of [
-    "./conversations",
     "./i18n",
     "./player-settings",
     "./playlist",
@@ -128,6 +133,44 @@ test("React packages publish stable capability subpaths", () => {
   }
   assert.ok(uiManifest.exports?.["./mesh-export"]);
   assert.ok(uiManifest.exports?.["./scene-tree"]);
+  for (const subpath of ["./contracts", "./controller", "./repository", "./settings", "./turn-state"]) {
+    assert.ok(sceneAgentManifest.exports?.[subpath], subpath);
+    assert.notEqual(sceneAgentManifest.exports[subpath].types, "./index.d.ts", `${subpath} needs capability-scoped types`);
+  }
+  for (const subpath of ["./conversations", "./scene-card", "./scene-card-runtime", "./progress", "./preview-lights", "./scene-load-queue", "./styles.css"]) {
+    assert.ok(reactSceneAgentManifest.exports?.[subpath], subpath);
+    if (subpath !== "./styles.css") {
+      assert.notEqual(reactSceneAgentManifest.exports[subpath].types, "./index.d.ts", `${subpath} needs capability-scoped types`);
+    }
+  }
+});
+
+test("scene-agent packages stay optional, unbranded, and free of product service URLs", () => {
+  const roots = [
+    path.join(REPO_ROOT, "packages", "scene-agent-kit"),
+    path.join(REPO_ROOT, "packages", "react-scene-agent")
+  ];
+  const violations = [];
+  for (const root of roots) {
+    for (const file of walkFiles(root)) {
+      const source = fs.readFileSync(file, "utf8");
+      if (/three[-_ ]?box/i.test(source)) violations.push(`${relative(file)} -> product branding`);
+      if (/https?:\/\/(?:api\.)?threebox\.org/i.test(source)) violations.push(`${relative(file)} -> fixed ThreeBox service URL`);
+      for (const reference of collectModuleReferences(file)) {
+        if (reference.startsWith("@threejson/scene-agent-kit") && root.endsWith("scene-agent-kit")) continue;
+        if (/apps\/threebox|tools\/scene-host\/threebox|threebox-cloud/i.test(reference)) {
+          violations.push(`${relative(file)} -> ${reference}`);
+        }
+      }
+    }
+  }
+  assert.deepEqual(violations, []);
+
+  const rootManifest = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "package.json"), "utf8"));
+  for (const packageName of ["@threejson/scene-agent-kit", "@threejson/react-scene-agent"]) {
+    assert.equal(rootManifest.dependencies?.[packageName], undefined);
+    assert.equal(rootManifest.peerDependencies?.[packageName], undefined);
+  }
 });
 
 test("packages do not statically import aggregate ThreeJSON entries", () => {

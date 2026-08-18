@@ -16,6 +16,8 @@
     "@threejson/player-kit": "file:../../packages/player-kit",
     "@threejson/react": "file:../../packages/react",
     "@threejson/react-ui": "file:../../packages/react-ui",
+    "@threejson/scene-agent-kit": "file:../../packages/scene-agent-kit",
+    "@threejson/react-scene-agent": "file:../../packages/react-scene-agent",
     "dompurify": "^3.1.6",
     "marked": "^12.0.2",
     "react": "^18.3.1",

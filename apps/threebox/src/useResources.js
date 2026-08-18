@@ -16,7 +16,7 @@ import {
   putResource,
   deleteResource,
   createResourceId
-} from "@threejson/host-kit/js/threeBoxSessionStore.js";
+} from "./lib/sceneAgentRepository.js";
 
 export function useResources() {
   const [resources, setResources] = useState([]);

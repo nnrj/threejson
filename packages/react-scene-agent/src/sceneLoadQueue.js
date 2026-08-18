@@ -1,6 +1,5 @@
 /**
- * Ported from tools/scene-host/threebox/js/threeBoxSceneLoadQueue.js (app-local: no @threejson/*
- * package covers it), then made to actually serialize.
+ * Serializes inline scene-card loads so concurrent React effects cannot race for WebGL contexts.
  *
  * The vanilla original does not serialize — it is only a busy tracker — because a plain page never
  * starts two scene loads for the same canvas at once. React's StrictMode does: it double-invokes a
@@ -14,11 +13,11 @@ let tail = Promise.resolve();
 
 function emitBusyChanged() {
   window.dispatchEvent(
-    new CustomEvent("threebox:scene-load-busy", { detail: { busy: activeCount > 0, activeCount } })
+    new CustomEvent("scene-agent:scene-load-busy", { detail: { busy: activeCount > 0, activeCount } })
   );
 }
 
-export function enqueueThreeBoxSceneLoad(task) {
+export function enqueueSceneAgentLoad(task) {
   activeCount += 1;
   emitBusyChanged();
   const run = tail.then(
@@ -36,6 +35,6 @@ export function enqueueThreeBoxSceneLoad(task) {
   });
 }
 
-export function isThreeBoxSceneLoadBusy() {
+export function isSceneAgentLoadBusy() {
   return activeCount > 0;
 }

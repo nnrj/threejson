@@ -207,18 +207,20 @@ test("sceneTreeModel hides runtime objects and keeps authored hierarchy", async 
   assert.ok(anon[0].uuid);
 });
 
-test("threeBoxSessionStore exposes its CRUD surface and collision-resistant ids", async () => {
-  const store = await import("@threejson/host-kit/js/threeBoxSessionStore.js");
+test("scene-agent repository exposes its CRUD surface and collision-resistant ids", async () => {
+  const store = await import("@threejson/scene-agent-kit/repository");
+  const repository = store.createSceneAgentRepository({ dbName: "scene-agent-smoke", indexedDb: null });
 
   for (const fn of [
     "putTurn", "getTurn", "getTurnsForConversation", "getAllTurns", "deleteTurnsForConversation",
     "putResource", "getResource", "getAllResources", "deleteResource",
     "putConversation", "getConversation", "getAllConversations", "deleteConversation",
-    "putProject", "getAllProjects", "createTurnId", "createResourceId",
-    "createConversationId", "createProjectId", "resetSessionStoreConnection"
+    "putProject", "getAllProjects", "resetConnection"
   ]) {
-    assert.equal(typeof store[fn], "function", `missing export: ${fn}`);
+    assert.equal(typeof repository[fn], "function", `missing repository method: ${fn}`);
   }
+  for (const fn of ["createTurnId", "createResourceId", "createConversationId", "createProjectId"])
+    assert.equal(typeof store[fn], "function", `missing export: ${fn}`);
 
   // Ids are prefixed by kind (so a stray id is identifiable in a dump) and carry enough entropy
   // that turns created inside the same millisecond do not collide.
@@ -344,11 +346,12 @@ test("editorSessionIdb round-trips values by key without indexedDB in Node", asy
   assert.equal(typeof indexedDB, "undefined");
 });
 
-test("threeBoxSessionStore resources API shape backs the library panel", async () => {
-  const store = await import("@threejson/host-kit/js/threeBoxSessionStore.js");
+test("scene-agent repository resources API shape backs a host library", async () => {
+  const store = await import("@threejson/scene-agent-kit/repository");
+  const repository = store.createSceneAgentRepository({ dbName: "scene-agent-resource-smoke", indexedDb: null });
   // The library panel (apps/threebox) drives exactly these; a rename would break it silently.
   for (const fn of ["getAllResources", "putResource", "getResource", "deleteResource", "createResourceId"]) {
-    assert.equal(typeof store[fn], "function", `missing resources export: ${fn}`);
+    assert.equal(typeof (fn === "createResourceId" ? store : repository)[fn], "function", `missing resource API: ${fn}`);
   }
   // Resource ids are prefixed and collision-resistant within a millisecond, like the turn ids.
   assert.match(store.createResourceId(), /^res-/);

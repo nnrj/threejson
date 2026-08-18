@@ -7,7 +7,7 @@
  * a plain module rather than a hook. No @threejson/* package covers it, so the app carries it.
  */
 import { resolveSceneHostUrl, sceneHostAssetUrl } from "@threejson/host-kit/js/sceneHostPaths.js";
-import { enqueueThreeBoxSceneLoad, isThreeBoxSceneLoadBusy } from "./threeBoxSceneLoadQueue.js";
+import { enqueueSceneAgentLoad, isSceneAgentLoadBusy } from "@threejson/react-scene-agent/scene-load-queue";
 import { loadThreeBoxSettingsBundle } from "./threeBoxSettingsStore.js";
 
 const THUMB_CACHE_KEY = "threejson.threebox.thumbCache.v1";
@@ -127,7 +127,7 @@ async function captureTemplateThumbnail(jsonUrl) {
   const payload = await response.json();
   const canvas = getThumbCanvas();
   let captured = null;
-  const runtime = await enqueueThreeBoxSceneLoad(() =>
+  const runtime = await enqueueSceneAgentLoad(() =>
     createJsonScene(withReducedQuality(payload), {
       canvas,
       resetScene: true,
@@ -202,7 +202,7 @@ function scheduleThumbQueue() {
   }
   thumbQueueScheduled = true;
   const run = () => {
-    if (isThreeBoxSceneLoadBusy()) {
+    if (isSceneAgentLoadBusy()) {
       thumbQueueScheduled = false;
       scheduleThumbQueue();
       return;

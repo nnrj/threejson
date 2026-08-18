@@ -14,7 +14,7 @@
 import { useCallback, useRef, useState } from "react";
 import { t } from "@threejson/host-kit/i18n/index.js";
 import { acceptForKind, processUploadedSceneFile } from "@threejson/host-kit/js/sceneFileUpload.js";
-import { putResource, createResourceId } from "@threejson/host-kit/js/threeBoxSessionStore.js";
+import { putResource, createResourceId } from "./lib/sceneAgentRepository.js";
 
 /** Matches threeBoxComposerStub.js's attach-type menu order exactly (json/tjz/image/model/other). */
 export const ATTACH_KIND_ORDER = [

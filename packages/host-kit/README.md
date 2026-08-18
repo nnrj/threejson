@@ -85,27 +85,10 @@ ops. Editor-owned gizmos are instances rather than types, so pass them via `extr
 A React renderer for this model ships as `SceneTreePanel` in
 [`@threejson/react-ui`](../react-ui/README.md).
 
-## ThreeBox session store
-
-`js/threeBoxSessionStore.js` is the AI workbench's IndexedDB database — conversations, turns,
-uploaded resources and projects. Headless like the other stores here, which is the point: an AI
-workbench's chat history is the same data whichever framework draws it, so a React shell and a
-vanilla one share it unchanged.
-
-```js
-import { putTurn, getTurnsForConversation } from "@threejson/host-kit/js/threeBoxSessionStore.js";
-```
-
-A turn stores its own full scene snapshot (`sceneJson`), which is what lets a reopened conversation
-replay its scenes without calling the model again. Turns cached as commands-only deltas carry
-`sceneJson: null` and are reconstructed by replaying `commands` from the nearest earlier turn that
-still holds a snapshot — so a consumer walking back for "the latest scene" must skip nulls rather
-than assume the last turn has one.
-
-`deleteConversation` also deletes that conversation's turns: they live in a separate store keyed by
-conversation, so removing only the metadata would leave rows nothing can reach.
-
-A React binding ships as `useConversations` in [`@threejson/react`](../react/README.md).
+Conversational scene-authoring persistence is not a host utility. It lives in the unbranded
+[`@threejson/scene-agent-kit`](../scene-agent-kit/README.md); React bindings live in
+[`@threejson/react-scene-agent`](../react-scene-agent/README.md). Host applications inject their own
+database name, so community and commercial products cannot accidentally share browser state.
 
 ## Locales under Node / SSR
 

@@ -1,21 +1,25 @@
 /**
- * Ported from tools/scene-host/threebox/js/threeBoxSceneCard.js (via threebox-cloud's React
- * version) as a React hook. Renders an inline LIVE Three.js canvas per generated/adjusted scene —
+ * Unbranded React scene-card runtime for a conversational scene workbench. Renders an inline LIVE
+ * Three.js canvas per generated/adjusted scene —
  * each card owns its own canvas + runtime, exactly as the original does (this is why there is no
  * shared viewport). Uses the engine (threejson) directly; host-kit only supplies the asset base and
  * i18n. Actions: download JSON / export .tjz / export mesh / open in editor / open in player /
  * refresh / fullscreen.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { t } from "@threejson/host-kit/i18n/index.js";
 import { sceneHostAssetUrl } from "@threejson/host-kit/js/sceneHostPaths.js";
-import { enqueueThreeBoxSceneLoad } from "./lib/threeBoxSceneLoadQueue.js";
-import { syncThreeBoxPreviewAuxiliaryLights } from "./lib/threeBoxPreviewLights.js";
-import {
-  openThreeBoxMeshExportDialog,
-  showThreeBoxMeshExportWarningDialog
-} from "./lib/threeBoxMeshExportDialog.js";
-import { openSceneInEditor, openSceneInPlayer } from "./sceneBridgeProtocol.js";
+import { enqueueSceneAgentLoad } from "./sceneLoadQueue.js";
+import { removeSceneAgentPreviewLights, syncSceneAgentPreviewLights } from "./previewLights.js";
+
+function interpolate(text, params) {
+  let result = String(text || "");
+  for (const [key, value] of Object.entries(params || {})) result = result.replaceAll(`{${key}}`, String(value));
+  return result;
+}
+
+function translate(options, key, fallback, params) {
+  return options?.translate?.(key, fallback, params) || interpolate(fallback, params);
+}
 
 function downloadBlob(blob, fileName) {
   const url = URL.createObjectURL(blob);
@@ -86,21 +90,24 @@ function waitForLoadingMaskPaint() {
   });
 }
 
-export function useSceneCard(options = {}) {
+export function useSceneCardRuntime(options = {}) {
   const canvasRef = useRef(null);
   const canvasWrapRef = useRef(null);
   const optionsRef = useRef(options);
   optionsRef.current = options;
 
   const runtimeRef = useRef(null);
+  const commandContextRef = useRef(null);
   const liveResizeObserverRef = useRef(null);
   const renderSeqRef = useRef(0);
   const currentSceneJsonRef = useRef(null);
-  const currentLabelRef = useRef(t("threebox.sceneCard.defaultLabel", "ThreeBox 场景"));
+  const currentLabelRef = useRef(translate(options, "sceneAgent.sceneCard.defaultLabel", "Scene"));
 
-  const [loadingText, setLoadingText] = useState(t("threebox.sceneCard.waitingForDraft", "等待场景草稿…"));
+  const [loadingText, setLoadingText] = useState(translate(options, "sceneAgent.sceneCard.waitingForDraft", "等待场景草稿…"));
   const [loadingCompact, setLoadingCompact] = useState(false);
   const [exporting, setExporting] = useState(null);
+  const [draft, setDraft] = useState(false);
+  const [textureProgress, setTextureProgressState] = useState(null);
 
   const toast = useCallback((msg, kind) => optionsRef.current.showToast?.(msg, kind), []);
 
@@ -140,8 +147,8 @@ export function useSceneCard(options = {}) {
     const total = Number(deploy?.total);
     setLoadingText(
       Number.isFinite(done) && Number.isFinite(total) && total > 0
-        ? t("threebox.sceneCard.loadingProgress", "正在装载场景内容 {done}/{total}（不消耗 Token）…", { done, total })
-        : t("threebox.sceneCard.loadingContent", "画布已启动，正在装载场景内容（不消耗 Token）…")
+        ? translate(optionsRef.current, "sceneAgent.sceneCard.loadingProgress", "正在装载场景内容 {done}/{total}（不消耗 Token）…", { done, total })
+        : translate(optionsRef.current, "sceneAgent.sceneCard.loadingContent", "画布已启动，正在装载场景内容（不消耗 Token）…")
     );
   }, []);
 
@@ -152,15 +159,17 @@ export function useSceneCard(options = {}) {
       liveResizeObserverRef.current = null;
       runtimeRef.current?.dispose?.();
       runtimeRef.current = null;
+      commandContextRef.current = null;
       currentSceneJsonRef.current = sceneJsonPayload;
+      setDraft(renderOptions.draft === true);
       setLabel(
         renderOptions.label ||
           sceneJsonPayload?.label ||
           sceneJsonPayload?.name ||
-          t("threebox.sceneCard.defaultLabel", "ThreeBox 场景")
+          translate(optionsRef.current, "sceneAgent.sceneCard.defaultLabel", "Scene")
       );
       setLoadingCompact(false);
-      setLoadingText(t("threebox.sceneCard.rendering", "场景渲染中（不消耗 Token）…"));
+      setLoadingText(translate(optionsRef.current, "sceneAgent.sceneCard.rendering", "场景渲染中（不消耗 Token）…"));
 
       const { createJsonScene } = await import("threejson");
       const canvas = canvasRef.current;
@@ -192,7 +201,7 @@ export function useSceneCard(options = {}) {
           typeof optionsRef.current.shouldUsePreviewAuxiliaryLights === "function"
             ? optionsRef.current.shouldUsePreviewAuxiliaryLights() !== false
             : optionsRef.current.previewAuxiliaryLights !== false;
-        syncThreeBoxPreviewAuxiliaryLights(nextRuntime.scene, enabled);
+        syncSceneAgentPreviewLights(nextRuntime.scene, enabled);
         auxiliaryLightsSynced = true;
       };
       const activateRuntime = (nextRuntime) => {
@@ -210,14 +219,15 @@ export function useSceneCard(options = {}) {
       };
 
       try {
-        const nextRuntime = await enqueueThreeBoxSceneLoad(() =>
+        const nextRuntime = await enqueueSceneAgentLoad(() =>
           createJsonScene(payload, {
             canvas,
             resetScene: true,
-            assetsBase: sceneHostAssetUrl("assets/"),
-            autoFillLights: true,
-            autoFillCamera: true,
-            autoFitCamera: true,
+            assetsBase: optionsRef.current.assetsBase || sceneHostAssetUrl("assets/"),
+            assetGateway: typeof optionsRef.current.assetGateway === "function" ? optionsRef.current.assetGateway() : optionsRef.current.assetGateway,
+            autoFillLights: renderOptions.authoritative !== true,
+            autoFillCamera: renderOptions.authoritative !== true,
+            autoFitCamera: renderOptions.authoritative !== true,
             onRuntimeReady: ({ runtime: readyRuntime }) => activateRuntime(readyRuntime),
             onDeployProgress: ({ runtime: deployingRuntime, deploy }) => {
               if (seq !== renderSeqRef.current) {
@@ -245,19 +255,142 @@ export function useSceneCard(options = {}) {
     [setLabel, showCompactLoadingProgress, watchLiveResize]
   );
 
+  const updateSceneJson = useCallback((sceneJson) => {
+    if (!sceneJson || typeof sceneJson !== "object") return;
+    currentSceneJsonRef.current = sceneJson;
+    if (commandContextRef.current) commandContextRef.current.document = sceneJson;
+  }, []);
+
+  const executeCommandBatch = useCallback(async (commands, commandOptions = {}) => {
+    const runtime = runtimeRef.current;
+    if (!runtime || !Array.isArray(commands) || commands.length === 0) {
+      return { ok: false, sceneMutated: false, results: [], error: "Scene preview runtime is not ready." };
+    }
+    const { createCommandContext, executeCommands } = await import("threejson/commands");
+    if (!commandContextRef.current || commandContextRef.current.scene !== runtime.scene) {
+      commandContextRef.current = createCommandContext({
+        scene: runtime.scene,
+        camera: runtime.camera,
+        renderer: runtime.renderer,
+        controls: runtime.controls,
+        runtime,
+        document: currentSceneJsonRef.current
+      });
+    }
+    const execResult = await executeCommands(commandContextRef.current, commands);
+    if (commandContextRef.current.runtime && commandContextRef.current.runtime !== runtimeRef.current) {
+      runtimeRef.current = commandContextRef.current.runtime;
+      runtimeRef.current.start?.();
+      watchLiveResize();
+    }
+    const results = Array.isArray(execResult?.results) ? execResult.results : [];
+    const failed = results.find((entry) => entry?.ok === false);
+    if (failed || execResult?.ok === false) {
+      return { ok: false, sceneMutated: false, execResult, results, error: failed?.error || "Scene preview command application failed." };
+    }
+    if (commandOptions.sceneJson) updateSceneJson(commandOptions.sceneJson);
+    setLabel(commandOptions.label);
+    setDraft(commandOptions.draft === true);
+    syncSceneAgentPreviewLights(
+      runtimeRef.current?.scene,
+      typeof optionsRef.current.shouldUsePreviewAuxiliaryLights === "function"
+        ? optionsRef.current.shouldUsePreviewAuxiliaryLights() !== false
+        : optionsRef.current.previewAuxiliaryLights !== false
+    );
+    const objectGetFeedback = results
+      .filter((entry) => entry?.ok && entry.op === "object.get" && entry.data)
+      .map((entry) => JSON.stringify({
+        threeJsonId: entry.data?.threeJsonId || entry.data?.id || "",
+        path: entry.data?.path ?? null,
+        value: entry.data?.value
+      }, null, 2))
+      .join("\n\n");
+    return {
+      ok: true,
+      sceneMutated: commandOptions.readOnly === true ? false : results.some((entry) => entry?.ok !== false),
+      execResult,
+      results,
+      objectGetFeedback,
+      runtime: runtimeRef.current
+    };
+  }, [setLabel, updateSceneJson, watchLiveResize]);
+
+  const applyCommandsWithResult = useCallback((commands, commandOptions = {}) =>
+    executeCommandBatch(commands, commandOptions), [executeCommandBatch]);
+
+  const applyCommands = useCallback(async (commands, commandOptions = {}) => {
+    const result = await executeCommandBatch(commands, commandOptions);
+    if (!result.ok) {
+      if (result.error === "Scene preview runtime is not ready.") return null;
+      throw new Error(result.error);
+    }
+    return result.runtime;
+  }, [executeCommandBatch]);
+
+  const exportSceneJsonString = useCallback(async (exportOptions = {}) => {
+    if (!runtimeRef.current?.scene?.isScene) return "";
+    const { sceneToStandardJsonSimple } = await import("threejson/scene-export");
+    const basePayload = commandContextRef.current?.document || currentSceneJsonRef.current;
+    const previewLightsEnabled =
+      typeof optionsRef.current.shouldUsePreviewAuxiliaryLights === "function"
+        ? optionsRef.current.shouldUsePreviewAuxiliaryLights() !== false
+        : optionsRef.current.previewAuxiliaryLights !== false;
+    removeSceneAgentPreviewLights(runtimeRef.current.scene);
+    let sceneJson;
+    try {
+      sceneJson = sceneToStandardJsonSimple(runtimeRef.current.scene, {
+        merge: false,
+        runtimeTarget: runtimeRef.current,
+        basePayload
+      });
+    } finally {
+      syncSceneAgentPreviewLights(runtimeRef.current.scene, previewLightsEnabled);
+    }
+    updateSceneJson(sceneJson);
+    setLabel(exportOptions.label);
+    if (Object.prototype.hasOwnProperty.call(exportOptions, "draft")) setDraft(exportOptions.draft === true);
+    return JSON.stringify(sceneJson, null, 2);
+  }, [setLabel, updateSceneJson]);
+
+  const finalize = useCallback(async (sceneJsonPayload, finalOptions = {}) => {
+    const sameScene = runtimeRef.current && currentSceneJsonRef.current &&
+      JSON.stringify(currentSceneJsonRef.current) === JSON.stringify(sceneJsonPayload);
+    if (!sameScene) return render(sceneJsonPayload, { ...finalOptions, draft: false });
+    updateSceneJson(sceneJsonPayload);
+    setLabel(finalOptions.label);
+    setDraft(false);
+    setLoadingText(null);
+    return runtimeRef.current;
+  }, [render, setLabel, updateSceneJson]);
+
+  const setTextureProgress = useCallback((event = {}) => {
+    const sourcePhase = String(event.phase || "");
+    if (!sourcePhase || sourcePhase === "complete" || sourcePhase === "skipped") {
+      setTextureProgressState(null);
+      return;
+    }
+    const phase = sourcePhase === "failed" || sourcePhase === "warning" ? sourcePhase : "working";
+    setTextureProgressState({ ...event, sourcePhase, phase });
+  }, []);
+
+  const setPreviewAuxiliaryLightsEnabled = useCallback((enabled) => {
+    syncSceneAgentPreviewLights(runtimeRef.current?.scene, enabled !== false);
+  }, []);
+
   const dispose = useCallback(() => {
     renderSeqRef.current += 1;
     liveResizeObserverRef.current?.disconnect();
     liveResizeObserverRef.current = null;
     runtimeRef.current?.dispose?.();
     runtimeRef.current = null;
+    commandContextRef.current = null;
   }, []);
 
   useEffect(() => () => dispose(), [dispose]);
 
   const requireSceneJson = useCallback(() => {
     if (!currentSceneJsonRef.current) {
-      toast(t("threebox.sceneCard.notReady", "场景尚未生成完成。"), "warning");
+      toast(translate(optionsRef.current, "sceneAgent.sceneCard.notReady", "场景尚未生成完成。"), "warning");
       return null;
     }
     return currentSceneJsonRef.current;
@@ -282,10 +415,13 @@ export function useSceneCard(options = {}) {
     setExporting("tjz");
     try {
       const { packJsonSceneArchive } = await import("threejson");
-      const blob = await packJsonSceneArchive(sceneJson, { outputType: "blob" });
+      const archiveOptions = typeof optionsRef.current.archiveOptions === "function"
+        ? await optionsRef.current.archiveOptions(sceneJson)
+        : (optionsRef.current.archiveOptions || {});
+      const blob = await packJsonSceneArchive(sceneJson, { ...archiveOptions, outputType: "blob" });
       downloadBlob(blob, `${currentLabelRef.current}.tjz`);
     } catch (error) {
-      toast(t("threebox.sceneCard.exportFailed", "导出失败：{error}", { error: error?.message || error }), "error");
+      toast(translate(optionsRef.current, "sceneAgent.sceneCard.exportFailed", "导出失败：{error}", { error: error?.message || error }), "error");
     } finally {
       setExporting(null);
     }
@@ -296,16 +432,16 @@ export function useSceneCard(options = {}) {
     if (!sceneJson) {
       return;
     }
-    const format = await openThreeBoxMeshExportDialog();
+    const format = await optionsRef.current.selectMeshFormat?.();
     if (!format) {
       return;
     }
     if (!runtimeRef.current?.scene?.isScene) {
-      toast(t("threebox.sceneCard.modelNotReady", "画布场景尚未渲染完成。"), "warning");
+      toast(translate(optionsRef.current, "sceneAgent.sceneCard.modelNotReady", "画布场景尚未渲染完成。"), "warning");
       return;
     }
     setExporting("mesh");
-    toast(t("threebox.sceneCard.exportMeshStarted", "正在导出 {format}…", { format: format.toUpperCase() }), "info");
+    toast(translate(optionsRef.current, "sceneAgent.sceneCard.exportMeshStarted", "正在导出 {format}…", { format: format.toUpperCase() }), "info");
     try {
       const { exportMesh } = await import("threejson");
       const result = await exportMesh(runtimeRef.current.scene, {
@@ -326,13 +462,13 @@ export function useSceneCard(options = {}) {
           ? optionsRef.current.shouldShowMeshExportWarnings() !== false
           : optionsRef.current.showMeshExportWarnings !== false;
       if (warnings.length && showWarn) {
-        await showThreeBoxMeshExportWarningDialog(warnings);
+        await optionsRef.current.showMeshWarnings?.(warnings);
       } else {
-        toast(t("threebox.sceneCard.exportMeshSuccess", "三方模型已导出。"), "success");
+        toast(translate(optionsRef.current, "sceneAgent.sceneCard.exportMeshSuccess", "三方模型已导出。"), "success");
       }
     } catch (error) {
-      console.error("[threebox] mesh export failed:", error);
-      toast(t("threebox.sceneCard.exportMeshFailed", "导出三方模型失败：{error}", { error: error?.message || error }), "error");
+      console.error("[scene-agent] mesh export failed:", error);
+      toast(translate(optionsRef.current, "sceneAgent.sceneCard.exportMeshFailed", "导出三方模型失败：{error}", { error: error?.message || error }), "error");
     } finally {
       setExporting(null);
     }
@@ -344,12 +480,13 @@ export function useSceneCard(options = {}) {
       return;
     }
     try {
-      await openSceneInEditor(sceneJson, currentLabelRef.current);
-      toast(t("threebox.sceneCard.openInEditorSuccess", "已将场景发送到编辑器。"), "success");
+      if (!optionsRef.current.openInEditor) throw new Error("Editor navigation is not configured.");
+      await optionsRef.current.openInEditor(sceneJson, currentLabelRef.current);
+      toast(translate(optionsRef.current, "sceneAgent.sceneCard.openInEditorSuccess", "已将场景发送到编辑器。"), "success");
     } catch (error) {
       const message = String(error?.message || error);
       toast(
-        t("threebox.sceneCard.openInEditorFailed", "在编辑器内打开失败：{error}", { error: message }),
+        translate(optionsRef.current, "sceneAgent.sceneCard.openInEditorFailed", "在编辑器内打开失败：{error}", { error: message }),
         "error"
       );
     }
@@ -361,12 +498,13 @@ export function useSceneCard(options = {}) {
       return;
     }
     try {
-      await openSceneInPlayer(sceneJson, currentLabelRef.current);
-      toast(t("threebox.sceneCard.openInPlayerSuccess", "已将场景发送到播放器。"), "success");
+      if (!optionsRef.current.openInPlayer) throw new Error("Player navigation is not configured.");
+      await optionsRef.current.openInPlayer(sceneJson, currentLabelRef.current);
+      toast(translate(optionsRef.current, "sceneAgent.sceneCard.openInPlayerSuccess", "已将场景发送到播放器。"), "success");
     } catch (error) {
       const message = String(error?.message || error);
       toast(
-        t("threebox.sceneCard.openInPlayerFailed", "在播放器内打开失败：{error}", { error: message }),
+        translate(optionsRef.current, "sceneAgent.sceneCard.openInPlayerFailed", "在播放器内打开失败：{error}", { error: message }),
         "error"
       );
     }
@@ -395,7 +533,7 @@ export function useSceneCard(options = {}) {
       return;
     }
     wrap.requestFullscreen?.().catch((error) => {
-      toast(t("threebox.sceneCard.fullscreenFailed", "进入全屏失败：{error}", { error: error?.message || error }), "warning");
+      toast(translate(optionsRef.current, "sceneAgent.sceneCard.fullscreenFailed", "进入全屏失败：{error}", { error: error?.message || error }), "warning");
     });
   }, [toast]);
 
@@ -405,7 +543,17 @@ export function useSceneCard(options = {}) {
     loadingText,
     loadingCompact,
     exporting,
+    draft,
+    textureProgress,
     render,
+    setLabel,
+    applyCommands,
+    applyCommandsWithResult,
+    exportSceneJsonString,
+    finalize,
+    updateSceneJson,
+    setTextureProgress,
+    setPreviewAuxiliaryLightsEnabled,
     dispose,
     getRuntime: () => runtimeRef.current,
     handleDownloadJson,

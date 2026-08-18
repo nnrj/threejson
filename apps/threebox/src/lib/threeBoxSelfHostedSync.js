@@ -10,7 +10,7 @@ import {
   getTurnsForConversation,
   putConversation,
   putTurn
-} from "@threejson/host-kit/js/threeBoxSessionStore.js";
+} from "./sceneAgentRepository.js";
 
 function localClientId() {
   const key = "threejson.threebox.selfHostedSync.clientId";

@@ -15,7 +15,6 @@
   "type": "module",
   "exports": {
     ".": "./src/index.js",
-    "./conversations": "./src/useConversations.js",
     "./i18n": "./src/i18n.js",
     "./player-settings": "./src/usePlayerSettings.js",
     "./playlist": "./src/usePlaylist.js",

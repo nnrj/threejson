@@ -12,31 +12,40 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHostI18n } from "@threejson/react/i18n";
-import { useConversations } from "@threejson/react/conversations";
+import { useSceneConversations } from "@threejson/react-scene-agent/conversations";
 import {
-  runAiGenerateTurn,
-  runAiAdjustTurn,
-  classifyAiTurnIntent,
-  resolveAiAdjustContextPayload,
-  buildResultDigest,
-  runAiSceneTitle,
-  runAiTurnSummary
-} from "@threejson/host-kit/js/aiTurnOrchestrator.js";
+  runSceneAgentGenerateTurn as runAiGenerateTurn,
+  runSceneAgentAdjustTurn as runAiAdjustTurn,
+  negotiateSceneAgentTurn,
+  resolveSceneAgentAdjustContext as resolveAiAdjustContextPayload,
+  buildSceneAgentResultDigest as buildResultDigest,
+  runSceneAgentTitle as runAiSceneTitle,
+  runSceneAgentSummary as runAiTurnSummary,
+  reconstructSceneAgentTurn,
+  isProviderVisionCapable
+} from "@threejson/scene-agent-kit/controller";
+import { resolveSceneAgentOptions, resolveSceneAgentTokenOptions } from "@threejson/scene-agent-kit/settings";
 import { buildStructuredTurnEnvelope } from "threejson/ai";
 import { getAiErrorFeedback } from "@threejson/host-kit/js/aiErrorFeedback.js";
-import { isProviderVisionCapable } from "@threejson/host-kit/js/aiTurnOrchestrator.js";
 import { resolveSceneHostUrl } from "@threejson/host-kit/js/sceneHostPaths.js";
 import {
+  sceneAgentRepository,
   getAllProjects,
   putProject,
   createProjectId,
+  createTurnId,
+  getTurn,
   putTurn,
   getConversation,
-  putConversation
-} from "@threejson/host-kit/js/threeBoxSessionStore.js";
+  putConversation,
+  getAllConversations
+} from "./lib/sceneAgentRepository.js";
 import { t } from "@threejson/host-kit/i18n/index.js";
 import { BUILTIN_PROVIDER_TYPE } from "@threejson/host-kit/js/builtinAiProvider.js";
 import { formatAgentProgressLabel } from "@threejson/host-kit/js/aiAgentProgressLabels.js";
+import { findChangedTextureObjectIds, runHostSceneTexturePipeline } from "@threejson/host-kit/js/sceneTextureOrchestrator.js";
+import { createTextureProxyUrl } from "@threejson/host-kit/js/textureProviderClient.js";
+import { getCachedTextureBlob, putCachedTextureBlob } from "@threejson/host-kit/js/browserTextureCache.js";
 import { renderMarkdownToSafeHtml } from "./lib/markdown.js";
 import { useAiProvider } from "./useAiProvider.js";
 import { useResources } from "./useResources.js";
@@ -53,14 +62,15 @@ import { createThreeBoxBuiltinNotifications } from "./lib/threeBoxBuiltinNotific
 import { requestBuiltinNotificationConsent } from "./lib/threeBoxBuiltinNotificationConsentDialog.js";
 import { createThreeBoxSelfHostedSync } from "./lib/threeBoxSelfHostedSync.js";
 import { createThreeBoxCloudMigration } from "./lib/threeBoxCloudMigration.js";
-import { getAllConversations } from "@threejson/host-kit/js/threeBoxSessionStore.js";
 
 // Optional self-hosted sync — a module singleton (its settingsProvider reads live via
 // getThreeBoxSettings), shared by the post-turn scheduleSync and the settings "立即同步" button.
 const selfHostedSync = createThreeBoxSelfHostedSync(getThreeBoxSettings);
 import { PrivacyDialog } from "./PrivacyDialog.jsx";
 import { SettingsModal } from "./SettingsModal.jsx";
-import { SceneCard } from "./SceneCard.jsx";
+import { SceneAgentSceneCard } from "@threejson/react-scene-agent/scene-card";
+import { openThreeBoxMeshExportDialog, showThreeBoxMeshExportWarningDialog } from "./lib/threeBoxMeshExportDialog.js";
+import { openSceneInEditor, openSceneInPlayer } from "./sceneBridgeProtocol.js";
 import { SceneJsonCollapse, AdjustDiffCollapse } from "./JsonCollapse.jsx";
 import { useAttachedContext } from "./useAttachedContext.js";
 import { AttachedContextRow } from "./AttachedContextRow.jsx";
@@ -89,7 +99,7 @@ function createAgentProgressUpdater(setStream, onScenePreview) {
       typeof progress.sceneJsonString === "string" &&
       (progress.kind === "stage_preview" || progress.kind === "scene_ready")
     ) {
-      onScenePreview(progress.sceneJsonString);
+      onScenePreview(progress.sceneJsonString, progress);
     }
     // core/ai/sceneAgent.js's progress messages are plain English — always run `kind` through the
     // shared localized-label mapping instead of showing progress.message directly (see
@@ -228,7 +238,7 @@ export function App() {
 
   // Include archived so the dock can render the separate "已归档" section (they're filtered out of
   // the main list below).
-  const history = useConversations({ includeArchived: true });
+  const history = useSceneConversations({ repository: sceneAgentRepository, includeArchived: true });
   const resources = useResources();
 
   const [projects, setProjects] = useState([]);
@@ -295,6 +305,10 @@ export function App() {
   const [stream, setStream] = useState("");
   const [shownSceneJson, setShownSceneJson] = useState(null);
   const [shownTurnId, setShownTurnId] = useState(null);
+  const shownTurnIdRef = useRef(null);
+  useEffect(() => {
+    shownTurnIdRef.current = shownTurnId;
+  }, [shownTurnId]);
   const [modeOverride, setModeOverride] = useState(null);
 
   // Chrome state.
@@ -352,6 +366,46 @@ export function App() {
   const messagesEndRef = useRef(null);
   const composerRef = useRef(null);
   const peekHideTimer = useRef(null);
+  const sceneCardsByMessageIdRef = useRef(new Map());
+  const sceneCardWaitersRef = useRef(new Map());
+  const textureJobsByTurnIdRef = useRef(new Map());
+  const turnMutationQueuesRef = useRef(new Map());
+
+  const registerSceneCard = useCallback((messageId, card) => {
+    if (!card) {
+      sceneCardsByMessageIdRef.current.delete(messageId);
+      return;
+    }
+    sceneCardsByMessageIdRef.current.set(messageId, card);
+    const waiters = sceneCardWaitersRef.current.get(messageId) || [];
+    sceneCardWaitersRef.current.delete(messageId);
+    for (const resolve of waiters) resolve(card);
+  }, []);
+
+  const waitForSceneCard = useCallback((messageId, timeoutMs = 3000) => {
+    const existing = sceneCardsByMessageIdRef.current.get(messageId);
+    if (existing) return Promise.resolve(existing);
+    return new Promise((resolve) => {
+      const waiters = sceneCardWaitersRef.current.get(messageId) || [];
+      const finish = (card) => {
+        clearTimeout(timer);
+        resolve(card || null);
+      };
+      waiters.push(finish);
+      sceneCardWaitersRef.current.set(messageId, waiters);
+      const timer = window.setTimeout(() => {
+        const current = sceneCardWaitersRef.current.get(messageId) || [];
+        sceneCardWaitersRef.current.set(messageId, current.filter((entry) => entry !== finish));
+        finish(null);
+      }, timeoutMs);
+    });
+  }, []);
+
+  useEffect(() => () => {
+    for (const controller of textureJobsByTurnIdRef.current.values()) controller.abort();
+    textureJobsByTurnIdRef.current.clear();
+    sceneCardWaitersRef.current.clear();
+  }, []);
 
   // Desktop hover-peek: when the dock is unpinned, hovering the left edge/flyout reveals it and
   // moving away hides it after a short delay (matching the original's leftFlyoutHost mouseenter/
@@ -398,7 +452,11 @@ export function App() {
   /** Patch a message in place by id (used to fill in the async scene title / recap after the card
    * has already rendered — the original never blocks the visible card on those AI round-trips). */
   const updateMessage = useCallback(
-    (id, patch) => setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m))),
+    (id, patch) => setMessages((prev) => prev.map((m) => {
+      if (m.id !== id) return m;
+      const resolvedPatch = typeof patch === "function" ? patch(m) : patch;
+      return resolvedPatch ? { ...m, ...resolvedPatch } : m;
+    })),
     []
   );
 
@@ -434,19 +492,160 @@ export function App() {
     getVisionCapable: () => isProviderVisionCapable({ provider: activeProvider?.provider })
   });
 
+  const resolveTextureServiceSettings = useCallback((bundle = getThreeBoxSettings()) => {
+    const customUrl = String(bundle?.ai?.textureServiceUrl || "").trim();
+    const customKey = String(bundle?.ai?.textureServiceApiKey || "").trim();
+    const builtin = bundle?.ai?.providers?.find((entry) => entry.provider === BUILTIN_PROVIDER_TYPE);
+    const mayUseBuiltin = provider.privacyAccepted === true;
+    return {
+      baseUrl: customUrl || (mayUseBuiltin ? String(bundle?.ai?.builtinBackendUrl || "").trim() : ""),
+      apiKey: customKey || (mayUseBuiltin ? String(builtin?.apiKey || "").trim() : "")
+    };
+  }, [provider.privacyAccepted]);
+
   // Scene-card behaviour driven by settings: auxiliary preview lights, the post-mesh-export warning
   // dialog, and the export-JSON indent.
   const sceneCardOptions = useMemo(
     () => ({
       previewAuxiliaryLights: settings.general.previewAuxiliaryLights,
       showMeshExportWarnings: settings.io.showMeshExportWarnings,
-      exportJsonIndent: settings.io.exportJsonIndent
+      exportJsonIndent: settings.io.exportJsonIndent,
+      selectMeshFormat: openThreeBoxMeshExportDialog,
+      showMeshWarnings: showThreeBoxMeshExportWarningDialog,
+      openInEditor: openSceneInEditor,
+      openInPlayer: openSceneInPlayer,
+      assetGateway: () => {
+        const bundle = getThreeBoxSettings();
+        const baseUrl = String(bundle?.general?.assetGatewayUrl || "").trim();
+        if (!baseUrl) return null;
+        const builtinBackend = String(bundle?.ai?.builtinBackendUrl || "").replace(/\/$/, "");
+        const builtin = bundle?.ai?.providers?.find((entry) => entry.provider === BUILTIN_PROVIDER_TYPE);
+        const apiKey = provider.privacyAccepted && builtinBackend === baseUrl.replace(/\/$/, "")
+          ? String(builtin?.apiKey || "").trim()
+          : "";
+        return apiKey ? { baseUrl, apiKey } : { baseUrl };
+      },
+      archiveOptions: async () => {
+        const bundle = getThreeBoxSettings();
+        const assetPolicy = bundle?.io?.tjzAssetPolicy === "tryPack" ? "tryPack" : "preserve";
+        if (assetPolicy !== "tryPack") return { assetPolicy };
+        const service = resolveTextureServiceSettings(bundle);
+        return {
+          assetPolicy,
+          fetchExternalUrls: false,
+          resolveAsset: async (sourceUrl) => {
+            const cached = await getCachedTextureBlob(sourceUrl, { dbName: "threejson-threebox-textures" });
+            if (cached) return cached;
+            if (!/^https?:\/\//i.test(String(sourceUrl || ""))) return null;
+            const runtimeUrl = createTextureProxyUrl(service.baseUrl, service.apiKey, sourceUrl);
+            try {
+              const response = await fetch(runtimeUrl);
+              if (!response.ok) return null;
+              const blob = await response.blob();
+              if (!blob.size) return null;
+              await putCachedTextureBlob(sourceUrl, blob, { source: "tjz-export" }, { dbName: "threejson-threebox-textures" });
+              return blob;
+            } catch {
+              return null;
+            }
+          }
+        };
+      },
+      translate: (key, fallback, params) => t(key.replace(/^sceneAgent\./, "threebox."), fallback, params)
     }),
-    [settings.general.previewAuxiliaryLights, settings.io.showMeshExportWarnings, settings.io.exportJsonIndent]
+    [settings.general.previewAuxiliaryLights, settings.io.showMeshExportWarnings, settings.io.exportJsonIndent, provider.privacyAccepted, resolveTextureServiceSettings]
   );
+
+  useEffect(() => {
+    for (const card of sceneCardsByMessageIdRef.current.values()) {
+      card.setPreviewAuxiliaryLightsEnabled?.(settings.general.previewAuxiliaryLights !== false);
+    }
+  }, [settings.general.previewAuxiliaryLights]);
+
+  const updateStoredTurn = useCallback((turnId, updater) => {
+    const queues = turnMutationQueuesRef.current;
+    const previous = queues.get(turnId) || Promise.resolve();
+    const mutation = previous.catch(() => {}).then(async () => {
+      const current = await getTurn(turnId);
+      if (!current) return null;
+      const next = updater(current);
+      return next ? putTurn(next) : current;
+    });
+    const tracked = mutation.finally(() => {
+      if (queues.get(turnId) === tracked) queues.delete(turnId);
+    });
+    queues.set(turnId, tracked);
+    return tracked;
+  }, []);
+
+  const abortTextureJob = useCallback((turnId) => {
+    const jobs = textureJobsByTurnIdRef.current;
+    jobs.get(turnId)?.abort();
+    jobs.delete(turnId);
+  }, []);
+
+  const abortAllTextureJobs = useCallback(() => {
+    for (const controller of textureJobsByTurnIdRef.current.values()) controller.abort();
+    textureJobsByTurnIdRef.current.clear();
+  }, []);
+
+  const startTurnTexturePipeline = useCallback(({
+    turnId,
+    messageId,
+    prompt: texturePrompt,
+    scene,
+    sceneCard,
+    aiProviderOptions,
+    changedObjectIds
+  }) => {
+    const bundle = getThreeBoxSettings();
+    if (!turnId || bundle?.ai?.texturePipelineEnabled === false || !sceneCard?.getRuntime?.()) return;
+    abortTextureJob(turnId);
+    const controller = new AbortController();
+    textureJobsByTurnIdRef.current.set(turnId, controller);
+    const revision = Symbol(turnId);
+    void runHostSceneTexturePipeline({
+      scene,
+      runtime: sceneCard.getRuntime(),
+      prompt: texturePrompt,
+      aiProviderOptions,
+      textureService: resolveTextureServiceSettings(bundle),
+      enabled: true,
+      strategy: bundle.ai?.textureStrategy || "semantic-hybrid",
+      pbr: bundle.ai?.texturePbr !== false,
+      allowUnknownLicense: bundle.ai?.textureAllowUnknownLicense === true,
+      persistenceMode: bundle.ai?.texturePersistenceMode || "remote",
+      cache: bundle.ai?.textureLocalCache !== false,
+      cacheDbName: "threejson-threebox-textures",
+      changedObjectIds,
+      signal: controller.signal,
+      revision,
+      isCurrent: (candidate) => candidate === revision && textureJobsByTurnIdRef.current.get(turnId) === controller,
+      onProgress: (event) => sceneCard.setTextureProgress(event),
+      onAssignment: async (_assignment, updatedScene) => {
+        if (textureJobsByTurnIdRef.current.get(turnId) !== controller) return;
+        const updatedJson = JSON.stringify(updatedScene, null, 2);
+        sceneCard.updateSceneJson(updatedScene);
+        updateMessage(messageId, { sceneJson: updatedJson });
+        if (shownTurnIdRef.current === turnId) setShownSceneJson(updatedJson);
+        await updateStoredTurn(turnId, (turn) => (
+          textureJobsByTurnIdRef.current.get(turnId) === controller
+            ? { ...turn, sceneJson: updatedJson }
+            : null
+        ));
+      }
+    }).catch((error) => {
+      if (error?.name !== "AbortError") console.warn("[threebox-react] texture pipeline failed:", error);
+    }).finally(() => {
+      if (textureJobsByTurnIdRef.current.get(turnId) === controller) {
+        textureJobsByTurnIdRef.current.delete(turnId);
+      }
+    });
+  }, [abortTextureJob, resolveTextureServiceSettings, updateMessage, updateStoredTurn]);
 
   const openConversation = useCallback(
     async (id) => {
+      abortAllTextureJobs();
       history.setActiveId(id);
       setMobilePeek(false);
       const turns = await history.loadTurns(id);
@@ -459,17 +658,22 @@ export function App() {
           // Parse the stored snapshot once here so each card gets a stable object reference (a fresh
           // parse on every React render would re-render the live canvas every frame).
           let sceneObj = null;
+          let replaySceneJson = turn.sceneJson || null;
           try {
-            sceneObj = turn.sceneJson ? JSON.parse(turn.sceneJson) : null;
+            if (!replaySceneJson && Array.isArray(turn.commands) && turn.commands.length) {
+              replaySceneJson = await reconstructSceneAgentTurn(turns, turn.id);
+            }
+            sceneObj = replaySceneJson ? JSON.parse(replaySceneJson) : null;
           } catch {
             sceneObj = null;
+            replaySceneJson = null;
           }
           replayed.push({
             id: `${turn.id}-a`,
             role: "assistant",
             text: turn.sceneTitle || L("场景已生成。", "Scene generated."),
             sceneObj,
-            sceneJson: turn.sceneJson || null,
+            sceneJson: replaySceneJson,
             label: turn.sceneTitle || turn.userPrompt || "",
             summary: turn.recapSummary || null,
             turnId: turn.id,
@@ -480,23 +684,26 @@ export function App() {
       setMessages(replayed);
 
       // The scene an adjust targets is the conversation's latest stored snapshot.
-      const latest = [...turns].reverse().find((t) => t.sceneJson);
+      const latest = [...turns].reverse().find((turn) => turn.sceneJson || (Array.isArray(turn.commands) && turn.commands.length));
       if (latest) {
-        setShownSceneJson(latest.sceneJson);
+        const latestSceneJson = latest.sceneJson || await reconstructSceneAgentTurn(turns, latest.id);
+        setShownSceneJson(latestSceneJson);
         setShownTurnId(latest.id);
+        shownTurnIdRef.current = latest.id;
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [history, append]
+    [history, append, abortAllTextureJobs]
   );
 
   const startNewConversation = useCallback(() => {
+    abortAllTextureJobs();
     history.setActiveId(null);
     setMessages([]);
     setShownSceneJson(null);
     setShownTurnId(null);
     setMobilePeek(false);
-  }, [history]);
+  }, [history, abortAllTextureJobs]);
 
   /** Attach a saved resource (a loadable json/tjz/model scene) to the composer context row, like
    * the original's resource library. Non-scene resources (image/other) aren't attachable. */
@@ -606,7 +813,8 @@ export function App() {
 
   // An attached scene also makes the next turn an adjust (it becomes the current scene as a seed).
   const canAdjust = Boolean(shownSceneJson) || Boolean(attachedContext.current);
-  const isAdjust = canAdjust && modeOverride !== "generate";
+  const isAdjust = canAdjust && modeOverride === "adjust";
+  const isAutoIntent = canAdjust && modeOverride == null;
 
   /**
    * Resolves providerOptions for the currently-selected saved provider (composer picker → default →
@@ -637,7 +845,12 @@ export function App() {
       }
       return {
         ready: true,
-        options: { provider: BUILTIN_PROVIDER_TYPE, apiKey: key, baseUrl: settings.ai.builtinBackendUrl || undefined }
+        options: {
+          provider: BUILTIN_PROVIDER_TYPE,
+          apiKey: key,
+          baseUrl: settings.ai.builtinBackendUrl || undefined,
+          thinkingPreference: settings.ai.thinkingPreference || "disabled"
+        }
       };
     }
     if (!String(active.apiKey || "").trim()) {
@@ -649,10 +862,11 @@ export function App() {
         provider: active.provider || "chatgpt",
         apiKey: String(active.apiKey).trim(),
         baseUrl: String(active.baseUrl || "").trim() || undefined,
-        model: String(active.model || "").trim() || undefined
+        model: String(active.model || "").trim() || undefined,
+        thinkingPreference: settings.ai.thinkingPreference || "disabled"
       }
     };
-  }, [settings.ai.providers, settings.ai.defaultProviderId, settings.ai.builtinBackendUrl, selectedProviderId, provider]);
+  }, [settings.ai.providers, settings.ai.defaultProviderId, settings.ai.builtinBackendUrl, settings.ai.thinkingPreference, selectedProviderId, provider]);
 
   const send = useCallback(
     async (text) => {
@@ -695,6 +909,7 @@ export function App() {
       // make it the scene the user's message adjusts — exactly like the original's
       // consumeAttachedContextAsSeedTurn.
       let seedSceneJson = null;
+      let seedTurnId = null;
       const attached = attachedContext.get();
       if (attached) {
         attachedContext.clear();
@@ -706,38 +921,74 @@ export function App() {
           sceneJson: seedSceneJson,
           label: attached.label
         });
-        await history.appendTurn(conversationId, {
+        const seedTurn = await history.appendTurn(conversationId, {
           userPrompt: L(`(模板) ${attached.label}`, `(template) ${attached.label}`),
           mode: "generate",
           stage: "generate",
           sceneJson: seedSceneJson,
           sceneTitle: attached.label
         });
+        seedTurnId = seedTurn?.id || null;
         setShownSceneJson(seedSceneJson);
-        setShownTurnId(null);
+        setShownTurnId(seedTurnId);
+        shownTurnIdRef.current = seedTurnId;
       }
 
       const controller = new AbortController();
       abortRef.current = controller;
+      const currentTurnId = createTurnId();
       const turnDeadlineAt = Date.now() + 180000;
       const sceneProviderOptions = { ...resolved.options, turnDeadlineAt };
-      const adjustTargetString = seedSceneJson || shownSceneJson;
-      const adjusting = modeOverride !== "generate" && Boolean(adjustTargetString);
+      let adjustTargetString = seedSceneJson || shownSceneJson;
+      let adjustTargetTurnId = seedSceneJson ? seedTurnId : shownTurnId;
+      let adjusting = modeOverride !== "generate" && Boolean(adjustTargetString);
+      let negotiation = null;
 
       // Direct generation is the default. This budget is only a runaway guard when core/ai
       // escalates a genuinely complex/output-limited scene to incremental construction.
-      const agentOptions = { maxRefineRounds: settings.ai.maxAutoRefineRounds };
+      const agentOptions = resolveSceneAgentOptions(settings);
       // The assistant card is always appended up-front now (so drafts can stream into it) and
       // finalized in place after the turn — there is no more "append once at the end" path.
       const assistantId = crypto?.randomUUID?.() ?? `m-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      const onScenePreview = (draftString) => {
+      let previewRenderQueue = Promise.resolve();
+      let previewQueueOpen = true;
+      let lastQueuedPreviewJson = "";
+      let adjustmentUsesSceneCardRuntime = false;
+      const onScenePreview = (draftString, progress = {}) => {
+        if (!draftString || draftString === lastQueuedPreviewJson) return previewRenderQueue;
         let obj = null;
         try {
           obj = JSON.parse(draftString);
         } catch {
-          return;
+          return previewRenderQueue;
         }
-        updateMessage(assistantId, { sceneObj: obj, sceneJson: draftString });
+        lastQueuedPreviewJson = draftString;
+        updateMessage(assistantId, (message) => ({
+          sceneObj: message.sceneObj || obj,
+          sceneJson: draftString
+        }));
+        previewRenderQueue = previewRenderQueue
+          .catch((error) => console.warn("[threebox-react] previous preview render failed:", error))
+          .then(async () => {
+            if (!previewQueueOpen) return null;
+            const sceneCard = await waitForSceneCard(assistantId);
+            if (!sceneCard) return null;
+            if (
+              progress.outputMode === "commands" &&
+              Array.isArray(progress.commands) &&
+              progress.commands.length > 0 &&
+              sceneCard.getRuntime?.()
+            ) {
+              if (adjustmentUsesSceneCardRuntime) return null;
+              return sceneCard.applyCommands(progress.commands, { sceneJson: obj, label: userPrompt, draft: true });
+            }
+            return sceneCard.render(obj, {
+              label: userPrompt,
+              draft: progress.stage !== "direct_scene",
+              authoritative: adjustmentUsesSceneCardRuntime
+            });
+          });
+        return previewRenderQueue;
       };
       const onAgentProgress = createAgentProgressUpdater(setStream, onScenePreview);
       activeOutputStreamIdRef.current = "";
@@ -759,18 +1010,65 @@ export function App() {
         text: L("正在生成…", "Generating…"),
         sceneObj: null,
         sceneJson: null,
+        renderSceneCard: true,
+        managedSceneCard: true,
         label: userPrompt,
         summary: null,
         mode: adjusting ? "adjust" : "generate"
       });
 
       try {
+        const allPriorTurns = await history.loadTurns(conversationId);
+        const priorSceneTurns = allPriorTurns.filter((turn) => (
+          !["failed", "stopped"].includes(String(turn?.status || "").toLowerCase()) &&
+          (Boolean(turn?.sceneJson) || (Array.isArray(turn?.commands) && turn.commands.length > 0))
+        ));
+        const negotiationHistory = priorSceneTurns.map((turn) => ({
+          turnId: turn.id,
+          summary: turn.recapSummary || turn.userPrompt || "",
+          userPrompt: turn.userPrompt || "",
+          mode: turn.mode,
+          targetTurnId: turn.targetTurnId,
+          sceneTitle: turn.sceneTitle || ""
+        }));
+        negotiation = await negotiateSceneAgentTurn(
+          {
+            userPrompt,
+            history: modeOverride === "generate" ? [] : negotiationHistory,
+            priorTurns: modeOverride === "generate" ? [] : priorSceneTurns
+          },
+          {
+            ...sceneProviderOptions,
+            signal: controller.signal,
+            animationCapabilityMode: settings.ai.animationCapabilityMode || "auto",
+            sceneGenerationMode: settings.ai.sceneGenerationMode || "auto"
+          }
+        );
+
+        if (seedSceneJson) {
+          adjusting = true;
+        } else if (modeOverride === "generate") {
+          adjusting = false;
+        } else if (modeOverride === "adjust") {
+          adjusting = Boolean(adjustTargetString);
+        } else {
+          adjusting = negotiation.route?.intent === "adjust";
+          adjustTargetTurnId = negotiation.route?.targetTurnId || shownTurnId;
+          if (adjusting && adjustTargetTurnId && adjustTargetTurnId !== shownTurnId) {
+            adjustTargetString = await reconstructSceneAgentTurn(allPriorTurns, adjustTargetTurnId);
+          }
+        }
+        if (adjusting && !adjustTargetString) adjusting = false;
+        updateMessage(assistantId, { mode: adjusting ? "adjust" : "generate" });
+
         let sceneJson;
         let sceneJsonString;
         let stage = "generate";
         // For adjust turns, the raw output the model applied (operation commands or a JSON Patch),
         // surfaced under the card in a collapse — exactly like the original's diff collapse.
         let diff = null;
+        let commands = null;
+        let patch = null;
         let agentResult = null;
 
         if (adjusting) {
@@ -782,13 +1080,17 @@ export function App() {
             includeFullJson: settings.ai.includeFullJson
           };
           const targetSceneJson = JSON.parse(adjustTargetString);
+          adjustmentUsesSceneCardRuntime = true;
+          const initialScenePreviewPromise = onScenePreview(adjustTargetString, { stage: "adjust_base" });
           const envelope = buildStructuredTurnEnvelope({
             userPrompt,
             intent: "adjust",
-            targetTurnId: shownTurnId,
+            targetTurnId: adjustTargetTurnId,
             contextPayload: resolveAiAdjustContextPayload(targetSceneJson, adjustContextSettings),
             includeReferenceLinks: settings.ai.attachReferenceLinks,
-            globalPromptPrefix: settings.ai.globalPromptPrefix || undefined
+            globalPromptPrefix: settings.ai.globalPromptPrefix || undefined,
+            selectedCapabilityIds: negotiation.selectedCapabilityIds,
+            requiresAnimation: negotiation.requiresAnimation
           });
           const result = await runAiAdjustTurn({
             userPrompt,
@@ -798,8 +1100,35 @@ export function App() {
             updateOutputMode: settings.ai.updateOutputMode,
             resolveContextPayload: (json) => resolveAiAdjustContextPayload(json, adjustContextSettings),
             agentOptions,
+            ...resolveSceneAgentTokenOptions(settings),
+            capabilityLookup: settings.ai.capabilityLookupEnabled,
+            selectedCapabilityIds: negotiation.selectedCapabilityIds,
+            animationCapabilities: negotiation.requiresAnimation === true,
+            generationStrategy: negotiation.generationStrategy,
+            estimatedSegments: negotiation.estimatedSegments,
             onAgentProgress,
             onDelta: onOutputDelta,
+            applyCommands: async (commands, meta = {}) => {
+              await initialScenePreviewPromise;
+              const sceneCard = await waitForSceneCard(assistantId);
+              if (!sceneCard) throw new Error("Scene adjustment preview is not ready.");
+              return sceneCard.applyCommandsWithResult(commands, {
+                label: userPrompt,
+                draft: true,
+                readOnly: meta.readOnly === true
+              });
+            },
+            refreshContext: async () => {
+              await initialScenePreviewPromise;
+              const sceneCard = await waitForSceneCard(assistantId);
+              const currentSceneJsonString = await sceneCard?.exportSceneJsonString({ label: userPrompt, draft: true });
+              if (!currentSceneJsonString) throw new Error("Scene adjustment preview is not ready.");
+              const currentSceneJson = JSON.parse(currentSceneJsonString);
+              return {
+                ...resolveAiAdjustContextPayload(currentSceneJson, adjustContextSettings),
+                currentSceneJsonString
+              };
+            },
             locale,
             signal: controller.signal
           });
@@ -808,20 +1137,13 @@ export function App() {
           stage = result.stage;
           agentResult = result.agentResult || null;
           if (result.stage === "commands" && Array.isArray(result.commands)) {
+            commands = result.commands;
             diff = { kind: "commands", text: JSON.stringify(result.commands, null, 2) };
           } else if (Array.isArray(result.patch) && result.patch.length > 0) {
+            patch = result.patch;
             diff = { kind: "patch", text: JSON.stringify(result.patch, null, 2) };
           }
         } else {
-          const negotiation = await classifyAiTurnIntent(
-            { userPrompt, history: [] },
-            {
-              ...sceneProviderOptions,
-              signal: controller.signal,
-              animationCapabilityMode: settings.ai.animationCapabilityMode || "auto",
-              sceneGenerationMode: settings.ai.sceneGenerationMode || "auto"
-            }
-          );
           const result = await runAiGenerateTurn({
             userPrompt,
             providerOptions: sceneProviderOptions,
@@ -832,19 +1154,22 @@ export function App() {
             // continuation cap.
             globalPromptPrefix: settings.ai.globalPromptPrefix || undefined,
             includeReferenceLinks: settings.ai.attachReferenceLinks,
+            capabilityLookup: settings.ai.capabilityLookupEnabled,
             maxSceneSegments: settings.ai.maxSceneSegments,
             generationStrategy: negotiation.generationStrategy,
             executionMode: negotiation.executionMode,
             refinementGoals: negotiation.refinementGoals,
             estimatedSegments: negotiation.estimatedSegments,
+            estimatedOutputTokens: negotiation.estimatedOutputTokens,
             selectedCapabilityIds: negotiation.selectedCapabilityIds,
             requiresAnimation: negotiation.requiresAnimation,
             agentOptions,
+            ...resolveSceneAgentTokenOptions(settings),
             onAgentProgress,
             // Every visible authoring request carries its own stream id, so JSON, commands and
             // Patch rounds replace one another instead of being concatenated into invalid text.
             onDelta: onOutputDelta,
-            onSceneDraft: onScenePreview,
+            onSceneDraft: (draftString) => onScenePreview(draftString, { stage: "scene_draft" }),
             onGenerationPhase: (phase) => {
               if (phase?.phase === "compact-retry" || phase?.phase === "segmented-recovery") {
                 activeOutputStreamIdRef.current = "";
@@ -865,15 +1190,25 @@ export function App() {
 
         setStream("");
         const snapshot = sceneJsonString ?? JSON.stringify(sceneJson);
+        previewQueueOpen = false;
+        await previewRenderQueue.catch((error) => {
+          console.warn("[threebox-react] superseded preview render failed:", error);
+        });
+        const finalSceneCard = await waitForSceneCard(assistantId);
+        await finalSceneCard?.finalize(sceneJson, { label: userPrompt });
         const verifiedAdjustSummary = adjusting && settings.ai.includeTurnSummary
           ? L(`已通过 ${stage} 调整了场景。`, `Adjusted the scene via ${stage}.`)
           : "";
+        const useDiffCache = adjusting && settings.io.turnCacheMode === "diff" && stage === "commands" && commands?.length;
         const turnRecord = await history.appendTurn(conversationId, {
+          id: currentTurnId,
           userPrompt,
           mode: adjusting ? "adjust" : "generate",
-          targetTurnId: adjusting ? shownTurnId : undefined,
+          targetTurnId: adjusting ? adjustTargetTurnId : undefined,
           stage,
-          sceneJson: snapshot,
+          sceneJson: useDiffCache ? null : snapshot,
+          commands,
+          patch,
           sceneTitle: "",
           recapSummary: verifiedAdjustSummary
         });
@@ -891,21 +1226,36 @@ export function App() {
           text: agentProcess ? `${baseText}\n\n${agentProcess}` : baseText,
           // The orchestrator already handed us the parsed scene object; the message's own SceneCard
           // renders it into its own live canvas (there is no shared viewport).
-          sceneObj: sceneJson,
           sceneJson: snapshot,
           diff,
           label: userPrompt,
-          turnId: turnRecord?.id ?? null,
+          turnId: currentTurnId,
           mode: adjusting ? "adjust" : "generate",
           summary: verifiedAdjustSummary || undefined
         };
         // The card was appended early and streamed drafts (see above) — finalize it in place so
         // the last draft is superseded by the real result.
-        updateMessage(assistantId, finalFields);
+        updateMessage(assistantId, (message) => ({
+          ...finalFields,
+          sceneObj: message.sceneObj || null
+        }));
         setShownSceneJson(snapshot);
-        setShownTurnId(turnRecord?.id ?? null);
+        setShownTurnId(currentTurnId);
+        shownTurnIdRef.current = currentTurnId;
         // Debounced push to the user's self-hosted sync server (no-op unless configured).
         selfHostedSync.scheduleSync();
+        if (finalSceneCard) {
+          const previousScene = adjusting ? JSON.parse(adjustTargetString) : null;
+          startTurnTexturePipeline({
+            turnId: currentTurnId,
+            messageId: assistantId,
+            prompt: userPrompt,
+            scene: sceneJson,
+            sceneCard: finalSceneCard,
+            aiProviderOptions: resolved.options,
+            changedObjectIds: previousScene ? findChangedTextureObjectIds(previousScene, sceneJson) : undefined
+          });
+        }
 
         // Generation title/recap remain best-effort background calls. Adjustments use the verified
         // stage above instead of asking another model call to guess what changed from a thin digest.
@@ -913,7 +1263,7 @@ export function App() {
           const digest = buildResultDigest(sceneJson);
           const providerOptions = resolved.options;
           const turnMode = adjusting ? "adjust" : "generate";
-          const adjustTargetTurnId = adjusting ? shownTurnId : undefined;
+          const summaryTargetTurnId = adjusting ? adjustTargetTurnId : undefined;
           void (async () => {
             const [title, recap] = await Promise.all([
               settings.ai.autoGenerateSceneTitle
@@ -928,8 +1278,8 @@ export function App() {
                 ? runAiTurnSummary({
                     userPrompt,
                     mode: turnMode,
-                    targetTurnId: adjustTargetTurnId,
-                    turnId: turnRecord?.id,
+                    targetTurnId: summaryTargetTurnId,
+                    turnId: currentTurnId,
                     resultDigest: digest,
                     providerOptions,
                     responseLanguage: summaryResponseLanguage,
@@ -965,8 +1315,12 @@ export function App() {
                 /* best-effort */
               }
             }
-            if (turnRecord?.id && (title || recapText)) {
-              void putTurn({ ...turnRecord, sceneTitle: title || turnRecord.sceneTitle || "", recapSummary: recapText }).catch(() => {});
+            if (turnRecord && (title || recapText)) {
+              void updateStoredTurn(currentTurnId, (current) => ({
+                ...current,
+                sceneTitle: title || current.sceneTitle || "",
+                recapSummary: recapText
+              })).catch(() => {});
             }
           })();
         }
@@ -985,14 +1339,15 @@ export function App() {
           const message = getAiErrorFeedback(error).message;
           if (assistantId) {
             // Convert the early agent placeholder into the error in place (drop its draft card).
-            updateMessage(assistantId, { role: "error", text: message, sceneObj: null, sceneJson: null, diff: null });
+            updateMessage(assistantId, { role: "error", text: message, sceneObj: null, sceneJson: null, diff: null, renderSceneCard: false });
           } else {
             append({ role: "error", text: message });
           }
           await history.appendTurn(conversationId, {
+            id: currentTurnId,
             userPrompt,
             mode: adjusting ? "adjust" : "generate",
-            targetTurnId: adjusting ? shownTurnId : undefined,
+            targetTurnId: adjusting ? adjustTargetTurnId : undefined,
             stage: "error",
             status: "failed",
             errorMessage: message,
@@ -1368,7 +1723,16 @@ export function App() {
                   ) : (
                     <div className={`chatMessageText${m.role === "error" ? " chatMessageError" : ""}`}>{m.text}</div>
                   )}
-                  {m.sceneObj && <SceneCard sceneJson={m.sceneObj} label={m.label} showToast={showToast} options={sceneCardOptions} />}
+                  {(m.renderSceneCard || m.sceneObj) && (
+                    <SceneAgentSceneCard
+                      sceneJson={m.sceneObj}
+                      label={m.label}
+                      showToast={showToast}
+                      options={sceneCardOptions}
+                      managed={m.managedSceneCard === true}
+                      onReady={(card) => registerSceneCard(m.id ?? `message-${i}`, card)}
+                    />
+                  )}
                   {/* Diff collapse (adjust turns) sits above the final-JSON collapse, per the original. */}
                   {m.diff && (
                     <AdjustDiffCollapse
@@ -1378,9 +1742,9 @@ export function App() {
                       highlight={settings.io.jsonViewerHighlight}
                     />
                   )}
-                  {m.sceneObj && (
+                  {m.sceneJson && (
                     <SceneJsonCollapse
-                      rawJsonString={m.sceneJson || JSON.stringify(m.sceneObj)}
+                      rawJsonString={m.sceneJson}
                       format={settings.io.sceneJsonFormat}
                       lineNumbers={settings.io.jsonViewerLineNumbers}
                       highlight={settings.io.jsonViewerHighlight}
@@ -1446,12 +1810,16 @@ export function App() {
             <AttachedContextRow attachedContext={attachedContext} showToast={showToast} sceneCardOptions={sceneCardOptions} />
             {canAdjust && (
               <div className="composerModeRow">
+                <label className={`composerModeOpt${isAutoIntent ? " active" : ""}`}>
+                  <input type="radio" name="turnMode" checked={isAutoIntent} onChange={() => setModeOverride(null)} />
+                  {L("自动判断", "Auto")}
+                </label>
                 <label className={`composerModeOpt${isAdjust ? " active" : ""}`}>
                   <input type="radio" name="turnMode" checked={isAdjust} onChange={() => setModeOverride("adjust")} />
                   {L("调整当前场景", "Adjust this scene")}
                 </label>
-                <label className={`composerModeOpt${!isAdjust ? " active" : ""}`}>
-                  <input type="radio" name="turnMode" checked={!isAdjust} onChange={() => setModeOverride("generate")} />
+                <label className={`composerModeOpt${modeOverride === "generate" ? " active" : ""}`}>
+                  <input type="radio" name="turnMode" checked={modeOverride === "generate"} onChange={() => setModeOverride("generate")} />
                   {L("生成新场景", "New scene")}
                 </label>
               </div>

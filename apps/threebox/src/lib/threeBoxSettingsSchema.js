@@ -1,15 +1,8 @@
-/**
- * ThreeBox settings schema — ported from tools/scene-host/threebox/js/threeBoxSettingsSchema.js.
- * The only change from the original is the builtin-provider import, which points at the published
- * @threejson/host-kit package instead of the in-repo shared/ path (no @threejson/* package exposes
- * the threebox settings schema itself, so the app carries it — the original's own doc comment
- * explains why it is deliberately app-local rather than shared).
- *
- * Unlike the editor (single AI provider config), ThreeBox supports an array of saved provider
- * configs (`ai.providers`) since the composer lets the user pick per-message.
- */
+/** Product settings composed over the generic scene-agent defaults. Provider lists, branding,
+ * privacy, notifications and sync stay app-local; execution and IO defaults stay shared. */
 
 import { BUILTIN_PROVIDER_TYPE, DEFAULT_BUILTIN_BACKEND_URL } from "@threejson/host-kit/js/builtinAiProvider.js";
+import { SCENE_AGENT_SETTINGS_DEFAULTS } from "@threejson/scene-agent-kit/settings";
 
 export const THREEBOX_SETTINGS_STORAGE_KEY = "threejson.threebox.settings.v1";
 
@@ -24,36 +17,16 @@ export const THREEBOX_SETTINGS_DEFAULTS = {
     builtinNotificationsDecisionMade: false
   },
   ai: {
+    ...SCENE_AGENT_SETTINGS_DEFAULTS.ai,
     providers: [],
     defaultProviderId: "",
     rememberKeys: true,
     builtinBackendUrl: DEFAULT_BUILTIN_BACKEND_URL,
     selfName: "ThreeBox",
-    sceneGenerationMode: "auto",
-    updateOutputMode: "commands",
-    includeSpatialSummary: true,
-    includeFullJson: false,
     defaultImageModel: "dall-e-3",
-    globalPromptPrefix: "",
-    includeTurnSummary: true,
-    autoGenerateSceneTitle: true,
-    sceneTitleLanguage: "auto",
-    attachReferenceLinks: true,
-    capabilityLookupEnabled: true,
-    animationCapabilityMode: "auto",
-    maxSceneSegments: 16,
-    // Runaway guard used only when a genuinely complex scene enters incremental construction.
-    maxAutoRefineRounds: 6,
-    agentPolicyVersion: 2
   },
   io: {
-    exportJsonIndent: 2,
-    sceneJsonFormat: "standard",
-    tjzAssetPolicy: "preserve",
-    showMeshExportWarnings: true,
-    turnCacheMode: "full",
-    jsonViewerLineNumbers: true,
-    jsonViewerHighlight: true
+    ...SCENE_AGENT_SETTINGS_DEFAULTS.io
   },
   sync: {
     enabled: false,
@@ -94,11 +67,20 @@ export const THREEBOX_SETTINGS_FIELDS = [
   { section: "ai", path: "ai.selfName", type: "text", label: "AI 自称" },
   {
     section: "ai",
+    path: "ai.thinkingPreference",
+    type: "select",
+    label: "DeepSeek 思考模式",
+    hint: "仅对支持该能力的供应商生效；场景 JSON 默认建议关闭。",
+    options: [["disabled", "关闭（推荐）"], ["high", "高"], ["max", "最高"], ["inherit", "继承供应商设置"]]
+  },
+  {
+    section: "ai",
     path: "ai.sceneGenerationMode",
     type: "select",
     label: "场景生成方式",
     options: [["auto", "自动（由 AI 判断）"], ["direct", "完整生成"], ["draft_refine", "增量构建"]]
   },
+  { section: "ai", path: "ai.sceneMaxOutputTokens", type: "number", label: "单次场景输出上限（0 = 不限制）", min: 0 },
   { section: "ai", path: "ai.updateOutputMode", type: "select", label: "调整优先方式", options: [["commands", "操作命令"], ["json-incremental", "JSON Patch"], ["json-full", "完整 JSON"]] },
   { section: "ai", path: "ai.includeSpatialSummary", type: "checkbox", label: "调整时附带空间摘要" },
   { section: "ai", path: "ai.includeFullJson", type: "checkbox", label: "调整时附带完整 JSON（更耗费 Token）" },
@@ -134,6 +116,26 @@ export const THREEBOX_SETTINGS_FIELDS = [
     label: "动画/事件脚本能力",
     options: [["auto", "自动（由协商模型判断）"], ["on", "始终启用"], ["off", "关闭"]]
   },
+  { section: "ai", path: "ai.texturePipelineEnabled", type: "checkbox", label: "场景显示后自动完善纹理" },
+  {
+    section: "ai",
+    path: "ai.textureStrategy",
+    type: "select",
+    label: "纹理获取策略",
+    options: [["semantic-hybrid", "语义混合（推荐）"], ["manifest", "仅内置资源"], ["search", "优先搜索"], ["generate", "优先生图"]]
+  },
+  { section: "ai", path: "ai.textureServiceUrl", type: "text", label: "纹理服务地址", placeholder: "https://api.threebox.org", testEndpoint: "textureService" },
+  { section: "ai", path: "ai.textureServiceApiKey", type: "password", label: "纹理服务 API Key" },
+  { section: "ai", path: "ai.textureLocalCache", type: "checkbox", label: "启用浏览器纹理缓存" },
+  { section: "ai", path: "ai.texturePbr", type: "checkbox", label: "启用完整 PBR 纹理" },
+  {
+    section: "ai",
+    path: "ai.texturePersistenceMode",
+    type: "select",
+    label: "纹理归档策略",
+    options: [["remote", "远程代理"], ["archive-selected", "归档已选择"], ["archive-all", "归档全部"]]
+  },
+  { section: "ai", path: "ai.textureAllowUnknownLicense", type: "checkbox", label: "允许自动使用许可未知的纹理" },
   {
     section: "ai",
     path: "ai.maxSceneSegments",

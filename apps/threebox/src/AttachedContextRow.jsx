@@ -6,7 +6,7 @@
  */
 import { useRef } from "react";
 import { t } from "@threejson/host-kit/i18n/index.js";
-import { SceneCard } from "./SceneCard.jsx";
+import { SceneAgentSceneCard } from "@threejson/react-scene-agent/scene-card";
 
 export function AttachedContextRow({ attachedContext, showToast, sceneCardOptions }) {
   const canvasWrapRef = useRef(null);
@@ -93,7 +93,7 @@ export function AttachedContextRow({ attachedContext, showToast, sceneCardOption
           </button>
         </div>
         <div className="attachedContextCanvasWrap" ref={canvasWrapRef}>
-          <SceneCard sceneJson={current.sceneJson} label={current.label} showToast={showToast} options={sceneCardOptions} />
+          <SceneAgentSceneCard sceneJson={current.sceneJson} label={current.label} showToast={showToast} options={sceneCardOptions} />
         </div>
       </div>
     </div>
