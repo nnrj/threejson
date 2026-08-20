@@ -36,7 +36,7 @@ function backendUrl(settings) {
   return String(settings?.ai?.builtinBackendUrl || "").replace(/\/$/, "");
 }
 
-async function ensureBuiltinApiKeyInternal(settingsController) {
+async function ensureBuiltinApiKeyInternal(settingsController, options = {}) {
   if (!isBuiltinPrivacyAccepted()) {
     return;
   }
@@ -64,15 +64,18 @@ async function ensureBuiltinApiKeyInternal(settingsController) {
     });
   } catch (error) {
     console.warn("[threebox] built-in provider key issuance failed:", error);
+    if (!provider.apiKey) {
+      options.onUnavailable?.(error);
+    }
   }
 }
 
 let inFlightEnsurePromise = null;
 
 /** Public entry point — deduplicates concurrent callers into a single in-flight request. */
-export function ensureBuiltinApiKey(settingsController) {
+export function ensureBuiltinApiKey(settingsController, options = {}) {
   if (!inFlightEnsurePromise) {
-    inFlightEnsurePromise = ensureBuiltinApiKeyInternal(settingsController).finally(() => {
+    inFlightEnsurePromise = ensureBuiltinApiKeyInternal(settingsController, options).finally(() => {
       inFlightEnsurePromise = null;
     });
   }

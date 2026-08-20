@@ -75,7 +75,7 @@ export function getAiErrorFeedback(error) {
     message = t("ai.error.revokedApiKey", "访问凭证已失效，请刷新后重试。");
   } else if (error?.code === "INVALID_API_KEY_HEADER_VALUE") {
     message = t("ai.error.invalidApiKeyHeader", "API Key 包含无法用于请求头的字符，请检查配置后重试。");
-  } else if (error?.code === "THREEBOX_INTENT_CLASSIFICATION_FAILED") {
+  } else if (["THREEBOX_INTENT_CLASSIFICATION_FAILED", "SCENE_AGENT_INTENT_CLASSIFICATION_FAILED"].includes(error?.code)) {
     message = t("ai.error.intentClassificationFailed", "未能可靠判断本次请求的操作类型，已停止本轮操作以避免错误修改场景，请重试。");
   } else if (providerCode === "UPSTREAM_REASONING_EXHAUSTED") {
     message = t("ai.error.reasoningExhausted", "供应商的思考过程耗尽了输出额度，尚未生成场景内容。请关闭或降低思考模式后重试。");

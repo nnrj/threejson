@@ -1513,13 +1513,12 @@ async function main() {
     openCloud: async () => {
       // Cloud migration is an account-service operation, deliberately independent from the
       // configurable built-in-provider endpoint.
-      const cloud = createThreeBoxCloudMigration({ apiBaseUrl: "https://api.threebox.org", cloudUrl: "https://cloud.threebox.org" });
-      const conversations = await getAllConversations();
-      if (conversations.length && window.confirm("将本机对话加密转交给 ThreeBox Cloud，并在登录后导入？")) {
-        await cloud.migrate();
-      } else {
-        window.location.assign("https://cloud.threebox.org");
-      }
+      const cloud = createThreeBoxCloudMigration({
+        apiBaseUrl: "https://api.threebox.org",
+        cloudUrl: "https://cloud.threebox.org",
+        settingsProvider: () => settingsModal.getSettings()
+      });
+      await cloud.open();
     },
     closeLeftDock: () => viewChrome.closeLeftDock(),
     onNewChat: () => {

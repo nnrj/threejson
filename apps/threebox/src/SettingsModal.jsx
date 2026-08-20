@@ -4,11 +4,8 @@
  * driven by THREEBOX_SETTINGS_FIELDS, plus the special AI-providers section (an editable array of
  * saved provider configs the composer picks from per-message).
  *
- * Two subsystems the original modal has are omitted here because this app has not built them yet:
- * the template-thumbnail rebuild/clear buttons (no thumbnail cache subsystem) and the built-in
- * provider's live remaining-quota readout (no quota endpoint wired). The corresponding schema
- * fields still persist; only those two auxiliary controls are absent. Everything else — every
- * field, provider-card editing, endpoint tests, the About section — is faithful.
+ * Includes provider editing, live built-in quota, endpoint checks, thumbnail-cache controls,
+ * self-hosted sync and the schema-driven product settings.
  */
 import { useEffect, useState } from "react";
 import { t } from "@threejson/host-kit/i18n/index.js";
@@ -36,6 +33,9 @@ function fieldLabelKey(field) {
 function fieldPlaceholderKey(field) {
   return `threebox.settings.fieldPlaceholder.${field.path.replace(/\./g, "_")}`;
 }
+function fieldHintKey(field) {
+  return `threebox.settings.fieldHint.${field.path.replace(/\./g, "_")}`;
+}
 function optionLabelKey(field, value) {
   return `threebox.settings.option.${field.path.replace(/\./g, "_")}.${value}`;
 }
@@ -46,7 +46,7 @@ function fieldsForSection(sectionId) {
   return THREEBOX_SETTINGS_FIELDS.filter((f) => f.section === sectionId);
 }
 
-function GenericField({ field, draft, onChange }) {
+function GenericField({ field, draft, onChange, onTestEndpoint }) {
   const value = getSettingsByPath(draft, field.path);
   const [testState, setTestState] = useState("idle");
   const [testMessage, setTestMessage] = useState("");
@@ -57,7 +57,9 @@ function GenericField({ field, draft, onChange }) {
     }
     setTestState("testing");
     try {
-      const result = await probeEndpoint(currentValue, "/health");
+      const result = onTestEndpoint
+        ? await onTestEndpoint(field.testEndpoint, currentValue)
+        : await probeEndpoint(currentValue, "/health");
       setTestState(result.ok ? "success" : "failed");
       setTestMessage(result.ok ? "" : result.message || "unreachable");
     } catch (error) {
@@ -136,6 +138,9 @@ function GenericField({ field, draft, onChange }) {
           </button>
         )}
       </div>
+      {field.hint && (
+        <div className="settingsFieldHint">{t(fieldHintKey(field), field.hint)}</div>
+      )}
     </div>
   );
 }
@@ -464,7 +469,15 @@ function SyncSection({ draft, onChange, onSyncNow, showToast }) {
   return (
     <div className="settingsSectionPanel">
       {fieldsForSection("sync").map((field) => (
-        <GenericField key={field.path} field={field} draft={draft} onChange={onChange} />
+        <GenericField
+          key={field.path}
+          field={field}
+          draft={draft}
+          onChange={onChange}
+          onTestEndpoint={field.testEndpoint === "selfHostedSync" && onSyncNow
+            ? async () => { await onSyncNow(); return { ok: true }; }
+            : undefined}
+        />
       ))}
       <div className="settingsButtonRow">
         <button type="button" className="settingsActionBtn" disabled={!configured || syncing} onClick={() => void runSyncNow()}>
@@ -549,6 +562,7 @@ export function SettingsModal({ initialSectionId = "general", onClose, privacyAc
       id="settingsModal"
       role="dialog"
       aria-modal="true"
+      aria-labelledby="settingsModalTitle"
       onClick={(event) => {
         if (event.target === event.currentTarget) {
           onClose();

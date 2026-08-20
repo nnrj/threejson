@@ -70,8 +70,13 @@ export const THREEBOX_SETTINGS_FIELDS = [
     path: "ai.thinkingPreference",
     type: "select",
     label: "DeepSeek 思考模式",
-    hint: "仅对支持该能力的供应商生效；场景 JSON 默认建议关闭。",
-    options: [["disabled", "关闭（推荐）"], ["high", "高"], ["max", "最高"], ["inherit", "继承供应商设置"]]
+    hint: "仅对 DeepSeek 生效；内置供应商是否允许用户覆盖，由服务端管理员控制。场景 JSON 默认建议关闭。",
+    options: [
+      ["disabled", "关闭（推荐，优先保证场景 JSON 输出）"],
+      ["high", "高"],
+      ["max", "最高"],
+      ["inherit", "继承供应商/服务器设置"]
+    ]
   },
   {
     section: "ai",
@@ -80,7 +85,14 @@ export const THREEBOX_SETTINGS_FIELDS = [
     label: "场景生成方式",
     options: [["auto", "自动（由 AI 判断）"], ["direct", "完整生成"], ["draft_refine", "增量构建"]]
   },
-  { section: "ai", path: "ai.sceneMaxOutputTokens", type: "number", label: "单次场景输出上限（0 = 不限制）", min: 0 },
+  {
+    section: "ai",
+    path: "ai.sceneMaxOutputTokens",
+    type: "number",
+    label: "单次场景输出上限（0 = 由供应商/服务端决定）",
+    hint: "这是可选的用户侧上限。保持 0 时 ThreeJSON 不发送 max_tokens；内置供应商仍遵循服务端管理员配置。",
+    min: 0
+  },
   { section: "ai", path: "ai.updateOutputMode", type: "select", label: "调整优先方式", options: [["commands", "操作命令"], ["json-incremental", "JSON Patch"], ["json-full", "完整 JSON"]] },
   { section: "ai", path: "ai.includeSpatialSummary", type: "checkbox", label: "调整时附带空间摘要" },
   { section: "ai", path: "ai.includeFullJson", type: "checkbox", label: "调整时附带完整 JSON（更耗费 Token）" },
@@ -124,8 +136,8 @@ export const THREEBOX_SETTINGS_FIELDS = [
     label: "纹理获取策略",
     options: [["semantic-hybrid", "语义混合（推荐）"], ["manifest", "仅内置资源"], ["search", "优先搜索"], ["generate", "优先生图"]]
   },
-  { section: "ai", path: "ai.textureServiceUrl", type: "text", label: "纹理服务地址", placeholder: "https://api.threebox.org", testEndpoint: "textureService" },
-  { section: "ai", path: "ai.textureServiceApiKey", type: "password", label: "纹理服务 API Key" },
+  { section: "ai", path: "ai.textureServiceUrl", type: "text", label: "纹理服务地址（留空使用内置后端）", placeholder: "https://api.threebox.org", testEndpoint: "textureService" },
+  { section: "ai", path: "ai.textureServiceApiKey", type: "password", label: "纹理服务 API Key（留空使用内置密钥）" },
   { section: "ai", path: "ai.textureLocalCache", type: "checkbox", label: "启用浏览器纹理缓存" },
   { section: "ai", path: "ai.texturePbr", type: "checkbox", label: "启用完整 PBR 纹理" },
   {

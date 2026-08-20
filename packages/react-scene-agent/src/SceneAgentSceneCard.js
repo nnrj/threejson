@@ -48,7 +48,11 @@ export function SceneAgentSceneCard({ sceneJson, label, showToast, options, onRe
       card.textureProgress
         ? h(
             "div",
-            { className: `sceneCardTextureBadge state-${card.textureProgress.phase}`, "data-state": card.textureProgress.phase },
+            {
+              className: `sceneCardTextureBadge state-${card.textureProgress.phase}`,
+              "data-state": card.textureProgress.phase,
+              title: card.textureProgress.title || ""
+            },
             card.textureProgress.message || text(mergedOptions, "sceneAgent.sceneCard.textureProgress", "正在完善纹理…")
           )
         : null

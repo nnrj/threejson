@@ -527,6 +527,9 @@ function normalizeOptionalMaxTokens(value) {
  * @param {number} [params.maxTokens] Optional caller/provider output ceiling. When omitted,
  * `max_tokens` is not sent and the provider (or an upstream gateway) owns the limit.
  * @param {string} [params.baseUrl] Override default apiBase
+ * @param {RequestCredentials} [params.credentials] Optional browser credential policy. Hosts that
+ * use cookie-authenticated gateways may opt into `include`; direct provider calls keep the fetch
+ * default when this is omitted.
  * @param {string} [params.userId] Anonymous application user identifier. Sent only to providers
  * whose documented API supports an isolation field (currently DeepSeek's `user_id`).
  * @param {"inherit"|"disabled"|"high"|"max"} [params.thinkingPreference="disabled"]
@@ -547,6 +550,7 @@ async function requestChatCompletion({
   onDelta,
   onCompletionMetadata,
   extraHeaders,
+  credentials,
   threeBoxTurnContext,
   userId,
   thinkingPreference = "disabled",
@@ -621,6 +625,7 @@ async function requestChatCompletion({
   try {
     const response = await fetch(url, {
       method: "POST",
+      ...(credentials ? { credentials } : {}),
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${normalizedApiKey}`,

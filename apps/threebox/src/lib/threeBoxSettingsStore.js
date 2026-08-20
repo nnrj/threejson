@@ -117,6 +117,19 @@ export function loadThreeBoxSettingsBundle() {
   if (!["auto", "direct", "draft_refine"].includes(merged.ai?.sceneGenerationMode)) {
     merged.ai.sceneGenerationMode = "auto";
   }
+  const configuredSceneMaxTokens = Number(merged.ai?.sceneMaxOutputTokens);
+  merged.ai.sceneMaxOutputTokens = Number.isFinite(configuredSceneMaxTokens) && configuredSceneMaxTokens > 0
+    ? Math.round(configuredSceneMaxTokens)
+    : 0;
+  if (!["inherit", "disabled", "high", "max"].includes(merged.ai?.thinkingPreference)) {
+    merged.ai.thinkingPreference = "disabled";
+  }
+  if (!["semantic-hybrid", "manifest", "search", "generate"].includes(merged.ai?.textureStrategy)) {
+    merged.ai.textureStrategy = "semantic-hybrid";
+  }
+  if (!["remote", "archive-selected", "archive-all"].includes(merged.ai?.texturePersistenceMode)) {
+    merged.ai.texturePersistenceMode = "remote";
+  }
   if (cached?.io?.sceneJsonFormat !== "standard" && cached?.io?.sceneJsonFormat !== "friendly") {
     merged.io.sceneJsonFormat = cached?.io?.copyFriendlyJson === true ? "friendly" : "standard";
   }
@@ -139,6 +152,7 @@ export function persistThreeBoxSettings(settings) {
     toSave.ai.providers = toSave.ai.providers.map((p) =>
       p.provider === THREEBOX_BUILTIN_PROVIDER_TYPE ? p : { ...p, apiKey: "" }
     );
+    toSave.ai.textureServiceApiKey = "";
   }
   if (!toSave.sync?.rememberAccessToken && toSave.sync) {
     toSave.sync.accessToken = "";

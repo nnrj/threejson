@@ -1,8 +1,10 @@
 import { createRoot } from "react-dom/client";
 import { App } from "./App.jsx";
+import "@threejson/host-kit/css/builtin-provider-privacy.css";
+// Generic scene-card structure first; the ThreeBox baseline theme below owns product styling.
+import "@threejson/react-scene-agent/styles.css";
 // Verbatim from tools/scene-host/threebox — the app reproduces that DOM so this design applies as-is.
 import "./threebox.css";
-import "@threejson/react-scene-agent/styles.css";
 // The handful of controls the original does not have (adjust/generate toggle, error colouring).
 import "./styles.css";
 

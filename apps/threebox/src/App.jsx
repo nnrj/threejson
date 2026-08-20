@@ -22,9 +22,12 @@ import {
   runSceneAgentTitle as runAiSceneTitle,
   runSceneAgentSummary as runAiTurnSummary,
   reconstructSceneAgentTurn,
+  createSceneAgentTurnContext,
+  projectSceneAgentJsonString,
   isProviderVisionCapable
 } from "@threejson/scene-agent-kit/controller";
 import { resolveSceneAgentOptions, resolveSceneAgentTokenOptions } from "@threejson/scene-agent-kit/settings";
+import { createUnsuccessfulTurnRecord, isUnsuccessfulTurn } from "@threejson/scene-agent-kit/turn-state";
 import { buildStructuredTurnEnvelope } from "threejson/ai";
 import { getAiErrorFeedback } from "@threejson/host-kit/js/aiErrorFeedback.js";
 import { resolveSceneHostUrl } from "@threejson/host-kit/js/sceneHostPaths.js";
@@ -37,11 +40,10 @@ import {
   getTurn,
   putTurn,
   getConversation,
-  putConversation,
-  getAllConversations
+  putConversation
 } from "./lib/sceneAgentRepository.js";
-import { t } from "@threejson/host-kit/i18n/index.js";
-import { BUILTIN_PROVIDER_TYPE } from "@threejson/host-kit/js/builtinAiProvider.js";
+import { normalizeLocale, t } from "@threejson/host-kit/i18n/index.js";
+import { BUILTIN_PROVIDER_TYPE, getDisplayDeviceId } from "@threejson/host-kit/js/builtinAiProvider.js";
 import { formatAgentProgressLabel } from "@threejson/host-kit/js/aiAgentProgressLabels.js";
 import { findChangedTextureObjectIds, runHostSceneTexturePipeline } from "@threejson/host-kit/js/sceneTextureOrchestrator.js";
 import { createTextureProxyUrl } from "@threejson/host-kit/js/textureProviderClient.js";
@@ -70,12 +72,13 @@ import { PrivacyDialog } from "./PrivacyDialog.jsx";
 import { SettingsModal } from "./SettingsModal.jsx";
 import { SceneAgentSceneCard } from "@threejson/react-scene-agent/scene-card";
 import { openThreeBoxMeshExportDialog, showThreeBoxMeshExportWarningDialog } from "./lib/threeBoxMeshExportDialog.js";
-import { openSceneInEditor, openSceneInPlayer } from "./sceneBridgeProtocol.js";
-import { SceneJsonCollapse, AdjustDiffCollapse } from "./JsonCollapse.jsx";
+import { openSceneInEditor, openSceneInPlayer, THREEBOX_PEER_URLS } from "./sceneBridgeProtocol.js";
+import { JsonCollapse, SceneJsonCollapse, AdjustDiffCollapse } from "./JsonCollapse.jsx";
 import { useAttachedContext } from "./useAttachedContext.js";
 import { AttachedContextRow } from "./AttachedContextRow.jsx";
 import { useComposerAttach, ATTACH_KIND_ORDER } from "./useComposerAttach.js";
 import { TemplateCard } from "./TemplateCard.jsx";
+import { AiErrorFeedback } from "./AiErrorFeedback.jsx";
 
 /**
  * Ported from threeBoxApp.js's createAgentProgressUpdater. Shows the current stage in the existing
@@ -144,6 +147,50 @@ function buildAgentProcessSummary(agentResult, heading, budgetMessage) {
 
 const TEMPLATE_MANIFEST = "assets/json/other/threebox/manifest.json";
 const LOGO_URL = resolveSceneHostUrl("assets/img/logo/threejson-logo-256.png");
+const LEFT_DOCK_PINNED_STORAGE_KEY = "threejson.threebox.leftDockPinned";
+const TEMPLATE_GALLERY_EXPANDED_STORAGE_KEY = "threejson.threebox.templateGalleryExpanded";
+const MOBILE_MEDIA_QUERY = "(max-width: 720px)";
+
+function isMobileViewport() {
+  return typeof window !== "undefined" && window.matchMedia?.(MOBILE_MEDIA_QUERY).matches;
+}
+
+function readStoredBoolean(key, fallback) {
+  try {
+    const value = localStorage.getItem(key);
+    return value == null ? fallback : value === "1";
+  } catch {
+    return fallback;
+  }
+}
+
+function formatRelativeTime(timestamp, zh) {
+  const age = Math.max(0, Date.now() - Number(timestamp || 0));
+  const minute = 60_000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+  if (age < minute) return zh ? "刚刚" : "Just now";
+  if (age < hour) {
+    const count = Math.floor(age / minute);
+    return zh ? `${count} 分钟前` : `${count} min ago`;
+  }
+  if (age < day) {
+    const count = Math.floor(age / hour);
+    return zh ? `${count} 小时前` : `${count} hr ago`;
+  }
+  if (age < 7 * day) {
+    const count = Math.floor(age / day);
+    return zh ? `${count} 天前` : `${count} d ago`;
+  }
+  return new Date(timestamp).toLocaleDateString(zh ? "zh-CN" : "en-US");
+}
+
+function formatFileSize(bytes) {
+  const size = Math.max(0, Number(bytes) || 0);
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(size < 10 * 1024 ? 1 : 0)} KB`;
+  return `${(size / 1024 / 1024).toFixed(1)} MB`;
+}
 
 /** Hero suggestion chips, matching the original's data-prompt / data-prompt-en. */
 const HERO_SUGGESTIONS = [
@@ -171,6 +218,22 @@ const RESOURCE_CATEGORIES = [
   ["other", "其他", "Other"]
 ];
 
+function ResourceIcon({ kind }) {
+  if (kind === "tjz") {
+    return <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="3" width="11" height="10" rx="1.4" fill="none" stroke="currentColor" strokeWidth="1.2" /><path fill="none" stroke="currentColor" strokeWidth="1.1" d="M8 3v10" /></svg>;
+  }
+  if (kind === "model") {
+    return <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" d="M8 2 14 5.5v5L8 14 2 10.5v-5z" /><path fill="none" stroke="currentColor" strokeWidth="1" d="M2 5.5 8 9l6-3.5M8 9v5" /></svg>;
+  }
+  if (kind === "image") {
+    return <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3" width="12" height="10" rx="1.2" fill="none" stroke="currentColor" strokeWidth="1.2" /><circle cx="5.6" cy="6.6" r="1.1" fill="currentColor" /><path fill="none" stroke="currentColor" strokeWidth="1.1" d="m3 11.5 3.3-3.3 2.3 2.1L12.5 7 14 8.5" /></svg>;
+  }
+  if (kind === "json") {
+    return <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="none" stroke="currentColor" strokeWidth="1.2" d="M3 2h7l3 3v9H3z" /><path fill="none" stroke="currentColor" strokeWidth="1.1" d="M6 8.5h4M6 10.8h4" /></svg>;
+  }
+  return <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="none" stroke="currentColor" strokeWidth="1.2" d="M4 2h5l3 3v9H4z" /></svg>;
+}
+
 export function App() {
   const { locale, setLocale } = useHostI18n();
   const zh = locale !== "en-US";
@@ -181,6 +244,7 @@ export function App() {
   // Apply the persisted UI-language preference: "auto" leaves whatever the browser resolved to,
   // "zh-CN"/"en-US" force that locale (matching the original's general.locale setting).
   const localeSetting = settings.general.locale;
+  useEffect(() => { document.documentElement.lang = zh ? "zh-CN" : "en"; }, [zh]);
   useEffect(() => {
     if (localeSetting === "zh-CN" || localeSetting === "en-US") {
       setLocale(localeSetting);
@@ -188,16 +252,41 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localeSetting]);
 
+  useEffect(() => {
+    const raw = new URLSearchParams(window.location.search || "").get("lang")
+      || new URLSearchParams(window.location.search || "").get("locale")
+      || "";
+    if (!raw) return;
+    const requested = normalizeLocale(raw);
+    if (!["zh-CN", "en-US"].includes(localeSetting) || requested === localeSetting) return;
+    const name = (value, language) => value === "zh-CN"
+      ? language === "zh-CN" ? "中文" : "Chinese"
+      : language === "zh-CN" ? "英文" : "English";
+    const accepted = window.confirm([
+      `官网当前为${name(requested, "zh-CN")}，但 ThreeBox 当前为${name(localeSetting, "zh-CN")}。是否将 ThreeBox 切换为${name(requested, "zh-CN")}？`,
+      "",
+      `The website is currently in ${name(requested, "en-US")}, but ThreeBox is currently in ${name(localeSetting, "en-US")}. Switch ThreeBox to ${name(requested, "en-US")}?`
+    ].join("\n"));
+    if (accepted) updateThreeBoxSettings((next) => { next.general.locale = requested; });
+    // URL hand-off is evaluated once at boot.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // The composer's model picker chooses among the saved providers; default to the configured
   // default provider, falling back to the first available.
   const providers = settings.ai.providers || [];
+  const selectableProviders = useMemo(
+    () => providers.filter((entry) => entry.provider !== BUILTIN_PROVIDER_TYPE || provider.privacyAccepted),
+    [providers, provider.privacyAccepted]
+  );
   const [selectedProviderId, setSelectedProviderId] = useState(settings.ai.defaultProviderId || "");
   useEffect(() => {
-    if (!providers.some((p) => p.id === selectedProviderId)) {
-      setSelectedProviderId(settings.ai.defaultProviderId || providers[0]?.id || "");
+    if (!selectableProviders.some((p) => p.id === selectedProviderId)) {
+      const configuredDefault = selectableProviders.find((p) => p.id === settings.ai.defaultProviderId);
+      setSelectedProviderId(configuredDefault?.id || selectableProviders[0]?.id || "");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings.ai.providers, settings.ai.defaultProviderId]);
+  }, [settings.ai.providers, settings.ai.defaultProviderId, provider.privacyAccepted]);
 
   // Dev-only: adopt a gitignored settings.test.json as a saved provider so the generate/adjust
   // loops can be exercised against a real model locally. Its credentials are served by a dev-server
@@ -254,7 +343,14 @@ export function App() {
   // Issue/refresh the built-in trial key + quota at boot (a no-op until the privacy agreement is
   // accepted; written into the ai.providers[builtin] entry). Not awaited — never blocks first paint.
   useEffect(() => {
-    void ensureBuiltinApiKey(threeBoxSettingsController);
+    void ensureBuiltinApiKey(threeBoxSettingsController, {
+      onUnavailable: () => setToast({
+        text: L("内置供应商无法访问，请配置供应商。", "The built-in provider is unavailable; configure another provider."),
+        kind: "info"
+      })
+    });
+    // Boot-only availability notice.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Device-scoped built-in notifications: a raw-DOM bell+panel widget with its own polling
@@ -302,7 +398,9 @@ export function App() {
   const [messages, setMessages] = useState([]);
   const [prompt, setPrompt] = useState("");
   const [busy, setBusy] = useState(false);
+  const [busyStoppable, setBusyStoppable] = useState(false);
   const [stream, setStream] = useState("");
+  const [activeAssistantId, setActiveAssistantId] = useState(null);
   const [shownSceneJson, setShownSceneJson] = useState(null);
   const [shownTurnId, setShownTurnId] = useState(null);
   const shownTurnIdRef = useRef(null);
@@ -312,7 +410,9 @@ export function App() {
   const [modeOverride, setModeOverride] = useState(null);
 
   // Chrome state.
-  const [sidebarPinned, setSidebarPinned] = useState(true);
+  const [sidebarPinned, setSidebarPinned] = useState(() => (
+    isMobileViewport() ? false : readStoredBoolean(LEFT_DOCK_PINNED_STORAGE_KEY, true)
+  ));
   const [mobilePeek, setMobilePeek] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -324,52 +424,45 @@ export function App() {
     setShowSettings(true);
   }, []);
 
-  /** Cloud migration (account-service, deliberately independent of the built-in-provider endpoint):
-   * confirm, then hand an encrypted local snapshot to ThreeBox Cloud and redirect; with no local
-   * conversations just open Cloud. Matches the original's openCloud action. */
-  const migrateToCloud = useCallback(async () => {
-    try {
-      const conversations = await getAllConversations();
-      if (
-        conversations.length &&
-        window.confirm(
-          L(
-            "将本机对话加密转交给 ThreeBox Cloud，并在登录后导入？",
-            "Encrypt and hand this device's conversations to ThreeBox Cloud, importing after login?"
-          )
-        )
-      ) {
-        const cloud = createThreeBoxCloudMigration({
-          apiBaseUrl: "https://api.threebox.org",
-          cloudUrl: "https://cloud.threebox.org"
-        });
-        await cloud.migrate();
-      } else {
-        window.location.assign("https://cloud.threebox.org");
-      }
-    } catch (error) {
-      showToast(L(`迁移失败：${error?.message || error}`, `Migration failed: ${error?.message || error}`), "error");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [zh]);
   const [showSearch, setShowSearch] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [resourceCategory, setResourceCategory] = useState("all");
   const [templateSearch, setTemplateSearch] = useState("");
+  const [templateGalleryExpanded, setTemplateGalleryExpanded] = useState(() =>
+    readStoredBoolean(TEMPLATE_GALLERY_EXPANDED_STORAGE_KEY, false)
+  );
   const [templates, setTemplates] = useState([]);
   const [templateBusyId, setTemplateBusyId] = useState(null);
   const [toast, setToast] = useState(null);
+  useEffect(() => {
+    if (!toast) return undefined;
+    const timer = window.setTimeout(() => setToast(null), 3600);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   const abortRef = useRef(null);
   const activeOutputStreamIdRef = useRef("");
+  const rawOutputRef = useRef("");
   const messagesEndRef = useRef(null);
+  const chatMessagesRef = useRef(null);
+  const leftDockRef = useRef(null);
+  const mobileMenuBtnRef = useRef(null);
+  const userMenuRef = useRef(null);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const composerRef = useRef(null);
   const peekHideTimer = useRef(null);
   const sceneCardsByMessageIdRef = useRef(new Map());
   const sceneCardWaitersRef = useRef(new Map());
   const textureJobsByTurnIdRef = useRef(new Map());
   const turnMutationQueuesRef = useRef(new Map());
+
+  useEffect(() => {
+    const textarea = composerRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.min(200, textarea.scrollHeight)}px`;
+  }, [prompt]);
 
   const registerSceneCard = useCallback((messageId, card) => {
     if (!card) {
@@ -411,23 +504,112 @@ export function App() {
   // moving away hides it after a short delay (matching the original's leftFlyoutHost mouseenter/
   // mouseleave). Touch devices don't fire hover, so this is naturally desktop-only.
   const onFlyoutEnter = useCallback(() => {
-    if (sidebarPinned) {
+    if (sidebarPinned || isMobileViewport()) {
       return;
     }
     clearTimeout(peekHideTimer.current);
     setMobilePeek(true);
   }, [sidebarPinned]);
   const onFlyoutLeave = useCallback(() => {
-    if (sidebarPinned) {
+    if (sidebarPinned || isMobileViewport()) {
       return;
     }
     clearTimeout(peekHideTimer.current);
     peekHideTimer.current = setTimeout(() => setMobilePeek(false), 220);
   }, [sidebarPinned]);
 
+  const closeLeftDock = useCallback(() => {
+    if (sidebarPinned && !isMobileViewport()) return;
+    clearTimeout(peekHideTimer.current);
+    setMobilePeek(false);
+  }, [sidebarPinned]);
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ block: "end" });
-  }, [messages, stream]);
+    if (!isMobileViewport()) {
+      try {
+        localStorage.setItem(LEFT_DOCK_PINNED_STORAGE_KEY, sidebarPinned ? "1" : "0");
+      } catch {
+        /* storage may be unavailable */
+      }
+    }
+    window.dispatchEvent(new Event("resize"));
+  }, [sidebarPinned, mobilePeek]);
+
+  useEffect(() => {
+    const query = window.matchMedia(MOBILE_MEDIA_QUERY);
+    const handleChange = () => {
+      if (query.matches) {
+        setSidebarPinned(false);
+        setMobilePeek(false);
+      } else {
+        setSidebarPinned(readStoredBoolean(LEFT_DOCK_PINNED_STORAGE_KEY, true));
+        setMobilePeek(false);
+      }
+      window.dispatchEvent(new Event("resize"));
+    };
+    query.addEventListener?.("change", handleChange);
+    return () => query.removeEventListener?.("change", handleChange);
+  }, []);
+
+  useEffect(() => {
+    const handlePointerDown = (event) => {
+      if (mobileMenuBtnRef.current?.contains(event.target)) return;
+      if (!sidebarPinned && leftDockRef.current && !leftDockRef.current.contains(event.target)) {
+        setMobilePeek(false);
+      }
+      if (userMenuOpen && userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setUserMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        closeLeftDock();
+        setUserMenuOpen(false);
+        setShowSearch(false);
+        setShowHelp(false);
+        setShowSettings(false);
+      }
+    };
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [sidebarPinned, userMenuOpen, closeLeftDock]);
+
+  const refreshScrollButton = useCallback(() => {
+    const node = chatMessagesRef.current;
+    if (!node) return;
+    setShowScrollToBottom(node.scrollHeight - node.scrollTop - node.clientHeight > 72);
+  }, []);
+
+  const scrollToBottom = useCallback((behavior = "smooth") => {
+    messagesEndRef.current?.scrollIntoView({ block: "end", behavior });
+    setShowScrollToBottom(false);
+  }, []);
+
+  const pinMessageNearTop = useCallback((messageId) => {
+    window.setTimeout(() => {
+      const container = chatMessagesRef.current;
+      const row = container?.querySelector?.(`[data-message-id="${CSS.escape(String(messageId))}"]`);
+      if (!container || !row) return;
+      container.scrollTo({ top: Math.max(0, row.offsetTop - 14), behavior: "smooth" });
+    }, 0);
+  }, []);
+
+  useEffect(() => {
+    if (!busy) scrollToBottom("auto");
+  }, [busy, scrollToBottom]);
+
+  useEffect(() => {
+    refreshScrollButton();
+    if (busy && activeAssistantId) {
+      const container = chatMessagesRef.current;
+      const row = container?.querySelector?.(`[data-message-id="${CSS.escape(String(activeAssistantId))}"]`);
+      row?.scrollIntoView?.({ block: "nearest", behavior: "auto" });
+    }
+  }, [messages, stream, busy, activeAssistantId, refreshScrollButton]);
 
   // Template manifest (rendered into the sidebar's template-gallery section, like the original).
   useEffect(() => {
@@ -446,6 +628,36 @@ export function App() {
   }, []);
 
   const showToast = useCallback((text, kind = "info") => setToast({ text, kind }), []);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = settings.general.theme === "light" ? "light" : "dark";
+  }, [settings.general.theme]);
+
+  useEffect(() => {
+    if (!provider.privacyDecided) setShowPrivacy(true);
+  }, [provider.privacyDecided]);
+
+  useEffect(() => {
+    if (String(settings.general.assetGatewayUrl || "").trim()) return;
+    const hasBuiltin = settings.ai.providers?.some((entry) => entry.provider === BUILTIN_PROVIDER_TYPE);
+    if (!hasBuiltin || !String(settings.ai.builtinBackendUrl || "").trim()) return;
+    updateThreeBoxSettings((next) => {
+      if (!String(next.general.assetGatewayUrl || "").trim()) {
+        next.general.assetGatewayUrl = String(next.ai.builtinBackendUrl || "").trim();
+      }
+    });
+  }, [settings.general.assetGatewayUrl, settings.ai.providers, settings.ai.builtinBackendUrl]);
+
+  useEffect(() => {
+    if (!selfHostedSync.isConfigured()) return;
+    let cancelled = false;
+    void selfHostedSync.syncNow()
+      .then(() => { if (!cancelled) return history.refresh(); })
+      .catch((error) => console.warn("[threebox-react] initial self-hosted sync failed:", error));
+    return () => { cancelled = true; };
+    // Synchronize once on boot; subsequent local mutations use scheduleSync().
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const append = useCallback((msg) => setMessages((prev) => [...prev, msg]), []);
 
@@ -476,14 +688,14 @@ export function App() {
   const [attachMenuPos, setAttachMenuPos] = useState(null); // { x, y } for the attach-type menu
 
   const activeProvider = useMemo(() => {
-    const list = settings.ai.providers || [];
+    const list = selectableProviders;
     return (
       list.find((p) => p.id === selectedProviderId) ||
       list.find((p) => p.id === settings.ai.defaultProviderId) ||
       list[0] ||
       null
     );
-  }, [settings.ai.providers, settings.ai.defaultProviderId, selectedProviderId]);
+  }, [selectableProviders, settings.ai.defaultProviderId, selectedProviderId]);
 
   const composerAttach = useComposerAttach({
     attachedContext,
@@ -646,14 +858,43 @@ export function App() {
   const openConversation = useCallback(
     async (id) => {
       abortAllTextureJobs();
+      abortRef.current?.abort();
       history.setActiveId(id);
-      setMobilePeek(false);
+      closeLeftDock();
+      attachedContext.clear();
+      setModeOverride(null);
+      setActiveAssistantId(null);
+      setStream("");
       const turns = await history.loadTurns(id);
       const replayed = [];
       for (const turn of turns) {
         replayed.push({ id: `${turn.id}-u`, role: "user", text: turn.userPrompt || "" });
-        if (turn.status === "failed" || turn.stage === "error") {
-          replayed.push({ id: `${turn.id}-e`, role: "error", text: turn.errorMessage || "This turn failed." });
+        if (isUnsuccessfulTurn(turn) || turn.stage === "error") {
+          const stopped = turn.status === "stopped";
+          const stoppedText = turn.mode === "adjust"
+            ? L("已停止调整。", "Adjustment stopped.")
+            : L("已停止生成。", "Generation stopped.");
+          const message = turn.errorMessage || L("处理失败，发生错误。", "Processing failed.");
+          replayed.push({
+            id: `${turn.id}-e`,
+            role: "error",
+            text: stopped ? stoppedText : message,
+            stopped,
+            errorFeedback: stopped ? null : {
+              tone: "error",
+              message,
+              code: turn.errorCode || "",
+              detail: [turn.errorCode ? `error: ${turn.errorCode}` : "", message].filter(Boolean).join("\n")
+            },
+            configureProvider: ["QUOTA_EXCEEDED", "BUILTIN_QUOTA_EXCEEDED"].includes(turn.errorCode),
+            retry: {
+              conversationId: id,
+              turnId: turn.id,
+              userPrompt: turn.userPrompt || "",
+              mode: turn.mode || "generate",
+              targetTurnId: turn.targetTurnId || null
+            }
+          });
         } else {
           // Parse the stored snapshot once here so each card gets a stable object reference (a fresh
           // parse on every React render would re-render the live canvas every frame).
@@ -677,7 +918,12 @@ export function App() {
             label: turn.sceneTitle || turn.userPrompt || "",
             summary: turn.recapSummary || null,
             turnId: turn.id,
-            mode: turn.mode || "generate"
+            mode: turn.mode || "generate",
+            diff: turn.commands?.length
+              ? { kind: "commands", text: JSON.stringify(turn.commands, null, 2) }
+              : turn.patch?.length
+                ? { kind: "patch", text: JSON.stringify(turn.patch, null, 2) }
+                : null
           });
         }
       }
@@ -690,32 +936,54 @@ export function App() {
         setShownSceneJson(latestSceneJson);
         setShownTurnId(latest.id);
         shownTurnIdRef.current = latest.id;
+      } else {
+        setShownSceneJson(null);
+        setShownTurnId(null);
+        shownTurnIdRef.current = null;
       }
+      window.setTimeout(() => scrollToBottom("auto"), 0);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [history, append, abortAllTextureJobs]
+    [history, abortAllTextureJobs, closeLeftDock, attachedContext, scrollToBottom, zh]
   );
 
-  const startNewConversation = useCallback(() => {
+  const resetConversationView = useCallback(() => {
     abortAllTextureJobs();
+    abortRef.current?.abort();
     history.setActiveId(null);
     setMessages([]);
     setShownSceneJson(null);
     setShownTurnId(null);
-    setMobilePeek(false);
-  }, [history, abortAllTextureJobs]);
+    shownTurnIdRef.current = null;
+    setModeOverride(null);
+    setActiveAssistantId(null);
+    setStream("");
+    attachedContext.clear();
+    closeLeftDock();
+  }, [history, abortAllTextureJobs, attachedContext, closeLeftDock]);
+
+  const startNewConversation = useCallback(async () => {
+    resetConversationView();
+    await history.create({ title: L("新聊天", "New chat") });
+    showToast(L("已新建聊天。", "New chat created."), "success");
+  }, [history, resetConversationView, showToast, zh]);
 
   /** Attach a saved resource (a loadable json/tjz/model scene) to the composer context row, like
    * the original's resource library. Non-scene resources (image/other) aren't attachable. */
   const attachResource = useCallback(
     (res) => {
       if (!res.sceneJson) {
+        showToast(
+          L("该资源已保存，但不是可直接加载的场景。可通过输入框的附件功能交给支持相应类型的模型处理。", "This resource is saved but is not a directly loadable scene."),
+          "warning"
+        );
         return;
       }
       let sceneObj = null;
       try {
         sceneObj = JSON.parse(res.sceneJson);
       } catch {
+        showToast(L("资源中的场景 JSON 无法解析。", "The resource scene JSON could not be parsed."), "error");
         return;
       }
       attachedContext.setTemplate({ id: res.id, title: res.name }, sceneObj);
@@ -781,12 +1049,12 @@ export function App() {
       }
       await history.remove(conv.id);
       if (history.activeId === conv.id) {
-        startNewConversation();
+        resetConversationView();
       }
       showToast(L("聊天已删除。", "Conversation deleted."));
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [history, startNewConversation]
+    [history, resetConversationView]
   );
 
   const createProject = useCallback(async () => {
@@ -823,7 +1091,7 @@ export function App() {
    * @returns {Promise<{ready:boolean, reason?:string, options?:object}>}
    */
   const resolveActiveProviderOptions = useCallback(async () => {
-    const list = settings.ai.providers || [];
+    const list = selectableProviders;
     const active =
       list.find((p) => p.id === selectedProviderId) ||
       list.find((p) => p.id === settings.ai.defaultProviderId) ||
@@ -856,53 +1124,107 @@ export function App() {
     if (!String(active.apiKey || "").trim()) {
       return { ready: false, reason: "missing-key" };
     }
+    const options = {
+      provider: active.provider || "chatgpt",
+      apiKey: String(active.apiKey).trim(),
+      baseUrl: String(active.baseUrl || "").trim() || undefined,
+      model: String(active.model || "").trim() || undefined,
+      thinkingPreference: settings.ai.thinkingPreference || "disabled"
+    };
+    if (options.provider === "deepseek") {
+      options.userId = await getDisplayDeviceId();
+    }
     return {
       ready: true,
-      options: {
-        provider: active.provider || "chatgpt",
-        apiKey: String(active.apiKey).trim(),
-        baseUrl: String(active.baseUrl || "").trim() || undefined,
-        model: String(active.model || "").trim() || undefined,
-        thinkingPreference: settings.ai.thinkingPreference || "disabled"
-      }
+      options
     };
-  }, [settings.ai.providers, settings.ai.defaultProviderId, settings.ai.builtinBackendUrl, settings.ai.thinkingPreference, selectedProviderId, provider]);
+  }, [selectableProviders, settings.ai.defaultProviderId, settings.ai.builtinBackendUrl, settings.ai.thinkingPreference, selectedProviderId, provider]);
 
   const send = useCallback(
-    async (text) => {
+    async (text, retryOptions = null) => {
       const userPrompt = String(text || "").trim();
       if (!userPrompt || busy) {
         return;
       }
 
-      const resolved = await resolveActiveProviderOptions();
+      const retrying = Boolean(retryOptions?.turnId);
+      const userMessageId = crypto?.randomUUID?.() ?? `u-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      if (!retrying) {
+        append({ id: userMessageId, role: "user", text: userPrompt });
+        pinMessageNearTop(userMessageId);
+      }
+      setPrompt("");
+      setBusy(true);
+      setBusyStoppable(false);
+      setStream(L("正在分析请求并准备场景…", "Analyzing the request and preparing the scene…"));
+      rawOutputRef.current = "";
+      const assistantId = crypto?.randomUUID?.() ?? `m-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      setActiveAssistantId(assistantId);
+      append({
+        id: assistantId,
+        role: "assistant",
+        text: "",
+        sceneObj: null,
+        sceneJson: null,
+        renderSceneCard: false,
+        managedSceneCard: true,
+        label: userPrompt,
+        summary: null,
+        mode: retryOptions?.mode || (shownSceneJson && modeOverride !== "generate" ? "adjust" : "generate")
+      });
+
+      let resolved;
+      try {
+        resolved = await resolveActiveProviderOptions();
+      } catch (error) {
+        const feedback = getAiErrorFeedback(error);
+        updateMessage(assistantId, { role: "error", text: feedback.message, errorFeedback: feedback });
+        setStream("");
+        setActiveAssistantId(null);
+        setBusy(false);
+        setBusyStoppable(false);
+        return;
+      }
       if (!resolved.ready) {
         if (resolved.reason === "privacy") {
           setShowPrivacy(true);
-        } else if (resolved.reason === "missing-key" || resolved.reason === "no-provider") {
-          openSettings("ai");
-        } else {
-          append({
-            role: "error",
-            text: `${L("无法连接内置供应商", "Could not reach the built-in provider")}${
-              provider.issueError ? `: ${provider.issueError.message}` : "."
-            } ${L("请在设置中配置你自己的供应商。", "Configure your own provider in Settings.")}`
-          });
         }
+        const missingMessage = resolved.reason === "issue-failed"
+          ? `${L("无法连接内置供应商", "Could not reach the built-in provider")}${
+              provider.issueError ? `: ${provider.issueError.message}` : "."
+            } ${L("请在设置中配置您自己的供应商。", "Configure your own provider in Settings.")}`
+          : L(
+              "尚未配置可用的 AI 供应商。请点击左侧「AI 配置」，添加一个供应商并填写 API Key 后再试。",
+              "No usable AI provider is configured. Open AI config, add a provider and enter its API key."
+            );
+        updateMessage(assistantId, {
+          role: "assistant",
+          text: missingMessage,
+          configureProvider: resolved.reason !== "privacy"
+        });
+        setStream("");
+        setActiveAssistantId(null);
+        setBusy(false);
+        setBusyStoppable(false);
         return;
       }
 
-      append({ role: "user", text: userPrompt });
-      setPrompt("");
-      setBusy(true);
-      setStream("");
-
-      let conversationId = history.activeId;
+      let conversationId = retryOptions?.conversationId || history.activeId;
       if (!conversationId) {
-        const created = await history.create({
-          title: userPrompt.length > 48 ? `${userPrompt.slice(0, 48)}…` : userPrompt
-        });
-        conversationId = created.id;
+        try {
+          const created = await history.create({
+            title: userPrompt.length > 24 ? `${userPrompt.slice(0, 24)}…` : userPrompt
+          });
+          conversationId = created.id;
+        } catch (error) {
+          const feedback = getAiErrorFeedback(error);
+          updateMessage(assistantId, { role: "error", text: feedback.message, errorFeedback: feedback });
+          setStream("");
+          setActiveAssistantId(null);
+          setBusy(false);
+          setBusyStoppable(false);
+          return;
+        }
       }
 
       // Consume an attached scene as a seed turn: render it verbatim (no AI call), cache it, and
@@ -910,38 +1232,52 @@ export function App() {
       // consumeAttachedContextAsSeedTurn.
       let seedSceneJson = null;
       let seedTurnId = null;
-      const attached = attachedContext.get();
-      if (attached) {
-        attachedContext.clear();
-        seedSceneJson = JSON.stringify(attached.sceneJson);
-        append({
-          role: "assistant",
-          text: L(`已应用「${attached.label}」作为上下文。`, `Applied "${attached.label}" as context.`),
-          sceneObj: attached.sceneJson,
-          sceneJson: seedSceneJson,
-          label: attached.label
-        });
-        const seedTurn = await history.appendTurn(conversationId, {
-          userPrompt: L(`(模板) ${attached.label}`, `(template) ${attached.label}`),
-          mode: "generate",
-          stage: "generate",
-          sceneJson: seedSceneJson,
-          sceneTitle: attached.label
-        });
-        seedTurnId = seedTurn?.id || null;
-        setShownSceneJson(seedSceneJson);
-        setShownTurnId(seedTurnId);
-        shownTurnIdRef.current = seedTurnId;
+      const attached = retrying ? null : attachedContext.get();
+      try {
+        if (attached) {
+          attachedContext.clear();
+          seedSceneJson = JSON.stringify(attached.sceneJson, null, 2);
+          append({
+            role: "assistant",
+            text: L(`已应用「${attached.label}」作为上下文。`, `Applied "${attached.label}" as context.`),
+            sceneObj: attached.sceneJson,
+            sceneJson: seedSceneJson,
+            label: attached.label
+          });
+          const seedTurn = await history.appendTurn(conversationId, {
+            userPrompt: L(`(模板) ${attached.label}`, `(template) ${attached.label}`),
+            mode: "template",
+            stage: "template",
+            sceneJson: seedSceneJson,
+            sceneTitle: attached.label,
+            recapSummary: L(`已应用模板「${attached.label}」。`, `Applied template "${attached.label}".`)
+          });
+          seedTurnId = seedTurn?.id || null;
+          setShownSceneJson(seedSceneJson);
+          setShownTurnId(seedTurnId);
+          shownTurnIdRef.current = seedTurnId;
+        }
+      } catch (error) {
+        const feedback = getAiErrorFeedback(error);
+        updateMessage(assistantId, { role: "error", text: feedback.message, errorFeedback: feedback });
+        setStream("");
+        setActiveAssistantId(null);
+        setBusy(false);
+        setBusyStoppable(false);
+        return;
       }
 
       const controller = new AbortController();
       abortRef.current = controller;
-      const currentTurnId = createTurnId();
+      setBusyStoppable(true);
+      const currentTurnId = retryOptions?.turnId || createTurnId();
+      const turnContext = createSceneAgentTurnContext(currentTurnId, userPrompt);
       const turnDeadlineAt = Date.now() + 180000;
-      const sceneProviderOptions = { ...resolved.options, turnDeadlineAt };
+      const sceneProviderOptions = { ...resolved.options, threeBoxTurnContext: turnContext, turnDeadlineAt };
       let adjustTargetString = seedSceneJson || shownSceneJson;
-      let adjustTargetTurnId = seedSceneJson ? seedTurnId : shownTurnId;
-      let adjusting = modeOverride !== "generate" && Boolean(adjustTargetString);
+      let adjustTargetTurnId = retryOptions?.targetTurnId || (seedSceneJson ? seedTurnId : shownTurnId);
+      const requestedMode = retryOptions?.mode || modeOverride;
+      let adjusting = requestedMode === "adjust" || (requestedMode !== "generate" && Boolean(adjustTargetString));
       let negotiation = null;
 
       // Direct generation is the default. This budget is only a runaway guard when core/ai
@@ -949,7 +1285,6 @@ export function App() {
       const agentOptions = resolveSceneAgentOptions(settings);
       // The assistant card is always appended up-front now (so drafts can stream into it) and
       // finalized in place after the turn — there is no more "append once at the end" path.
-      const assistantId = crypto?.randomUUID?.() ?? `m-${Date.now()}-${Math.random().toString(36).slice(2)}`;
       let previewRenderQueue = Promise.resolve();
       let previewQueueOpen = true;
       let lastQueuedPreviewJson = "";
@@ -1001,19 +1336,15 @@ export function App() {
           if (streamId) {
             activeOutputStreamIdRef.current = streamId;
           }
-          return `${startsNewOutput ? "" : previous}${String(delta || "")}`;
+          const previousOutput = startsNewOutput ? "" : rawOutputRef.current;
+          const nextOutput = `${previousOutput}${String(delta || "")}`;
+          rawOutputRef.current = nextOutput;
+          return nextOutput;
         });
       };
-      append({
-        id: assistantId,
-        role: "assistant",
+      updateMessage(assistantId, {
         text: L("正在生成…", "Generating…"),
-        sceneObj: null,
-        sceneJson: null,
         renderSceneCard: true,
-        managedSceneCard: true,
-        label: userPrompt,
-        summary: null,
         mode: adjusting ? "adjust" : "generate"
       });
 
@@ -1034,8 +1365,8 @@ export function App() {
         negotiation = await negotiateSceneAgentTurn(
           {
             userPrompt,
-            history: modeOverride === "generate" ? [] : negotiationHistory,
-            priorTurns: modeOverride === "generate" ? [] : priorSceneTurns
+            history: requestedMode === "generate" ? [] : negotiationHistory,
+            priorTurns: requestedMode === "generate" ? [] : priorSceneTurns
           },
           {
             ...sceneProviderOptions,
@@ -1047,10 +1378,14 @@ export function App() {
 
         if (seedSceneJson) {
           adjusting = true;
-        } else if (modeOverride === "generate") {
+        } else if (requestedMode === "generate") {
           adjusting = false;
-        } else if (modeOverride === "adjust") {
+        } else if (requestedMode === "adjust") {
           adjusting = Boolean(adjustTargetString);
+          if (adjustTargetTurnId && adjustTargetTurnId !== shownTurnId) {
+            adjustTargetString = await reconstructSceneAgentTurn(allPriorTurns, adjustTargetTurnId);
+            adjusting = Boolean(adjustTargetString);
+          }
         } else {
           adjusting = negotiation.route?.intent === "adjust";
           adjustTargetTurnId = negotiation.route?.targetTurnId || shownTurnId;
@@ -1173,6 +1508,7 @@ export function App() {
             onGenerationPhase: (phase) => {
               if (phase?.phase === "compact-retry" || phase?.phase === "segmented-recovery") {
                 activeOutputStreamIdRef.current = "";
+                rawOutputRef.current = "";
                 setStream(phase?.phase === "segmented-recovery"
                   ? L("输出过长，正在切换为分段生成…", "Output too long — switching to segmented generation…")
                   : L("输出过长，正在简化场景并重新生成…", "Output too long — simplifying and regenerating the scene…"));
@@ -1189,7 +1525,12 @@ export function App() {
         }
 
         setStream("");
-        const snapshot = sceneJsonString ?? JSON.stringify(sceneJson);
+        const rawSnapshot = sceneJsonString ?? JSON.stringify(sceneJson);
+        const snapshot = projectSceneAgentJsonString(
+          rawSnapshot,
+          settings.io.sceneJsonFormat === "friendly" ? "friendly" : "standard"
+        );
+        sceneJson = JSON.parse(snapshot);
         previewQueueOpen = false;
         await previewRenderQueue.catch((error) => {
           console.warn("[threebox-react] superseded preview render failed:", error);
@@ -1245,14 +1586,19 @@ export function App() {
         // Debounced push to the user's self-hosted sync server (no-op unless configured).
         selfHostedSync.scheduleSync();
         if (finalSceneCard) {
-          const previousScene = adjusting ? JSON.parse(adjustTargetString) : null;
+          const previousScene = adjusting
+            ? JSON.parse(projectSceneAgentJsonString(
+                adjustTargetString,
+                settings.io.sceneJsonFormat === "friendly" ? "friendly" : "standard"
+              ))
+            : null;
           startTurnTexturePipeline({
             turnId: currentTurnId,
             messageId: assistantId,
             prompt: userPrompt,
             scene: sceneJson,
             sceneCard: finalSceneCard,
-            aiProviderOptions: resolved.options,
+            aiProviderOptions: sceneProviderOptions,
             changedObjectIds: previousScene ? findChangedTextureObjectIds(previousScene, sceneJson) : undefined
           });
         }
@@ -1261,7 +1607,7 @@ export function App() {
         // stage above instead of asking another model call to guess what changed from a thin digest.
         if (!adjusting && (settings.ai.autoGenerateSceneTitle || settings.ai.includeTurnSummary)) {
           const digest = buildResultDigest(sceneJson);
-          const providerOptions = resolved.options;
+          const providerOptions = sceneProviderOptions;
           const turnMode = adjusting ? "adjust" : "generate";
           const summaryTargetTurnId = adjusting ? adjustTargetTurnId : undefined;
           void (async () => {
@@ -1293,6 +1639,7 @@ export function App() {
             const patch = {};
             if (title) {
               patch.label = title;
+              sceneCardsByMessageIdRef.current.get(assistantId)?.setLabel?.(title);
             }
             if (recapText) {
               patch.summary = recapText;
@@ -1325,42 +1672,54 @@ export function App() {
           })();
         }
       } catch (error) {
+        previewQueueOpen = false;
         setStream("");
-        if (error?.name === "AbortError") {
-          const stoppedText = L("生成已停止。", "Generation stopped.");
-          // If the agent card was appended early, finalize it in place rather than orphaning the
-          // "正在生成…" placeholder; otherwise append a fresh notice.
-          if (assistantId) {
-            updateMessage(assistantId, { text: stoppedText });
-          } else {
-            append({ role: "assistant", text: stoppedText });
-          }
-        } else {
-          const message = getAiErrorFeedback(error).message;
-          if (assistantId) {
-            // Convert the early agent placeholder into the error in place (drop its draft card).
-            updateMessage(assistantId, { role: "error", text: message, sceneObj: null, sceneJson: null, diff: null, renderSceneCard: false });
-          } else {
-            append({ role: "error", text: message });
-          }
-          await history.appendTurn(conversationId, {
-            id: currentTurnId,
-            userPrompt,
-            mode: adjusting ? "adjust" : "generate",
-            targetTurnId: adjusting ? adjustTargetTurnId : undefined,
-            stage: "error",
-            status: "failed",
-            errorMessage: message,
-            sceneJson: null
-          });
-        }
+        const stopped = error?.name === "AbortError";
+        const feedback = stopped ? null : getAiErrorFeedback(error);
+        const stoppedText = adjusting
+          ? L("已停止调整。", "Adjustment stopped.")
+          : L("已停止生成。", "Generation stopped.");
+        const retry = {
+          conversationId,
+          turnId: currentTurnId,
+          userPrompt,
+          mode: adjusting ? "adjust" : "generate",
+          targetTurnId: adjusting ? adjustTargetTurnId : null
+        };
+        updateMessage(assistantId, {
+          role: "error",
+          text: stopped ? stoppedText : feedback.message,
+          stopped,
+          errorFeedback: feedback,
+          retry,
+          configureProvider: ["QUOTA_EXCEEDED", "BUILTIN_QUOTA_EXCEEDED"].includes(feedback?.code),
+          failedOutput: rawOutputRef.current || null,
+          sceneObj: null,
+          sceneJson: null,
+          diff: null,
+          renderSceneCard: false
+        });
+        await history.appendTurn(conversationId, createUnsuccessfulTurnRecord({
+          id: currentTurnId,
+          conversationId,
+          userPrompt,
+          mode: adjusting ? "adjust" : "generate",
+          targetTurnId: adjusting ? adjustTargetTurnId : null,
+          stopped,
+          errorMessage: feedback?.message || "",
+          errorCode: error?.code || feedback?.code || null
+        })).catch((cacheError) => {
+          console.error("[threebox-react] failed to persist unsuccessful turn:", cacheError);
+        });
       } finally {
         setBusy(false);
+        setBusyStoppable(false);
+        setActiveAssistantId(null);
         abortRef.current = null;
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [busy, provider, locale, append, updateMessage, history, isAdjust, modeOverride, shownSceneJson, shownTurnId, zh, resolveActiveProviderOptions, settings.ai, attachedContext]
+    [busy, provider, locale, append, updateMessage, history, isAdjust, modeOverride, shownSceneJson, shownTurnId, zh, resolveActiveProviderOptions, settings.ai, settings.io.sceneJsonFormat, attachedContext]
   );
 
   const onComposerKeyDown = (event) => {
@@ -1413,10 +1772,19 @@ export function App() {
       className={`historyItem${history.activeId === conv.id ? " active" : ""}${conv.pinned ? " pinned" : ""}`}
       onClick={() => void openConversation(conv.id)}
     >
-      {conv.pinned && <span className="historyItemPin" aria-hidden="true">📌</span>}
+      {conv.pinned && (
+        <svg viewBox="0 0 16 16" className="historyItemPin" aria-hidden="true">
+          <path fill="currentColor" d="M8 1.6 9.4 5.5 13.3 6.4 9.4 7.3 8 11.2 6.6 7.3 2.7 6.4 6.6 5.5 8 1.6z" />
+        </svg>
+      )}
       <div className="historyItemBody">
         <div className="historyItemTitle">{conv.title || L("未命名", "Untitled")}</div>
-        <div className="historyItemMeta">{new Date(conv.updatedAt).toLocaleDateString()}</div>
+        <div className="historyItemMeta">
+          {formatRelativeTime(conv.updatedAt, zh)}
+          {conv.projectId && projects.find((project) => project.id === conv.projectId)?.name
+            ? ` · ${projects.find((project) => project.id === conv.projectId).name}`
+            : ""}
+        </div>
       </div>
       <button
         className="historyItemMenuBtn"
@@ -1428,7 +1796,11 @@ export function App() {
           setHistoryMenu({ conv, x: rect.right, y: rect.bottom });
         }}
       >
-        ⋯
+        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+          <circle cx="8" cy="3.4" r="1.2" fill="currentColor" />
+          <circle cx="8" cy="8" r="1.2" fill="currentColor" />
+          <circle cx="8" cy="12.6" r="1.2" fill="currentColor" />
+        </svg>
       </button>
     </div>
   );
@@ -1442,9 +1814,14 @@ export function App() {
         onMouseLeave={onFlyoutLeave}
       >
         <div className="edgeHoverZone edgeHoverZoneLeft" />
-        <aside className="leftDock">
+        <aside
+          className="leftDock"
+          id="leftDock"
+          ref={leftDockRef}
+          aria-hidden={sidebarPinned || mobilePeek ? "false" : "true"}
+        >
           <div className="sidebarHeaderRow">
-            <a className="brand" href="#/" onClick={(e) => e.preventDefault()}>
+            <a className="brand" href="https://threejson.org/website/#/examples" target="_blank" rel="noreferrer">
               <img src={LOGO_URL} alt="ThreeJSON" />
               <span className="brandText">
                 <span className="brandTitle">ThreeBox</span>
@@ -1458,7 +1835,12 @@ export function App() {
               type="button"
               aria-pressed={sidebarPinned}
               aria-label={L("钉住侧栏", "Pin sidebar")}
-              onClick={() => setSidebarPinned((v) => !v)}
+              title={sidebarPinned
+                ? L("已钉住：鼠标移开仍显示", "Pinned: stays visible")
+                : L("未钉住：移到屏幕左边缘唤出", "Unpinned: move to the left edge to reveal")}
+              onClick={() => {
+                if (!isMobileViewport()) setSidebarPinned((v) => !v);
+              }}
             >
               <svg className="sidebarPinIcon" viewBox="0 0 16 16" aria-hidden="true">
                 <path
@@ -1476,7 +1858,7 @@ export function App() {
 
           <div className="sidebarBody">
             <nav className="sidebarNav">
-              <button className="sidebarNavBtn" type="button" onClick={() => openSettings("ai")}>
+              <button className="sidebarNavBtn" type="button" onClick={() => { closeLeftDock(); openSettings("ai"); }}>
                 <svg viewBox="0 0 16 16" aria-hidden="true">
                   <circle cx="8" cy="8" r="2.4" fill="none" stroke="currentColor" strokeWidth="1.2" />
                   <path
@@ -1488,13 +1870,13 @@ export function App() {
                 </svg>
                 <span>{L("AI 配置", "AI config")}</span>
               </button>
-              <button className="sidebarNavBtn" type="button" onClick={startNewConversation}>
+              <button className="sidebarNavBtn" type="button" onClick={() => void startNewConversation()}>
                 <svg viewBox="0 0 16 16" aria-hidden="true">
                   <path fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" d="M8 2.5v11M2.5 8h11" />
                 </svg>
                 <span>{L("新聊天", "New chat")}</span>
               </button>
-              <button className="sidebarNavBtn" type="button" onClick={() => setShowSearch(true)}>
+              <button className="sidebarNavBtn" type="button" onClick={() => { closeLeftDock(); setShowSearch(true); }}>
                 <svg viewBox="0 0 16 16" aria-hidden="true">
                   <circle cx="6.8" cy="6.8" r="4" fill="none" stroke="currentColor" strokeWidth="1.3" />
                   <path stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" d="m9.8 9.8 3.3 3.3" />
@@ -1520,22 +1902,26 @@ export function App() {
                 </div>
                 <div className="resourceList">
                   {filteredResources.length === 0 && (
-                    <div className="historyEmpty">{L("暂无资源。", "No resources yet.")}</div>
+                    <div className="historyEmpty">{L("暂无资源。点击输入框左侧的 + 上传文件。", "No resources yet. Use + beside the composer to upload one.")}</div>
                   )}
                   {filteredResources.map((res) => (
                     <div
                       key={res.id}
                       className={`resourceItem${res.sceneJson ? " resourceItemLoadable" : ""}`}
+                      title={res.sceneJson ? res.name : L("该类型暂不支持直接加载为场景上下文", "This type cannot yet be loaded directly as scene context")}
                       onClick={() => attachResource(res)}
                     >
                       <div className="resourceItemIcon" aria-hidden="true">
-                        {res.kind === "image" ? "🖼" : res.kind === "model" ? "◆" : "{ }"}
+                        <ResourceIcon kind={res.kind} />
                       </div>
                       <div className="resourceItemInfo">
                         <div className="resourceItemName">{res.name}</div>
                         <div className="resourceItemMeta">
-                          {res.kind}
-                          {res.sceneJson ? ` · ${(res.sceneJson.length / 1024).toFixed(1)} KB` : ""}
+                          {res.sceneJson
+                            ? formatFileSize(new Blob([res.sceneJson]).size)
+                            : res.blob?.size
+                              ? formatFileSize(res.blob.size)
+                              : ""}
                         </div>
                       </div>
                       <button
@@ -1555,7 +1941,15 @@ export function App() {
               </div>
             </details>
 
-            <details className="sidebarSection" open>
+            <details
+              className="sidebarSection"
+              open={templateGalleryExpanded}
+              onToggle={(event) => {
+                const open = event.currentTarget.open;
+                setTemplateGalleryExpanded(open);
+                try { localStorage.setItem(TEMPLATE_GALLERY_EXPANDED_STORAGE_KEY, open ? "1" : "0"); } catch { /* ignore */ }
+              }}
+            >
               <summary className="sidebarSectionTitle">{L("模板库", "Templates")}</summary>
               <div className="sidebarSectionBody">
                 <input
@@ -1566,6 +1960,9 @@ export function App() {
                   onChange={(e) => setTemplateSearch(e.target.value)}
                 />
                 <div className="templateGrid">
+                  {filteredTemplates.length === 0 && (
+                    <div className="historyEmpty">{L("没有匹配的模板。", "No matching templates.")}</div>
+                  )}
                   {filteredTemplates.map((item) => (
                     <TemplateCard
                       key={item.id}
@@ -1582,7 +1979,7 @@ export function App() {
             <details className="sidebarSection">
               <summary className="sidebarSectionTitle">{L("应用", "Apps")}</summary>
               <div className="sidebarSectionBody">
-                <a className="appLinkCard" href="http://localhost:5183" target="_blank" rel="noopener noreferrer">
+                <a className="appLinkCard" href={THREEBOX_PEER_URLS.editor} target="_blank" rel="noopener noreferrer">
                   <svg viewBox="0 0 16 16" aria-hidden="true">
                     <path
                       fill="none"
@@ -1596,7 +1993,7 @@ export function App() {
                   </svg>
                   <span>{L("场景编辑器", "Scene editor")}</span>
                 </a>
-                <a className="appLinkCard" href="http://localhost:5180" target="_blank" rel="noopener noreferrer">
+                <a className="appLinkCard" href={THREEBOX_PEER_URLS.player} target="_blank" rel="noopener noreferrer">
                   <svg viewBox="0 0 16 16" aria-hidden="true">
                     <circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" strokeWidth="1.3" />
                     <path fill="currentColor" d="M6.6 5.4 11 8l-4.4 2.6V5.4z" />
@@ -1652,7 +2049,7 @@ export function App() {
             )}
           </div>
 
-          <div className="sidebarFooter">
+          <div className="sidebarFooter" ref={userMenuRef}>
             <button className="userMenuBtn" type="button" onClick={() => setUserMenuOpen((v) => !v)}>
               <span className="userAvatar">U</span>
               <span className="userName">{L("访客用户", "Guest")}</span>
@@ -1663,6 +2060,7 @@ export function App() {
                   type="button"
                   onClick={() => {
                     setUserMenuOpen(false);
+                    closeLeftDock();
                     openSettings("general");
                   }}
                 >
@@ -1672,15 +2070,22 @@ export function App() {
                   type="button"
                   onClick={() => {
                     setUserMenuOpen(false);
-                    void migrateToCloud();
+                    closeLeftDock();
+                    const migration = createThreeBoxCloudMigration({
+                      apiBaseUrl: "https://api.threebox.org",
+                      cloudUrl: "https://cloud.threebox.org",
+                      settingsProvider: getThreeBoxSettings
+                    });
+                    void migration.open().catch((error) => showToast(error?.message || String(error), "error"));
                   }}
                 >
-                  {L("云端", "Cloud")}
+                  {L("切换到 ThreeBox Cloud", "Switch to ThreeBox Cloud")}
                 </button>
                 <button
                   type="button"
                   onClick={() => {
                     setUserMenuOpen(false);
+                    closeLeftDock();
                     setShowHelp(true);
                   }}
                 >
@@ -1694,9 +2099,11 @@ export function App() {
 
       <main id="mainArea" className="mainArea">
         <button
+          ref={mobileMenuBtnRef}
           type="button"
           className="mobileMenuBtn"
           aria-label={L("菜单", "Menu")}
+          aria-expanded={mobilePeek}
           onClick={() => setMobilePeek((v) => !v)}
         >
           <svg viewBox="0 0 18 14" aria-hidden="true">
@@ -1704,16 +2111,28 @@ export function App() {
           </svg>
         </button>
 
-        <div className="chatMessages" hidden={!hasMessages}>
+        <div className="chatMessages" ref={chatMessagesRef} hidden={!hasMessages} onScroll={refreshScrollButton}>
           {messages.map((m, i) => {
             const role = m.role === "user" ? "user" : "assistant";
             return (
-              <div key={m.id ?? i} className={`chatMessage chatMessage${role === "user" ? "User" : "Assistant"}`}>
+              <div
+                key={m.id ?? i}
+                data-message-id={m.id ?? undefined}
+                className={`chatMessage chatMessage${role === "user" ? "User" : "Assistant"}`}
+              >
                 <div className={`chatMessageAvatar chatMessageAvatar${role === "user" ? "User" : "Assistant"}`}>
                   {role === "user" ? "U" : <img src={LOGO_URL} alt="ThreeBox" />}
                 </div>
                 <div className="chatMessageBody">
-                  {m.role === "assistant" ? (
+                  {m.role === "error" ? (
+                    <AiErrorFeedback
+                      feedback={m.errorFeedback}
+                      stoppedText={m.stopped ? m.text : ""}
+                      retrying={busy}
+                      onRetry={m.retry ? () => void send(m.retry.userPrompt, m.retry) : null}
+                      onConfigureProvider={m.configureProvider ? () => openSettings("ai") : null}
+                    />
+                  ) : m.role === "assistant" ? (
                     // Assistant text may embed AI-authored (untrusted) content — render it as
                     // sanitized markdown, exactly like the original (renderMarkdownToSafeHtml).
                     <div
@@ -1721,7 +2140,23 @@ export function App() {
                       dangerouslySetInnerHTML={{ __html: renderMarkdownToSafeHtml(m.text) }}
                     />
                   ) : (
-                    <div className={`chatMessageText${m.role === "error" ? " chatMessageError" : ""}`}>{m.text}</div>
+                    <div className="chatMessageText">{m.text}</div>
+                  )}
+                  {m.configureProvider && m.role !== "error" && (
+                    <button type="button" className="chatRetryBtn" onClick={() => openSettings("ai")}>
+                      {L("点此配置供应商", "Configure provider")}
+                    </button>
+                  )}
+                  {busy && m.id === activeAssistantId && (
+                    <pre
+                      className={`streamingPreview${["{", "[", "`"].includes(stream.trim().charAt(0)) ? "" : " streamingPreviewPending streamingPreviewProcessing"}`}
+                      role="status"
+                      aria-live="polite"
+                      aria-busy="true"
+                      onClick={(event) => event.currentTarget.classList.toggle("expanded")}
+                    >
+                      {stream || L("正在生成…", "Generating…")}
+                    </pre>
                   )}
                   {(m.renderSceneCard || m.sceneObj) && (
                     <SceneAgentSceneCard
@@ -1740,6 +2175,7 @@ export function App() {
                       text={m.diff.text}
                       lineNumbers={settings.io.jsonViewerLineNumbers}
                       highlight={settings.io.jsonViewerHighlight}
+                      showToast={showToast}
                     />
                   )}
                   {m.sceneJson && (
@@ -1748,6 +2184,18 @@ export function App() {
                       format={settings.io.sceneJsonFormat}
                       lineNumbers={settings.io.jsonViewerLineNumbers}
                       highlight={settings.io.jsonViewerHighlight}
+                      showToast={showToast}
+                    />
+                  )}
+                  {m.failedOutput && (
+                    <JsonCollapse
+                      failed
+                      text={m.failedOutput}
+                      label={L("查看失败时的 JSON", "View output at failure")}
+                      copyTitle={L("复制失败输出", "Copy failed output")}
+                      lineNumbers={settings.io.jsonViewerLineNumbers}
+                      highlight={settings.io.jsonViewerHighlight}
+                      showToast={showToast}
                     />
                   )}
                   {/* Post-turn recap (ai.includeTurnSummary), rendered as markdown below the card. */}
@@ -1761,18 +2209,21 @@ export function App() {
               </div>
             );
           })}
-          {busy && (
-            <div className="chatMessage chatMessageAssistant">
-              <div className="chatMessageAvatar chatMessageAvatarAssistant">
-                <img src={LOGO_URL} alt="ThreeBox" />
-              </div>
-              <div className="chatMessageBody">
-                <pre className="streamingPreview streamingPreviewPending streamingPreviewProcessing">{stream ? stream.slice(-2000) : L("正在生成…", "Generating…")}</pre>
-              </div>
-            </div>
-          )}
+          {busy && <div className="chatTurnSpacer" aria-hidden="true" />}
           <div ref={messagesEndRef} />
         </div>
+
+        <button
+          type="button"
+          className="scrollToBottomBtn"
+          hidden={!showScrollToBottom}
+          aria-label={L("滚动到底部", "Scroll to bottom")}
+          onClick={() => scrollToBottom()}
+        >
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" d="m3.2 6 4.8 4.8L12.8 6" />
+          </svg>
+        </button>
 
         <div className="chatHero" hidden={hasMessages}>
           <div className="chatHeroInner">
@@ -1867,19 +2318,21 @@ export function App() {
                   value={selectedProviderId}
                   onChange={(e) => setSelectedProviderId(e.target.value)}
                 >
-                  {providers.length === 0 && <option value="">{L("默认模型", "Default model")}</option>}
-                  {providers.map((p) => (
-                    <option
-                      key={p.id}
-                      value={p.id}
-                      disabled={p.provider === BUILTIN_PROVIDER_TYPE && !provider.privacyAccepted}
-                    >
+                  {selectableProviders.length === 0 && <option value="">{L("默认模型", "Default model")}</option>}
+                  {selectableProviders.map((p) => (
+                    <option key={p.id} value={p.id}>
                       {p.label || p.id}
                     </option>
                   ))}
                 </select>
                 {busy ? (
-                  <button type="button" className="composerSendBtn composerStopBtn" title={L("停止", "Stop")} onClick={() => abortRef.current?.abort()}>
+                  <button
+                    type="button"
+                    className="composerSendBtn composerSendBtnStop"
+                    title={busyStoppable ? L("停止", "Stop") : L("正在准备…", "Preparing…")}
+                    disabled={!busyStoppable}
+                    onClick={() => abortRef.current?.abort()}
+                  >
                     <svg viewBox="0 0 20 20" aria-hidden="true">
                       <rect x="6" y="6" width="8" height="8" rx="1.5" fill="currentColor" />
                     </svg>
@@ -2022,7 +2475,6 @@ export function App() {
 
       {showPrivacy && (
         <PrivacyDialog
-          deviceId={provider.deviceId}
           onAccept={() => {
             provider.acceptPrivacy();
             setShowPrivacy(false);

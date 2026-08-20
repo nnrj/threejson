@@ -82,6 +82,7 @@ export function createSceneAgentRepository({ dbName, indexedDb = globalThis.inde
     getTurn: (id) => getOne(STORES.turns, id),
     getTurnsForConversation,
     getAllTurns: () => getAll(STORES.turns),
+    deleteTurn: (id) => withStore(STORES.turns, "readwrite", (store) => store.delete(id)),
     deleteTurnsForConversation,
     async putResource(resource) { await withStore(STORES.resources, "readwrite", (store) => store.put(resource)); return resource; },
     getResource: (id) => getOne(STORES.resources, id),
@@ -95,7 +96,9 @@ export function createSceneAgentRepository({ dbName, indexedDb = globalThis.inde
       await withStore(STORES.conversations, "readwrite", (store) => store.delete(id));
     },
     async putProject(project) { await withStore(STORES.projects, "readwrite", (store) => store.put(project)); return project; },
+    getProject: (id) => getOne(STORES.projects, id),
     getAllProjects: () => getAll(STORES.projects),
+    deleteProject: (id) => withStore(STORES.projects, "readwrite", (store) => store.delete(id)),
     resetConnection() { dbPromise = null; }
   };
 }

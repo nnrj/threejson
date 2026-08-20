@@ -25,6 +25,7 @@ export interface SceneAgentRepository {
   getTurn(id: string): Promise<any | null>;
   getTurnsForConversation(id: string): Promise<any[]>;
   getAllTurns(): Promise<any[]>;
+  deleteTurn(id: string): Promise<void>;
   deleteTurnsForConversation(id: string): Promise<void>;
   putResource(resource: any): Promise<any>;
   getResource(id: string): Promise<any | null>;
@@ -35,6 +36,8 @@ export interface SceneAgentRepository {
   getAllConversations(): Promise<any[]>;
   deleteConversation(id: string): Promise<void>;
   putProject(project: any): Promise<any>;
+  getProject(id: string): Promise<any | null>;
   getAllProjects(): Promise<any[]>;
+  deleteProject(id: string): Promise<void>;
   resetConnection(): void;
 }

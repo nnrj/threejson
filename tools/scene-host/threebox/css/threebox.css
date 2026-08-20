@@ -564,6 +564,22 @@ details[open] > .sidebarSectionTitle::before { transform: rotate(90deg); }
 .modalOverlay { position: fixed; inset: 0; z-index: 70; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(0,0,0,0.55); }
 .modalOverlay[hidden] { display: none; }
 .modalDialog { width: min(440px, 100%); max-height: 80vh; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 14px; background: var(--panel2); box-shadow: 0 18px 50px rgba(0,0,0,0.42); }
+.cloudMigrationDialog { width: min(620px, 100%); }
+.cloudMigrationBody { display: grid; gap: 14px; overflow-y: auto; }
+.cloudMigrationChoices, .cloudMigrationForm { display: grid; gap: 12px; }
+.cloudMigrationChoice { display: grid; gap: 4px; width: 100%; padding: 14px; text-align: left; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--text); }
+.cloudMigrationChoice.primary { border-color: var(--brand); }
+.cloudMigrationChoice small, .cloudMigrationStatus { color: var(--muted); line-height: 1.45; }
+.cloudMigrationWarning { padding: 11px 13px; border: 1px solid color-mix(in srgb, #e5a12e 50%, var(--line)); border-radius: 9px; background: color-mix(in srgb, #e5a12e 10%, var(--panel)); line-height: 1.55; }
+.cloudMigrationForm > label { display: grid; gap: 6px; color: var(--muted); font-size: 12px; }
+.cloudMigrationForm input:not([type="checkbox"]) { width: 100%; min-height: 36px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--text); }
+.cloudMigrationInline { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.cloudMigrationCheck { display: flex !important; grid-template-columns: none; flex-direction: row; align-items: flex-start; gap: 8px !important; color: var(--text) !important; }
+.cloudMigrationCheck input { margin-top: 2px; }
+.cloudMigrationAgreements { display: grid; gap: 7px; }
+.cloudMigrationAgreements details { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.cloudMigrationAgreements pre { max-height: 170px; overflow: auto; white-space: pre-wrap; color: var(--muted); font: 12px/1.55 inherit; }
+.cloudMigrationError { min-height: 18px; color: #e46b63; font-size: 12px; }
 .modalHeader { padding: 16px 18px; border-bottom: 1px solid var(--line); font-weight: 700; font-size: 15px; }
 .modalBody { display: grid; gap: 12px; padding: 16px 18px; min-height: 0; overflow: auto; }
 .modalFooter { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 18px 16px; }

@@ -25,6 +25,7 @@ export function openThreeBoxMeshExportDialog(options = {}) {
     overlay.className = "modalOverlay threeBoxMeshExportOverlay";
     overlay.setAttribute("role", "dialog");
     overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-labelledby", "threeBoxMeshExportTitle");
 
     const dialog = document.createElement("div");
     dialog.className = "modalDialog threeBoxMeshExportDialog";
@@ -32,6 +33,7 @@ export function openThreeBoxMeshExportDialog(options = {}) {
 
     const header = document.createElement("div");
     header.className = "modalHeader";
+    header.id = "threeBoxMeshExportTitle";
     header.textContent = t("threebox.meshExport.title", "导出三方模型");
     dialog.appendChild(header);
 
@@ -133,6 +135,7 @@ export function showThreeBoxMeshExportWarningDialog(warnings = []) {
     overlay.className = "modalOverlay threeBoxMeshExportOverlay";
     overlay.setAttribute("role", "alertdialog");
     overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-labelledby", "threeBoxMeshExportWarningTitle");
 
     const dialog = document.createElement("div");
     dialog.className = "modalDialog threeBoxMeshExportDialog threeBoxMeshExportWarningDialog";
@@ -140,6 +143,7 @@ export function showThreeBoxMeshExportWarningDialog(warnings = []) {
 
     const header = document.createElement("div");
     header.className = "modalHeader";
+    header.id = "threeBoxMeshExportWarningTitle";
     header.textContent = t("threebox.meshExport.warningTitle", "模型已导出，但有注意事项");
     dialog.appendChild(header);
 

@@ -14,6 +14,7 @@
 import { useCallback, useRef, useState } from "react";
 import { t } from "@threejson/host-kit/i18n/index.js";
 import { acceptForKind, processUploadedSceneFile } from "@threejson/host-kit/js/sceneFileUpload.js";
+import { enqueueSceneAgentLoad } from "@threejson/react-scene-agent/scene-load-queue";
 import { putResource, createResourceId } from "./lib/sceneAgentRepository.js";
 
 /** Matches threeBoxComposerStub.js's attach-type menu order exactly (json/tjz/image/model/other). */
@@ -92,7 +93,10 @@ export function useComposerAttach(host = {}) {
     for (const file of files) {
       showToast(t("threebox.composer.processing", "正在处理「{name}」…", { name: file.name }), "info");
       try {
-        const result = await processUploadedSceneFile(file, kind);
+        const parse = () => processUploadedSceneFile(file, kind);
+        const result = kind === "tjz" || kind === "model"
+          ? await enqueueSceneAgentLoad(parse)
+          : await parse();
         await persistAndAttach(result);
       } catch (error) {
         showToast(

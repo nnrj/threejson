@@ -102,6 +102,7 @@ export function useSceneCardRuntime(options = {}) {
   const renderSeqRef = useRef(0);
   const currentSceneJsonRef = useRef(null);
   const currentLabelRef = useRef(translate(options, "sceneAgent.sceneCard.defaultLabel", "Scene"));
+  const textureProgressTimerRef = useRef(null);
 
   const [loadingText, setLoadingText] = useState(translate(options, "sceneAgent.sceneCard.waitingForDraft", "等待场景草稿…"));
   const [loadingCompact, setLoadingCompact] = useState(false);
@@ -364,13 +365,66 @@ export function useSceneCardRuntime(options = {}) {
   }, [render, setLabel, updateSceneJson]);
 
   const setTextureProgress = useCallback((event = {}) => {
+    clearTimeout(textureProgressTimerRef.current);
+    textureProgressTimerRef.current = null;
     const sourcePhase = String(event.phase || "");
-    if (!sourcePhase || sourcePhase === "complete" || sourcePhase === "skipped") {
-      setTextureProgressState(null);
+    const total = Math.max(0, Number(event.total) || 0);
+    const completed = Math.max(0, Number(event.completed) || 0);
+    if (sourcePhase === "planned" && total > 0) {
+      setTextureProgressState({
+        sourcePhase,
+        phase: "working",
+        title: "",
+        message: translate(optionsRef.current, "sceneAgent.sceneCard.texturePlanned", "正在完善纹理 · 0/{total}", { total })
+      });
       return;
     }
-    const phase = sourcePhase === "failed" || sourcePhase === "warning" ? sourcePhase : "working";
-    setTextureProgressState({ ...event, sourcePhase, phase });
+    if ((sourcePhase === "acquiring" || sourcePhase === "task-complete") && total > 0) {
+      setTextureProgressState({
+        sourcePhase,
+        phase: "working",
+        title: "",
+        message: translate(optionsRef.current, "sceneAgent.sceneCard.textureProgress", "正在完善纹理 · {completed}/{total}", { completed, total })
+      });
+      return;
+    }
+    if (sourcePhase === "complete" && total > 0) {
+      const assignments = Math.max(0, Number(event.assignments) || 0);
+      const pendingLicense = Math.max(0, Number(event.pendingLicense) || 0);
+      const pendingItems = Array.isArray(event.pendingLicenseItems) ? event.pendingLicenseItems : [];
+      setTextureProgressState({
+        sourcePhase,
+        phase: pendingLicense ? "neutral" : assignments ? "complete" : "neutral",
+        title: pendingItems
+          .map((item) => [
+            item.objectName || item.query || item.taskId,
+            item.candidateName || item.candidateId,
+            item.source,
+            item.license?.id || item.license?.name || item.license?.status || "unknown"
+          ].filter(Boolean).join(" · "))
+          .join("\n"),
+        message: pendingLicense
+          ? translate(optionsRef.current, "sceneAgent.sceneCard.textureLicensePending", "已完善 {assignments} 项 · {pendingLicense} 项需许可确认", { assignments, pendingLicense })
+          : assignments
+            ? translate(optionsRef.current, "sceneAgent.sceneCard.textureComplete", "纹理已完善 · {assignments}/{total}", { assignments, total })
+            : translate(optionsRef.current, "sceneAgent.sceneCard.textureUnchanged", "未找到可安全应用的纹理")
+      });
+      if (!pendingLicense) {
+        textureProgressTimerRef.current = setTimeout(() => setTextureProgressState(null), 4200);
+      }
+      return;
+    }
+    if (sourcePhase === "failed") {
+      setTextureProgressState({
+        sourcePhase,
+        phase: "warning",
+        title: "",
+        message: translate(optionsRef.current, "sceneAgent.sceneCard.textureFailed", "纹理服务暂不可用，已保留基础材质")
+      });
+      textureProgressTimerRef.current = setTimeout(() => setTextureProgressState(null), 5200);
+      return;
+    }
+    setTextureProgressState(null);
   }, []);
 
   const setPreviewAuxiliaryLightsEnabled = useCallback((enabled) => {
@@ -378,6 +432,8 @@ export function useSceneCardRuntime(options = {}) {
   }, []);
 
   const dispose = useCallback(() => {
+    clearTimeout(textureProgressTimerRef.current);
+    textureProgressTimerRef.current = null;
     renderSeqRef.current += 1;
     liveResizeObserverRef.current?.disconnect();
     liveResizeObserverRef.current = null;
