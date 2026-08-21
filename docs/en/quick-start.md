@@ -43,7 +43,7 @@ Without a bundler, use native ES modules and an import map:
     "three": "https://esm.sh/three@0.184.0",
     "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
     "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
-    "threejson/runtime": "https://esm.sh/threejson@0.1.0-alpha.9/runtime"
+    "threejson/runtime": "https://esm.sh/threejson@0.1.0-alpha.10/runtime"
   }
 }
 </script>
@@ -119,7 +119,7 @@ Create `index.html`:
   {
     "imports": {
       "three": "https://esm.sh/three@0.184.0",
-      "threejson": "https://esm.sh/threejson@0.1.0-alpha.4"
+      "threejson": "https://esm.sh/threejson@0.1.0-alpha.10"
     }
   }
   </script>
@@ -364,7 +364,7 @@ ThreeJSON resolves `/assets/...` and `assets/...` against the active asset base.
 ```js
 await createJsonScene(sceneJson, {
   canvas,
-  assetsBase: "https://cdn.jsdelivr.net/npm/@threejson/assets@1.1.3",
+  assetsBase: "https://cdn.jsdelivr.net/npm/@threejson/assets@1.1.5",
   assetsBaseMode: "cdn-first"
 });
 ```

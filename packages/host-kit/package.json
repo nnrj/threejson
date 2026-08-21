@@ -1,6 +1,6 @@
 {
   "name": "@threejson/host-kit",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "description": "Framework-agnostic scene-host runtime shared by ThreeJSON's editor/player/shower/threebox apps: settings schemas/stores, AI turn orchestration, scene file IO, i18n, and viewport helpers. No React or other UI framework dependency.",
   "author": "nnrj <tianhehechu2017@gmail.com>",
   "repository": {
@@ -30,7 +30,7 @@
     "README.md"
   ],
   "peerDependencies": {
-    "threejson": "^0.1.0-alpha.9",
+    "threejson": "^0.1.0-alpha.10",
     "three": ">=0.179.0",
     "three-viewport-gizmo": ">=2.0.0"
   },

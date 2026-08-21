@@ -16,7 +16,7 @@
  * independently published assets/package.json version; a release must publish that assets version
  * before publishing an engine version that pins its CDN URL.
  */
-export const ASSETS_PACKAGE_VERSION = "1.1.4";
+export const ASSETS_PACKAGE_VERSION = "1.1.5";
 
 export const DEFAULT_CDN_ASSETS_BASE =
   `https://cdn.jsdelivr.net/npm/@threejson/assets@${ASSETS_PACKAGE_VERSION}`;

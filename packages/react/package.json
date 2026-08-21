@@ -1,6 +1,6 @@
 {
   "name": "@threejson/react",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "description": "Thin React bindings over ThreeJSON's framework-agnostic host/player kits: <SceneViewport />, useScenePlayer(), useHostI18n(), usePlayerSettings(). No business shell — app UI stays in the app.",
   "author": "nnrj <tianhehechu2017@gmail.com>",
   "repository": {
@@ -29,11 +29,11 @@
     "README.md"
   ],
   "peerDependencies": {
-    "@threejson/host-kit": "^0.1.0-alpha.1",
-    "@threejson/player-kit": "^0.1.0-alpha.1",
+    "@threejson/host-kit": "^0.1.0-alpha.2",
+    "@threejson/player-kit": "^0.1.0-alpha.2",
     "react": ">=18",
     "three": ">=0.179.0",
-    "threejson": "^0.1.0-alpha.9"
+    "threejson": "^0.1.0-alpha.10"
   },
   "peerDependenciesMeta": {
     "@threejson/player-kit": {

@@ -1,11 +1,17 @@
 {
   "name": "@threejson/react-ui",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "description": "Ready-made, styled React components for ThreeJSON scene-host apps: mesh export dialog, export warnings, and other shared UI. Built on @threejson/react (headless hooks) + @threejson/host-kit.",
   "author": "nnrj <tianhehechu2017@gmail.com>",
-  "repository": { "type": "git", "url": "git+https://github.com/nnrj/threejson.git", "directory": "packages/react-ui" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nnrj/threejson.git",
+    "directory": "packages/react-ui"
+  },
   "homepage": "https://github.com/nnrj/threejson#readme",
-  "bugs": { "url": "https://github.com/nnrj/threejson/issues" },
+  "bugs": {
+    "url": "https://github.com/nnrj/threejson/issues"
+  },
   "type": "module",
   "exports": {
     ".": "./src/index.js",
@@ -15,10 +21,14 @@
     "./src/*.js": "./src/*.js",
     "./styles.css": "./src/styles.css"
   },
-  "files": ["src", "LICENSE", "README.md"],
+  "files": [
+    "src",
+    "LICENSE",
+    "README.md"
+  ],
   "peerDependencies": {
-    "@threejson/host-kit": "^0.1.0-alpha.1",
-    "@threejson/react": "^0.1.0-alpha.1",
+    "@threejson/host-kit": "^0.1.0-alpha.2",
+    "@threejson/react": "^0.1.0-alpha.2",
     "react": ">=18"
   },
   "devDependencies": {
@@ -28,7 +38,14 @@
     "react-dom": "^18.3.1",
     "threejson": "file:../.."
   },
-  "engines": { "node": ">=24.0.0" },
-  "keywords": ["threejson", "react", "components", "three.js"],
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "keywords": [
+    "threejson",
+    "react",
+    "components",
+    "three.js"
+  ],
   "license": "MIT"
 }

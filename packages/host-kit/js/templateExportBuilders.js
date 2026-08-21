@@ -7,6 +7,12 @@ import { DEFAULT_CDN_ASSETS_BASE } from "threejson/assets";
 // "assets/" path segment.
 const ASSETS_CDN = `${DEFAULT_CDN_ASSETS_BASE}/`;
 
+// Keep this in sync with the root package version. The release version command updates it in both
+// the scene-host source and the published @threejson/host-kit copy. Pinning avoids a downloaded
+// template changing behavior later merely because npm's `latest` dist-tag moved.
+export const TEMPLATE_THREEJSON_VERSION = "0.1.0-alpha.10";
+const THREEJSON_CDN = `https://cdn.jsdelivr.net/npm/threejson@${TEMPLATE_THREEJSON_VERSION}`;
+
 const OPTIONAL_TEMPLATE_DEPENDENCIES = Object.freeze({
   archive: ["fflate", "https://esm.sh/fflate@0.8.3", "^0.8.3"],
   animatedGif: ["gifuct-js", "https://esm.sh/gifuct-js@2.1.2", "^2.1.2"],
@@ -85,7 +91,7 @@ export function jsonStringForScript(payload, indent = 2) {
 export function buildImportMapHtml(options = {}) {
   const capabilities = resolveTemplateCapabilities(options);
   const imports = {
-    "threejson/runtime": "https://cdn.jsdelivr.net/npm/threejson/core/runtime.js",
+    "threejson/runtime": `${THREEJSON_CDN}/core/runtime.js`,
     three: "https://esm.sh/three@0.184.0",
     "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
     "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0"
@@ -144,7 +150,7 @@ export function buildPackageJson(type, options = {}) {
       ? { dev: "vite --host 0.0.0.0", start: "electron .", build: "vite build" }
       : { dev: "vite --host 0.0.0.0", build: "vite build", preview: "vite preview" };
   const deps = {
-    threejson: "latest",
+    threejson: TEMPLATE_THREEJSON_VERSION,
     three: "^0.184.0",
     "@tweenjs/tween.js": "^25.0.0"
   };

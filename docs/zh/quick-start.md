@@ -43,7 +43,7 @@ ThreeJSON 默认也能通过 CDN 访问 `@threejson/assets`，但生产项目建
     "three": "https://esm.sh/three@0.184.0",
     "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
     "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
-    "threejson/runtime": "https://esm.sh/threejson@0.1.0-alpha.9/runtime"
+    "threejson/runtime": "https://esm.sh/threejson@0.1.0-alpha.10/runtime"
   }
 }
 </script>
@@ -127,7 +127,7 @@ const sceneJson = {
   {
     "imports": {
       "three": "https://esm.sh/three@0.184.0",
-      "threejson": "https://esm.sh/threejson@0.1.0-alpha.4"
+      "threejson": "https://esm.sh/threejson@0.1.0-alpha.10"
     }
   }
   </script>
@@ -372,7 +372,7 @@ ThreeJSON 会把 `/assets/...`、`assets/...` 等公共资源路径解析到当�
 ```js
 await createJsonScene(sceneJson, {
   canvas,
-  assetsBase: "https://cdn.jsdelivr.net/npm/@threejson/assets@1.0.0",
+  assetsBase: "https://cdn.jsdelivr.net/npm/@threejson/assets@1.1.5",
   assetsBaseMode: "cdn-first"
 });
 ```

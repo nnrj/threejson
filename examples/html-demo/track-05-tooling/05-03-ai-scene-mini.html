@@ -10,6 +10,7 @@
       "imports": {
         "threejson": "../../../builtins/full.js",
         "threejson/core": "../../../core/index.js",
+        "threejson/ai": "../../../core/ai/index.js",
         "three": "https://esm.sh/three@0.184.0",
         "three/examples/jsm/": "https://esm.sh/three@0.184.0/examples/jsm/",
         "@tweenjs/tween.js": "https://esm.sh/@tweenjs/tween.js@25.0.0",
@@ -92,7 +93,8 @@
   </aside>
 </div>
 <script type="module">
-  import { createJsonScene, createSceneAiClient } from "threejson";
+  import { createJsonScene } from "threejson";
+  import { createSceneAiClient } from "threejson/ai";
 
   const LS_PREFIX = "threejson.demo.aiSceneMini.";
   const canvas = document.getElementById("canvasContainer");

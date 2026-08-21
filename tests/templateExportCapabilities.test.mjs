@@ -4,7 +4,8 @@ import test from "node:test";
 import {
   buildHtmlTemplate,
   buildPackageJson,
-  detectTemplateCapabilities
+  detectTemplateCapabilities,
+  TEMPLATE_THREEJSON_VERSION
 } from "@threejson/host-kit/js/templateExportBuilders.js";
 
 const OPTIONAL_SPECIFIERS = [
@@ -16,19 +17,21 @@ const OPTIONAL_SPECIFIERS = [
   "troika-three-text"
 ];
 
-test("minimal exported scene uses the runtime entry and no optional capability", () => {
+test("minimal exported scene prefers the runtime entry and keeps optional packages out of install manifests", () => {
   const sceneJsonText = JSON.stringify({ objectList: [{ objType: "box" }] });
   const html = buildHtmlTemplate({ sceneJsonText, inlineJson: true });
   const manifest = JSON.parse(buildPackageJson("react", { sceneJsonText }));
 
   assert.match(html, /from "threejson\/runtime"/);
+  assert.doesNotMatch(html, /runtime-compat|threejson\/core/);
   for (const specifier of OPTIONAL_SPECIFIERS) {
     assert.equal(html.includes(`"${specifier}"`), false, specifier);
     assert.equal(manifest.dependencies[specifier], undefined, specifier);
   }
+  assert.equal(manifest.dependencies.threejson, TEMPLATE_THREEJSON_VERSION);
 });
 
-test("exported templates add only capabilities detected in the scene", () => {
+test("exported project manifests add only capabilities detected in the scene", () => {
   const scene = {
     objectList: [
       { objType: "text", content: "SDF by default" },

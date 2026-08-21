@@ -38,6 +38,8 @@ node_modules/
 # ==========================================
 dist/
 assets/dist/
+# npm pack 在未指定 --pack-destination 时生成的本地包归档
+*.tgz
 build/
 out/
 target/

@@ -8,7 +8,8 @@ import {
   buildHtmlTemplate,
   buildReactFiles,
   buildVueFiles,
-  buildElectronFiles
+  buildElectronFiles,
+  TEMPLATE_THREEJSON_VERSION
 } from "@threejson/host-kit/js/templateExportBuilders.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -56,4 +57,15 @@ test("host-kit templateExportBuilders stays byte-identical to its tools/scene-ho
     toolsCopy,
     "packages/host-kit/js/templateExportBuilders.js has drifted from its tools/scene-host source — keep the vendored copy in sync."
   );
+});
+
+test("downloaded HTML pins the ThreeJSON runtime version without hiding unpublished entries", () => {
+  const packageJson = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "package.json"), "utf8"));
+  assert.equal(TEMPLATE_THREEJSON_VERSION, packageJson.version);
+
+  const html = buildHtmlTemplate({ sceneJsonText: "{}", inlineJson: true });
+  const escapedVersion = packageJson.version.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  assert.match(html, new RegExp(`threejson@${escapedVersion}/core/runtime\\.js`));
+  assert.doesNotMatch(html, /core\/index\.js|runtime-compat|falling back/i);
+  assert.doesNotMatch(html, /npm\/threejson\/core\/runtime\.js/);
 });

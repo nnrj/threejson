@@ -1,6 +1,6 @@
 {
   "name": "@threejson/react-scene-agent",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "description": "React hooks and UI primitives for an embeddable conversational ThreeJSON scene workbench.",
   "author": "nnrj <tianhehechu2017@gmail.com>",
   "repository": {
@@ -9,28 +9,56 @@
     "directory": "packages/react-scene-agent"
   },
   "homepage": "https://github.com/nnrj/threejson#readme",
-  "bugs": { "url": "https://github.com/nnrj/threejson/issues" },
+  "bugs": {
+    "url": "https://github.com/nnrj/threejson/issues"
+  },
   "type": "module",
   "exports": {
-    ".": { "types": "./index.d.ts", "default": "./src/index.js" },
-    "./conversations": { "types": "./conversations.d.ts", "default": "./src/useSceneConversations.js" },
-    "./scene-card": { "types": "./scene-card.d.ts", "default": "./src/SceneAgentSceneCard.js" },
-    "./scene-card-runtime": { "types": "./scene-card-runtime.d.ts", "default": "./src/useSceneCardRuntime.js" },
-    "./progress": { "types": "./progress.d.ts", "default": "./src/SceneAgentProgress.js" },
-    "./preview-lights": { "types": "./preview-lights.d.ts", "default": "./src/previewLights.js" },
-    "./scene-load-queue": { "types": "./scene-load-queue.d.ts", "default": "./src/sceneLoadQueue.js" },
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./conversations": {
+      "types": "./conversations.d.ts",
+      "default": "./src/useSceneConversations.js"
+    },
+    "./scene-card": {
+      "types": "./scene-card.d.ts",
+      "default": "./src/SceneAgentSceneCard.js"
+    },
+    "./scene-card-runtime": {
+      "types": "./scene-card-runtime.d.ts",
+      "default": "./src/useSceneCardRuntime.js"
+    },
+    "./progress": {
+      "types": "./progress.d.ts",
+      "default": "./src/SceneAgentProgress.js"
+    },
+    "./preview-lights": {
+      "types": "./preview-lights.d.ts",
+      "default": "./src/previewLights.js"
+    },
+    "./scene-load-queue": {
+      "types": "./scene-load-queue.d.ts",
+      "default": "./src/sceneLoadQueue.js"
+    },
     "./styles.css": "./src/styles.css",
     "./package.json": "./package.json",
     "./src/*": "./src/*"
   },
   "types": "./index.d.ts",
-  "files": ["src", "*.d.ts", "LICENSE", "README.md"],
+  "files": [
+    "src",
+    "*.d.ts",
+    "LICENSE",
+    "README.md"
+  ],
   "peerDependencies": {
-    "@threejson/host-kit": "^0.1.0-alpha.1",
-    "@threejson/scene-agent-kit": "^0.1.0-alpha.1",
+    "@threejson/host-kit": "^0.1.0-alpha.2",
+    "@threejson/scene-agent-kit": "^0.1.0-alpha.2",
     "react": ">=18",
     "three": ">=0.179.0",
-    "threejson": "^0.1.0-alpha.9"
+    "threejson": "^0.1.0-alpha.10"
   },
   "devDependencies": {
     "@threejson/host-kit": "file:../host-kit",
@@ -40,7 +68,14 @@
     "three": "^0.184.0",
     "threejson": "file:../.."
   },
-  "engines": { "node": ">=24.0.0" },
-  "keywords": ["threejson", "react", "scene-agent", "workbench"],
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "keywords": [
+    "threejson",
+    "react",
+    "scene-agent",
+    "workbench"
+  ],
   "license": "MIT"
 }

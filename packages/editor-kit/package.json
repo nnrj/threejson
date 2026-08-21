@@ -1,6 +1,6 @@
 {
   "name": "@threejson/editor-kit",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "description": "Framework-agnostic, no-shell logic for building ThreeJSON scene editors: the editor command layer (registry + command specs), the AI scene-update flow (command/JSON round-trips), and the domain-edit session (drill-in, child-transform baselines, undo). No DOM, no UI framework — scene tree / property panels / sidebars stay in the app.",
   "author": "nnrj <tianhehechu2017@gmail.com>",
   "repository": {
@@ -32,7 +32,7 @@
     "README.md"
   ],
   "peerDependencies": {
-    "threejson": "^0.1.0-alpha.9",
+    "threejson": "^0.1.0-alpha.10",
     "three": ">=0.179.0"
   },
   "devDependencies": {
