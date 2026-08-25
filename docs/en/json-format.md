@@ -576,11 +576,13 @@ Core also supports `transform`, `expression`, `path`, and `morph` animation reco
 }
 ```
 
-`source.type` supports `positions`, `box`, `sphere`, `shell`, `disc`, `cone`, `line`, `curve`, and `meshSurface`. Use `simulation.backend: "cpu"` as the reference backend or `"webgl-compute"` for the WebGL compute path. `textMask` and `imageMask` are browser-only raster sources loaded on demand:
+`source.type` supports `positions`, `box`, `sphere`, `shell`, `disc`, `cone`, `line`, `curve`, and `meshSurface`. Use `simulation.backend: "cpu"` as the reference backend or `"webgl-compute"` for the WebGL compute path. `textMask` and `imageMask` are browser-only raster sources; asynchronous `createJsonScene()` loads them from the descriptor automatically, or a host may preload the entry:
 
 ```js
 import "threejson/particles-raster";
 ```
+
+The module is not loaded when no raster source is present. `createJsonSceneSimple()` does not run this asynchronous lazy-load path.
 
 The legacy `points` object remains a point-cloud primitive; it is not the Particle V2 emitter schema.
 

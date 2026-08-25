@@ -442,8 +442,9 @@ export function createEditorAiGeneratePanel(host) {
         apiKey: creds.apiKey,
         model: creds.model,
         baseUrl: creds.baseUrl,
+        providerAdapter: creds.providerAdapter,
         userId: creds.userId,
-        threeBoxTurnContext: createEditorAiTurnContext(userText),
+        requestContext: createEditorAiTurnContext(userText),
         turnDeadlineAt
       };
       // The tab already fixes the intent to "generate". Automatic construction mode still uses

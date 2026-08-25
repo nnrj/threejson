@@ -38,7 +38,8 @@ test("React ThreeBox exposes every baseline setting with matching product semant
 test("React ThreeBox request, persistence and replay paths retain baseline safeguards", () => {
   const source = read("apps/threebox/src/App.jsx");
   assert.match(source, /createSceneAgentTurnContext\(currentTurnId, userPrompt\)/);
-  assert.match(source, /threeBoxTurnContext:\s*turnContext/);
+  assert.match(source, /requestContext:\s*turnContext/);
+  assert.match(source, /withBuiltinAiProviderAdapter\(/);
   assert.match(source, /options\.provider === "deepseek"[\s\S]*getDisplayDeviceId\(\)/);
   assert.match(source, /createUnsuccessfulTurnRecord\(/);
   assert.match(source, /status === "stopped"/);

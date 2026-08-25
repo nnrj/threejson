@@ -1,4 +1,4 @@
-import { MapControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { TrackballControls } from "three/examples/jsm/controls/TrackballControls.js";
 import { ArcballControls } from "three/examples/jsm/controls/ArcballControls.js";
 import { registerControlsType } from "../controlsBuilder.js";

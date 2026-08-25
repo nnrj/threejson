@@ -388,8 +388,9 @@ export function createEditorAiAdjustPanel(host) {
         apiKey: creds.apiKey,
         model: creds.model,
         baseUrl: creds.baseUrl,
+        providerAdapter: creds.providerAdapter,
         userId: creds.userId,
-        threeBoxTurnContext: createEditorAiTurnContext(prompt)
+        requestContext: createEditorAiTurnContext(prompt)
       };
       const targetSceneJsonString = await getSceneJsonText();
       const targetSceneJson = parseSceneJsonString(targetSceneJsonString);

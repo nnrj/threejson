@@ -5,10 +5,19 @@ import { createJsonScene, deployJsonScene } from "../core/handler/sceneLoadHandl
 
 test("WebGPU preview registers only through its explicit entry", async () => {
   const webgpu = await import("../webgpu/index.js");
-  const { getRendererBackend } = await import("../core/handler/rendererBackendRegistry.js");
+  const {
+    detectRendererBackend,
+    getRendererBackend,
+    rendererBackendOwnsPostProcessing,
+    resolveRendererBackendFallback
+  } = await import("../core/handler/rendererBackendRegistry.js");
   const { getSceneCapability } = await import("../core/capabilities/sceneCapabilityManifest.js");
   assert.equal(webgpu.THREEJSON_WEBGPU_SUPPORTED_REVISION, "184");
   assert.equal(typeof getRendererBackend("webgpu")?.createRenderer, "function");
+  assert.equal(detectRendererBackend({ isWebGPURenderer: true }), "webgpu");
+  assert.equal(rendererBackendOwnsPostProcessing("webgpu"), true);
+  assert.equal(resolveRendererBackendFallback("webgpu", { policy: "fallback-webgl" }), "webgl");
+  assert.equal(resolveRendererBackendFallback("webgpu", { policy: "error" }), null);
   assert.equal(getSceneCapability("rendererBackends", "webgpu").status, "preview");
   assert.equal(getSceneCapability("materials", "tsl").status, "preview");
 });

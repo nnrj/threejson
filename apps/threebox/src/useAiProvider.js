@@ -13,7 +13,8 @@ import { useCallback, useEffect, useState } from "react";
 import {
   BUILTIN_PROVIDER_TYPE,
   issueBuiltinApiKey,
-  getDisplayDeviceId
+  getDisplayDeviceId,
+  withBuiltinAiProviderAdapter
 } from "@threejson/host-kit/js/builtinAiProvider.js";
 import {
   BUILTIN_PRIVACY_ACCEPTED,
@@ -84,7 +85,7 @@ export function useAiProvider() {
       }
       return {
         ready: true,
-        options: { provider: BUILTIN_PROVIDER_TYPE, apiKey: key, baseUrl: backendUrl }
+        options: withBuiltinAiProviderAdapter({ apiKey: key, baseUrl: backendUrl })
       };
     },
     [privacyAccepted, ensureBuiltinKey]

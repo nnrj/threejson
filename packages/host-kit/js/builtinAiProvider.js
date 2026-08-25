@@ -6,14 +6,118 @@
  * app-specific settings storage and UI feedback on top of the pure functions here.
  */
 
-/** The `provider` value both apps write into their AI settings when the built-in trial provider
- * is selected, and the `PROVIDERS` key `core/ai/sceneAiService.js` resolves it against. Do not
- * rename: real users already have this literal string persisted in their browsers' localStorage
- * (ThreeBox shipped before this module existed) — changing it would silently orphan their saved
- * provider config. */
+/** The host-owned `provider` value both apps persist for the built-in trial service. The engine
+ * deliberately does not know this identifier; `BUILTIN_AI_PROVIDER_ADAPTER` below supplies its
+ * OpenAI-compatible transport contract at the application boundary. */
 export const BUILTIN_PROVIDER_TYPE = "threebox-builtin";
 
 export const DEFAULT_BUILTIN_BACKEND_URL = "https://api.threebox.org";
+
+const BUILTIN_THINKING_PREFERENCES = new Set(["inherit", "disabled", "high", "max"]);
+const BUILTIN_ERROR_CODE_MAP = Object.freeze({
+  QUOTA_EXCEEDED: "BUILTIN_QUOTA_EXCEEDED",
+  SAFETY_POLICY_WARNING: "BUILTIN_SAFETY_WARNING",
+  DEVICE_BANNED: "BUILTIN_DEVICE_BANNED",
+  DEVICE_PERMANENTLY_BANNED: "BUILTIN_DEVICE_PERMANENTLY_BANNED",
+  DEVICE_MUTED: "BUILTIN_DEVICE_MUTED"
+});
+
+function isRecord(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function normalizeBuiltinThinkingPreference(value) {
+  const normalized = String(value || "disabled");
+  return BUILTIN_THINKING_PREFERENCES.has(normalized) ? normalized : "disabled";
+}
+
+/** Mutable state shared by all built-in-provider requests spawned by one user action. */
+export function createBuiltinAiTurnContext(turnId, originalPrompt) {
+  return {
+    turnId: String(turnId || "").trim(),
+    originalPrompt: String(originalPrompt || ""),
+    moderationStatus: "pending",
+    moderationReceipt: "",
+    originalPromptHash: ""
+  };
+}
+
+export function buildBuiltinAiRequestContext(context, options = {}) {
+  if (!isRecord(context) || !String(context.turnId || "").trim()) return undefined;
+  const hasReceipt = Boolean(String(context.moderationReceipt || "").trim());
+  const taskKind = /^[a-z][a-z0-9_-]{0,63}$/i.test(String(options.taskKind || "").trim())
+    ? String(options.taskKind).trim()
+    : "";
+  const preference = Object.prototype.hasOwnProperty.call(options, "thinkingPreference")
+    ? normalizeBuiltinThinkingPreference(options.thinkingPreference)
+    : "inherit";
+  const thinking = preference === "inherit"
+    ? null
+    : preference === "disabled"
+      ? { mode: "disabled" }
+      : { mode: "enabled", effort: preference };
+  return {
+    protocol_version: 1,
+    turn_id: String(context.turnId).trim(),
+    original_prompt: hasReceipt
+      ? { included: false }
+      : { included: true, text: String(context.originalPrompt || "") },
+    moderation: {
+      status: hasReceipt ? String(context.moderationStatus || "allowed") : "pending",
+      ...(hasReceipt ? { receipt: String(context.moderationReceipt) } : {}),
+      ...(context.originalPromptHash ? { prompt_hash: String(context.originalPromptHash) } : {})
+    },
+    ...((taskKind || thinking) ? {
+      ai: {
+        ...(taskKind ? { task_kind: taskKind } : {}),
+        ...(thinking ? { thinking } : {})
+      }
+    } : {})
+  };
+}
+
+export function applyBuiltinAiModerationHeaders(context, headers) {
+  if (!isRecord(context) || !headers?.get) return;
+  const status = String(headers.get("X-ThreeBox-Moderation-Status") || "").trim();
+  const receipt = String(headers.get("X-ThreeBox-Moderation-Receipt") || "").trim();
+  const promptHash = String(headers.get("X-ThreeBox-Moderation-Prompt-Hash") || "").trim();
+  if (status) context.moderationStatus = status;
+  if (receipt) context.moderationReceipt = receipt;
+  if (promptHash) context.originalPromptHash = promptHash;
+}
+
+/** Host-owned protocol adapter injected into `threejson/ai`. Product request fields, moderation
+ * response headers, quota codes and gateway errors therefore never enter ThreeJSON core. */
+export const BUILTIN_AI_PROVIDER_ADAPTER = Object.freeze({
+  endpoint: "/v1/chat/completions",
+  defaultModel: "",
+  transformRequestBody(body, options = {}) {
+    const context = buildBuiltinAiRequestContext(options.requestContext, options);
+    return context ? { ...body, threebox_context: context } : body;
+  },
+  handleResponse(response, options = {}) {
+    applyBuiltinAiModerationHeaders(options.requestContext, response?.headers);
+  },
+  classifyError({ payload } = {}) {
+    const rawCode = String(payload?.error || "").trim();
+    const code = BUILTIN_ERROR_CODE_MAP[rawCode]
+      || (rawCode.startsWith("UPSTREAM_") ? rawCode : "");
+    return {
+      ...(code ? { code } : {}),
+      providerError: isRecord(payload) ? payload : null
+    };
+  }
+});
+
+/** Adds the built-in transport contract while keeping the stored provider identifier unchanged. */
+export function withBuiltinAiProviderAdapter(options = {}, requestContext) {
+  return {
+    ...options,
+    provider: BUILTIN_PROVIDER_TYPE,
+    providerAdapter: BUILTIN_AI_PROVIDER_ADAPTER,
+    ...(requestContext !== undefined ? { requestContext } : {})
+  };
+}
 
 /** Re-issue a trial key this long before its actual expiry, so a boot-time check rarely races an
  * about-to-expire key. */

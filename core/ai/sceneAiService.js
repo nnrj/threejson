@@ -64,18 +64,6 @@ const PROVIDERS = {
     apiBase: "",
     endpoint: "/chat/completions",
     defaultModel: "gpt-4o-mini"
-  },
-  // ThreeBox's built-in trial provider (tools/scene-host/threebox/js/threeBoxBuiltinProvider.js):
-  // a Cloudflare Worker proxy the user configures a base URL for (default https://api.threebox.org,
-  // see threebox-server's README), never a hardcoded upstream — behaves like "custom" except the
-  // frontend fills baseUrl automatically instead of asking the user to type it. Unlike the other
-  // entries, `endpoint` includes the "/v1" segment: threebox-server's chat-completions route lives
-  // at "{base}/v1/chat/completions", matching the same base its non-chat endpoints
-  // (threeBoxBuiltinProvider.js's "{base}/v1/auth/issue" and "{base}/v1/quota") are built from.
-  "threebox-builtin": {
-    apiBase: "",
-    endpoint: "/v1/chat/completions",
-    defaultModel: ""
   }
 };
 
@@ -84,12 +72,29 @@ function isObject(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function ensureProvider(provider) {
+function resolveProviderConfig(provider, providerAdapter) {
   const normalized = String(provider || "chatgpt").toLowerCase();
-  if (!PROVIDERS[normalized]) {
-    throw new Error(`Unsupported provider "${provider}". Use one of: ${Object.keys(PROVIDERS).join(", ")}.`);
+  const builtInConfig = PROVIDERS[normalized];
+  const adapter = isObject(providerAdapter) ? providerAdapter : null;
+  if (!builtInConfig && !adapter) {
+    throw new Error(
+      `Unsupported provider "${provider}". Use one of: ${Object.keys(PROVIDERS).join(", ")}, ` +
+      "or inject a host-owned providerAdapter."
+    );
   }
-  return normalized;
+  const endpoint = String(adapter?.endpoint ?? builtInConfig?.endpoint ?? "").trim();
+  if (!endpoint.startsWith("/")) {
+    throw new Error("providerAdapter.endpoint must be an absolute URL path beginning with '/'.");
+  }
+  return {
+    provider: normalized,
+    adapter,
+    config: {
+      apiBase: String(adapter?.apiBase ?? builtInConfig?.apiBase ?? ""),
+      endpoint,
+      defaultModel: String(adapter?.defaultModel ?? builtInConfig?.defaultModel ?? "")
+    }
+  };
 }
 
 const THINKING_PREFERENCES = new Set(["inherit", "disabled", "high", "max"]);
@@ -113,68 +118,6 @@ function buildDeepSeekThinkingOptions(preference) {
   if (normalized === "inherit") return {};
   if (normalized === "disabled") return { thinking: { type: "disabled" } };
   return { thinking: { type: "enabled" }, reasoning_effort: normalized };
-}
-
-/** Shared mutable state for every provider request spawned by one user-authored scene turn. */
-function createSceneAiTurnContext(turnId, originalPrompt) {
-  return {
-    turnId: String(turnId || "").trim(),
-    originalPrompt: String(originalPrompt || ""),
-    moderationStatus: "pending",
-    moderationReceipt: "",
-    originalPromptHash: ""
-  };
-}
-
-function buildThreeBoxRequestContext(context, options = {}) {
-  if (!isObject(context) || !String(context.turnId || "").trim()) {
-    return undefined;
-  }
-  const hasReceipt = Boolean(String(context.moderationReceipt || "").trim());
-  const taskKind = /^[a-z][a-z0-9_-]{0,63}$/i.test(String(options.taskKind || "").trim())
-    ? String(options.taskKind).trim()
-    : "";
-  const thinkingPreference = Object.prototype.hasOwnProperty.call(options, "thinkingPreference")
-    ? normalizeThinkingPreference(options.thinkingPreference)
-    : "inherit";
-  const thinking = thinkingPreference === "inherit"
-    ? null
-    : thinkingPreference === "disabled"
-      ? { mode: "disabled" }
-      : { mode: "enabled", effort: thinkingPreference };
-  return {
-    protocol_version: 1,
-    turn_id: String(context.turnId).trim(),
-    original_prompt: hasReceipt
-      ? { included: false }
-      : { included: true, text: String(context.originalPrompt || "") },
-    moderation: {
-      status: hasReceipt ? String(context.moderationStatus || "allowed") : "pending",
-      ...(hasReceipt ? { receipt: String(context.moderationReceipt) } : {}),
-      ...(context.originalPromptHash ? { prompt_hash: String(context.originalPromptHash) } : {})
-    },
-    ...((taskKind || thinking) ? {
-      ai: {
-        ...(taskKind ? { task_kind: taskKind } : {}),
-        ...(thinking ? { thinking } : {})
-      }
-    } : {})
-  };
-}
-
-// Retained for existing ThreeBox hosts; reusable packages use the product-neutral name above.
-const createThreeBoxTurnContext = createSceneAiTurnContext;
-
-function applyThreeBoxModerationHeaders(context, headers) {
-  if (!isObject(context) || !headers?.get) {
-    return;
-  }
-  const status = String(headers.get("X-ThreeBox-Moderation-Status") || "").trim();
-  const receipt = String(headers.get("X-ThreeBox-Moderation-Receipt") || "").trim();
-  const promptHash = String(headers.get("X-ThreeBox-Moderation-Prompt-Hash") || "").trim();
-  if (status) context.moderationStatus = status;
-  if (receipt) context.moderationReceipt = receipt;
-  if (promptHash) context.originalPromptHash = promptHash;
 }
 
 function extractJsonText(rawText) {
@@ -532,6 +475,11 @@ function normalizeOptionalMaxTokens(value) {
  * default when this is omitted.
  * @param {string} [params.userId] Anonymous application user identifier. Sent only to providers
  * whose documented API supports an isolation field (currently DeepSeek's `user_id`).
+ * @param {object} [params.providerAdapter] Optional host-owned OpenAI-compatible transport
+ * adapter. It may define `apiBase`, `endpoint`, `defaultModel`, `transformRequestBody`,
+ * `handleResponse`, and `classifyError`. This is the extension boundary for gateways and product
+ * protocols that must not become engine dependencies.
+ * @param {*} [params.requestContext] Opaque context forwarded only to `providerAdapter` hooks.
  * @param {"inherit"|"disabled"|"high"|"max"} [params.thinkingPreference="disabled"]
  * DeepSeek thinking policy. Other providers do not receive these vendor-specific fields.
  */
@@ -551,13 +499,16 @@ async function requestChatCompletion({
   onCompletionMetadata,
   extraHeaders,
   credentials,
-  threeBoxTurnContext,
+  providerAdapter,
+  requestContext,
   userId,
   thinkingPreference = "disabled",
   taskKind = ""
 }) {
-  const normalizedProvider = ensureProvider(provider);
-  const providerConfig = PROVIDERS[normalizedProvider];
+  const resolvedProvider = resolveProviderConfig(provider, providerAdapter);
+  const normalizedProvider = resolvedProvider.provider;
+  const providerConfig = resolvedProvider.config;
+  const adapter = resolvedProvider.adapter;
   const normalizedApiKey = String(apiKey || "").trim();
   if (!normalizedApiKey) {
     throw new Error("Missing apiKey.");
@@ -572,6 +523,7 @@ async function requestChatCompletion({
       "Check that you pasted only the API key supplied by the provider."
     );
     error.code = "INVALID_API_KEY_HEADER_VALUE";
+    error.isAiTransportError = true;
     throw error;
   }
   if (!Array.isArray(messages) || messages.length === 0) {
@@ -582,7 +534,8 @@ async function requestChatCompletion({
   const endpointBase = (baseUrl || providerConfig.apiBase || "").replace(/\/$/, "");
   if (!endpointBase) {
     throw new Error(
-      'provider "custom" requires options.baseUrl (OpenAI-compatible API root URL, e.g. https://api.openai.com/v1).'
+      `Provider "${normalizedProvider}" requires options.baseUrl or providerAdapter.apiBase ` +
+      "(OpenAI-compatible API root URL, e.g. https://api.openai.com/v1)."
     );
   }
   const url = `${endpointBase}${providerConfig.endpoint}`;
@@ -590,9 +543,6 @@ async function requestChatCompletion({
   if (normalizedUserId && !/^[a-zA-Z0-9_-]{1,512}$/.test(normalizedUserId)) {
     throw new Error("userId must contain only letters, digits, hyphens, or underscores (maximum 512 characters).");
   }
-  const threeBoxContext = normalizedProvider === "threebox-builtin"
-    ? buildThreeBoxRequestContext(threeBoxTurnContext, { thinkingPreference, taskKind })
-    : undefined;
   const thinkingOptions = isOfficialDeepSeekEndpoint(normalizedProvider, endpointBase)
     ? buildDeepSeekThinkingOptions(thinkingPreference)
     : {};
@@ -623,6 +573,29 @@ async function requestChatCompletion({
     requestTimeoutCode
   );
   try {
+    const baseRequestBody = {
+      model: model || providerConfig.defaultModel,
+      temperature,
+      ...(normalizedMaxTokens !== undefined
+        ? { max_tokens: normalizedMaxTokens }
+        : {}),
+      messages,
+      stream: stream === true,
+      ...thinkingOptions,
+      ...(normalizedProvider === "deepseek" && normalizedUserId ? { user_id: normalizedUserId } : {})
+    };
+    const transformedRequestBody = typeof adapter?.transformRequestBody === "function"
+      ? await adapter.transformRequestBody(baseRequestBody, {
+          requestContext,
+          provider: normalizedProvider,
+          endpointBase,
+          thinkingPreference,
+          taskKind
+        })
+      : baseRequestBody;
+    if (!isObject(transformedRequestBody)) {
+      throw new Error("providerAdapter.transformRequestBody must return a request body object.");
+    }
     const response = await fetch(url, {
       method: "POST",
       ...(credentials ? { credentials } : {}),
@@ -632,52 +605,44 @@ async function requestChatCompletion({
         ...extraHeaders
       },
       signal: abortScope.signal,
-      body: JSON.stringify({
-        model: model || providerConfig.defaultModel,
-        temperature,
-        ...(normalizedMaxTokens !== undefined
-          ? { max_tokens: normalizedMaxTokens }
-          : {}),
-        messages,
-        stream: stream === true,
-        ...thinkingOptions,
-        ...(normalizedProvider === "deepseek" && normalizedUserId ? { user_id: normalizedUserId } : {}),
-        ...(threeBoxContext ? { threebox_context: threeBoxContext } : {})
-      })
+      body: JSON.stringify(transformedRequestBody)
     });
-    applyThreeBoxModerationHeaders(threeBoxTurnContext, response.headers);
+    if (typeof adapter?.handleResponse === "function") {
+      await adapter.handleResponse(response, {
+        requestContext,
+        provider: normalizedProvider,
+        endpointBase,
+        thinkingPreference,
+        taskKind
+      });
+    }
 
     if (!response.ok) {
       const detail = await response.text();
-      // threebox-server reports trial quota exhaustion as `{ "error": "QUOTA_EXCEEDED" }` —
-      // tag it so hosts can distinguish "buy your own key" from a generic failure without
-      // string-matching the message text.
-      let errorCode = null;
-      let providerError = null;
+      let parsedPayload = null;
       try {
         const parsed = JSON.parse(detail);
-        providerError = parsed && typeof parsed === "object" ? parsed : null;
-        if (parsed && parsed.error === "QUOTA_EXCEEDED") {
-          errorCode = "BUILTIN_QUOTA_EXCEEDED";
-        } else if (parsed?.error === "SAFETY_POLICY_WARNING") {
-          errorCode = "BUILTIN_SAFETY_WARNING";
-        } else if (parsed?.error === "DEVICE_BANNED") {
-          errorCode = "BUILTIN_DEVICE_BANNED";
-        } else if (parsed?.error === "DEVICE_PERMANENTLY_BANNED") {
-          errorCode = "BUILTIN_DEVICE_PERMANENTLY_BANNED";
-        } else if (parsed?.error === "DEVICE_MUTED") {
-          errorCode = "BUILTIN_DEVICE_MUTED";
-        } else if (typeof parsed?.error === "string" && parsed.error.startsWith("UPSTREAM_")) {
-          errorCode = parsed.error;
-        }
+        parsedPayload = parsed && typeof parsed === "object" ? parsed : null;
       } catch {
         /* not JSON, ignore */
       }
-      const error = new Error(`AI request failed (${response.status}): ${detail}`);
+      const classification = typeof adapter?.classifyError === "function"
+        ? await adapter.classifyError({
+            response,
+            detail,
+            payload: parsedPayload,
+            requestContext,
+            provider: normalizedProvider
+          })
+        : null;
+      const error = new Error(
+        String(classification?.message || `AI request failed (${response.status}): ${detail}`)
+      );
       error.httpStatus = response.status;
-      error.providerError = providerError;
-      if (errorCode) {
-        error.code = errorCode;
+      error.isAiTransportError = true;
+      error.providerError = classification?.providerError ?? parsedPayload;
+      if (classification?.code) {
+        error.code = String(classification.code);
       }
       throw error;
     }
@@ -1536,8 +1501,8 @@ async function requestUpdatedSceneEditCommands(prompt, context = {}, options = {
 
   // Whenever the model is given the "auto" system prompt (commands preferred, full JSON allowed
   // for large restructures), the response parser below must accept both forms too — agent/
-  // iterative rounds always get that prompt regardless of the caller's `outputMode` (ThreeBox's
-  // "commands" setting never becomes literal outputMode:"auto"), so gating the JSON-detection
+  // iterative rounds always get that prompt regardless of the caller's `outputMode` (a host's
+  // command-preferred setting need not become literal outputMode:"auto"), so gating JSON detection
   // branch on `outputMode === "auto"` alone let the model follow its own prompt's advice and
   // return valid scene JSON, only to have it rejected as "not a valid command script" with no
   // fallback (agent calls always pass fallbackToJson:false) — the whole agent turn then failed
@@ -1798,9 +1763,5 @@ export {
   resolveVisionImageUrl,
   buildGenerateUserMessage,
   projectSceneJsonString,
-  maybeApplyCapabilityReview,
-  createSceneAiTurnContext,
-  createThreeBoxTurnContext,
-  buildThreeBoxRequestContext,
-  applyThreeBoxModerationHeaders
+  maybeApplyCapabilityReview
 };

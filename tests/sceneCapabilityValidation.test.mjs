@@ -30,7 +30,7 @@ test("capability validation reports unavailable features with pointers", () => {
   assert.ok(diagnostics.some((entry) => entry.category === "rendererBackends" && entry.id === "webgpu"));
   assert.ok(diagnostics.some((entry) => entry.category === "materials" && entry.id === "tsl"));
   assert.ok(diagnostics.some((entry) => entry.category === "passes" && entry.id === "unrealBloom"));
-  assert.ok(diagnostics.some((entry) => entry.category === "particleSources" && entry.id === "textMask"));
+  assert.equal(diagnostics.some((entry) => entry.category === "particleSources" && entry.id === "textMask"), false);
 });
 
 test("capability validation rejects the removed flat Particle V1 shape", () => {

@@ -299,7 +299,7 @@ Engine capabilities summary:
 - JSM geometry/material registry: RoundedBoxGeometry, LineGeometry, LineMaterial, and assetLibrary geometryRef/materialRef expansion
 - Groups, lines, info panels, css3d panels, shader surfaces, planes, extrude, buffer/irregular meshes
 - Particles (prefer particleEmitter only when requested/implied), weather domains, wind, heat, sprites, tubes, instanced meshes, scene text (objType text)
-- particleEmitter V2: orthogonal source/emission/particle/simulation/render blocks; CPU and webgl-compute share seeded sources, lifetime, forces and boundary semantics. Sources include positions, box, sphere, shell, disc, cone, line, curve and meshSurface; textMask/imageMask require the optional particles-raster entry.
+- particleEmitter V2: orthogonal source/emission/particle/simulation/render blocks; CPU and webgl-compute share seeded sources, lifetime, forces and boundary semantics. Sources include positions, box, sphere, shell, disc, cone, line, curve and meshSurface; browser textMask/imageMask use the descriptor-activated particles-raster entry in the async loader.
 - css3dPanel: interactive DOM overlay (distinct from static infoPanel textures)
 - sceneConfig.textureQuality optional tier; sceneConfig.extensions container (nativeGeometries, assetLibrary.textureUrlCache)
 - Optional customBucket string on descriptors for host batch visibility queries

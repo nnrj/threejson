@@ -427,6 +427,8 @@ import "threejson/particles-raster";   // textMask / imageMask 粒子来源
 import "threejson/webgpu";             // 显式启用 WebGPU/TSL 预览
 ```
 
+异步 `createJsonScene()` 会根据 JSON 描述符自动按需加载 `controls-extra`、`particles-raster` 和 WebGL 高级后处理；上述前两项显式 import 仅用于预加载或直接使用低层注册能力。WebGPU、第三方后端与代码执行能力始终要求宿主显式启用。同步 `createJsonSceneSimple()` 不运行异步按需加载链。
+
 domain JSON 通常使用：
 
 ```json

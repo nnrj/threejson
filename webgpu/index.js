@@ -9,7 +9,7 @@ import { compileTslGraph, prepareTslGraphsForPayload, TslGraphError } from "./ts
 import { WebgpuRenderPipelineAdapter } from "./webgpuPostProcessing.js";
 import { registerWebgpuParticleBackend, deployParticleWebgpuEmitter, buildWebgpuParticleInitialArrays } from "./particleWebgpuCompute.js";
 import { registerRectAreaLightSupportInitializer } from "../core/builder/lightFactory.js";
-import { ensureRectAreaLightWebgpuInitialized } from "../core/builder/light/rectAreaLightWebgpu.js";
+import { ensureRectAreaLightWebgpuInitialized } from "./rectAreaLightWebgpu.js";
 
 export const THREEJSON_WEBGPU_SUPPORTED_REVISION = "184";
 
@@ -36,7 +36,14 @@ async function createWebgpuRenderer({ canvas, descriptor, width, height, scene, 
 let registered = false;
 export function registerThreeJsonWebgpuPreview() {
   if (registered) return;
-  registerRendererBackend("webgpu", { async: true, revision: THREEJSON_WEBGPU_SUPPORTED_REVISION, createRenderer: createWebgpuRenderer });
+  registerRendererBackend("webgpu", {
+    async: true,
+    revision: THREEJSON_WEBGPU_SUPPORTED_REVISION,
+    matchesRenderer: (renderer) => renderer?.isWebGPURenderer === true,
+    ownsPostProcessing: true,
+    resolveFallback: ({ policy }) => policy === "fallback-webgl" ? "webgl" : null,
+    createRenderer: createWebgpuRenderer
+  });
   registerMaterialFactory("tsl", createTslMaterialFromDescriptor);
   registerSceneCapability("rendererBackends", "webgpu", { status: "preview", async: true, entry: "threejson/webgpu", revision: THREEJSON_WEBGPU_SUPPORTED_REVISION });
   registerSceneCapability("materials", "tsl", { status: "preview", rendererBackends: ["webgpu"], modes: ["preset","graph","code"] });

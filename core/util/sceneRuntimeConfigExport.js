@@ -1,5 +1,6 @@
 import { JSON_ORIGIN_CONFIG } from "./sceneJsonOrigin.js";
 import { Vector3 } from "three";
+import { detectRendererBackend } from "../handler/rendererBackendRegistry.js";
 
 /**
  * Extract sceneConfig (camera, controls, lights) from runtime scene / target.
@@ -66,7 +67,7 @@ export function extractRendererConfigFromRuntime(target) {
   if (!renderer || typeof renderer !== "object") return null;
   const saved = renderer.userData?.threeJsonRendererConfig;
   const result = saved && typeof saved === "object" ? { ...saved } : {};
-  result.backend = renderer.__threeJsonBackend || result.backend || "webgl";
+  result.backend = detectRendererBackend(renderer, result.backend || "webgl");
   if (Number.isInteger(renderer.toneMapping)) result.toneMapping = renderer.toneMapping;
   if (Number.isFinite(renderer.toneMappingExposure)) result.toneMappingExposure = renderer.toneMappingExposure;
   if (renderer.outputColorSpace != null) result.outputColorSpace = renderer.outputColorSpace;

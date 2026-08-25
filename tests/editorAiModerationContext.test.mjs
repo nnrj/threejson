@@ -19,6 +19,8 @@ test("editor generate and adjust panels pass their shared context into provider 
     readFile(new URL("../tools/scene-host/editor/js/editorAiAdjustPanel.js", import.meta.url), "utf8")
   ]);
 
-  assert.match(generateSource, /threeBoxTurnContext:\s*createEditorAiTurnContext\(userText\)/);
-  assert.match(adjustSource, /threeBoxTurnContext:\s*createEditorAiTurnContext\(prompt\)/);
+  assert.match(generateSource, /requestContext:\s*createEditorAiTurnContext\(userText\)/);
+  assert.match(adjustSource, /requestContext:\s*createEditorAiTurnContext\(prompt\)/);
+  assert.match(generateSource, /providerAdapter:\s*creds\.providerAdapter/);
+  assert.match(adjustSource, /providerAdapter:\s*creds\.providerAdapter/);
 });

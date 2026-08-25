@@ -11,6 +11,10 @@ import {
   runAiSceneTitle,
   runAiTurnSummary
 } from "../../shared/js/aiTurnOrchestrator.js";
+import {
+  BUILTIN_PROVIDER_TYPE,
+  withBuiltinAiProviderAdapter
+} from "../../shared/js/builtinAiProvider.js";
 
 /**
  * ThreeBox-specific glue over the shared AI turn orchestration core
@@ -38,7 +42,7 @@ export function resolveProviderOptions(settings, providerId) {
   if (!provider) {
     return null;
   }
-  return {
+  const options = {
     provider: provider.provider || "chatgpt",
     apiKey: provider.apiKey || "",
     model: provider.model || undefined,
@@ -46,10 +50,13 @@ export function resolveProviderOptions(settings, providerId) {
     baseUrl:
       provider.provider === "custom"
         ? provider.baseUrl || undefined
-        : provider.provider === "threebox-builtin"
+        : provider.provider === BUILTIN_PROVIDER_TYPE
           ? settings?.ai?.builtinBackendUrl || undefined
           : undefined
   };
+  return provider.provider === BUILTIN_PROVIDER_TYPE
+    ? withBuiltinAiProviderAdapter(options)
+    : options;
 }
 
 export function isProviderVisionCapable(provider) {

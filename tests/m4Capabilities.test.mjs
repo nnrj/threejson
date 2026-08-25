@@ -91,3 +91,8 @@ test("extra controls are detected only when requested", () => {
   assert.equal(sceneUsesExtraControls({ sceneConfig: { controls: { type: "arcball" } } }), true);
   assert.equal(sceneUsesExtraControls({ sceneConfig: { controls: { type: "orbit" } } }), false);
 });
+
+test("the extra-controls entry imports against the active Three.js revision", async () => {
+  const entry = await import("../core/builder/controls/extraControls.js");
+  assert.equal(typeof entry.ensureExtraControlsRegistered, "function");
+});

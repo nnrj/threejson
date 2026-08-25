@@ -13,7 +13,6 @@ import {
 import { createCommandContext, executeCommands } from "threejson/commands";
 import {
   buildStructuredTurnEnvelope,
-  createSceneAiTurnContext,
   projectSceneJsonString
 } from "threejson/ai";
 import { resolveSceneAgentRoute } from "./turnState.js";
@@ -30,7 +29,7 @@ export const runSceneAgentGenerateTurn = (input) => runAiGenerateTurn(input);
 export const runSceneAgentAdjustTurn = (input) => runAiAdjustTurn(input);
 export const buildSceneAgentTurnEnvelope = (input) => buildStructuredTurnEnvelope(input);
 export const createSceneAgentTurnContext = (turnId, userPrompt) =>
-  createSceneAiTurnContext(turnId, userPrompt);
+  ({ turnId: String(turnId || "").trim(), originalPrompt: String(userPrompt || "") });
 export const projectSceneAgentJsonString = (sceneJsonString, outputFormat = "standard", options = {}) =>
   projectSceneJsonString(sceneJsonString, outputFormat, options);
 

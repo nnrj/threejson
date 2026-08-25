@@ -43,7 +43,11 @@ import {
   putConversation
 } from "./lib/sceneAgentRepository.js";
 import { normalizeLocale, t } from "@threejson/host-kit/i18n/index.js";
-import { BUILTIN_PROVIDER_TYPE, getDisplayDeviceId } from "@threejson/host-kit/js/builtinAiProvider.js";
+import {
+  BUILTIN_PROVIDER_TYPE,
+  getDisplayDeviceId,
+  withBuiltinAiProviderAdapter
+} from "@threejson/host-kit/js/builtinAiProvider.js";
 import { formatAgentProgressLabel } from "@threejson/host-kit/js/aiAgentProgressLabels.js";
 import { findChangedTextureObjectIds, runHostSceneTexturePipeline } from "@threejson/host-kit/js/sceneTextureOrchestrator.js";
 import { createTextureProxyUrl } from "@threejson/host-kit/js/textureProviderClient.js";
@@ -1111,14 +1115,14 @@ export function App() {
       if (!key) {
         return { ready: false, reason: "issue-failed" };
       }
+      const builtinOptions = withBuiltinAiProviderAdapter({
+        apiKey: key,
+        baseUrl: settings.ai.builtinBackendUrl || undefined,
+        thinkingPreference: settings.ai.thinkingPreference || "disabled"
+      });
       return {
         ready: true,
-        options: {
-          provider: BUILTIN_PROVIDER_TYPE,
-          apiKey: key,
-          baseUrl: settings.ai.builtinBackendUrl || undefined,
-          thinkingPreference: settings.ai.thinkingPreference || "disabled"
-        }
+        options: builtinOptions
       };
     }
     if (!String(active.apiKey || "").trim()) {
@@ -1273,7 +1277,7 @@ export function App() {
       const currentTurnId = retryOptions?.turnId || createTurnId();
       const turnContext = createSceneAgentTurnContext(currentTurnId, userPrompt);
       const turnDeadlineAt = Date.now() + 180000;
-      const sceneProviderOptions = { ...resolved.options, threeBoxTurnContext: turnContext, turnDeadlineAt };
+      const sceneProviderOptions = { ...resolved.options, requestContext: turnContext, turnDeadlineAt };
       let adjustTargetString = seedSceneJson || shownSceneJson;
       let adjustTargetTurnId = retryOptions?.targetTurnId || (seedSceneJson ? seedTurnId : shownTurnId);
       const requestedMode = retryOptions?.mode || modeOverride;

@@ -69,10 +69,16 @@ export function ensureParticlesRasterRegistered() {
   registerParticleSourceSampler("textmask", textMaskSampler);
   registerParticleSourceSampler("imagemask", imageMaskSampler);
   for (const id of ["textMask", "imageMask"]) {
-    registerSceneCapability("particleSources", id, { status: "stable", entry: "threejson/particles-raster", browser: true });
+    registerSceneCapability("particleSources", id, {
+      status: "stable",
+      lazy: true,
+      asyncRuntime: true,
+      activation: "descriptor",
+      entry: "threejson/particles-raster",
+      browser: true
+    });
   }
   registered = true;
 }
 
 ensureParticlesRasterRegistered();
-

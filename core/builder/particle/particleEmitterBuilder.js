@@ -20,9 +20,6 @@ export function deployParticleEmitterCore(record, scene, ctx = {}) {
   if (optionalResult !== undefined) {
     return optionalResult;
   }
-  if (requested === "webgpu-compute") {
-    throw Object.assign(new Error("particle simulation webgpu-compute requires threejson/webgpu"), { code: "E_PARTICLE_BACKEND_UNAVAILABLE" });
-  }
   if (requested === "webgl-compute") {
     const renderer = ctx?.renderer ?? null;
     if (!canUseGpuCompute(ctx)) {

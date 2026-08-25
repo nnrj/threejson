@@ -96,6 +96,8 @@ export function ensureWebglAdvancedPassesRegistered() {
       status: "stable",
       rendererBackends: ["webgl"],
       lazy: true,
+      asyncRuntime: true,
+      activation: "descriptor",
       entry: "threejson/postprocessing-webgl"
     });
   }

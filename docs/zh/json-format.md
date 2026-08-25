@@ -611,11 +611,13 @@ core 还支持 `transform`、`expression`、`path` 与 `morph` 动画。`path` �
 }
 ```
 
-`source.type` 支持 `positions`、`box`、`sphere`、`shell`、`disc`、`cone`、`line`、`curve`、`meshSurface`。`simulation.backend: "cpu"` 是功能参考后端，`"webgl-compute"` 是 WebGL 计算后端。`textMask` 和 `imageMask` 属于按需加载的浏览器栅格来源：
+`source.type` 支持 `positions`、`box`、`sphere`、`shell`、`disc`、`cone`、`line`、`curve`、`meshSurface`。`simulation.backend: "cpu"` 是功能参考后端，`"webgl-compute"` 是 WebGL 计算后端。`textMask` 和 `imageMask` 属于浏览器栅格来源；异步 `createJsonScene()` 会按描述符自动加载，也可预先导入：
 
 ```js
 import "threejson/particles-raster";
 ```
+
+未出现栅格来源时不会加载该模块；`createJsonSceneSimple()` 不执行这条异步按需加载链。
 
 旧的 `points` 仍是点云图元，但不再是 Particle V2 发射器格式。
 

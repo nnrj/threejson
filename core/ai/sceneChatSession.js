@@ -37,7 +37,18 @@ const SCENE_TITLE_UNSAFE_CHARS = /[\\/:*?"<>|]/g;
 /** Keep only chat-completion transport options. A stage-specific optional ceiling wins over the
  * legacy common maxTokens option; neither is invented here. */
 function pickChatCompletionOptions(source, stageMaxTokensKey) {
-  const keys = ["provider", "apiKey", "model", "baseUrl", "temperature", "signal", "threeBoxTurnContext", "userId", "thinkingPreference"];
+  const keys = [
+    "provider",
+    "apiKey",
+    "model",
+    "baseUrl",
+    "temperature",
+    "signal",
+    "providerAdapter",
+    "requestContext",
+    "userId",
+    "thinkingPreference"
+  ];
   const out = {};
   for (const k of keys) {
     if (source && Object.prototype.hasOwnProperty.call(source, k)) {
@@ -314,21 +325,9 @@ async function classifyTurnIntent(input = {}, options = {}) {
       requiresAnimation
     };
   } catch (error) {
-    // Transport/API failures already carry structured status and provider error metadata for the
-    // host UI. Do not turn them into an intent-classification fallback, otherwise a moderation
-    // ban, quota error, or invalid credential is mislabeled as "could not determine operation".
-    if (
-      Number.isFinite(Number(error?.httpStatus))
-      || [
-        "BUILTIN_MODERATION_BLOCKED",
-        "BUILTIN_SAFETY_WARNING",
-        "BUILTIN_DEVICE_BANNED",
-        "BUILTIN_DEVICE_PERMANENTLY_BANNED",
-        "BUILTIN_DEVICE_MUTED",
-        "BUILTIN_QUOTA_EXCEEDED",
-        "INVALID_API_KEY_HEADER_VALUE"
-      ].includes(error?.code)
-    ) {
+    // Transport/API failures already carry structured metadata for the host UI. Do not turn them
+    // into an intent fallback; provider-specific error codes belong to the injected adapter.
+    if (Number.isFinite(Number(error?.httpStatus)) || error?.isAiTransportError === true) {
       throw error;
     }
     return {
@@ -338,7 +337,7 @@ async function classifyTurnIntent(input = {}, options = {}) {
   }
 }
 
-const DEFAULT_SELF_NAME = "ThreeBox";
+const DEFAULT_SELF_NAME = "ThreeJSON";
 
 function buildSummarizeTurnSystemPrompt(selfName) {
   const name = String(selfName || "").trim() || DEFAULT_SELF_NAME;
@@ -379,8 +378,8 @@ function buildSummarizeTurnUserMessage({ userPrompt, mode, targetTurnId, turnId,
  *   "English") — when provided, the recap is written in that language regardless of the user
  *   request's own language, so a chat host can keep summaries consistent with its current UI
  *   locale setting rather than whatever language the user happened to type in.
- *   `selfName` is the chat host's own product name (e.g. "ThreeBox") for the recap to refer to
- *   itself by, rather than defaulting to generic "the assistant" wording — defaults to "ThreeBox"
+ *   `selfName` is the chat host's own product name for the recap to refer to itself by, rather
+ *   than defaulting to generic "the assistant" wording — defaults to "ThreeJSON"
  *   when omitted.
  * @param {object} [options] requestChatCompletion transport options
  * @returns {Promise<string>} plain-text summary; empty string on failure (caller may still cache the turn without a summary)

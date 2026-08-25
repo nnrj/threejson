@@ -57,13 +57,13 @@ WebGL 仍是默认后端。普通立方体不会加载 WebGPU、栅格粒子、�
 
 `cpu` 是功能正确的参考实现；`webgl-compute` 共用同一描述符，不再维护缩水版 schema。它依据渲染器真实纹理上限验证数量，不会静默截断。宿主可显式传入性能预算。当前跨后端统一契约最多支持 16 个吸引子和每条生命周期曲线 8 个关键帧；超出时返回结构化诊断，不会静默裁剪。
 
-文字和图片蒙版依赖浏览器 Canvas/图片解码，因此不进入默认 core 依赖图：
+文字和图片蒙版依赖浏览器 Canvas/图片解码，因此实现不进入默认静态加载图。异步 `createJsonScene()` 在描述符实际出现 `textMask` / `imageMask` 时才按需加载 `threejson/particles-raster`；普通场景不会加载它，也不会产生图片请求。若希望预加载模块，也可显式导入：
 
 ```js
 import "threejson/particles-raster";
 ```
 
-导入后可用 `source.type: "textMask"`（`text`、`font`、`width`、`height`、`depth`）和 `"imageMask"`（`url` 或 ImageData）；远程图片仍受 CORS 约束。
+两种方式均可使用 `source.type: "textMask"`（`text`、`font`、`width`、`height`、`depth`）和 `"imageMask"`（`url` 或 ImageData）；远程图片仍受 CORS 约束。同步子集 `createJsonSceneSimple()` 不执行可选模块加载，请使用异步入口。
 
 第三方计算实现通过 `registerParticleSimulationBackend()` 注册 `simulation.backend`，并通过 `registerParticleSimulationLifecycle()` 管理更新和释放。
 
@@ -157,6 +157,6 @@ configureTslCodeExecution({
 - `objType: "lod"` 使用 `levels: [{ distance, hysteresis, object }]`，导出时只保留权威的嵌套描述。
 - Line、CatmullRom、Quadratic/Cubic Bezier、Ellipse、CurvePath 共用同一曲线工厂，供 Tube、Line、路径动画和粒子使用。
 - `morph.list` / `morph.set` 查询和调整按名称或索引定位的 morph target；描述符可用 `morphInfluences`，也支持声明式 `morph` 动画。
-- 导入 `threejson/controls-extra` 可启用 MapControls、TrackballControls、ArcballControls；TransformControls 仍属于 Editor。
+- 异步 `createJsonScene()` 遇到相应描述符时会按需加载 MapControls、TrackballControls、ArcballControls；也可预先导入 `threejson/controls-extra`。TransformControls 仍属于 Editor。
 
 可运行素材位于 `examples/particle-v2/`、`examples/webgpu/` 和 `examples/capabilities/`。

@@ -7,7 +7,11 @@
  * call, tab-specific composer controls) stays in each panel's own file. */
 import { BUILTIN_PROVIDER_TYPE, ensureEditorBuiltinApiKey, getDisplayDeviceId } from "./editorBuiltinAiProvider.js";
 import { appendAiChatTurn, getAiChatHistory, resolveSceneKeyFromLabel } from "./editorAiChatStore.js";
-import { createThreeBoxTurnContext, parseSceneJsonString } from "threejson/ai";
+import { parseSceneJsonString } from "threejson/ai";
+import {
+  createBuiltinAiTurnContext,
+  withBuiltinAiProviderAdapter
+} from "../../shared/js/builtinAiProvider.js";
 import { t } from "../../shared/i18n/index.js";
 import { getAiErrorFeedback, renderAiErrorFeedback } from "../../shared/js/aiErrorFeedback.js";
 import {
@@ -26,7 +30,7 @@ export function isAiAbortError(err) {
 export function createEditorAiTurnContext(originalPrompt) {
   const suffix = globalThis.crypto?.randomUUID?.()
     || `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
-  return createThreeBoxTurnContext(`editor-${suffix}`, originalPrompt);
+  return createBuiltinAiTurnContext(`editor-${suffix}`, originalPrompt);
 }
 
 export function formatAssemblyParentWarnings(batchOrResult) {
@@ -202,6 +206,7 @@ export function getCredentials(host) {
     creds.baseUrl = String(provider.baseUrl || "").trim() || undefined;
   } else if (provider.provider === BUILTIN_PROVIDER_TYPE) {
     creds.baseUrl = String(host.getEditorSettings()?.ai?.builtinBackendUrl || "").trim() || undefined;
+    return withBuiltinAiProviderAdapter(creds);
   }
   return creds;
 }

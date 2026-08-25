@@ -16,7 +16,7 @@ Optional capabilities that are not used should not require configuration switche
 ## Optional, non-invasive
 
 - **Capabilities are separable**: Physics, JSON Patch, plugins, and similar features ship as independent modules or under `extensions/`; the core main entry aggregates only a stable subset. `extensions/` aligns with the npm optional-peer mental model: reference implementations maintained in-repo, semver may diverge from core, avoiding binding a specific engine into the default package.
-- **Predictable behavior**: When not imported and not registered, runtime paths match historical versions, with no implicit side effects.
+- **Predictable behavior**: Without a matching JSON descriptor, a capability is not loaded, initialized, or allowed to make network requests. Stable, lightweight, in-package modules explicitly marked `activation: "descriptor"` in the manifest may be lazy-loaded by the asynchronous scene loader when a descriptor actually references them. Heavy dependencies, third-party backends, and code execution still require explicit host import, registration, and authorization. Manifest declarations, loader behavior, documentation, and the AI capability catalog must agree.
 
 ## Core vs extensions boundary
 
@@ -59,7 +59,7 @@ The boundary does not mean hosts may only use types already implemented in core.
 - **Frame hooks and plugins**: `beforeFrame` / `afterRender`, `PluginHost`, `sceneConfig.extensions`, for layering physics, gameplay, and custom logic.
 - **Extensible registries** (as needed): e.g. a registry for `controls.type` allowing extension packages or the host to register new types rather than a fixed enum.
 
-When extensions are not imported and not registered, behavior must match historical versions (see “Predictable behavior” in the previous section).
+When extensions are not imported and not registered, behavior must match historical versions. Only stable in-package capabilities explicitly declared as descriptor-activated may be registered on demand by the asynchronous load chain (see “Predictable behavior” above).
 
 ## Object registry and “descriptor ↔ scene” sync
 
@@ -110,6 +110,7 @@ The following constraints describe **who may import whom** and responsibility bo
 
 1. **One-way dependencies**: `domains → core`; `host (scene editor, RoomShow, etc.) → core + domains`. **Forbidden**: `core → domains` (importing concrete domain modules inside core), `domains → host`.
 2. **Core can and should** host cross-domain generic capabilities (load, export, edit state machine, registry, mutation). Prefer **generic mechanism + registration hooks** over hard-coding a `domain` name in core.
+   Renderer backends follow the same rule: core queries runtime detection, post-processing ownership, and compatibility fallback through the backend registry. Optional implementations such as WebGPU must not make core inspect private class flags or import implementation modules.
 3. **Do not put one application’s interaction details in core** (modal copy, drill-in gestures, editor settings); those stay in the host; core exposes neutral APIs only (e.g. `assertSceneExportable`, `exportDeployRootDescriptor`).
 4. **Dispatch contract**: core scheduling recognizes only JSON `domain` + `handler` and registries; business differences extend in `api` hooks in `domains/*/index.js`.
 5. **Persistence shape**: authoritative load records are **instance-only** `persistSource` (one per deploy root); core does not uniformly rewrite into `items[]` bundles.

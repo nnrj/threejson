@@ -33,7 +33,8 @@ import {
   isUnsuccessfulTurn,
   resolveThreeBoxNegotiatedRoute
 } from "./threeBoxTurnState.js";
-import { buildStructuredTurnEnvelope, createThreeBoxTurnContext, projectSceneJsonString } from "threejson/ai";
+import { buildStructuredTurnEnvelope, projectSceneJsonString } from "threejson/ai";
+import { createBuiltinAiTurnContext } from "../../shared/js/builtinAiProvider.js";
 import { initHostI18n, applyShellI18n, getHostLocale, normalizeLocale, t } from "../../shared/i18n/index.js";
 import {
   BUILTIN_PRIVACY_ACCEPTED,
@@ -614,7 +615,7 @@ async function main() {
   async function handleGenerateTurn(text, api, {
     conversationId,
     turnId,
-    turnContext = createThreeBoxTurnContext(turnId, text),
+    turnContext = createBuiltinAiTurnContext(turnId, text),
     generationStrategy = "single",
     executionMode = "direct",
     refinementGoals = [],
@@ -629,7 +630,7 @@ async function main() {
     const selectedProviderId = document.getElementById("composerModelSelect")?.value;
     const providerOptions = {
       ...await resolveProviderOptionsForRequest(settings, selectedProviderId),
-      threeBoxTurnContext: turnContext,
+      requestContext: turnContext,
       turnDeadlineAt
     };
 
@@ -906,7 +907,7 @@ async function main() {
     conversationId,
     turnId,
     targetTurnId,
-    turnContext = createThreeBoxTurnContext(turnId, text),
+    turnContext = createBuiltinAiTurnContext(turnId, text),
     turnDeadlineAt = Date.now() + 180000,
     abortController: providedAbortController,
     selectedCapabilityIds,
@@ -918,7 +919,7 @@ async function main() {
     const selectedProviderId = document.getElementById("composerModelSelect")?.value;
     const providerOptions = {
       ...await resolveProviderOptionsForRequest(settings, selectedProviderId),
-      threeBoxTurnContext: turnContext,
+      requestContext: turnContext,
       turnDeadlineAt
     };
 
@@ -1315,7 +1316,7 @@ async function main() {
     }
     if (seed) {
       const turnId = createTurnId();
-      const turnContext = createThreeBoxTurnContext(turnId, text);
+      const turnContext = createBuiltinAiTurnContext(turnId, text);
       await handleAdjustTurn(text, api, {
         conversationId: seed.conversationId,
         turnId,
@@ -1327,7 +1328,7 @@ async function main() {
 
     const conversationId = sidebar.ensureActiveConversation().id;
     const turnId = createTurnId();
-    const turnContext = createThreeBoxTurnContext(turnId, text);
+    const turnContext = createBuiltinAiTurnContext(turnId, text);
     const turnDeadlineAt = Date.now() + 180000;
     const turnAbortController = new AbortController();
     activeAbortController = turnAbortController;
@@ -1352,7 +1353,7 @@ async function main() {
       { userPrompt: text, history },
       {
         ...providerOptions,
-        threeBoxTurnContext: turnContext,
+        requestContext: turnContext,
         turnDeadlineAt,
         signal: turnAbortController.signal,
         animationCapabilityMode,

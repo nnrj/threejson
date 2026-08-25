@@ -11,6 +11,11 @@ import { attachCameraToPlayerRig } from "./controls/playerRigAttach.js";
 import { createSceneRuntime, createSceneRuntimeAsync } from "./sceneRuntimeHandler.js";
 import { assertSceneCapabilities } from "../capabilities/sceneCapabilityValidation.js";
 import {
+  detectRendererBackend,
+  rendererBackendOwnsPostProcessing,
+  resolveRendererBackendFallback
+} from "./rendererBackendRegistry.js";
+import {
   ensureOptionalSceneCapabilitiesForPayload,
   sceneUsesAdvancedWebglPass,
   sceneUsesExtraControls,
@@ -980,7 +985,7 @@ async function ensureRuntimePostProcessing(runtime, normalized, options = {}) {
   if (!runtime?.renderer || runtime.composer || options.composer) {
     return runtime?.composer ?? options.composer ?? null;
   }
-  if (runtime.renderer.__threeJsonBackend === "webgpu" || runtime.renderer.isWebGPURenderer) {
+  if (rendererBackendOwnsPostProcessing(runtime.renderer)) {
     return runtime.composer ?? null;
   }
   if (filterPassRecords(normalized?.objectList).length === 0) return null;
@@ -1222,12 +1227,18 @@ function resolveCompatibleRendererBackend(normalized) {
     return requested;
   } catch (error) {
     const policy = String(normalized?.rendererConfig?.compatibilityPolicy || "error").trim().toLowerCase();
-    if (requested !== "webgpu" || policy !== "fallback-webgl") throw error;
-    // Fallback is all-or-nothing and only legal when the same scene is valid on WebGL.
-    assertSceneCapabilities(payload, { rendererBackend: "webgl" });
-    normalized.rendererConfig = { ...normalized.rendererConfig, backend: "webgl" };
-    log.warn("[sceneRuntime] WebGPU-incompatible records found; compatibilityPolicy=fallback-webgl selected WebGL for the whole scene");
-    return "webgl";
+    const fallback = resolveRendererBackendFallback(requested, {
+      policy,
+      error,
+      payload,
+      rendererDescriptor: normalized?.rendererConfig || {}
+    });
+    if (!fallback) throw error;
+    // A backend adapter may select a whole-scene fallback, but it cannot bypass validation.
+    assertSceneCapabilities(payload, { rendererBackend: fallback });
+    normalized.rendererConfig = { ...normalized.rendererConfig, backend: fallback };
+    log.warn(`[sceneRuntime] renderer backend "${requested}" is incompatible; policy "${policy}" selected "${fallback}" for the whole scene`);
+    return fallback;
   }
 }
 
@@ -1256,17 +1267,21 @@ function assertPayloadCapabilitiesBeforePreparation(payload = {}, fallbackBacken
   } catch (error) {
     if (options.forceBackend === true) throw error;
     const policy = String(renderer.compatibilityPolicy || "error").trim().toLowerCase();
-    if (requested !== "webgpu" || policy !== "fallback-webgl") throw error;
-    assertSceneCapabilities(payload, { rendererBackend: "webgl" });
-    return "webgl";
+    const fallback = resolveRendererBackendFallback(requested, {
+      policy,
+      error,
+      payload,
+      rendererDescriptor: renderer
+    });
+    if (!fallback) throw error;
+    assertSceneCapabilities(payload, { rendererBackend: fallback });
+    return fallback;
   }
 }
 
 function rendererBackendForTarget(target, fallback = "webgl") {
   const runtime = extractDeploymentTarget(target);
-  if (runtime.renderer?.isWebGPURenderer || runtime.renderer?.__threeJsonBackend === "webgpu") return "webgpu";
-  if (runtime.renderer) return "webgl";
-  return fallback;
+  return runtime.renderer ? detectRendererBackend(runtime.renderer, fallback) : fallback;
 }
 
 function assertSimpleSceneHasNoAsyncOptionalCapabilities(payload) {

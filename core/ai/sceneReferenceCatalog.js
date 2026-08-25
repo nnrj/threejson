@@ -12,8 +12,7 @@
  * cannot fail from network flakiness or rate limits.
  *
  * Environment-agnostic by design (no assumption about how the caller serves the repo): callers
- * supply a `resolveUrl(repoRelativePath) => string` function (ThreeBox uses
- * tools/scene-host/shared/js/sceneHostPaths.js's `resolveSceneHostUrl`); this module never
+ * supply a `resolveUrl(repoRelativePath) => string` function; this module never
  * hardcodes a base URL. A caller that doesn't pass `resolveUrl` gets "" back — a silent no-op,
  * not an error — since this is a best-effort enhancement, not a required capability.
  */

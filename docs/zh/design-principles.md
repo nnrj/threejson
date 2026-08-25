@@ -16,7 +16,7 @@
 ## 可选、非侵入
 
 - **能力可拆**：物理、JSON Patch、插件等以独立模块或 `extensions/` 目录交付；core 主入口仅聚合稳定子集。`extensions/` 与 npm 可选 peer 心智一致：随仓维护的参考实现，semver 可与 core 脱钩，避免把具体引擎绑进默认包。
-- **行为可预测**：未 import、未注册时，运行路径与历史版本一致，无隐式副作用。
+- **行为可预测**：没有相应 JSON 描述符时，不加载、不初始化、不发起网络请求。Manifest 中明确标为 `activation: "descriptor"` 的稳定、轻量、随包模块，可由异步场景加载器在描述符实际引用时按需加载；重依赖、第三方后端和代码执行能力仍必须由宿主显式 import/注册/授权。Manifest 声明、加载行为、文档和 AI 能力目录必须一致。
 
 ## Core 与 extensions 的划界
 
@@ -59,7 +59,7 @@
 - **帧钩子与插件**：`beforeFrame` / `afterRender`、`PluginHost`、`sceneConfig.extensions`，用于叠加物理、玩法与自定义逻辑。
 - **可扩展注册表**（按需）：如 `controls.type` 的 registry 允许扩展包或宿主注册新类型，而非写死枚举。
 
-未 import、未注册扩展时，行为须与历史版本一致（见上一节「行为可预测」）。
+未 import、未注册扩展时，行为须与历史版本一致；仅 Manifest 明确声明为 descriptor 激活的随包稳定能力可由异步加载链按需注册（见上一节「行为可预测」）。
 
 ## 对象注册表与「描述符 ↔ 场景」同步
 
@@ -110,6 +110,7 @@ ThreeJSON 旨在消化「用 JSON 描述 Three.js 场景」的重复劳动；不
 
 1. **依赖单向**：`domains → core`；`宿主（含场景编辑器、RoomShow 等）→ core + domains`。禁止 `core → domains`（在 core 内 import 具体域模块）、禁止 `domains → 宿主`。
 2. **core 可以且应当**承载跨域通用能力（加载、导出、编辑状态机、registry、mutation）。新增能力优先做成 **通用机制 + 注册钩子**，而非在 core 写死某一 `domain` 名。
+   渲染后端同样遵循此规则：core 只通过 backend registry 查询运行时识别、后处理所有权与兼容回退；WebGPU 等可选实现不得让 core 检查其私有类标记或导入实现模块。
 3. **禁止 core 承载某一应用的交互细节**（弹窗文案、drill-in 手势、编辑器设置项）；这些留在宿主，core 只暴露中性 API（如 `assertSceneExportable`、`exportDeployRootDescriptor`）。
 4. **调度契约**：core 调度只认 JSON 的 `domain` + `handler` 与 registry；业务差异在 `domains/*/index.js` 的 `api` 钩子中扩展。
 5. **持久化形态**：authoritative 加载记录为 **instance-only** `persistSource`（每个 deploy 根一份）；core 不统一改写为 `items[]` bundle。

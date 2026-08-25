@@ -30,7 +30,7 @@ export function tryDeployParticleSimulationBackend(id, record, scene, ctx = {}) 
 
 /**
  * Per-runtime lifecycle store for optional simulation implementations. The store
- * only knows update/dispose callbacks; WebGPU and future backends stay outside
+ * only knows update/dispose callbacks; optional and future backends stay outside
  * the default dependency graph.
  */
 export function createParticleSimulationExtensionStore() {

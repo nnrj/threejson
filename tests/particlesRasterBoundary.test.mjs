@@ -4,7 +4,10 @@ import { ensureOptionalSceneCapabilitiesForPayload, sceneUsesRasterParticleSourc
 import { getParticleSourceSampler } from "../core/builder/particle/particleSourceSampler.js";
 import { getSceneCapability } from "../core/capabilities/sceneCapabilityManifest.js";
 
-test("raster particle support stays optional until a raster source is requested", async () => {
+test("raster particle support is stable but its implementation loads only when requested", async () => {
+  const declaration = getSceneCapability("particleSources", "textMask");
+  assert.equal(declaration.status, "stable");
+  assert.equal(declaration.activation, "descriptor");
   assert.equal(sceneUsesRasterParticleSource({ objectList: [{ objType: "particleEmitter", source: { type: "box" } }] }), false);
   const payload = { objectList: [{ objType: "particleEmitter", source: { type: "textMask" } }] };
   assert.equal(sceneUsesRasterParticleSource(payload), true);

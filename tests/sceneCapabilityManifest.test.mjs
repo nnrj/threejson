@@ -18,6 +18,10 @@ test("capability manifest exposes implemented lazy WebGL passes", () => {
   assert.equal(manifest.categories.rendererBackends.webgpu, undefined);
   assert.equal(manifest.categories.passes.unrealBloom.status, "stable");
   assert.equal(manifest.categories.passes.unrealBloom.lazy, true);
+  assert.equal(manifest.categories.passes.unrealBloom.activation, "descriptor");
+  assert.equal(manifest.categories.particleSources.textMask.status, "stable");
+  assert.equal(manifest.categories.particleSources.textMask.activation, "descriptor");
+  assert.equal(manifest.categories.controlsTypes.arcball.entry, "threejson/controls-extra");
   assert.equal(manifest.categories.materials.physical.status, "stable");
   assert.ok(manifest.categories.modelFormats.fbx);
   assert.equal(manifest.categories.modelFormats.usd.import, true);

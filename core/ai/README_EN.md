@@ -64,6 +64,8 @@ The former pointer/image-sink texture pipeline has been removed without compatib
 
 Chat supports `chatgpt`, `deepseek`, and arbitrary OpenAI-compatible `custom` endpoints. Common options are `apiKey`, `model`, `baseUrl`, `temperature`, `maxTokens`, `stream`, and `signal`.
 
+Product-owned gateways inject `providerAdapter` hooks for endpoint selection, request-body transformation, response observation, and error classification. `requestContext` is opaque state forwarded only to that adapter. Core does not recognize product provider names, moderation fields, private response headers, or quota codes.
+
 Direct generation returns a complete usable scene. Incremental construction is reserved for genuinely complex scenes or explicit provider truncation. Updates prefer commands, then JSON Patch, with full JSON rewrite as a final fallback. `# done` and no-op/repeated output stop immediately.
 
 ## Entry and dependency boundaries

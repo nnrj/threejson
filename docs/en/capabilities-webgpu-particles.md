@@ -57,13 +57,13 @@ Sources: `positions`, `box`, `sphere`, `shell`, `disc`, `cone`, `line`, `curve`,
 
 `cpu` is the reference implementation. `webgl-compute` shares the descriptor instead of inventing a smaller schema. It validates the renderer's actual texture limit and never silently truncates particle count. A host may supply an explicit performance budget. The shared cross-backend contract currently allows up to 16 attractors and 8 keys per lifecycle curve; larger descriptors fail with a structured diagnostic instead of being truncated.
 
-Text and image masks need browser Canvas/image decoding and stay outside the default core graph:
+Text and image masks need browser Canvas/image decoding, so their implementation stays outside the default static load graph. Asynchronous `createJsonScene()` lazy-loads `threejson/particles-raster` only when a descriptor actually uses `textMask` or `imageMask`; ordinary scenes load nothing and make no image request. Hosts may also preload it explicitly:
 
 ```js
 import "threejson/particles-raster";
 ```
 
-This enables `source.type: "textMask"` (`text`, `font`, `width`, `height`, `depth`) and `"imageMask"` (`url` or ImageData). CORS still applies to remote images.
+Both paths enable `source.type: "textMask"` (`text`, `font`, `width`, `height`, `depth`) and `"imageMask"` (`url` or ImageData). CORS still applies to remote images. The synchronous `createJsonSceneSimple()` subset does not run optional-module loading; use the asynchronous entry.
 
 Optional compute implementations register `simulation.backend` through `registerParticleSimulationBackend()` and lifecycle callbacks through `registerParticleSimulationLifecycle()`.
 
@@ -157,6 +157,6 @@ The module must be self-contained and default-export a `(params, context) => out
 - `objType: "lod"` uses `levels: [{ distance, hysteresis, object }]` and preserves the authoritative nested descriptors on export.
 - Shared curves support Line, CatmullRom, Quadratic/Cubic Bezier, Ellipse, and CurvePath. They are consumed by tubes, lines, path animations, and particles.
 - `morph.list` and `morph.set` query and update named/indexed morph targets. Descriptors may use `morphInfluences`; declarative `morph` animation is also available.
-- Import `threejson/controls-extra` for MapControls, TrackballControls, and ArcballControls. TransformControls remains an editor concern.
+- Asynchronous `createJsonScene()` lazy-loads MapControls, TrackballControls, and ArcballControls when their descriptors are present; hosts may also preload `threejson/controls-extra`. TransformControls remains an editor concern.
 
 See the runnable fixtures under `examples/particle-v2/`, `examples/webgpu/`, and `examples/capabilities/`.

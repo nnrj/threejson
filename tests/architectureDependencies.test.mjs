@@ -173,6 +173,37 @@ test("scene-agent packages stay optional, unbranded, and free of product service
   }
 });
 
+test("core AI exposes generic provider hooks without knowing host product protocols", () => {
+  const root = path.join(REPO_ROOT, "core", "ai");
+  const violations = [];
+  for (const file of walkFiles(root)) {
+    if (!file.endsWith(".js")) continue;
+    const source = fs.readFileSync(file, "utf8");
+    if (/three[-_ ]?box/i.test(source)) violations.push(`${relative(file)} -> product branding`);
+    if (/X-ThreeBox-|threebox_context|BUILTIN_(?:QUOTA|SAFETY|DEVICE|MODERATION)/.test(source)) {
+      violations.push(`${relative(file)} -> host transport protocol`);
+    }
+  }
+  assert.deepEqual(violations, []);
+});
+
+test("core renderer orchestration uses backend hooks instead of optional-backend implementation flags", () => {
+  const files = [
+    path.join(REPO_ROOT, "core", "handler", "sceneLoadHandler.js"),
+    path.join(REPO_ROOT, "core", "builder", "particle", "particleEmitterBuilder.js"),
+    path.join(REPO_ROOT, "core", "util", "sceneRuntimeConfigExport.js")
+  ];
+  const violations = [];
+  for (const file of files) {
+    const source = fs.readFileSync(file, "utf8");
+    if (/isWebGPURenderer|fallback-webgl|threejson\/webgpu|webgpu-compute/.test(source)) {
+      violations.push(relative(file));
+    }
+  }
+  assert.deepEqual(violations, []);
+  assert.equal(fs.existsSync(path.join(REPO_ROOT, "core", "builder", "light", "rectAreaLightWebgpu.js")), false);
+});
+
 test("packages do not statically import aggregate ThreeJSON entries", () => {
   const violations = [];
   const staticImportPattern =

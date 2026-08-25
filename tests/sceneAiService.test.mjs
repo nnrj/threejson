@@ -7,11 +7,14 @@ import {
   requestSceneRefinementStep,
   requestUpdatedSceneEditCommands,
   requestUpdatedSceneJsonString,
-  requestChatCompletion,
-  createThreeBoxTurnContext,
-  buildThreeBoxRequestContext,
-  applyThreeBoxModerationHeaders
+  requestChatCompletion
 } from "../core/ai/sceneAiService.js";
+import {
+  applyBuiltinAiModerationHeaders,
+  buildBuiltinAiRequestContext,
+  createBuiltinAiTurnContext,
+  withBuiltinAiProviderAdapter
+} from "../packages/host-kit/js/builtinAiProvider.js";
 import {
   sanitizeAiJsonText,
   isLikelyTruncatedJsonText,
@@ -25,21 +28,21 @@ import {
 import { listMaterialTextureSlots } from "../core/texture/index.js";
 import { classifyTurnIntent } from "../core/ai/sceneChatSession.js";
 
-test("ThreeBox turn context sends the original prompt once, then uses the signed moderation receipt", () => {
-  const context = createThreeBoxTurnContext("turn-1", "raw user prompt");
-  assert.deepEqual(buildThreeBoxRequestContext(context), {
+test("the host adapter sends the original prompt once, then uses the signed moderation receipt", () => {
+  const context = createBuiltinAiTurnContext("turn-1", "raw user prompt");
+  assert.deepEqual(buildBuiltinAiRequestContext(context), {
     protocol_version: 1,
     turn_id: "turn-1",
     original_prompt: { included: true, text: "raw user prompt" },
     moderation: { status: "pending" }
   });
 
-  applyThreeBoxModerationHeaders(context, new Headers({
+  applyBuiltinAiModerationHeaders(context, new Headers({
     "X-ThreeBox-Moderation-Status": "allowed",
     "X-ThreeBox-Moderation-Receipt": "tbm_receipt",
     "X-ThreeBox-Moderation-Prompt-Hash": "prompt-hash"
   }));
-  assert.deepEqual(buildThreeBoxRequestContext(context), {
+  assert.deepEqual(buildBuiltinAiRequestContext(context), {
     protocol_version: 1,
     turn_id: "turn-1",
     original_prompt: { included: false },
@@ -268,9 +271,9 @@ afterEach(() => {
   globalThis.fetch = originalFetch;
 });
 
-test("ThreeBox request context carries only an explicit AI task and thinking preference", () => {
-  const context = createThreeBoxTurnContext("turn-policy", "create a scene");
-  const payload = buildThreeBoxRequestContext(context, {
+test("the built-in host request context carries only an explicit AI task and thinking preference", () => {
+  const context = createBuiltinAiTurnContext("turn-policy", "create a scene");
+  const payload = buildBuiltinAiRequestContext(context, {
     taskKind: "scene_generate",
     thinkingPreference: "max"
   });
@@ -652,15 +655,13 @@ test("requestChatCompletion applies explicit DeepSeek effort and sends built-in 
     thinkingPreference: "high",
     messages: [{ role: "user", content: "x" }]
   });
-  await requestChatCompletion({
-    provider: "threebox-builtin",
-    baseUrl: "https://builtin.example/v1",
+  await requestChatCompletion(withBuiltinAiProviderAdapter({
+    baseUrl: "https://builtin.example",
     apiKey: "test-key",
     thinkingPreference: "max",
     taskKind: "scene_generate",
-    threeBoxTurnContext: createThreeBoxTurnContext("turn-policy", "x"),
     messages: [{ role: "user", content: "x" }]
-  });
+  }, createBuiltinAiTurnContext("turn-policy", "x")));
 
   assert.deepEqual(bodies[0].thinking, { type: "enabled" });
   assert.equal(bodies[0].reasoning_effort, "high");
@@ -703,13 +704,11 @@ test("requestChatCompletion preserves structured built-in moderation errors for 
   });
 
   await assert.rejects(
-    requestChatCompletion({
-      provider: "threebox-builtin",
-      baseUrl: "https://builtin.example/v1",
+    requestChatCompletion(withBuiltinAiProviderAdapter({
+      baseUrl: "https://builtin.example",
       apiKey: "test-key",
-      messages: [{ role: "user", content: "x" }],
-      threeBoxTurnContext: createThreeBoxTurnContext("turn-error", "x")
-    }),
+      messages: [{ role: "user", content: "x" }]
+    }, createBuiltinAiTurnContext("turn-error", "x"))),
     (error) => {
       assert.equal(error.code, "BUILTIN_SAFETY_WARNING");
       assert.equal(error.httpStatus, 422);
@@ -1581,7 +1580,7 @@ test("classifyTurnIntent propagates structured moderation failures to the host U
   await assert.rejects(
     classifyTurnIntent(
       { userPrompt: "try again", history: [{ turnId: "turn-base", summary: "scene" }] },
-      { provider: "threebox-builtin", baseUrl: "https://builtin.example/v1", apiKey: "test-key" }
+      withBuiltinAiProviderAdapter({ baseUrl: "https://builtin.example", apiKey: "test-key" })
     ),
     (error) => {
       assert.equal(error.code, "BUILTIN_DEVICE_PERMANENTLY_BANNED");

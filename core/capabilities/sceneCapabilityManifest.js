@@ -120,10 +120,10 @@ const BUILTIN_CAPABILITIES = Object.freeze({
     render: Object.freeze({ status: "stable", rendererBackends: ["webgl"] }),
     outline: Object.freeze({ status: "stable", rendererBackends: ["webgl"] }),
     output: Object.freeze({ status: "stable", rendererBackends: ["webgl"] }),
-    unrealBloom: Object.freeze({ status: "stable", rendererBackends: ["webgl"], lazy: true, entry: "threejson/postprocessing-webgl" }),
-    fxaa: Object.freeze({ status: "stable", rendererBackends: ["webgl"], lazy: true, entry: "threejson/postprocessing-webgl" }),
-    smaa: Object.freeze({ status: "stable", rendererBackends: ["webgl"], lazy: true, entry: "threejson/postprocessing-webgl" }),
-    shaderPreset: Object.freeze({ status: "stable", rendererBackends: ["webgl"], lazy: true, entry: "threejson/postprocessing-webgl" }),
+    unrealBloom: Object.freeze({ status: "stable", rendererBackends: ["webgl"], lazy: true, asyncRuntime: true, activation: "descriptor", entry: "threejson/postprocessing-webgl" }),
+    fxaa: Object.freeze({ status: "stable", rendererBackends: ["webgl"], lazy: true, asyncRuntime: true, activation: "descriptor", entry: "threejson/postprocessing-webgl" }),
+    smaa: Object.freeze({ status: "stable", rendererBackends: ["webgl"], lazy: true, asyncRuntime: true, activation: "descriptor", entry: "threejson/postprocessing-webgl" }),
+    shaderPreset: Object.freeze({ status: "stable", rendererBackends: ["webgl"], lazy: true, asyncRuntime: true, activation: "descriptor", entry: "threejson/postprocessing-webgl" }),
     bloom: Object.freeze({
       status: "unavailable",
       rendererBackends: ["webgpu"],
@@ -156,16 +156,16 @@ const BUILTIN_CAPABILITIES = Object.freeze({
     line: Object.freeze({ status: "stable" }),
     curve: Object.freeze({ status: "stable" }),
     meshSurface: Object.freeze({ status: "stable" }),
-    textMask: Object.freeze({ status: "unavailable", entry: "threejson/particles-raster" }),
-    imageMask: Object.freeze({ status: "unavailable", entry: "threejson/particles-raster" })
+    textMask: Object.freeze({ status: "stable", lazy: true, asyncRuntime: true, activation: "descriptor", entry: "threejson/particles-raster", browser: true }),
+    imageMask: Object.freeze({ status: "stable", lazy: true, asyncRuntime: true, activation: "descriptor", entry: "threejson/particles-raster", browser: true })
   }),
   controlsTypes: Object.freeze({
     orbit: Object.freeze({ status: "stable" }),
     firstPerson: Object.freeze({ status: "stable" }),
     fly: Object.freeze({ status: "stable" }),
-    map: Object.freeze({ status: "stable", lazy: true }),
-    trackball: Object.freeze({ status: "stable", lazy: true }),
-    arcball: Object.freeze({ status: "stable", lazy: true })
+    map: Object.freeze({ status: "stable", lazy: true, asyncRuntime: true, activation: "descriptor", entry: "threejson/controls-extra" }),
+    trackball: Object.freeze({ status: "stable", lazy: true, asyncRuntime: true, activation: "descriptor", entry: "threejson/controls-extra" }),
+    arcball: Object.freeze({ status: "stable", lazy: true, asyncRuntime: true, activation: "descriptor", entry: "threejson/controls-extra" })
   })
 });
 

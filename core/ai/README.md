@@ -64,6 +64,8 @@ const result = await runSceneTexturePipeline(scene, {
 
 聊天 Provider 支持 `chatgpt`、`deepseek` 与任意 OpenAI-compatible `custom` 端点。常用参数包括 `apiKey`、`model`、`baseUrl`、`temperature`、`maxTokens`、`stream`、`signal`。
 
+产品自有网关通过 `providerAdapter` 注入 `endpoint`、请求体转换、响应观察和错误分类；`requestContext` 只作为不透明状态传给该适配器。core 不识别产品供应商名称、审核字段、专用响应头或额度错误码。
+
 完整生成默认返回一个可直接渲染的场景；真正复杂或供应商明确截断的场景才进入增量构建。场景调整优先使用命令，其次 JSON Patch，完整 JSON 重写仅作为兜底。模型输出 `# done` 或没有剩余工作时立即结束。
 
 ## 入口与依赖
