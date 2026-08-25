@@ -126,15 +126,21 @@ await createJsonScene(payload, {
 
 API and field semantics: [`extensions/physics-rapier/README.md`](../../extensions/physics-rapier/README.md).
 
-### Particle provider (registry path)
+### Optional particle simulation backend
 
-When `PluginHost` is not needed, register at page entry:
+Particle V2 extends simulation through one registry instead of replacing the whole emitter:
 
 ```js
-import "threejson/extensions/particle-nebula"; // registers provider: "nebula"
-```
+import {
+  registerParticleSimulationBackend,
+  registerParticleSimulationLifecycle
+} from "threejson/core";
 
-Particle emitter JSON may set `provider: "nebula"`. Custom providers use `registerParticleEmitterProvider(id, deployer)` (see [`extensions/particle-nebula/`](../../extensions/particle-nebula/index.js) stub).
+registerParticleSimulationBackend("acme-compute", (record, scene, ctx) => {
+  // Build a renderable using the Particle V2 source/emission/particle/simulation/render blocks.
+  // Register update/dispose callbacks with registerParticleSimulationLifecycle(...).
+});
+```
 
 ## Bundled reference implementations
 
@@ -147,7 +153,6 @@ Directory overview: [`extensions/README.md`](../../extensions/README.md).
 | `fps-walk` | `extensions/fps-walk/` | `bootstrapFirstPersonExtensionsFromScene` | [04-03-fps-walk.html](../../examples/html-demo/track-04-interaction/04-03-fps-walk.html) |
 | Rapier first-person | `physics-rapier/firstPersonBridge.js` | `bootstrapRapierFirstPersonFromScene` | [04-05-fps-rapier-collision.html](../../examples/html-demo/track-04-interaction/04-05-fps-rapier-collision.html) |
 | `stat-echarts` | `extensions/stat-echarts/` | `bootstrapFromScene` (with stat domain) | Track 6 `06-04-stat-chart-echarts.html` |
-| `nebula` (provider) | `extensions/particle-nebula/` | `registerParticleEmitterProvider` | see api / json-format particle section |
 
 Tutorial index: [tutorial.md · Track 4](./tutorial.md).
 
@@ -169,7 +174,7 @@ You may copy examples from [`extensions/`](../../extensions/) into e.g. `src/thr
 | mechanism | use when |
 |-----------|----------|
 | `createPluginHost().register` | frame hooks (`beforePhysics`, `afterRender`, …) |
-| `registerParticleEmitterProvider` | particle `provider` field |
+| `registerParticleSimulationBackend` | an optional Particle V2 `simulation.backend` |
 | `registerControlsType` | new `controls.type` |
 | `registerObjTypeDeployer` | new `objType` deploy (closer to domain territory; see [design-principles](./design-principles.md)) |
 

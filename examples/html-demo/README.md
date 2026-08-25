@@ -107,7 +107,7 @@ html-demo 教程 JSON（[`assets/json/tutorial/`](../../assets/json/tutorial/)�
 **例外（数值 intentionally 保持较大或非米制）**：
 
 - [`02-05-scene-background.json`](../../assets/json/tutorial/track-02/02-05-scene-background.json) — 太阳系教学比例（见该 JSON 根级 `remark`）
-- [`02-01-heatmap-wind.json`](../../assets/json/tutorial/track-02/02-01-heatmap-wind.json)、[`02-09-particle-emitter-gpu.json`](../../assets/json/tutorial/track-02/02-09-particle-emitter-gpu.json)、[`02-10-particle-nebula-provider.json`](../../assets/json/tutorial/track-02/02-10-particle-nebula-provider.json) — 大场景粒子 / 热力 / 星云
+- [`02-01-heatmap-wind.json`](../../assets/json/tutorial/track-02/02-01-heatmap-wind.json)、[`02-09-particle-emitter-gpu.json`](../../assets/json/tutorial/track-02/02-09-particle-emitter-gpu.json)、[`02-10-particle-v2-sources.json`](../../assets/json/tutorial/track-02/02-10-particle-v2-sources.json) — 大场景粒子 / 热力 / Particle V2
 - [`04-03-fps-walk.json`](../../assets/json/tutorial/track-04/04-03-fps-walk.json)、[`04-04-fps-player-rig.json`](../../assets/json/tutorial/track-04/04-04-fps-player-rig.json)、[`04-05-fps-rapier-collision.json`](../../assets/json/tutorial/track-04/04-05-fps-rapier-collision.json) — FPS 漫游尺度
 - [`roomShow.json`](../../assets/json/roomShow.json)、[`portShow.json`](../../assets/json/portShow.json) 及对应业务页 — 不随 tutorial 批量缩放
 

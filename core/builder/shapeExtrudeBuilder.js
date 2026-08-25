@@ -12,6 +12,7 @@ import {
   validateShapeDefinition
 } from "./shapeGeometryUtil.js";
 import { applyParallelToOrRotation } from "./shapeTransformUtil.js";
+import { createMaterialFromDescriptor } from "./material/materialFactory.js";
 
 function hasValue(value) {
   return value !== undefined && value !== null;
@@ -19,15 +20,9 @@ function hasValue(value) {
 
 function buildExtrudeMaterial(record) {
   const materialInfo = record?.material && typeof record.material === "object" ? record.material : {};
-  const color = hasValue(materialInfo.color) ? materialInfo.color : "#dcdfe6";
-  const opacity = Number(hasValue(materialInfo.opacity) ? materialInfo.opacity : 1);
-  const transparent = Boolean(hasValue(materialInfo.transparent) ? materialInfo.transparent : opacity < 1);
-  const mat = new THREE.MeshStandardMaterial({
-    color,
-    transparent,
-    opacity,
-    metalness: Number(hasValue(materialInfo.metalness) ? materialInfo.metalness : 0.1),
-    roughness: Number(hasValue(materialInfo.roughness) ? materialInfo.roughness : 0.6)
+  const mat = createMaterialFromDescriptor(materialInfo, {
+    fallbackType: "standard",
+    defaultColor: "#dcdfe6"
   });
   trackDisposableResource(mat);
   return mat;

@@ -99,7 +99,7 @@ function compareStructural(zhEntry, enEntry, ctx, errors) {
 
 function validatePaths(entry, ctx, warnings) {
   if (typeof entry.path === "string" && entry.path.startsWith("./")) {
-    const abs = path.join(ROOT, entry.path.replace(/^\.\//, ""));
+    const abs = path.join(CATALOG_DIR, entry.path.replace(/^\.\//, ""));
     if (!fs.existsSync(abs)) {
       warnings.push(`${ctx}: path not found: ${entry.path}`);
     }

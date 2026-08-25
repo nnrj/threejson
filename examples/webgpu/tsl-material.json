@@ -1,0 +1,59 @@
+{
+  "threeJsonId": "webgpu-tsl-material",
+  "sceneConfig": {
+    "scene": { "background": "#070b16" },
+    "renderer": { "backend": "webgpu", "compatibilityPolicy": "error", "antialias": true, "toneMapping": "aces", "exposure": 1.1 },
+    "camera": { "fov": 52, "near": 0.1, "far": 1000, "position": { "x": 35, "y": 28, "z": 60 } },
+    "controls": { "target": { "x": 0, "y": 3, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "intensity": 0.45 },
+      { "type": "directional", "intensity": 2, "position": { "x": 30, "y": 45, "z": 25 } }
+    ],
+    "renderLoop": { "updateAnimations": true }
+  },
+  "objectList": [
+    {
+      "threeJsonId": "preset-cube",
+      "objType": "box",
+      "geometry": { "width": 18, "height": 18, "depth": 18 },
+      "material": {
+        "type": "tsl",
+        "base": "standard",
+        "metalness": 0.3,
+        "roughness": 0.35,
+        "tsl": { "kind": "preset", "preset": "pulse", "params": { "color": "#38bdf8", "speed": 2.4 } }
+      },
+      "position": { "x": -15, "y": 6, "z": 0 },
+      "animations": [{ "type": "rotate", "axis": "y", "speed": 0.35 }]
+    },
+    {
+      "threeJsonId": "graph-sphere",
+      "objType": "sphere",
+      "geometry": { "radius": 11, "widthSegments": 48, "heightSegments": 32 },
+      "material": {
+        "type": "tsl",
+        "base": "physical",
+        "roughness": 0.3,
+        "clearcoat": 0.6,
+        "tsl": {
+          "kind": "graph",
+          "source": {
+            "inline": {
+              "graphVersion": 1,
+              "nodes": [
+                { "id": "uv", "type": "uv" },
+                { "id": "uvY", "type": "swizzle", "input": "uv", "components": "y" },
+                { "id": "cold", "type": "color", "value": "#4338ca" },
+                { "id": "hot", "type": "color", "value": "#fb7185" },
+                { "id": "gradient", "type": "mix", "a": "cold", "b": "hot", "factor": "uvY" }
+              ],
+              "outputs": { "color": "gradient" }
+            }
+          }
+        }
+      },
+      "position": { "x": 16, "y": 6, "z": 0 }
+    },
+    { "objType": "pass", "passType": "bloom", "strength": 0.55, "radius": 0.2, "threshold": 0.75 }
+  ]
+}

@@ -1,4 +1,5 @@
 import { JSON_ORIGIN_CONFIG } from "./sceneJsonOrigin.js";
+import { Vector3 } from "three";
 
 /**
  * Extract sceneConfig (camera, controls, lights) from runtime scene / target.
@@ -51,8 +52,32 @@ export function extractControlsConfigFromRuntime(target) {
     }
     : { x: 0, y: 0, z: 0 };
   return {
+    ...(controls.threeJsonControlsConfig && typeof controls.threeJsonControlsConfig === "object"
+      ? controls.threeJsonControlsConfig
+      : {}),
+    type: controls.threeJsonControlsKind || controls.threeJsonControlsConfig?.type || "orbit",
     target: targetVec
   };
+}
+
+/** Preserve constructor-only renderer choices as well as live mutable values. */
+export function extractRendererConfigFromRuntime(target) {
+  const renderer = target?.renderer;
+  if (!renderer || typeof renderer !== "object") return null;
+  const saved = renderer.userData?.threeJsonRendererConfig;
+  const result = saved && typeof saved === "object" ? { ...saved } : {};
+  result.backend = renderer.__threeJsonBackend || result.backend || "webgl";
+  if (Number.isInteger(renderer.toneMapping)) result.toneMapping = renderer.toneMapping;
+  if (Number.isFinite(renderer.toneMappingExposure)) result.toneMappingExposure = renderer.toneMappingExposure;
+  if (renderer.outputColorSpace != null) result.outputColorSpace = renderer.outputColorSpace;
+  if (renderer.shadowMap) {
+    result.shadowMap = {
+      ...(result.shadowMap && typeof result.shadowMap === "object" ? result.shadowMap : {}),
+      enabled: Boolean(renderer.shadowMap.enabled),
+      type: renderer.shadowMap.type
+    };
+  }
+  return result;
 }
 
 function classifyLightType(light) {
@@ -73,6 +98,9 @@ function classifyLightType(light) {
   }
   if (light.isSpotLight) {
     return "spot";
+  }
+  if (light.isRectAreaLight) {
+    return "rectarea";
   }
   return "";
 }
@@ -145,6 +173,17 @@ export function extractLightsConfigFromScene(scene) {
         };
       }
     }
+    if (type === "rectarea") {
+      entry.width = safeNum(obj.width, 10);
+      entry.height = safeNum(obj.height, 10);
+      const direction = new Vector3(0, 0, -1);
+      obj.getWorldDirection?.(direction);
+      entry.target = {
+        x: safeNum(obj.position?.x, 0) + safeNum(direction.x, 0),
+        y: safeNum(obj.position?.y, 0) + safeNum(direction.y, 0),
+        z: safeNum(obj.position?.z, 0) + safeNum(direction.z, -1)
+      };
+    }
     out.push(entry);
   });
   return out;
@@ -158,6 +197,7 @@ export function extractLightsConfigFromScene(scene) {
 export function applyRuntimeSceneConfigToPayload(payload, target, scene) {
   const cameraConfig = extractCameraConfigFromRuntime(target, scene);
   const controlsConfig = extractControlsConfigFromRuntime(target);
+  const rendererConfig = extractRendererConfigFromRuntime(target);
   const lightsConfig = extractLightsConfigFromScene(scene);
   payload.sceneConfig = payload.sceneConfig && typeof payload.sceneConfig === "object"
     ? payload.sceneConfig
@@ -185,6 +225,12 @@ export function applyRuntimeSceneConfigToPayload(payload, target, scene) {
     payload.sceneConfig.lights = [];
   } else {
     delete payload.sceneConfig.lights;
+  }
+  if (rendererConfig) {
+    payload.sceneConfig.renderer = {
+      ...rendererConfig,
+      jsonOrigin: JSON_ORIGIN_CONFIG
+    };
   }
 }
 

@@ -419,10 +419,12 @@ import "threejson/domains/device";
 import "threejson/domains/nature";
 ```
 
-扩展示例：
+可选能力示例：
 
 ```js
-import "threejson/extensions/particle-nebula";
+import "threejson/controls-extra";      // Map / Trackball / Arcball
+import "threejson/particles-raster";   // textMask / imageMask 粒子来源
+import "threejson/webgpu";             // 显式启用 WebGPU/TSL 预览
 ```
 
 domain JSON 通常使用：

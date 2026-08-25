@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThreeJSON Tutorial · Particle V2 sources</title>
+  <link rel="icon" href="../../../assets/img/favicon.ico" type="image/x-icon">
+  <script type="importmap">
+    {"imports":{
+      "threejson":"../../../builtins/full.js",
+      "threejson/core":"../../../core/index.js",
+      "three":"https://esm.sh/three@0.184.0",
+      "three/examples/jsm/":"https://esm.sh/three@0.184.0/examples/jsm/",
+      "@tweenjs/tween.js":"https://esm.sh/@tweenjs/tween.js@25.0.0",
+      "html2canvas-pro":"https://esm.sh/html2canvas-pro@2.0.4",
+      "gifuct-js":"https://esm.sh/gifuct-js@2.1.2",
+      "three-mesh-bvh":"https://esm.sh/three-mesh-bvh@0.9.10?deps=three@0.184.0",
+      "three-bvh-csg":"https://esm.sh/three-bvh-csg@0.0.18?deps=three@0.184.0,three-mesh-bvh@0.9.10"
+    }}
+  </script>
+  <style>
+    html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#080d1b;font-family:Arial,"Microsoft YaHei",sans-serif}
+    canvas{display:block;width:100%;height:100%}
+    #mask{position:fixed;inset:0;display:grid;place-items:center;color:#fff;background:#080d1b;z-index:2}
+    #hint{position:fixed;left:12px;bottom:12px;padding:9px 13px;color:#dcecff;background:#101727dd;border:1px solid #ffffff24;border-radius:9px;font:13px/1.55 Arial;z-index:3}
+    code{color:#79dfff}
+  </style>
+</head>
+<body>
+  <canvas id="canvas">需要 WebGL</canvas>
+  <div id="mask">加载 Particle V2…</div>
+  <div id="hint">Particle V2：<code>shell</code>、<code>curve</code>、烟火 burst；均使用可复现 seed。</div>
+  <script type="module">
+    import { createJsonScene } from "threejson/core";
+    const canvas=document.getElementById("canvas");const mask=document.getElementById("mask");let runtime;
+    try{
+      const response=await fetch("../../../assets/json/tutorial/track-02/02-10-particle-v2-sources.json");
+      if(!response.ok)throw new Error(`HTTP ${response.status}`);
+      const payload=await response.json();payload.canvasWidth=innerWidth;payload.canvasHeight=innerHeight;
+      runtime=await createJsonScene(payload,{canvas,assetsBase:"../../../assets",resetScene:true});runtime.start();mask.remove();
+      addEventListener("resize",()=>runtime.resize?.(innerWidth,innerHeight));
+      addEventListener("beforeunload",()=>runtime.dispose?.());
+    }catch(error){console.error(error);mask.textContent=`加载失败：${error.message}`;}
+  </script>
+</body>
+</html>

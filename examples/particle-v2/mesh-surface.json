@@ -1,0 +1,27 @@
+{
+  "threeJsonId": "particle-v2-mesh-surface",
+  "sceneConfig": {
+    "scene": { "background": "#090b12" },
+    "camera": { "fov": 50, "near": 0.1, "far": 1000, "position": { "x": 45, "y": 35, "z": 70 } },
+    "controls": { "target": { "x": 0, "y": 0, "z": 0 } },
+    "lights": [{ "type": "ambient", "intensity": 0.5 }, { "type": "directional", "intensity": 1, "position": { "x": 30, "y": 50, "z": 30 } }],
+    "renderLoop": { "updateAnimations": true }
+  },
+  "objectList": [
+    {
+      "threeJsonId": "surface-source",
+      "objType": "torus",
+      "geometry": { "radius": 18, "tube": 5, "tubularSegments": 96, "radialSegments": 16 },
+      "material": { "type": "physical", "color": "#172554", "roughness": 0.5, "metalness": 0.2, "transparent": true, "opacity": 0.22 }
+    },
+    {
+      "threeJsonId": "surface-particles",
+      "objType": "particleEmitter",
+      "source": { "type": "meshSurface", "threeJsonId": "surface-source" },
+      "emission": { "mode": "static", "count": 6500, "seed": 501 },
+      "particle": { "lifetime": 0, "sizeOverLife": [1.1, 2.4, 1.1], "colorOverLife": ["#22d3ee", "#ffffff", "#6366f1"] },
+      "simulation": { "backend": "cpu", "noise": { "strength": 0.01, "frequency": 1.5 } },
+      "render": { "type": "points", "size": 1.6, "opacity": 0.9, "blending": "additive", "depthWrite": false }
+    }
+  ]
+}

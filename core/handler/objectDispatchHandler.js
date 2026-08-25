@@ -29,6 +29,7 @@ import { deployInfoPanel } from "../builder/infoPanelBuilder.js";
 import { createText, createTextAsync } from "../builder/textBuilder.js";
 import { deploySceneAudio } from "../builder/audioBuilder.js";
 import { deployParticleEmitter } from "../builder/particle/particleEmitterBuilder.js";
+import { deployLod } from "../builder/lodBuilder.js";
 import {
   deployNativeObjectRecordWithFallback
 } from "./nativeObjectDispatch.js";
@@ -290,6 +291,9 @@ function deployObjectRecord(targetRoot, record, ctx = {}) {
     }
     deployParticleEmitter(record, targetRoot, ctx);
     return;
+  }
+  if (objType === "lod") {
+    return deployLod(record, targetRoot, ctx, deployObjectRecord);
   }
   if (objType === "plane") {
     createPlane(record, targetRoot);

@@ -267,8 +267,11 @@ test("evaluateCapabilityFit accepts particleEmitter for particle prompt", () => 
     objectList: [
       {
         objType: "particleEmitter",
-        simulation: "cpu",
-        material: { color: "#ffffff", size: 2 },
+        source: { type: "box", width: 10, height: 4, depth: 10 },
+        emission: { mode: "static", count: 100, seed: 1 },
+        particle: { lifetime: 0 },
+        simulation: { backend: "cpu" },
+        render: { color: "#ffffff", size: 2 },
         position: { x: 0, y: 10, z: 0 }
       }
     ]

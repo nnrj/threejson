@@ -15,6 +15,8 @@ import { createInfoPanelDeployStore } from "../builder/infoPanelBuilder.js";
 import { createAudioSessionStore } from "../builder/audioBuilder.js";
 import { createPointsMotionStore } from "../builder/pointsMotion.js";
 import { createParticleGpuComputeStore } from "../builder/particle/particleGpuCompute.js";
+import { createParticleCpuSimulationStore } from "../builder/particle/particleCpuSimulation.js";
+import { createParticleSimulationExtensionStore } from "../builder/particle/particleSimulationBackendRegistry.js";
 import { createPlaneScrollMotionStore } from "../builder/planeScrollMotion.js";
 import { createShaderMotionStore } from "../builder/shader/shaderMotion.js";
 import { createTweenGroupStore } from "../compat/adapters/tween.js";
@@ -94,6 +96,8 @@ const DISPOSE_ORDER = [
   "animationMixer",
   "animationStateMachine",
   "pointsMotion",
+  "particleCpuSimulation",
+  "particleSimulationExtension",
   "particleGpuCompute",
   "planeScrollMotion",
   "shaderMotion",
@@ -176,6 +180,8 @@ function createRuntimeContext() {
   ctx.infoPanelDeploy = createInfoPanelDeployStore();
   ctx.audioSession = createAudioSessionStore();
   ctx.pointsMotion = createPointsMotionStore();
+  ctx.particleCpuSimulation = createParticleCpuSimulationStore();
+  ctx.particleSimulationExtension = createParticleSimulationExtensionStore();
   ctx.particleGpuCompute = createParticleGpuComputeStore();
   ctx.planeScrollMotion = createPlaneScrollMotionStore();
   ctx.shaderMotion = createShaderMotionStore();

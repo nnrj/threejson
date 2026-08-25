@@ -1,5 +1,5 @@
 /**
- * weather domain presets → core `points` records (merge logic unit-testable).
+ * Weather domain presets expressed directly with the Particle V2 contract.
  */
 
 import { assetUrl } from "../../core/util/assetsBase.js";
@@ -8,19 +8,19 @@ import { WEATHER_PARTICLE_DEFAULT_OPACITY } from "./weatherPalette.js";
 const SKIP_MERGE_KEYS = new Set(["domain", "handler", "objType", "options", "payload", "items"]);
 
 /** @type {Record<string, object>} */
-export const WEATHER_HANDLER_PRESETS = {
+export const WEATHER_PARTICLE_PRESETS = {
   rain: {
+    objType: "particleEmitter",
     name: "weather-rain",
-    count: 550,
-    bounds: { width: 200, height: 70, depth: 200 },
-    position: { x: 0, y: 48, z: 0 },
-    motion: {
-      type: "drift",
-      speed: 14,
-      direction: { x: 0, y: -1, z: 0 },
-      wrap: true
+    source: { type: "box", width: 200, height: 70, depth: 200 },
+    emission: { mode: "continuous", count: 550, rate: 110, loop: true, seed: 7301 },
+    particle: { lifetime: 5, velocity: { x: 0, y: -14, z: 0 } },
+    simulation: {
+      backend: "cpu",
+      boundary: { type: "wrap", width: 200, height: 70, depth: 200 }
     },
-    material: {
+    position: { x: 0, y: 48, z: 0 },
+    render: {
       color: "#9ec8ff",
       size: 2.2,
       sizeAttenuation: true,
@@ -31,17 +31,18 @@ export const WEATHER_HANDLER_PRESETS = {
     }
   },
   snow: {
+    objType: "particleEmitter",
     name: "weather-snow",
-    count: 400,
-    bounds: { width: 220, height: 100, depth: 220 },
-    position: { x: 0, y: 55, z: 0 },
-    motion: {
-      type: "drift",
-      speed: 4,
-      direction: { x: 0.08, y: -1, z: 0.05 },
-      wrap: true
+    source: { type: "box", width: 220, height: 100, depth: 220 },
+    emission: { mode: "continuous", count: 400, rate: 65, loop: true, seed: 7302 },
+    particle: { lifetime: 7, velocity: { x: 0.32, y: -4, z: 0.2 } },
+    simulation: {
+      backend: "cpu",
+      noise: { strength: 0.12, frequency: 1.1 },
+      boundary: { type: "wrap", width: 220, height: 100, depth: 220 }
     },
-    material: {
+    position: { x: 0, y: 55, z: 0 },
+    render: {
       color: "#ffffff",
       size: 4.5,
       sizeAttenuation: true,
@@ -52,17 +53,19 @@ export const WEATHER_HANDLER_PRESETS = {
     }
   },
   sparkles: {
+    objType: "particleEmitter",
     name: "weather-sparkles",
-    count: 900,
-    bounds: { width: 160, height: 80, depth: 160 },
-    position: { x: 0, y: 35, z: 0 },
-    motion: {
-      type: "twinkle",
-      speed: 2.2,
-      minOpacity: 0.2,
-      maxOpacity: 1
+    source: { type: "box", width: 160, height: 80, depth: 160 },
+    emission: { mode: "continuous", count: 900, rate: 150, loop: true, seed: 7303 },
+    particle: {
+      lifetime: 6,
+      velocity: { x: 0, y: 0, z: 0 },
+      opacityOverLife: [0.2, 1, 0.2],
+      sizeOverLife: [1.5, 3.5, 1.5]
     },
-    material: {
+    simulation: { backend: "cpu", boundary: { type: "none" } },
+    position: { x: 0, y: 35, z: 0 },
+    render: {
       color: "#ffdd88",
       size: 3,
       sizeAttenuation: true,
@@ -73,26 +76,30 @@ export const WEATHER_HANDLER_PRESETS = {
     }
   },
   embers: {
+    objType: "particleEmitter",
     name: "weather-embers",
-    count: 180,
-    bounds: { width: 120, height: 100, depth: 120 },
+    source: { type: "disc", radius: 14 },
+    emission: { mode: "continuous", count: 180, rate: 28, loop: true, seed: 7304 },
+    particle: {
+      lifetime: { min: 5, max: 8 },
+      velocity: { min: { x: -0.4, y: 4, z: -0.2 }, max: { x: 0.4, y: 7, z: 0.5 } },
+      sizeOverLife: [12, 7, 1],
+      opacityOverLife: [0, 0.9, 0]
+    },
+    simulation: {
+      backend: "cpu",
+      noise: { strength: 0.35, frequency: 1.4 },
+      boundary: { type: "kill", width: 120, height: 100, depth: 120 }
+    },
     position: { x: 40, y: 25, z: -20 },
-    motion: [
-      {
-        type: "drift",
-        speed: 6,
-        direction: { x: 0, y: 1, z: 0.15 },
-        wrap: true
-      },
-      { type: "scrollUv", speed: 1.4 }
-    ],
-    material: {
+    render: {
+      type: "billboard",
       color: "#ffaa55",
       size: 14,
       sizeAttenuation: true,
       transparent: true,
       opacity: WEATHER_PARTICLE_DEFAULT_OPACITY,
-      textureUrl: assetUrl("textures/environment/nature/weather/wind_hot_left.png"),
+      sprite: assetUrl("textures/environment/nature/weather/wind_hot_left.png"),
       blending: "additive",
       depthWrite: false
     }
@@ -128,9 +135,9 @@ function mergePlain(target, source) {
  * @param {object} [overrides]
  * @returns {object|null}
  */
-export function buildWeatherPointsRecord(handler, overrides = {}) {
+export function buildWeatherParticleEmitterRecord(handler, overrides = {}) {
   const key = typeof handler === "string" ? handler.trim().toLowerCase() : "";
-  const preset = WEATHER_HANDLER_PRESETS[key];
+  const preset = WEATHER_PARTICLE_PRESETS[key];
   if (!preset) {
     return null;
   }
@@ -145,5 +152,5 @@ export function buildWeatherPointsRecord(handler, overrides = {}) {
  */
 export function isWeatherHandler(handler) {
   const key = typeof handler === "string" ? handler.trim().toLowerCase() : "";
-  return Boolean(WEATHER_HANDLER_PRESETS[key]);
+  return Boolean(WEATHER_PARTICLE_PRESETS[key]);
 }

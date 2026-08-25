@@ -141,6 +141,38 @@ function promoteToStandard(target) {
   return material;
 }
 
+function promoteToPhysical(target) {
+  const old = target.material;
+  const material = new THREE.MeshPhysicalMaterial({
+    color: old.color?.clone?.() || new THREE.Color(0xffffff),
+    opacity: old.opacity,
+    transparent: old.transparent,
+    side: old.side,
+    depthTest: old.depthTest,
+    depthWrite: old.depthWrite,
+    visible: old.visible,
+    vertexColors: old.vertexColors,
+    map: old.map || null,
+    alphaMap: old.alphaMap || null,
+    aoMap: old.aoMap || null,
+    bumpMap: old.bumpMap || null,
+    displacementMap: old.displacementMap || null,
+    emissive: old.emissive?.clone?.() || new THREE.Color(0x000000),
+    emissiveMap: old.emissiveMap || null,
+    emissiveIntensity: old.emissiveIntensity ?? 1,
+    normalMap: old.normalMap || null,
+    roughnessMap: old.roughnessMap || null,
+    metalnessMap: old.metalnessMap || null,
+    roughness: old.roughness ?? 1,
+    metalness: old.metalness ?? 0
+  });
+  material.name = old.name;
+  material.userData = { ...(old.userData || {}) };
+  trackDisposableResource(material);
+  replaceTargetMaterial(target, material);
+  return material;
+}
+
 function replaceTargetMaterial(target, material) {
   if (Array.isArray(target.object.material)) {
     const next = target.object.material.slice();
@@ -162,9 +194,29 @@ const STANDARD_MATERIAL_SLOTS = new Set([
   "displacement"
 ]);
 
+const PHYSICAL_MATERIAL_SLOTS = new Set([
+  "clearcoat",
+  "clearcoatRoughness",
+  "clearcoatNormal",
+  "transmission",
+  "thickness",
+  "sheenColor",
+  "sheenRoughness",
+  "specularColor",
+  "specularIntensity",
+  "anisotropy",
+  "iridescence",
+  "iridescenceThickness"
+]);
+
 function needsStandardMaterial(maps, material) {
   if (material?.isMeshStandardMaterial || material?.isMeshPhysicalMaterial) return false;
   return Object.keys(maps || {}).some((slot) => STANDARD_MATERIAL_SLOTS.has(slot));
+}
+
+function needsPhysicalMaterial(maps, material) {
+  if (material?.isMeshPhysicalMaterial) return false;
+  return Object.keys(maps || {}).some((slot) => PHYSICAL_MATERIAL_SLOTS.has(slot));
 }
 
 /**
@@ -230,9 +282,11 @@ export async function applyTextureAssignmentAsync(runtime, assignment, options =
   try {
     for (const target of targets) {
       const originalMaterial = target.material;
-      const promoted = needsStandardMaterial(loaded, target.material)
-        ? promoteToStandard(target)
-        : null;
+      const promoted = needsPhysicalMaterial(loaded, target.material)
+        ? promoteToPhysical(target)
+        : needsStandardMaterial(loaded, target.material)
+          ? promoteToStandard(target)
+          : null;
       const mapsBefore = {};
       const transparentBefore = target.material.transparent;
       for (const [slot, texture] of Object.entries(loaded)) {
@@ -253,8 +307,10 @@ export async function applyTextureAssignmentAsync(runtime, assignment, options =
       const field = assignment.slotRecords?.[slot]?.descriptorField || definition?.descriptorField;
       if (field && loaded[slot]) materialDescriptor[field] = authoritativeUrl;
     }
-    if (Object.keys(loaded).some((slot) => STANDARD_MATERIAL_SLOTS.has(slot))
-      && materialDescriptor.type !== "standard") {
+    if (Object.keys(loaded).some((slot) => PHYSICAL_MATERIAL_SLOTS.has(slot))) {
+      materialDescriptor.type = "physical";
+    } else if (Object.keys(loaded).some((slot) => STANDARD_MATERIAL_SLOTS.has(slot))
+      && materialDescriptor.type !== "standard" && materialDescriptor.type !== "physical") {
       materialDescriptor.type = "standard";
     }
     if (loaded.opacity) materialDescriptor.transparent = true;

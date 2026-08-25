@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ThreeJSON WebGPU / TSL preview</title>
+  <script type="importmap">
+    {"imports":{
+      "three":"https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.module.js",
+      "three/webgpu":"https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.webgpu.js",
+      "three/tsl":"https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.tsl.js",
+      "three/examples/jsm/":"https://cdn.jsdelivr.net/npm/three@0.184.0/examples/jsm/",
+      "@tweenjs/tween.js":"https://esm.sh/@tweenjs/tween.js@25.0.0",
+      "html2canvas-pro":"https://esm.sh/html2canvas-pro@2.0.4",
+      "gifuct-js":"https://esm.sh/gifuct-js@2.1.2",
+      "three-mesh-bvh":"https://esm.sh/three-mesh-bvh@0.9.10?deps=three@0.184.0",
+      "three-bvh-csg":"https://esm.sh/three-bvh-csg@0.0.18?deps=three@0.184.0,three-mesh-bvh@0.9.10"
+    }}
+  </script>
+  <style>
+    html,body,canvas{width:100%;height:100%;margin:0;display:block}body{overflow:hidden;background:#030712;color:#e5e7eb;font:14px system-ui}#status{position:fixed;left:12px;top:12px;max-width:min(560px,calc(100vw - 48px));padding:10px 13px;border:1px solid #ffffff26;border-radius:9px;background:#0f172acc;white-space:pre-wrap}#switch{position:fixed;right:12px;top:12px;padding:8px 12px;border:1px solid #ffffff35;border-radius:8px;background:#172033;color:inherit;text-decoration:none}
+  </style>
+</head>
+<body>
+  <canvas id="scene"></canvas>
+  <div id="status">Initializing explicit WebGPU preview…</div>
+  <a id="switch" href="?scene=particles">Switch example</a>
+  <script type="module">
+    import "../../webgpu/index.js";
+    import { createJsonScene } from "../../core/index.js";
+
+    const status = document.querySelector("#status");
+    const canvas = document.querySelector("#scene");
+    const query = new URLSearchParams(location.search);
+    const particles = query.get("scene") === "particles";
+    const forceWebGL = query.get("forceWebGL") === "1";
+    document.querySelector("#switch").href = particles ? "./" : "?scene=particles";
+    document.querySelector("#switch").textContent = particles ? "Show TSL materials" : "Show WebGPU particles";
+    try {
+      const response = await fetch(particles ? "./webgpu-particles.json" : "./tsl-material.json");
+      if (!response.ok) throw new Error(`Scene request failed: HTTP ${response.status}`);
+      const payload = await response.json();
+      payload.canvasWidth = innerWidth;
+      payload.canvasHeight = innerHeight;
+      if (forceWebGL) payload.sceneConfig.renderer.forceWebGL = true;
+      const runtime = await createJsonScene(payload, { canvas, resetScene: true });
+      runtime.start();
+      const particleCount = payload.objectList?.find((record) => record?.objType === "particleEmitter")?.emission?.count;
+      status.textContent = `backend: webgpu${forceWebGL ? " (forced WebGL2 fallback)" : ""}\nThree.js r184 adapter\n${particles ? `${Number(particleCount || 0).toLocaleString()} compute particles` : "TSL preset + graph + bloom"}`;
+      addEventListener("resize", () => runtime.resize?.({ width: innerWidth, height: innerHeight }));
+      addEventListener("beforeunload", () => runtime.dispose?.());
+    } catch (error) {
+      console.error(error);
+      status.textContent = `${error.code || "ERROR"}: ${error.message}`;
+    }
+  </script>
+</body>
+</html>

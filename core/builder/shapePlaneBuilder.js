@@ -12,6 +12,7 @@ import {
   validateShapeDefinition
 } from "./shapeGeometryUtil.js";
 import { applyParallelToOrRotation } from "./shapeTransformUtil.js";
+import { createMaterialFromDescriptor } from "./material/materialFactory.js";
 
 function hasValue(value) {
   return value !== undefined && value !== null;
@@ -19,29 +20,9 @@ function hasValue(value) {
 
 function buildShapePlaneMaterial(record) {
   const materialInfo = record?.material && typeof record.material === "object" ? record.material : {};
-  const type = typeof materialInfo.type === "string" ? materialInfo.type.trim().toLowerCase() : "standard";
-  const color = hasValue(materialInfo.color) ? materialInfo.color : "#cccccc";
-  const opacity = Number(hasValue(materialInfo.opacity) ? materialInfo.opacity : 1);
-  const transparent = Boolean(hasValue(materialInfo.transparent) ? materialInfo.transparent : opacity < 1);
-  let side = THREE.FrontSide;
-  const sideRaw = typeof materialInfo.side === "string" ? materialInfo.side.trim().toLowerCase() : "double";
-  if (sideRaw === "double") {
-    side = THREE.DoubleSide;
-  } else if (sideRaw === "back") {
-    side = THREE.BackSide;
-  }
-  if (type === "basic") {
-    const mat = new THREE.MeshBasicMaterial({ color, transparent, opacity, side });
-    trackDisposableResource(mat);
-    return mat;
-  }
-  const mat = new THREE.MeshStandardMaterial({
-    color,
-    transparent,
-    opacity,
-    side,
-    metalness: Number(hasValue(materialInfo.metalness) ? materialInfo.metalness : 0.1),
-    roughness: Number(hasValue(materialInfo.roughness) ? materialInfo.roughness : 0.6)
+  const mat = createMaterialFromDescriptor({ side: "double", ...materialInfo }, {
+    fallbackType: "standard",
+    defaultColor: "#cccccc"
   });
   trackDisposableResource(mat);
   return mat;

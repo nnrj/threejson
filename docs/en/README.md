@@ -17,6 +17,7 @@ This handbook is written for library callers. It focuses on the scene pipeline u
 - [Tools and host apps](./tools.md): `sysConfig` / `sceneConfig` boundaries (editor, player, etc.).
 - [Runtime object mutation quickref](./runtime-object-mutation-quickref.md): `applyObjectChange` / partial / snapshot / redeploy.
 - [Dynamic runtime batches](./dynamic-runtime-batches.md): slot-backed GPU buffers, virtual runtime entities, frame-coalesced commits, and opt-in demand rendering.
+- [Capabilities, Particle V2, and WebGPU/TSL](./capabilities-webgpu-particles.md): machine-readable capability truth, Physical materials, particles, optional WebGPU, TSL security, LOD, curves, and morph targets.
 - [Development](./development.md): Node version, tests, AI verification, sync/async API naming.
 - [Terminology glossary](./glossary.md): key concept pairs and short definitions (complements [language policy](./development.md#language-and-documentation-policy)).
 - [Scope](./scope.md): core vs extensions and canonical vs runtime overlays.

@@ -16,6 +16,13 @@ test("createControlsFromDescriptor returns null when disabled", () => {
   assert.equal(createControlsFromDescriptor(null, null, { enabled: false }), null);
 });
 
+test("unknown controls report a structured error instead of changing navigation semantics", () => {
+  assert.throws(
+    () => createControlsFromDescriptor(null, null, { type: "not-registered" }),
+    (error) => error?.code === "E_CONTROLS_TYPE_UNAVAILABLE"
+  );
+});
+
 test("applyControlsConfig does not require target for firstPerson", () => {
   const fp = {
     threeJsonControlsKind: "firstPerson",

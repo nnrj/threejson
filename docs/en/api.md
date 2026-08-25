@@ -416,10 +416,12 @@ import "threejson/domains/device";
 import "threejson/domains/nature";
 ```
 
-Extension example:
+Optional capability examples:
 
 ```js
-import "threejson/extensions/particle-nebula";
+import "threejson/controls-extra";      // Map / Trackball / Arcball
+import "threejson/particles-raster";   // textMask / imageMask particle sources
+import "threejson/webgpu";             // explicit WebGPU/TSL preview
 ```
 
 Domain JSON commonly uses:

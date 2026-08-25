@@ -9,6 +9,7 @@ import { setUserDataObjJson } from "../handler/objectDescriptorAttach.js";
 import { applyVisibilityFromDescriptor } from "../util/util.js";
 import { validateBufferMeshStats } from "./bufferMeshLimits.js";
 import { applyParallelToOrRotation } from "./shapeTransformUtil.js";
+import { createMaterialFromDescriptor } from "./material/materialFactory.js";
 
 function hasValue(value) {
   return value !== undefined && value !== null;
@@ -54,39 +55,11 @@ function parseIndices(raw) {
   return arr.length >= 3 && arr.length % 3 === 0 ? new Uint32Array(arr) : null;
 }
 
-function resolveMaterialSide(materialInfo) {
-  const side = typeof materialInfo?.side === "string" ? materialInfo.side.trim().toLowerCase() : "";
-  if (side === "front") {
-    return THREE.FrontSide;
-  }
-  if (side === "back") {
-    return THREE.BackSide;
-  }
-  if (side === "double") {
-    return THREE.DoubleSide;
-  }
-  return THREE.FrontSide;
-}
-
 function buildMeshMaterial(record) {
   const materialInfo = record?.material && typeof record.material === "object" ? record.material : {};
-  const type = typeof materialInfo.type === "string" ? materialInfo.type.trim().toLowerCase() : "standard";
-  const color = hasValue(materialInfo.color) ? materialInfo.color : "#cccccc";
-  const opacity = Number(hasValue(materialInfo.opacity) ? materialInfo.opacity : 1);
-  const transparent = Boolean(hasValue(materialInfo.transparent) ? materialInfo.transparent : opacity < 1);
-  const side = resolveMaterialSide(materialInfo);
-  if (type === "basic") {
-    const mat = new THREE.MeshBasicMaterial({ color, transparent, opacity, side });
-    trackDisposableResource(mat);
-    return mat;
-  }
-  const mat = new THREE.MeshStandardMaterial({
-    color,
-    transparent,
-    opacity,
-    side,
-    metalness: Number(hasValue(materialInfo.metalness) ? materialInfo.metalness : 0.1),
-    roughness: Number(hasValue(materialInfo.roughness) ? materialInfo.roughness : 0.6)
+  const mat = createMaterialFromDescriptor(materialInfo, {
+    fallbackType: "standard",
+    defaultColor: "#cccccc"
   });
   trackDisposableResource(mat);
   return mat;

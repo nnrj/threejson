@@ -5,6 +5,7 @@
  * runnable examples stay in docs/ and assets/json/tutorial/.
  */
 import { THREE_JSON_DOMAIN_CAPABILITY_INDEX } from "./sceneDomainCapability.js";
+import { getSceneCapabilityManifest } from "../capabilities/sceneCapabilityManifest.js";
 
 const THREE_JSON_AGENT_CAPABILITY_INDEX_BASE = `
 ThreeJSON capability index (choose the most appropriate/specific feature for what's described; this is not a checklist):
@@ -30,16 +31,16 @@ Geometry and composition:
 - Reuse and scale: groupList/subScene for assemblies, instancedList for repeated props, lineList only for visible paths/boundaries, tubeList for pipes/splines, spriteList for billboards.
 
 Materials, assets, and rendering:
-- Materials support standard/phong/lambert/basic/physical-like fields, textureUrl/map, normal/roughness/metalness/emissive/alpha maps, repeat/offset/rotation/wrap/filter/anisotropy.
+- Materials support standard/phong/lambert/basic fields, textureUrl/map, normal/roughness/metalness/emissive/alpha maps, repeat/offset/rotation/wrap/filter/anisotropy. Use only material types listed as available in the runtime capability snapshot below.
 - sceneConfig.textureQuality controls default texture sampling; per-material textureSampling can override.
 - assetLibrary can hold geometryPreset/materialPreset/shaderSource/eventScript and lib:// references.
-- sceneConfig supports scene background/environment/fog, perspective or orthographic camera, orbit/firstPerson/fly controls, lights, helpers, renderLoop, passList/post-processing, intro.postLoad.
+- sceneConfig supports scene background/environment/fog, perspective or orthographic camera, orbit/firstPerson/fly controls, lights, helpers, renderLoop, available passList post-processing, intro.postLoad.
 
 Effects and media:
-- shaderSurface for requested custom/preset shader surfaces; particleEmitter for CPU/GPU particles only when an effect/weather/particle field is actually needed; particleList/points only for legacy point clouds.
+- shaderSurface uses a registered shaderPreset for requested shader surfaces; particleEmitter is only for an effect/weather/particle field that is actually needed; particleList/points is the legacy point-cloud path.
 - windList, heatList, weather domains, nature.sky, nature.water, sprites, tubes.
 - audioList supports ambient or positional audio attached to scene/camera/object; use audioUrl and sensible playback policy fields.
-- externalModelList/objModelList load GLTF/GLB/OBJ-style assets; animationMode mixer and animationGraph support clip state machines.
+- externalModelList/objModelList load GLTF/GLB/OBJ/STL/PLY/FBX/USD/USDZ assets; animationMode mixer and animationGraph support clip state machines where the format exposes clips.
 
 Domains:
 - domainModelList / objType domain dispatches built-in domains: floor, wall, glass, door, box, nativeThree, weather(.rain/.wind), nature(.sky/.water), stat(.bar/.grid/.panel/.chart/.line/.pie/.ring), device(.cabinet/.server/.ups/.switch/.airConditioner), port, sceneHighlight.
@@ -59,7 +60,7 @@ Scene text (capability id: sceneText):
 - TextItem uses content, fontSize, color, position, optional billboard/anchor/align and sdf styling. Do not substitute descriptor name/label for visible content.
 
 Command and patch editing:
-- Core command mode supports scene.list, scene.validate, scene.applyPatch, scene.export, object.get/add/remove/patch/reconcile, material.patch, camera.fit.
+- Core command mode supports scene.list, scene.validate, scene.applyPatch, scene.export, object.get/add/remove/patch/reconcile, material.patch, morph.list/set, camera.fit.
 - Use commands for small edits and full JSON for broad restructuring. Use JSON Patch for minimal document-level edits when paths are clear.
 `;
 
@@ -69,8 +70,24 @@ Texture acquisition:
 `;
 
 function buildAgentCapabilityIndex(options = {}) {
+  const manifest = getSceneCapabilityManifest({
+    rendererBackend: options.rendererBackend || "webgl",
+    includePreview: options.includePreviewCapabilities === true
+  });
+  const list = (category) => Object.keys(manifest.categories?.[category] || {}).join(", ") || "none";
+  const runtimeSnapshot = [
+    "Runtime capability snapshot (author only these available capabilities):",
+    `- renderer backend: ${options.rendererBackend || "webgl"}`,
+    `- materials: ${list("materials")}`,
+    `- light types: ${list("lightTypes")}`,
+    `- post-processing passes: ${list("passes")}`,
+    `- model formats: ${list("modelFormats")}`,
+    `- particle simulations: ${list("particleBackends")}`,
+    `- particle sources: ${list("particleSources")}`
+  ].join("\n");
   return [
     THREE_JSON_AGENT_CAPABILITY_INDEX_BASE.trim(),
+    runtimeSnapshot,
     THREE_JSON_AGENT_TEXTURE_ACQUISITION_INDEX.trim()
   ].filter(Boolean).join("\n\n");
 }

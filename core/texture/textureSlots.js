@@ -19,7 +19,19 @@ export const MATERIAL_TEXTURE_SLOTS = Object.freeze({
   emissive: Object.freeze({ descriptorField: "emissiveMap", runtimeField: "emissiveMap", color: true }),
   opacity: Object.freeze({ descriptorField: "alphaMap", runtimeField: "alphaMap" }),
   bump: Object.freeze({ descriptorField: "bumpMap", runtimeField: "bumpMap" }),
-  displacement: Object.freeze({ descriptorField: "displacementMap", runtimeField: "displacementMap" })
+  displacement: Object.freeze({ descriptorField: "displacementMap", runtimeField: "displacementMap" }),
+  clearcoat: Object.freeze({ descriptorField: "clearcoatMap", runtimeField: "clearcoatMap", pbr: true }),
+  clearcoatRoughness: Object.freeze({ descriptorField: "clearcoatRoughnessMap", runtimeField: "clearcoatRoughnessMap", pbr: true }),
+  clearcoatNormal: Object.freeze({ descriptorField: "clearcoatNormalMap", runtimeField: "clearcoatNormalMap", pbr: true }),
+  transmission: Object.freeze({ descriptorField: "transmissionMap", runtimeField: "transmissionMap", pbr: true }),
+  thickness: Object.freeze({ descriptorField: "thicknessMap", runtimeField: "thicknessMap", pbr: true }),
+  sheenColor: Object.freeze({ descriptorField: "sheenColorMap", runtimeField: "sheenColorMap", pbr: true, color: true }),
+  sheenRoughness: Object.freeze({ descriptorField: "sheenRoughnessMap", runtimeField: "sheenRoughnessMap", pbr: true }),
+  specularColor: Object.freeze({ descriptorField: "specularColorMap", runtimeField: "specularColorMap", pbr: true, color: true }),
+  specularIntensity: Object.freeze({ descriptorField: "specularIntensityMap", runtimeField: "specularIntensityMap", pbr: true }),
+  anisotropy: Object.freeze({ descriptorField: "anisotropyMap", runtimeField: "anisotropyMap", pbr: true }),
+  iridescence: Object.freeze({ descriptorField: "iridescenceMap", runtimeField: "iridescenceMap", pbr: true }),
+  iridescenceThickness: Object.freeze({ descriptorField: "iridescenceThicknessMap", runtimeField: "iridescenceThicknessMap", pbr: true })
 });
 
 export const MATERIAL_TEXTURE_SLOT_NAMES = Object.freeze(Object.keys(MATERIAL_TEXTURE_SLOTS));

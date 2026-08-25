@@ -223,12 +223,13 @@ Object form:
 
 | Field | Description |
 | --- | --- |
-| `type` | `ambient`, `directional`, `point`, and related light types. |
+| `type` | `ambient`, `hemisphere`, `directional`, `point`, `spot`, or `rectArea`. |
 | `color` | Light color. |
 | `intensity` | Light intensity. |
 | `position` | Position for lights that need it. |
 | `target` | Target for directional-style lights. |
 | `distance` / `decay` | Point-light fields. |
+| `width` / `height` | `rectArea` dimensions. Rect-area LTC tables load only when needed, so use the async scene/runtime API. |
 
 ### 5.6 Render Loop
 
@@ -544,7 +545,7 @@ Available actions depend on the core event mechanism and registered domain capab
   "objType": "box",
   "animations": [
     {
-      "type": "rotation",
+      "type": "rotate",
       "axis": "y",
       "speed": 0.8
     }
@@ -552,7 +553,7 @@ Available actions depend on the core event mechanism and registered domain capab
 }
 ```
 
-Available animation types depend on the current core and registered extensions. Editor-exported animation JSON is the best source of truth for complex cases.
+Core also supports `transform`, `expression`, `path`, and `morph` animation records. A `path` animation consumes the same Line/CatmullRom/Bezier/Ellipse curve descriptor used by tubes, lines, and particle sources. A `morph` animation addresses a loaded model's morph target by name or index. glTF clips continue to use AnimationMixer / `animationGraph`.
 
 ## 14. Particles, Shaders, And Extensions
 
@@ -561,18 +562,27 @@ Available animation types depend on the current core and registered extensions. 
 ```json
 {
   "threeJsonId": "particles-1",
-  "objType": "points",
-  "count": 1000,
-  "position": { "x": 0, "y": 2, "z": 0 },
-  "material": { "color": "#ffffff", "size": 0.05 }
+  "objType": "particleEmitter",
+  "source": { "type": "sphere", "radius": 5 },
+  "emission": { "mode": "continuous", "count": 1000, "rate": 200, "loop": true, "seed": 42 },
+  "particle": {
+    "lifetime": { "min": 3, "max": 5 },
+    "velocity": { "min": { "x": -0.2, "y": 0.5, "z": -0.2 }, "max": { "x": 0.2, "y": 1.5, "z": 0.2 } },
+    "sizeOverLife": [0, 3, 0],
+    "opacityOverLife": [0, 1, 0]
+  },
+  "simulation": { "backend": "cpu", "gravity": { "x": 0, "y": -0.15, "z": 0 }, "drag": 0.1 },
+  "render": { "type": "points", "color": "#ffffff", "size": 3, "blending": "additive", "depthWrite": false }
 }
 ```
 
-Third-party particle providers may require extension imports:
+`source.type` supports `positions`, `box`, `sphere`, `shell`, `disc`, `cone`, `line`, `curve`, and `meshSurface`. Use `simulation.backend: "cpu"` as the reference backend or `"webgl-compute"` for the WebGL compute path. `textMask` and `imageMask` are browser-only raster sources loaded on demand:
 
 ```js
-import "threejson/extensions/particle-nebula";
+import "threejson/particles-raster";
 ```
+
+The legacy `points` object remains a point-cloud primitive; it is not the Particle V2 emitter schema.
 
 ### 14.2 Shader Surface
 
@@ -580,12 +590,14 @@ import "threejson/extensions/particle-nebula";
 {
   "threeJsonId": "shader-1",
   "objType": "shaderSurface",
-  "geometry": { "type": "plane", "width": 8, "height": 8 },
-  "shader": { "preset": "water" }
+  "surface": "plane",
+  "geometry": { "width": 8, "height": 8 },
+  "shaderPreset": "water",
+  "uniforms": { "speed": 0.5 }
 }
 ```
 
-Shader support depends on registered presets.
+`shaderSurface` uses a registered WebGL GLSL preset. It does not accept arbitrary `shaderSource`. WebGPU TSL materials have a separate, explicit-preview contract described in [Capabilities, Particle V2, and WebGPU/TSL](./capabilities-webgpu-particles.md).
 
 ## 15. Sub-Scenes
 

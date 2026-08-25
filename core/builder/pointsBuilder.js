@@ -103,7 +103,7 @@ export function resolvePointsCount(record) {
   }
   const count = Number(record?.count);
   if (Number.isFinite(count) && count > 0) {
-    return Math.min(Math.floor(count), 500000);
+    return Math.floor(count);
   }
   return 0;
 }

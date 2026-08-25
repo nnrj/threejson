@@ -16,7 +16,6 @@ import {Line2} from 'three/examples/jsm/lines/Line2.js'
 import {LineGeometry} from 'three/examples/jsm/lines/LineGeometry.js';
 import {LineMaterial} from 'three/examples/jsm/lines/LineMaterial.js'; // Line material with configurable line width
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js'; // GLTF model loader
-import {DRACOLoader} from 'three/examples/jsm/loaders/DRACOLoader.js'; // GLTF Draco decoder
 import {OBJLoader} from 'three/examples/jsm/loaders/OBJLoader.js';
 import {MTLLoader} from 'three/examples/jsm/loaders/MTLLoader.js';
 import {
@@ -34,6 +33,8 @@ import { evaluateMeshBoolean } from '../handler/csgCapability.js';
 import { registerObject } from '../handler/objectRegistry.js';
 import { setUserDataObjJson } from '../handler/objectDescriptorAttach.js';
 import { tryRegisterGltfAnimationMixers } from '../handler/animationMixerRegistry.js';
+import { applyMorphInfluencesFromDescriptor } from '../handler/morphTargetRuntime.js';
+import { createCurveFromDescriptor } from './curve/curveFactory.js';
 import {
     normalizeAttachTo,
     placeLoadedModelByAttachTarget,
@@ -68,6 +69,9 @@ import { createSprite as createSpriteImpl, deploySprite as deploySpriteImpl } fr
 import { createTube as createTubeImpl, deployTube as deployTubeImpl } from "./tubeBuilder.js";
 import { deployInstancedMeshWithFactory } from "./instancedBuilder.js";
 import { coerceMeshMaterialForRaycast } from "../util/meshPick.js";
+import { createMaterialFromDescriptor } from "./material/materialFactory.js";
+import { createGeometryFromDescriptor } from "./geometry/geometryFactory.js";
+import { configureGltfLoader } from "./gltfLoaderConfig.js";
 
 let modelLoadingManager = loadingManager;
 let textureLoader = new THREE.TextureLoader(modelLoadingManager);
@@ -220,76 +224,11 @@ function fillMissingBoxFaceTextureUrls(record) {
  * @returns {THREE.Material}
  */
 function buildThreeMaterialFromFaceJson(faceJson, objectVisible = true) {
-    if ("dynamicBox" === faceJson.type) {
-        const subMaterial = new THREE.MeshStandardMaterial({
-            map: safeMaterialMap(faceJson.map),
-            color: faceJson.color ? faceJson.color : "",
-            transparent: faceJson.transparent ? faceJson.transparent : false,
-            opacity: faceJson.opacity ? faceJson.opacity : 1,
-            visible: objectVisible,
-            depthTest: faceJson.depthTest ? faceJson.depthTest : true,
-            ...standardMaterialPbrFromJson(faceJson)
-        });
-        trackDisposableResource(subMaterial);
-        return subMaterial;
-    }
-    if ("phong" === faceJson.type) {
-        const subMaterial = new THREE.MeshPhongMaterial({
-            map: safeMaterialMap(faceJson.map),
-            color: faceJson.color ? faceJson.color : "",
-            transparent: faceJson.transparent ? faceJson.transparent : false,
-            opacity: faceJson.opacity ? faceJson.opacity : 1,
-            depthTest: faceJson.depthTest ? faceJson.depthTest : true
-        });
-        trackDisposableResource(subMaterial);
-        return subMaterial;
-    }
-    if ("lambert" === faceJson.type) {
-        const subMaterial = new THREE.MeshLambertMaterial({
-            map: safeMaterialMap(faceJson.map),
-            color: faceJson.color ? faceJson.color : "",
-            transparent: faceJson.transparent ? faceJson.transparent : false,
-            opacity: faceJson.opacity ? faceJson.opacity : 1,
-            visible: objectVisible,
-            depthTest: faceJson.depthTest ? faceJson.depthTest : true
-        });
-        trackDisposableResource(subMaterial);
-        return subMaterial;
-    }
-    if ("standard" === faceJson.type) {
-        const subMaterial = new THREE.MeshStandardMaterial({
-            map: safeMaterialMap(faceJson.map),
-            color: valueOr(faceJson.color, "#cccccc"),
-            transparent: valueOr(faceJson.transparent, false),
-            opacity: valueOr(faceJson.opacity, 1),
-            visible: objectVisible,
-            depthTest: valueOr(faceJson.depthTest, true),
-            ...standardMaterialPbrFromJson(faceJson)
-        });
-        trackDisposableResource(subMaterial);
-        return subMaterial;
-    }
     const m = faceJson || {};
-    if (jsonMaterialPrefersStandardPbr(m)) {
-        const subMaterial = new THREE.MeshStandardMaterial({
-            map: safeMaterialMap(m.map),
-            color: m.color ? m.color : "#cccccc",
-            transparent: m.transparent ? m.transparent : false,
-            opacity: m.opacity ? m.opacity : 1,
-            visible: objectVisible,
-            depthTest: m.depthTest ? m.depthTest : true,
-            ...standardMaterialPbrFromJson(m)
-        });
-        trackDisposableResource(subMaterial);
-        return subMaterial;
-    }
-    const subMaterial = new THREE.MeshLambertMaterial({
-        map: safeMaterialMap(m.map),
-        color: m.color ? m.color : "#cccccc",
-        transparent: m.transparent ? m.transparent : false,
-        opacity: m.opacity ? m.opacity : 1,
+    const subMaterial = createMaterialFromDescriptor(m, {
         visible: objectVisible,
-        depthTest: m.depthTest ? m.depthTest : true
+        defaultColor: "#cccccc",
+        fallbackType: jsonMaterialPrefersStandardPbr(m) ? "standard" : "lambert"
     });
     trackDisposableResource(subMaterial);
     return subMaterial;
@@ -908,17 +847,13 @@ function objTexturePlansRequireStandardMaterial(slotPlans, materialJson) {
 }
 
 function createObjMaterialFromJson(materialJson = {}, useStandard = false) {
-    const baseOptions = {
-        color: materialJson.color ? materialJson.color : "#fff",
-        transparent: hasValue(materialJson.transparent) ? !!materialJson.transparent : false,
-        opacity: hasValue(materialJson.opacity) ? materialJson.opacity : 1
-    };
-    const next = useStandard
-        ? new THREE.MeshStandardMaterial({
-            ...baseOptions,
-            ...standardMaterialPbrFromJson(materialJson)
-        })
-        : new THREE.MeshPhongMaterial(baseOptions);
+    const descriptor = useStandard && !materialJson.type
+        ? { ...materialJson, type: "standard" }
+        : materialJson;
+    const next = createMaterialFromDescriptor(descriptor, {
+        defaultColor: "#ffffff",
+        fallbackType: useStandard ? "standard" : "phong"
+    });
     trackDisposableResource(next);
     return next;
 }
@@ -1209,146 +1144,17 @@ function applyMaterialSideFromJson(material, materialJson) {
 }
 
 function buildSingleMaterialSurface(materialJson, objectVisible = true){
-    let material;
-    if (materialJson) {
-        if ("dynamicBox" === materialJson.type) {
-            material = new THREE.MeshStandardMaterial({
-                map: safeMaterialMap(materialJson.map),
-                color: valueOr(materialJson.color, "#cccccc"),
-                transparent: valueOr(materialJson.transparent, false),
-                opacity: valueOr(materialJson.opacity, 1),
-                visible: objectVisible,
-                depthTest: valueOr(materialJson.depthTest, true),
-                ...standardMaterialPbrFromJson(materialJson),
-            });
-        } else if ("phong" === materialJson.type) {
-            material = new THREE.MeshPhongMaterial({
-                map: safeMaterialMap(materialJson.map),
-                color: valueOr(materialJson.color, "#cccccc"),
-                transparent: valueOr(materialJson.transparent, false),
-                opacity: valueOr(materialJson.opacity, 1),
-                depthTest: valueOr(materialJson.depthTest, true),
-            });
-        } else if ("lambert" === materialJson.type) {
-            material = new THREE.MeshLambertMaterial({
-                map: safeMaterialMap(materialJson.map),
-                color: valueOr(materialJson.color, "#cccccc"),
-                transparent: valueOr(materialJson.transparent, false),
-                opacity: valueOr(materialJson.opacity, 1),
-                visible: objectVisible,
-                depthTest: valueOr(materialJson.depthTest, true),
-            });
-        } else if ("standard" === materialJson.type) {
-            material = new THREE.MeshStandardMaterial({
-                map: safeMaterialMap(materialJson.map),
-                color: valueOr(materialJson.color, "#cccccc"),
-                transparent: valueOr(materialJson.transparent, false),
-                opacity: valueOr(materialJson.opacity, 1),
-                visible: objectVisible,
-                depthTest: valueOr(materialJson.depthTest, true),
-                ...standardMaterialPbrFromJson(materialJson),
-            });
-        } else if ("basic" === materialJson.type) {
-            material = new THREE.MeshBasicMaterial({
-                map: safeMaterialMap(materialJson.map),
-                color: valueOr(materialJson.color, "#cccccc"),
-                transparent: valueOr(materialJson.transparent, false),
-                opacity: valueOr(materialJson.opacity, 1),
-                visible: objectVisible,
-                depthTest: valueOr(materialJson.depthTest, true),
-            });
-        } else if (jsonMaterialPrefersStandardPbr(materialJson)) {
-            material = new THREE.MeshStandardMaterial({
-                map: safeMaterialMap(materialJson.map),
-                color: valueOr(materialJson.color, "#cccccc"),
-                transparent: valueOr(materialJson.transparent, false),
-                opacity: valueOr(materialJson.opacity, 1),
-                visible: objectVisible,
-                depthTest: valueOr(materialJson.depthTest, true),
-                ...standardMaterialPbrFromJson(materialJson),
-            });
-        } else {
-            material = new THREE.MeshPhongMaterial({
-                map: safeMaterialMap(materialJson.map),
-                color: valueOr(materialJson.color, "#cccccc"),
-                transparent: valueOr(materialJson.transparent, false),
-                opacity: valueOr(materialJson.opacity, 1),
-                visible: objectVisible,
-                depthTest: valueOr(materialJson.depthTest, true),
-            });
-        }
-    } else {
-        material = new THREE.MeshPhongMaterial({
-            color: "#0xffff00"
-        });
-    }
+    const descriptor = materialJson || { type: "phong", color: "#ffff00" };
+    const material = createMaterialFromDescriptor(descriptor, {
+        visible: objectVisible,
+        defaultColor: "#cccccc",
+        fallbackType: jsonMaterialPrefersStandardPbr(descriptor) ? "standard" : "phong"
+    });
     return applyMaterialSideFromJson(material, materialJson);
 }
 
 function createPrimitiveGeometry(primitiveObj, shapeType){
-    const geometryInfo = primitiveObj?.geometry || {};
-    if ("sphere" === shapeType) {
-        return new THREE.SphereGeometry(
-            valueOr(geometryInfo.radius, 1),
-            valueOr(geometryInfo.widthSegments, 32),
-            valueOr(geometryInfo.heightSegments, 16),
-            valueOr(geometryInfo.phiStart, 0),
-            valueOr(geometryInfo.phiLength, Math.PI * 2),
-            valueOr(geometryInfo.thetaStart, 0),
-            valueOr(geometryInfo.thetaLength, Math.PI)
-        );
-    }
-    if ("cylinder" === shapeType) {
-        return new THREE.CylinderGeometry(
-            valueOr(geometryInfo.radiusTop, valueOr(geometryInfo.radius, 1)),
-            valueOr(geometryInfo.radiusBottom, valueOr(geometryInfo.radius, 1)),
-            valueOr(geometryInfo.height, valueOr(geometryInfo.length, 1)),
-            valueOr(geometryInfo.radialSegments, 32),
-            valueOr(geometryInfo.heightSegments, 1),
-            valueOr(geometryInfo.openEnded, false),
-            valueOr(geometryInfo.thetaStart, 0),
-            valueOr(geometryInfo.thetaLength, Math.PI * 2)
-        );
-    }
-    if ("cone" === shapeType) {
-        return new THREE.ConeGeometry(
-            valueOr(geometryInfo.radius, 1),
-            valueOr(geometryInfo.height, valueOr(geometryInfo.length, 1)),
-            valueOr(geometryInfo.radialSegments, 32),
-            valueOr(geometryInfo.heightSegments, 1),
-            valueOr(geometryInfo.openEnded, false),
-            valueOr(geometryInfo.thetaStart, 0),
-            valueOr(geometryInfo.thetaLength, Math.PI * 2)
-        );
-    }
-    if ("ring" === shapeType) {
-        return new THREE.RingGeometry(
-            valueOr(geometryInfo.innerRadius, 0.5),
-            valueOr(geometryInfo.outerRadius, 1),
-            valueOr(geometryInfo.thetaSegments, 32),
-            valueOr(geometryInfo.phiSegments, 1),
-            valueOr(geometryInfo.thetaStart, 0),
-            valueOr(geometryInfo.thetaLength, Math.PI * 2)
-        );
-    }
-    if ("torus" === shapeType) {
-        return new THREE.TorusGeometry(
-            valueOr(geometryInfo.radius, 1),
-            valueOr(geometryInfo.tube, 0.4),
-            valueOr(geometryInfo.radialSegments, 16),
-            valueOr(geometryInfo.tubularSegments, 48),
-            valueOr(geometryInfo.arc, Math.PI * 2)
-        );
-    }
-    if ("capsule" === shapeType) {
-        return new THREE.CapsuleGeometry(
-            valueOr(geometryInfo.radius, 0.5),
-            valueOr(geometryInfo.length, 1),
-            valueOr(geometryInfo.capSegments, 4),
-            valueOr(geometryInfo.radialSegments, 8)
-        );
-    }
-    return null;
+    return createGeometryFromDescriptor(primitiveObj, { type: shapeType });
 }
 
 function finalizeSingleMaterialPrimitive(primitiveMesh, primitiveObj, materialJson){
@@ -1831,78 +1637,12 @@ function createMergeBox(boxObj){
         }
         const mergedMatSrc = boxObj.materialArr[i];
         const mr = mergedMatSrc && mergedMatSrc.textureRepeat ? mergedMatSrc.textureRepeat : {};
-        let material;
-        if ("dynamicBox" === boxObj.materialArr[i].type) {
-            material = new THREE.MeshStandardMaterial({
-                map: safeMaterialMap(boxObj.materialArr[i].map),
-                color: boxObj.materialArr[i].color ? boxObj.materialArr[i].color : '',
-                transparent: boxObj.materialArr[i].transparent ? boxObj.materialArr[i].transparent : false,
-                opacity: boxObj.materialArr[i].opacity ? boxObj.materialArr[i].opacity : 1,
-                visible: false !== boxObj.visible,
-                depthTest: boxObj.materialArr[i].depthTest ? boxObj.materialArr[i].depthTest : true,
-                ...standardMaterialPbrFromJson(boxObj.materialArr[i]),
-            });
-            trackDisposableResource(material)
-        }
-        else if("phong" === boxObj.materialArr[i].type){
-            material = new THREE.MeshPhongMaterial({
-                map: safeMaterialMap(boxObj.materialArr[i].map),
-                color: boxObj.materialArr[i].color ? boxObj.materialArr[i].color : '',
-                transparent : boxObj.materialArr[i].transparent ? boxObj.materialArr[i].transparent : false,
-                opacity: boxObj.materialArr[i].opacity ? boxObj.materialArr[i].opacity : 1,
-                depthTest: boxObj.materialArr[i].depthTest ? boxObj.materialArr[i].depthTest : true,
-            });
-            trackDisposableResource(material)
-        }
-        else if ("lambert" === boxObj.materialArr[i].type) {
-            material = new THREE.MeshLambertMaterial({
-                map: safeMaterialMap(boxObj.materialArr[i].map),
-                color: boxObj.materialArr[i].color ? boxObj.materialArr[i].color : '',
-                transparent: boxObj.materialArr[i].transparent ? boxObj.materialArr[i].transparent : false,
-                opacity: boxObj.materialArr[i].opacity ? boxObj.materialArr[i].opacity : 1,
-                visible: false !== boxObj.visible,
-                depthTest: boxObj.materialArr[i].depthTest ? boxObj.materialArr[i].depthTest : true,
-            });
-            trackDisposableResource(material)
-        }
-        else if ("standard" === boxObj.materialArr[i].type) {
-            const mm = boxObj.materialArr[i];
-            material = new THREE.MeshStandardMaterial({
-                map: safeMaterialMap(mm.map),
-                color: valueOr(mm.color, ''),
-                transparent: valueOr(mm.transparent, false),
-                opacity: valueOr(mm.opacity, 1),
-                visible: false !== boxObj.visible,
-                depthTest: valueOr(mm.depthTest, true),
-                ...standardMaterialPbrFromJson(mm),
-            });
-            trackDisposableResource(material)
-        }
-        else if (jsonMaterialPrefersStandardPbr(boxObj.materialArr[i])) {
-            const mm = boxObj.materialArr[i] || {};
-            material = new THREE.MeshStandardMaterial({
-                map: safeMaterialMap(mm.map),
-                color: mm.color ? mm.color : "#cccccc",
-                transparent: mm.transparent ? mm.transparent : false,
-                opacity: mm.opacity ? mm.opacity : 1,
-                visible: false !== boxObj.visible,
-                depthTest: mm.depthTest ? mm.depthTest : true,
-                ...standardMaterialPbrFromJson(mm),
-            });
-            trackDisposableResource(material)
-        }
-        else {
-            const mm = boxObj.materialArr[i] || {};
-            material = new THREE.MeshLambertMaterial({
-                map: safeMaterialMap(mm.map),
-                color: mm.color ? mm.color : "#cccccc",
-                transparent: mm.transparent ? mm.transparent : false,
-                opacity: mm.opacity ? mm.opacity : 1,
-                visible: false !== boxObj.visible,
-                depthTest: mm.depthTest ? mm.depthTest : true,
-            });
-            trackDisposableResource(material)
-        }
+        const material = createMaterialFromDescriptor(mergedMatSrc || {}, {
+            visible: false !== boxObj.visible,
+            defaultColor: "#cccccc",
+            fallbackType: jsonMaterialPrefersStandardPbr(mergedMatSrc) ? "standard" : "lambert"
+        });
+        trackDisposableResource(material)
         if (material && mergedMatSrc) {
             applyTextureFromMaterialJsonToThreeMaterial(material, mergedMatSrc, {
                 defaultRepeatX: valueOr(mr.x, TEXTURE_REPEAT_DEFAULT.x),
@@ -2203,13 +1943,32 @@ function shouldPlaneScrollTexture(planeObj) {
     return shouldPlaneScrollFromDescriptor(planeObj);
 }
 
+function resolveLinePoints(lineObj) {
+    const curveDescriptor = lineObj?.path ?? lineObj?.curve;
+    if (curveDescriptor && typeof curveDescriptor === "object") {
+        const curve = createCurveFromDescriptor(curveDescriptor, THREE);
+        if (!curve) {
+            return [];
+        }
+        const segments = Math.max(1, Math.floor(Number(lineObj.segments ?? curveDescriptor.segments) || 64));
+        return curve.getSpacedPoints(segments);
+    }
+    const raw = Array.isArray(lineObj?.points) ? lineObj.points : [];
+    return raw.filter(Boolean).map((point) => new THREE.Vector3(
+        Number(point.x) || 0,
+        Number(point.y) || 0,
+        Number(point.z) || 0
+    ));
+}
+
 /**
  * Create polyline with THREE.Line (1px width only; use createLine2 for wide lines).
  * @param {object} lineObj Includes points: {x,y,z}[], material, name, objType
  * @returns {THREE.Line|null}
  */
 function createLine(lineObj){
-    if(!lineObj || !lineObj.points || lineObj.points.length <= 0){
+    const resolvedPoints = resolveLinePoints(lineObj);
+    if(!lineObj || resolvedPoints.length <= 0){
         return;
     }
     let material = new THREE.LineBasicMaterial( { color: 0xffffff } );
@@ -2224,14 +1983,7 @@ function createLine(lineObj){
             fog: valueOr(lineObj.material.fog, true)
         })
     }
-    let points = [];
-    for(let i = 0; i < lineObj.points.length; i++){
-        let point = lineObj.points[i];
-        if(!point){
-            continue;
-        }
-        points.push( new THREE.Vector3( point.x, point.y, point.z ))
-    }
+    const points = resolvedPoints;
     const topology = normalizeLineTopology(lineObj);
     let geometry = new THREE.BufferGeometry().setFromPoints( points );
     trackDisposableResource(geometry)
@@ -2250,7 +2002,8 @@ function createLine(lineObj){
  * @returns {Line2|null}
  */
 function createLine2(lineObj){
-    if(!lineObj || !lineObj.points || lineObj.points.length <= 0){
+    const resolvedPoints = resolveLinePoints(lineObj);
+    if(!lineObj || resolvedPoints.length <= 0){
         return;
     }
     const topology = normalizeLineTopology(lineObj);
@@ -2272,10 +2025,10 @@ function createLine2(lineObj){
         })
     }
     // Set material resolution
-    material.resolution.set(window.innerWidth, window.innerHeight);
+    material.resolution.set(typeof window !== "undefined" ? window.innerWidth : 1, typeof window !== "undefined" ? window.innerHeight : 1);
     let points = [];
-    for(let i = 0; i < lineObj.points.length; i++){
-        let point = lineObj.points[i];
+    for(let i = 0; i < resolvedPoints.length; i++){
+        let point = resolvedPoints[i];
         if(!point){
             continue;
         }
@@ -2536,17 +2289,15 @@ function loadGltf(glbObj, scene, loadOptions = {}) {
     // Initialize GLTF model loader
     const gltfLoader = new GLTFLoader(modelLoadingManager);
     trackDisposableResource(gltfLoader)
-    // Draco-compressed GLTF/GLB requires DRACOLoader decoding.
-    const dracoLoader = new DRACOLoader()
-    trackDisposableResource(dracoLoader)
-    dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.184.0/examples/jsm/libs/draco/gltf/')
-    gltfLoader.setDRACOLoader(dracoLoader)
     const resolvedPath = resolveAssetUrl("", glbObj.modelPath);
     if (!resolvedPath) {
         log.warn("[loadGltf] cannot resolve modelPath:", glbObj.modelPath);
         return;
     }
-    gltfLoader.load(resolvedPath, (gltf) => {
+    configureGltfLoader(gltfLoader, glbObj, { ...loadOptions, loadingManager: modelLoadingManager })
+      .then(({ resources }) => {
+        trackDisposableResource(resources);
+        gltfLoader.load(resolvedPath, (gltf) => {
             // Track loaded GLTF model for memory cleanup
             let model = gltf.scene;
             trackDisposableResource(model)
@@ -2579,12 +2330,15 @@ function loadGltf(glbObj, scene, loadOptions = {}) {
                 scene.add(model);
             }
             registerObject(model, glbObj);
+            applyMorphInfluencesFromDescriptor(model, glbObj);
             tryRegisterGltfAnimationMixers(model, gltf, glbObj);
         },
         () => {},
         (error) => {
             log.error("[loadGltf] load failed:", resolvedPath, error)
-        })
+        });
+      })
+      .catch((error) => log.error("[loadGltf] decoder configuration failed:", error));
 }
 
 function inferExternalModelTypeFromPath(modelPath){
@@ -2703,6 +2457,7 @@ function finalizeExternalMeshObject(object, objInfo, scene, loadOptions = {}) {
         scene.add(object);
     }
     registerObject(object, objInfo);
+    applyMorphInfluencesFromDescriptor(object, objInfo);
 }
 
 /**
@@ -2750,6 +2505,7 @@ function finalizeObjObject(object, objInfo, scene, loadCtx = {}){
     }
     scene.add(object);
     registerObject(object, objInfo);
+    applyMorphInfluencesFromDescriptor(object, objInfo);
 }
 
 /**
@@ -2815,18 +2571,18 @@ function loadObjWithOptionalMtl(objInfo, scene){
  * @param {{ camera?: THREE.PerspectiveCamera|null, scene?: THREE.Scene }} [loadOptions]
  * @returns {Promise<import("three").Object3D|null>}
  */
-function loadGltfAsync(glbObj, scene, loadOptions = {}) {
+async function loadGltfAsync(glbObj, scene, loadOptions = {}) {
+  if (!glbObj || !glbObj.modelPath) {
+    return null;
+  }
+  const gltfLoader = new GLTFLoader(modelLoadingManager);
+  trackDisposableResource(gltfLoader);
+  const { resources } = await configureGltfLoader(gltfLoader, glbObj, {
+    ...loadOptions,
+    loadingManager: modelLoadingManager
+  });
+  trackDisposableResource(resources);
   return new Promise((resolve, reject) => {
-    if (!glbObj || !glbObj.modelPath) {
-      resolve(null);
-      return;
-    }
-    const gltfLoader = new GLTFLoader(modelLoadingManager);
-    trackDisposableResource(gltfLoader);
-    const dracoLoader = new DRACOLoader();
-    trackDisposableResource(dracoLoader);
-    dracoLoader.setDecoderPath("https://cdn.jsdelivr.net/npm/three@0.184.0/examples/jsm/libs/draco/gltf/");
-    gltfLoader.setDRACOLoader(dracoLoader);
     const resolvedPath = resolveAssetUrl("", glbObj.modelPath);
     if (!resolvedPath) {
       reject(new Error(`[loadGltf] cannot resolve modelPath: ${glbObj.modelPath}`));
@@ -2850,6 +2606,7 @@ function loadGltfAsync(glbObj, scene, loadOptions = {}) {
           scene.add(model);
         }
         registerObject(model, glbObj);
+        applyMorphInfluencesFromDescriptor(model, glbObj);
         tryRegisterGltfAnimationMixers(model, gltf, glbObj);
         resolve(model);
       },
@@ -2957,6 +2714,7 @@ function loadThreeNativeObjectJsonFromUrlAsync(modelInfo, scene, deps = {}) {
         object.visible = modelInfo.visible !== false;
         scene.add(object);
         registerObject(object, modelInfo);
+        applyMorphInfluencesFromDescriptor(object, modelInfo);
         resolve(object);
       },
       undefined,

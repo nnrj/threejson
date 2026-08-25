@@ -8,7 +8,7 @@ import {
   createWindStrip,
   deployWindStrip
 } from "./weatherFactory.js";
-import { isWeatherHandler, WEATHER_HANDLER_PRESETS } from "./weatherPresets.js";
+import { isWeatherHandler, WEATHER_PARTICLE_PRESETS } from "./weatherPresets.js";
 import { isWindHandler, WIND_HANDLER_PRESETS } from "./windPresets.js";
 
 function resolveWeatherDomainModel(record, scene) {
@@ -45,7 +45,7 @@ const weatherDomain = {
     createWind: deployWindStrip,
     isWeatherHandler,
     isWindHandler,
-    weatherPresets: WEATHER_HANDLER_PRESETS,
+    weatherPresets: WEATHER_PARTICLE_PRESETS,
     windPresets: WIND_HANDLER_PRESETS
   }
 };

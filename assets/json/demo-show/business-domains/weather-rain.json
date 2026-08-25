@@ -11,7 +11,7 @@
   },
   "worldInfo": {
     "domainModelList": [
-      { "objType": "domain", "domain": "weather", "handler": "rain", "name": "rain-zone", "position": { "x": 0, "y": 8, "z": 0 }, "count": 1200 }
+      { "objType": "domain", "domain": "weather", "handler": "rain", "name": "rain-zone", "position": { "x": 0, "y": 8, "z": 0 }, "emission": { "count": 1200 } }
     ],
     "boxModelList": [
       { "name": "ground", "objType": "box", "geometry": { "width": 30, "height": 0.4, "depth": 30 }, "position": { "x": 0, "y": -0.2, "z": 0 }, "material": { "type": "standard", "color": "#1a2430" } }

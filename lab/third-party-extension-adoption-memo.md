@@ -27,7 +27,7 @@
 | 意图 | JSON 驱动的业务对象装配 | 横切运行时能力（物理、图表、FPS 贴地等） |
 | core 自动加载 | 主入口 `threejson` → `builtins/register.js` 注册内置域 | **否**；宿主显式 import + bootstrap |
 | JSON 容器 | `objType: "domain"` + `domain` / `handler` | `sceneConfig.extensions[id]`、物体级 `extensions[id]`；core **只合并 Map，不解析字段语义**（`core/util/extensionsUtil.js`） |
-| 运行时钩子 | `businessDomains.<id>.*`、`resolveDomainModel` | `createPluginHost`、`registerParticleEmitterProvider`、`registerControlsType`、`registerObjTypeDeployer` 等 |
+| 运行时钩子 | `businessDomains.<id>.*`、`resolveDomainModel` | `createPluginHost`、`registerParticleSimulationBackend`、`registerControlsType`、`registerObjTypeDeployer` 等 |
 | npm 形态 | 内置与 core 同 semver；第三方独立包 | 参考实现打进主包子路径；第三方无官方 manifest 约定 |
 | CLI | ✅ `threejson add-domain` → `threejson.domains.mjs` | ❌ 无 `add-extension` |
 
@@ -112,6 +112,6 @@ export * from "../core/index.js";
 | `simple-gravity` | `extensions/simple-gravity/plugin.js` | `PluginHost.register` 演示 |
 | `fps-walk` | `extensions/fps-walk/bootstrapFirstPersonExtensions.js` | 第一人称贴地 |
 | `stat-echarts` | `extensions/stat-echarts/bootstrapFromScene.js` | ECharts + css3dPanel |
-| `nebula`（provider） | `extensions/particle-nebula/index.js` | `registerParticleEmitterProvider` 骨架 |
+| Particle V2 自定义模拟 | 宿主自有扩展 | `registerParticleSimulationBackend` + 生命周期注册 |
 
 宿主职责三步（与 [extension-json.md](./extension-json.md) 一致）：import 扩展 → `onSceneReady` 取得 `pluginHost` / `sceneJson` → 调用 bootstrap。

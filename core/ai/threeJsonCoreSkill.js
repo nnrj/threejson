@@ -32,14 +32,14 @@ Structure & overlay:
 - shaderSurfaceList — custom shader surfaces (objType shaderSurface)
 
 Effects & visualization:
-- Prefer objType particleEmitter (objectList or any friendly list) only for requested/implied particles, rain, snow, dust, sparks, starfields, or similar atmospheric effects — simulation cpu|gpuCompute
+- Prefer objType particleEmitter (objectList or any friendly list) only for requested/implied particles, rain, snow, dust, sparks, starfields, or similar atmospheric effects — use the V2 source/emission/particle/simulation/render blocks
 - particleList — legacy points clouds (objType points); prefer particleEmitter for new scenes
 - windList, heatList — wind strips / heat volumes
 - spriteList, tubeList, instancedList
 - objectList — scene text (objType text): floating labels, SDF titles; may also hold particleEmitter, css3dPanel, domain records in standard JSON when those roles are actually needed
 
 Assets & domains:
-- externalModelList / objModelList — GLTF/OBJ paths
+- externalModelList / objModelList — GLTF/GLB/OBJ/STL/PLY/FBX/USD/USDZ paths
 - domainModelList — domain handlers (weather rain|snow, nativeThree loadFromUrl, wall addToScene, etc.)
 - audioList — positional or ambient audio
 
@@ -48,7 +48,7 @@ Runtime (top-level sceneConfig — preferred for new standard JSON and friendly 
 - textureQuality: 0|1|2|3 or off|low|medium|high (optional global texture sampling tier; omit unless user asks)
 - extensions: JSON container only — e.g. nativeGeometries[], assetLibrary.textureUrlCache; physics/plugins are host bootstrap (not auto-loaded)
 - camera supports type "perspective" (default) or "orthographic"/"ortho"; lookAt {x,y,z} is supported
-- controls supports type "orbit" (default), "firstPerson", "fly"
+- controls supports type "orbit" (default), "firstPerson", "fly", "map", "trackball", and "arcball"; non-default controls load only when requested
 - helpers: { grid: boolean, axes: boolean } or gridHelper / axesHelper sugar on sceneConfig or worldInfo
 - Optional customBucket on objects for host batch queries (runtime index tag; not a scene graph node)
 
@@ -161,13 +161,13 @@ Intent → capability:
 - Interactive console / form / iframe overlay → css3dPanelList (objType css3dPanel)
 - Requested visible words / floating labels / floor titles → objectList objType text, preferably mode sdf. Use mode mesh only when solid/extruded/beveled lettering is explicitly requested.
 - Multi-part buildings / rigs → groupList with subScene[] children (or subSceneList blocks)
-- Particles / stars / dust / sparks / visible solar halo → objectList or modelList objType particleEmitter (simulation cpu|gpuCompute). For round halos or star dust around a sun/planet, use distribution {type:"shell"|"halo", radius, thickness}; for volume dust, use {type:"sphere", radius}.
+- Particles / stars / dust / sparks / visible solar halo → objectList objType particleEmitter. Use source {type:"shell",radius,thickness} for halos or source {type:"sphere",radius} for volume dust; simulation.backend is "cpu" or "webgl-compute".
 - Rain / snow → domainModelList domain weather.* or objType particleEmitter with weather-style material
 - Custom animated shader plane → shaderSurfaceList (objType shaderSurface)
 - Pipes along paths → tubeList + path catmullRom
 - Many repeated props → instancedList + transforms[]
 - Complex Three.js shapes → native dispatch (TorusKnot, Lathe, Polyhedron, etc.)
-- GLTF/OBJ assets → externalModelList / objModelList
+- GLTF/GLB/OBJ/STL/PLY/FBX/USD/USDZ assets → externalModelList / objModelList
 - Boolean cuts on boxes → holes / joins / inters on boxModelList items (CSG)
 - Scene atmosphere → sceneConfig scene.background, lights; optional windList / heatList only when wind/heat is actually visible or requested
 `;
@@ -212,7 +212,7 @@ All worldInfo list properties shown below are optional; include a list property 
     "camera": { "fov": number, "near": number, "far": number, "position": { "x", "y", "z" } },
     "renderer": { "antialias": boolean },
     "controls": { "enableDamping": boolean, "target": { "x", "y", "z" } },
-    "lights": [{ "type": "ambient"|"directional"|"point"|"spot", "color": "#RRGGBB", "intensity": number, "position": { "x", "y", "z" } (ignored for ambient), "distance": number (optional, point|spot; 0 = unbounded), "decay": number (optional, point|spot; default 2 = physically correct inverse-square falloff), "angle": number (optional, spot only, radians), "penumbra": number (optional, spot only, 0-1), "target": { "x", "y", "z" } (optional, spot only) }] — see authoring rule 14 for intensity scale (point/spot need MUCH higher values than ambient/directional),
+    "lights": [{ "type": "ambient"|"hemisphere"|"directional"|"point"|"spot"|"rectArea", "color": "#RRGGBB", "intensity": number, "position": { "x", "y", "z" } (ignored for ambient), "distance": number (optional, point|spot; 0 = unbounded), "decay": number (optional, point|spot; default 2 = physically correct inverse-square falloff), "angle": number (optional, spot only, radians), "penumbra": number (optional, spot only, 0-1), "width"/"height": number (optional, rectArea), "target": { "x", "y", "z" } (optional, directional|spot|rectArea) }] — see authoring rule 14 for intensity scale (point/spot need MUCH higher values than ambient/directional),
     "renderLoop": { "autoResize": boolean },
     "helpers": { "grid": boolean, "axes": boolean },
     "textureQuality": "off"|"low"|"medium"|"high" or 0|1|2|3 (optional),
@@ -270,8 +270,8 @@ MeshRecord:
 
 GroupRecord, LineRecord, InfoPanelRecord, Css3dPanelRecord, ShaderSurfaceRecord, PointsItem, AudioItem — same shapes as before.
 Css3dPanelRecord: { "objType": "css3dPanel", "html": string or "url": string, "panel": { "position", "geometry": { width, height, depth } } } — host must enable CSS3D rendering.
-ShaderSurfaceRecord: { "objType": "shaderSurface", "shaderSource" or material with ShaderMaterial, "geometry": plane/box dims, "position": {...} }
-ParticleEmitterItem: { "objType": "particleEmitter", "simulation": "cpu"|"gpuCompute", "count": number, "distribution": { "type": "box"|"sphere"|"shell"|"halo", "radius": number, "thickness": number }, "bounds": { "width", "height", "depth" }, "material": { "size", "opacity", "color", "blending": "additive", "depthWrite": false }, "position": {...} }
+ShaderSurfaceRecord: { "objType": "shaderSurface", "shaderPreset": registered preset id, "uniforms": {...}, "surface": "plane"|"sphere"|"box", "geometry": {...}, "position": {...} }
+ParticleEmitterItem: { "objType":"particleEmitter", "source":{"type":"positions"|"box"|"sphere"|"shell"|"disc"|"cone"|"line"|"curve"|"meshSurface",...}, "emission":{"mode":"static"|"continuous"|"burst","count":number,"rate"?:number,"duration"?:number,"loop"?:boolean,"seed"?:number}, "particle":{"lifetime":number|[min,max],"velocity"?:{x,y,z}|{"min":{...},"max":{...}},"sizeOverLife"?:[],"colorOverLife"?:[],"opacityOverLife"?:[]}, "simulation":{"backend":"cpu"|"webgl-compute","gravity"?:{...},"drag"?:number,"noise"?:{},"attractors"?:[],"boundary"?:{}}, "render":{"type":"points"|"billboard","size"?:number,"color"?:"#RRGGBB","opacity"?:number,"blending"?:"additive","depthWrite"?:false}, "position"?:{...} }
 TextItem (objectList only): { "threeJsonId": string, "objType": "text", "content": string, "mode": "sdf"|"texture"|"mesh" (default/preferred "sdf"), "fontSize": number, "color": "#RRGGBB", "align": "left"|"center"|"right", "anchor": {"x":0..1,"y":0..1}, "billboard": boolean, "position": {x,y,z}, "sdf": {"outlineWidth"?:number,"outlineColor"?:"#RRGGBB"}, "mesh": { "fontJsonUrl": string, "depth"?:number, "bevelEnabled"?:boolean } only when mode is mesh }
 TubeItem: { "objType": "tube", "path": { "type": "catmullRom", "points": [{x,y,z},...] }, "geometry": { "radius", "tubularSegments" }, "material": {...} }
 InstancedItem: { "objType": "instanced", "geometry": { "width", "height", "depth" }, "transforms": [{ "position", "rotation", "scale" }] }
@@ -299,12 +299,12 @@ Engine capabilities summary:
 - JSM geometry/material registry: RoundedBoxGeometry, LineGeometry, LineMaterial, and assetLibrary geometryRef/materialRef expansion
 - Groups, lines, info panels, css3d panels, shader surfaces, planes, extrude, buffer/irregular meshes
 - Particles (prefer particleEmitter only when requested/implied), weather domains, wind, heat, sprites, tubes, instanced meshes, scene text (objType text)
-- particleEmitter: unified objType with simulation cpu|gpuCompute (gpuCompute uses GPUComputationRenderer + ShaderMaterial points); supports box bounds plus spherical distribution {type:"sphere"|"shell"|"halo", radius, thickness}; use only for explicit particle/weather/atmospheric effects
+- particleEmitter V2: orthogonal source/emission/particle/simulation/render blocks; CPU and webgl-compute share seeded sources, lifetime, forces and boundary semantics. Sources include positions, box, sphere, shell, disc, cone, line, curve and meshSurface; textMask/imageMask require the optional particles-raster entry.
 - css3dPanel: interactive DOM overlay (distinct from static infoPanel textures)
 - sceneConfig.textureQuality optional tier; sceneConfig.extensions container (nativeGeometries, assetLibrary.textureUrlCache)
 - Optional customBucket string on descriptors for host batch visibility queries
 - ShaderMaterial inline / lib://shaderSource via assetLibrary on native materials
-- External GLTF/OBJ, audio, CSG holes/joins/inters
+- External GLTF/GLB/OBJ/STL/PLY/FBX/USD/USDZ, audio, CSG holes/joins/inters
 - glTF animationGraph state machine (opt-in): parameters, transitions, crossFade; runtime setAnimationParameter / fireAnimationEvent
 - sceneConfig runtime block with renderLoop.updateAnimations true for visible motion, declarative rotate animations, PBR metalness/roughness, textures
 `;
@@ -389,7 +389,7 @@ Standard ThreeJSON scheme B (the only format permitted for AI output):
     "camera": { "type"?: "perspective"|"orthographic", "fov"?: number, "near"?: number, "far"?: number, "position": { "x": number, "y": number, "z": number } },
     "renderer": { "antialias"?: boolean },
     "controls": { "type"?: "orbit"|"firstPerson"|"fly", "target"?: { "x": number, "y": number, "z": number }, "enableDamping"?: boolean },
-    "lights": [{ "type": "ambient"|"directional"|"point"|"spot", "color"?: "#RRGGBB", "intensity": number, "position"?: { "x": number, "y": number, "z": number } }],
+    "lights": [{ "type": "ambient"|"hemisphere"|"directional"|"point"|"spot"|"rectArea", "color"?: "#RRGGBB", "intensity": number, "position"?: { "x": number, "y": number, "z": number }, "width"?: number, "height"?: number, "target"?: { "x": number, "y": number, "z": number } }],
     "renderLoop"?: { "autoResize"?: boolean, "updateAnimations"?: boolean },
     "helpers"?: { "grid"?: boolean, "axes"?: boolean },
     "intro"?: object,

@@ -24,12 +24,14 @@ test("object dispatcher deploys core particleEmitter without an extension provid
   deployObjectRecord(scene, {
     objType: "particleEmitter",
     name: "solar-halo",
-    count: 12,
-    distribution: { type: "halo", radius: 8, thickness: 1 },
-    material: { color: "#ffcc66", size: 2, transparent: true, opacity: 0.45, blending: "additive" }
+    source: { type: "shell", radius: 8, thickness: 1 },
+    emission: { mode: "static", count: 12, seed: 5 },
+    particle: { lifetime: 0 },
+    simulation: { backend: "cpu" },
+    render: { color: "#ffcc66", size: 2, transparent: true, opacity: 0.45, blending: "additive" }
   }, {});
   const points = scene.children.find((child) => child.name === "solar-halo");
   assert.ok(points instanceof THREE.Points);
-  assert.equal(points.userData.objJson.objType, "points");
-  assert.equal(points.userData.objJson.userData.particleEmitter.simulation, "cpu");
+  assert.equal(points.userData.objJson.objType, "particleEmitter");
+  assert.equal(points.userData.objJson.simulation.backend, "cpu");
 });

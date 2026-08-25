@@ -1,9 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  buildWeatherPointsRecord,
+  buildWeatherParticleEmitterRecord,
   isWeatherHandler,
-  WEATHER_HANDLER_PRESETS
+  WEATHER_PARTICLE_PRESETS
 } from "../domains/weather/weatherPresets.js";
 
 test("isWeatherHandler recognizes presets", () => {
@@ -11,20 +11,20 @@ test("isWeatherHandler recognizes presets", () => {
   assert.equal(isWeatherHandler("unknown"), false);
 });
 
-test("buildWeatherPointsRecord merges overrides", () => {
-  const rec = buildWeatherPointsRecord("rain", {
-    count: 99,
+test("buildWeatherParticleEmitterRecord merges V2 overrides", () => {
+  const rec = buildWeatherParticleEmitterRecord("rain", {
+    emission: { count: 99 },
     position: { x: 10, y: 20, z: 0 }
   });
   assert.ok(rec);
-  assert.equal(rec.count, 99);
+  assert.equal(rec.emission.count, 99);
   assert.equal(rec.position.x, 10);
-  assert.equal(rec.motion.type, "drift");
+  assert.equal(rec.particle.velocity.y, -14);
 });
 
-test("embers preset includes scrollUv motion and texture", () => {
-  const embers = WEATHER_HANDLER_PRESETS.embers;
-  assert.ok(Array.isArray(embers.motion));
-  assert.equal(embers.motion[1].type, "scrollUv");
-  assert.ok(String(embers.material.textureUrl).includes("wind_hot"));
+test("embers preset uses a V2 billboard sprite and lifecycle", () => {
+  const embers = WEATHER_PARTICLE_PRESETS.embers;
+  assert.equal(embers.render.type, "billboard");
+  assert.ok(String(embers.render.sprite).includes("wind_hot"));
+  assert.equal(embers.particle.opacityOverLife.length, 3);
 });

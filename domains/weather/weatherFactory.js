@@ -1,7 +1,7 @@
 import { createPlane } from "../../core/builder/modelBuilder.js";
 import { log } from "../../core/util/logger.js";
 import { deployParticleEmitter } from "../../core/builder/particle/particleEmitterBuilder.js";
-import { buildWeatherPointsRecord, isWeatherHandler } from "./weatherPresets.js";
+import { buildWeatherParticleEmitterRecord, isWeatherHandler } from "./weatherPresets.js";
 import {
   buildWindPlaneRecord,
   isWindHandler,
@@ -18,7 +18,7 @@ export function createWeatherJson(handler, overrides = {}) {
     log.warn("[weather] unknown handler:", handler);
     return null;
   }
-  return buildWeatherPointsRecord(handler, overrides);
+  return buildWeatherParticleEmitterRecord(handler, overrides);
 }
 
 /**
@@ -27,7 +27,7 @@ export function createWeatherJson(handler, overrides = {}) {
  */
 export function createWeather(record) {
   const handler = record?.handler ?? "rain";
-  return buildWeatherPointsRecord(handler, record);
+  return buildWeatherParticleEmitterRecord(handler, record);
 }
 
 /**
@@ -40,14 +40,12 @@ export async function deployWeather(record, scene, ctx = {}) {
     return null;
   }
   const handler = record.handler ?? "rain";
-  const pointsRecord = buildWeatherPointsRecord(handler, record);
-  if (!pointsRecord) {
+  const emitterRecord = buildWeatherParticleEmitterRecord(handler, record);
+  if (!emitterRecord) {
     log.warn("[weather] deployWeather failed, handler:", handler);
     return null;
   }
-  pointsRecord.objType = "particleEmitter";
-  pointsRecord.simulation = record.simulation ?? "cpu";
-  return deployParticleEmitter(pointsRecord, scene, ctx);
+  return deployParticleEmitter(emitterRecord, scene, ctx);
 }
 
 /**

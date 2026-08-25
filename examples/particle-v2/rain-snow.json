@@ -1,0 +1,32 @@
+{
+  "threeJsonId": "particle-v2-rain-snow",
+  "sceneConfig": {
+    "scene": { "background": "#0a1220" },
+    "camera": { "fov": 55, "near": 0.1, "far": 1000, "position": { "x": 0, "y": 45, "z": 110 } },
+    "controls": { "target": { "x": 0, "y": 20, "z": 0 } },
+    "lights": [{ "type": "ambient", "intensity": 0.5 }],
+    "renderLoop": { "updateAnimations": true }
+  },
+  "objectList": [
+    {
+      "threeJsonId": "rain",
+      "objType": "particleEmitter",
+      "source": { "type": "box", "width": 75, "height": 55, "depth": 70 },
+      "emission": { "mode": "continuous", "count": 3200, "rate": 700, "loop": true, "seed": 301 },
+      "particle": { "lifetime": 4.5, "velocity": { "x": 0, "y": -16, "z": 0 }, "sizeOverLife": [2.3, 1.2] },
+      "simulation": { "backend": "webgl-compute", "boundary": { "type": "wrap", "width": 75, "height": 55, "depth": 70 } },
+      "render": { "type": "points", "size": 2, "color": "#8cc8ff", "opacity": 0.75, "blending": "additive", "depthWrite": false },
+      "position": { "x": -42, "y": 32, "z": 0 }
+    },
+    {
+      "threeJsonId": "snow",
+      "objType": "particleEmitter",
+      "source": { "type": "box", "width": 75, "height": 55, "depth": 70 },
+      "emission": { "mode": "continuous", "count": 1800, "rate": 260, "loop": true, "seed": 302 },
+      "particle": { "lifetime": 7, "velocity": { "min": { "x": -0.5, "y": -4.5, "z": -0.3 }, "max": { "x": 0.5, "y": -2.5, "z": 0.3 } }, "sizeOverLife": [2, 4, 2] },
+      "simulation": { "backend": "cpu", "noise": { "strength": 0.18, "frequency": 1.1 }, "boundary": { "type": "wrap", "width": 75, "height": 55, "depth": 70 } },
+      "render": { "type": "billboard", "size": 3.5, "color": "#ffffff", "opacity": 0.9, "depthWrite": false },
+      "position": { "x": 42, "y": 32, "z": 0 }
+    }
+  ]
+}

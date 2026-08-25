@@ -7,8 +7,8 @@
 | 项 | 说明 |
 |----|------|
 | #4 叶子模块 | [`core/handler/trackedResourceRegistry.js`](../core/handler/trackedResourceRegistry.js)；builder/util track 改 import；[`resourceReclaimer.js`](../core/handler/resourceReclaimer.js) 编排 dispose |
-| #12 extension 公共 API | [`extensions/particle-nebula`](../extensions/particle-nebula/index.js) 从 `core/index.js` 导入 `registerParticleEmitterProvider` / `deployParticleEmitterCore` |
-| #2 demo 顺序 | [`02-10-particle-nebula-provider.html`](../examples/html-demo/track-02-visual-fx/02-10-particle-nebula-provider.html) 先 core 后 extension |
+| #12 extension 公共 API | 该历史粒子 provider 接口已被 Particle V2 的 `registerParticleSimulationBackend` 取代；不再存在 Nebula stub |
+| #2 demo 顺序 | 原 Nebula 注册顺序示例已迁移为 [`02-10-particle-v2-sources.html`](../examples/html-demo/track-02-visual-fx/02-10-particle-v2-sources.html) |
 | 回归测试 | [`tests/module-import-order.test.mjs`](../tests/module-import-order.test.mjs)（含 extension-first 历史顺序） |
 | 废弃 | `var` TDZ 妥协、`_clearTrackedResourceBucketForTests` 死代码 |
 

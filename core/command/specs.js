@@ -169,6 +169,22 @@ export const CORE_COMMAND_SPECS = [
     },
     example: { v: COMMAND_API_VERSION, op: "camera.fit", args: { target: "scene" } },
     microDslExample: "camera.fit target=scene"
+  },
+  {
+    op: "morph.list",
+    mode: "runtime",
+    summary: "List morph targets and current influences for a loaded model.",
+    args: { id: "Root model threeJsonId.", mesh: "Optional child mesh name, uuid, or threeJsonId." },
+    example: { v: COMMAND_API_VERSION, op: "morph.list", args: { id: "character" } },
+    microDslExample: "morph.list id=character"
+  },
+  {
+    op: "morph.set",
+    mode: "runtime",
+    summary: "Set a named or indexed morph influence on matching meshes.",
+    args: { id: "Root model threeJsonId.", target: "Morph name or index.", value: "Influence (clamped to 0..1 by default).", mesh: "Optional child mesh selector.", clamp: "Set false to allow values outside 0..1." },
+    example: { v: COMMAND_API_VERSION, op: "morph.set", args: { id: "character", target: "Smile", value: 0.8 } },
+    microDslExample: "morph.set id=character target=Smile value=0.8"
   }
 ];
 

@@ -805,11 +805,11 @@
     ],
     "status": "stable",
     "group": "Track 2 · Visualization and effects",
-    "title": "particleEmitter gpuCompute",
-    "summary": "objType particleEmitter: gpuCompute (GPUComputationRenderer) vs cpu twinkle comparison.",
-    "navSummary": "particleEmitter gpu/cpu.",
+    "title": "Particle V2 WebGL compute",
+    "summary": "objType particleEmitter: webgl-compute (GPUComputationRenderer) and the CPU reference backend share one V2 descriptor.",
+    "navSummary": "Particle V2 WebGL/CPU.",
     "highlights": [
-      "simulation: gpuCompute + compute.textureSize.",
+      "simulation.backend: webgl-compute + compute texture layout.",
       "GPU position texture + ShaderMaterial Points.",
       "Falls back to cpu without WebGL2."
     ],
@@ -819,16 +819,16 @@
         "label": "particleEmitter"
       }
     ],
-    "hint": "【Track 2 · particleEmitter】<code>../../../assets/json/tutorial/track-02/02-09-particle-emitter-gpu.json</code><br>\n    Center: <code>simulation: gpuCompute</code> falling particles · Left: <code>simulation: cpu</code> twinkle comparison"
+    "hint": "【Track 2 · Particle V2】<code>../../../assets/json/tutorial/track-02/02-09-particle-emitter-gpu.json</code><br>\n    Center: <code>simulation.backend: webgl-compute</code> rain · Left: the <code>cpu</code> reference backend"
   },
   {
     "id": "t02-10",
     "track": "02",
     "order": "10",
-    "path": "./track-02-visual-fx/02-10-particle-nebula-provider.html",
+    "path": "./track-02-visual-fx/02-10-particle-v2-sources.html",
     "jsonFiles": [
       {
-        "json": "../../assets/json/tutorial/track-02/02-10-particle-nebula-provider.json"
+        "json": "../../assets/json/tutorial/track-02/02-10-particle-v2-sources.json"
       }
     ],
     "prerequisites": [
@@ -836,25 +836,25 @@
     ],
     "status": "stable",
     "group": "Track 2 · Visualization and effects",
-    "title": "particleEmitter third-party provider",
-    "summary": "extensions/particle-nebula: provider: nebula registers a third-party particle adapter, side-by-side with core.",
-    "navSummary": "Third-party particle provider.",
+    "title": "Particle V2 source and simulation gallery",
+    "summary": "Seeded shell and curve sources plus a burst firework demonstrate the Particle V2 descriptor.",
+    "navSummary": "Particle V2 sources and forces.",
     "highlights": [
-      "Import threejson/core first, then extensions/particle-nebula to register provider.",
-      "JSON provider: nebula → adapter tweaks material then delegates to core.",
-      "Warn and fall back to core when extension not imported."
+      "Orthogonal source, emission, particle, simulation and render blocks.",
+      "Fixed seeds produce repeatable layouts.",
+      "Lifecycle curves plus gravity, drag and noise."
     ],
     "docLinks": [
       {
-        "href": "../../extensions/particle-nebula/README.md",
-        "label": "particle-nebula README"
+        "href": "../../docs/en/json-format.md#particleemitter-unified-emitter-entry",
+        "label": "Particle V2 schema"
       },
       {
         "href": "../../docs/en/json-format.md#particleemitter-unified-emitter-entry",
         "label": "particleEmitter"
       }
     ],
-    "hint": "【Track 2 · Third-party particle provider】<code>../../../assets/json/tutorial/track-02/02-10-particle-nebula-provider.json</code><br>\n    Import <code>threejson/core</code> first, then <code>import \"/extensions/particle-nebula/index.js\"</code> · Left: core · Right: <code>provider: \"nebula\"</code>"
+    "hint": "【Track 2 · Particle V2】<code>../../../assets/json/tutorial/track-02/02-10-particle-v2-sources.json</code><br>\n    Seeded <code>shell</code>/<code>curve</code> sources and a burst firework with lifecycle curves"
   },
   {
     "id": "t02-11",

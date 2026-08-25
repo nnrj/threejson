@@ -16,7 +16,7 @@ const OUTLINE_TARGET_KEYS = ["threeJsonId", "threeJsonIds", "targetPolicy", "all
 
 /**
  * @param {object} sceneConfig
- * @returns {{ autoOutputPass: boolean }}
+ * @returns {{ autoOutputPass: boolean, autoRenderPass: boolean }}
  */
 export function resolvePostProcessingConfig(sceneConfig = {}) {
   const root =
@@ -24,7 +24,8 @@ export function resolvePostProcessingConfig(sceneConfig = {}) {
       ? sceneConfig.postProcessing
       : {};
   return {
-    autoOutputPass: root.autoOutputPass !== false
+    autoOutputPass: root.autoOutputPass !== false,
+    autoRenderPass: root.autoRenderPass !== false
   };
 }
 
@@ -171,9 +172,20 @@ export function deployPassRecordsFromObjectList(normalizedPayload, ctx) {
   const state = { renderPassCount: { value: 0 }, deployIndex: 0 };
   const deployed = [];
   let hasOutputPass = false;
+  const ppConfig = resolvePostProcessingConfig(normalizedPayload?.sceneConfig);
+  const hasRenderPass = records.some((record) => normalizePassType(record.passType) === "render");
+
+  if (records.length > 0 && !hasRenderPass && ppConfig.autoRenderPass && ctx?.composer) {
+    const renderPass = deployPassRecord(
+      { objType: "pass", passType: "render", id: "__auto_render__" },
+      ctx,
+      state
+    );
+    if (renderPass) deployed.push(renderPass);
+  }
 
   for (let i = 0; i < records.length; i++) {
-    state.deployIndex = i;
+    state.deployIndex = deployed.length + i;
     const record = records[i];
     if (normalizePassType(record.passType) === "output") {
       hasOutputPass = true;
@@ -184,7 +196,6 @@ export function deployPassRecordsFromObjectList(normalizedPayload, ctx) {
     }
   }
 
-  const ppConfig = resolvePostProcessingConfig(normalizedPayload?.sceneConfig);
   if (ppConfig.autoOutputPass && !hasOutputPass && deployed.length > 0 && ctx?.composer) {
     const outputPass = createOutputPassFromRecord({ passType: "output", id: "__auto_output__" }, ctx);
     if (outputPass) {

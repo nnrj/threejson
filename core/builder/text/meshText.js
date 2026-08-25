@@ -17,6 +17,7 @@ import {
   numberBetween,
   resolveTextRecord
 } from "./textStyleShared.js";
+import { createMaterialFromDescriptor } from "../material/materialFactory.js";
 
 const fontLoader = new FontLoader(loadingManager);
 trackDisposableResource(fontLoader);
@@ -71,12 +72,14 @@ export async function createMeshText(parent, record) {
   trackDisposableResource(geometry);
   geometry.computeBoundingBox();
 
-  const material = new THREE.MeshStandardMaterial({
-    color: new THREE.Color(resolved.color),
+  const material = createMaterialFromDescriptor({
+    type: "standard",
+    color: resolved.color,
     metalness: numberBetween(meshBlock.metalness, 0, 0, 1),
     roughness: numberBetween(meshBlock.roughness, 0.45, 0, 1),
-    side: THREE.DoubleSide
-  });
+    side: "double",
+    ...(record.material && typeof record.material === "object" ? record.material : {})
+  }, { fallbackType: "standard" });
   trackDisposableResource(material);
 
   const mesh = new THREE.Mesh(geometry, material);

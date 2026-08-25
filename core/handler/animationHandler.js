@@ -3,10 +3,13 @@ import { updateEngineTweens } from '../compat/adapters/tween.js';
 import { getAnimationMode } from '../util/animationMode.js';
 import { updatePointsMotion } from '../builder/pointsMotion.js';
 import { updateParticleGpuCompute } from '../builder/particle/particleGpuCompute.js';
+import { updateParticleCpuSimulation } from '../builder/particle/particleCpuSimulation.js';
+import { updateParticleSimulationExtensions } from '../builder/particle/particleSimulationBackendRegistry.js';
 import { updatePlaneScrollMotion } from '../builder/planeScrollMotion.js';
 import { updateShaderMotion } from '../builder/shader/shaderMotion.js';
 import { evaluateNumericExpression } from '../util/numericExpression.js';
 import { resolvePosition, resolveRotation, resolveScale } from '../util/vectorValue.js';
+import { createCurveFromDescriptor } from '../builder/curve/curveFactory.js';
 
 /**
  * Scene animation driver: per-frame updates from JSON `animations` (e.g. rotate) and unified updateEngineTweens.
@@ -141,6 +144,64 @@ function applyExpressionAnimation(object3D, animation, deltaSeconds, index){
 	object3D[property].set(evaluateAxis('x'), evaluateAxis('y'), evaluateAxis('z'));
 }
 
+function resolveLoopedProgress(state, animation, deltaSeconds){
+	state.elapsed += deltaSeconds * 1000;
+	const delay = Math.max(0, Number(animation.delay) || 0);
+	if(state.elapsed < delay) return null;
+	const duration = Math.max(1, Number(animation.duration) || 1000);
+	const elapsed = state.elapsed - delay;
+	const cycle = Math.floor(elapsed / duration);
+	const repeat = animation.repeat === true || animation.repeat === 'infinite'
+		? Infinity
+		: Math.max(0, Math.floor(Number(animation.repeat) || 0));
+	const finished = Number.isFinite(repeat) && cycle > repeat;
+	let progress = finished ? 1 : (elapsed % duration) / duration;
+	if(elapsed > 0 && elapsed % duration === 0) progress = 1;
+	if(animation.yoyo === true && (finished ? repeat : cycle) % 2 === 1) progress = 1 - progress;
+	return Math.max(0, Math.min(1, progress));
+}
+
+function applyPathAnimation(object3D, animation, deltaSeconds, index){
+	const state = getObjectAnimationState(object3D, animation, index);
+	if(!state.curve){
+		state.curve = createCurveFromDescriptor(animation.path ?? animation.curve ?? animation, THREE);
+	}
+	if(!state.curve) return;
+	const progress = resolveLoopedProgress(state, animation, deltaSeconds);
+	if(progress === null) return;
+	const point = animation.spaced === false ? state.curve.getPoint(progress) : state.curve.getPointAt(progress);
+	object3D.position.copy(point);
+	if(animation.lookAhead === true){
+		const lookProgress = Math.min(1, progress + Math.max(0.0001, Number(animation.lookAheadStep) || 0.002));
+		const target = animation.spaced === false ? state.curve.getPoint(lookProgress) : state.curve.getPointAt(lookProgress);
+		object3D.lookAt(target);
+	}
+}
+
+function resolveMorphIndex(object3D, target){
+	if(Number.isInteger(target)) return target;
+	if(typeof target === 'string' && object3D.morphTargetDictionary && Object.hasOwn(object3D.morphTargetDictionary, target)){
+		return object3D.morphTargetDictionary[target];
+	}
+	return -1;
+}
+
+function applyMorphAnimation(object3D, animation, deltaSeconds, index){
+	const state = getObjectAnimationState(object3D, animation, index);
+	const progress = resolveLoopedProgress(state, animation, deltaSeconds);
+	if(progress === null) return;
+	const from = Number.isFinite(Number(animation.from)) ? Number(animation.from) : 0;
+	const to = Number.isFinite(Number(animation.to ?? animation.value)) ? Number(animation.to ?? animation.value) : 1;
+	const target = animation.target ?? animation.morph ?? animation.name;
+	object3D.traverse((candidate) => {
+		if(!Array.isArray(candidate.morphTargetInfluences)) return;
+		if(animation.mesh && animation.mesh !== candidate.name && animation.mesh !== candidate.uuid) return;
+		const morphIndex = resolveMorphIndex(candidate, target);
+		if(morphIndex < 0 || morphIndex >= candidate.morphTargetInfluences.length) return;
+		candidate.morphTargetInfluences[morphIndex] = from + (to - from) * progress;
+	});
+}
+
 /** Apply all enabled animations configured on a single Object3D. */
 function updateObjectAnimations(currObj, deltaSeconds){
 	const mode = getAnimationMode(currObj);
@@ -159,6 +220,10 @@ function updateObjectAnimations(currObj, deltaSeconds){
 			applyTransformAnimation(currObj, animation, deltaSeconds, i);
 		} else if('expression' === animation.type){
 			applyExpressionAnimation(currObj, animation, deltaSeconds, i);
+		} else if('path' === animation.type){
+			applyPathAnimation(currObj, animation, deltaSeconds, i);
+		} else if('morph' === animation.type){
+			applyMorphAnimation(currObj, animation, deltaSeconds, i);
 		}
 	}
 }
@@ -181,6 +246,8 @@ function updateSceneAnimations(scene, deltaSeconds, options = {}){
 	});
 	const animCtx = { scene, deltaSeconds: safeDeltaSeconds };
 	updatePointsMotion(safeDeltaSeconds, scene);
+	updateParticleCpuSimulation(safeDeltaSeconds, scene);
+	updateParticleSimulationExtensions(safeDeltaSeconds, scene);
 	updateParticleGpuCompute(safeDeltaSeconds, scene);
 	updatePlaneScrollMotion(safeDeltaSeconds, scene);
 	updateShaderMotion(safeDeltaSeconds, animCtx);

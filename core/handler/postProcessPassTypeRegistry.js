@@ -1,4 +1,3 @@
-import { log } from "../util/logger.js";
 /**
  * passType sub-factory registry (render / outline / unrealBloom / shader).
  */
@@ -45,8 +44,10 @@ export function createPassByType(record, ctx) {
   const passType = normalizePassType(record?.passType) || "outline";
   const factory = factoriesByPassType.get(passType);
   if (!factory) {
-    log.warn("[passTypeRegistry] unsupported passType:", passType);
-    return null;
+    const error = new Error(`ThreeJSON post-processing pass type is not registered: ${passType}`);
+    error.code = "E_POST_PROCESS_PASS_UNAVAILABLE";
+    error.passType = passType;
+    throw error;
   }
   return factory(record, ctx);
 }

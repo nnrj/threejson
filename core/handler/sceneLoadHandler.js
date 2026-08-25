@@ -8,7 +8,16 @@ import {
 } from "../compat/index.js";
 import { applyControlsConfig } from "../builder/controlsBuilder.js";
 import { attachCameraToPlayerRig } from "./controls/playerRigAttach.js";
-import { createSceneRuntime } from "./sceneRuntimeHandler.js";
+import { createSceneRuntime, createSceneRuntimeAsync } from "./sceneRuntimeHandler.js";
+import { assertSceneCapabilities } from "../capabilities/sceneCapabilityValidation.js";
+import {
+  ensureOptionalSceneCapabilitiesForPayload,
+  sceneUsesAdvancedWebglPass,
+  sceneUsesExtraControls,
+  sceneUsesRasterParticleSource
+} from "../capabilities/optionalCapabilityLoader.js";
+import { runSceneCapabilityPreparers } from "../capabilities/scenePreparationRegistry.js";
+import { applyRendererDescriptor } from "./rendererConfig.js";
 import {
   applySceneBackdropFromHints,
   applySceneBackdropSimpleFromHints,
@@ -64,6 +73,12 @@ import { deployInfoPanel } from "../builder/infoPanelBuilder.js";
 import { createText, createTextAsync, preloadSceneTextFonts } from "../builder/textBuilder.js";
 import { deployCss3dPanel } from "../builder/css3d/css3dPanelBuilder.js";
 import { deployParticleEmitter } from "../builder/particle/particleEmitterBuilder.js";
+import { deployLod } from "../builder/lodBuilder.js";
+import {
+  createLightBundleFromDescriptor,
+  ensureRectAreaLightSupport,
+  normalizeLightType
+} from "../builder/lightFactory.js";
 import { integrateCss3dIntoSceneLoad } from "../builder/css3d/attachSceneRuntime.js";
 import { integrateEventMechanismIntoSceneLoad } from "../runtime/eventMechanism/attachSceneEventRuntime.js";
 import {
@@ -95,7 +110,8 @@ import { shouldDeployNativeOnly } from "./nativeParseMode.js";
 import { hasValue, listOr } from "../util/util.js";
 import {
   deployPassRecordsFromObjectList,
-  filterNonPassRecords
+  filterNonPassRecords,
+  filterPassRecords
 } from "./postProcessPassDeploy.js";
 import { deployBoundBoxHelpersFromPayload } from "./boxHelperDeploy.js";
 import {
@@ -526,6 +542,9 @@ function deployCanonicalRecord(overlayRoot, record, ctx) {
     deployParticleEmitter(record, overlayRoot, ctx);
     return;
   }
+  if (objType === "lod") {
+    return deployLod(record, overlayRoot, ctx, deployOneCanonicalRecordSync);
+  }
   if (objType === "plane") {
     createPlane(record, overlayRoot);
     return;
@@ -764,9 +783,7 @@ function applyRendererConfig(renderer, config = {}, sceneConfig = {}) {
   if (!renderer) {
     return;
   }
-  if (hasOwn(config, "shadowMapEnabled")) {
-    renderer.shadowMap.enabled = Boolean(config.shadowMapEnabled);
-  }
+  applyRendererDescriptor(renderer, config);
   if (isFiniteNumber(config.clearAlpha)) {
     renderer.setClearAlpha(config.clearAlpha);
   }
@@ -809,43 +826,18 @@ function createManagedLight(entry, runtimeScope) {
   const color = entry.color || "#ffffff";
   const created = [];
 
-  let light = null;
-  if (entry.type === "ambient") {
-    light = new THREE.AmbientLight(color, intensity);
-  } else if (entry.type === "hemisphere") {
-    light = new THREE.HemisphereLight(
-      entry.skyColor || color,
-      entry.groundColor || "#444444",
-      intensity
-    );
-  } else if (entry.type === "directional") {
-    light = new THREE.DirectionalLight(color, intensity);
-  } else if (entry.type === "point") {
-    light = new THREE.PointLight(
-      color,
-      intensity,
-      isFiniteNumber(entry.distance) ? entry.distance : 0,
-      isFiniteNumber(entry.decay) ? entry.decay : 2
-    );
-  } else if (entry.type === "spot") {
-    light = new THREE.SpotLight(
-      color,
-      intensity,
-      isFiniteNumber(entry.distance) ? entry.distance : 0,
-      isFiniteNumber(entry.angle) ? entry.angle : Math.PI / 3,
-      isFiniteNumber(entry.penumbra) ? entry.penumbra : 0,
-      isFiniteNumber(entry.decay) ? entry.decay : 2
-    );
-  }
+  const bundle = createLightBundleFromDescriptor(entry, { intensity });
+  const light = bundle.light;
+  const type = normalizeLightType(entry.type);
   if (!light) {
     return created;
   }
 
   const position = toVector3(entry.position, { x: 0, y: 0, z: 0 });
-  if (entry.type !== "ambient" || position.x !== 0 || position.y !== 0 || position.z !== 0) {
+  if (type !== "ambient" || position.x !== 0 || position.y !== 0 || position.z !== 0) {
     light.position.set(position.x, position.y, position.z);
   }
-  if (entry.type !== "ambient" && light.shadow && entry.shadow !== false) {
+  if (type !== "ambient" && light.shadow && entry.shadow !== false) {
     light.castShadow = true;
     const shadowHints = entry.shadow && typeof entry.shadow === "object" ? entry.shadow : {};
     const shadowNear = isFiniteNumber(shadowHints.cameraNear) ? shadowHints.cameraNear : entry.shadowCameraNear;
@@ -865,20 +857,14 @@ function createManagedLight(entry, runtimeScope) {
       threeJsonId: hasValue(entry.threeJsonId)
         ? String(entry.threeJsonId).trim()
         : (hasValue(entry.id) ? String(entry.id).trim() : `sys-light-${light.uuid}`),
-      type: entry.type,
+      type,
       color,
       intensity
     }
   };
   created.push(light);
 
-  if (entry.type === "spot" && entry.target && typeof entry.target === "object") {
-    const targetObject = new THREE.Object3D();
-    const targetPosition = toVector3(entry.target, { x: 0, y: 0, z: 0 });
-    targetObject.position.set(targetPosition.x, targetPosition.y, targetPosition.z);
-    light.target = targetObject;
-    created.push(targetObject);
-  }
+  created.push(...bundle.attachments);
   return created;
 }
 
@@ -978,6 +964,9 @@ function deployPostProcessPassesForScene(normalized, runtimeHints, options = {})
   if (!composer) {
     return [];
   }
+  if (typeof composer.configureThreeJsonPasses === "function") {
+    return composer.configureThreeJsonPasses(normalized?.payload || normalized);
+  }
   rebuildObjectRegistryFromScene(runtimeHints.scene);
   return deployPassRecordsFromObjectList(normalized, {
     scene: runtimeHints.scene ?? null,
@@ -985,6 +974,24 @@ function deployPostProcessPassesForScene(normalized, runtimeHints, options = {})
     renderer: runtimeHints.renderer ?? null,
     composer
   });
+}
+
+async function ensureRuntimePostProcessing(runtime, normalized, options = {}) {
+  if (!runtime?.renderer || runtime.composer || options.composer) {
+    return runtime?.composer ?? options.composer ?? null;
+  }
+  if (runtime.renderer.__threeJsonBackend === "webgpu" || runtime.renderer.isWebGPURenderer) {
+    return runtime.composer ?? null;
+  }
+  if (filterPassRecords(normalized?.objectList).length === 0) return null;
+  const { EffectComposer } = await import("three/examples/jsm/postprocessing/EffectComposer.js");
+  const composer = new EffectComposer(runtime.renderer);
+  if (typeof runtime.setComposer === "function") runtime.setComposer(composer);
+  else {
+    runtime.composer = composer;
+    runtime.renderLoop?.setComposer?.(composer);
+  }
+  return composer;
 }
 
 async function runCanonicalObjectDeploy(overlayRoot, normalized, options = {}, runtimeHints = {}, schedulerHints = {}) {
@@ -1089,6 +1096,7 @@ async function deployIntoTarget(target, normalized, options = {}) {
 
   mountSceneLights(scene, normalized.lightsConfig);
   mountSceneHelpers(scene, normalized.helpersConfig);
+  await ensureRuntimePostProcessing(runtime, normalized, options);
   const deployHints = {
     scene: runtime.scene ?? null,
     camera: runtime.camera ?? null,
@@ -1206,7 +1214,74 @@ function deployIntoTargetSimple(target, normalized, options = {}) {
   };
 }
 
-function createSceneRuntimeFromNormalized(normalized, options = {}, lifecycleBus = null) {
+function resolveCompatibleRendererBackend(normalized) {
+  const payload = normalized?.payload || normalized?.compatPayload || normalized?.sourcePayload || {};
+  const requested = String(normalized?.rendererConfig?.backend || "webgl").trim().toLowerCase();
+  try {
+    assertSceneCapabilities(payload, { rendererBackend: requested });
+    return requested;
+  } catch (error) {
+    const policy = String(normalized?.rendererConfig?.compatibilityPolicy || "error").trim().toLowerCase();
+    if (requested !== "webgpu" || policy !== "fallback-webgl") throw error;
+    // Fallback is all-or-nothing and only legal when the same scene is valid on WebGL.
+    assertSceneCapabilities(payload, { rendererBackend: "webgl" });
+    normalized.rendererConfig = { ...normalized.rendererConfig, backend: "webgl" };
+    log.warn("[sceneRuntime] WebGPU-incompatible records found; compatibilityPolicy=fallback-webgl selected WebGL for the whole scene");
+    return "webgl";
+  }
+}
+
+function rawRendererDescriptor(payload = {}) {
+  if (payload?.sceneConfig?.renderer && typeof payload.sceneConfig.renderer === "object") {
+    return payload.sceneConfig.renderer;
+  }
+  let runtimeRecord = null;
+  if (Array.isArray(payload?.objectList)) {
+    for (const record of payload.objectList) {
+      if (normalizeObjType(record?.objType) === "renderer") runtimeRecord = record;
+    }
+  }
+  if (runtimeRecord && typeof runtimeRecord === "object") return runtimeRecord;
+  if (payload?.renderer && typeof payload.renderer === "object") return payload.renderer;
+  return {};
+}
+
+/** Validate before capability preparers can fetch resources or execute authorized TSL modules. */
+function assertPayloadCapabilitiesBeforePreparation(payload = {}, fallbackBackend = "webgl", options = {}) {
+  const renderer = rawRendererDescriptor(payload);
+  const requested = String(options.forceBackend === true ? fallbackBackend : (renderer.backend || fallbackBackend || "webgl")).trim().toLowerCase();
+  try {
+    assertSceneCapabilities(payload, { rendererBackend: requested });
+    return requested;
+  } catch (error) {
+    if (options.forceBackend === true) throw error;
+    const policy = String(renderer.compatibilityPolicy || "error").trim().toLowerCase();
+    if (requested !== "webgpu" || policy !== "fallback-webgl") throw error;
+    assertSceneCapabilities(payload, { rendererBackend: "webgl" });
+    return "webgl";
+  }
+}
+
+function rendererBackendForTarget(target, fallback = "webgl") {
+  const runtime = extractDeploymentTarget(target);
+  if (runtime.renderer?.isWebGPURenderer || runtime.renderer?.__threeJsonBackend === "webgpu") return "webgpu";
+  if (runtime.renderer) return "webgl";
+  return fallback;
+}
+
+function assertSimpleSceneHasNoAsyncOptionalCapabilities(payload) {
+  const capabilities = [];
+  if (sceneUsesAdvancedWebglPass(payload)) capabilities.push("advanced WebGL post-processing");
+  if (sceneUsesRasterParticleSource(payload)) capabilities.push("textMask/imageMask particles");
+  if (sceneUsesExtraControls(payload)) capabilities.push("Map/Trackball/Arcball controls");
+  if (!capabilities.length) return;
+  const error = new Error(`createJsonSceneSimple cannot load optional capabilities: ${capabilities.join(", ")}; use createJsonScene()`);
+  error.code = "E_SCENE_ASYNC_CAPABILITY_REQUIRED";
+  error.capabilities = capabilities;
+  throw error;
+}
+
+function buildRuntimeCreationOptions(normalized, options, lifecycleBus, runtimeFactory) {
   const mergedRenderLoopConfig = resolveRenderLoopFpsPolicy(
     normalized.renderLoopConfig || {},
     options.renderLoopUserPolicy || {}
@@ -1224,7 +1299,7 @@ function createSceneRuntimeFromNormalized(normalized, options = {}, lifecycleBus
         beforeRender: options.beforeRender,
         afterRender: options.afterRender
       };
-    runtimeRef = createSceneRuntime({
+    const creation = runtimeFactory({
       canvas: options.canvas,
       config: {
         canvasWidth: normalized.canvasWidth,
@@ -1241,6 +1316,13 @@ function createSceneRuntimeFromNormalized(normalized, options = {}, lifecycleBus
       beforeRender: frameHooks.beforeRender,
       afterRender: frameHooks.afterRender
     });
+    if (creation && typeof creation.then === "function") {
+      return creation.then((runtime) => {
+        runtimeRef = runtime;
+        return runtime;
+      });
+    }
+    runtimeRef = creation;
     return runtimeRef;
   }
   const scene = new THREE.Scene();
@@ -1265,6 +1347,16 @@ function createSceneRuntimeFromNormalized(normalized, options = {}, lifecycleBus
       scene.fog = null;
     }
   };
+}
+
+function createSceneRuntimeFromNormalized(normalized, options = {}, lifecycleBus = null) {
+  resolveCompatibleRendererBackend(normalized);
+  return buildRuntimeCreationOptions(normalized, options, lifecycleBus, createSceneRuntime);
+}
+
+async function createSceneRuntimeFromNormalizedAsync(normalized, options = {}, lifecycleBus = null) {
+  resolveCompatibleRendererBackend(normalized);
+  return buildRuntimeCreationOptions(normalized, options, lifecycleBus, createSceneRuntimeAsync);
 }
 
 function bindPluginHostToLifecycleBus(loadOptions, bus) {
@@ -1401,6 +1493,9 @@ function resolveRuntimeLoadOptions(normalized, callerOptions = {}) {
 }
 
 async function createJsonScene(payload, options = {}) {
+  await ensureOptionalSceneCapabilitiesForPayload(payload);
+  assertPayloadCapabilitiesBeforePreparation(payload);
+  await runSceneCapabilityPreparers(payload, options);
   await ensureCsgBrushOpsForPayload(payload);
   const restoreAssetsBase = applyAssetsBaseForLoad(payload, options);
   const css3dIntegration = integrateCss3dIntoSceneLoad(options);
@@ -1453,7 +1548,7 @@ async function createJsonScene(payload, options = {}) {
 
     await bus.emit(LOAD_PHASE.beforeRuntime, { ...baseCtx, phase: LOAD_PHASE.beforeRuntime });
 
-    const runtime = createSceneRuntimeFromNormalized(normalized, loadOptions, bus);
+    const runtime = await createSceneRuntimeFromNormalizedAsync(normalized, loadOptions, bus);
     if (runtime.scene) {
       attachRuntimeContext(runtime.scene, runtimeCtx);
     }
@@ -1564,6 +1659,11 @@ async function deployObjectRecordIntoRuntime(target, record, options = {}) {
   if (!isObjectRecordEntry(record)) {
     throw new Error("deployObjectRecordIntoRuntime: expected object record with objType");
   }
+  const targetBackend = rendererBackendForTarget(target);
+  await ensureOptionalSceneCapabilitiesForPayload(record);
+  assertPayloadCapabilitiesBeforePreparation(record, targetBackend, { forceBackend: true });
+  await runSceneCapabilityPreparers(record, options);
+  await ensureRectAreaLightSupport([record], targetBackend);
   await ensureCsgBrushOpsForPayload(record);
   const { deployJsonObjectAsync } = await getObjectLoadHandler();
   if (resolveArchiveObjectEntryMode(options) === "replace") {
@@ -1599,6 +1699,10 @@ async function createJsonSceneFromObjectRecord(record, options = {}) {
   if (!isObjectRecordEntry(record)) {
     throw new Error("createJsonSceneFromObjectRecord: expected object record with objType");
   }
+  await ensureOptionalSceneCapabilitiesForPayload(record);
+  assertPayloadCapabilitiesBeforePreparation(record, "webgl");
+  await runSceneCapabilityPreparers(record, options);
+  await ensureRectAreaLightSupport([record], "webgl");
   await ensureCsgBrushOpsForPayload(record);
   const restoreAssetsBase = applyAssetsBaseForLoad({}, options);
   try {
@@ -1694,6 +1798,8 @@ async function createJsonSceneFromArchive(input, options = {}) {
  * @returns {object}
  */
 function createJsonSceneSimple(payload, options = {}) {
+  assertSimpleSceneHasNoAsyncOptionalCapabilities(payload);
+  assertPayloadCapabilitiesBeforePreparation(payload);
   assertCsgBrushOpsReadyForPayload(payload);
   const { bus } = resolveLifecycleHooks(options);
   bindPluginHostToLifecycleBus(options, bus);
@@ -1751,11 +1857,16 @@ function createJsonSceneSimple(payload, options = {}) {
  * @param {{ resetScene?: boolean, context?: object }} [options]
  */
 async function deployJsonScene(target, payload, options = {}) {
+  const targetBackend = rendererBackendForTarget(target);
+  await ensureOptionalSceneCapabilitiesForPayload(payload);
+  assertPayloadCapabilitiesBeforePreparation(payload, targetBackend, { forceBackend: true });
+  await runSceneCapabilityPreparers(payload, options);
   await ensureCsgBrushOpsForPayload(payload);
   // Deploying into an existing target (no new Scene): only cancel *this* target's
   // own in-flight scheduled deploy, never a sibling canvas's.
   cancelActiveDeployScheduler(target);
   const normalized = normalizeScenePayloadWithRuntimeDefaults(payload, options);
+  await ensureRectAreaLightSupport(normalized.lightsConfig, targetBackend);
   const deployed = await deployIntoTarget(target, normalized, options);
   const runtime = extractDeploymentTarget(deployed);
   applyAutoFitCameraToRuntime(

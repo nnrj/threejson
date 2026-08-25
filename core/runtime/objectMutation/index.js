@@ -1,4 +1,3 @@
-import * as THREE from "three";
 import { applyObjectTransform } from "../../builder/heatmap/heatmapTexture.js";
 import { getObjectByThreeJsonId } from "../../handler/objectRegistry.js";
 import { markDescriptorBindingJsonDirty, redeployObject } from "../../handler/sceneDescriptorBinding.js";
@@ -8,6 +7,7 @@ import { resolveTextureSource } from "../../util/resolveTextureSource.js";
 import { getDeployTextureContext, syncTexturePropsToMap } from "../../util/textureSampling.js";
 import { getByPath, setByPath } from "../../util/jsonPointer.js";
 import { classifyPath, getTopLevelKey, isRedeployTopLevelKey } from "./descriptorPaths.js";
+import { applyMaterialDescriptorProperties } from "../../builder/material/materialFactory.js";
 
 function isObjectRecord(value) {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
@@ -133,49 +133,13 @@ function applyMaterialPatch(mesh, materialPatch, options = {}) {
     if (!mat) {
       continue;
     }
-    if (typeof materialPatch.color === "string" && mat.color?.set) {
-      mat.color.set(materialPatch.color);
-    }
-    if (typeof materialPatch.emissive === "string" && mat.emissive?.set) {
-      mat.emissive.set(materialPatch.emissive);
-    }
-    if (Number.isFinite(materialPatch.emissiveIntensity) && "emissiveIntensity" in mat) {
-      mat.emissiveIntensity = materialPatch.emissiveIntensity;
-    }
+    applyMaterialDescriptorProperties(mat, materialPatch);
     if (Number.isFinite(materialPatch.opacity) && "opacity" in mat) {
       mat.opacity = materialPatch.opacity;
       if ("transparent" in mat) {
         mat.transparent =
           materialPatch.opacity < 1 || materialPatch.transparent === true;
       }
-    }
-    if (typeof materialPatch.transparent === "boolean" && "transparent" in mat) {
-      mat.transparent = materialPatch.transparent;
-    }
-    if (typeof materialPatch.visible === "boolean" && "visible" in mat) {
-      mat.visible = materialPatch.visible;
-    }
-    if (typeof materialPatch.depthWrite === "boolean" && "depthWrite" in mat) {
-      mat.depthWrite = materialPatch.depthWrite;
-    }
-    if (typeof materialPatch.depthTest === "boolean" && "depthTest" in mat) {
-      mat.depthTest = materialPatch.depthTest;
-    }
-    if (Number.isFinite(materialPatch.alphaTest) && "alphaTest" in mat) {
-      mat.alphaTest = materialPatch.alphaTest;
-    }
-    if (Number.isFinite(materialPatch.metalness) && "metalness" in mat) {
-      mat.metalness = materialPatch.metalness;
-    }
-    if (Number.isFinite(materialPatch.roughness) && "roughness" in mat) {
-      mat.roughness = materialPatch.roughness;
-    }
-    if (typeof materialPatch.wireframe === "boolean" && "wireframe" in mat) {
-      mat.wireframe = materialPatch.wireframe;
-    }
-    if (typeof materialPatch.side === "string" && "side" in mat) {
-      const side = String(materialPatch.side).trim().toLowerCase();
-      mat.side = side === "double" ? THREE.DoubleSide : THREE.FrontSide;
     }
     mat.needsUpdate = true;
   }
@@ -223,6 +187,17 @@ function applyMaterialPatch(mesh, materialPatch, options = {}) {
     }
   }
   return { pending };
+}
+
+function partialNeedsRedeploy(partial) {
+  if (!isObjectRecord(partial)) return false;
+  if (Object.keys(partial).some((key) => isRedeployTopLevelKey(key))) return true;
+  return isObjectRecord(partial.material) && Object.prototype.hasOwnProperty.call(partial.material, "type");
+}
+
+function pathNeedsRedeploy(path) {
+  const normalized = String(path ?? "").trim().replace(/^\//, "").replaceAll("/", ".");
+  return normalized === "material.type";
 }
 
 function syncObjectFromDescriptor(object3D, descriptor, options = {}) {
@@ -294,7 +269,7 @@ function applyObjectPartial(threeJsonId, partial, options = {}) {
   const keys = Object.keys(partial);
   mergeDescriptorPartial(descriptor, partial);
   maybeMarkDirty(descriptor, options);
-  const needsRedeploy = keys.some((k) => isRedeployTopLevelKey(k));
+  const needsRedeploy = keys.some((k) => isRedeployTopLevelKey(k)) || partialNeedsRedeploy(partial);
   const { pending } = syncObjectFromDescriptor(base.object3D, descriptor, {
     awaitTextures: false
   });
@@ -317,7 +292,7 @@ async function applyObjectPartialAsync(threeJsonId, partial, options = {}) {
   const keys = Object.keys(partial);
   mergeDescriptorPartial(descriptor, partial);
   maybeMarkDirty(descriptor, options);
-  const needsRedeploy = keys.some((k) => isRedeployTopLevelKey(k));
+  const needsRedeploy = keys.some((k) => isRedeployTopLevelKey(k)) || partialNeedsRedeploy(partial);
   const { pending } = syncObjectFromDescriptor(base.object3D, descriptor, {
     awaitTextures: true
   });
@@ -347,7 +322,7 @@ function applyObjectChange(threeJsonId, path, value, options = {}) {
   maybeMarkDirty(base.descriptor, options);
   const kind = classifyPath(normalizedPath);
   const topLevelKey = getTopLevelKey(normalizedPath);
-  const needsRedeploy = kind === "structural" || isRedeployTopLevelKey(topLevelKey);
+  const needsRedeploy = kind === "structural" || isRedeployTopLevelKey(topLevelKey) || pathNeedsRedeploy(normalizedPath);
   const { pending } = syncObjectFromDescriptor(base.object3D, base.descriptor, {
     awaitTextures: false
   });
@@ -382,7 +357,7 @@ async function applyObjectChangeAsync(threeJsonId, path, value, options = {}) {
   maybeMarkDirty(base.descriptor, options);
   const kind = classifyPath(normalizedPath);
   const topLevelKey = getTopLevelKey(normalizedPath);
-  const needsRedeploy = kind === "structural" || isRedeployTopLevelKey(topLevelKey);
+  const needsRedeploy = kind === "structural" || isRedeployTopLevelKey(topLevelKey) || pathNeedsRedeploy(normalizedPath);
   const { pending } = syncObjectFromDescriptor(base.object3D, base.descriptor, {
     awaitTextures: true
   });

@@ -12,10 +12,22 @@ import {
 	sceneConfigNeedsAsyncBackdrop
 } from './sceneBackdropResolver.js';
 import { attachRuntimeContext, detachRuntimeContext, isRuntimeContext } from '../runtime/runtimeContext.js';
+import {
+	applyRendererDescriptor,
+	buildWebGLRendererConstructorOptions
+} from './rendererConfig.js';
+import {
+	containsRectAreaLightDescriptor,
+	createLightBundleFromDescriptor,
+	ensureRectAreaLightSupport
+} from '../builder/lightFactory.js';
+import { createRendererFromRegisteredBackend } from './rendererBackendRegistry.js';
 
 /**
  * One-shot scene runtime assembly: Scene, Camera, WebGLRenderer, OrbitControls, lights, and render loop.
  */
+
+const RECT_AREA_LIGHT_READY = Symbol("threeJsonRectAreaLightReady");
 
 /** @param {object|null} source @param {string} key @param {*} defaultValue */
 function getValue(source, key, defaultValue){
@@ -24,14 +36,6 @@ function getValue(source, key, defaultValue){
 
 function toColor(value, defaultValue){
 	return new THREE.Color(value || defaultValue);
-}
-
-function toVector3(value, defaultValue = {x: 0, y: 0, z: 0}){
-	return {
-		x: getValue(value, 'x', defaultValue.x),
-		y: getValue(value, 'y', defaultValue.y),
-		z: getValue(value, 'z', defaultValue.z)
-	};
 }
 
 function createScene(sceneConfig = {}){
@@ -50,20 +54,10 @@ function createCamera(cameraConfig = {}, width, height){
 }
 
 function createRenderer(canvas, rendererConfig = {}, width, height){
-	const renderer = new THREE.WebGLRenderer({
-		canvas,
-		antialias: getValue(rendererConfig, 'antialias', true),
-		precision: rendererConfig.precision,
-		preserveDrawingBuffer: rendererConfig.preserveDrawingBuffer,
-		stencil: rendererConfig.stencil,
-		alpha: rendererConfig.alpha
-	});
-	if (THREE.SRGBColorSpace !== undefined) {
-		renderer.outputColorSpace = THREE.SRGBColorSpace;
-	}
-	if(rendererConfig.shadowMapEnabled){
-		renderer.shadowMap.enabled = true;
-	}
+	const renderer = new THREE.WebGLRenderer(
+		buildWebGLRendererConstructorOptions(canvas, rendererConfig)
+	);
+	applyRendererDescriptor(renderer, rendererConfig);
 	// updateStyle=false: the host owns the canvas' responsive CSS sizing (width:100%/height:100%).
 	// Letting WebGLRenderer write an inline pixel width/height here bakes in whatever size the
 	// canvas happened to have at scene-load time; later resizes that correctly pass
@@ -74,7 +68,8 @@ function createRenderer(canvas, rendererConfig = {}, width, height){
 	if(Number.isFinite(rendererConfig.clearAlpha)){
 		renderer.setClearAlpha(rendererConfig.clearAlpha);
 	}
-	renderer.setPixelRatio(window.devicePixelRatio * getValue(rendererConfig, 'ratioRate', 1));
+	const devicePixelRatio = typeof window !== 'undefined' ? window.devicePixelRatio : 1;
+	renderer.setPixelRatio(devicePixelRatio * getValue(rendererConfig, 'ratioRate', 1));
 	return renderer;
 }
 
@@ -83,65 +78,11 @@ function createControls(camera, canvas, controlsConfig = {}, scene = null){
 }
 
 function createLight(lightConfig){
-	if(!lightConfig){
-		return null;
+	const bundle = createLightBundleFromDescriptor(lightConfig || {});
+	if (bundle.light && bundle.attachments.length > 0) {
+		bundle.light.userData.__threeJsonLightAttachments = bundle.attachments;
 	}
-	const type = String(lightConfig.type || '').trim().toLowerCase();
-	if(type === 'ambient'){
-		return new THREE.AmbientLight(
-			lightConfig.color || 0xffffff,
-			getValue(lightConfig, 'intensity', 1)
-		);
-	}
-	if(type === 'hemisphere'){
-		const light = new THREE.HemisphereLight(
-			lightConfig.skyColor || lightConfig.color || 0xffffff,
-			lightConfig.groundColor || 0x444444,
-			getValue(lightConfig, 'intensity', 1)
-		);
-		return light;
-	}
-	if(type === 'directional'){
-		const light = new THREE.DirectionalLight(
-			lightConfig.color || 0xffffff,
-			getValue(lightConfig, 'intensity', 1)
-		);
-		const position = toVector3(lightConfig.position, {x: 0, y: 1, z: 0});
-		light.position.set(position.x, position.y, position.z);
-		return light;
-	}
-	if(type === 'point'){
-		const light = new THREE.PointLight(
-			lightConfig.color || 0xffffff,
-			getValue(lightConfig, 'intensity', 1),
-			getValue(lightConfig, 'distance', 0),
-			getValue(lightConfig, 'decay', 2)
-		);
-		const position = toVector3(lightConfig.position, {x: 0, y: 1, z: 0});
-		light.position.set(position.x, position.y, position.z);
-		return light;
-	}
-	if(type === 'spot'){
-		const light = new THREE.SpotLight(
-			lightConfig.color || 0xffffff,
-			getValue(lightConfig, 'intensity', 1),
-			getValue(lightConfig, 'distance', 0),
-			getValue(lightConfig, 'angle', Math.PI / 3),
-			getValue(lightConfig, 'penumbra', 0),
-			getValue(lightConfig, 'decay', 2)
-		);
-		const position = toVector3(lightConfig.position, {x: 0, y: 1, z: 0});
-		light.position.set(position.x, position.y, position.z);
-		if(lightConfig.target && typeof lightConfig.target === 'object'){
-			const targetPos = toVector3(lightConfig.target, {x: 0, y: 0, z: 0});
-			const target = new THREE.Object3D();
-			target.position.set(targetPos.x, targetPos.y, targetPos.z);
-			light.target = target;
-			light.userData.__threeJsonSpotTarget = target;
-		}
-		return light;
-	}
-	return null;
+	return bundle.light;
 }
 
 function addLights(scene, lightsConfig = []){
@@ -149,9 +90,9 @@ function addLights(scene, lightsConfig = []){
 		const light = createLight(lightsConfig[i]);
 		if(light){
 			scene.add(light);
-			const target = light.userData?.__threeJsonSpotTarget;
-			if(target){
-				scene.add(target);
+			const attachments = light.userData?.__threeJsonLightAttachments || [];
+			for (const attachment of attachments) {
+				scene.add(attachment);
 			}
 		}
 	}
@@ -177,14 +118,17 @@ function buildRenderLoopConfig(config = {}){
  * @param {boolean} [options.disposeRuntimeContext=false] Dispose the supplied runtime context with this runtime.
  * @returns {{ scene: THREE.Scene, camera: THREE.Camera, renderer: THREE.WebGLRenderer, controls, renderLoop, runtimeContext: object|null, setComposer: Function, start: Function, stop: Function, resize: Function, invalidate: Function, renderOnce: Function, dispose: Function }}
  */
-function createSceneRuntime(options = {}){
+function assembleSceneRuntime(options, prepared){
 	const canvas = options.canvas;
 	const config = options.config || {};
-	const width = getValue(config, 'canvasWidth', window.innerWidth);
-	const height = getValue(config, 'canvasHeight', window.innerHeight);
-	const scene = createScene(config.scene);
-	const camera = createCamera(config.camera, width, height);
-	const renderer = createRenderer(canvas, config.renderer, width, height);
+	const fallbackWidth = typeof window !== 'undefined' ? window.innerWidth : 1;
+	const fallbackHeight = typeof window !== 'undefined' ? window.innerHeight : 1;
+	const width = prepared?.width ?? getValue(config, 'canvasWidth', fallbackWidth);
+	const height = prepared?.height ?? getValue(config, 'canvasHeight', fallbackHeight);
+	const scene = prepared?.scene ?? createScene(config.scene);
+	const camera = prepared?.camera ?? createCamera(config.camera, width, height);
+	const renderer = prepared?.renderer;
+	let activeComposer = prepared?.composer ?? options.composer ?? null;
 	const controls = createControls(camera, canvas, config.controls, scene);
 	const runtimeContext = isRuntimeContext(options.runtimeContext) ? options.runtimeContext : null;
 	if(runtimeContext){
@@ -199,7 +143,7 @@ function createSceneRuntime(options = {}){
 		camera,
 		renderer,
 		controls,
-		composer: options.composer,
+		composer: activeComposer,
 		config: buildRenderLoopConfig(config),
 		beforeFrame: options.beforeFrame,
 		beforeRender: options.beforeRender,
@@ -209,7 +153,8 @@ function createSceneRuntime(options = {}){
 	const innerDispose = () => {
 		renderLoop.stop();
 		controls?.dispose?.();
-		renderer.dispose();
+		activeComposer?.dispose?.();
+		renderer?.dispose?.();
 		if(runtimeContext){
 			detachRuntimeContext(scene);
 			if(options.disposeRuntimeContext === true){
@@ -218,14 +163,19 @@ function createSceneRuntime(options = {}){
 		}
 	};
 
-	return {
+	const runtime = {
 		scene,
 		camera,
 		renderer,
+		composer: activeComposer,
 		controls,
 		renderLoop,
 		runtimeContext,
-		setComposer: composer => renderLoop.setComposer(composer),
+		setComposer: composer => {
+			activeComposer = composer;
+			runtime.composer = composer;
+			renderLoop.setComposer(composer);
+		},
 		start: () => renderLoop.start(),
 		stop: () => renderLoop.stop(),
 		resize: size => renderLoop.resize(size),
@@ -236,6 +186,35 @@ function createSceneRuntime(options = {}){
 			innerDispose();
 		}
 	};
+	return runtime;
+}
+
+function createSceneRuntime(options = {}){
+	const config = options.config || {};
+	const backend = String(config.renderer?.backend || 'webgl').trim().toLowerCase();
+	if (backend !== 'webgl') {
+		const error = new Error(`Renderer backend "${backend}" requires createSceneRuntimeAsync()`);
+		error.code = 'E_RENDERER_ASYNC_REQUIRED';
+		error.backend = backend;
+		throw error;
+	}
+	if (containsRectAreaLightDescriptor(config.lights) && options[RECT_AREA_LIGHT_READY] !== true) {
+		const error = new Error('RectAreaLight requires createSceneRuntimeAsync() so renderer LTC data can be initialized lazily');
+		error.code = 'E_RECT_AREA_LIGHT_ASYNC_REQUIRED';
+		throw error;
+	}
+	const fallbackWidth = typeof window !== 'undefined' ? window.innerWidth : 1;
+	const fallbackHeight = typeof window !== 'undefined' ? window.innerHeight : 1;
+	const width = getValue(config, 'canvasWidth', fallbackWidth);
+	const height = getValue(config, 'canvasHeight', fallbackHeight);
+	return assembleSceneRuntime(options, {
+		width,
+		height,
+		scene: createScene(config.scene),
+		camera: createCamera(config.camera, width, height),
+		renderer: createRenderer(options.canvas, config.renderer, width, height),
+		composer: options.composer ?? null
+	});
 }
 
 /**
@@ -248,6 +227,8 @@ function createSceneRuntime(options = {}){
  */
 async function createSceneRuntimeAsync(options = {}){
 	const config = options.config || {};
+	const backend = String(config.renderer?.backend || 'webgl').trim().toLowerCase();
+	await ensureRectAreaLightSupport(config.lights, backend);
 	const sceneCfg = config.scene && typeof config.scene === 'object' ? { ...config.scene } : {};
 	const stripAsyncFields = (cfg) => {
 		if (!sceneConfigNeedsAsyncBackdrop(cfg)) {
@@ -260,15 +241,47 @@ async function createSceneRuntimeAsync(options = {}){
 	};
 	const strippedScene = stripAsyncFields(sceneCfg);
 
-	const runtime = createSceneRuntime({
-		...options,
-		config: { ...config, scene: strippedScene }
-	});
+	let runtime;
+	if (backend === 'webgl') {
+		runtime = createSceneRuntime({
+			...options,
+			[RECT_AREA_LIGHT_READY]: true,
+			config: { ...config, scene: strippedScene }
+		});
+	} else {
+		const fallbackWidth = typeof window !== 'undefined' ? window.innerWidth : 1;
+		const fallbackHeight = typeof window !== 'undefined' ? window.innerHeight : 1;
+		const width = getValue(config, 'canvasWidth', fallbackWidth);
+		const height = getValue(config, 'canvasHeight', fallbackHeight);
+		const scene = createScene(strippedScene);
+		const camera = createCamera(config.camera, width, height);
+		const preparedRenderer = await createRendererFromRegisteredBackend(backend, {
+			canvas: options.canvas,
+			descriptor: config.renderer || {},
+			config,
+			width,
+			height,
+			scene,
+			camera
+		});
+		runtime = assembleSceneRuntime({
+			...options,
+			config: { ...config, scene: strippedScene },
+			composer: options.composer ?? preparedRenderer.composer ?? null
+		}, {
+			width,
+			height,
+			scene,
+			camera,
+			renderer: preparedRenderer.renderer,
+			composer: options.composer ?? preparedRenderer.composer ?? null
+		});
+	}
 
 	if (sceneConfigNeedsAsyncBackdrop(sceneCfg) && runtime.renderer) {
 		await applySceneBackdropFromHints(runtime.scene, sceneCfg, runtime.renderer, {});
 	} else if (sceneConfigNeedsAsyncBackdrop(sceneCfg) && !runtime.renderer) {
-		log.warn('createSceneRuntimeAsync: missing WebGLRenderer; cannot load typed background or environment');
+		log.warn('createSceneRuntimeAsync: missing renderer; cannot load typed background or environment');
 	}
 
 	return runtime;

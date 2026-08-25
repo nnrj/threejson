@@ -125,7 +125,7 @@ const INTENT_SIGNALS = [
     patterns: [/\bparticles?\b|\bpoint\s*clouds?\b|\bstarfields?\b|\bdust\b|\bsparks?\b|\bsmoke\b|\bembers?\b|\bash\b|\bfireflies\b|\bfireworks?\b|\bmagic(?:al)?\s+(?:dust|sparkles?|effects?)\b|粒子|星尘|点云|烟雾|烟尘|火花|余烬|飞灰|萤火虫|烟花|魔法特效/i],
     lists: ["objectList", "particleList", "domainModelList"],
     objTypes: ["particleEmitter", "points"],
-    note: "Prefer objectList objType particleEmitter (simulation cpu|gpuCompute); particleList/points is legacy."
+    note: "Prefer the V2 objectList particleEmitter schema with source/emission/particle/simulation/render; particleList/points is legacy. Use only source and backend values exposed by the runtime capability snapshot."
   },
   {
     id: "weather",
@@ -190,7 +190,7 @@ const INTENT_SIGNALS = [
     patterns: [/shader surface|custom shader|glsl plane|shader plane|着色器面|自定义着色器/i],
     lists: ["shaderSurfaceList", "objectList"],
     objTypes: ["shaderSurface"],
-    note: "Use shaderSurfaceList with objType shaderSurface and shaderSource/material."
+    note: "Use shaderSurfaceList with objType shaderSurface and a registered shaderPreset plus uniforms."
   },
   {
     id: "wind",
@@ -223,7 +223,7 @@ const INTENT_SIGNALS = [
     patterns: [/post.?process|bloom|outline pass|FXAA|SMAA|pass list|passList/i],
     lists: ["passList"],
     objTypes: ["pass"],
-    note: "Use passList or sceneConfig pass records for requested post-processing effects."
+    note: "Use only post-processing pass types listed in the runtime capability snapshot; do not invent a pass merely because its name appears in the request."
   },
   {
     id: "declarativeAnimation",

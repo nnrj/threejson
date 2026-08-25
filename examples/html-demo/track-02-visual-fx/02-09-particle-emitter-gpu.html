@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ThreeJSON Tutorial · Track 2 · particleEmitter gpuCompute</title>
+  <title>ThreeJSON Tutorial · Track 2 · Particle V2 WebGL compute</title>
   <link rel="icon" href="../../../assets/img/favicon.ico" type="image/x-icon">
   <script type="importmap">
     {
@@ -84,8 +84,8 @@
 </style>
 <script>
 (function(){
-  var ZH_HINT = "【Track 2 · particleEmitter】<code>../../../assets/json/tutorial/track-02/02-09-particle-emitter-gpu.json</code><br>\n    中央 <code>simulation: gpuCompute</code> 下落粒子 · 左侧 <code>simulation: cpu</code> twinkle 对比";
-  var EN_HINT = "【Track 2 · particleEmitter】<code>../../../assets/json/tutorial/track-02/02-09-particle-emitter-gpu.json</code><br>\n    Center: <code>simulation: gpuCompute</code> falling particles · Left: <code>simulation: cpu</code> twinkle comparison";
+  var ZH_HINT = "【Track 2 · Particle V2】<code>../../../assets/json/tutorial/track-02/02-09-particle-emitter-gpu.json</code><br>\n    中央 <code>simulation.backend: webgl-compute</code> 雨滴 · 左侧 <code>cpu</code> 参考后端";
+  var EN_HINT = "【Track 2 · Particle V2】<code>../../../assets/json/tutorial/track-02/02-09-particle-emitter-gpu.json</code><br>\n    Center: <code>simulation.backend: webgl-compute</code> rain · Left: the <code>cpu</code> reference backend";
   var box = document.getElementById("demoHintBox");
   var textEl = document.getElementById("demoHintText");
   var langBtn = document.getElementById("demoHintLangBtn");

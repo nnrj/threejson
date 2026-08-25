@@ -1,5 +1,4 @@
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { log } from "../util/logger.js";
 import { FlyControls } from "three/examples/jsm/controls/FlyControls.js";
 import { createFirstPersonControls } from "../handler/controls/firstPersonControls.js";
 
@@ -28,9 +27,15 @@ function toVector3(value, defaultValue = { x: 0, y: 0, z: 0 }) {
  */
 export function resolveControlsType(config = {}) {
   const raw = typeof config.type === "string" ? config.type.trim() : "";
-  if (!raw || raw.toLowerCase() === "orbit") {
+  const lower = raw.toLowerCase().replace(/[\s_-]/g, "");
+  if (!lower || lower === "orbit") {
     return "orbit";
   }
+  if (lower === "firstperson") return "firstPerson";
+  if (lower === "fly") return "fly";
+  if (lower === "map" || lower === "mapcontrols") return "map";
+  if (lower === "trackball" || lower === "trackballcontrols") return "trackball";
+  if (lower === "arcball" || lower === "arcballcontrols") return "arcball";
   return raw;
 }
 
@@ -39,7 +44,7 @@ export function resolveControlsType(config = {}) {
  * @param {(camera: import("three").PerspectiveCamera, domElement: HTMLElement, config: object, ctx: object) => object} factory
  */
 export function registerControlsType(type, factory) {
-  const key = typeof type === "string" ? type.trim() : "";
+  const key = resolveControlsType({ type });
   if (!key) {
     throw new Error("registerControlsType: type must not be empty");
   }
@@ -96,21 +101,21 @@ export function createControlsFromDescriptor(camera, domElement, controlsConfig 
     return null;
   }
   const type = resolveControlsType(controlsConfig);
-  if (type === "orbit") {
-    return createOrbitControls(camera, domElement, controlsConfig);
-  }
-  if (type === "firstPerson") {
-    return createFirstPersonControls(camera, domElement, controlsConfig, ctx);
-  }
-  if (type === "fly") {
-    return createFlyControls(camera, domElement, controlsConfig);
-  }
+  let controls = null;
+  if (type === "orbit") controls = createOrbitControls(camera, domElement, controlsConfig);
+  if (type === "firstPerson") controls = createFirstPersonControls(camera, domElement, controlsConfig, ctx);
+  if (type === "fly") controls = createFlyControls(camera, domElement, controlsConfig);
   const custom = customFactories.get(type);
-  if (custom) {
-    return custom(camera, domElement, controlsConfig, ctx);
+  if (!controls && custom) controls = custom(camera, domElement, controlsConfig, ctx);
+  if (!controls) {
+    const error = new Error(`ThreeJSON controls type is not registered: ${type}`);
+    error.code = "E_CONTROLS_TYPE_UNAVAILABLE";
+    error.controlsType = type;
+    throw error;
   }
-  log.warn(`[controlsBuilder] Unknown controls.type="${type}", falling back to orbit`);
-  return createOrbitControls(camera, domElement, controlsConfig);
+  controls.threeJsonControlsKind = controls.threeJsonControlsKind || type || "orbit";
+  controls.threeJsonControlsConfig = { ...controlsConfig, type: controls.threeJsonControlsKind };
+  return controls;
 }
 
 /**
@@ -122,6 +127,11 @@ export function applyControlsConfig(controls, config = {}) {
     return;
   }
   const kind = controls.threeJsonControlsKind || resolveControlsType(config);
+  controls.threeJsonControlsConfig = {
+    ...(controls.threeJsonControlsConfig || {}),
+    ...config,
+    type: kind
+  };
 
   if (config.enabled === false) {
     controls.enabled = false;

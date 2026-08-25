@@ -1,0 +1,29 @@
+{
+  "threeJsonId": "particle-v2-attractor",
+  "sceneConfig": {
+    "scene": { "background": "#050713" },
+    "camera": { "fov": 48, "near": 0.1, "far": 1000, "position": { "x": 0, "y": 30, "z": 105 } },
+    "controls": { "target": { "x": 0, "y": 0, "z": 0 } },
+    "lights": [{ "type": "ambient", "intensity": 0.3 }],
+    "renderLoop": { "updateAnimations": true }
+  },
+  "objectList": [
+    {
+      "threeJsonId": "attracted-shell",
+      "objType": "particleEmitter",
+      "source": { "type": "shell", "radius": 34, "thickness": 5 },
+      "emission": { "mode": "continuous", "count": 5000, "rate": 700, "loop": true, "seed": 401 },
+      "particle": { "lifetime": { "min": 8, "max": 12 }, "velocity": { "min": { "x": -0.5, "y": -0.5, "z": -0.5 }, "max": { "x": 0.5, "y": 0.5, "z": 0.5 } }, "colorOverLife": ["#38bdf8", "#f8fafc", "#a855f7"], "opacityOverLife": [0, 1, 0] },
+      "simulation": {
+        "backend": "cpu",
+        "drag": 0.02,
+        "attractors": [
+          { "position": { "x": -15, "y": 0, "z": 0 }, "strength": 80, "maxDistance": 80 },
+          { "position": { "x": 15, "y": 0, "z": 0 }, "strength": 80, "maxDistance": 80 }
+        ],
+        "boundary": { "type": "wrap", "width": 100, "height": 100, "depth": 100 }
+      },
+      "render": { "type": "points", "size": 2.2, "blending": "additive", "depthWrite": false }
+    }
+  ]
+}

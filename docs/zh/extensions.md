@@ -126,15 +126,21 @@ await createJsonScene(payload, {
 
 API 与各键含义：[`extensions/physics-rapier/README.md`](../../extensions/physics-rapier/README.md)。
 
-### 粒子 provider（registry 路径）
+### 可选粒子模拟后端
 
-无需 `PluginHost` 时，可在页面入口 side-effect 注册：
+Particle V2 通过单一的模拟后端注册表扩展，而不是替换整个发射器：
 
 ```js
-import "threejson/extensions/particle-nebula"; // 注册 provider: "nebula"
-```
+import {
+  registerParticleSimulationBackend,
+  registerParticleSimulationLifecycle
+} from "threejson/core";
 
-JSON 中 `objType: "points"`（粒子发射器）可设 `provider: "nebula"`。自定义 provider 使用 `registerParticleEmitterProvider(id, deployer)`（见 [`extensions/particle-nebula/`](../../extensions/particle-nebula/index.js) 骨架）。
+registerParticleSimulationBackend("acme-compute", (record, scene, ctx) => {
+  // 按 Particle V2 的 source/emission/particle/simulation/render 构建对象，
+  // 并通过 registerParticleSimulationLifecycle(...) 注册更新和释放回调。
+});
+```
 
 ## 内置参考实现索引
 
@@ -147,7 +153,6 @@ JSON 中 `objType: "points"`（粒子发射器）可设 `provider: "nebula"`。�
 | `fps-walk` | `extensions/fps-walk/` | `bootstrapFirstPersonExtensionsFromScene` | [04-03-fps-walk.html](../../examples/html-demo/track-04-interaction/04-03-fps-walk.html) |
 | Rapier 第一人称 | `physics-rapier/firstPersonBridge.js` | `bootstrapRapierFirstPersonFromScene` | [04-05-fps-rapier-collision.html](../../examples/html-demo/track-04-interaction/04-05-fps-rapier-collision.html) |
 | `stat-echarts` | `extensions/stat-echarts/` | `bootstrapFromScene`（配合 stat 域） | Track 6 `06-04-stat-chart-echarts.html` |
-| `nebula`（provider） | `extensions/particle-nebula/` | `registerParticleEmitterProvider` | 见 api / json-format 粒子节 |
 
 教程索引：[tutorial.md · Track 4](./tutorial.md)（运行时交互与扩展）。
 
@@ -169,7 +174,7 @@ JSON 中 `objType: "points"`（粒子发射器）可设 `provider: "nebula"`。�
 | 机制 | 适用 |
 |------|------|
 | `createPluginHost().register` | 帧循环钩子（`beforePhysics`、`afterRender` 等） |
-| `registerParticleEmitterProvider` | 粒子 `provider` 字段 |
+| `registerParticleSimulationBackend` | 可选的 Particle V2 `simulation.backend` |
 | `registerControlsType` | 新 `controls.type` |
 | `registerObjTypeDeployer` | 新 `objType` deploy（更接近 domain 边界，见 [design-principles](./design-principles.md)） |
 

@@ -13,6 +13,8 @@ test("threejson root/core entries do not statically load AI or service adapters"
   const fullEntry = fs.readFileSync(path.join(repoRoot, "builtins/full.js"), "utf8");
   assert.doesNotMatch(coreIndex, /core\/ai|\.\/ai\//);
   assert.doesNotMatch(fullEntry, /core\/ai|\.\/ai\//);
+  assert.doesNotMatch(coreIndex, /from\s+["'][^"']*(?:webgpu|tslCode|particlesRaster|webglAdvancedPasses|extraControls)/i);
+  assert.doesNotMatch(fullEntry, /(?:webgpu|tsl-code|particles-raster|postprocessing-webgl|controls-extra)/i);
   for (const file of [
     "core/texture/textureSlots.js",
     "core/texture/textureProvider.js",
@@ -22,6 +24,16 @@ test("threejson root/core entries do not statically load AI or service adapters"
     const source = fs.readFileSync(path.join(repoRoot, file), "utf8");
     assert.doesNotMatch(source, /polyhaven|openverse|threebox-server/i, `${file} leaked a service adapter`);
   }
+});
+
+test("optional renderer and particle adapters stay behind dynamic capability loading", () => {
+  const optionalLoader = fs.readFileSync(path.join(repoRoot, "core/capabilities/optionalCapabilityLoader.js"), "utf8");
+  assert.match(optionalLoader, /import\("\.\.\/builder\/postprocess\/webglAdvancedPasses\.js"\)/);
+  assert.match(optionalLoader, /import\("\.\.\/builder\/particle\/particlesRaster\.js"\)/);
+  assert.match(optionalLoader, /import\("\.\.\/builder\/controls\/extraControls\.js"\)/);
+  const pkg = JSON.parse(fs.readFileSync(path.join(repoRoot, "package.json"), "utf8"));
+  assert.equal(pkg.exports["./webgpu"], "./webgpu/index.js");
+  assert.equal(pkg.exports["./particles-raster"], "./core/builder/particle/particlesRaster.js");
 });
 
 test("published ThreeJSON dependency graph contains no texture search/generation/storage package", () => {
@@ -66,4 +78,3 @@ test("the texture pipeline is inert when no textureProvider is injected", async 
   assert.equal(result.skipped, "provider_not_configured");
   assert.equal(plannerCalls, 0);
 });
-

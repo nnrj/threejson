@@ -35,19 +35,21 @@
     {
       "objType": "particleEmitter",
       "name": "gpu-rain",
-      "simulation": "gpuCompute",
-      "count": 6000,
-      "bounds": { "width": 200, "height": 80, "depth": 200 },
+      "source": { "type": "box", "width": 200, "height": 80, "depth": 200 },
+      "emission": { "mode": "continuous", "count": 6000, "rate": 900, "loop": true, "seed": 2026 },
+      "particle": {
+        "lifetime": 4.5,
+        "velocity": { "min": { "x": -0.3, "y": -18, "z": -0.3 }, "max": { "x": 0.3, "y": -16, "z": 0.3 } },
+        "opacityOverLife": [0, 0.9, 0]
+      },
+      "simulation": {
+        "backend": "webgl-compute",
+        "gravity": { "x": 0, "y": -1.5, "z": 0 },
+        "boundary": { "type": "wrap", "width": 200, "height": 80, "depth": 200 },
+        "compute": { "textureSize": 128 }
+      },
       "position": { "x": 0, "y": 55, "z": 0 },
-      "emitter": {
-        "velocity": { "x": 0, "y": -1, "z": 0 },
-        "speed": 18,
-        "wrap": true
-      },
-      "compute": {
-        "textureSize": 128
-      },
-      "material": {
+      "render": {
         "color": "#9ec8ff",
         "size": 2.2,
         "sizeAttenuation": true,
@@ -60,17 +62,16 @@
     {
       "objType": "particleEmitter",
       "name": "cpu-sparkles",
-      "simulation": "cpu",
-      "count": 400,
-      "bounds": { "width": 120, "height": 50, "depth": 120 },
-      "position": { "x": -70, "y": 30, "z": 40 },
-      "motion": {
-        "type": "twinkle",
-        "speed": 2.5,
-        "minOpacity": 0.25,
-        "maxOpacity": 1
+      "source": { "type": "sphere", "radius": 60 },
+      "emission": { "mode": "static", "count": 400, "seed": 99 },
+      "particle": {
+        "lifetime": 0,
+        "sizeOverLife": [1.5, 4, 1.5],
+        "opacityOverLife": [0.25, 1, 0.25]
       },
-      "material": {
+      "simulation": { "backend": "cpu", "noise": { "strength": 0.08, "frequency": 2.5 } },
+      "position": { "x": -70, "y": 30, "z": 40 },
+      "render": {
         "color": "#ffdd88",
         "size": 3.5,
         "transparent": true,

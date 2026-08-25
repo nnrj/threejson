@@ -805,11 +805,11 @@
     ],
     "status": "stable",
     "group": "Track 2 · 可视化与特效",
-    "title": "particleEmitter gpuCompute",
-    "summary": "objType particleEmitter：gpuCompute（GPUComputationRenderer）与 cpu twinkle 对比。",
-    "navSummary": "particleEmitter gpu/cpu。",
+    "title": "Particle V2 WebGL 计算",
+    "summary": "objType particleEmitter：webgl-compute（GPUComputationRenderer）与 CPU 参考后端共用同一 V2 描述符。",
+    "navSummary": "Particle V2 WebGL/CPU。",
     "highlights": [
-      "simulation: gpuCompute + compute.textureSize。",
+      "simulation.backend: webgl-compute + 计算纹理布局。",
       "GPU 位置纹理 + ShaderMaterial Points。",
       "无 WebGL2 时自动回退 cpu。"
     ],
@@ -819,16 +819,16 @@
         "label": "particleEmitter"
       }
     ],
-    "hint": "【Track 2 · particleEmitter】<code>../../../assets/json/tutorial/track-02/02-09-particle-emitter-gpu.json</code><br>\n    中央 <code>simulation: gpuCompute</code> 下落粒子 · 左侧 <code>simulation: cpu</code> twinkle 对比"
+    "hint": "【Track 2 · Particle V2】<code>../../../assets/json/tutorial/track-02/02-09-particle-emitter-gpu.json</code><br>\n    中央 <code>simulation.backend: webgl-compute</code> 雨滴 · 左侧 <code>cpu</code> 参考后端"
   },
   {
     "id": "t02-10",
     "track": "02",
     "order": "10",
-    "path": "./track-02-visual-fx/02-10-particle-nebula-provider.html",
+    "path": "./track-02-visual-fx/02-10-particle-v2-sources.html",
     "jsonFiles": [
       {
-        "json": "../../assets/json/tutorial/track-02/02-10-particle-nebula-provider.json"
+        "json": "../../assets/json/tutorial/track-02/02-10-particle-v2-sources.json"
       }
     ],
     "prerequisites": [
@@ -836,25 +836,25 @@
     ],
     "status": "stable",
     "group": "Track 2 · 可视化与特效",
-    "title": "particleEmitter 第三方 provider",
-    "summary": "extensions/particle-nebula：provider: nebula 注册第三方粒子适配器，与 core 并排对比。",
-    "navSummary": "第三方粒子 provider。",
+    "title": "Particle V2 来源与仿真",
+    "summary": "通过固定 seed 的 shell、curve 来源和 burst 烟火展示 Particle V2 描述符。",
+    "navSummary": "Particle V2 来源与力场。",
     "highlights": [
-      "先 threejson/core，再 import extensions/particle-nebula 注册 provider。",
-      "JSON provider: nebula → adapter 略调 material 后委托 core。",
-      "未 import 扩展时 warn 并回退 core。"
+      "source、emission、particle、simulation、render 五段正交描述。",
+      "固定 seed 可复现场景。",
+      "生命周期曲线，以及重力、阻力与噪声。"
     ],
     "docLinks": [
       {
-        "href": "../../extensions/particle-nebula/README.md",
-        "label": "particle-nebula README"
+        "href": "../../docs/zh/json-format.md#particleemitter统一粒子发射器",
+        "label": "Particle V2 格式"
       },
       {
         "href": "../../docs/zh/json-format.md#particleemitter统一粒子发射器",
         "label": "particleEmitter"
       }
     ],
-    "hint": "【Track 2 · 第三方粒子】<code>../../../assets/json/tutorial/track-02/02-10-particle-nebula-provider.json</code><br>\n    先 <code>threejson/core</code> 再 <code>import \"/extensions/particle-nebula/index.js\"</code> · 左侧 core · 右侧 <code>provider: \"nebula\"</code>"
+    "hint": "【Track 2 · Particle V2】<code>../../../assets/json/tutorial/track-02/02-10-particle-v2-sources.json</code><br>\n    固定 seed 的 <code>shell</code>/<code>curve</code> 来源与带生命周期曲线的 burst 烟火"
   },
   {
     "id": "t02-11",

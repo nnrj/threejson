@@ -12,7 +12,6 @@
 | `fps-walk/` | 第一人称 **`floorMeshRef`** 贴地；`bootstrapFirstPersonExtensionsFromScene` 统一入口。 |
 | （同上目录） | `bootstrapFirstPersonExtensions.js` — 按 `collision.provider` 分发 fps-walk / Rapier。 |
 | `physics-rapier/` | 含 **`firstPersonBridge.js`**（第一人称 Rapier 碰撞）。 |
-| `particle-nebula/` | **粒子第三方适配器骨架**；`provider: "nebula"` → `registerParticleEmitterProvider` 示例。 |
 
 可交互 **CSS3D 面板**（`css3dPanel`）已迁入 **core**（`core/builder/css3d/`），见 [`docs/zh/json-format.md`](../docs/zh/json-format.md) 与 `04-06-css3d-panel.html`。
 

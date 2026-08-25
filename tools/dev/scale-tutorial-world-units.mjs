@@ -13,7 +13,7 @@ const WHITELIST = new Set([
   "02-05-scene-background.json",
   "02-01-heatmap-wind.json",
   "02-09-particle-emitter-gpu.json",
-  "02-10-particle-nebula-provider.json",
+  "02-10-particle-v2-sources.json",
   "04-03-fps-walk.json",
   "04-04-fps-player-rig.json",
   "04-05-fps-rapier-collision.json",

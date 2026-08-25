@@ -236,12 +236,13 @@ ThreeJSON 支持两种等价写法：
 
 | 字段 | 说明 |
 | --- | --- |
-| `type` | `ambient`、`directional`、`point` 等。 |
+| `type` | `ambient`、`hemisphere`、`directional`、`point`、`spot` 或 `rectArea`。 |
 | `color` | 灯光颜色。 |
 | `intensity` | 光照强度。 |
 | `position` | 需要位置的灯光使用。 |
 | `target` | 方向灯等可使用。 |
 | `distance` / `decay` | 点光源等可使用。 |
+| `width` / `height` | `rectArea` 的尺寸。矩形面积光所需 LTC 表仅在使用时加载，因此须使用异步场景/运行时 API。 |
 
 ### 5.6 渲染循环
 
@@ -579,7 +580,7 @@ CSS3D 面板需要页面提供对应 CSS3D 集成环境。简单 3D 场景不建
   "objType": "box",
   "animations": [
     {
-      "type": "rotation",
+      "type": "rotate",
       "axis": "y",
       "speed": 0.8
     }
@@ -587,7 +588,7 @@ CSS3D 面板需要页面提供对应 CSS3D 集成环境。简单 3D 场景不建
 }
 ```
 
-实际可用动画类型取决于当前内核和扩展注册情况。编辑器导出的动画配置优先作为权威示例。
+core 还支持 `transform`、`expression`、`path` 与 `morph` 动画。`path` 与 Tube、Line、粒子来源共用 Line/CatmullRom/Bezier/Ellipse 曲线描述；`morph` 可按名称或索引调整已加载模型的 morph target。glTF 动画片段继续使用 AnimationMixer / `animationGraph`。
 
 ## 14. 粒子、着色器与其它扩展
 
@@ -596,18 +597,27 @@ CSS3D 面板需要页面提供对应 CSS3D 集成环境。简单 3D 场景不建
 ```json
 {
   "threeJsonId": "particles-1",
-  "objType": "points",
-  "count": 1000,
-  "position": { "x": 0, "y": 2, "z": 0 },
-  "material": { "color": "#ffffff", "size": 0.05 }
+  "objType": "particleEmitter",
+  "source": { "type": "sphere", "radius": 5 },
+  "emission": { "mode": "continuous", "count": 1000, "rate": 200, "loop": true, "seed": 42 },
+  "particle": {
+    "lifetime": { "min": 3, "max": 5 },
+    "velocity": { "min": { "x": -0.2, "y": 0.5, "z": -0.2 }, "max": { "x": 0.2, "y": 1.5, "z": 0.2 } },
+    "sizeOverLife": [0, 3, 0],
+    "opacityOverLife": [0, 1, 0]
+  },
+  "simulation": { "backend": "cpu", "gravity": { "x": 0, "y": -0.15, "z": 0 }, "drag": 0.1 },
+  "render": { "type": "points", "color": "#ffffff", "size": 3, "blending": "additive", "depthWrite": false }
 }
 ```
 
-使用第三方粒子 provider 时，需要在代码中导入对应扩展：
+`source.type` 支持 `positions`、`box`、`sphere`、`shell`、`disc`、`cone`、`line`、`curve`、`meshSurface`。`simulation.backend: "cpu"` 是功能参考后端，`"webgl-compute"` 是 WebGL 计算后端。`textMask` 和 `imageMask` 属于按需加载的浏览器栅格来源：
 
 ```js
-import "threejson/extensions/particle-nebula";
+import "threejson/particles-raster";
 ```
+
+旧的 `points` 仍是点云图元，但不再是 Particle V2 发射器格式。
 
 ### 14.2 着色器表面
 
@@ -615,12 +625,14 @@ import "threejson/extensions/particle-nebula";
 {
   "threeJsonId": "shader-1",
   "objType": "shaderSurface",
-  "geometry": { "type": "plane", "width": 8, "height": 8 },
-  "shader": { "preset": "water" }
+  "surface": "plane",
+  "geometry": { "width": 8, "height": 8 },
+  "shaderPreset": "water",
+  "uniforms": { "speed": 0.5 }
 }
 ```
 
-着色器能力依赖已注册的 preset。自定义 preset 应在应用启动时注册。
+`shaderSurface` 只能使用已注册的 WebGL GLSL preset，不接受任意 `shaderSource`。WebGPU TSL 材质使用另一套显式预览契约，详见[能力、Particle V2 与 WebGPU/TSL](./capabilities-webgpu-particles.md)。
 
 ## 15. 子场景
 

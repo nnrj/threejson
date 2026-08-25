@@ -11,6 +11,7 @@
  */
 import * as THREE from "three";
 import { resolveRuntimeContext } from "../runtime/runtimeContext.js";
+import { log } from "./logger.js";
 
 const ANISOTROPY_MIN = 1;
 const ANISOTROPY_MAX = 16;
@@ -357,13 +358,9 @@ export function coerceFiltersForMipmaps(settings, warnCtx = {}) {
 				out = { ...settings };
 			}
 			out[key] = THREE.LinearFilter;
-			if (typeof console !== "undefined" && console.warn) {
-				const id = warnCtx.threeJsonId ? ` threeJsonId=${warnCtx.threeJsonId}` : "";
-				const ptr = warnCtx.materialPointer ? ` material=${warnCtx.materialPointer}` : "";
-				console.warn(
-					`[textureSampling] generateMipmaps=false: ${key} downgraded to linear.${id}${ptr}`
-				);
-			}
+			const id = warnCtx.threeJsonId ? ` threeJsonId=${warnCtx.threeJsonId}` : "";
+			const ptr = warnCtx.materialPointer ? ` material=${warnCtx.materialPointer}` : "";
+			log.warn(`[textureSampling] generateMipmaps=false: ${key} downgraded to linear.${id}${ptr}`);
 		}
 	}
 	return out;

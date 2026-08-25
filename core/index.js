@@ -152,8 +152,19 @@ export {
   evaluateAnimationWhen
 } from "./handler/animationGraphUtil.js";
 export * from "./plugin/pluginHost.js";
+export * from "./capabilities/sceneCapabilityManifest.js";
+export * from "./capabilities/sceneCapabilityValidation.js";
+export * from "./handler/rendererConfig.js";
+export * from "./handler/rendererBackendRegistry.js";
+export * from "./builder/lightFactory.js";
+export * from "./builder/geometry/geometryFactory.js";
+export * from "./builder/gltfLoaderConfig.js";
+export * from "./capabilities/optionalCapabilityLoader.js";
+export * from "./capabilities/scenePreparationRegistry.js";
+export * from "./builder/postprocess/shaderPassPresetRegistry.js";
 
 export * from "./builder/modelBuilder.js";
+export * from "./builder/material/materialFactory.js";
 export * from "./builder/nativeObjectLoader.js";
 export * from "./builder/sceneHelperBuilder.js";
 export * from "./builder/shapeGeometryUtil.js";
@@ -278,13 +289,20 @@ export {
 export { deployShaderSurface } from "./builder/shader/shaderSurfaceBuilder.js";
 export { registerCoreShaderMechanism } from "./builder/shader/registerCoreShader.js";
 export { deployParticleEmitter, deployParticleEmitterCore } from "./builder/particle/particleEmitterBuilder.js";
+export * from "./builder/particle/particleV2Descriptor.js";
+export * from "./builder/particle/particleSourceSampler.js";
 export {
-  registerParticleEmitterProvider,
-  getParticleEmitterProvider,
-  resolveParticleProviderId
-} from "./builder/particle/particleProviderRegistry.js";
+  deployParticleCpuEmitter,
+  createParticleCpuSimulationStore,
+  updateParticleCpuSimulation,
+  disposeParticleCpuSimulation
+} from "./builder/particle/particleCpuSimulation.js";
+export * from "./builder/particle/particleSimulationBackendRegistry.js";
 export { deployParticleGpuEmitter } from "./builder/particle/particleGpuCompute.js";
 export { resolveParticleTextureSize } from "./builder/particle/particleComputeUtil.js";
+export { deployLod } from "./builder/lodBuilder.js";
+export { CurveDescriptorError, createCurveFromDescriptor, sampleCurveDescriptor } from "./builder/curve/curveFactory.js";
+export { listMorphTargets, setMorphTargetInfluence, applyMorphInfluencesFromDescriptor } from "./handler/morphTargetRuntime.js";
 export {
   configureTextureUrlCacheForDeploy,
   isTextureUrlCacheEnabled,

@@ -1,0 +1,34 @@
+{
+  "threeJsonId": "particle-v2-text-logo",
+  "sceneConfig": {
+    "scene": { "background": "#070b18" },
+    "camera": { "fov": 50, "near": 0.1, "far": 1000, "position": { "x": 0, "y": 0, "z": 95 } },
+    "controls": { "target": { "x": 0, "y": 0, "z": 0 } },
+    "lights": [{ "type": "ambient", "intensity": 0.4 }],
+    "renderLoop": { "updateAnimations": true }
+  },
+  "objectList": [
+    {
+      "threeJsonId": "text-particles",
+      "objType": "particleEmitter",
+      "name": "ThreeJSON text mask",
+      "source": { "type": "textMask", "text": "ThreeJSON", "font": "700 78px sans-serif", "width": 72, "height": 24, "depth": 1, "resolution": 384 },
+      "emission": { "mode": "static", "count": 4200, "seed": 101 },
+      "particle": { "lifetime": 0, "sizeOverLife": [1.1, 2, 1.1], "colorOverLife": ["#5ee7ff", "#ffffff", "#7c6cff"] },
+      "simulation": { "backend": "cpu", "noise": { "strength": 0.015, "frequency": 1.2 } },
+      "render": { "type": "points", "size": 1.7, "opacity": 0.9, "blending": "additive", "depthWrite": false },
+      "position": { "x": -15, "y": 15, "z": 0 }
+    },
+    {
+      "threeJsonId": "logo-particles",
+      "objType": "particleEmitter",
+      "name": "ThreeJSON image mask",
+      "source": { "type": "imageMask", "url": "/assets/img/logo/threejson-logo-512.png", "width": 28, "height": 28, "depth": 1, "alphaThreshold": 40 },
+      "emission": { "mode": "static", "count": 3200, "seed": 102 },
+      "particle": { "lifetime": 0, "colorOverLife": ["#3b82f6", "#a5f3fc"] },
+      "simulation": { "backend": "cpu", "noise": { "strength": 0.01, "frequency": 1.6 } },
+      "render": { "type": "points", "size": 1.8, "opacity": 0.92, "blending": "additive", "depthWrite": false },
+      "position": { "x": 28, "y": -13, "z": 0 }
+    }
+  ]
+}

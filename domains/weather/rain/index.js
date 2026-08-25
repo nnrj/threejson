@@ -4,7 +4,7 @@ import {
   createWeather,
   deployWeather
 } from "../weatherFactory.js";
-import { isWeatherHandler, WEATHER_HANDLER_PRESETS } from "../weatherPresets.js";
+import { isWeatherHandler, WEATHER_PARTICLE_PRESETS } from "../weatherPresets.js";
 
 function resolveRainDomainModel(record, scene) {
   const handler = record?.handler ?? "rain";
@@ -34,7 +34,7 @@ const weatherRainDomain = {
       return deployWeather({ handler: record?.handler ?? "rain", ...record }, scene);
     },
     isWeatherHandler,
-    weatherPresets: WEATHER_HANDLER_PRESETS
+    weatherPresets: WEATHER_PARTICLE_PRESETS
   }
 };
 

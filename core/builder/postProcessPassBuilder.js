@@ -180,26 +180,6 @@ export function createOutputPassFromRecord(record, ctx) {
 }
 
 /**
- * @param {object} record
- * @param {object} _ctx
- * @returns {null}
- */
-function createUnrealBloomPassStub(record, _ctx) {
-  log.warn("[pass:unrealBloom] not implemented yet; record id:", record?.id);
-  return null;
-}
-
-/**
- * @param {object} record
- * @param {object} _ctx
- * @returns {null}
- */
-function createShaderPassStub(record, _ctx) {
-  log.warn("[pass:shader] not implemented yet; record id:", record?.id);
-  return null;
-}
-
-/**
  * @param {object} [overrides]
  * @returns {object}
  */
@@ -231,8 +211,6 @@ export function ensureDefaultPassTypeFactories() {
   registerPassTypeFactory("outline", createOutlinePassFromRecord);
   registerPassTypeFactory("render", createRenderPassFromRecord);
   registerPassTypeFactory("output", createOutputPassFromRecord);
-  registerPassTypeFactory("unrealbloom", createUnrealBloomPassStub);
-  registerPassTypeFactory("shader", createShaderPassStub);
   factoriesRegistered = true;
 }
 

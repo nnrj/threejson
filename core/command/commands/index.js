@@ -14,6 +14,7 @@ import {
 } from "./object.js";
 import { handleMaterialPatch } from "./material.js";
 import { handleCameraFit } from "./camera.js";
+import { handleMorphList, handleMorphSet } from "./morph.js";
 
 /** @typedef {(ctx: import("../types.js").CommandContext, args: object) => unknown | Promise<unknown>} CommandHandler */
 
@@ -30,5 +31,7 @@ export const CORE_COMMAND_HANDLERS = {
   "object.get": handleObjectGet,
   "object.reconcile": handleObjectReconcile,
   "material.patch": handleMaterialPatch,
-  "camera.fit": handleCameraFit
+  "camera.fit": handleCameraFit,
+  "morph.list": handleMorphList,
+  "morph.set": handleMorphSet
 };

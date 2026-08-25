@@ -21,8 +21,11 @@ class CatmullRomCurve3 {
 
 const THREE = { Vector3, CatmullRomCurve3 };
 
-test("buildCurveFromPathDef returns null without enough points", () => {
-  assert.equal(buildCurveFromPathDef({ points: [{ x: 0, y: 0, z: 0 }] }, THREE), null);
+test("buildCurveFromPathDef distinguishes a missing descriptor from an invalid one", () => {
+  assert.throws(
+    () => buildCurveFromPathDef({ points: [{ x: 0, y: 0, z: 0 }] }, THREE),
+    (error) => error?.code === "E_CURVE_POINTS_REQUIRED"
+  );
   assert.equal(buildCurveFromPathDef(null, THREE), null);
 });
 

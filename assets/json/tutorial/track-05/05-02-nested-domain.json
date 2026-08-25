@@ -50,7 +50,7 @@
           "y": 8,
           "z": 0
         },
-        "count": 1400
+        "emission": { "count": 1400 }
       },
       {
         "objType": "domain",
@@ -78,7 +78,7 @@
           "y": 7,
           "z": 4
         },
-        "count": 600
+        "emission": { "count": 600 }
       }
     ],
     "boxModelList": [

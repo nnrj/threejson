@@ -45,7 +45,9 @@ test("listMaterialTextureSlots scans PBR slots and materialArr, but not discarde
   const names = new Set(slots.map((slot) => slot.slot));
   assert.deepEqual(names, new Set([
     "baseColor", "normal", "roughness", "metalness", "ao",
-    "emissive", "opacity", "bump", "displacement"
+    "emissive", "opacity", "bump", "displacement", "clearcoat", "clearcoatRoughness",
+    "clearcoatNormal", "transmission", "thickness", "sheenColor", "sheenRoughness",
+    "specularColor", "specularIntensity", "anisotropy", "iridescence", "iridescenceThickness"
   ]));
   assert.equal(slots.some((slot) => slot.materialPointer === "/objectList/0/material"), true);
   assert.equal(slots.some((slot) => slot.materialPointer === "/objectList/0/holes/0/material"), false);

@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-test("extension before core: particle-nebula then core/index does not throw on module load", async () => {
-  await import("../extensions/particle-nebula/index.js");
+test("optional particle raster entry can load before core/index", async () => {
+  await import("../core/builder/particle/particlesRaster.js");
   const core = await import("../core/index.js");
   assert.equal(typeof core.createJsonScene, "function");
   assert.equal(typeof core.trackDisposableResource, "function");

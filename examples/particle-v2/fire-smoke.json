@@ -1,0 +1,45 @@
+{
+  "threeJsonId": "particle-v2-fire-smoke",
+  "sceneConfig": {
+    "scene": { "background": "#080808" },
+    "camera": { "fov": 52, "near": 0.1, "far": 500, "position": { "x": 0, "y": 18, "z": 58 } },
+    "controls": { "target": { "x": 0, "y": 13, "z": 0 } },
+    "lights": [{ "type": "ambient", "intensity": 0.25 }],
+    "renderLoop": { "updateAnimations": true }
+  },
+  "objectList": [
+    {
+      "threeJsonId": "fire-emitter",
+      "objType": "particleEmitter",
+      "source": { "type": "disc", "radius": 5 },
+      "emission": { "mode": "continuous", "count": 1400, "rate": 330, "loop": true, "seed": 201 },
+      "particle": {
+        "lifetime": { "min": 1.2, "max": 2.8 },
+        "velocity": { "min": { "x": -0.8, "y": 6, "z": -0.8 }, "max": { "x": 0.8, "y": 12, "z": 0.8 } },
+        "sizeOverLife": [1, 7, 0],
+        "colorOverLife": ["#fff7ad", "#ff7a18", "#b91c1c"],
+        "opacityOverLife": [0, 1, 0]
+      },
+      "simulation": { "backend": "cpu", "drag": 0.12, "noise": { "strength": 0.9, "frequency": 2.2 } },
+      "render": { "type": "billboard", "size": 4, "blending": "additive", "depthWrite": false },
+      "position": { "x": -8, "y": 0, "z": 0 }
+    },
+    {
+      "threeJsonId": "smoke-emitter",
+      "objType": "particleEmitter",
+      "source": { "type": "disc", "radius": 4 },
+      "emission": { "mode": "continuous", "count": 800, "rate": 100, "loop": true, "seed": 202 },
+      "particle": {
+        "lifetime": { "min": 5, "max": 8 },
+        "velocity": { "min": { "x": -0.5, "y": 2, "z": -0.5 }, "max": { "x": 0.5, "y": 5, "z": 0.5 } },
+        "angularVelocity": { "min": -0.4, "max": 0.4 },
+        "sizeOverLife": [2, 11, 18],
+        "colorOverLife": ["#52525b", "#71717a", "#18181b"],
+        "opacityOverLife": [0, 0.55, 0]
+      },
+      "simulation": { "backend": "cpu", "drag": 0.2, "noise": { "strength": 0.45, "frequency": 0.8 } },
+      "render": { "type": "billboard", "size": 8, "blending": "normal", "depthWrite": false },
+      "position": { "x": 9, "y": 0, "z": 0 }
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "threeJsonId": "lod-curves-capabilities",
+  "sceneConfig": {
+    "scene": { "background": "#eef2ff" },
+    "renderer": { "backend": "webgl", "toneMapping": "aces", "exposure": 1.05, "shadowMap": { "enabled": true, "type": "pcf-soft" } },
+    "camera": { "fov": 52, "near": 0.1, "far": 2000, "position": { "x": 50, "y": 42, "z": 85 } },
+    "controls": { "type": "map", "enableDamping": true, "target": { "x": 0, "y": 8, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "intensity": 0.65 },
+      { "type": "rectArea", "color": "#ffffff", "intensity": 4, "width": 20, "height": 12, "position": { "x": 20, "y": 35, "z": 25 }, "target": { "x": 0, "y": 5, "z": 0 } }
+    ],
+    "renderLoop": { "updateAnimations": true }
+  },
+  "objectList": [
+    {
+      "threeJsonId": "demo-lod",
+      "objType": "lod",
+      "name": "distance-detail",
+      "position": { "x": -24, "y": 9, "z": 0 },
+      "levels": [
+        {
+          "distance": 0,
+          "hysteresis": 0.08,
+          "object": {
+            "threeJsonId": "lod-near",
+            "objType": "sphere",
+            "geometry": { "radius": 9, "widthSegments": 48, "heightSegments": 32 },
+            "material": { "type": "physical", "color": "#2563eb", "roughness": 0.22, "metalness": 0.15, "clearcoat": 0.75, "clearcoatRoughness": 0.18 }
+          }
+        },
+        {
+          "distance": 65,
+          "hysteresis": 0.08,
+          "object": {
+            "threeJsonId": "lod-far",
+            "objType": "sphere",
+            "geometry": { "radius": 9, "widthSegments": 10, "heightSegments": 7 },
+            "material": { "type": "standard", "color": "#2563eb", "roughness": 0.45 }
+          }
+        }
+      ]
+    },
+    {
+      "threeJsonId": "bezier-route",
+      "objType": "line",
+      "path": {
+        "type": "cubicBezier",
+        "points": [[-8, 1, -18], [8, 28, -12], [18, -5, 10], [35, 16, 20]]
+      },
+      "segments": 96,
+      "material": { "color": "#f97316", "linewidth": 3 }
+    },
+    {
+      "threeJsonId": "route-tube",
+      "objType": "tube",
+      "path": {
+        "type": "curvePath",
+        "curves": [
+          { "type": "line", "points": [[-8, 0, -18], [0, 2, -6]] },
+          { "type": "quadraticBezier", "points": [[0, 2, -6], [14, 18, 4], [35, 15, 20]] }
+        ]
+      },
+      "tubularSegments": 96,
+      "radius": 0.3,
+      "material": { "type": "physical", "color": "#0ea5e9", "roughness": 0.3, "clearcoat": 0.5 }
+    },
+    {
+      "threeJsonId": "path-mover",
+      "objType": "sphere",
+      "geometry": { "radius": 1.8, "widthSegments": 24, "heightSegments": 16 },
+      "material": { "type": "physical", "color": "#ef4444", "emissive": "#7f1d1d", "emissiveIntensity": 0.8, "roughness": 0.25 },
+      "animations": [{
+        "type": "path",
+        "duration": 6500,
+        "loop": true,
+        "path": { "type": "cubicBezier", "points": [[-8, 1, -18], [8, 28, -12], [18, -5, 10], [35, 16, 20]] }
+      }]
+    }
+  ]
+}
