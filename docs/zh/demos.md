@@ -4,10 +4,11 @@
 
 [中文](./demos.md) | [English](../en/demos.md)
 
-演示分为两类：
+演示分为三类：
 
-1. **教程示例**（推荐）：`examples/html-demo/track-*`，按学习轨组织，数据在 `assets/json/tutorial/`。索引入口：[demo.html](../../examples/html-demo/demo.html)，课表：[tutorial.md](./tutorial.md)。
-2. **根目录整合页**：机房、编辑器、播放器、港口等业务大屏（非教程必修）。
+1. **官网“查看示例”**（推荐浏览入口）：`website/index.html#/examples`，按能力分章；普通 JSON 进入 Shower，WebGPU / TSL 使用专用预览页。本期粒子示例位于 `examples/particle-v2/`，TSL 与 WebGPU 示例位于 `examples/webgpu/`。
+2. **教程示例**：`examples/html-demo/track-*`，按学习轨组织，数据在 `assets/json/tutorial/`。索引入口：[demo.html](../../examples/html-demo/demo.html)，课表：[tutorial.md](./tutorial.md)。
+3. **根目录整合页**：机房、编辑器、播放器、港口等业务大屏（非教程必修）。
 
 ## 运行
 
@@ -19,6 +20,7 @@ python -m http.server 8080
 
 ```text
 http://localhost:8080/examples/html-demo/demo.html
+http://localhost:8080/website/index.html#/examples
 http://localhost:8080/index.html
 ```
 

@@ -4,6 +4,7 @@
 
 [中文](../zh/demos.md) | [English](./demos.md)
 
+- **Website “View Examples” gallery** (recommended browsing entry): `website/index.html#/examples`, grouped by capability. Regular JSON opens in Shower; WebGPU / TSL uses its dedicated preview runner. Current particle fixtures live under `examples/particle-v2/`, with TSL and WebGPU fixtures under `examples/webgpu/`.
 - **Tutorial demos**: `examples/html-demo/track-*` with JSON under `assets/json/tutorial/`. Index: [demo.html](../../examples/html-demo/demo.html), catalog: [tutorial.md](./tutorial.md).
 - **Root integration pages**: `room-show.html`, `port-show.html`; scene editor/player now live under [`tools/scene-host/`](../../tools/scene-host/).
 
@@ -13,6 +14,7 @@ python -m http.server 8080
 
 ```text
 http://localhost:8080/examples/html-demo/demo.html
+http://localhost:8080/website/index.html#/examples
 ```
 
 See [quick-start.md](./quick-start.md) for minimal `createJsonScene` setup. Full lesson list: [tutorial.md](./tutorial.md).

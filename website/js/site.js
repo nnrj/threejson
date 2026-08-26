@@ -72,7 +72,7 @@ const I18N = {
     "home.examples": "查看示例",
     "home.features": "核心能力",
     "examples.title": "示例",
-    "examples.desc": "每个示例聚焦一个 JSON 能力点。点击卡片后进入 shower，在左侧编辑 JSON，右侧实时渲染 ThreeJSON 场景。",
+    "examples.desc": "每个示例聚焦一个 JSON 能力点。普通场景进入 Shower 编辑与实时渲染；WebGPU / TSL 预览使用明确标注的专用运行页。",
     "examples.legacy": "案例教程",
     "examples.tools.rebuild": "重建示例缩略图缓存",
     "examples.tools.clear": "清除示例缩略图缓存",
@@ -134,7 +134,7 @@ const I18N = {
     "home.examples": "View Examples",
     "home.features": "Core Features",
     "examples.title": "Examples",
-    "examples.desc": "Each example focuses on one JSON capability. Open a card in shower, edit JSON on the left, and render the ThreeJSON scene on the right.",
+    "examples.desc": "Each example focuses on one JSON capability. Regular scenes open in Shower for editing and live rendering; labeled WebGPU / TSL previews use their dedicated runner.",
     "examples.legacy": "Case Tutorials",
     "examples.tools.rebuild": "Rebuild Thumbnail Cache",
     "examples.tools.clear": "Clear Thumbnail Cache",
@@ -472,9 +472,14 @@ async function renderExamples() {
             <h2>${lang === "zh-CN" ? section.sectionTitle : section.sectionTitleEn}</h2>
             <div class="exampleGrid">
               ${section.items.map((item) => `
-                <article class="card exampleCard${item.external ? " externalCard" : ""}" data-json="${item.json || ""}"${item.external ? ` data-external="${item.external}"` : ""}>
-                  <div class="exampleThumb"><img src="${PLACEHOLDER_IMG}" alt=""></div>
+                <article class="card exampleCard${item.external ? " externalCard" : ""}" data-json="${item.json || ""}"${item.external ? ` data-external="${item.external}"` : ""}${item.thumbnail === false ? ' data-thumbnail-disabled="1"' : ""}>
+                  ${item.coverLabel ? `
+                    <div class="exampleThumb exampleCapabilityCover exampleCapabilityCover--${item.coverVariant || "default"}">
+                      <strong>${item.coverLabel}</strong>
+                      <span>${lang === "zh-CN" ? item.coverCaption : item.coverCaptionEn}</span>
+                    </div>` : `<div class="exampleThumb"><img src="${PLACEHOLDER_IMG}" alt=""></div>`}
                   <div class="exampleCardBody">
+                    ${item.badge ? `<span class="exampleBadge${item.badgeTone === "preview" ? " preview" : ""}">${lang === "zh-CN" ? item.badge : item.badgeEn}</span>` : ""}
                     <h3>${lang === "zh-CN" ? item.title : item.titleEn}${item.external ? ' <span class="externalLinkGlyph" title="' + (lang === "zh-CN" ? "在新标签页打开" : "Opens in a new tab") + '">↗</span>' : ""}</h3>
                     <p>${lang === "zh-CN" ? item.desc : item.descEn}</p>
                   </div>
@@ -558,7 +563,9 @@ function initExamplesThumbnails() {
 }
 
 function rebuildAllThumbnails() {
-  const cards = Array.from(app.querySelectorAll(".exampleCard")).filter((card) => card.dataset.json);
+  const cards = Array.from(app.querySelectorAll(".exampleCard")).filter(
+    (card) => card.dataset.json && card.dataset.thumbnailDisabled !== "1"
+  );
   thumbQueue = cards.map((card) => ({ card, jsonPath: card.dataset.json }));
   void runThumbQueue();
 }
@@ -616,6 +623,7 @@ function writeThumbCache(cache) {
 }
 
 function enqueueThumbnail(card) {
+  if (card.dataset.thumbnailDisabled === "1") return;
   const jsonPath = card.dataset.json;
   if (!jsonPath) return;
   const cache = readThumbCache();
@@ -907,8 +915,12 @@ async function downloadSceneJsons(event) {
   const files = {};
   for (const section of manifest) {
     for (const item of section.items) {
+      if (!item?.json) continue;
       const url = resolveRootAssetUrl(item.json);
-      const text = await fetch(url).then((res) => res.text());
+      const text = await fetch(url).then((res) => {
+        if (!res.ok) throw new Error(`Example JSON request failed: HTTP ${res.status}`);
+        return res.text();
+      });
       files[`demo-scene-jsons/${new URL(url).pathname.split("/").pop()}`] = [strToU8(text), { level: 6 }];
     }
   }

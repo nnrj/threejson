@@ -221,6 +221,155 @@
     ]
   },
   {
+    "section": "particles",
+    "sectionTitle": "粒子系统",
+    "sectionTitleEn": "Particle System",
+    "items": [
+      {
+        "id": "particle-v2-sources",
+        "title": "粒子来源与生命周期",
+        "titleEn": "Particle sources and lifecycle",
+        "desc": "固定 seed 的球壳、曲线流和爆发烟火，展示 source、emission、particle、simulation、render 五段式 Particle V2 描述。",
+        "descEn": "Seeded shell, curve-stream, and burst-firework emitters demonstrating Particle V2's source, emission, particle, simulation, and render blocks.",
+        "json": "assets/json/tutorial/track-02/02-10-particle-v2-sources.json",
+        "badge": "Particle V2",
+        "badgeEn": "Particle V2"
+      },
+      {
+        "id": "particle-text-logo",
+        "title": "文字与 Logo 粒子",
+        "titleEn": "Text and logo particles",
+        "desc": "textMask 与 imageMask 将文字和透明图片采样为粒子图案，栅格能力按描述符加载。",
+        "descEn": "textMask and imageMask sample text and transparent images into particle patterns, loading raster support only when described.",
+        "json": "examples/particle-v2/text-logo.json",
+        "badge": "Particle V2",
+        "badgeEn": "Particle V2"
+      },
+      {
+        "id": "particle-fire-smoke",
+        "title": "火焰与烟雾",
+        "titleEn": "Fire and smoke",
+        "desc": "两个连续发射器使用不同的寿命、速度、尺寸、颜色和透明度曲线组合火焰与烟雾。",
+        "descEn": "Two continuous emitters combine distinct lifetime, velocity, size, color, and opacity curves into fire and smoke.",
+        "json": "examples/particle-v2/fire-smoke.json",
+        "badge": "Particle V2",
+        "badgeEn": "Particle V2"
+      },
+      {
+        "id": "particle-rain-snow",
+        "title": "雨雪粒子",
+        "titleEn": "Rain and snow particles",
+        "desc": "直接使用 Particle V2 描述雨滴和雪花，而不是依赖固定天气效果。",
+        "descEn": "Rain and snow authored directly with Particle V2 rather than a hard-coded weather effect.",
+        "json": "examples/particle-v2/rain-snow.json",
+        "badge": "Particle V2",
+        "badgeEn": "Particle V2"
+      },
+      {
+        "id": "particle-attractor",
+        "title": "双吸引子粒子场",
+        "titleEn": "Dual-attractor particle field",
+        "desc": "球壳粒子在两个吸引子与边界循环作用下形成持续变化的流场。",
+        "descEn": "Shell particles form an evolving flow field under two attractors and a wrapping boundary.",
+        "json": "examples/particle-v2/attractor.json",
+        "badge": "Particle V2",
+        "badgeEn": "Particle V2"
+      },
+      {
+        "id": "particle-mesh-surface",
+        "title": "模型表面粒子采样",
+        "titleEn": "Mesh-surface particle sampling",
+        "desc": "meshSurface 从已部署网格表面采样初始位置，展示粒子与普通场景对象的引用协作。",
+        "descEn": "meshSurface samples initial positions from a deployed mesh, demonstrating references between particles and ordinary scene objects.",
+        "json": "examples/particle-v2/mesh-surface.json",
+        "badge": "Particle V2",
+        "badgeEn": "Particle V2"
+      },
+      {
+        "id": "particle-webgl-compute",
+        "title": "WebGL GPU 计算粒子",
+        "titleEn": "WebGL GPU-compute particles",
+        "desc": "webgl-compute 与 CPU 参考后端共用 Particle V2 描述符，展示 GPU 雨幕和 CPU 闪光粒子。",
+        "descEn": "The webgl-compute and CPU reference backends share one Particle V2 contract, shown as GPU rain and CPU sparkles.",
+        "json": "assets/json/tutorial/track-02/02-09-particle-emitter-gpu.json",
+        "badge": "WebGL Compute",
+        "badgeEn": "WebGL Compute"
+      }
+    ],
+    "docLinks": [
+      {
+        "file": "capabilities-webgpu-particles.md",
+        "label": "粒子与 WebGPU 能力",
+        "labelEn": "Particles and WebGPU"
+      }
+    ]
+  },
+  {
+    "section": "webgpu-tsl",
+    "sectionTitle": "WebGPU 与 TSL",
+    "sectionTitleEn": "WebGPU and TSL",
+    "items": [
+      {
+        "id": "tsl-materials",
+        "title": "TSL 预设、节点图与 Bloom",
+        "titleEn": "TSL presets, graphs, and bloom",
+        "desc": "显式 WebGPU 运行时中的 NodeMaterial 预设、可序列化 TSL graph 与 RenderPipeline bloom。",
+        "descEn": "NodeMaterial presets, a serializable TSL graph, and RenderPipeline bloom in the explicit WebGPU runtime.",
+        "json": "examples/webgpu/tsl-material.json",
+        "external": "examples/webgpu/index.html?scene=materials",
+        "thumbnail": false,
+        "badge": "WebGPU 预览",
+        "badgeEn": "WebGPU Preview",
+        "badgeTone": "preview",
+        "coverLabel": "TSL",
+        "coverCaption": "预设 · Graph · Bloom",
+        "coverCaptionEn": "Preset · Graph · Bloom",
+        "coverVariant": "tsl"
+      },
+      {
+        "id": "tsl-burning-model",
+        "title": "GLB 模型动态燃烧与消融",
+        "titleEn": "Dynamic GLB burning and dissolve",
+        "desc": "通过通用模型材质绑定和 TSL graph，在外部 GLB 表面生成随时间变化的分形燃烧与透明消融。",
+        "descEn": "A generic model-material binding and TSL graph create animated fractal burning and transparent dissolve over an external GLB.",
+        "json": "examples/webgpu/tsl-burning-model.json",
+        "external": "examples/webgpu/index.html?scene=burning",
+        "thumbnail": false,
+        "badge": "WebGPU 预览",
+        "badgeEn": "WebGPU Preview",
+        "badgeTone": "preview",
+        "coverLabel": "TSL",
+        "coverCaption": "GLB · 材质绑定 · 消融",
+        "coverCaptionEn": "GLB · Material Binding · Dissolve",
+        "coverVariant": "tsl"
+      },
+      {
+        "id": "webgpu-compute-particles",
+        "title": "WebGPU Compute 吸引子粒子",
+        "titleEn": "WebGPU compute attractor particles",
+        "desc": "Particle V2 的 webgpu-compute 后端在 GPU 上执行生命周期、噪声、双吸引子和边界循环。",
+        "descEn": "Particle V2's webgpu-compute backend runs lifecycle, noise, dual attractors, and boundary wrapping on the GPU.",
+        "json": "examples/webgpu/webgpu-particles.json",
+        "external": "examples/webgpu/index.html?scene=particles",
+        "thumbnail": false,
+        "badge": "WebGPU 预览",
+        "badgeEn": "WebGPU Preview",
+        "badgeTone": "preview",
+        "coverLabel": "GPU",
+        "coverCaption": "Compute · Particle V2 · Attractors",
+        "coverCaptionEn": "Compute · Particle V2 · Attractors",
+        "coverVariant": "webgpu"
+      }
+    ],
+    "docLinks": [
+      {
+        "file": "capabilities-webgpu-particles.md",
+        "label": "WebGPU / TSL 与粒子能力",
+        "labelEn": "WebGPU / TSL and particles"
+      }
+    ]
+  },
+  {
     "section": "csg-merge-holes",
     "sectionTitle": "合并与挖洞",
     "sectionTitleEn": "CSG Merge and Holes",

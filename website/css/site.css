@@ -499,6 +499,81 @@ a { color: inherit; text-decoration: none; }
 
 .exampleCardBody h3 { margin-top: 0; }
 
+.exampleBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  margin-bottom: 9px;
+  padding: 2px 8px;
+  border: 1px solid color-mix(in srgb, var(--brand) 42%, var(--line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--brand) 10%, var(--panel));
+  color: var(--brand);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.exampleBadge.preview {
+  border-color: color-mix(in srgb, #a855f7 46%, var(--line));
+  background: color-mix(in srgb, #a855f7 11%, var(--panel));
+  color: color-mix(in srgb, #a855f7 78%, var(--text));
+}
+
+.exampleCapabilityCover {
+  position: relative;
+  isolation: isolate;
+  align-content: center;
+  gap: 7px;
+  color: #f8fafc;
+  text-align: center;
+}
+
+.exampleCapabilityCover::before,
+.exampleCapabilityCover::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  border-radius: 50%;
+  filter: blur(2px);
+}
+
+.exampleCapabilityCover::before {
+  width: 150px;
+  height: 150px;
+  left: -34px;
+  top: -72px;
+  background: rgba(34, 211, 238, 0.3);
+}
+
+.exampleCapabilityCover::after {
+  width: 132px;
+  height: 132px;
+  right: -24px;
+  bottom: -72px;
+  background: rgba(168, 85, 247, 0.42);
+}
+
+.exampleCapabilityCover strong {
+  font: 800 clamp(30px, 5vw, 48px)/1 Inter, "Segoe UI", sans-serif;
+  letter-spacing: 0.08em;
+}
+
+.exampleCapabilityCover span {
+  padding: 0 18px;
+  color: rgba(248, 250, 252, 0.78);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.exampleCapabilityCover--tsl {
+  background: linear-gradient(135deg, #111827, #4c1d95 56%, #be123c);
+}
+
+.exampleCapabilityCover--webgpu {
+  background: linear-gradient(135deg, #071426, #0e7490 55%, #4c1d95);
+}
+
 .examplesToolsHover {
   position: fixed;
   top: 76px;
