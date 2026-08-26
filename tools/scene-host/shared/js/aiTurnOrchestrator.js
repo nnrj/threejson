@@ -128,6 +128,8 @@ export async function runAiGenerateTurn({
   maxSceneSegments,
   maxTokens,
   selectedCapabilityIds,
+  rendererBackend,
+  includePreviewCapabilities,
   requiresAnimation
 }) {
   const animationCapabilities = typeof requiresAnimation === "boolean"
@@ -168,6 +170,8 @@ export async function runAiGenerateTurn({
       segmentedOutput: generationStrategy === "segmented",
       maxSceneSegments,
       selectedCapabilityIds,
+      rendererBackend,
+      includePreviewCapabilities,
       animationCapabilities,
       onGenerationPhase,
       onSceneDraft,
@@ -197,6 +201,8 @@ export async function runAiImageGenerateTurn({
   executionMode = "direct",
   refinementGoals = [],
   selectedCapabilityIds,
+  rendererBackend,
+  includePreviewCapabilities,
   requiresAnimation,
   onAgentProgress,
   onGenerationPhase,
@@ -228,6 +234,8 @@ export async function runAiImageGenerateTurn({
       resolveReferenceUrl: resolveSceneAiReferenceUrl,
       capabilityLookup,
       selectedCapabilityIds,
+      rendererBackend,
+      includePreviewCapabilities,
       animationCapabilities,
       onGenerationPhase,
       onSceneDraft,
@@ -453,6 +461,8 @@ async function runAiAgentAdjustTurn({
   locale,
   capabilityLookup,
   selectedCapabilityIds,
+  rendererBackend,
+  includePreviewCapabilities,
   animationCapabilities,
   generationStrategy,
   estimatedSegments,
@@ -490,6 +500,8 @@ async function runAiAgentAdjustTurn({
         resolveReferenceUrl: resolveSceneAiReferenceUrl,
         capabilityLookup,
         selectedCapabilityIds,
+        rendererBackend,
+        includePreviewCapabilities,
         animationCapabilities,
         generationStrategy,
         estimatedSegments,
@@ -576,6 +588,8 @@ async function runAiAgentAdjustTurn({
         resolveReferenceUrl: resolveSceneAiReferenceUrl,
         capabilityLookup,
         selectedCapabilityIds,
+        rendererBackend,
+        includePreviewCapabilities,
         animationCapabilities,
         generationStrategy,
         estimatedSegments,
@@ -680,6 +694,8 @@ export async function runAiAdjustTurn({
   locale,
   capabilityLookup,
   selectedCapabilityIds,
+  rendererBackend,
+  includePreviewCapabilities,
   animationCapabilities,
   generationStrategy,
   estimatedSegments,
@@ -710,6 +726,8 @@ export async function runAiAdjustTurn({
         resolveReferenceUrl: resolveSceneAiReferenceUrl,
         capabilityLookup,
         selectedCapabilityIds,
+        rendererBackend,
+        includePreviewCapabilities,
         animationCapabilities,
         locale
       });
@@ -730,6 +748,8 @@ export async function runAiAdjustTurn({
           resolveReferenceUrl: resolveSceneAiReferenceUrl,
           capabilityLookup,
           selectedCapabilityIds,
+          rendererBackend,
+          includePreviewCapabilities,
           animationCapabilities,
           locale
         }
@@ -757,6 +777,8 @@ export async function runAiAdjustTurn({
         resolveReferenceUrl: resolveSceneAiReferenceUrl,
         capabilityLookup,
         selectedCapabilityIds,
+        rendererBackend,
+        includePreviewCapabilities,
         animationCapabilities,
         locale
       }
@@ -808,6 +830,8 @@ export async function runAiAdjustTurn({
       locale,
       capabilityLookup,
       selectedCapabilityIds,
+      rendererBackend,
+      includePreviewCapabilities,
       animationCapabilities,
       generationStrategy,
       estimatedSegments,
@@ -828,6 +852,8 @@ export async function runAiAdjustTurn({
       resolveReferenceUrl: resolveSceneAiReferenceUrl,
       capabilityLookup,
       selectedCapabilityIds,
+      rendererBackend,
+      includePreviewCapabilities,
       animationCapabilities,
       locale
     };

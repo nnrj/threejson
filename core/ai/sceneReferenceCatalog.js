@@ -41,6 +41,12 @@ const SIGNAL_TO_SECTIONS = {
   css3dPanel: ["info-panels"],
   infoPanel: ["info-panels"],
   sceneText: ["text-3d"],
+  particles: ["particles"],
+  particleEmitter: ["particles"],
+  particleRaster: ["particles"],
+  webgpuParticles: ["webgpu-tsl"],
+  webgpuTsl: ["webgpu-tsl"],
+  tslCode: ["webgpu-tsl"],
   external: ["external-resources"],
   audio: ["external-resources"],
   lighting: ["materials-lighting"],
@@ -61,6 +67,12 @@ const DOMAIN_PREFIX_TO_SECTIONS = [
 ];
 
 const SIGNAL_TO_EXAMPLE_IDS = {
+  particles: ["particle-v2-sources", "particle-fire-smoke"],
+  particleEmitter: ["particle-v2-sources", "particle-fire-smoke"],
+  particleRaster: ["particle-text-logo"],
+  webgpuParticles: ["webgpu-compute-particles"],
+  webgpuTsl: ["tsl-burning-model", "tsl-materials"],
+  tslCode: ["tsl-materials"],
   deviceDomain: ["device-cabinet"],
   deviceCabinetDomain: ["device-cabinet"],
   deviceServerDomain: ["device-cabinet"],

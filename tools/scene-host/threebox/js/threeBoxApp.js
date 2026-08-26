@@ -33,7 +33,7 @@ import {
   isUnsuccessfulTurn,
   resolveThreeBoxNegotiatedRoute
 } from "./threeBoxTurnState.js";
-import { buildStructuredTurnEnvelope, projectSceneJsonString } from "threejson/ai";
+import { buildStructuredTurnEnvelope, matchIntentSignals, projectSceneJsonString } from "threejson/ai";
 import { createBuiltinAiTurnContext } from "../../shared/js/builtinAiProvider.js";
 import { initHostI18n, applyShellI18n, getHostLocale, normalizeLocale, t } from "../../shared/i18n/index.js";
 import {
@@ -50,6 +50,12 @@ import {
 } from "../../shared/js/sceneTextureOrchestrator.js";
 import { createTextureProxyUrl } from "../../shared/js/textureProviderClient.js";
 import { getCachedTextureBlob, putCachedTextureBlob } from "../../shared/js/browserTextureCache.js";
+import {
+  activateThreeBoxAiCapabilities,
+  projectSceneToRendererBackend,
+  resolveThreeBoxAiRendererBackend,
+  shouldActivateThreeBoxTslCode
+} from "./threeBoxAiCapabilities.js";
 
 function readRequestedLocaleFromUrl() {
   try {
@@ -600,6 +606,29 @@ async function main() {
     });
   }
 
+  async function resolveActiveAiRendererBackend(text, selectedCapabilityIds, scene = null) {
+    const matchedCapabilityIds = matchIntentSignals(text).map((signal) => signal.id);
+    const activateTslCode = shouldActivateThreeBoxTslCode({
+      scene,
+      selectedCapabilityIds,
+      matchedCapabilityIds
+    });
+    const rendererBackend = resolveThreeBoxAiRendererBackend({
+      scene,
+      selectedCapabilityIds,
+      matchedCapabilityIds
+    });
+    if (
+      rendererBackend === "webgpu"
+      && !(await activateThreeBoxAiCapabilities({ tslCode: activateTslCode }))
+    ) {
+      const error = new Error("ThreeBox 无法加载 WebGPU/TSL 可选运行时，未向 AI 伪装该能力可用。");
+      error.code = "E_THREEBOX_WEBGPU_ACTIVATION_FAILED";
+      throw error;
+    }
+    return rendererBackend;
+  }
+
   /** Resolves a turn's full scene JSON string, reconstructing it via command replay when the turn
    * was diff-cached (io.turnCacheMode "diff" — see threeBoxSettingsSchema.js and
    * threeBoxOrchestrator.js's resolveTurnSceneJsonString). Turns cached in "full" mode (the
@@ -626,6 +655,7 @@ async function main() {
     selectedCapabilityIds,
     requiresAnimation
   }) {
+    const rendererBackend = await resolveActiveAiRendererBackend(text, selectedCapabilityIds);
     const settings = settingsModal.getSettings();
     const selectedProviderId = document.getElementById("composerModelSelect")?.value;
     const providerOptions = {
@@ -665,7 +695,10 @@ async function main() {
           if (!previewQueueOpen) {
             return null;
           }
-          const sceneJson = JSON.parse(sceneJsonString);
+          const sceneJson = projectSceneToRendererBackend(
+            JSON.parse(sceneJsonString),
+            rendererBackend
+          );
           if (
             progress.outputMode === "commands" &&
             Array.isArray(progress.commands) &&
@@ -701,7 +734,7 @@ async function main() {
     };
 
     try {
-      const { sceneJson, sceneJsonString, agentResult } = await runThreeBoxGenerateTurn({
+      const { sceneJson, agentResult } = await runThreeBoxGenerateTurn({
         userPrompt: text,
         providerOptions,
         globalPromptPrefix: settings.ai?.globalPromptPrefix,
@@ -736,7 +769,10 @@ async function main() {
           }
           draftPreviewStarted = true;
           draftPreviewPromise = Promise.resolve()
-            .then(() => sceneCard.render(JSON.parse(draftJsonString), { label: text, draft: true }))
+            .then(() => sceneCard.render(
+              projectSceneToRendererBackend(JSON.parse(draftJsonString), rendererBackend),
+              { label: text, draft: true }
+            ))
             .catch((error) => {
               console.warn("[threebox] draft preview render failed:", error);
               return null;
@@ -755,12 +791,19 @@ async function main() {
         maxSceneSegments: settings.ai?.maxSceneSegments,
         ...resolveThreeBoxSceneTokenOptions(settings),
         selectedCapabilityIds,
+        rendererBackend,
+        includePreviewCapabilities: rendererBackend === "webgpu",
         requiresAnimation,
         signal: abortController.signal
       });
       clearBusyIfCurrent();
 
-      const outputSceneJsonString = projectSceneForUser(sceneJsonString, settings);
+      // Negotiation is authoritative for an optional backend. If a provider follows the TSL
+      // material contract but accidentally omits renderer.backend, repair that host-level
+      // invariant before the first/final render instead of sending a TSL scene to WebGL.
+      const generatedSceneJson = projectSceneToRendererBackend(sceneJson, rendererBackend);
+      const generatedSceneJsonString = JSON.stringify(generatedSceneJson, null, 2);
+      const outputSceneJsonString = projectSceneForUser(generatedSceneJsonString, settings);
       const outputSceneJson = JSON.parse(outputSceneJsonString);
 
       streaming.remove();
@@ -775,7 +818,7 @@ async function main() {
       // parallel, but never make the visible scene card wait for either network round-trip: the
       // user should see the canvas and its rendering mask as soon as the JSON is ready. The title
       // updates the card's download/export label whenever it arrives.
-      const digest = buildResultDigest(sceneJson);
+      const digest = buildResultDigest(generatedSceneJson);
       const titlePromise =
         settings.ai?.autoGenerateSceneTitle !== false
           ? runThreeBoxGenerateSceneTitle({
@@ -931,7 +974,9 @@ async function main() {
         turnId,
         turnContext,
         turnDeadlineAt,
-        abortController: providedAbortController
+        abortController: providedAbortController,
+        selectedCapabilityIds,
+        requiresAnimation
       });
     }
     let targetSceneJsonString;
@@ -944,10 +989,18 @@ async function main() {
         turnId,
         turnContext,
         turnDeadlineAt,
-        abortController: providedAbortController
+        abortController: providedAbortController,
+        selectedCapabilityIds,
+        requiresAnimation
       });
     }
-    const targetSceneJson = JSON.parse(targetSceneJsonString);
+    let targetSceneJson = JSON.parse(targetSceneJsonString);
+    const rendererBackend = await resolveActiveAiRendererBackend(text, selectedCapabilityIds, targetSceneJson);
+    const projectedTargetScene = projectSceneToRendererBackend(targetSceneJson, rendererBackend);
+    if (projectedTargetScene !== targetSceneJson) {
+      targetSceneJson = projectedTargetScene;
+      targetSceneJsonString = JSON.stringify(targetSceneJson, null, 2);
+    }
     abortTextureJob(targetTurnId);
 
     const initialActivity = api.takeInitialActivity?.();
@@ -1044,6 +1097,8 @@ async function main() {
         locale: getHostLocale(),
         capabilityLookup: settings.ai?.capabilityLookupEnabled !== false,
         selectedCapabilityIds,
+        rendererBackend,
+        includePreviewCapabilities: rendererBackend === "webgpu",
         animationCapabilities: requiresAnimation === true,
         // Transport metadata remains useful for full-JSON fallbacks, but ordinary adjustment is
         // always iterative and stops as soon as the model returns # done.
@@ -1357,7 +1412,14 @@ async function main() {
         turnDeadlineAt,
         signal: turnAbortController.signal,
         animationCapabilityMode,
-        sceneGenerationMode
+        sceneGenerationMode,
+        rendererBackend: "auto",
+        includePreviewCapabilities: true,
+        // Advertise an on-demand host capability during negotiation without downloading the
+        // WebGPU/TSL implementation for ordinary WebGL requests. Selection activates it before
+        // the generation/adjustment call in resolveActiveAiRendererBackend().
+        activatableCapabilityEntries: ["threejson/webgpu", "threejson/tsl-code"],
+        activatableTslCodePolicy: "prompt"
       }
     );
     const route = resolveThreeBoxNegotiatedRoute(classified, priorTurns);

@@ -12,6 +12,7 @@ import {
   showThreeBoxMeshExportWarningDialog
 } from "./threeBoxMeshExportDialog.js";
 import { syncThreeBoxPreviewAuxiliaryLights } from "./threeBoxPreviewLights.js";
+import { ensureThreeBoxSceneCapabilitiesForPayload } from "./threeBoxAiCapabilities.js";
 
 const EDITOR_OPEN_SCENE_BRIDGE_PREFIX = "threejson.editor.openScene.";
 
@@ -274,6 +275,9 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
     loadingMask.textContent = t("threebox.sceneCard.rendering", "场景渲染中（不消耗 Token）…");
     loadingMask.classList.remove("sceneCardLoadingMaskCompact");
     loadingMask.hidden = false;
+    // Saved/history/template scenes may be the first thing rendered after page load. Activate
+    // their explicit optional backend from the descriptor rather than relying on a prior AI turn.
+    await ensureThreeBoxSceneCapabilitiesForPayload(sceneJsonPayload);
     const { createJsonScene } = await import("threejson");
     const { width, height } = await waitForStableSize(canvasWrap);
     // Pin the canvas's own CSS box explicitly: core's render loop resizes against

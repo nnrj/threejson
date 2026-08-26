@@ -23,7 +23,8 @@
  */
 import { requestChatCompletion, extractJsonText } from "./sceneAiService.js";
 import { sanitizeAiJsonText } from "./sceneJsonSanitize.js";
-import { THREE_JSON_AGENT_CAPABILITY_INDEX } from "./sceneCapabilityIndex.js";
+import { buildAgentCapabilityIndex } from "./sceneCapabilityIndex.js";
+import { mergeRequiredCapabilityIds } from "./sceneCapability.js";
 
 // Negotiation, summaries and titles deliberately have no engine-owned completion ceiling. Their
 // prompts constrain response shape; callers may opt into independent stage-specific limits.
@@ -123,7 +124,8 @@ function buildExecutionModePolicyRules(sceneGenerationMode) {
 function buildClassifyIntentSystemPrompt(
   animationCapabilityMode = "auto",
   sceneGenerationMode = "auto",
-  generationOnly = false
+  generationOnly = false,
+  capabilityOptions = {}
 ) {
   const normalizedGenerationMode = normalizeSceneGenerationMode(sceneGenerationMode);
   return [
@@ -173,7 +175,10 @@ function buildClassifyIntentSystemPrompt(
         ? '- Animation capability is explicitly disabled by the user: requiresAnimation MUST be false and do not select events/lifecycle/declarativeAnimation solely for animation.'
         : '- Animation mode is automatic: set requiresAnimation from the requested behavior and scene meaning, not from keyword matching.',
     '',
-    THREE_JSON_AGENT_CAPABILITY_INDEX.trim(),
+    // Build this at request time. Optional entries (notably threejson/webgpu) register after the
+    // AI module itself has loaded, so a module-level snapshot permanently hid newly activated
+    // capabilities from negotiation.
+    buildAgentCapabilityIndex(capabilityOptions).trim(),
     "",
     "Output requirement:",
     "Return ONLY one JSON object. No Markdown fences. No commentary before or after."
@@ -249,7 +254,8 @@ async function classifyTurnIntent(input = {}, options = {}) {
           content: buildClassifyIntentSystemPrompt(
             options.animationCapabilityMode,
             sceneGenerationMode,
-            generationOnly
+            generationOnly,
+            options
           )
         },
         { role: "user", content: buildClassifyIntentUserMessage(userPrompt, historyEntries) }
@@ -301,6 +307,7 @@ async function classifyTurnIntent(input = {}, options = {}) {
     const selectedCapabilityIds = Array.isArray(parsed?.selectedCapabilityIds)
       ? [...new Set(parsed.selectedCapabilityIds.map((id) => String(id || "").trim()).filter(Boolean))].slice(0, 12)
       : undefined;
+    const effectiveSelectedCapabilityIds = mergeRequiredCapabilityIds(userPrompt, selectedCapabilityIds);
     const requiresAnimation = options.animationCapabilityMode === "on"
       ? true
       : options.animationCapabilityMode === "off"
@@ -321,7 +328,7 @@ async function classifyTurnIntent(input = {}, options = {}) {
       estimatedOutputTokens,
       executionMode,
       refinementGoals,
-      selectedCapabilityIds,
+      selectedCapabilityIds: effectiveSelectedCapabilityIds,
       requiresAnimation
     };
   } catch (error) {

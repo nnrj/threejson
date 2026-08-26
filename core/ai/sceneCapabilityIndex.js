@@ -70,14 +70,63 @@ Texture acquisition:
 `;
 
 function buildAgentCapabilityIndex(options = {}) {
+  const requestedRendererBackend = String(options.rendererBackend || "webgl").trim().toLowerCase();
+  const isRendererNegotiation = requestedRendererBackend === "auto" || requestedRendererBackend === "any";
   const manifest = getSceneCapabilityManifest({
-    rendererBackend: options.rendererBackend || "webgl",
+    // Negotiation needs to see every backend the host has actually registered. Authoring calls
+    // still pass one concrete backend so the generation model cannot mix WebGL-only and
+    // WebGPU-only records in the same scene by accident.
+    rendererBackend: isRendererNegotiation ? undefined : requestedRendererBackend,
     includePreview: options.includePreviewCapabilities === true
   });
+  const activatableEntries = new Set(
+    Array.isArray(options.activatableCapabilityEntries)
+      ? options.activatableCapabilityEntries.map((entry) => String(entry || "").trim()).filter(Boolean)
+      : []
+  );
+  if (activatableEntries.size > 0) {
+    const declared = getSceneCapabilityManifest({
+      rendererBackend: isRendererNegotiation ? undefined : requestedRendererBackend,
+      includePreview: true,
+      includeUnavailable: true
+    });
+    for (const [categoryId, category] of Object.entries(declared.categories || {})) {
+      manifest.categories[categoryId] ||= {};
+      for (const [capabilityId, capability] of Object.entries(category || {})) {
+        const declaredEntries = [
+          capability?.entry,
+          ...(Array.isArray(capability?.optionalEntries) ? capability.optionalEntries : [])
+        ].map((entry) => String(entry || "").trim()).filter(Boolean);
+        if (
+          capability?.status === "unavailable"
+          && declaredEntries.some((entry) => activatableEntries.has(entry))
+        ) {
+          const promoted = {
+            ...capability,
+            status: "activatable",
+            activation: "host-import"
+          };
+          if (
+            categoryId === "materials"
+            && capabilityId === "tsl"
+            && activatableEntries.has(String(capability.codeEntry || ""))
+          ) {
+            promoted.modes = [...new Set([...(capability.modes || []), "code"])];
+            promoted.codeExecutionPolicy = options.activatableTslCodePolicy || "prompt";
+          }
+          manifest.categories[categoryId][capabilityId] = promoted;
+        }
+      }
+    }
+  }
   const list = (category) => Object.keys(manifest.categories?.[category] || {}).join(", ") || "none";
   const runtimeSnapshot = [
-    "Runtime capability snapshot (author only these available capabilities):",
-    `- renderer backend: ${options.rendererBackend || "webgl"}`,
+    isRendererNegotiation
+      ? "Host capability snapshot for negotiation (choose one compatible renderer backend; do not mix backend-specific features):"
+      : "Runtime capability snapshot (author only these available capabilities):",
+    isRendererNegotiation
+      ? `- available renderer backends: ${list("rendererBackends")}`
+      : `- renderer backend: ${requestedRendererBackend}`,
     `- materials: ${list("materials")}`,
     `- light types: ${list("lightTypes")}`,
     `- post-processing passes: ${list("passes")}`,
@@ -87,22 +136,36 @@ function buildAgentCapabilityIndex(options = {}) {
   ].join("\n");
   const tslCapability = manifest.categories?.materials?.tsl;
   const tslAvailable = Boolean(tslCapability);
+  const tslNeedsActivation = tslCapability?.status === "activatable";
   const tslModes = Array.isArray(tslCapability?.modes) ? tslCapability.modes : [];
   const tslKindContract = tslModes.map((mode) => `"${mode}"`).join("|") || "none";
   const tslCodeGuidance = tslModes.includes("code")
-    ? "- kind:\"code\" is available because the host imported the tsl-code entry; scene JSON still cannot enable or relax the selected host execution policy."
+    ? "- kind:\"code\" is available because the host imported or can activate the tsl-code entry; scene JSON still cannot enable or relax the selected host execution policy."
     : "- kind:\"code\" is not available in this runtime snapshot. The host must explicitly import the tsl-code entry before AI may author code modules.";
   const tslAuthoring = tslAvailable ? `
-WebGPU/TSL authoring (available in this runtime snapshot):
+WebGPU/TSL authoring capability (negotiation ids: webgpuTsl, tslCode):
+- ${tslNeedsActivation ? "This host offers the capability on demand and will import the appropriate threejson/webgpu or threejson/tsl-code entry after selection; ordinary WebGL scenes do not pay the module cost." : "The WebGPU/TSL entry is active in this runtime snapshot."}
+- Select webgpuTsl when the user explicitly asks for TSL, NodeMaterial, WebGPU shader/node graphs, or when a requested procedural surface effect genuinely needs a time-varying node graph. Do not select it for ordinary colors, PBR textures, or generic "high quality" wording.
 - Set sceneConfig.renderer.backend to "webgpu". revisionPolicy is "best-effort" by default; use "strict" only when the host requires the tested Three.js revision.
 - TSL materials use material { type:"tsl", base:"standard"|"physical"|"basic"|"lambert"|"phong"|"toon"|"matcap"|"normal", tsl:{ kind:${tslKindContract}, ... } }.
-- Prefer preset or graph for portable generated scenes. Built-in presets include solid, uv-gradient, and pulse. Compose effects such as burn/dissolve from generic position/time/noise/fractalNoise/math graph nodes instead of assuming a one-off preset; call can use callable three/tsl exports.
+- Prefer preset or graph for portable generated scenes. Preset uses tsl:{kind:"preset",preset:"solid"|"uv-gradient"|"pulse",params:{...}}.
+- Graph uses tsl:{kind:"graph",source:{inline:{graphVersion:1,nodes:[{id,type,...}],outputs:{color:"nodeId",opacity?:"nodeId",position?:"nodeId"}}}}. Node references are node id strings. Compose effects such as burn/dissolve from position/time/noise/fractalNoise/math/mix/smoothstep nodes instead of assuming a one-off preset; call may use callable three/tsl exports.
 - To apply TSL to a GLTF/GLB asset, add materialBindings:[{ selector:{ nodeName|nodePath|nodeType|meshIndex|materialName|materialIndex }, inheritOriginal?:"textures"|"all", material:{ type:"tsl", ... } }]. An empty selector or {all:true} targets all slots.
 ${tslCodeGuidance}
+${tslModes.includes("code") ? '- Select tslCode in addition to webgpuTsl only when the requested effect genuinely needs a full TSL ESM module rather than a preset/graph. Code shape: tsl:{kind:"code",source:{inline:"export default (params, context) => ..."}|{url:"...",sha256?:"..."},params:{...}}. Inline source must be one valid JSON string and default-export a factory returning a NodeMaterial, TSL node, output-node map, or undefined after mutating context.material. Use context.TSL/context.WEBGPU; do not invent module URLs or a sha256 value. The host, not scene JSON, owns confirmation/execution policy.' : ''}
 ` : "";
+  const particleAuthoring = options.particleEffects === false ? "" : `
+Particle V2 capability ids:
+- particles: select for requested particles, point clouds, rain/snow, smoke, fire, sparks, fireworks, dust, starfields, magic effects, attractors, or particle patterns. Author objType:"particleEmitter" with five orthogonal blocks: source, emission, particle, simulation, render. Do not use retired top-level count/distribution/motion/material fields.
+- particleRaster: additionally select for textMask or imageMask particle patterns. Those sources are descriptor-activated browser capabilities; textMask uses text/font/width/height/depth and imageMask uses url or image data. Never substitute a cube grid for requested particle text or imagery.
+- webgpuParticles: select only when WebGPU compute is available and the requested particle count/simulation materially benefits from it. It requires sceneConfig.renderer.backend:"webgpu" and simulation.backend:"webgpu-compute"; ordinary particle effects may use cpu or webgl-compute.
+- Available sources in this host snapshot: ${list("particleSources")}. Available simulation backends: ${list("particleBackends")}.
+- emission supports static|continuous|burst with count/rate/duration/loop/seed; particle supports lifetime, velocity/rotation ranges, and size/color/opacity-over-life; simulation supports gravity, drag, noise, attractors, and none|wrap|bounce|kill boundaries; render supports points or billboard plus sprite/atlas fields.
+`;
   return [
     THREE_JSON_AGENT_CAPABILITY_INDEX_BASE.trim(),
     runtimeSnapshot,
+    particleAuthoring.trim(),
     tslAuthoring.trim(),
     THREE_JSON_AGENT_TEXTURE_ACQUISITION_INDEX.trim()
   ].filter(Boolean).join("\n\n");

@@ -34,11 +34,13 @@ import {
   buildCommandIntentHints,
   analyzeSceneUsage,
   evaluateCapabilityFit,
-  matchIntentSignals
+  matchIntentSignals,
+  mergeRequiredCapabilityIds
 } from "./sceneCapability.js";
 import {
   THREE_JSON_AGENT_CAPABILITY_INDEX,
-  THREE_JSON_AGENT_EXAMPLE_INDEX
+  THREE_JSON_AGENT_EXAMPLE_INDEX,
+  buildAgentCapabilityIndex
 } from "./sceneCapabilityIndex.js";
 import {
   buildObjectSpatialCardsFromScene,
@@ -104,9 +106,11 @@ if (typeof window !== "undefined") {
     buildIntentHints,
     THREE_JSON_AGENT_CAPABILITY_INDEX,
     THREE_JSON_AGENT_EXAMPLE_INDEX,
+    buildAgentCapabilityIndex,
     analyzeSceneUsage,
     evaluateCapabilityFit,
     matchIntentSignals,
+    mergeRequiredCapabilityIds,
     buildCapabilityFixPrompt,
     buildObjectSpatialCardsFromScene,
     buildObjectSpatialCardsFromSceneJson,
@@ -148,9 +152,11 @@ export {
   buildCommandIntentHints,
   THREE_JSON_AGENT_CAPABILITY_INDEX,
   THREE_JSON_AGENT_EXAMPLE_INDEX,
+  buildAgentCapabilityIndex,
   analyzeSceneUsage,
   evaluateCapabilityFit,
   matchIntentSignals,
+  mergeRequiredCapabilityIds,
   buildCapabilityFixPrompt,
   buildObjectSpatialCardsFromScene,
   buildObjectSpatialCardsFromSceneJson,

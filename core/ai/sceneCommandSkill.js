@@ -285,6 +285,50 @@ function buildCommandSceneTextFragment(options = {}) {
   return rules.join("\n");
 }
 
+function buildCommandAdvancedCapabilityFragment(options = {}) {
+  const selected = new Set(
+    Array.isArray(options.selectedCapabilityIds)
+      ? options.selectedCapabilityIds.map((id) => String(id || "").trim()).filter(Boolean)
+      : []
+  );
+  const particleSelected = [
+    "particles",
+    "particleEmitter",
+    "particleRaster",
+    "webgpuParticles",
+    "weather",
+    "weatherDomain"
+  ].some((id) => selected.has(id));
+  const tslSelected = selected.has("webgpuTsl") || String(options.rendererBackend || "").toLowerCase() === "webgpu";
+  const tslCodeSelected = selected.has("tslCode");
+  const blocks = [];
+  if (particleSelected) {
+    blocks.push([
+      "Negotiated Particle V2 editing capability:",
+      "- Add a particle effect with object.add descriptor={\"threeJsonId\":\"...\",\"objType\":\"particleEmitter\",\"source\":{\"type\":\"box|sphere|shell|disc|cone|line|curve|meshSurface|textMask|imageMask\",...},\"emission\":{\"mode\":\"static|continuous|burst\",\"count\":1000,\"seed\":1},\"particle\":{\"lifetime\":{\"min\":2,\"max\":5},...},\"simulation\":{\"backend\":\"cpu|webgl-compute|webgpu-compute\",...},\"render\":{\"type\":\"points|billboard\",...}}.",
+      "- Patch only the relevant source/emission/particle/simulation/render block on an existing emitter. Never emit retired top-level count/distribution/motion/material fields, and never replace requested particle text/images with instanced cubes.",
+      "- textMask/imageMask are descriptor-activated. webgpu-compute additionally requires a WebGPU scene and the webgpuParticles capability."
+    ].join("\n"));
+  }
+  if (tslSelected) {
+    blocks.push([
+      "Negotiated WebGPU/TSL editing capability:",
+      "- The scene renderer must remain sceneConfig.renderer.backend=webgpu. Use material.patch with a complete TSL material partial, or scene.applyPatch/full JSON when changing the renderer and material atomically.",
+      "- TSL material shape: {\"type\":\"tsl\",\"base\":\"standard|physical|basic|lambert|phong|toon|matcap|normal\",\"tsl\":{\"kind\":\"preset|graph\",...}}.",
+      "- Graph shape: tsl.source.inline={\"graphVersion\":1,\"nodes\":[{\"id\":\"...\",\"type\":\"...\",...}],\"outputs\":{\"color\":\"nodeId\",\"opacity\":\"nodeId\"}}. Preserve existing graph nodes and unrelated material/model bindings unless the request replaces them."
+    ].join("\n"));
+  }
+  if (tslCodeSelected) {
+    blocks.push([
+      "Negotiated raw TSL code editing capability:",
+      "- tslCode is host-enabled for this turn. A code material uses tsl:{\"kind\":\"code\",\"source\":{\"inline\":\"export default (params, context) => ...\"},\"params\":{...}}; URL source is allowed only when supplied by the user/current scene.",
+      "- The inline value is one valid JSON string containing an ESM module whose default factory returns a NodeMaterial, TSL node, output-node map, or mutates context.material. Use context.TSL/context.WEBGPU; do not invent source.sha256.",
+      "- Prefer preset/graph when they express the effect cleanly. Preserve existing code byte-for-byte unless the user asks to change that shader/module; the host owns authorization policy."
+    ].join("\n"));
+  }
+  return blocks.join("\n\n");
+}
+
 function buildCommandTextureAcquisitionFragment() {
   return [
     "Texture-acquisition setting:",
@@ -306,6 +350,8 @@ function buildCommandPromptRulesFragment(options = {}) {
     buildGroupRulesFragment(),
     "",
     buildCommandSceneTextFragment(options),
+    "",
+    buildCommandAdvancedCapabilityFragment(options),
     "",
     buildCommandUtilityFragment()
   ].join("\n");

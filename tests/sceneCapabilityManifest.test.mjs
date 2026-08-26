@@ -60,3 +60,41 @@ test("AI capability snapshot advertises available runtime features only", () => 
   assert.match(prompt, /materials:[^\n]*physical/);
   assert.match(prompt, /registered shaderPreset/);
 });
+
+test("AI negotiation can advertise a host-activatable WebGPU entry without registering it globally", () => {
+  _clearSceneCapabilityRegistrationsForTests();
+  const ordinary = buildAgentCapabilityIndex({ rendererBackend: "webgl" });
+  assert.doesNotMatch(ordinary, /WebGPU\/TSL authoring capability/);
+
+  const negotiation = buildAgentCapabilityIndex({
+    rendererBackend: "auto",
+    includePreviewCapabilities: true,
+    activatableCapabilityEntries: ["threejson/webgpu"]
+  });
+  assert.match(negotiation, /available renderer backends: webgl, webgpu/);
+  assert.match(negotiation, /WebGPU\/TSL authoring capability/);
+  assert.match(negotiation, /offers the capability on demand/);
+  assert.match(negotiation, /webgpuParticles/);
+  assert.equal(isSceneCapabilityAvailable("rendererBackends", "webgpu"), false);
+});
+
+test("AI negotiation advertises raw TSL code only when the host offers its separate entry", () => {
+  const graphOnly = buildAgentCapabilityIndex({
+    rendererBackend: "auto",
+    includePreviewCapabilities: true,
+    activatableCapabilityEntries: ["threejson/webgpu"]
+  });
+  assert.match(graphOnly, /kind:"code" is not available/);
+  assert.doesNotMatch(graphOnly, /Select tslCode in addition/);
+
+  const withCode = buildAgentCapabilityIndex({
+    rendererBackend: "auto",
+    includePreviewCapabilities: true,
+    activatableCapabilityEntries: ["threejson/webgpu", "threejson/tsl-code"],
+    activatableTslCodePolicy: "prompt"
+  });
+  assert.match(withCode, /negotiation ids: webgpuTsl, tslCode/);
+  assert.match(withCode, /Select tslCode in addition/);
+  assert.match(withCode, /default-export a factory/);
+  assert.match(withCode, /host.*confirmation\/execution policy/i);
+});

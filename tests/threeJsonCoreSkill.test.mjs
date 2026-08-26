@@ -116,10 +116,13 @@ test("generation prompt hides particle capabilities when particle intent is abse
   assert.equal((prompt.match(/particleEmitter/g) || []).length, 1);
   assert.equal((prompt.match(/particleList/g) || []).length, 1);
   assert.doesNotMatch(prompt, /ParticleEmitterItem|"particleList"\s*:\s*\[/);
+  assert.doesNotMatch(prompt, /particleRaster|webgpuParticles|textMask|imageMask/);
   assert.match(prompt, /particle effects are forbidden/i);
 
   const enabled = buildSceneGenerationSystemPrompt({ particleEffects: true });
   assert.match(enabled, /particleEmitter/);
+  assert.match(enabled, /particleRaster/);
+  assert.match(enabled, /five orthogonal blocks: source, emission, particle, simulation, render/);
 });
 
 test("scene prompts keep texture acquisition provider-neutral and semantic", () => {
@@ -145,6 +148,20 @@ test("WebGPU capability snapshot teaches TSL effects and imported-model material
 
   const webglPrompt = buildSceneGenerationSystemPrompt();
   assert.doesNotMatch(webglPrompt, /WebGPU\/TSL authoring \(available/);
+});
+
+test("explicit TSL code entry teaches AI the executable module contract", async () => {
+  await import("../webgpu/tslCode.js");
+  const prompt = buildSceneGenerationSystemPrompt({
+    rendererBackend: "webgpu",
+    includePreviewCapabilities: true,
+    selectedCapabilityIds: ["webgpuTsl", "tslCode"]
+  });
+  assert.match(prompt, /kind:"code" is available/);
+  assert.match(prompt, /Select tslCode in addition to webgpuTsl/);
+  assert.match(prompt, /source:\{inline:"export default/);
+  assert.match(prompt, /returning a NodeMaterial, TSL node, output-node map/);
+  assert.match(prompt, /host, not scene JSON, owns confirmation\/execution policy/i);
 });
 
 test("buildIntentHints maps solar system prompt to sphere capability", () => {

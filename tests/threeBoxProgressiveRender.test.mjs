@@ -22,7 +22,7 @@ test("ThreeBox can start a draft preview before final AI post-processing complet
   ]);
   assert.match(appSource, /onSceneDraft:/);
   assert.match(appSource, /draftPreviewPromise/);
-  assert.match(coreSource, /options\.onSceneDraft\(sceneJsonString\)/);
+  assert.match(coreSource, /capabilityOptions\.onSceneDraft\(sceneJsonString\)/);
   assert.match(cardSource, /onRuntimeReady:/);
   assert.match(cardSource, /showCompactLoadingProgress\(\)/);
   assert.match(cardSource, /async function applyCommands\(/);

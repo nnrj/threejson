@@ -4,7 +4,7 @@
  */
 import { DEFAULT_FRIENDLY_SCENE_LIST_ORDER } from "../handler/sceneFriendlyMap.js";
 
-/** @typedef {{ id: string, patterns: RegExp[], lists?: string[], objTypes?: string[], note: string, boxFriendly?: boolean }} IntentSignal */
+/** @typedef {{ id: string, patterns: RegExp[], lists?: string[], objTypes?: string[], requiredObjTypes?: string[], selectionIds?: string[], requiredWhenMatched?: boolean, note: string, boxFriendly?: boolean }} IntentSignal */
 
 const INTENT_SIGNALS = [
   {
@@ -51,7 +51,9 @@ const INTENT_SIGNALS = [
   },
   {
     id: "line",
-    patterns: [/line|path|route|cable|wire|boundary|polyline|道路|路径|管线|边界|折线/i],
+    // Keep English tokens bounded: an unbounded `line` also matches "inline TSL code" and
+    // incorrectly forces a lineList into an otherwise valid material edit.
+    patterns: [/\bline\b|\bpath\b|\broute\b|\bcable\b|\bwire\b|\bboundary\b|\bpolyline\b|道路|路径|管线|边界|折线/i],
     lists: ["lineList"],
     objTypes: ["line"],
     note: "Use lineList with points[] and optional topology."
@@ -122,17 +124,55 @@ const INTENT_SIGNALS = [
     // Word-bounded and specific on purpose: a bare "points" (no boundary) previously matched
     // "waypoints"/"control points"/"data points" in ordinary prompts and forced particleEmitter
     // into unrelated scenes via the capability-fit repair pass (evaluateCapabilityFit below).
-    patterns: [/\bparticles?\b|\bpoint\s*clouds?\b|\bstarfields?\b|\bdust\b|\bsparks?\b|\bsmoke\b|\bembers?\b|\bash\b|\bfireflies\b|\bfireworks?\b|\bmagic(?:al)?\s+(?:dust|sparkles?|effects?)\b|粒子|星尘|点云|烟雾|烟尘|火花|余烬|飞灰|萤火虫|烟花|魔法特效/i],
+    patterns: [/\bparticles?\b|\bpoint\s*clouds?\b|\bstarfields?\b|\bdust\b|\bsparks?\b|\bsmoke\b|\bembers?\b|\bash\b|\bflames?\b|\bfire\s+(?:effect|particles?)\b|\bfireflies\b|\bfireworks?\b|\bmagic(?:al)?\s+(?:dust|sparkles?|effects?)\b|粒子|星尘|点云|烟雾|烟尘|火花|火焰|烈焰|余烬|飞灰|萤火虫|烟花|烟火|魔法特效/i],
     lists: ["objectList", "particleList", "domainModelList"],
     objTypes: ["particleEmitter", "points"],
-    note: "Prefer the V2 objectList particleEmitter schema with source/emission/particle/simulation/render; particleList/points is legacy. Use only source and backend values exposed by the runtime capability snapshot."
+    selectionIds: ["particles"],
+    requiredWhenMatched: true,
+    note: "Prefer the V2 objectList particleEmitter schema with source/emission/particle/simulation/render; use lifecycle curves, forces, attractors, and textMask/imageMask/meshSurface sources where the requested effect needs them. particleList/points is legacy. Use only source and backend values exposed by the runtime capability snapshot."
+  },
+  {
+    id: "particleRaster",
+    patterns: [/\b(?:particle|point)[ -]?(?:text|logo|image|mask)\b|\btextMask\b|\bimageMask\b|粒子.{0,32}(?:文字|文本|字样|Logo|标志|图案|图片)|文字粒子|图案粒子/i],
+    lists: ["objectList"],
+    requiredObjTypes: ["particleEmitter", "particleSource:raster"],
+    selectionIds: ["particles", "particleRaster"],
+    requiredWhenMatched: true,
+    note: "Use Particle V2 source.type textMask or imageMask for requested particle text, logos, or image silhouettes; do not approximate the pattern with an instanced cube grid."
+  },
+  {
+    id: "webgpuParticles",
+    patterns: [/\bwebgpu(?:[ -]compute)?[ -]particles?\b|\bgpu[ -]compute[ -]particles?\b|\btsl[ -]compute[ -]particles?\b|WebGPU.{0,16}粒子|GPU.{0,8}(?:计算|Compute).{0,8}粒子/i],
+    lists: ["objectList"],
+    requiredObjTypes: ["renderer:webgpu", "particleEmitter", "particleBackend:webgpu-compute"],
+    selectionIds: ["particles", "webgpuParticles"],
+    requiredWhenMatched: true,
+    note: "Use sceneConfig.renderer.backend webgpu plus Particle V2 simulation.backend webgpu-compute for an explicitly requested WebGPU/GPU-compute particle system."
+  },
+  {
+    id: "webgpuTsl",
+    patterns: [/\bTSL\b|three\.tsl|\bNodeMaterial\b|\bnode[ -](?:material|shader|graph)\b|\bWebGPU[ -](?:material|shader|rendering)\b|TSL(?:材质|节点|着色器|渲染)|WebGPU(?:材质|着色器|节点图)|节点(?:材质|着色器|图)/i],
+    lists: ["objectList"],
+    requiredObjTypes: ["renderer:webgpu", "material:tsl"],
+    selectionIds: ["webgpuTsl"],
+    requiredWhenMatched: true,
+    note: "Use sceneConfig.renderer.backend webgpu and a material type tsl (preset or graph) for explicitly requested TSL/NodeMaterial/WebGPU node-shader effects."
+  },
+  {
+    id: "tslCode",
+    patterns: [/\bTSL[ -](?:code|module|source)\b|\b(?:raw|custom)[ -]TSL\b|\bNodeMaterial[ -](?:code|module)\b|TSL(?:代码|源码|模块)|(?:自定义|原始)TSL/i],
+    lists: ["objectList"],
+    requiredObjTypes: ["renderer:webgpu", "material:tsl", "tslKind:code"],
+    selectionIds: ["webgpuTsl", "tslCode"],
+    requiredWhenMatched: true,
+    note: "Use a material type tsl with tsl.kind code only when the host exposes tslCode; source.inline/source.url must be a real ESM module default-exporting a TSL material/node factory."
   },
   {
     id: "weather",
     patterns: [/rain|snow|weather|ember|sparkle|雨|雪|天气/i],
-    lists: ["particleList", "domainModelList"],
-    objTypes: ["points", "domain"],
-    note: "Use particleList or domainModelList domain weather."
+    lists: ["objectList", "particleList", "domainModelList"],
+    objTypes: ["particleEmitter", "points", "domain"],
+    note: "Use a Particle V2 particleEmitter or a weather domain record for visible rain/snow/weather particles."
   },
   {
     id: "tube",
@@ -334,6 +374,21 @@ function analyzeSceneUsage(sceneObj) {
   const objTypes = new Set();
   let totalItems = 0;
 
+  const runtimeRendererRecord = Array.isArray(sceneObj?.objectList)
+    ? [...sceneObj.objectList].reverse().find(
+      (record) => String(record?.objType || "").trim().toLowerCase() === "renderer"
+    )
+    : null;
+  const rendererBackend = String(
+    sceneObj?.sceneConfig?.renderer?.backend
+      || runtimeRendererRecord?.backend
+      || sceneObj?.renderer?.backend
+      || "webgl"
+  ).trim().toLowerCase();
+  if (rendererBackend) {
+    objTypes.add(`renderer:${rendererBackend}`);
+  }
+
   if (sceneObj?.sceneConfig?.intro) {
     objTypes.add("intro");
   }
@@ -409,10 +464,35 @@ function collectObjTypes(record, objTypes) {
   if (record.geometry?.type && typeof record.geometry.type === "string") {
     objTypes.add("native");
   }
+  const collectMaterial = (material) => {
+    if (!material || typeof material !== "object") return;
+    const materialType = String(material.type || "").trim().toLowerCase();
+    if (materialType === "tsl" || materialType === "nodematerial") {
+      objTypes.add("material:tsl");
+      const tslKind = String(material.tsl?.kind || "preset").trim().toLowerCase();
+      if (tslKind) objTypes.add(`tslKind:${tslKind}`);
+    }
+  };
+  collectMaterial(record.material);
+  if (Array.isArray(record.materials)) record.materials.forEach(collectMaterial);
+  if (Array.isArray(record.materialArr)) record.materialArr.forEach(collectMaterial);
+  if (Array.isArray(record.materialBindings)) {
+    record.materialBindings.forEach((binding) => collectMaterial(binding?.material));
+  }
+  if (String(record.objType || "").trim().toLowerCase() === "particleemitter") {
+    objTypes.add("particleEmitter");
+    const backend = String(record.simulation?.backend || "cpu").trim().toLowerCase();
+    const sourceType = String(record.source?.type || "box").trim().toLowerCase();
+    if (backend) objTypes.add(`particleBackend:${backend}`);
+    if (sourceType) objTypes.add(`particleSource:${sourceType}`);
+    if (sourceType === "textmask" || sourceType === "imagemask") {
+      objTypes.add("particleSource:raster");
+    }
+  }
   if (record.parseMode === "native") {
     objTypes.add("native");
   }
-  const nestedLists = ["boxModelList", "subGroup", "joins", "inters", "holes", "children"];
+  const nestedLists = ["boxModelList", "subScene", "subGroup", "joins", "inters", "holes", "children", "objectList"];
   for (let i = 0; i < nestedLists.length; i += 1) {
     const key = nestedLists[i];
     const nested = record[key];
@@ -438,7 +518,10 @@ function signalSatisfied(signal, usage) {
   const typeHit =
     !signal.objTypes ||
     signal.objTypes.some((typeName) => usage.objTypes.has(typeName));
-  return listHit && typeHit;
+  const requiredTypeHit =
+    !signal.requiredObjTypes ||
+    signal.requiredObjTypes.every((typeName) => usage.objTypes.has(typeName));
+  return listHit && typeHit && requiredTypeHit;
 }
 
 function collectTopLevelSceneRecords(sceneObj) {
@@ -637,9 +720,34 @@ function shouldAllowParticleEffects(prompt) {
   return /\brain(?:ing|fall)?\b|\bsnow(?:ing|fall)?\b|\bhail\b|\bblizzard\b|\bsandstorm\b|\bmeteor\s+shower\b|下雨|雨滴|雨天|降雨|下雪|雪花|降雪|冰雹|暴风雪|沙尘暴|流星雨/i.test(text);
 }
 
+/**
+ * Preserve the negotiation model's semantic choices while enforcing capabilities that the user
+ * named explicitly. This is deliberately limited to signals marked requiredWhenMatched: it does
+ * not turn the entire regex catalog into a replacement for model judgment.
+ *
+ * @param {string} prompt
+ * @param {string[]|undefined} selectedCapabilityIds
+ * @returns {string[]|undefined}
+ */
+function mergeRequiredCapabilityIds(prompt, selectedCapabilityIds) {
+  const hadSelection = Array.isArray(selectedCapabilityIds);
+  const selected = hadSelection
+    ? selectedCapabilityIds.map((id) => String(id || "").trim()).filter(Boolean)
+    : [];
+  for (const signal of matchIntentSignals(prompt)) {
+    if (signal.requiredWhenMatched !== true) continue;
+    for (const id of signal.selectionIds || [signal.id]) {
+      const normalized = String(id || "").trim();
+      if (normalized && !selected.includes(normalized)) selected.push(normalized);
+    }
+  }
+  return selected.length > 0 || hadSelection ? selected : undefined;
+}
+
 export {
   INTENT_SIGNALS,
   matchIntentSignals,
+  mergeRequiredCapabilityIds,
   shouldAllowParticleEffects,
   buildIntentHints,
   buildCommandIntentHints,

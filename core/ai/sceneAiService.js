@@ -28,10 +28,13 @@ import { extractPatchOperations, applySceneJsonPatch } from "./scenePatch.js";
 import {
   buildIntentHints,
   matchIntentSignals,
+  mergeRequiredCapabilityIds,
+  analyzeSceneUsage,
   shouldAllowParticleEffects,
   evaluateCapabilityFit,
   buildCapabilityFixPrompt
 } from "./sceneCapability.js";
+import { isSceneCapabilityAvailable } from "../capabilities/sceneCapabilityManifest.js";
 import { fetchReferenceMaterial } from "./sceneReferenceCatalog.js";
 import { requestSceneOutline } from "./agentTools.js";
 import {
@@ -1026,6 +1029,65 @@ function buildGenerateUserMessage(prompt, outline = "", options = {}) {
   return parts.join("\n\n");
 }
 
+const WEBGPU_AI_CAPABILITY_IDS = new Set(["webgpuTsl", "tslCode", "webgpuParticles"]);
+const PARTICLE_AI_CAPABILITY_IDS = new Set([
+  "particles",
+  "particleEmitter",
+  "particleRaster",
+  "webgpuParticles",
+  "weather",
+  "weatherDomain"
+]);
+
+function readSceneRendererBackend(scene) {
+  const runtimeRendererRecord = Array.isArray(scene?.objectList)
+    ? [...scene.objectList].reverse().find(
+      (record) => String(record?.objType || "").trim().toLowerCase() === "renderer"
+    )
+    : null;
+  const backend = String(
+    scene?.sceneConfig?.renderer?.backend
+      || runtimeRendererRecord?.backend
+      || scene?.renderer?.backend
+      || ""
+  ).trim().toLowerCase();
+  return backend === "webgpu" || backend === "webgl" ? backend : "";
+}
+
+/** Resolve a concrete prompt/runtime snapshot from explicit negotiation plus hard requirements
+ * named in the user request. WebGPU is chosen automatically only when its optional entry is
+ * actually registered; otherwise the prompt remains honest about the WebGL-only host. */
+function resolveAiCapabilityOptions(prompt, options = {}, currentScene = null) {
+  const promptSelectedCapabilityIds = mergeRequiredCapabilityIds(prompt, options.selectedCapabilityIds);
+  const selected = new Set(promptSelectedCapabilityIds || []);
+  if (currentScene && typeof currentScene === "object") {
+    const usage = analyzeSceneUsage(currentScene).objTypes;
+    if (usage.has("particleEmitter")) selected.add("particles");
+    if (usage.has("particleSource:raster")) selected.add("particleRaster");
+    if (usage.has("particleBackend:webgpu-compute")) selected.add("webgpuParticles");
+    if (usage.has("material:tsl")) selected.add("webgpuTsl");
+    if (usage.has("tslKind:code")) selected.add("tslCode");
+  }
+  const selectedCapabilityIds = selected.size > 0
+    ? [...selected]
+    : promptSelectedCapabilityIds;
+  const explicitBackend = String(options.rendererBackend || "").trim().toLowerCase();
+  const currentBackend = readSceneRendererBackend(currentScene);
+  const wantsWebgpu = Array.isArray(selectedCapabilityIds)
+    && selectedCapabilityIds.some((id) => WEBGPU_AI_CAPABILITY_IDS.has(id));
+  const webgpuAvailable = isSceneCapabilityAvailable("rendererBackends", "webgpu");
+  const rendererBackend = explicitBackend === "webgpu" || explicitBackend === "webgl"
+    ? explicitBackend
+    : currentBackend || (wantsWebgpu && webgpuAvailable ? "webgpu" : "webgl");
+  return {
+    ...options,
+    rendererBackend,
+    includePreviewCapabilities:
+      options.includePreviewCapabilities === true || rendererBackend === "webgpu",
+    selectedCapabilityIds
+  };
+}
+
 async function resolveReferenceMaterialForPrompt(prompt, options = {}) {
   if (options.capabilityLookup === false || typeof options.resolveReferenceUrl !== "function") {
     return "";
@@ -1134,16 +1196,17 @@ async function generateSceneJsonString(prompt, options = {}) {
   }
 
   const trimmedPrompt = String(prompt).trim();
-  const particleEffects = Array.isArray(options.selectedCapabilityIds)
-    ? options.selectedCapabilityIds.some((id) => ["particleEmitter", "weatherDomain"].includes(id))
+  const capabilityOptions = resolveAiCapabilityOptions(trimmedPrompt, options);
+  const particleEffects = Array.isArray(capabilityOptions.selectedCapabilityIds)
+    ? capabilityOptions.selectedCapabilityIds.some((id) => PARTICLE_AI_CAPABILITY_IDS.has(id))
     : shouldAllowParticleEffects(trimmedPrompt);
-  const effectivePrompt = await resolveEffectiveGeneratePrompt(trimmedPrompt, options);
-  const maxTokens = normalizeOptionalMaxTokens(options.maxTokens);
-  const referenceMaterial = await resolveReferenceMaterialForPrompt(effectivePrompt, options);
+  const effectivePrompt = await resolveEffectiveGeneratePrompt(trimmedPrompt, capabilityOptions);
+  const maxTokens = normalizeOptionalMaxTokens(capabilityOptions.maxTokens);
+  const referenceMaterial = await resolveReferenceMaterialForPrompt(effectivePrompt, capabilityOptions);
 
-  const estimatedSegments = clampInteger(options.estimatedSegments, 1, 1, DEFAULT_MAX_SCENE_SEGMENTS);
-  const segmentedOutput = shouldUseSegmentedSceneOutput(options, estimatedSegments);
-  const systemPrompt = buildSceneGenerationSystemPrompt({ ...options, particleEffects });
+  const estimatedSegments = clampInteger(capabilityOptions.estimatedSegments, 1, 1, DEFAULT_MAX_SCENE_SEGMENTS);
+  const segmentedOutput = shouldUseSegmentedSceneOutput(capabilityOptions, estimatedSegments);
+  const systemPrompt = buildSceneGenerationSystemPrompt({ ...capabilityOptions, particleEffects });
   const messages = [
     {
       role: "system",
@@ -1153,36 +1216,36 @@ async function generateSceneJsonString(prompt, options = {}) {
     },
     {
       role: "user",
-      content: [buildGenerateUserMessage(effectivePrompt, "", options), referenceMaterial].filter(Boolean).join("\n\n")
+      content: [buildGenerateUserMessage(effectivePrompt, "", capabilityOptions), referenceMaterial].filter(Boolean).join("\n\n")
     }
   ];
   let content;
   if (segmentedOutput) {
-    content = await requestSegmentedSceneJsonContent(messages, options, maxTokens);
+    content = await requestSegmentedSceneJsonContent(messages, capabilityOptions, maxTokens);
   } else {
     let completionMetadata = { finishReason: null };
     content = await requestChatCompletion({
-      ...options,
+      ...capabilityOptions,
       maxTokens,
-      taskKind: options.taskKind || "scene_generate",
+      taskKind: capabilityOptions.taskKind || "scene_generate",
       messages,
       onCompletionMetadata: (metadata) => {
         completionMetadata = { ...completionMetadata, ...metadata };
-        if (typeof options.onCompletionMetadata === "function") {
-          options.onCompletionMetadata(metadata);
+        if (typeof capabilityOptions.onCompletionMetadata === "function") {
+          capabilityOptions.onCompletionMetadata(metadata);
         }
       }
     });
     if (
-      options.compactRetryOnTruncation === false &&
-      isSceneOutputCutoff(content, completionMetadata, options)
+      capabilityOptions.compactRetryOnTruncation === false &&
+      isSceneOutputCutoff(content, completionMetadata, capabilityOptions)
     ) {
       throw createSceneOutputLimitError(
         "Scene JSON exceeded the provider output limit. Switch to planned incremental construction."
       );
     }
-    if (shouldRetryCompactSceneOutput(content, completionMetadata, options)) {
-      await emitSceneGenerationPhase(options, {
+    if (shouldRetryCompactSceneOutput(content, completionMetadata, capabilityOptions)) {
+      await emitSceneGenerationPhase(capabilityOptions, {
         phase: "segmented-recovery",
         reason: "provider-output-limit"
       });
@@ -1199,10 +1262,10 @@ async function generateSceneJsonString(prompt, options = {}) {
           },
           {
             role: "user",
-            content: buildCompactSceneRetryMessage(effectivePrompt, referenceMaterial, options)
+            content: buildCompactSceneRetryMessage(effectivePrompt, referenceMaterial, capabilityOptions)
           }
         ],
-        { ...options, estimatedSegments: recoveryEstimatedSegments },
+        { ...capabilityOptions, estimatedSegments: recoveryEstimatedSegments },
         maxTokens
       );
     }
@@ -1210,35 +1273,35 @@ async function generateSceneJsonString(prompt, options = {}) {
 
   // Network/token generation has finished. Let browser hosts paint a parsing/rendering status
   // before the synchronous JSON normalization below; non-UI callers pay no extra delay.
-  await emitSceneGenerationPhase(options, {
+  await emitSceneGenerationPhase(capabilityOptions, {
     phase: "processing",
     segmentedOutput,
     estimatedSegments
   });
 
   let jsonText = extractJsonText(content);
-  let sceneJsonString = projectSceneDraftJsonString(jsonText, "standard", options);
-  if (options.allowInvalidSceneDraft === true) {
+  let sceneJsonString = projectSceneDraftJsonString(jsonText, "standard", capabilityOptions);
+  if (capabilityOptions.allowInvalidSceneDraft === true) {
     try {
       parseSceneJsonString(sceneJsonString);
     } catch (_error) {
       return sceneJsonString;
     }
   }
-  if (typeof options.onSceneDraft === "function") {
+  if (typeof capabilityOptions.onSceneDraft === "function") {
     try {
       // Start host-side preview work without delaying the final post-processing path. Hosts may
       // render this validated draft immediately and replace it with the reviewed final JSON later.
-      void Promise.resolve(options.onSceneDraft(sceneJsonString)).catch(() => {});
+      void Promise.resolve(capabilityOptions.onSceneDraft(sceneJsonString)).catch(() => {});
     } catch {
       /* A preview must never make generation fail. */
     }
   }
   sceneJsonString = await maybeApplyCapabilityReview(trimmedPrompt, sceneJsonString, {
-    ...options,
+    ...capabilityOptions,
     maxTokens
   });
-  return projectSceneJsonString(sceneJsonString, options.outputFormat, options);
+  return projectSceneJsonString(sceneJsonString, capabilityOptions.outputFormat, capabilityOptions);
 }
 
 const DEFAULT_SCENE_IMAGE_PROMPT =
@@ -1263,21 +1326,22 @@ async function generateSceneJsonFromImage(input = {}, options = {}) {
     input.prompt !== undefined && String(input.prompt).trim()
       ? String(input.prompt).trim()
       : DEFAULT_SCENE_IMAGE_PROMPT;
+  const capabilityOptions = resolveAiCapabilityOptions(trimmedPrompt, chatOptions);
 
-  const effectivePrompt = await resolveEffectiveGeneratePrompt(trimmedPrompt, chatOptions);
-  const maxTokens = normalizeOptionalMaxTokens(chatOptions.maxTokens);
-  const referenceMaterial = await resolveReferenceMaterialForPrompt(effectivePrompt, chatOptions);
+  const effectivePrompt = await resolveEffectiveGeneratePrompt(trimmedPrompt, capabilityOptions);
+  const maxTokens = normalizeOptionalMaxTokens(capabilityOptions.maxTokens);
+  const referenceMaterial = await resolveReferenceMaterialForPrompt(effectivePrompt, capabilityOptions);
 
   const content = await requestJsonCompletionWithSegmentedRecovery(
     [
       {
         role: "system",
-        content: buildSceneImageGenerationSystemPrompt(chatOptions)
+        content: buildSceneImageGenerationSystemPrompt(capabilityOptions)
       },
       {
         role: "user",
         content: [
-          { type: "text", text: [buildGenerateUserMessage(effectivePrompt, "", chatOptions), referenceMaterial].filter(Boolean).join("\n\n") },
+          { type: "text", text: [buildGenerateUserMessage(effectivePrompt, "", capabilityOptions), referenceMaterial].filter(Boolean).join("\n\n") },
           {
             type: "image_url",
             image_url: {
@@ -1288,17 +1352,17 @@ async function generateSceneJsonFromImage(input = {}, options = {}) {
         ]
       }
     ],
-    { ...options, maxTokens },
-    options.taskKind || "scene_generate_image"
+    { ...capabilityOptions, imageDetail: detail, maxTokens },
+    capabilityOptions.taskKind || "scene_generate_image"
   );
 
   let jsonText = extractJsonText(content);
   let sceneJsonString = projectSceneJsonString(jsonText, "standard");
   sceneJsonString = await maybeApplyCapabilityReview(trimmedPrompt, sceneJsonString, {
-    ...options,
+    ...capabilityOptions,
     maxTokens
   });
-  return projectSceneJsonString(sceneJsonString, options.outputFormat, options);
+  return projectSceneJsonString(sceneJsonString, capabilityOptions.outputFormat, capabilityOptions);
 }
 
 /**
@@ -1319,7 +1383,6 @@ async function requestUpdatedSceneJsonString(prompt, currentSceneJsonString, opt
 
   const updateMode = options.updateMode === "incremental" ? "incremental" : "full";
   const includePatch = options.includePatch === true;
-  const chatOpts = stripChatTransportOptions(options);
   let currentSceneObj;
   try {
     currentSceneObj = projectSceneOutputObject(
@@ -1330,7 +1393,9 @@ async function requestUpdatedSceneJsonString(prompt, currentSceneJsonString, opt
     if (options.allowInvalidSceneDraft !== true) throw error;
     currentSceneObj = parseJsonObjectWithoutSceneValidation(currentSceneJsonString);
   }
-  const referenceMaterial = await resolveReferenceMaterialForPrompt(prompt, options);
+  const capabilityOptions = resolveAiCapabilityOptions(prompt, options, currentSceneObj);
+  const chatOpts = stripChatTransportOptions(capabilityOptions);
+  const referenceMaterial = await resolveReferenceMaterialForPrompt(prompt, capabilityOptions);
 
   if (updateMode === "incremental") {
     const currentScenePrettyJson = prettyJson(currentSceneObj);
@@ -1338,7 +1403,7 @@ async function requestUpdatedSceneJsonString(prompt, currentSceneJsonString, opt
       [
         {
           role: "system",
-          content: buildSceneIncrementalUpdateSystemPrompt(options)
+          content: buildSceneIncrementalUpdateSystemPrompt(capabilityOptions)
         },
         {
           role: "user",
@@ -1349,8 +1414,8 @@ async function requestUpdatedSceneJsonString(prompt, currentSceneJsonString, opt
           ].filter(Boolean).join("\n\n")
         }
       ],
-      { ...options, ...chatOpts },
-      options.taskKind || "scene_adjust_patch"
+      { ...capabilityOptions, ...chatOpts },
+      capabilityOptions.taskKind || "scene_adjust_patch"
     );
     const patch = extractPatchOperations(content);
     const applied = applySceneJsonPatch(currentSceneObj, patch);
@@ -1358,7 +1423,7 @@ async function requestUpdatedSceneJsonString(prompt, currentSceneJsonString, opt
       throw new Error(`incremental patch failed: ${applied.error}`);
     }
     const sceneJsonString = prettyJson(
-      projectSceneOutputObject(applied.scene, options.outputFormat, options)
+      projectSceneOutputObject(applied.scene, capabilityOptions.outputFormat, capabilityOptions)
     );
     return includePatch ? { sceneJsonString, patch } : sceneJsonString;
   }
@@ -1368,7 +1433,7 @@ async function requestUpdatedSceneJsonString(prompt, currentSceneJsonString, opt
     [
       {
         role: "system",
-        content: buildSceneUpdateSystemPrompt(options)
+        content: buildSceneUpdateSystemPrompt(capabilityOptions)
       },
       {
         role: "user",
@@ -1379,15 +1444,15 @@ async function requestUpdatedSceneJsonString(prompt, currentSceneJsonString, opt
         ].filter(Boolean).join("\n\n")
       }
     ],
-    { ...options, ...chatOpts },
-    options.taskKind || "scene_adjust_json"
+    { ...capabilityOptions, ...chatOpts },
+    capabilityOptions.taskKind || "scene_adjust_json"
   );
 
   const updatedJsonText = extractJsonText(content);
   const sceneJsonString = projectSceneDraftJsonString(
     updatedJsonText,
-    options.outputFormat,
-    options
+    capabilityOptions.outputFormat,
+    capabilityOptions
   );
   return includePatch ? { sceneJsonString, patch: null } : sceneJsonString;
 }
@@ -1461,6 +1526,16 @@ async function requestUpdatedSceneEditCommands(prompt, context = {}, options = {
   const currentSceneJsonString = String(
     context.currentSceneJsonString || context.fullSceneJson || ""
   ).trim();
+  let currentSceneForCapabilities = null;
+  if (currentSceneJsonString) {
+    try {
+      currentSceneForCapabilities = parseSceneJsonString(currentSceneJsonString);
+    } catch {
+      // Command mode can operate from a spatial summary without a parseable full document. In
+      // that case use the negotiated/prompt capability selection alone.
+    }
+  }
+  options = resolveAiCapabilityOptions(prompt, options, currentSceneForCapabilities);
 
   if (outputMode === "json") {
     if (!currentSceneJsonString) {
@@ -1509,15 +1584,19 @@ async function requestUpdatedSceneEditCommands(prompt, context = {}, options = {
   // after burning through every repair round on responses that were never actually invalid.
   const allowAutoOutputKind = outputMode === "auto" || agentRound || iterativeApply;
   const systemPrompt = allowAutoOutputKind
-    ? buildSceneCommandAutoUpdateSystemPrompt({
+      ? buildSceneCommandAutoUpdateSystemPrompt({
         agentRound: agentRound || iterativeApply,
         iterativeApply,
         animationCapabilities: options.animationCapabilities,
-        selectedCapabilityIds: options.selectedCapabilityIds
+        selectedCapabilityIds: options.selectedCapabilityIds,
+        rendererBackend: options.rendererBackend,
+        includePreviewCapabilities: options.includePreviewCapabilities
       })
     : buildSceneCommandUpdateSystemPrompt({
         animationCapabilities: options.animationCapabilities,
-        selectedCapabilityIds: options.selectedCapabilityIds
+        selectedCapabilityIds: options.selectedCapabilityIds,
+        rendererBackend: options.rendererBackend,
+        includePreviewCapabilities: options.includePreviewCapabilities
       });
 
   let finishReason = null;
@@ -1665,6 +1744,7 @@ async function requestSceneRefinementStep(userPrompt, currentSceneJsonString, op
     throw new Error("userPrompt is required.");
   }
   const currentSceneObj = parseSceneJsonString(String(currentSceneJsonString || ""));
+  options = resolveAiCapabilityOptions(userPrompt, options, currentSceneObj);
   const currentScenePrettyJson = prettyJson(currentSceneObj);
   const feedback = String(options.feedback || "").trim();
   const allowCommands = options.allowCommands !== false;
@@ -1673,7 +1753,10 @@ async function requestSceneRefinementStep(userPrompt, currentSceneJsonString, op
     buildSceneCommandAutoUpdateSystemPrompt({
       agentRound: true,
       iterativeApply: true,
-      animationCapabilities: options.animationCapabilities
+      animationCapabilities: options.animationCapabilities,
+      selectedCapabilityIds: options.selectedCapabilityIds,
+      rendererBackend: options.rendererBackend,
+      includePreviewCapabilities: options.includePreviewCapabilities
     }),
     "",
     "Optional draft-refinement protocol:",

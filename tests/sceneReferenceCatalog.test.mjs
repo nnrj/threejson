@@ -136,6 +136,49 @@ test("fetchReferenceMaterial maps lighting and animation signals to focused refe
   }
 });
 
+test("fetchReferenceMaterial selects the dedicated Particle V2 and TSL examples", async () => {
+  const restore = installFetchMock({
+    "https://example.test/assets/json/demo-show/manifest.json": JSON.stringify([
+      {
+        section: "particles",
+        sectionTitleEn: "Particle System",
+        docLinks: [{ file: "capabilities-webgpu-particles.md" }],
+        items: [
+          { id: "particle-v2-sources", json: "examples/particle-v2/sources.json" },
+          { id: "particle-text-logo", json: "examples/particle-v2/text-logo.json" }
+        ]
+      },
+      {
+        section: "webgpu-tsl",
+        sectionTitleEn: "WebGPU and TSL",
+        docLinks: [{ file: "capabilities-webgpu-particles.md" }],
+        items: [
+          { id: "tsl-materials", json: "examples/webgpu/tsl-material.json" },
+          { id: "tsl-burning-model", json: "examples/webgpu/tsl-burning-model.json" }
+        ]
+      }
+    ]),
+    "https://example.test/docs/en/capabilities-webgpu-particles.md": "# Particle V2 and TSL\nUse explicit renderer and capability descriptors.",
+    "https://example.test/examples/particle-v2/text-logo.json":
+      '{"threeJsonId":"particle-text","objectList":[{"threeJsonId":"letters","objType":"particleEmitter","source":{"type":"textMask","text":"ThreeJSON"},"emission":{"mode":"static","count":1000},"particle":{"lifetime":0},"simulation":{"backend":"cpu"},"render":{"type":"points"}}]}',
+    "https://example.test/examples/webgpu/tsl-material.json":
+      '{"threeJsonId":"burn","sceneConfig":{"renderer":{"backend":"webgpu"}},"objectList":[{"threeJsonId":"mesh","objType":"box","material":{"type":"tsl","base":"physical","tsl":{"kind":"graph","source":{"inline":{"graphVersion":1,"nodes":[{"id":"c","type":"color","value":"#ff6600"}],"outputs":{"color":"c"}}}}}}]}'
+  });
+  try {
+    const result = await fetchReferenceMaterial(
+      [{ id: "particleRaster" }, { id: "webgpuTsl" }],
+      { resolveUrl, locale: "en-US" }
+    );
+    assert.match(result, /particle-text-logo/);
+    assert.match(result, /"type": "textMask"/);
+    assert.match(result, /tsl-materials/);
+    assert.match(result, /"backend": "webgpu"/);
+    assert.match(result, /"kind": "graph"/);
+  } finally {
+    restore();
+  }
+});
+
 test("device-domain lookup selects the cabinet example instead of the first business example", async () => {
   const restore = installFetchMock({
     "https://example.test/assets/json/demo-show/manifest.json": JSON.stringify([

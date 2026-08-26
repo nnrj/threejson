@@ -3,6 +3,7 @@ import { test } from "node:test";
 import {
   matchIntentSignals,
   evaluateCapabilityFit,
+  mergeRequiredCapabilityIds,
   shouldAllowParticleEffects
 } from "../core/ai/sceneCapability.js";
 
@@ -92,4 +93,56 @@ test("ordinary requests to add visible words select sceneText and require a Text
     ]
   });
   assert.equal(withSdfText.ok, true);
+});
+
+test("explicit particle-raster and TSL requests survive an incomplete model capability selection", () => {
+  assert.deepEqual(
+    mergeRequiredCapabilityIds("用粒子组成 ThreeJSON 文字", []),
+    ["particles", "particleRaster"]
+  );
+  assert.deepEqual(
+    mergeRequiredCapabilityIds("Use a TSL node material", ["external"]),
+    ["external", "webgpuTsl"]
+  );
+  assert.deepEqual(
+    mergeRequiredCapabilityIds("Use inline TSL code for the custom material", []),
+    ["webgpuTsl", "tslCode"]
+  );
+});
+
+test("capability fit understands Particle V2 raster sources and WebGPU TSL materials", () => {
+  const particleFit = evaluateCapabilityFit("用粒子组成 Logo 图案", {
+    objectList: [{
+      objType: "particleEmitter",
+      source: { type: "imageMask", url: "/logo.png" },
+      emission: { mode: "static", count: 2000 },
+      particle: { lifetime: 0 },
+      simulation: { backend: "cpu" },
+      render: { type: "points" }
+    }]
+  });
+  assert.equal(particleFit.ok, true);
+
+  const tslFit = evaluateCapabilityFit("Use a TSL node material", {
+    objectList: [{
+      objType: "renderer",
+      backend: "webgpu"
+    }, {
+      objType: "sphere",
+      material: { type: "tsl", tsl: { kind: "preset", preset: "pulse" } }
+    }]
+  });
+  assert.equal(tslFit.ok, true);
+
+  const tslCodeFit = evaluateCapabilityFit("Use inline TSL code for the custom material", {
+    sceneConfig: { renderer: { backend: "webgpu" } },
+    objectList: [{
+      objType: "sphere",
+      material: {
+        type: "tsl",
+        tsl: { kind: "code", source: { inline: "export default () => undefined" } }
+      }
+    }]
+  });
+  assert.equal(tslCodeFit.ok, true);
 });

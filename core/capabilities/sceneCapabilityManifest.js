@@ -22,7 +22,8 @@ const BUILTIN_CAPABILITIES = Object.freeze({
       status: "unavailable",
       async: true,
       entry: "threejson/webgpu",
-      reason: "Import threejson/webgpu to register the preview renderer backend."
+      optionalEntries: Object.freeze(["threejson/webgpu", "threejson/tsl-code"]),
+      reason: "Import threejson/webgpu (or the superset threejson/tsl-code) to register the preview renderer backend."
     })
   }),
   objects: Object.freeze({
@@ -89,7 +90,15 @@ const BUILTIN_CAPABILITIES = Object.freeze({
     matcap: Object.freeze({ status: "stable" }),
     normal: Object.freeze({ status: "stable" }),
     shader: Object.freeze({ status: "stable", rendererBackends: ["webgl"], mode: "registered-preset" }),
-    tsl: Object.freeze({ status: "unavailable", rendererBackends: ["webgpu"] })
+    tsl: Object.freeze({
+      status: "unavailable",
+      rendererBackends: ["webgpu"],
+      modes: Object.freeze(["preset", "graph"]),
+      entry: "threejson/webgpu",
+      optionalEntries: Object.freeze(["threejson/webgpu", "threejson/tsl-code"]),
+      codeEntry: "threejson/tsl-code",
+      reason: "Import threejson/webgpu for preset/graph, or threejson/tsl-code for the full TSL module capability."
+    })
   }),
   lightTypes: Object.freeze({
     ambient: Object.freeze({ status: "stable" }),
@@ -134,7 +143,8 @@ const BUILTIN_CAPABILITIES = Object.freeze({
       status: "unavailable",
       rendererBackends: ["webgpu"],
       entry: "threejson/webgpu",
-      reason: "Import threejson/webgpu to register the preview WebGPU bloom RenderPipeline."
+      optionalEntries: Object.freeze(["threejson/webgpu", "threejson/tsl-code"]),
+      reason: "Import threejson/webgpu (or threejson/tsl-code) to register the preview WebGPU bloom RenderPipeline."
     })
   }),
   modelFormats: Object.freeze({
@@ -150,7 +160,13 @@ const BUILTIN_CAPABILITIES = Object.freeze({
   particleBackends: Object.freeze({
     cpu: Object.freeze({ status: "stable", rendererBackends: ["webgl"] }),
     "webgl-compute": Object.freeze({ status: "stable", rendererBackends: ["webgl"], requires: "webgl2" }),
-    "webgpu-compute": Object.freeze({ status: "unavailable", rendererBackends: ["webgpu"] })
+    "webgpu-compute": Object.freeze({
+      status: "unavailable",
+      rendererBackends: ["webgpu"],
+      entry: "threejson/webgpu",
+      optionalEntries: Object.freeze(["threejson/webgpu", "threejson/tsl-code"]),
+      reason: "Import threejson/webgpu (or threejson/tsl-code) to register the WebGPU compute particle backend."
+    })
   }),
   particleSources: Object.freeze({
     positions: Object.freeze({ status: "stable" }),

@@ -71,6 +71,21 @@ test("command update prompt adds requested visible text as SDF instead of metada
   assert.match(prompt, /sceneText was selected during negotiation/);
 });
 
+test("command update prompt teaches negotiated Particle V2 and WebGPU TSL edits", () => {
+  const prompt = buildSceneCommandUpdateSystemPrompt({
+    selectedCapabilityIds: ["particles", "particleRaster", "webgpuTsl", "tslCode"],
+    rendererBackend: "webgpu"
+  });
+  assert.match(prompt, /Negotiated Particle V2 editing capability/);
+  assert.match(prompt, /source.*emission.*particle.*simulation.*render/);
+  assert.match(prompt, /textMask\|imageMask/);
+  assert.match(prompt, /Negotiated WebGPU\/TSL editing capability/);
+  assert.match(prompt, /sceneConfig\.renderer\.backend=webgpu/);
+  assert.match(prompt, /"kind":"preset\|graph"/);
+  assert.match(prompt, /Negotiated raw TSL code editing capability/);
+  assert.match(prompt, /default factory returns a NodeMaterial/);
+});
+
 test("buildSceneCommandAutoUpdateSystemPrompt distinguishes agent vs single round", () => {
   const single = buildSceneCommandAutoUpdateSystemPrompt();
   assert.ok(single.includes("Single-round"));

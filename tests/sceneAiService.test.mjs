@@ -1638,6 +1638,52 @@ test("classifyTurnIntent teaches the model to select sceneText for visible words
   assert.deepEqual(result.selectedCapabilityIds, ["sceneText"]);
 });
 
+test("classifyTurnIntent advertises ThreeBox on-demand Particle V2 and WebGPU TSL capabilities", async () => {
+  let requestBody;
+  globalThis.fetch = async (_url, init = {}) => {
+    requestBody = JSON.parse(init.body);
+    return {
+      ok: true,
+      async json() {
+        return {
+          choices: [{
+            message: {
+              // Deliberately omit the explicit capabilities: core must preserve requirements
+              // named by the user even when the negotiation model under-selects them.
+              content: '{"intent":"generate","targetTurnId":null,"note":"tsl particle logo","generationStrategy":"single","estimatedSegments":1,"selectedCapabilityIds":[],"requiresAnimation":true}'
+            }
+          }]
+        };
+      }
+    };
+  };
+
+  const result = await classifyTurnIntent(
+    { userPrompt: "用 WebGPU TSL 粒子组成 ThreeJSON Logo", history: [] },
+    {
+      provider: "chatgpt",
+      apiKey: "test-key",
+      rendererBackend: "auto",
+      includePreviewCapabilities: true,
+      activatableCapabilityEntries: ["threejson/webgpu", "threejson/tsl-code"],
+      activatableTslCodePolicy: "prompt"
+    }
+  );
+
+  const systemPrompt = requestBody.messages[0].content;
+  assert.match(systemPrompt, /Particle V2 capability ids/);
+  assert.match(systemPrompt, /particleRaster/);
+  assert.match(systemPrompt, /WebGPU\/TSL authoring capability/);
+  assert.match(systemPrompt, /offers the capability on demand/);
+  assert.match(systemPrompt, /Select tslCode in addition/);
+  assert.deepEqual(result.selectedCapabilityIds, [
+    "particles",
+    "particleRaster",
+    "webgpuParticles",
+    "webgpuTsl"
+  ]);
+});
+
 test("requestSceneRefinementStep recognizes done, JSON Patch, and commands", async () => {
   const scene = JSON.stringify({
     threeJsonId: "refinement-scene",
@@ -1822,4 +1868,56 @@ test("requestUpdatedSceneJsonString forwards negotiated sceneText guidance", asy
   const systemContent = requestBodies[0].messages[0].content;
   assert.match(systemContent, /Negotiated ThreeJSON scene-text capability/);
   assert.match(systemContent, /Preferred default is mode:\"sdf\"/);
+});
+
+test("requestUpdatedSceneJsonString preserves TSL code capability from the current scene", async () => {
+  await import("../webgpu/tslCode.js");
+
+  const currentScene = {
+    version: "next",
+    threeJsonId: "tsl-code-scene",
+    objectList: [
+      {
+        threeJsonId: "renderer-1",
+        objType: "renderer",
+        backend: "webgpu"
+      },
+      {
+        threeJsonId: "surface-1",
+        objType: "box",
+        material: {
+          type: "tsl",
+          base: "standard",
+          tsl: {
+            kind: "code",
+            source: {
+              inline: "export default () => ({})"
+            }
+          }
+        }
+      }
+    ]
+  };
+  let requestBody;
+  globalThis.fetch = async (_url, init = {}) => {
+    requestBody = JSON.parse(init.body);
+    return {
+      ok: true,
+      async json() {
+        return {
+          choices: [{ message: { content: JSON.stringify(currentScene) } }]
+        };
+      }
+    };
+  };
+
+  await requestUpdatedSceneJsonString(
+    "make the pulse faster without changing the material system",
+    JSON.stringify(currentScene),
+    { provider: "chatgpt", apiKey: "test-key", updateMode: "full" }
+  );
+
+  const systemPrompt = requestBody.messages[0].content;
+  assert.match(systemPrompt, /Select tslCode in addition to webgpuTsl/);
+  assert.match(systemPrompt, /kind:\"code\" is available/);
 });
