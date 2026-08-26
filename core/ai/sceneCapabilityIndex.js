@@ -69,7 +69,25 @@ Texture acquisition:
 - A separate host pipeline plans and acquires trusted texture resources after the scene is rendered. Scene authoring preserves supplied URLs but never invents URLs or bundled filenames. Express recognizable materials with accurate semantic names, base color, metalness, roughness, emissive properties, and textureRepeat so the later pipeline can choose an asset, trusted search result, PBR library, or capable generator.
 `;
 
+// Intent negotiation needs capability *selection ids*, not the authoring grammar that the next
+// model call will receive after selection. Keeping this view derived beside the full index avoids
+// making a small classifier read thousands of irrelevant schema tokens before deciding whether
+// the user even wants a new scene.
+const THREE_JSON_AGENT_NEGOTIATION_INDEX_BASE = `
+ThreeJSON capability-selection index (selection only; do not author scene JSON in this stage):
+
+- Basic primitives, ordinary materials, camera, lighting, grouping, and common scene layout need no special capability id.
+- sceneText — visible words/titles/labels; infoPanel — text or media on a visible board/card; css3dPanel — interactive DOM/iframe UI in 3D.
+- group — multipart assemblies; instanced — many repeated objects; native — explicitly requested native Three.js geometry/ObjectLoader data.
+- external — GLTF/GLB/OBJ/STL/PLY/FBX/USD/USDZ assets; audio — ambient/positional sound; shaderSurface — registered WebGL GLSL presets; postProcess — explicitly requested bloom/outline/FXAA/SMAA or registered pass presets.
+- events — clicks/pointer/keyboard behavior; lifecycle — scene/object ready/dispose behavior; declarativeAnimation — continuous transform/expression animation; animationGraph — imported-model clip state machines.
+- Select only ids whose detailed syntax/examples the authoring model actually needs. Do not select advanced capabilities for generic quality, realism, detail, or style wording.
+
+${THREE_JSON_DOMAIN_CAPABILITY_INDEX.trim()}
+`;
+
 function buildAgentCapabilityIndex(options = {}) {
+  const negotiationOnly = options.promptPurpose === "negotiation";
   const requestedRendererBackend = String(options.rendererBackend || "webgl").trim().toLowerCase();
   const isRendererNegotiation = requestedRendererBackend === "auto" || requestedRendererBackend === "any";
   const manifest = getSceneCapabilityManifest({
@@ -142,7 +160,14 @@ function buildAgentCapabilityIndex(options = {}) {
   const tslCodeGuidance = tslModes.includes("code")
     ? "- kind:\"code\" is available because the host imported or can activate the tsl-code entry; scene JSON still cannot enable or relax the selected host execution policy."
     : "- kind:\"code\" is not available in this runtime snapshot. The host must explicitly import the tsl-code entry before AI may author code modules.";
-  const tslAuthoring = tslAvailable ? `
+  const tslAuthoring = !tslAvailable ? "" : negotiationOnly ? `
+WebGPU/TSL authoring capability (negotiation ids: webgpuTsl, tslCode):
+- ${tslNeedsActivation ? "The host can activate WebGPU/TSL on demand after selection; ordinary WebGL scenes do not load it." : "WebGPU/TSL is active in this host snapshot."}
+- Select webgpuTsl only for explicit TSL, NodeMaterial, WebGPU node graphs/shaders, or a procedural animated surface that genuinely needs TSL. Do not select it for ordinary PBR materials, textures, colors, or generic high-quality wording.
+- Available TSL kinds: ${tslKindContract}. The selected scene must use the WebGPU renderer.
+${tslCodeGuidance}
+${tslModes.includes("code") ? '- Select tslCode in addition to webgpuTsl only when a full executable TSL ESM module is genuinely required; preset/graph remain preferred when sufficient. The host owns confirmation/execution policy.' : ''}
+` : `
 WebGPU/TSL authoring capability (negotiation ids: webgpuTsl, tslCode):
 - ${tslNeedsActivation ? "This host offers the capability on demand and will import the appropriate threejson/webgpu or threejson/tsl-code entry after selection; ordinary WebGL scenes do not pay the module cost." : "The WebGPU/TSL entry is active in this runtime snapshot."}
 - Select webgpuTsl when the user explicitly asks for TSL, NodeMaterial, WebGPU shader/node graphs, or when a requested procedural surface effect genuinely needs a time-varying node graph. Do not select it for ordinary colors, PBR textures, or generic "high quality" wording.
@@ -153,8 +178,14 @@ WebGPU/TSL authoring capability (negotiation ids: webgpuTsl, tslCode):
 - To apply TSL to a GLTF/GLB asset, add materialBindings:[{ selector:{ nodeName|nodePath|nodeType|meshIndex|materialName|materialIndex }, inheritOriginal?:"textures"|"all", material:{ type:"tsl", ... } }]. An empty selector or {all:true} targets all slots.
 ${tslCodeGuidance}
 ${tslModes.includes("code") ? '- Select tslCode in addition to webgpuTsl only when the requested effect genuinely needs a full TSL ESM module rather than a preset/graph. Code shape: tsl:{kind:"code",source:{inline:"export default (params, context) => ..."}|{url:"...",sha256?:"..."},params:{...}}. Inline source must be one valid JSON string and default-export a factory returning a NodeMaterial, TSL node, output-node map, or undefined after mutating context.material. Use context.TSL/context.WEBGPU; do not invent module URLs or a sha256 value. The host, not scene JSON, owns confirmation/execution policy.' : ''}
-` : "";
-  const particleAuthoring = options.particleEffects === false ? "" : `
+`;
+  const particleAuthoring = options.particleEffects === false ? "" : negotiationOnly ? `
+Particle V2 capability ids:
+- particles — requested particles, point clouds, rain/snow, smoke/fire/sparks/fireworks, dust/starfields, attractors, or particle patterns.
+- particleRaster — additionally select for particles forming text, a logo, image, or mask through textMask/imageMask; never substitute an instanced cube grid.
+- webgpuParticles — additionally select only for explicit WebGPU/GPU-compute particles or a scale/simulation that genuinely benefits from WebGPU compute.
+- Host particle sources: ${list("particleSources")}. Host simulation backends: ${list("particleBackends")}.
+` : `
 Particle V2 capability ids:
 - particles: select for requested particles, point clouds, rain/snow, smoke, fire, sparks, fireworks, dust, starfields, magic effects, attractors, or particle patterns. Author objType:"particleEmitter" with five orthogonal blocks: source, emission, particle, simulation, render. Do not use retired top-level count/distribution/motion/material fields.
 - particleRaster: additionally select for textMask or imageMask particle patterns. Those sources are descriptor-activated browser capabilities; textMask uses text/font/width/height/depth and imageMask uses url or image data. Never substitute a cube grid for requested particle text or imagery.
@@ -163,11 +194,13 @@ Particle V2 capability ids:
 - emission supports static|continuous|burst with count/rate/duration/loop/seed; particle supports lifetime, velocity/rotation ranges, and size/color/opacity-over-life; simulation supports gravity, drag, noise, attractors, and none|wrap|bounce|kill boundaries; render supports points or billboard plus sprite/atlas fields.
 `;
   return [
-    THREE_JSON_AGENT_CAPABILITY_INDEX_BASE.trim(),
+    (negotiationOnly
+      ? THREE_JSON_AGENT_NEGOTIATION_INDEX_BASE
+      : THREE_JSON_AGENT_CAPABILITY_INDEX_BASE).trim(),
     runtimeSnapshot,
     particleAuthoring.trim(),
     tslAuthoring.trim(),
-    THREE_JSON_AGENT_TEXTURE_ACQUISITION_INDEX.trim()
+    negotiationOnly ? "" : THREE_JSON_AGENT_TEXTURE_ACQUISITION_INDEX.trim()
   ].filter(Boolean).join("\n\n");
 }
 
@@ -188,6 +221,7 @@ Capability patterns:
 export {
   THREE_JSON_AGENT_CAPABILITY_INDEX,
   THREE_JSON_AGENT_CAPABILITY_INDEX_BASE,
+  THREE_JSON_AGENT_NEGOTIATION_INDEX_BASE,
   THREE_JSON_AGENT_TEXTURE_ACQUISITION_INDEX,
   buildAgentCapabilityIndex,
   THREE_JSON_AGENT_EXAMPLE_INDEX

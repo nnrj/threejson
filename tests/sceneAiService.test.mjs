@@ -1540,10 +1540,127 @@ test("classifyTurnIntent preserves an adjust decision when the model omits its t
   assert.equal(Object.hasOwn(requestBody, "max_tokens"), false);
   assert.equal(negotiationInput.priorSceneTurns[1].isLatestScene, true);
   assert.equal(negotiationInput.priorSceneTurns[1].originalRequest, "再加一个木屋");
-  assert.match(requestBody.messages[0].content, /Conversation continuity is the default/);
+  assert.match(requestBody.messages[0].content, /reliable continuity evidence/);
   assert.equal(result.intent, "adjust");
   assert.equal(result.targetTurnId, "turn-cabin");
   assert.equal(result.classificationFailed, false);
+});
+
+test("classifyTurnIntent does not treat conversation history as automatic adjustment evidence", async () => {
+  let requestBody;
+  globalThis.fetch = async (_url, init = {}) => {
+    requestBody = JSON.parse(init.body);
+    return {
+      ok: true,
+      async json() {
+        return {
+          choices: [{ message: { content: JSON.stringify({
+            intent: "generate",
+            targetTurnId: null,
+            note: "self-contained unrelated environment",
+            generationStrategy: "single",
+            estimatedSegments: 1,
+            executionMode: "direct",
+            refinementGoals: []
+          }) } }]
+        };
+      }
+    };
+  };
+
+  const result = await classifyTurnIntent(
+    {
+      userPrompt: "生成一个游乐园，有摩天轮、过山车和入口广场",
+      history: [{ turnId: "turn-moon", summary: "地球与月球轨道场景", sceneTitle: "地月系统" }]
+    },
+    { provider: "chatgpt", apiKey: "test-key", temperature: 0.9 }
+  );
+
+  assert.match(requestBody.messages[0].content, /recent scene is evidence, not a presumption/);
+  assert.match(requestBody.messages[0].content, /self-contained request for a complete scene\/world/);
+  assert.match(requestBody.messages[0].content, /prior forest.*海底城市.*generate/);
+  assert.doesNotMatch(requestBody.messages[0].content, /Conversation continuity is the default/);
+  assert.equal(requestBody.temperature, 0.1);
+  assert.equal(result.intent, "generate");
+  assert.equal(result.targetTurnId, null);
+});
+
+test("an explicit independent-scene request overrides a weak model's adjustment shortcut", async () => {
+  let requestBody;
+  globalThis.fetch = async (_url, init = {}) => {
+    requestBody = JSON.parse(init.body);
+    return {
+      ok: true,
+      async json() {
+        return {
+          choices: [{ message: { content: JSON.stringify({
+            intent: "adjust",
+            targetTurnId: "turn-forest",
+            note: "history exists",
+            generationStrategy: "single",
+            estimatedSegments: 1,
+            executionMode: "direct",
+            refinementGoals: []
+          }) } }]
+        };
+      }
+    };
+  };
+
+  const result = await classifyTurnIntent(
+    {
+      userPrompt: "不要沿用之前的场景，生成一个全新的海底城市场景",
+      history: [{ turnId: "turn-forest", summary: "森林和木屋" }]
+    },
+    { provider: "chatgpt", apiKey: "test-key" }
+  );
+
+  const negotiationInput = JSON.parse(requestBody.messages[1].content);
+  assert.deepEqual(negotiationInput.hostRouteDirective, {
+    intent: "generate",
+    reason: "The newest message explicitly requests an independent/new scene and excludes continuation of prior scene state."
+  });
+  assert.match(requestBody.messages[0].content, /HOST ROUTE DIRECTIVE/);
+  assert.equal(result.intent, "generate");
+  assert.equal(result.targetTurnId, null);
+  assert.equal(result.classificationFailed, false);
+});
+
+test("quoted new-scene text is not mistaken for a route directive", async () => {
+  let requestBody;
+  globalThis.fetch = async (_url, init = {}) => {
+    requestBody = JSON.parse(init.body);
+    return {
+      ok: true,
+      async json() {
+        return {
+          choices: [{ message: { content: JSON.stringify({
+            intent: "adjust",
+            targetTurnId: "turn-room",
+            note: "edit the existing title",
+            generationStrategy: "single",
+            estimatedSegments: 1,
+            executionMode: "direct",
+            refinementGoals: []
+          }) } }]
+        };
+      }
+    };
+  };
+
+  const result = await classifyTurnIntent(
+    {
+      userPrompt: "把标题改成“新场景”",
+      history: [{ turnId: "turn-room", summary: "带标题的房间场景" }]
+    },
+    { provider: "chatgpt", apiKey: "test-key", negotiationTemperature: 0.35 }
+  );
+
+  const negotiationInput = JSON.parse(requestBody.messages[1].content);
+  assert.equal(Object.hasOwn(negotiationInput, "hostRouteDirective"), false);
+  assert.equal(requestBody.temperature, 0.35);
+  assert.equal(result.intent, "adjust");
+  assert.equal(result.targetTurnId, "turn-room");
 });
 
 test("classifyTurnIntent marks provider or parse fallback instead of disguising it as generation", async () => {
@@ -1674,7 +1791,9 @@ test("classifyTurnIntent advertises ThreeBox on-demand Particle V2 and WebGPU TS
   assert.match(systemPrompt, /Particle V2 capability ids/);
   assert.match(systemPrompt, /particleRaster/);
   assert.match(systemPrompt, /WebGPU\/TSL authoring capability/);
-  assert.match(systemPrompt, /offers the capability on demand/);
+  assert.match(systemPrompt, /activate WebGPU\/TSL on demand/);
+  assert.match(systemPrompt, /capability-selection index \(selection only/);
+  assert.doesNotMatch(systemPrompt, /Authoring shapes:/);
   assert.match(systemPrompt, /Select tslCode in addition/);
   assert.deepEqual(result.selectedCapabilityIds, [
     "particles",

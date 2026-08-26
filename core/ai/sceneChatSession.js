@@ -35,6 +35,32 @@ const SCENE_GENERATION_MODES = new Set(["auto", "direct", "draft_refine"]);
  * verbatim as a chat host's download/export file name (see generateSceneTitle below). */
 const SCENE_TITLE_UNSAFE_CHARS = /[\\/:*?"<>|]/g;
 
+// Routing remains model-driven for ordinary language. These deliberately narrow patterns cover
+// only an explicit product-level instruction to leave the old scene behind. They protect that
+// unambiguous instruction from a weak negotiation model's common "history exists => adjust"
+// shortcut without trying to replace semantic classification with a keyword router.
+const EXPLICIT_NEW_SCENE_ROUTE_PATTERNS = Object.freeze([
+  /(?:新建|创建|生成|构建|制作|设计|做|开启|开始)\s*(?:一个|一份|个)?\s*(?:全新(?:的)?|新(?:的)?|另一个|独立(?:的)?|完全不同(?:的)?).{0,40}(?:场景|世界|项目)/i,
+  /(?:^|[\s，。！？；,:;])(?:请|请帮我|帮我|现在|接下来|然后)?\s*(?:新建|另起|另开)\s*(?:一个|一份)?\s*(?:3d\s*)?(?:场景|项目)/i,
+  /(?:与|和)\s*(?:之前|先前|上(?:一)?个|当前|现有|刚才).{0,24}(?:无关|不相关|没(?:有)?关系)/i,
+  /(?:不要|别|无需)\s*(?:再)?\s*(?:基于|沿用|继承|继续|修改|调整).{0,32}(?:之前|先前|上(?:一)?个|当前|现有|刚才)/i,
+  /\b(?:create|generate|build|make|design|start|begin)\s+(?:a|an|one)?\s*(?:brand[- ]new|new|another|separate|independent|completely different)\b.{0,60}\b(?:scene|world|project)\b/i,
+  /\b(?:start over|start from scratch|begin again with (?:a )?blank scene)\b/i,
+  /\b(?:unrelated to|independent of|separate from)\s+(?:the\s+)?(?:previous|last|current|existing)\s+(?:scene|result)\b/i,
+  /\b(?:do not|don't|dont)\s+(?:use|reuse|continue|modify|adjust|build on|base.{0,12}on)\s+(?:the\s+)?(?:previous|last|current|existing)\s+(?:scene|result)\b/i,
+  /\b(?:ignore|discard)\s+(?:the\s+)?(?:previous|last|current|existing)\s+(?:scene|result)\b/i
+]);
+
+function detectExplicitSceneRouteDirective(userPrompt) {
+  const text = String(userPrompt || "").trim();
+  if (!text) return null;
+  if (!EXPLICIT_NEW_SCENE_ROUTE_PATTERNS.some((pattern) => pattern.test(text))) return null;
+  return {
+    intent: "generate",
+    reason: "The newest message explicitly requests an independent/new scene and excludes continuation of prior scene state."
+  };
+}
+
 /** Keep only chat-completion transport options. A stage-specific optional ceiling wins over the
  * legacy common maxTokens option; neither is invented here. */
 function pickChatCompletionOptions(source, stageMaxTokensKey) {
@@ -125,7 +151,8 @@ function buildClassifyIntentSystemPrompt(
   animationCapabilityMode = "auto",
   sceneGenerationMode = "auto",
   generationOnly = false,
-  capabilityOptions = {}
+  capabilityOptions = {},
+  explicitRouteDirective = null
 ) {
   const normalizedGenerationMode = normalizeSceneGenerationMode(sceneGenerationMode);
   return [
@@ -153,11 +180,20 @@ function buildClassifyIntentSystemPrompt(
           '- If intent is "generate", "targetTurnId" MUST be null.',
           '- If intent is "adjust" but you cannot tell which prior turn is meant, still pick the single most recent turn as targetTurnId (most conversations continue the latest result) and explain the ambiguity in "note".'
         ]),
+    ...(!generationOnly && explicitRouteDirective?.intent === "generate"
+      ? [
+          '- HOST ROUTE DIRECTIVE: the trusted top-level hostRouteDirective says intent="generate". This is authoritative: return intent="generate" and targetTurnId=null. The directive was derived outside the user text from an explicit request for an independent/new scene.'
+        ]
+      : []),
     ...(generationOnly
       ? []
       : [
-          '- Conversation continuity is the default when prior scene turns exist. Requests to add, remove, replace, recolor, resize, move, rotate, animate, label, improve, simplify, or otherwise change something normally mean "adjust"—including short follow-ups such as "再加一棵树", "把它改成红色", or "让机器人挥手".',
-          '- Choose "generate" with prior turns only when the user clearly asks for a new/separate scene, asks to start over, or the newest request is clearly unrelated to every prior scene. Do not classify a follow-up as "generate" merely because it contains enough detail to describe a complete scene.'
+          '- Decide intent FIRST, independently of generationStrategy, executionMode, capability selection, and the mere existence of history. A conversation may contain several independent scene branches; a recent scene is evidence, not a presumption that every later request edits it.',
+          '- Choose "adjust" only when there is reliable continuity evidence: the newest message explicitly refers to a prior/current scene or title; uses a deictic target such as it/this/that/当前/刚才/上一个; asks to add/remove/recolor/resize/move/rotate/animate/label/improve an existing object; says continue/based on/再/继续/保留; or otherwise needs prior scene state to be interpreted.',
+          '- Choose "generate" when the newest message is a self-contained request for a complete scene/world, changes the principal subject or environment, or can be fulfilled without retaining prior scene state. It does NOT have to contain the literal words new/separate/unrelated.',
+          '- Do not classify as "adjust" merely because the new request shares generic words, colors, object types, or visual style with history. Do not classify as "generate" merely because an actual adjustment is described in complete sentences.',
+          '- Counterfactual test for genuine ambiguity: if applying the request to the latest scene would unexpectedly retain unrelated old content that the user did not mention, choose "generate"; if removing prior context leaves the request without a target or referent, choose "adjust".',
+          '- Examples: prior forest + "再加一间木屋" => adjust latest; prior forest + "生成一个海底城市，有珊瑚和潜艇" => generate; prior Solar System + "生成一个月亮，让它环绕当前地球" => adjust; prior cube + "创建一个蓝色球体场景" => generate; prior scene + "把标题改成‘新场景’" => adjust (quoted text is not a route instruction).'
         ]),
     '- "note" is one short sentence explaining your choice.',
     '- Choose "generationStrategy" before generation starts. "single" means the complete JSON clearly fits one response. "segmented" means the request genuinely needs multiple responses AND you can follow the host segmented-output protocol from the first response. "compact" means a literal/full expansion is too large or segmented output is unsuitable; preserve the visual intent with instancing, bounded representative populations, and fewer explicit records so complete JSON fits one response.',
@@ -178,31 +214,33 @@ function buildClassifyIntentSystemPrompt(
     // Build this at request time. Optional entries (notably threejson/webgpu) register after the
     // AI module itself has loaded, so a module-level snapshot permanently hid newly activated
     // capabilities from negotiation.
-    buildAgentCapabilityIndex(capabilityOptions).trim(),
+    buildAgentCapabilityIndex({ ...capabilityOptions, promptPurpose: "negotiation" }).trim(),
     "",
     "Output requirement:",
     "Return ONLY one JSON object. No Markdown fences. No commentary before or after."
   ].join("\n");
 }
 
-function buildClassifyIntentUserMessage(userPrompt, historyEntries) {
-  return JSON.stringify(
-    {
-      newestUserMessage: String(userPrompt || "").trim(),
-      priorSceneTurns: historyEntries.map((entry, index) => ({
-        turnId: entry.turnId,
-        chronologicalIndex: index + 1,
-        isLatestScene: index === historyEntries.length - 1,
-        mode: entry.mode,
-        targetTurnId: entry.targetTurnId,
-        sceneTitle: entry.sceneTitle,
-        originalRequest: entry.userPrompt,
-        resultSummary: entry.summary
-      }))
-    },
-    null,
-    2
-  );
+function buildClassifyIntentUserMessage(userPrompt, historyEntries, explicitRouteDirective = null) {
+  const payload = {
+    newestUserMessage: String(userPrompt || "").trim(),
+    priorSceneTurns: historyEntries.map((entry, index) => ({
+      turnId: entry.turnId,
+      chronologicalIndex: index + 1,
+      isLatestScene: index === historyEntries.length - 1,
+      mode: entry.mode,
+      targetTurnId: entry.targetTurnId,
+      sceneTitle: entry.sceneTitle,
+      originalRequest: entry.userPrompt,
+      resultSummary: entry.summary
+    }))
+  };
+  if (explicitRouteDirective) {
+    // This field is computed by the host and serialized beside—not parsed from—the user's text.
+    // The system prompt can therefore treat it as a trusted routing constraint.
+    payload.hostRouteDirective = explicitRouteDirective;
+  }
+  return JSON.stringify(payload, null, 2);
 }
 
 /**
@@ -223,6 +261,9 @@ async function classifyTurnIntent(input = {}, options = {}) {
   // With no prior scene there is nothing to adjust. The model call remains useful for automatic
   // complete-vs-incremental construction and capability negotiation, but never controls routing.
   const generationOnly = historyEntries.length === 0;
+  const explicitRouteDirective = generationOnly
+    ? null
+    : detectExplicitSceneRouteDirective(userPrompt);
   const sceneGenerationMode = normalizeSceneGenerationMode(options.sceneGenerationMode);
   const fallbackExecutionMode = sceneGenerationMode === "draft_refine" ? "draft_refine" : "direct";
   const fallback = {
@@ -245,8 +286,16 @@ async function classifyTurnIntent(input = {}, options = {}) {
   };
 
   try {
+    const negotiationOptions = pickChatCompletionOptions(options, "negotiationMaxTokens");
+    const requestedNegotiationTemperature = Number(options.negotiationTemperature);
+    // Intent routing is a classification task. Do not inherit a creative scene-authoring
+    // temperature; weak/small providers become noticeably less consistent when this stage is
+    // sampled like content generation. Callers may still opt into another value explicitly.
+    negotiationOptions.temperature = Number.isFinite(requestedNegotiationTemperature)
+      ? Math.min(2, Math.max(0, requestedNegotiationTemperature))
+      : 0.1;
     const content = await requestChatCompletion({
-      ...pickChatCompletionOptions(options, "negotiationMaxTokens"),
+      ...negotiationOptions,
       taskKind: "scene_negotiate",
       messages: [
         {
@@ -255,15 +304,23 @@ async function classifyTurnIntent(input = {}, options = {}) {
             options.animationCapabilityMode,
             sceneGenerationMode,
             generationOnly,
-            options
+            options,
+            explicitRouteDirective
           )
         },
-        { role: "user", content: buildClassifyIntentUserMessage(userPrompt, historyEntries) }
+        {
+          role: "user",
+          content: buildClassifyIntentUserMessage(
+            userPrompt,
+            historyEntries,
+            explicitRouteDirective
+          )
+        }
       ]
     });
     const jsonText = extractJsonText(content);
     const parsed = JSON.parse(sanitizeAiJsonText(jsonText));
-    const intent = generationOnly
+    const intent = generationOnly || explicitRouteDirective?.intent === "generate"
       ? "generate"
       : parsed?.intent === "adjust"
         ? "adjust"
@@ -284,7 +341,8 @@ async function classifyTurnIntent(input = {}, options = {}) {
         ? rawTargetId
         : latestTurnId
       : null;
-    const note = typeof parsed?.note === "string" ? parsed.note.slice(0, 300) : "";
+    const note = explicitRouteDirective?.reason
+      || (typeof parsed?.note === "string" ? parsed.note.slice(0, 300) : "");
     const rawEstimatedSegments = Number(parsed?.estimatedSegments);
     const boundedSegments = Number.isFinite(rawEstimatedSegments)
       ? Math.min(MAX_ESTIMATED_SCENE_SEGMENTS, Math.max(1, Math.round(rawEstimatedSegments)))
