@@ -30,6 +30,7 @@ import {
   renderViewportGizmoOverlay,
   updateViewportGizmoOverlay
 } from "../../shared/js/viewportGizmoOverlay.js";
+import { shouldApplyThemeSceneBackground } from "./showerSceneBackground.js";
 
 const STORAGE = {
   autoRun: "threejson.shower.autoRun",
@@ -228,6 +229,7 @@ let messageTimer = 0;
 let hoverMenu = null;
 let demoManifest = [];
 let currentJsonUrl = "";
+let runtimeUsesThemeBackground = false;
 
 // Default fit direction (isometric). The former per-axis "three views" cycling was removed — that
 // role now belongs to the viewport navigation gizmo (three-viewport-gizmo).
@@ -764,6 +766,8 @@ async function runScene(sceneJson) {
   clearHighlight();
   teardownThreeJsonSceneAudioFromRuntime(runtime);
   runtime?.dispose?.();
+  runtime = null;
+  runtimeUsesThemeBackground = false;
   disposeViewportGizmoOverlay();
   audioMuted = false;
   fullJson = structuredClone(sceneJson);
@@ -836,9 +840,17 @@ function toggleAudioMute() {
 
 function applyRuntimeCanvasThemeBackground() {
   if (!runtime?.scene) return;
+  if (!shouldApplyThemeSceneBackground({
+    sceneJson: fullJson,
+    runtimeBackground: runtime.scene.background,
+    usingThemeFallback: runtimeUsesThemeBackground
+  })) {
+    return;
+  }
   const color = getComputedStyle(document.documentElement).getPropertyValue("--canvas-bg").trim() || "#11151b";
   runtime.scene.background = new THREE.Color(color);
   runtime.renderer?.setClearColor?.(color, 1);
+  runtimeUsesThemeBackground = true;
 }
 
 function toCore(sceneJson) {

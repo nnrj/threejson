@@ -32,7 +32,13 @@ test("website examples expose the complete Particle V2 fixture set", () => {
   }
   for (const item of section.items) {
     assert.ok(item.json, `${item.id} should expose its JSON descriptor`);
-    assert.equal(fs.existsSync(path.join(repoRoot, localPathFromReference(item.json))), true, item.json);
+    const scenePath = path.join(repoRoot, localPathFromReference(item.json));
+    assert.equal(fs.existsSync(scenePath), true, item.json);
+    const scene = JSON.parse(fs.readFileSync(scenePath, "utf8"));
+    const background = scene.sceneConfig?.scene?.background;
+    assert.match(background, /^#[0-9a-f]{6}$/i, `${item.id} should declare a solid scene background`);
+    const channels = background.slice(1).match(/../g).map((channel) => Number.parseInt(channel, 16));
+    assert.ok(Math.max(...channels) <= 32, `${item.id} should keep a dark scene background`);
   }
 });
 
