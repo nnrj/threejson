@@ -62,7 +62,13 @@ const BUILTIN_CAPABILITIES = Object.freeze({
     instanced: Object.freeze({ status: "stable" }),
     skinned: Object.freeze({ status: "stable" }),
     audio: Object.freeze({ status: "stable" }),
-    externalModel: Object.freeze({ status: "stable" }),
+    externalModel: Object.freeze({
+      status: "stable",
+      materialBindings: Object.freeze({
+        formats: Object.freeze(["gltf", "glb"]),
+        modes: Object.freeze(["replace", "patch"])
+      })
+    }),
     domain: Object.freeze({ status: "stable" }),
     pass: Object.freeze({ status: "stable", rendererBackends: ["webgl"] }),
     scene: Object.freeze({ status: "stable" }),

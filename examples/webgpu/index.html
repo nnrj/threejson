@@ -32,12 +32,20 @@
     const status = document.querySelector("#status");
     const canvas = document.querySelector("#scene");
     const query = new URLSearchParams(location.search);
-    const particles = query.get("scene") === "particles";
+    const examples = [
+      { id: "materials", file: "./tsl-material.json", label: "TSL preset + graph + bloom" },
+      { id: "burning", file: "./tsl-burning-model.json", label: "TSL burning GLB material binding" },
+      { id: "particles", file: "./webgpu-particles.json", label: "WebGPU compute particles" }
+    ];
+    const requestedScene = query.get("scene") || "materials";
+    const exampleIndex = Math.max(0, examples.findIndex((item) => item.id === requestedScene));
+    const example = examples[exampleIndex];
+    const nextExample = examples[(exampleIndex + 1) % examples.length];
     const forceWebGL = query.get("forceWebGL") === "1";
-    document.querySelector("#switch").href = particles ? "./" : "?scene=particles";
-    document.querySelector("#switch").textContent = particles ? "Show TSL materials" : "Show WebGPU particles";
+    document.querySelector("#switch").href = `?scene=${nextExample.id}${forceWebGL ? "&forceWebGL=1" : ""}`;
+    document.querySelector("#switch").textContent = `Show ${nextExample.id}`;
     try {
-      const response = await fetch(particles ? "./webgpu-particles.json" : "./tsl-material.json");
+      const response = await fetch(example.file);
       if (!response.ok) throw new Error(`Scene request failed: HTTP ${response.status}`);
       const payload = await response.json();
       payload.canvasWidth = innerWidth;
@@ -46,7 +54,7 @@
       const runtime = await createJsonScene(payload, { canvas, resetScene: true });
       runtime.start();
       const particleCount = payload.objectList?.find((record) => record?.objType === "particleEmitter")?.emission?.count;
-      status.textContent = `backend: webgpu${forceWebGL ? " (forced WebGL2 fallback)" : ""}\nThree.js r184 adapter\n${particles ? `${Number(particleCount || 0).toLocaleString()} compute particles` : "TSL preset + graph + bloom"}`;
+      status.textContent = `backend: webgpu${forceWebGL ? " (forced WebGL2 fallback)" : ""}\nThree.js r184 tested adapter\n${particleCount ? `${Number(particleCount).toLocaleString()} compute particles` : example.label}`;
       addEventListener("resize", () => runtime.resize?.({ width: innerWidth, height: innerHeight }));
       addEventListener("beforeunload", () => runtime.dispose?.());
     } catch (error) {

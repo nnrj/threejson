@@ -69,7 +69,7 @@ import "threejson/particles-raster";
 
 ## 显式启用的 WebGPU/TSL 预览
 
-WebGPU 必须显式导入，适配层固定保证 Three.js r184：
+WebGPU 必须显式导入。适配层以 Three.js r184 为持续测试基线，但不会把测试矩阵误作能力封锁：其他 revision 默认以 `best-effort` 运行并发出警告；需要认证组合的宿主可显式选择 `strict`：
 
 ```js
 import "threejson/webgpu";
@@ -81,7 +81,11 @@ const result = await createJsonScene(payload, { canvas });
 ```json
 {
   "sceneConfig": {
-    "renderer": { "backend": "webgpu", "compatibilityPolicy": "error" }
+    "renderer": {
+      "backend": "webgpu",
+      "revisionPolicy": "best-effort",
+      "compatibilityPolicy": "error"
+    }
   }
 }
 ```
@@ -104,7 +108,7 @@ const result = await createJsonScene(payload, { canvas });
 }
 ```
 
-预览内置 `solid`、`uv-gradient`、`pulse`，宿主可调用 `registerTslPreset()`。
+预览内置 `solid`、`uv-gradient`、`pulse`，宿主可调用 `registerTslPreset()`。燃烧、溶解等复杂效果不写死为针对单个示例的特殊分支，可由下述通用 graph 节点或 code 模块组合实现。
 
 ### TSL graph
 
@@ -134,23 +138,53 @@ const result = await createJsonScene(payload, { canvas });
 }
 ```
 
-graphVersion 1 会校验节点数量、唯一 ID、引用、循环、节点类型、输出、URL/CORS 和纹理加载。节点覆盖常量/uniform/时间、UV/位置/法线/纹理、算术、mix/smoothstep/clamp、常见一元运算、噪声与 swizzle。
+graphVersion 1 会校验节点数量、唯一 ID、引用、循环、节点类型、输出、URL/CORS 和纹理加载。节点覆盖常量/uniform/时间、UV/位置/法线/纹理、算术、mix/smoothstep/clamp、常见一元运算、普通噪声、fractal noise 与 swizzle。`call` 节点可调用当前 `three/tsl` 实际导出的函数；宿主也可通过 `registerTslGraphNode()` 注册新的可序列化节点。输出可以映射到目标 NodeMaterial 实际提供的任意安全 `*Node` 属性，而不是由 ThreeJSON 维护一个滞后的固定白名单。
 
-### TSL code 安全边界
+### 外部模型材质绑定
 
-TSL code 是拥有页面同等级权限的 JavaScript，不是沙箱 shader 文本。默认完全关闭，场景 JSON 无权开启。宿主必须导入 `threejson/tsl-code`、开启总开关，并逐一确认精确的 SHA-256 内容哈希和 URL/内联来源；内容变化后必须重新确认。
+GLTF/GLB 加载完成后，可按节点名、节点路径、节点类型、mesh 序号、材质名或材质槽序号，将原模型材质替换为任意已注册材质，包括 TSL：
+
+```json
+{
+  "objType": "externalModel",
+  "modelFileType": "glb",
+  "modelPath": "/assets/head.glb",
+  "materialBindings": [{
+    "selector": { "nodeName": "Head*" },
+    "required": true,
+    "material": {
+      "type": "tsl",
+      "base": "standard",
+      "transparent": true,
+      "tsl": { "kind": "graph", "source": { "url": "/materials/burn.graph.json" } }
+    }
+  }]
+}
+```
+
+可运行的完整内联燃烧 graph 见 `examples/webgpu/tsl-burning-model.json`。`selector` 为空或 `{ "all": true }` 时匹配全部材质槽；字符串选择器支持 `*`/`?`。`mode` 可为 `replace`（默认）或 `patch`，`shareMaterial` 控制多个命中槽是否共享同一材质。TSL 替换材质还支持 `inheritOriginal: "textures" | "all"`，可沿用 GLTF 原材质的贴图或全部兼容属性。`required` 或顶层 `materialBindingsStrict` 可把未命中变成结构化错误。
+
+### TSL code 执行策略
+
+TSL code 是拥有页面同等级权限的 JavaScript 模块，不是受限 shader 文本。导入可选入口就是宿主对能力的显式启用；它同时注册 WebGPU/TSL，不必重复导入 `threejson/webgpu`。默认 `trusted` 提供正常 ESM 能力，场景 JSON 无权修改宿主策略。
 
 ```js
-import "threejson/webgpu";
 import { configureTslCodeExecution } from "threejson/tsl-code";
 
 configureTslCodeExecution({
-  enabled: true,
+  executionPolicy: "prompt",
   authorize: async ({ hash, source, notice }) => showUserConfirmation({ hash, source, notice })
 });
 ```
 
-模块必须是自包含的，并默认导出 `(params, context) => outputs` 工厂；`TSL` 与 `WEBGPU` 由 `context` 提供。外部 import 会执行未被当前批准哈希覆盖的可变代码，因此会被拒绝。生产宿主应同时配置严格 CSP，也可以完全禁止第三方 code。
+可选策略如下：
+
+- `trusted`（默认）：完整加载模块及其 ESM 依赖，适合作者自有内容、离线工具和可信项目。
+- `prompt`：对精确源码哈希进行宿主确认，确认后仍保留正常 ESM 依赖能力。
+- `restricted`：要求确认并拒绝源码中的静态/动态 import，适合只接受自包含模块的站点。
+- `disabled`：完全禁用 code，仍可使用 preset 和 graph。
+
+模块默认导出 `(params, context) => result` 工厂；`TSL`、`WEBGPU`、描述符和目标材质由 `context` 提供。工厂可返回完整 NodeMaterial、单个 TSL 节点、输出节点表，也可直接修改 `context.material` 后不返回值。URL 模块从原 URL 导入，因此相对依赖正常解析；内联模块可使用宿主 import map，也可由 `moduleLoader` 接入 bundler、CSP 或自定义解析。`source.sha256` 可用于完整性校验。宿主应根据内容来源自行选择策略，而不是由引擎替所有应用统一阉割能力。
 
 ## 其它稳定补全
 

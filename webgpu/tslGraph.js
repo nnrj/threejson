@@ -3,12 +3,27 @@ import * as TSL from "three/tsl";
 
 const graphCache = new Map();
 const textureCache = new Map();
-const SUPPORTED_OUTPUTS = new Set(["color", "baseColor", "opacity", "emissive", "roughness", "metalness", "normal", "position"]);
+const graphNodeCompilers = new Map();
+const SAFE_OUTPUT_NAME = /^[A-Za-z][A-Za-z0-9]*$/;
+const SAFE_TSL_EXPORT_NAME = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
 
 export class TslGraphError extends Error {
   constructor(message, code = "E_TSL_GRAPH_INVALID", details = {}) {
     super(message); this.name = "TslGraphError"; this.code = code; Object.assign(this, details);
   }
+}
+
+/** Register additional serializable graph nodes without changing the core graph compiler. */
+export function registerTslGraphNode(type, compiler) {
+  const id = String(type || "").trim().toLowerCase();
+  if (!id || typeof compiler !== "function") {
+    throw new Error("[tslGraph] type and compiler are required");
+  }
+  graphNodeCompilers.set(id, compiler);
+}
+
+export function unregisterTslGraphNode(type) {
+  return graphNodeCompilers.delete(String(type || "").trim().toLowerCase());
 }
 
 function graphSource(tslDescriptor) {
@@ -60,7 +75,11 @@ export function compileTslGraph(graphOrDescriptor, options = {}) {
       throw new TslGraphError(`Unknown TSL node reference: ${value}`, "E_TSL_GRAPH_UNKNOWN_REFERENCE", { nodeId: value });
     }
     if (typeof value === "number") return TSL.float(value);
+    if (typeof value === "boolean") return value;
     if (Array.isArray(value)) return constant(value, `vec${Math.min(4, Math.max(2, value.length))}`);
+    if (value && typeof value === "object" && Object.prototype.hasOwnProperty.call(value, "literal")) {
+      return value.literal;
+    }
     if (value && typeof value === "object" && value.node) return resolveNode(value.node);
     return constant(value?.value ?? value, value?.valueType || value?.type);
   };
@@ -70,7 +89,8 @@ export function compileTslGraph(graphOrDescriptor, options = {}) {
     const node = definitions.get(id); if (!node) throw new TslGraphError(`Unknown TSL node reference: ${id}`);
     resolving.add(id);
     const type = String(node.type || "constant").trim().toLowerCase();
-    const args = Array.isArray(node.inputs) ? node.inputs.map(resolveInput) : [];
+    const inputList = Array.isArray(node.inputs) ? node.inputs : Array.isArray(node.args) ? node.args : [];
+    const args = inputList.map(resolveInput);
     const unaryInput = () => resolveInput(node.input ?? node.a ?? node.value);
     let value;
     if (type === "constant" || type === "color") value = constant(node.value, type === "color" ? "color" : node.valueType);
@@ -86,6 +106,28 @@ export function compileTslGraph(graphOrDescriptor, options = {}) {
     else if (type === "smoothstep") value = TSL.smoothstep(resolveInput(node.edge0), resolveInput(node.edge1), resolveInput(node.input));
     else if (type === "clamp") value = TSL.clamp(resolveInput(node.input), resolveInput(node.min ?? 0), resolveInput(node.max ?? 1));
     else if (type === "noise") value = TSL.mx_noise_float(unaryInput(), Number(node.amplitude ?? 1), Number(node.pivot ?? 0));
+    else if (["fractalnoise", "fractal_noise", "fbm"].includes(type)) {
+      value = TSL.mx_fractal_noise_float(unaryInput());
+    }
+    else if (type === "call") {
+      const functionName = String(node.function ?? node.fn ?? "").trim();
+      if (!SAFE_TSL_EXPORT_NAME.test(functionName) || typeof TSL[functionName] !== "function") {
+        throw new TslGraphError(
+          `Unknown callable three/tsl export: ${functionName}`,
+          "E_TSL_GRAPH_CALL_UNAVAILABLE",
+          { nodeId: id, functionName }
+        );
+      }
+      try {
+        value = TSL[functionName](...args);
+      } catch (cause) {
+        throw new TslGraphError(
+          `three/tsl call failed: ${functionName}`,
+          "E_TSL_GRAPH_CALL_FAILED",
+          { nodeId: id, functionName, cause }
+        );
+      }
+    }
     else if (type === "swizzle") {
       const components = String(node.components || "x");
       if (!/^[xyzwrgba]{1,4}$/.test(components)) {
@@ -93,14 +135,25 @@ export function compileTslGraph(graphOrDescriptor, options = {}) {
       }
       value = unaryInput()[components];
     }
+    else if (graphNodeCompilers.has(type)) {
+      value = graphNodeCompilers.get(type)({
+        node,
+        nodeId: id,
+        args,
+        resolveInput,
+        TSL,
+        THREE,
+        options
+      });
+    }
     else throw new TslGraphError(`Unsupported TSL graph node type: ${type}`, "E_TSL_GRAPH_NODE_UNAVAILABLE", { nodeId: id, nodeType: type });
     resolving.delete(id); resolved.set(id, value); return value;
   };
   const outputs = graph.outputs && typeof graph.outputs === "object" ? graph.outputs : {};
   const compiled = {};
   for (const [name, reference] of Object.entries(outputs)) {
-    if (!SUPPORTED_OUTPUTS.has(name)) {
-      throw new TslGraphError(`Unsupported TSL graph output: ${name}`, "E_TSL_GRAPH_OUTPUT_UNAVAILABLE", { output: name });
+    if (!SAFE_OUTPUT_NAME.test(name) || ["constructor", "prototype", "__proto__"].includes(name)) {
+      throw new TslGraphError(`Invalid TSL graph output name: ${name}`, "E_TSL_GRAPH_OUTPUT_INVALID", { output: name });
     }
     compiled[name] = resolveInput(reference);
   }

@@ -39,7 +39,7 @@ Effects & visualization:
 - objectList — scene text (objType text): floating labels, SDF titles; may also hold particleEmitter, css3dPanel, domain records in standard JSON when those roles are actually needed
 
 Assets & domains:
-- externalModelList / objModelList — GLTF/GLB/OBJ/STL/PLY/FBX/USD/USDZ paths
+- externalModelList / objModelList — GLTF/GLB/OBJ/STL/PLY/FBX/USD/USDZ paths; GLTF/GLB may use materialBindings for post-load material replacement/patching
 - domainModelList — domain handlers (weather rain|snow, nativeThree loadFromUrl, wall addToScene, etc.)
 - audioList — positional or ambient audio
 
@@ -272,6 +272,7 @@ GroupRecord, LineRecord, InfoPanelRecord, Css3dPanelRecord, ShaderSurfaceRecord,
 Css3dPanelRecord: { "objType": "css3dPanel", "html": string or "url": string, "panel": { "position", "geometry": { width, height, depth } } } — host must enable CSS3D rendering.
 ShaderSurfaceRecord: { "objType": "shaderSurface", "shaderPreset": registered preset id, "uniforms": {...}, "surface": "plane"|"sphere"|"box", "geometry": {...}, "position": {...} }
 ParticleEmitterItem: { "objType":"particleEmitter", "source":{"type":"positions"|"box"|"sphere"|"shell"|"disc"|"cone"|"line"|"curve"|"meshSurface",...}, "emission":{"mode":"static"|"continuous"|"burst","count":number,"rate"?:number,"duration"?:number,"loop"?:boolean,"seed"?:number}, "particle":{"lifetime":number|[min,max],"velocity"?:{x,y,z}|{"min":{...},"max":{...}},"sizeOverLife"?:[],"colorOverLife"?:[],"opacityOverLife"?:[]}, "simulation":{"backend":"cpu"|"webgl-compute","gravity"?:{...},"drag"?:number,"noise"?:{},"attractors"?:[],"boundary"?:{}}, "render":{"type":"points"|"billboard","size"?:number,"color"?:"#RRGGBB","opacity"?:number,"blending"?:"additive","depthWrite"?:false}, "position"?:{...} }
+ExternalModelItem: { "objType":"externalModel", "modelFileType":"gltf"|"glb"|"obj"|"stl"|"ply"|"fbx"|"usd"|"usdz", "modelPath":string, "materialBindings"?: [{ "selector"?: {"nodeName"?:string,"nodePath"?:string,"nodeType"?:string,"meshIndex"?:number,"materialName"?:string,"materialIndex"?:number,"all"?:true}, "mode"?:"replace"|"patch", "material": MaterialRecord, "shareMaterial"?:boolean, "inheritOriginal"?:"textures"|"all", "required"?:boolean }] }
 TextItem (objectList only): { "threeJsonId": string, "objType": "text", "content": string, "mode": "sdf"|"texture"|"mesh" (default/preferred "sdf"), "fontSize": number, "color": "#RRGGBB", "align": "left"|"center"|"right", "anchor": {"x":0..1,"y":0..1}, "billboard": boolean, "position": {x,y,z}, "sdf": {"outlineWidth"?:number,"outlineColor"?:"#RRGGBB"}, "mesh": { "fontJsonUrl": string, "depth"?:number, "bevelEnabled"?:boolean } only when mode is mesh }
 TubeItem: { "objType": "tube", "path": { "type": "catmullRom", "points": [{x,y,z},...] }, "geometry": { "radius", "tubularSegments" }, "material": {...} }
 InstancedItem: { "objType": "instanced", "geometry": { "width", "height", "depth" }, "transforms": [{ "position", "rotation", "scale" }] }
@@ -470,7 +471,7 @@ function filterParticleCapabilityLines(text, options = {}) {
 /** @returns {string} Shared catalog block for scene prompts. */
 function buildSceneCapabilityCatalog(options = {}) {
   const blocks = [
-    buildAgentCapabilityIndex().trim(),
+    buildAgentCapabilityIndex(options).trim(),
     THREE_JSON_STANDARD_AI_CAPABILITY_CATALOG.trim(),
     THREE_JSON_PRIMITIVE_GEOMETRY.trim(),
     THREE_JSON_AGENT_EXAMPLE_INDEX.trim(),

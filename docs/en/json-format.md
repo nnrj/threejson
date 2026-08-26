@@ -430,6 +430,10 @@ Some fields allow partial vectors:
   "objType": "externalModel",
   "modelFileType": "gltf",
   "modelPath": "/assets/models/robot.glb",
+  "materialBindings": [{
+    "selector": { "nodeName": "Body*" },
+    "material": { "type": "physical", "color": "#dbeafe", "roughness": 0.3 }
+  }],
   "position": { "x": 0, "y": 0, "z": 0 },
   "scale": { "x": 1, "y": 1, "z": 1 }
 }
@@ -444,6 +448,11 @@ Some fields allow partial vectors:
 | `mapsFolderFallback` | Fallback texture folder. |
 | `castShadow` / `receiveShadow` | Shadow configuration. |
 | `animations` | Model animation configuration. |
+| `materialBindings` | Post-load GLTF/GLB material bindings; select by node/path/type, mesh index, material name, or slot index and `replace` or `patch`. |
+| `materialBindingsStrict` | When `true`, any unmatched binding produces a structured error. |
+| `disposeReplacedMaterials` | Defaults to `true` and releases old materials/textures no longer referenced by the model; set `false` when a host deliberately retains and restores originals. |
+
+Each binding uses `{ selector, material, mode?, shareMaterial?, inheritOriginal?, required? }`. Selectors support `nodeName(s)`, `nodePath(s)`, `nodeType(s)`, `meshIndex/indices`, `materialName(s)`, and `materialIndex/indices`; names and paths accept `*` and `?` wildcards. Omit the selector or use `{ "all": true }` to select every slot. `material` goes through the shared material registry, so it may also be a TSL NodeMaterial after explicitly importing `threejson/webgpu`; the TSL factory supports `inheritOriginal: "textures" | "all"`. See [`examples/webgpu/tsl-burning-model.json`](../../examples/webgpu/tsl-burning-model.json).
 
 ## 10. Domain Objects
 

@@ -422,9 +422,10 @@ Optional capability examples:
 import "threejson/controls-extra";      // Map / Trackball / Arcball
 import "threejson/particles-raster";   // textMask / imageMask particle sources
 import "threejson/webgpu";             // explicit WebGPU/TSL preview
+import "threejson/tsl-code";           // WebGPU/TSL plus complete TSL ESM module capability
 ```
 
-Asynchronous `createJsonScene()` automatically lazy-loads `controls-extra`, `particles-raster`, and advanced WebGL post-processing when their JSON descriptors are present. Explicit imports of the first two are for preloading or direct low-level registration use. WebGPU, third-party backends, and code execution always require explicit host opt-in. The synchronous `createJsonSceneSimple()` subset does not run the asynchronous lazy-load chain.
+Asynchronous `createJsonScene()` automatically lazy-loads `controls-extra`, `particles-raster`, and advanced WebGL post-processing when their JSON descriptors are present. Explicit imports of the first two are for preloading or direct low-level registration use. WebGPU, third-party backends, and code execution always require explicit host import or registration; the host chooses whether code uses `trusted`, `prompt`, `restricted`, or `disabled` policy. The synchronous `createJsonSceneSimple()` subset does not run the asynchronous lazy-load chain.
 
 Domain JSON commonly uses:
 

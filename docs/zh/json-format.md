@@ -457,6 +457,10 @@ Vector3 可写完整对象：
   "objType": "externalModel",
   "modelFileType": "gltf",
   "modelPath": "/assets/models/robot.glb",
+  "materialBindings": [{
+    "selector": { "nodeName": "Body*" },
+    "material": { "type": "physical", "color": "#dbeafe", "roughness": 0.3 }
+  }],
   "position": { "x": 0, "y": 0, "z": 0 },
   "scale": { "x": 1, "y": 1, "z": 1 }
 }
@@ -473,6 +477,11 @@ Vector3 可写完整对象：
 | `mapsFolderFallback` | 贴图文件夹兜底路径。 |
 | `castShadow` / `receiveShadow` | 阴影配置。 |
 | `animations` | 模型动画配置。 |
+| `materialBindings` | GLTF/GLB 加载后的材质绑定数组；可按节点/路径/类型、mesh 序号、材质名或槽序号选择并 `replace` / `patch`。 |
+| `materialBindingsStrict` | 为 `true` 时，任一绑定未命中即返回结构化错误。 |
+| `disposeReplacedMaterials` | 默认 `true`，释放模型内已不再引用的旧材质/纹理；需要在宿主中自行保存并恢复原材质时可设为 `false`。 |
+
+每个绑定使用 `{ selector, material, mode?, shareMaterial?, inheritOriginal?, required? }`。`selector` 支持 `nodeName(s)`、`nodePath(s)`、`nodeType(s)`、`meshIndex/indices`、`materialName(s)` 和 `materialIndex/indices`；名称与路径可用 `*`、`?` 通配符。省略 selector 或使用 `{ "all": true }` 可选择全部槽。`material` 走统一材质注册表，因此显式导入 `threejson/webgpu` 后也可绑定 TSL NodeMaterial；TSL 工厂支持 `inheritOriginal: "textures" | "all"`。完整示例见 [`examples/webgpu/tsl-burning-model.json`](../../examples/webgpu/tsl-burning-model.json)。
 
 ## 10. domain 对象
 

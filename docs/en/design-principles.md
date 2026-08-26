@@ -16,7 +16,17 @@ Optional capabilities that are not used should not require configuration switche
 ## Optional, non-invasive
 
 - **Capabilities are separable**: Physics, JSON Patch, plugins, and similar features ship as independent modules or under `extensions/`; the core main entry aggregates only a stable subset. `extensions/` aligns with the npm optional-peer mental model: reference implementations maintained in-repo, semver may diverge from core, avoiding binding a specific engine into the default package.
-- **Predictable behavior**: Without a matching JSON descriptor, a capability is not loaded, initialized, or allowed to make network requests. Stable, lightweight, in-package modules explicitly marked `activation: "descriptor"` in the manifest may be lazy-loaded by the asynchronous scene loader when a descriptor actually references them. Heavy dependencies, third-party backends, and code execution still require explicit host import, registration, and authorization. Manifest declarations, loader behavior, documentation, and the AI capability catalog must agree.
+- **Predictable behavior**: Without a matching JSON descriptor, a capability is not loaded, initialized, or allowed to make network requests. Stable, lightweight, in-package modules explicitly marked `activation: "descriptor"` in the manifest may be lazy-loaded by the asynchronous scene loader when a descriptor actually references them. Heavy dependencies, third-party backends, and code execution still require explicit host import or registration; whether they also require authorization is a host policy. Manifest declarations, loader behavior, documentation, and the AI capability catalog must agree.
+
+## Separate capability from policy
+
+ThreeJSON is a scene engine. Unless there is an objective technical barrier, a generic Three.js capability that can be exposed reliably through descriptors or registries should be available from the engine. It must not be globally weakened, stripped of effects, or denied module dependencies merely because one upper-layer application accepts untrusted content.
+
+- **The engine provides capability**: descriptors, runtime assembly, extension points, diagnostics, disposal, and policy hooks.
+- **The host chooses policy**: trusted execution, per-use confirmation, restricted execution, or complete disablement according to source and deployment. A community site, editor, offline tool, and private application may choose different policies.
+- **Optional security layers add constraints**: sandboxing, source allowlists, signatures, CSP, moderation, and organizational policy belong in a host or an additional security module; they are not the rendering capability itself.
+
+“Complete capability” does not mean “load everything by default.” WebGPU, TSL code, and similar features remain explicit subpath imports so the default path stays lightweight. Once a host opts in, however, the engine should expose a complete usable mechanism and leave the final trust decision to that host. Only genuinely unsupported combinations should fail, with structured diagnostics instead of silent degradation or a global ban.
 
 ## Core vs extensions boundary
 

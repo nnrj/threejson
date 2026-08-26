@@ -144,6 +144,27 @@ export function collectSceneCapabilityDiagnostics(scene, options = {}) {
 
     const materialType = normalizeMaterialType(record);
     if (materialType) checkCapability(diagnostics, "materials", materialType, `${pointer}/type`, rendererBackend);
+    if (
+      materialType === "tsl"
+      && isSceneCapabilityAvailable("materials", "tsl", { rendererBackend })
+    ) {
+      const kind = normalizeLower(record.tsl?.kind || "preset");
+      const declaration = getSceneCapability("materials", "tsl", { rendererBackend });
+      const modes = Array.isArray(declaration?.modes)
+        ? declaration.modes.map(normalizeLower)
+        : [];
+      if (!kind || (modes.length > 0 && !modes.includes(kind))) {
+        addDiagnostic(diagnostics, {
+          category: "materialModes",
+          id: `tsl.${kind || "missing"}`,
+          pointer: `${pointer}/tsl/kind`,
+          rendererBackend,
+          reason: kind === "code"
+            ? "TSL code is not available under the current host policy. Import threejson/tsl-code and select a non-disabled execution policy."
+            : `TSL material mode is unavailable: ${kind || "missing"}`
+        });
+      }
+    }
 
     if (objType === "shadersurface" && !normalizeId(record.shaderPreset ?? record.material?.shaderPreset)) {
       addDiagnostic(diagnostics, {

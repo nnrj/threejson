@@ -164,6 +164,7 @@ export * from "./capabilities/scenePreparationRegistry.js";
 export * from "./builder/postprocess/shaderPassPresetRegistry.js";
 
 export * from "./builder/modelBuilder.js";
+export * from "./builder/modelMaterialBindings.js";
 export * from "./builder/material/materialFactory.js";
 export * from "./builder/nativeObjectLoader.js";
 export * from "./builder/sceneHelperBuilder.js";

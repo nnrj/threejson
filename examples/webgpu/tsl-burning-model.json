@@ -1,0 +1,106 @@
+{
+  "threeJsonId": "webgpu-tsl-burning-model",
+  "name": "TSL burning external GLB",
+  "sceneConfig": {
+    "scene": { "background": "#101010" },
+    "renderer": {
+      "backend": "webgpu",
+      "revisionPolicy": "best-effort",
+      "compatibilityPolicy": "error",
+      "antialias": true,
+      "toneMapping": "aces",
+      "exposure": 1.05
+    },
+    "camera": {
+      "fov": 30,
+      "near": 0.1,
+      "far": 1000,
+      "position": { "x": 0, "y": 3, "z": 20 },
+      "lookAt": { "x": 0, "y": 0, "z": 0 }
+    },
+    "controls": {
+      "type": "orbit",
+      "target": { "x": 0, "y": 0, "z": 0 },
+      "enableDamping": true,
+      "autoRotate": true,
+      "autoRotateSpeed": 0.2
+    },
+    "lights": [
+      { "type": "ambient", "color": "#b8dfff", "intensity": 0.25 },
+      {
+        "type": "directional",
+        "color": "#f0ffff",
+        "intensity": 2,
+        "position": { "x": 0, "y": 3, "z": 20 }
+      }
+    ],
+    "renderLoop": { "updateAnimations": true }
+  },
+  "objectList": [
+    {
+      "threeJsonId": "lee-perry-smith-burning-head",
+      "objType": "externalModel",
+      "modelFileType": "glb",
+      "modelPath": "https://boytchev.github.io/etudes/threejs/negative-morphs/LeePerrySmith.glb",
+      "materialBindingsStrict": true,
+      "materialBindings": [
+        {
+          "selector": { "all": true },
+          "required": true,
+          "shareMaterial": true,
+          "material": {
+            "type": "tsl",
+            "base": "standard",
+            "transparent": true,
+            "side": "double",
+            "roughness": 0.8,
+            "tsl": {
+              "kind": "graph",
+              "source": {
+                "inline": {
+                  "graphVersion": 1,
+                  "nodes": [
+                    { "id": "position", "type": "position", "space": "local" },
+                    { "id": "time", "type": "time" },
+                    { "id": "base-noise", "type": "fractalNoise", "input": "position" },
+                    { "id": "base-noise-half", "type": "div", "inputs": ["base-noise", 2] },
+                    { "id": "time-sine", "type": "sin", "input": "time" },
+                    { "id": "noise-offset", "type": "add", "inputs": ["base-noise-half", "time-sine"] },
+                    { "id": "animated-position", "type": "add", "inputs": ["position", "noise-offset"] },
+                    { "id": "detail-noise-raw", "type": "fractalNoise", "input": "animated-position" },
+                    { "id": "detail-noise-shifted", "type": "add", "inputs": ["detail-noise-raw", 1] },
+                    { "id": "detail-noise", "type": "div", "inputs": ["detail-noise-shifted", 8] },
+                    { "id": "position-y", "type": "swizzle", "input": "position", "components": "y" },
+                    { "id": "vertical-scaled", "type": "div", "inputs": ["position-y", -20] },
+                    { "id": "vertical", "type": "add", "inputs": ["vertical-scaled", 0.2] },
+                    { "id": "time-slow", "type": "div", "inputs": ["time", 3] },
+                    { "id": "pulse-sine", "type": "sin", "input": "time-slow" },
+                    { "id": "pulse", "type": "mul", "inputs": ["pulse-sine", 0.6] },
+                    { "id": "burn-spatial", "type": "add", "inputs": ["vertical", "detail-noise"] },
+                    { "id": "burn-animated", "type": "add", "inputs": ["burn-spatial", "pulse"] },
+                    { "id": "burn-half", "type": "div", "inputs": ["burn-animated", 2] },
+                    { "id": "burn-shifted", "type": "add", "inputs": ["burn-half", 0.2] },
+                    { "id": "burn", "type": "clamp", "input": "burn-shifted", "min": 0, "max": 1 },
+                    { "id": "color-factor", "type": "smoothstep", "input": "burn", "edge0": 0.48, "edge1": 0.5 },
+                    { "id": "opacity", "type": "smoothstep", "input": "burn", "edge0": 0.44, "edge1": 0.5 },
+                    { "id": "burn-color", "type": "color", "value": "#ff3300" },
+                    { "id": "surface-color", "type": "color", "value": "#cccccc" },
+                    { "id": "surface", "type": "mix", "a": "burn-color", "b": "surface-color", "factor": "color-factor" }
+                  ],
+                  "outputs": {
+                    "color": "surface",
+                    "opacity": "opacity"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "sourceAttribution": {
+    "effect": "Based on Pavel Boytchev's Burning Lee with TSL demonstration",
+    "url": "https://codepen.io/boytchev/pen/bNeNObV"
+  }
+}

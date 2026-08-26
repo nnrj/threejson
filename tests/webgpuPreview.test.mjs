@@ -13,13 +13,32 @@ test("WebGPU preview registers only through its explicit entry", async () => {
   } = await import("../core/handler/rendererBackendRegistry.js");
   const { getSceneCapability } = await import("../core/capabilities/sceneCapabilityManifest.js");
   assert.equal(webgpu.THREEJSON_WEBGPU_SUPPORTED_REVISION, "184");
+  assert.equal(webgpu.THREEJSON_WEBGPU_TESTED_REVISION, "184");
+  assert.equal(webgpu.checkWebgpuRevisionCompatibility({ actualRevision: "184" }).compatible, true);
+  assert.throws(
+    () => webgpu.checkWebgpuRevisionCompatibility({ actualRevision: "999", policy: "strict" }),
+    (error) => error?.code === "E_WEBGPU_THREE_REVISION_UNSUPPORTED"
+  );
   assert.equal(typeof getRendererBackend("webgpu")?.createRenderer, "function");
   assert.equal(detectRendererBackend({ isWebGPURenderer: true }), "webgpu");
   assert.equal(rendererBackendOwnsPostProcessing("webgpu"), true);
   assert.equal(resolveRendererBackendFallback("webgpu", { policy: "fallback-webgl" }), "webgl");
   assert.equal(resolveRendererBackendFallback("webgpu", { policy: "error" }), null);
-  assert.equal(getSceneCapability("rendererBackends", "webgpu").status, "preview");
+  const backendCapability = getSceneCapability("rendererBackends", "webgpu");
+  assert.equal(backendCapability.status, "preview");
+  assert.equal(backendCapability.testedRevision, "184");
+  assert.equal(backendCapability.revisionPolicy, "best-effort");
   assert.equal(getSceneCapability("materials", "tsl").status, "preview");
+  assert.deepEqual(getSceneCapability("materials", "tsl").modes, ["preset", "graph"]);
+  const { collectSceneCapabilityDiagnostics } = await import("../core/capabilities/sceneCapabilityValidation.js");
+  const codeDiagnostics = collectSceneCapabilityDiagnostics({
+    sceneConfig: { renderer: { backend: "webgpu" } },
+    objectList: [{
+      objType: "box",
+      material: { type: "tsl", tsl: { kind: "code", source: { inline: "export default () => ({})" } } }
+    }]
+  }, { rendererBackend: "webgpu" });
+  assert.ok(codeDiagnostics.some((entry) => entry.category === "materialModes" && entry.id === "tsl.code"));
 });
 
 test("canonical renderer records participate in pre-deploy compatibility validation", async () => {
@@ -95,6 +114,40 @@ test("TSL graph compiles safe serializable nodes and rejects cycles", async () =
   );
 });
 
+test("TSL graph exposes fractal noise, generic three/tsl calls and host node registration", async () => {
+  const {
+    compileTslGraph,
+    registerTslGraphNode,
+    unregisterTslGraphNode,
+    TslGraphError
+  } = await import("../webgpu/index.js");
+  const graph = {
+    graphVersion: 1,
+    nodes: [
+      { id: "p", type: "position", space: "local" },
+      { id: "fractal", type: "fractalNoise", input: "p" },
+      { id: "clamped", type: "call", function: "clamp", inputs: ["fractal", 0, 1] }
+    ],
+    outputs: { opacityNode: "clamped" }
+  };
+  assert.equal(compileTslGraph(graph).opacityNode.isNode, true);
+  assert.throws(
+    () => compileTslGraph({
+      graphVersion: 1,
+      nodes: [{ id: "bad", type: "call", function: "not_a_tsl_export", inputs: [] }],
+      outputs: { color: "bad" }
+    }),
+    (error) => error instanceof TslGraphError && error.code === "E_TSL_GRAPH_CALL_UNAVAILABLE"
+  );
+  registerTslGraphNode("double", ({ node, resolveInput }) => resolveInput(node.input).mul(2));
+  assert.equal(compileTslGraph({
+    graphVersion: 1,
+    nodes: [{ id: "one", type: "constant", value: 1 }, { id: "two", type: "double", input: "one" }],
+    outputs: { opacity: "two" }
+  }).opacity.isNode, true);
+  unregisterTslGraphNode("double");
+});
+
 test("TSL preset material is a NodeMaterial without raw code evaluation", async () => {
   const { createTslMaterialFromDescriptor } = await import("../webgpu/index.js");
   const material = createTslMaterialFromDescriptor({
@@ -106,6 +159,39 @@ test("TSL preset material is a NodeMaterial without raw code evaluation", async 
   assert.equal(material.isNodeMaterial, true);
   assert.equal(material.roughness, 0.7);
   assert.equal(material.colorNode.isNode, true);
+  material.dispose();
+});
+
+test("TSL graph material provides animated fractal color and opacity nodes", async () => {
+  const { createTslMaterialFromDescriptor } = await import("../webgpu/index.js");
+  const material = createTslMaterialFromDescriptor({
+    type: "tsl",
+    base: "standard",
+    transparent: true,
+    side: "double",
+    tsl: {
+      kind: "graph",
+      source: {
+        inline: {
+          graphVersion: 1,
+          nodes: [
+            { id: "position", type: "position", space: "local" },
+            { id: "noise", type: "fractalNoise", input: "position" },
+            { id: "opacity", type: "smoothstep", input: "noise", edge0: 0.44, edge1: 0.5 },
+            { id: "hot", type: "color", value: "#ff3300" },
+            { id: "surface", type: "color", value: "#cccccc" },
+            { id: "color", type: "mix", a: "hot", b: "surface", factor: "opacity" }
+          ],
+          outputs: { color: "color", opacity: "opacity" }
+        }
+      }
+    }
+  });
+  assert.equal(material.isMeshStandardNodeMaterial, true);
+  assert.equal(material.colorNode.isNode, true);
+  assert.equal(material.opacityNode.isNode, true);
+  assert.equal(material.transparent, true);
+  assert.equal(material.side, THREE.DoubleSide);
   material.dispose();
 });
 

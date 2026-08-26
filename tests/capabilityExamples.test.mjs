@@ -33,6 +33,7 @@ test("WebGPU examples become valid only after the explicit preview import", asyn
   await import("../webgpu/index.js");
   for (const file of [
     "examples/webgpu/tsl-material.json",
+    "examples/webgpu/tsl-burning-model.json",
     "examples/webgpu/webgpu-particles.json"
   ]) {
     const payload = readJson(file);

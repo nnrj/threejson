@@ -70,6 +70,7 @@ import { createTube as createTubeImpl, deployTube as deployTubeImpl } from "./tu
 import { deployInstancedMeshWithFactory } from "./instancedBuilder.js";
 import { coerceMeshMaterialForRaycast } from "../util/meshPick.js";
 import { createMaterialFromDescriptor } from "./material/materialFactory.js";
+import { applyModelMaterialBindings } from "./modelMaterialBindings.js";
 import { createGeometryFromDescriptor } from "./geometry/geometryFactory.js";
 import { configureGltfLoader } from "./gltfLoaderConfig.js";
 
@@ -2301,6 +2302,15 @@ function loadGltf(glbObj, scene, loadOptions = {}) {
             // Track loaded GLTF model for memory cleanup
             let model = gltf.scene;
             trackDisposableResource(model)
+            try {
+                const bindingSummary = applyModelMaterialBindings(model, glbObj);
+                if (bindingSummary.unmatchedBindings.length > 0) {
+                    log.warn("[loadGltf] material bindings matched no slots:", bindingSummary.unmatchedBindings);
+                }
+            } catch (error) {
+                log.error("[loadGltf] material binding failed:", error);
+                return;
+            }
             const attachTo = normalizeAttachTo(glbObj);
             let placedOnCamera = false;
             if (attachTo === "camera" && loadOptions.camera && loadOptions.scene?.isScene) {
@@ -2593,6 +2603,15 @@ async function loadGltfAsync(glbObj, scene, loadOptions = {}) {
       (gltf) => {
         const model = gltf.scene;
         trackDisposableResource(model);
+        try {
+          const bindingSummary = applyModelMaterialBindings(model, glbObj);
+          if (bindingSummary.unmatchedBindings.length > 0) {
+            log.warn("[loadGltf] material bindings matched no slots:", bindingSummary.unmatchedBindings);
+          }
+        } catch (error) {
+          reject(error instanceof Error ? error : new Error(String(error)));
+          return;
+        }
         const attachTo = normalizeAttachTo(glbObj);
         let placedOnCamera = false;
         if (attachTo === "camera" && loadOptions.camera && loadOptions.scene?.isScene) {

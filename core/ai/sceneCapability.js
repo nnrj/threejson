@@ -176,7 +176,7 @@ const INTENT_SIGNALS = [
     patterns: [/gltf|glb|obj model|fbx|外部模型|导入模型/i],
     lists: ["externalModelList", "objModelList"],
     objTypes: ["externalModel"],
-    note: "Use externalModelList or objModelList with modelPath."
+    note: "Use externalModelList or objModelList with modelPath. GLTF/GLB materialBindings can replace or patch selected loaded material slots."
   },
   {
     id: "heat",

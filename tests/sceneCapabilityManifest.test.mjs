@@ -23,6 +23,8 @@ test("capability manifest exposes implemented lazy WebGL passes", () => {
   assert.equal(manifest.categories.particleSources.textMask.activation, "descriptor");
   assert.equal(manifest.categories.controlsTypes.arcball.entry, "threejson/controls-extra");
   assert.equal(manifest.categories.materials.physical.status, "stable");
+  assert.deepEqual(manifest.categories.objects.externalModel.materialBindings.formats, ["gltf", "glb"]);
+  assert.deepEqual(manifest.categories.objects.externalModel.materialBindings.modes, ["replace", "patch"]);
   assert.ok(manifest.categories.modelFormats.fbx);
   assert.equal(manifest.categories.modelFormats.usd.import, true);
   assert.equal(manifest.categories.modelFormats.usd.export, false);

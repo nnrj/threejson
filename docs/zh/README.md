@@ -19,9 +19,9 @@ ThreeJSON 是一个基于 Three.js 的 Web3D JSON 运行时。调用者不需要
 - [工具与宿主应用](./tools.md)：`sysConfig` / `sceneConfig` 的边界说明（编辑器、播放器等）。
 - [运行时对象变更速查](./runtime-object-mutation-quickref.md)：`applyObjectChange` / 局部更新 / 快照 / 重新部署。
 - [动态运行时批处理](./dynamic-runtime-batches.md)：槽位化 GPU 缓冲、虚拟运行时实体、按帧合并提交与可选按需渲染。
-- [能力真源、Particle V2 与 WebGPU/TSL](./capabilities-webgpu-particles.md)：机器可读能力真源、Physical 材质、粒子、可选 WebGPU、TSL 安全、LOD、曲线和 morph target。
+- [能力真源、Particle V2 与 WebGPU/TSL](./capabilities-webgpu-particles.md)：机器可读能力真源、Physical 材质、粒子、可选 WebGPU、TSL 模块策略、外部模型材质绑定、LOD、曲线和 morph target。
 - [能力边界](./scope.md)：core 与扩展的边界，以及规范真源与运行时叠加层。
-- [设计原则](./design-principles.md)：可选功能、非侵入式设计与安全占位。
+- [设计原则](./design-principles.md)：可选功能、非侵入式设计、能力与宿主策略分离。
 - [Demo 页面](./demos.md)：`examples/html-demo/` 与仓库根页面各自演示什么。
 - [场景加载生命周期](./scene-load-lifecycle.md)：`createJsonScene` 的阶段钩子与 SDF 文字字体预热（中英双语）。
 

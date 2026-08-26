@@ -40,7 +40,7 @@ Effects and media:
 - shaderSurface uses a registered shaderPreset for requested shader surfaces; particleEmitter is only for an effect/weather/particle field that is actually needed; particleList/points is the legacy point-cloud path.
 - windList, heatList, weather domains, nature.sky, nature.water, sprites, tubes.
 - audioList supports ambient or positional audio attached to scene/camera/object; use audioUrl and sensible playback policy fields.
-- externalModelList/objModelList load GLTF/GLB/OBJ/STL/PLY/FBX/USD/USDZ assets; animationMode mixer and animationGraph support clip state machines where the format exposes clips.
+- externalModelList/objModelList load GLTF/GLB/OBJ/STL/PLY/FBX/USD/USDZ assets; animationMode mixer and animationGraph support clip state machines where the format exposes clips. GLTF/GLB materialBindings can select loaded material slots and replace or patch them through the registered material factories.
 
 Domains:
 - domainModelList / objType domain dispatches built-in domains: floor, wall, glass, door, box, nativeThree, weather(.rain/.wind), nature(.sky/.water), stat(.bar/.grid/.panel/.chart/.line/.pie/.ring), device(.cabinet/.server/.ups/.switch/.airConditioner), port, sceneHighlight.
@@ -85,9 +85,25 @@ function buildAgentCapabilityIndex(options = {}) {
     `- particle simulations: ${list("particleBackends")}`,
     `- particle sources: ${list("particleSources")}`
   ].join("\n");
+  const tslCapability = manifest.categories?.materials?.tsl;
+  const tslAvailable = Boolean(tslCapability);
+  const tslModes = Array.isArray(tslCapability?.modes) ? tslCapability.modes : [];
+  const tslKindContract = tslModes.map((mode) => `"${mode}"`).join("|") || "none";
+  const tslCodeGuidance = tslModes.includes("code")
+    ? "- kind:\"code\" is available because the host imported the tsl-code entry; scene JSON still cannot enable or relax the selected host execution policy."
+    : "- kind:\"code\" is not available in this runtime snapshot. The host must explicitly import the tsl-code entry before AI may author code modules.";
+  const tslAuthoring = tslAvailable ? `
+WebGPU/TSL authoring (available in this runtime snapshot):
+- Set sceneConfig.renderer.backend to "webgpu". revisionPolicy is "best-effort" by default; use "strict" only when the host requires the tested Three.js revision.
+- TSL materials use material { type:"tsl", base:"standard"|"physical"|"basic"|"lambert"|"phong"|"toon"|"matcap"|"normal", tsl:{ kind:${tslKindContract}, ... } }.
+- Prefer preset or graph for portable generated scenes. Built-in presets include solid, uv-gradient, and pulse. Compose effects such as burn/dissolve from generic position/time/noise/fractalNoise/math graph nodes instead of assuming a one-off preset; call can use callable three/tsl exports.
+- To apply TSL to a GLTF/GLB asset, add materialBindings:[{ selector:{ nodeName|nodePath|nodeType|meshIndex|materialName|materialIndex }, inheritOriginal?:"textures"|"all", material:{ type:"tsl", ... } }]. An empty selector or {all:true} targets all slots.
+${tslCodeGuidance}
+` : "";
   return [
     THREE_JSON_AGENT_CAPABILITY_INDEX_BASE.trim(),
     runtimeSnapshot,
+    tslAuthoring.trim(),
     THREE_JSON_AGENT_TEXTURE_ACQUISITION_INDEX.trim()
   ].filter(Boolean).join("\n\n");
 }
@@ -100,6 +116,7 @@ Capability patterns:
 - Interactive object: add events.click.actions with object.toggleVisible / object.moveBy, or events.click.script for short EventScript.
 - Lifecycle intro/spawn: use sceneConfig.intro.postLoad for a splash; use events["object.ready"] for finite per-object creation motion. Use declarative per-frame animation for continuous motion.
 - Animated imported model: externalModel with animationMode "mixer", renderLoop.updateAnimations true, and animationGraph { parameters, states, transitions }.
+- Imported-model material override: GLTF/GLB externalModel with materialBindings selecting node/material slots and a registered replacement material; use a TSL replacement only when the runtime snapshot exposes TSL.
 - Dashboard: stat domain records for charts + infoPanel for static labels + css3dPanel only for interactive DOM.
 - Advanced shape: native geometry.type or shapeExtrude/irregularGeometry; do not approximate all curved/custom shapes as boxes.
 - Repeated city/forest/servers: instancedList or grouped subScene, not hundreds of unrelated root boxes.

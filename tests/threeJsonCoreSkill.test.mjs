@@ -131,6 +131,22 @@ test("scene prompts keep texture acquisition provider-neutral and semantic", () 
   assert.doesNotMatch(prompt, /Poly Haven|Openverse|R2/);
 });
 
+test("WebGPU capability snapshot teaches TSL effects and imported-model material binding", async () => {
+  await import("../webgpu/index.js");
+  const prompt = buildSceneGenerationSystemPrompt({
+    rendererBackend: "webgpu",
+    includePreviewCapabilities: true
+  });
+  assert.match(prompt, /WebGPU\/TSL authoring/);
+  assert.match(prompt, /burn\/dissolve/);
+  assert.match(prompt, /fractalNoise/);
+  assert.match(prompt, /materialBindings/);
+  assert.match(prompt, /kind:\"code\" is not available in this runtime snapshot/);
+
+  const webglPrompt = buildSceneGenerationSystemPrompt();
+  assert.doesNotMatch(webglPrompt, /WebGPU\/TSL authoring \(available/);
+});
+
 test("buildIntentHints maps solar system prompt to sphere capability", () => {
   const hints = buildIntentHints("build a small solar system with planets");
   assert.match(hints, /sphereModelList|sphere/i);

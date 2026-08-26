@@ -69,7 +69,7 @@ Optional compute implementations register `simulation.backend` through `register
 
 ## Explicit WebGPU/TSL preview
 
-WebGPU is opt-in and pinned to Three.js r184 by its adapter:
+WebGPU is opt-in. Three.js r184 is the continuously tested adapter baseline, but the test matrix is not treated as a capability ban: other revisions run in `best-effort` mode with a warning by default, while a host that requires a certified combination can select `strict`:
 
 ```js
 import "threejson/webgpu";
@@ -81,7 +81,11 @@ const result = await createJsonScene(payload, { canvas });
 ```json
 {
   "sceneConfig": {
-    "renderer": { "backend": "webgpu", "compatibilityPolicy": "error" }
+    "renderer": {
+      "backend": "webgpu",
+      "revisionPolicy": "best-effort",
+      "compatibilityPolicy": "error"
+    }
   }
 }
 ```
@@ -104,7 +108,7 @@ const result = await createJsonScene(payload, { canvas });
 }
 ```
 
-Built-in preview presets are `solid`, `uv-gradient`, and `pulse`; hosts can call `registerTslPreset()`.
+Built-in preview presets are `solid`, `uv-gradient`, and `pulse`; hosts can call `registerTslPreset()`. Complex effects such as burning and dissolve are not hard-coded as one-off branches for a particular example; they can be composed from the generic graph nodes below or from a code module.
 
 ### TSL graph
 
@@ -134,23 +138,53 @@ Built-in preview presets are `solid`, `uv-gradient`, and `pulse`; hosts can call
 }
 ```
 
-Graph version 1 validates node count, unique IDs, references, cycles, supported node types, outputs, URL/CORS failures, and texture loading. Supported nodes cover constants/uniforms/time, UV/position/normal/texture, arithmetic, mix/smoothstep/clamp, common unary operations, noise, and swizzle.
+Graph version 1 validates node count, unique IDs, references, cycles, supported node types, outputs, URL/CORS failures, and texture loading. Supported nodes cover constants/uniforms/time, UV/position/normal/texture, arithmetic, mix/smoothstep/clamp, common unary operations, regular noise, fractal noise, and swizzle. A `call` node can invoke callable exports actually present in `three/tsl`; hosts may add serializable nodes through `registerTslGraphNode()`. Outputs may target any safe `*Node` property actually exposed by the selected NodeMaterial instead of a stale engine-maintained output whitelist.
 
-### TSL code security boundary
+### External-model material bindings
 
-TSL code is JavaScript with the same page permissions as the host; it is not sandboxed shader text. It is disabled by default and a scene cannot enable it. The host must import `threejson/tsl-code`, enable execution, and approve each exact SHA-256 content hash and URL/inline source. Changed content requires a new approval.
+After a GLTF/GLB asset loads, its material slots can be selected by node name, node path, node type, mesh index, material name, or material index and replaced with any registered material, including TSL:
+
+```json
+{
+  "objType": "externalModel",
+  "modelFileType": "glb",
+  "modelPath": "/assets/head.glb",
+  "materialBindings": [{
+    "selector": { "nodeName": "Head*" },
+    "required": true,
+    "material": {
+      "type": "tsl",
+      "base": "standard",
+      "transparent": true,
+      "tsl": { "kind": "graph", "source": { "url": "/materials/burn.graph.json" } }
+    }
+  }]
+}
+```
+
+See `examples/webgpu/tsl-burning-model.json` for a runnable complete inline burning graph. An empty selector or `{ "all": true }` matches every material slot; string selectors support `*` and `?`. `mode` is `replace` (default) or `patch`, and `shareMaterial` controls sharing across matching slots. TSL replacement materials also accept `inheritOriginal: "textures" | "all"` to retain the GLTF material's maps or all compatible properties. `required` or top-level `materialBindingsStrict` turns an unmatched binding into a structured error.
+
+### TSL code execution policy
+
+TSL code is a JavaScript module with the same page permissions as the host; it is not restricted shader text. Importing the optional entry is the host's explicit capability opt-in, and it also registers WebGPU/TSL, so a second `threejson/webgpu` import is unnecessary. The default `trusted` policy preserves ordinary ESM capability. Scene JSON cannot change host policy.
 
 ```js
-import "threejson/webgpu";
 import { configureTslCodeExecution } from "threejson/tsl-code";
 
 configureTslCodeExecution({
-  enabled: true,
+  executionPolicy: "prompt",
   authorize: async ({ hash, source, notice }) => showUserConfirmation({ hash, source, notice })
 });
 ```
 
-The module must be self-contained and default-export a `(params, context) => outputs` factory. It receives `TSL` and `WEBGPU` through `context`; external imports are rejected because their mutable code would not be covered by the approved hash. Production hosts should combine this with a restrictive CSP and may disable third-party code entirely.
+Available policies are:
+
+- `trusted` (default): loads the module and its normal ESM dependencies; suited to author-owned content, offline tools, and trusted projects.
+- `prompt`: asks the host about the exact source hash, then retains normal ESM dependencies.
+- `restricted`: asks for confirmation and rejects static or dynamic imports; suited to sites that accept only self-contained modules.
+- `disabled`: disables code while preset and graph remain available.
+
+The module default-exports a `(params, context) => result` factory. `TSL`, `WEBGPU`, the descriptor, and the target material are supplied through `context`. The factory may return a complete NodeMaterial, one TSL node, an output-node map, or mutate `context.material` and return nothing. URL modules are imported from their original URL so relative dependencies resolve normally. Inline modules can use the host import map, or a `moduleLoader` can connect a bundler, CSP, or custom resolver. `source.sha256` optionally verifies integrity. The host chooses policy according to content provenance; the engine does not globally remove capability on behalf of every application.
 
 ## Other stable additions
 
