@@ -63,9 +63,22 @@ export function isProviderVisionCapable(provider) {
   return isProviderVisionCapableShared(provider);
 }
 
-/** Resolve the runaway guard used only when an operation genuinely enters incremental mode. */
+/** Resolve only explicit user budgets; zero/blank leaves the model-driven loop unlimited. */
 export function resolveThreeBoxAgentOptions(settings = {}) {
-  return { maxRefineRounds: settings?.ai?.maxAutoRefineRounds };
+  const configured = Number(settings?.ai?.maxAutoRefineRounds);
+  const modelBudget = settings?.ai?.modelBudget || {};
+  return {
+    ...(Number.isFinite(configured) && configured > 0
+      ? { maxRefineRounds: Math.round(configured) }
+      : {}),
+    complexModelStrategy: settings?.ai?.complexModelStrategy || "auto",
+    modelQuality: settings?.ai?.modelQuality || "balanced",
+    modelBudget: {
+      maxTokens: Number(modelBudget.maxTokens) > 0 ? Number(modelBudget.maxTokens) : undefined,
+      maxCost: Number(modelBudget.maxCost) > 0 ? Number(modelBudget.maxCost) : undefined,
+      maxTimeMs: Number(modelBudget.maxTimeMs) > 0 ? Number(modelBudget.maxTimeMs) : undefined
+    }
+  };
 }
 
 /** Optional user ceiling for scene-authoring responses. Zero/blank means no client-side limit:

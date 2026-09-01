@@ -17,6 +17,7 @@ const ASSET_CANDIDATE_KEYS = new Set([
   "map",
   "url",
   "src",
+  "buffer",
   "script",
   "scriptUrl"
 ]);
@@ -65,7 +66,8 @@ function walkPayloadForAssetRefs(payload, onRef, path = "$") {
   for (let i = 0; i < entries.length; i++) {
     const [key, value] = entries[i];
     const nextPath = `${path}.${key}`;
-    if (typeof value === "string" && isPackableAssetRef(key, value)) {
+    const isMeshBufferEntry = /\.geometry\.buffers(?:\.|$)/.test(path);
+    if (typeof value === "string" && (isPackableAssetRef(key, value) || (isMeshBufferEntry && isLikelyAssetRef(value)))) {
       onRef?.({ key, ref: value, path: nextPath });
     }
     walkPayloadForAssetRefs(value, onRef, nextPath);
@@ -182,6 +184,9 @@ async function tryResolveAssetBytes(ref, options = {}) {
   }
   if (ref.startsWith("data:")) {
     return dataUrlToBytes(ref);
+  }
+  if (ref.startsWith("blob:")) {
+    return fetchUrlToBytes(ref);
   }
   if (ref.toLowerCase().startsWith(LIB_PREFIX)) {
     const entry = findEventScriptEntry(options.payload, ref.slice(LIB_PREFIX.length));

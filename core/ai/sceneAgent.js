@@ -3,10 +3,11 @@
  * while `executionMode` controls whether a scene is authored directly or built incrementally.
  * Direct is the default and produces one complete, immediately usable scene. `draft_refine` is
  * reserved for genuinely complex scenes or a direct output-limit fallback. Incremental loops stop
- * on `# done`, repeated/no-op output, or their runaway guard; the guard is never a target.
+ * on `# done`, an implicit completed response, repeated/no-op output, or consecutive invalid
+ * results. A caller may provide an explicit budget, but core owns no quality-round ceiling.
  *
  * Generation and adjustment share the same commands/patch/full-JSON/done protocol, compact spatial
- * context and round-budget semantics. Their small host adapters remain separate only because a
+ * context and optional caller-budget semantics. Their small host adapters remain separate only because a
  * generated draft may be applied through a stateless callback while adjustment owns a reusable
  * live/off-screen runtime with refresh/exploration hooks.
  *
@@ -54,25 +55,21 @@ import {
  * @property {object} [usageEstimate]
  */
 
-/** Default runaway guard for the comparatively rare incremental path. */
-const DEFAULT_MAX_REFINE_ROUNDS = 6;
-/** Hard ceiling enforced regardless of what a caller/user configures — a stuck loop (model never
- * emits `# done`) must still terminate. */
-const HARD_MAX_REFINE_ROUNDS = 20;
+/** An anomaly guard, not a quality budget. Consecutive invalid/no-progress responses mean the
+ * provider is no longer participating in the protocol and must not create an infinite loop. */
+const MAX_CONSECUTIVE_NO_PROGRESS = 3;
 const MAX_CAPABILITY_REVIEW_ATTEMPTS = 1;
 const MAX_REPAIR_ATTEMPTS = 2;
 
 /**
  * @param {object} agentOptions
- * @returns {{ maxRefineRounds: number }}
+ * @returns {{ maxRefineRounds?: number }}
  */
 function normalizeAgentOptions(agentOptions = {}) {
   const raw = Number(agentOptions?.maxRefineRounds);
-  const maxRefineRounds =
-    Number.isFinite(raw) && raw > 0
-      ? Math.max(1, Math.min(HARD_MAX_REFINE_ROUNDS, Math.round(raw)))
-      : DEFAULT_MAX_REFINE_ROUNDS;
-  return { maxRefineRounds };
+  return Number.isFinite(raw) && raw > 0
+    ? { maxRefineRounds: Math.max(1, Math.round(raw)) }
+    : {};
 }
 
 /** Returns the first explicitly configured positive token ceiling. An absent value deliberately
@@ -90,6 +87,147 @@ function resolveOptionalTokenLimit(...values) {
 
 function normalizeExecutionMode(value) {
   return value === "draft_refine" ? "draft_refine" : "direct";
+}
+
+function normalizeComplexModelStrategy(value) {
+  return ["auto", "full-coordinates", "progressive"].includes(value) ? value : "auto";
+}
+
+function normalizeModelQuality(value) {
+  return ["draft", "balanced", "high", "custom"].includes(value) ? value : "balanced";
+}
+
+function combineAbortSignals(...signals) {
+  const active = signals.filter((signal) => signal && typeof signal.addEventListener === "function");
+  if (active.length === 0) return undefined;
+  if (active.length === 1) return active[0];
+  if (typeof AbortSignal !== "undefined" && typeof AbortSignal.any === "function") {
+    return AbortSignal.any(active);
+  }
+  const controller = new AbortController();
+  const forward = (signal) => {
+    if (!controller.signal.aborted) controller.abort(signal.reason);
+  };
+  for (const signal of active) {
+    if (signal.aborted) {
+      forward(signal);
+      break;
+    }
+    signal.addEventListener("abort", () => forward(signal), { once: true });
+  }
+  return controller.signal;
+}
+
+function createModelBudgetMonitor(options = {}) {
+  const configured = options.modelBudget && typeof options.modelBudget === "object"
+    ? options.modelBudget
+    : options.agent?.modelBudget && typeof options.agent.modelBudget === "object"
+      ? options.agent.modelBudget
+      : {};
+  const positive = (value) => {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) && numeric > 0 ? numeric : undefined;
+  };
+  const nonNegative = (value) => {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) && numeric >= 0 ? numeric : undefined;
+  };
+  const maxTokens = positive(configured.maxTokens);
+  const maxCost = positive(configured.maxCost);
+  const controller = new AbortController();
+  const state = { totalTokens: 0, totalCost: 0, completionCount: 0 };
+  const externalMetadata = typeof options.onCompletionMetadata === "function"
+    ? options.onCompletionMetadata
+    : null;
+  const estimateCost = typeof options.estimateModelCost === "function"
+    ? options.estimateModelCost
+    : typeof options.providerAdapter?.estimateCost === "function"
+      ? (metadata) => options.providerAdapter.estimateCost(metadata, {
+          provider: options.provider,
+          model: options.model,
+          requestContext: options.requestContext
+        })
+      : null;
+
+  const fail = (code, message) => {
+    const error = new Error(message);
+    error.code = code;
+    error.modelBudget = { ...state, maxTokens, maxCost };
+    if (!controller.signal.aborted) controller.abort(error);
+    throw error;
+  };
+
+  const onCompletionMetadata = (metadata = {}) => {
+    state.completionCount += 1;
+    const usage = metadata.usage && typeof metadata.usage === "object" ? metadata.usage : {};
+    const actualTokens = positive(usage.totalTokens) ?? positive(usage.completionTokens);
+    const estimatedTokens = positive(usage.estimatedCompletionTokens);
+    state.totalTokens += actualTokens ?? estimatedTokens ?? 0;
+
+    const reportedCost = nonNegative(usage.cost) ?? nonNegative(metadata.cost);
+    let estimatedCost;
+    if (reportedCost === undefined && maxCost !== undefined && estimateCost) {
+      estimatedCost = Number(estimateCost({ ...metadata, usage }));
+      if (!Number.isFinite(estimatedCost) || estimatedCost < 0) estimatedCost = undefined;
+    }
+    if (reportedCost !== undefined || estimatedCost !== undefined) {
+      state.totalCost += reportedCost ?? estimatedCost;
+    }
+
+    externalMetadata?.({ ...metadata, modelBudgetUsage: { ...state } });
+    if (maxTokens !== undefined && state.totalTokens > maxTokens) {
+      fail(
+        "AI_MODEL_TOKEN_BUDGET_EXCEEDED",
+        `AI scene turn exceeded the explicitly configured model token budget (${Math.round(state.totalTokens)} > ${Math.round(maxTokens)}).`
+      );
+    }
+    if (maxCost !== undefined && reportedCost === undefined && estimatedCost === undefined) {
+      fail(
+        "AI_MODEL_COST_ESTIMATOR_REQUIRED",
+        "A model cost budget was configured, but this provider supplied neither cost metadata nor a host estimateModelCost/providerAdapter.estimateCost callback."
+      );
+    }
+    if (maxCost !== undefined && state.totalCost > maxCost) {
+      fail(
+        "AI_MODEL_COST_BUDGET_EXCEEDED",
+        `AI scene turn exceeded the explicitly configured model cost budget (${state.totalCost} > ${maxCost}).`
+      );
+    }
+  };
+
+  return {
+    signal: combineAbortSignals(options.signal, controller.signal),
+    onCompletionMetadata,
+    state,
+    maxTokens,
+    maxCost
+  };
+}
+
+function buildComplexModelAuthoringHint(strategy, quality) {
+  const qualityLine = `Complex-model quality target: ${quality}. Treat it as a completion target, not a fixed round count.`;
+  if (strategy === "full-coordinates") {
+    return [
+      "COMPLEX MODEL STRATEGY (mandatory): full-coordinates.",
+      qualityLine,
+      "When the request needs a free-form complex model, author the complete raw bufferMesh attributes and indices requested by the user. Do not replace it with primitive assemblies, an external asset, or editableMesh merely because the coordinate output is long.",
+      "Use segmented scene output when transport requires continuation; continue until the JSON and mesh transaction are complete. There is no engine-owned vertex, triangle, byte, or continuation-round limit."
+    ].join("\n");
+  }
+  if (strategy === "progressive") {
+    return [
+      "COMPLEX MODEL STRATEGY (mandatory): progressive.",
+      qualityLine,
+      "Represent free-form models as editableMesh control topology with stable vertex/face IDs, semantic parts, and deterministic modifiers. Produce a useful coarse model first, then refine only the affected parts with mesh.inspect, mesh.getTopology and atomic mesh.edit operations.",
+      "When the coarse silhouette/topology is already correct, prefer locally evaluated Catmull-Clark/Loop and optional Smooth modifiers over generating redundant control vertices. Add topology only where silhouette, features, or deformation require it.",
+      "Do not rebuild the entire mesh each step and do not reduce the subject to a pile of boxes, cylinders, or spheres when an editable surface is appropriate. End each refinement response with # continue plus the next concrete stage, or # done when the quality target is met."
+    ].join("\n");
+  }
+  return [
+    "COMPLEX MODEL STRATEGY: automatic.",
+    qualityLine,
+    "Choose the least complex representation that faithfully expresses the final shape: primitives/native geometry/instancing/CSG for exact regular forms, compact surfaces or editableMesh for free-form progressive work, and raw bufferMesh when complete coordinates are appropriate. Never downgrade a complex subject to primitive assemblies solely to shorten output, and never use a complex mesh merely because quality is requested."
+  ].join("\n");
 }
 
 /** Scene hosts pass a JSON envelope so routing/capability metadata reaches the generation prompt.
@@ -229,8 +367,9 @@ async function runSceneAgentCommandsUpdate(params) {
     createOutputStreamOptions
   } = params;
 
-  const maxCommandRounds =
-    preset.maxRefineRounds ?? Math.max(preset.maxRepairAttempts ?? 1, 4);
+  // This path returns one usable update. Extra attempts repair invalid provider output; they are
+  // not scene-quality/refinement rounds and therefore do not inherit a quality budget.
+  const maxCommandAttempts = Math.max(1, preset.maxCommandRepairAttempts ?? 3);
   let round = 0;
   let lastError = "";
   let lastRawContent = "";
@@ -244,21 +383,20 @@ async function runSceneAgentCommandsUpdate(params) {
   // attempts, and this avoids refetching on every round.
   const referenceMaterial = await resolveAgentReferenceMaterial(userPrompt, chatOptions);
 
-  while (round < maxCommandRounds) {
+  while (round < maxCommandAttempts) {
     round += 1;
     const isRepair = Boolean(lastError);
     setStepIndex(getStepIndex() + 1);
     const progressMessage = isRepair
-      ? `Command repair (${round}/${maxCommandRounds}): ${lastError}`
+      ? `Repairing an invalid command response: ${lastError}`
       : baseContext.objectGetFeedback && round > 1
-        ? `Continuing after scene inspection (${round}/${maxCommandRounds})...`
+        ? "Continuing after scene inspection..."
         : "Generating scene edit commands...";
     emitProgress(
       {
         step: getStepIndex(),
         kind: isRepair ? "repair" : baseContext.objectGetFeedback && round > 1 ? "explore" : "commands",
         round,
-        maxRounds: maxCommandRounds,
         error: isRepair ? lastError : undefined,
         message: progressMessage
       },
@@ -436,7 +574,7 @@ async function runSceneAgentCommandsUpdate(params) {
     };
   }
 
-  throw new Error(lastError || `Command agent failed after ${maxCommandRounds} round(s).`);
+  throw new Error(lastError || "The command provider repeatedly returned unusable output.");
 }
 
 /**
@@ -467,7 +605,7 @@ async function runSceneAgentCommandsUpdateIterative(params) {
     throw new Error("iterativeApply requires applyCommands and refreshContext callbacks.");
   }
 
-  const maxRefineRounds = preset.maxRefineRounds ?? 4;
+  const maxRefineRounds = preset.maxRefineRounds;
   const baseContext = {
     ...updateContext,
     currentSceneJsonString
@@ -478,11 +616,20 @@ async function runSceneAgentCommandsUpdateIterative(params) {
   let anySceneMutated = false;
   const appliedCommands = [];
   let previousMutatingSignature = "";
+  let previousReadbackSignature = "";
+  let consecutiveNoProgress = 0;
+  let refineRound = 0;
+  let explicitBudgetExhausted = false;
 
   // Resolved once for the whole turn — see runSceneAgentCommandsUpdate's matching comment.
   const referenceMaterial = await resolveAgentReferenceMaterial(userPrompt, chatOptions);
 
-  for (let refineRound = 1; refineRound <= maxRefineRounds; refineRound += 1) {
+  while (true) {
+    if (maxRefineRounds && refineRound >= maxRefineRounds) {
+      explicitBudgetExhausted = true;
+      break;
+    }
+    refineRound += 1;
     chatOptions?.signal?.throwIfAborted?.();
     setStepIndex(getStepIndex() + 1);
     emitProgress(
@@ -490,8 +637,9 @@ async function runSceneAgentCommandsUpdateIterative(params) {
         step: getStepIndex(),
         kind: "refine",
         round: refineRound,
-        maxRounds: maxRefineRounds,
-        message: `Agent refine round ${refineRound}/${maxRefineRounds}...`
+        message: refineRound === 1
+          ? "Applying the requested scene adjustment..."
+          : "Continuing the next meaningful scene adjustment..."
       },
       onProgress
     );
@@ -528,6 +676,9 @@ async function runSceneAgentCommandsUpdateIterative(params) {
     if (lastError) {
       context.userMessage = `${context.userMessage}\n\nPrevious error: ${lastError}`;
     }
+    if (Array.isArray(baseContext.visualFeedback) && baseContext.visualFeedback.length > 0) {
+      context.visualFeedback = baseContext.visualFeedback;
+    }
 
     let commandResult;
     try {
@@ -544,12 +695,15 @@ async function runSceneAgentCommandsUpdateIterative(params) {
         singleRound: false,
         maxTokens: preset.commandMaxTokens
       });
+      baseContext.visualFeedback = [];
     } catch (err) {
       if (isSceneOutputLimitError(err)) {
         throw err;
       }
       lastError = String(err?.message || err);
       steps.push({ kind: "refine", round: refineRound, ok: false, error: lastError });
+      consecutiveNoProgress += 1;
+      if (consecutiveNoProgress >= MAX_CONSECUTIVE_NO_PROGRESS) break;
       continue;
     }
 
@@ -576,6 +730,8 @@ async function runSceneAgentCommandsUpdateIterative(params) {
         };
       }
       lastError = validation.error || "Scene JSON validation failed.";
+      consecutiveNoProgress += 1;
+      if (consecutiveNoProgress >= MAX_CONSECUTIVE_NO_PROGRESS) break;
       continue;
     }
 
@@ -594,6 +750,8 @@ async function runSceneAgentCommandsUpdateIterative(params) {
       if (priorRoundError && appliedRounds === 0) {
         lastError = priorRoundError;
         steps.push({ kind: "refine_done", round: refineRound, ok: false, error: priorRoundError });
+        consecutiveNoProgress += 1;
+        if (consecutiveNoProgress >= MAX_CONSECUTIVE_NO_PROGRESS) break;
         continue;
       }
       steps.push({ kind: "refine_done", round: refineRound, ok: true, appliedRounds });
@@ -616,6 +774,8 @@ async function runSceneAgentCommandsUpdateIterative(params) {
     if (commandListIsEmptyOrCommentsOnly(commands)) {
       lastError = "Output mutating commands or # done when finished.";
       steps.push({ kind: "refine", round: refineRound, ok: false, error: lastError });
+      consecutiveNoProgress += 1;
+      if (consecutiveNoProgress >= MAX_CONSECUTIVE_NO_PROGRESS) break;
       continue;
     }
 
@@ -624,6 +784,8 @@ async function runSceneAgentCommandsUpdateIterative(params) {
       const fail = dryRun.results?.find((item) => !item.ok);
       lastError = fail?.error || "Command dry-run failed.";
       steps.push({ kind: "refine", round: refineRound, ok: false, error: lastError });
+      consecutiveNoProgress += 1;
+      if (consecutiveNoProgress >= MAX_CONSECUTIVE_NO_PROGRESS) break;
       continue;
     }
 
@@ -657,6 +819,8 @@ async function runSceneAgentCommandsUpdateIterative(params) {
     if (!applied.ok) {
       lastError = applied.error || "Command apply failed.";
       steps.push({ kind: "refine", round: refineRound, ok: false, error: lastError });
+      consecutiveNoProgress += 1;
+      if (consecutiveNoProgress >= MAX_CONSECUTIVE_NO_PROGRESS) break;
       continue;
     }
 
@@ -664,6 +828,9 @@ async function runSceneAgentCommandsUpdateIterative(params) {
       baseContext.objectGetFeedback = [baseContext.objectGetFeedback, applied.objectGetFeedback]
         .filter(Boolean)
         .join("\n\n");
+    }
+    if (Array.isArray(applied.visualFeedback) && applied.visualFeedback.length > 0) {
+      baseContext.visualFeedback = applied.visualFeedback;
     }
 
     const fresh = await refreshContext();
@@ -679,6 +846,14 @@ async function runSceneAgentCommandsUpdateIterative(params) {
 
     if (readOnly) {
       steps.push({ kind: "explore", round: refineRound, ok: true, count: commands.length });
+      const readbackSignature = String(applied.objectGetFeedback || "").trim();
+      if (readbackSignature && readbackSignature !== previousReadbackSignature) {
+        previousReadbackSignature = readbackSignature;
+        consecutiveNoProgress = 0;
+      } else {
+        consecutiveNoProgress += 1;
+      }
+      if (consecutiveNoProgress >= MAX_CONSECUTIVE_NO_PROGRESS) break;
       continue;
     }
 
@@ -686,10 +861,13 @@ async function runSceneAgentCommandsUpdateIterative(params) {
       previousMutatingSignature = mutatingSignature;
       lastError = "The command batch reported success, but the refreshed scene JSON did not change.";
       steps.push({ kind: "refine_apply", round: refineRound, ok: false, count: commands.length, error: lastError });
+      consecutiveNoProgress += 1;
+      if (consecutiveNoProgress >= MAX_CONSECUTIVE_NO_PROGRESS) break;
       continue;
     }
 
     previousMutatingSignature = mutatingSignature;
+    consecutiveNoProgress = 0;
     appliedRounds += 1;
     anySceneMutated = true;
     appliedCommands.push(...commands);
@@ -698,7 +876,7 @@ async function runSceneAgentCommandsUpdateIterative(params) {
         step: getStepIndex(),
         kind: "commands_applied",
         round: refineRound,
-        message: `Applied round ${refineRound} to scene.`,
+        message: "Applied the latest refinement to the scene.",
         sceneMutated: true
       },
       onProgress
@@ -712,10 +890,9 @@ async function runSceneAgentCommandsUpdateIterative(params) {
         setStepIndex,
         stage: "adjustment_refinement",
         round: refineRound,
-        maxRounds: maxRefineRounds,
         commands,
         outputMode: commandResult.outputMode,
-        message: `Adjustment refinement preview ${refineRound}.`
+        message: "The latest adjustment is visible."
       });
     }
 
@@ -775,12 +952,12 @@ async function runSceneAgentCommandsUpdateIterative(params) {
       sceneMutated: anySceneMutated,
       execOk: true,
       completed: false,
-      stopReason: "budget_exhausted",
+      stopReason: explicitBudgetExhausted ? "budget_exhausted" : "no_progress",
       tokenHint: { rounds: getStepIndex(), depth, maxSteps: preset.maxSteps }
     };
   }
 
-  throw new Error(lastError || "Iterative agent finished without applying changes.");
+  throw new Error(lastError || "The provider repeatedly made no usable progress.");
 }
 
 async function runAutomaticDraftRefinement(params) {
@@ -801,10 +978,20 @@ async function runAutomaticDraftRefinement(params) {
   let current = initialSceneJsonString;
   let feedback = "";
   let completed = false;
-  let stopReason = "budget_exhausted";
+  let stopReason = "model_done";
   let previousOutputSignature = "";
+  let consecutiveNoProgress = 0;
+  let round = 0;
+  let explicitBudgetExhausted = false;
+  let visualFeedback = [];
 
-  for (let round = 1; round <= maxRounds; round += 1) {
+  while (true) {
+    if (maxRounds && round >= maxRounds) {
+      explicitBudgetExhausted = true;
+      stopReason = "budget_exhausted";
+      break;
+    }
+    round += 1;
     chatOptions?.signal?.throwIfAborted?.();
     setStepIndex(getStepIndex() + 1);
     emitProgress(
@@ -812,8 +999,9 @@ async function runAutomaticDraftRefinement(params) {
         step: getStepIndex(),
         kind: "draft_refinement",
         round,
-        maxRounds,
-        message: `Improving the draft (step ${round})...`
+        message: round === 1
+          ? "Refining the visible structural draft..."
+          : "Building the next requested model or scene detail..."
       },
       onProgress
     );
@@ -826,7 +1014,8 @@ async function runAutomaticDraftRefinement(params) {
       const context = {
         currentSceneJsonString: current,
         objectSpatialCards: spatial.cards,
-        sceneScaleProfile
+        sceneScaleProfile,
+        visualFeedback
       };
       context.userMessage = [
         buildSceneCommandUpdateUserMessage({
@@ -854,9 +1043,15 @@ async function runAutomaticDraftRefinement(params) {
         singleRound: false,
         maxTokens: preset.repairMaxTokens ?? preset.generateMaxTokens
       });
+      visualFeedback = [];
     } catch (error) {
       feedback = String(error?.message || error);
       steps.push({ kind: "draft_refinement", round, ok: false, error: feedback });
+      consecutiveNoProgress += 1;
+      if (consecutiveNoProgress >= MAX_CONSECUTIVE_NO_PROGRESS) {
+        stopReason = "no_progress";
+        break;
+      }
       continue;
     }
 
@@ -882,6 +1077,7 @@ async function runAutomaticDraftRefinement(params) {
     previousOutputSignature = outputSignature;
 
     let candidate = refinement.sceneJsonString || "";
+    let appliedFeedback = "";
     if (refinement.outputMode === "commands") {
       try {
         if (typeof applyDraftCommands !== "function") {
@@ -900,6 +1096,10 @@ async function runAutomaticDraftRefinement(params) {
         if (applied && typeof applied === "object" && applied.ok === false) {
           throw new Error(applied.error || "Draft refinement commands failed.");
         }
+        appliedFeedback = typeof applied?.objectGetFeedback === "string"
+          ? applied.objectGetFeedback.trim()
+          : "";
+        visualFeedback = Array.isArray(applied?.visualFeedback) ? applied.visualFeedback : [];
       } catch (error) {
         feedback = String(error?.message || error);
         steps.push({
@@ -909,6 +1109,29 @@ async function runAutomaticDraftRefinement(params) {
           ok: false,
           error: feedback
         });
+        consecutiveNoProgress += 1;
+        if (consecutiveNoProgress >= MAX_CONSECUTIVE_NO_PROGRESS) {
+          stopReason = "no_progress";
+          break;
+        }
+        continue;
+      }
+      if (!commandListHasMutatingOp(refinement.commands)) {
+        if (!appliedFeedback && visualFeedback.length === 0) {
+          feedback = "The read-only mesh inspection returned no usable feedback. Inspect a valid mesh/part or output a mutating mesh.edit batch.";
+          consecutiveNoProgress += 1;
+          if (consecutiveNoProgress >= MAX_CONSECUTIVE_NO_PROGRESS) {
+            stopReason = "no_progress";
+            break;
+          }
+        } else {
+          feedback = [
+            appliedFeedback,
+            "Use these inspection results to output the next concrete mesh.edit batch, or # done if the selected quality target is already met."
+          ].filter(Boolean).join("\n\n");
+          consecutiveNoProgress = 0;
+        }
+        steps.push({ kind: "draft_refinement_explore", round, ok: true, count: refinement.commands?.length || 0 });
         continue;
       }
     }
@@ -929,6 +1152,11 @@ async function runAutomaticDraftRefinement(params) {
     });
     if (!validation.ok) {
       feedback = validation.error || "Refined scene JSON is invalid.";
+      consecutiveNoProgress += 1;
+      if (consecutiveNoProgress >= MAX_CONSECUTIVE_NO_PROGRESS) {
+        stopReason = "no_progress";
+        break;
+      }
       continue;
     }
 
@@ -940,7 +1168,11 @@ async function runAutomaticDraftRefinement(params) {
     }
 
     current = candidate;
-    feedback = "The previous refinement was applied successfully. Continue only if another meaningful improvement is needed.";
+    consecutiveNoProgress = 0;
+    feedback = [
+      appliedFeedback,
+      "The previous refinement was applied successfully. Continue only if another meaningful improvement is needed."
+    ].filter(Boolean).join("\n\n");
     emitStagePreview({
       sceneJsonString: current,
       onProgress,
@@ -948,10 +1180,9 @@ async function runAutomaticDraftRefinement(params) {
       setStepIndex,
       stage: "draft_refinement",
       round,
-      maxRounds,
       commands: refinement.outputMode === "commands" ? refinement.commands : undefined,
       outputMode: refinement.outputMode,
-      message: `Draft refinement preview ${round} (${refinement.outputMode}).`
+      message: "The latest model refinement is visible."
     });
     if (modelSaysDone) {
       steps.push({ kind: "draft_refinement_done", round, ok: true });
@@ -959,10 +1190,19 @@ async function runAutomaticDraftRefinement(params) {
       stopReason = "model_done";
       break;
     }
+    const responseWasCutOff = completionReasonIndicatesCutoff(refinement.finishReason);
+    if (!commandScriptRequestsContinuation(rawRefinement) && !responseWasCutOff) {
+      steps.push({ kind: "draft_refinement_done", round, ok: true, reason: "implicit_complete" });
+      completed = true;
+      stopReason = "implicit_complete";
+      break;
+    }
   }
 
-  if (!completed) {
+  if (!completed && explicitBudgetExhausted) {
     steps.push({ kind: "draft_refinement_budget_exhausted", ok: true, maxRounds });
+  } else if (!completed) {
+    steps.push({ kind: "draft_refinement_stopped", ok: false, reason: stopReason });
   }
   return { sceneJsonString: current, completed, stopReason };
 }
@@ -1082,9 +1322,15 @@ async function runSceneAgent(input = {}, options = {}) {
   const prompt = String(input.prompt || "").trim();
   const userRequest = extractUserRequest(prompt);
   const { maxRefineRounds } = normalizeAgentOptions(options.agent);
-  const requestedExecutionMode = normalizeExecutionMode(options.executionMode ?? options.agent?.executionMode);
+  const complexModelStrategy = normalizeComplexModelStrategy(
+    options.complexModelStrategy ?? options.agent?.complexModelStrategy
+  );
+  const modelQuality = normalizeModelQuality(options.modelQuality ?? options.agent?.modelQuality);
+  const requestedExecutionMode = complexModelStrategy === "progressive"
+    ? "draft_refine"
+    : normalizeExecutionMode(options.executionMode ?? options.agent?.executionMode);
   const refinementGoals = Array.isArray(options.refinementGoals)
-    ? [...new Set(options.refinementGoals.map((goal) => String(goal || "").trim()).filter(Boolean))].slice(0, 4)
+    ? [...new Set(options.refinementGoals.map((goal) => String(goal || "").trim()).filter(Boolean))]
     : [];
   // Fixed metadata label — there is no more "depth" concept to report (see the module docblock);
   // kept only so tokenHint's shape doesn't change for anything reading it.
@@ -1098,9 +1344,11 @@ async function runSceneAgent(input = {}, options = {}) {
   // prevents intent/outline/review calls from being concatenated with scene JSON, commands or
   // JSON Patch while still allowing every user-visible authoring round to stream independently.
   const rawOnDelta = typeof options.onDelta === "function" ? options.onDelta : undefined;
+  const modelBudgetMonitor = createModelBudgetMonitor(options);
   const chatTransport = {
     stream: options.stream === true,
-    signal: options.signal,
+    signal: modelBudgetMonitor.signal,
+    onCompletionMetadata: modelBudgetMonitor.onCompletionMetadata,
     onDelta:
       streamPreview && typeof onProgress === "function"
         ? (previewDelta) => {
@@ -1138,12 +1386,13 @@ async function runSceneAgent(input = {}, options = {}) {
       }
     };
   };
-  const configuredTurnTimeoutMs = Number(options.turnTimeoutMs);
+  const configuredTurnTimeoutMs = Number(
+    options.turnTimeoutMs ?? options.modelBudget?.maxTimeMs ?? options.agent?.modelBudget?.maxTimeMs
+  );
   if (!(Number.isFinite(Number(chatOptions.turnDeadlineAt)) && Number(chatOptions.turnDeadlineAt) > 0)) {
-    const turnTimeoutMs = Number.isFinite(configuredTurnTimeoutMs) && configuredTurnTimeoutMs > 0
-      ? Math.max(1000, Math.min(600000, Math.round(configuredTurnTimeoutMs)))
-      : 180000;
-    chatOptions.turnDeadlineAt = Date.now() + turnTimeoutMs;
+    if (Number.isFinite(configuredTurnTimeoutMs) && configuredTurnTimeoutMs > 0) {
+      chatOptions.turnDeadlineAt = Date.now() + Math.max(1000, Math.round(configuredTurnTimeoutMs));
+    }
   }
   const applyDraftCommands = options.applyDraftCommands;
   delete chatOptions.agent;
@@ -1194,7 +1443,11 @@ async function runSceneAgent(input = {}, options = {}) {
   const tokenBudget = options.tokenBudget && typeof options.tokenBudget === "object"
     ? options.tokenBudget
     : {};
-  const commonMaxTokens = resolveOptionalTokenLimit(options.maxTokens, tokenBudget.maxTokens);
+  const commonMaxTokens = resolveOptionalTokenLimit(
+    options.maxTokens,
+    tokenBudget.maxTokens,
+    modelBudgetMonitor.maxTokens
+  );
   const preset = {
     maxSteps: maxRefineRounds,
     maxRefineRounds,
@@ -1238,7 +1491,8 @@ async function runSceneAgent(input = {}, options = {}) {
     runCapabilityReview: true,
     runLayoutReview: options.agent?.layoutReview === true,
     maxCapabilityReviewAttempts: MAX_CAPABILITY_REVIEW_ATTEMPTS,
-    maxRepairAttempts: MAX_REPAIR_ATTEMPTS
+    maxRepairAttempts: MAX_REPAIR_ATTEMPTS,
+    maxCommandRepairAttempts: MAX_CONSECUTIVE_NO_PROGRESS
   };
   let outline = "";
   let sceneJsonString = "";
@@ -1341,6 +1595,7 @@ async function runSceneAgent(input = {}, options = {}) {
   // this generate/repair path already passes prompt as free text to generateSceneJsonString /
   // updateSceneJsonString.
   const referenceMaterial = await resolveAgentReferenceMaterial(userRequest, chatOptions);
+  const complexModelHint = buildComplexModelAuthoringHint(complexModelStrategy, modelQuality);
 
   const buildInitialPrompt = () => {
     const draftHint =
@@ -1352,12 +1607,15 @@ async function runSceneAgent(input = {}, options = {}) {
             "Return one complete valid standard scheme-B JSON document. Use compact JSON formatting and ensure syntactic closure before adding secondary content.",
             "Keep only the primary visual anchors needed for a useful first render. Consolidate repeated elements with instancedList/transforms, bounded representative samples, and reusable materials; do not obey or invent an arbitrary token or object-count quota.",
             "Include every primary subject, semantically accurate materials, requested primary animation, basic lighting, and a fitted camera now. Do not invent texture URLs; a separate host pipeline acquires trusted textures after this draft is visible. Defer secondary props, decoration, and large populations to later incremental command rounds.",
+            "For a genuinely free-form primary subject, make the draft a recognizable low-density editableMesh or compact surface that remains the source for later refinement. Do not build a disposable primitive proxy merely to ask for confirmation before starting the real mesh.",
+            "Primitive/CSG blockouts are appropriate for scene layout, hard-surface assemblies, and objects whose final shape they already express faithfully. They are not a mandatory pre-stage for every complex model.",
             "Do not expand every outline bullet into separate objects and do not create a visually unreadable placeholder."
           ].join("\n")
         : "\n\nReturn the complete, immediately usable scene now. Include semantically accurate materials, requested animation, lighting, and a fitted camera; do not invent texture URLs or reserve ordinary scene work for later review rounds. A separate host pipeline may acquire trusted textures after first render.";
     return (
       (outline && effectiveExecutionMode === "draft_refine" ? `${prompt}\n\nFollow this outline:\n${outline}` : prompt) +
       (mode === "generate" || mode === "fromImage" ? draftHint : "") +
+      (mode === "generate" || mode === "fromImage" ? `\n\n${complexModelHint}` : "") +
       (referenceMaterial ? `\n\n${referenceMaterial}` : "")
     );
   };
@@ -1380,7 +1638,10 @@ async function runSceneAgent(input = {}, options = {}) {
       // A direct cutoff switches policies immediately instead of repeating another whole final
       // scene. A structural draft is already the incremental policy, so a genuine cutoff restarts
       // under the compact segmented-continuation protocol instead of becoming a visible failure.
-      compactRetryOnTruncation: incrementalDraft,
+      // A user-forced full-coordinate model must stay a full-coordinate model. A provider
+      // cutoff changes only the transport: restart under exact segmented continuation instead
+      // of silently switching representation to a compact control cage or primitive draft.
+      compactRetryOnTruncation: incrementalDraft || complexModelStrategy === "full-coordinates",
       incrementalDraft,
       segmentedOutput:
         effectiveExecutionMode === "draft_refine" ? false : chatOptionsGenerate.segmentedOutput
@@ -1402,6 +1663,7 @@ async function runSceneAgent(input = {}, options = {}) {
   } catch (error) {
     const canEscalate =
       effectiveExecutionMode === "direct" &&
+      complexModelStrategy !== "full-coordinates" &&
       (mode === "generate" || mode === "fromImage") &&
       isSceneOutputLimitError(error);
     if (!canEscalate) throw error;

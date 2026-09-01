@@ -182,11 +182,35 @@ async function captureTemplateThumbnail(jsonUrl) {
 function idleYield() {
   return new Promise((resolve) => {
     if (typeof window.requestIdleCallback === "function") {
-      window.requestIdleCallback(() => resolve(), { timeout: 1000 });
+      // Thumbnails are optional decoration. Never force them through a timeout while the browser
+      // has higher-priority input, layout, or scene work waiting.
+      window.requestIdleCallback(() => resolve());
     } else {
-      setTimeout(resolve, 32);
+      setTimeout(resolve, 800);
     }
   });
+}
+
+function hasPendingUserInput() {
+  try {
+    return navigator.scheduling?.isInputPending?.({ includeContinuous: true }) === true;
+  } catch (_error) {
+    return false;
+  }
+}
+
+function shouldDeferThumbnailTask(task) {
+  return isThreeBoxSceneLoadBusy()
+    || hasPendingUserInput()
+    || task?.shouldDeferBackgroundWork?.() === true;
+}
+
+function retryThumbQueueLater() {
+  thumbQueueScheduled = true;
+  setTimeout(() => {
+    thumbQueueScheduled = false;
+    scheduleThumbQueue();
+  }, 1200);
 }
 
 async function runThumbQueue() {
@@ -197,6 +221,11 @@ async function runThumbQueue() {
   thumbQueueRunning = true;
   const cache = readThumbCache();
   while (thumbQueue.length > 0) {
+    if (shouldDeferThumbnailTask(thumbQueue[0])) {
+      thumbQueueRunning = false;
+      retryThumbQueueLater();
+      return;
+    }
     const task = thumbQueue.shift();
     if (!task.imgEl.isConnected) {
       continue;
@@ -220,26 +249,29 @@ async function runThumbQueue() {
 }
 
 function scheduleThumbQueue() {
-  if (thumbQueueRunning || thumbQueueScheduled) {
+  if (thumbQueue.length === 0 || thumbQueueRunning || thumbQueueScheduled) {
     return;
   }
   thumbQueueScheduled = true;
-  const run = () => {
-    if (isThreeBoxSceneLoadBusy()) {
-      thumbQueueScheduled = false;
-      scheduleThumbQueue();
+  const run = (deadline) => {
+    const task = thumbQueue[0];
+    if (
+      shouldDeferThumbnailTask(task)
+      || (deadline && deadline.timeRemaining() < 8 && !deadline.didTimeout)
+    ) {
+      retryThumbQueueLater();
       return;
     }
     void runThumbQueue();
   };
   if (typeof window.requestIdleCallback === "function") {
-    window.requestIdleCallback(run, { timeout: 2500 });
+    window.requestIdleCallback(run);
   } else {
-    setTimeout(run, 600);
+    setTimeout(run, 1200);
   }
 }
 
-function enqueueThumbnail(jsonUrl, imgEl) {
+function enqueueThumbnail(jsonUrl, imgEl, shouldDeferBackgroundWork) {
   const cache = readThumbCache();
   const cached = cache[jsonUrl];
   if (cached?.dataUrl && Date.now() - (cached.ts || 0) < THUMB_CACHE_TTL_MS) {
@@ -247,11 +279,11 @@ function enqueueThumbnail(jsonUrl, imgEl) {
     imgEl.classList.add("captured");
     return;
   }
-  thumbQueue.push({ jsonUrl, imgEl });
+  thumbQueue.push({ jsonUrl, imgEl, shouldDeferBackgroundWork });
   scheduleThumbQueue();
 }
 
-function getThumbObserver() {
+function getThumbObserver(shouldDeferBackgroundWork) {
   if (thumbObserver) {
     return thumbObserver;
   }
@@ -265,7 +297,7 @@ function getThumbObserver() {
         const jsonUrl = entry.target.dataset.jsonUrl;
         const imgEl = entry.target.querySelector("img");
         if (jsonUrl && imgEl) {
-          enqueueThumbnail(jsonUrl, imgEl);
+          enqueueThumbnail(jsonUrl, imgEl, shouldDeferBackgroundWork);
         }
       }
     },
@@ -275,11 +307,13 @@ function getThumbObserver() {
 }
 
 /**
- * @param {{ onSelectTemplate?: (item: object, payload: object) => void }} [host]
+ * @param {{ onSelectTemplate?: (item: object, payload: object) => void, shouldDeferBackgroundWork?: () => boolean }} [host]
  */
 export function createThreeBoxTemplateGallery(host = {}) {
   const templateGrid = document.getElementById("templateGrid");
   let items = [];
+  let initPromise = null;
+  let initialized = false;
 
   async function loadManifest() {
     const url = resolveSceneHostUrl(MANIFEST_REPO_RELATIVE_PATH);
@@ -353,7 +387,7 @@ export function createThreeBoxTemplateGallery(host = {}) {
     // cards keep the placeholder (or whatever a manual rebuild last captured) instead of
     // recapturing on every visit.
     const autoCaptureEnabled = isThumbAutoCacheEnabled();
-    const observer = autoCaptureEnabled ? getThumbObserver() : null;
+    const observer = autoCaptureEnabled ? getThumbObserver(host.shouldDeferBackgroundWork) : null;
     for (const item of filtered) {
       const card = buildCardEl(item);
       templateGrid.appendChild(card);
@@ -371,14 +405,21 @@ export function createThreeBoxTemplateGallery(host = {}) {
     renderCards(query || "");
   }
 
-  async function init() {
-    try {
-      items = await loadManifest();
-    } catch (error) {
-      console.warn("[threebox template gallery] manifest load failed:", error);
-      items = [];
+  function init() {
+    if (initPromise) {
+      return initPromise;
     }
-    renderCards("");
+    initPromise = (async () => {
+      try {
+        items = await loadManifest();
+      } catch (error) {
+        console.warn("[threebox template gallery] manifest load failed:", error);
+        items = [];
+      }
+      initialized = true;
+      renderCards(lastFilterQuery);
+    })();
+    return initPromise;
   }
 
   /** Re-renders cards after a locale switch so titles/empty-state text pick up the new language,
@@ -386,6 +427,9 @@ export function createThreeBoxTemplateGallery(host = {}) {
    * setting, so toggling it in the settings modal takes effect on the very next save (settings
    * modal calls this via threeBoxApp.js's onSave, same as the locale-switch path). */
   function refresh() {
+    if (!initialized) {
+      return;
+    }
     renderCards(lastFilterQuery);
   }
 
@@ -419,7 +463,11 @@ export function createThreeBoxTemplateGallery(host = {}) {
       const jsonUrl = card.dataset.jsonUrl;
       const imgEl = card.querySelector("img");
       if (jsonUrl && imgEl) {
-        thumbQueue.push({ jsonUrl, imgEl });
+        thumbQueue.push({
+          jsonUrl,
+          imgEl,
+          shouldDeferBackgroundWork: host.shouldDeferBackgroundWork
+        });
       }
     }
     scheduleThumbQueue();

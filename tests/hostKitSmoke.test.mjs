@@ -39,8 +39,8 @@ test("editorSettingsSchema imports resolve through the public threejson/threejso
   assert.equal(mod.EDITOR_SETTINGS_DEFAULTS.editing.boxHelperColor, "#E59520");
   assert.equal(mod.EDITOR_SETTINGS_DEFAULTS.editing.highlightChannels.locate, "#E6A800");
   assert.equal(mod.EDITOR_SETTINGS_DEFAULTS.editing.highlightChannels.alarm, "#DC3A2F");
-  assert.equal(mod.EDITOR_SETTINGS_DEFAULTS.ai.maxAutoRefineRounds, 6);
-  assert.equal(mod.EDITOR_SETTINGS_DEFAULTS.ai.agentPolicyVersion, 2);
+  assert.equal(mod.EDITOR_SETTINGS_DEFAULTS.ai.maxAutoRefineRounds, 0);
+  assert.equal(mod.EDITOR_SETTINGS_DEFAULTS.ai.agentPolicyVersion, 3);
   assert.equal(mod.EDITOR_SETTINGS_DEFAULTS.ai.sceneGenerationMode, "auto");
   assert.equal(mod.EDITOR_SETTINGS_DEFAULTS.ai.sceneMaxOutputTokens, 0);
   assert.equal("agentEnabled" in mod.EDITOR_SETTINGS_DEFAULTS.ai, false);

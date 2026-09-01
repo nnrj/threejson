@@ -36,3 +36,7 @@ import {
 | Add object | `addObjectFromDescriptor(Async)` |
 | Remove object | `removeObjectById` |
 | Undo removal | `addObjectFromDescriptor(removedDescriptor, { parent })` |
+
+## Complex mesh commands
+
+The unified command executor provides `mesh.inspect`, `mesh.getTopology`, `mesh.validate`, `mesh.edit`, `mesh.buffer.*`, `mesh.bake`, and `mesh.renderViews`. They use revisions to reject stale topology writes and publish only after complete validation and prebuilding succeed. See [Complex Meshes and Progressive Modeling](./complex-mesh.md) for arguments, the control-topology schema, binary buffers, and the progressive generation flow.

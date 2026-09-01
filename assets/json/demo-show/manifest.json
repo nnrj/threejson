@@ -122,6 +122,110 @@
     ]
   },
   {
+    "section": "complex-modeling",
+    "sectionTitle": "复杂模型与曲面",
+    "sectionTitleEn": "Complex Models and Surfaces",
+    "items": [
+      {
+        "id": "editable-lounge-chair",
+        "title": "可编辑控制网格：休闲椅",
+        "titleEn": "Editable control cage: lounge chair",
+        "desc": "稳定顶点/面 ID、语义 part、Catmull–Clark 与 Solidify 共同生成连续的家具外壳。",
+        "descEn": "Stable vertex/face IDs, semantic parts, Catmull-Clark, and Solidify form a continuous furniture shell.",
+        "json": "assets/json/demo-show/complex-modeling/editable-lounge-chair.json",
+        "badge": "Editable Mesh",
+        "badgeEn": "Editable Mesh"
+      },
+      {
+        "id": "loft-vehicle-shell",
+        "title": "Loft 车辆外壳",
+        "titleEn": "Lofted vehicle shell",
+        "desc": "用多个自由形截面紧凑描述连续车身，而不是用盒子拼装。",
+        "descEn": "Multiple free-form sections compactly describe a continuous vehicle body instead of a box assembly.",
+        "json": "assets/json/demo-show/complex-modeling/loft-vehicle-shell.json",
+        "badge": "Loft",
+        "badgeEn": "Loft"
+      },
+      {
+        "id": "lathe-mechanical-spindle",
+        "title": "Lathe 精密机械件",
+        "titleEn": "Lathed precision part",
+        "desc": "高密度旋转曲面由紧凑轮廓确定性生成，适合轴、壳体和回转零件。",
+        "descEn": "A compact profile deterministically creates a dense revolved surface for shafts, housings, and turned parts.",
+        "json": "assets/json/demo-show/complex-modeling/lathe-mechanical-spindle.json",
+        "badge": "Lathe",
+        "badgeEn": "Lathe"
+      },
+      {
+        "id": "sweep-bezier-plant",
+        "title": "Sweep + Bézier 植物",
+        "titleEn": "Sweep + Bezier plant",
+        "desc": "曲线路径扫掠枝干，并以 Bézier patch 描述自由形叶片。",
+        "descEn": "Curved sweeps form stems and branches while Bezier patches describe free-form leaves.",
+        "json": "assets/json/demo-show/complex-modeling/sweep-bezier-plant.json",
+        "badge": "Sweep · Bézier",
+        "badgeEn": "Sweep · Bezier"
+      },
+      {
+        "id": "editable-animal-form",
+        "title": "可编辑有机动物形体",
+        "titleEn": "Editable organic animal form",
+        "desc": "低密度语义控制笼细分为连续动物轮廓，可按头部、身体和尾鳍继续局部调整。",
+        "descEn": "A low-density semantic cage subdivides into a continuous animal silhouette, ready for local head, body, and tail refinement.",
+        "json": "assets/json/demo-show/complex-modeling/editable-animal-form.json",
+        "badge": "Subdivision",
+        "badgeEn": "Subdivision"
+      },
+      {
+        "id": "implicit-humanoid",
+        "title": "SDF 连续类人形体",
+        "titleEn": "Continuous SDF humanoid",
+        "desc": "组合隐式曲面经 Marching Tetrahedra 转为连续三角网格，展示非规则几何的紧凑表达。",
+        "descEn": "A composed implicit field becomes a continuous triangle mesh through Marching Tetrahedra, demonstrating compact irregular geometry.",
+        "json": "assets/json/demo-show/complex-modeling/implicit-humanoid.json",
+        "badge": "SDF",
+        "badgeEn": "SDF"
+      },
+      {
+        "id": "implicit-asymmetric-organic",
+        "title": "非对称隐式雕塑",
+        "titleEn": "Asymmetric implicit sculpture",
+        "desc": "平滑并集与差集生成带孔洞、分叉和非对称轮廓的有机模型。",
+        "descEn": "Smooth unions and subtraction create an organic model with a cavity, branching, and an asymmetric silhouette.",
+        "json": "assets/json/demo-show/complex-modeling/implicit-asymmetric-organic.json",
+        "badge": "SDF Boolean",
+        "badgeEn": "SDF Boolean"
+      },
+      {
+        "id": "nurbs-freeform-product",
+        "title": "NURBS 自由曲面产品",
+        "titleEn": "NURBS free-form product",
+        "desc": "带权控制点定义人体工学产品上下壳，运行时生成平滑高密度表面。",
+        "descEn": "Weighted control points define ergonomic upper and lower shells that evaluate to smooth dense surfaces at runtime.",
+        "json": "assets/json/demo-show/complex-modeling/nurbs-freeform-product.json",
+        "badge": "NURBS",
+        "badgeEn": "NURBS"
+      },
+      {
+        "id": "raw-buffer-morph",
+        "title": "完整 BufferGeometry 与 Morph",
+        "titleEn": "Complete BufferGeometry and morph",
+        "desc": "直接描述 position、UV、自定义 attribute、Uint16 index 和 morph target；相同入口也支持 Uint32 与二进制引用。",
+        "descEn": "Directly describes positions, UVs, a custom attribute, Uint16 indices, and a morph target; the same entry supports Uint32 and binary references.",
+        "json": "assets/json/demo-show/complex-modeling/raw-buffer-morph.json",
+        "badge": "Raw Buffer Mesh",
+        "badgeEn": "Raw Buffer Mesh"
+      }
+    ],
+    "docLinks": [
+      {
+        "file": "complex-mesh.md",
+        "label": "复杂模型与渐进建模",
+        "labelEn": "Complex Meshes and Progressive Modeling"
+      }
+    ]
+  },
+  {
     "section": "composition",
     "sectionTitle": "组合",
     "sectionTitleEn": "Composition",

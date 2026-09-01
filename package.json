@@ -32,6 +32,7 @@
     "./commands": "./core/command/index.js",
     "./events": "./core/runtime/eventMechanism/resolveBindSceneEvents.js",
     "./mesh-export": "./core/handler/meshExportHandler.js",
+    "./complex-mesh": "./core/builder/complexMeshCapability.js",
     "./player": "./core/player.js",
     "./resources": "./core/resources.js",
     "./runtime-config": "./core/runtimeConfig.js",
@@ -70,6 +71,7 @@
     "**/core/builder/postprocess/webglAdvancedPasses.js",
     "**/core/builder/particle/particlesRaster.js",
     "**/core/builder/controls/extraControls.js",
+    "**/core/builder/complexMeshCapability.js",
     "**/webgpu/index.js",
     "**/webgpu/tslCode.js"
   ],

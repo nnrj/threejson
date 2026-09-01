@@ -205,6 +205,78 @@ const INTENT_SIGNALS = [
     note: "Use objType native or geometry.type (e.g. TorusKnotGeometry) with parseMode auto|native."
   },
   {
+    id: "complexMesh",
+    patterns: [/complex (?:3d )?(?:model|mesh|shape)|organic (?:model|mesh|shape)|freeform (?:model|surface)|detailed (?:model|mesh)|smooth (?:character|creature|vehicle body|product shell)|复杂(?:三维|3D)?(?:模型|网格|曲面)|有机(?:模型|造型|曲面)|自由曲面|精细(?:模型|网格)|平滑(?:外壳|角色|动物|人体)/i],
+    lists: ["objectList", "editableMeshList", "bufferMeshList"],
+    objTypes: ["editableMesh", "bufferMesh", "parametricSurface", "nurbsSurface", "bezierPatch", "loftMesh", "sweepMesh", "implicitSurface"],
+    selectionIds: ["complexMesh", "editableMesh", "meshModeling", "subdivisionSurface"],
+    requiredWhenMatched: true,
+    note: "Represent genuinely free-form geometry with editableMesh control topology, a compact surface/SDF descriptor, or raw bufferMesh coordinates. Do not downgrade it to primitive blocks merely because explicit coordinates are longer, and do not select this capability when primitives/native geometry/CSG already express the final form exactly."
+  },
+  {
+    id: "rawBufferMesh",
+    patterns: [/\bBufferGeometry\b|\bbufferMesh\b|raw (?:mesh|vertices|coordinates)|explicit (?:vertices|triangles|coordinates)|完整坐标|原始网格|显式(?:顶点|坐标|三角面)|直接输出.{0,8}(?:顶点|坐标)/i],
+    lists: ["objectList", "bufferMeshList"],
+    objTypes: ["bufferMesh"],
+    selectionIds: ["complexMesh", "rawBufferMesh"],
+    requiredWhenMatched: true,
+    note: "Use objType bufferMesh with complete geometry.attributes/index/groups/morphAttributes. Honor an explicit full-coordinate request; never replace it with a simplified primitive or external asset."
+  },
+  {
+    id: "editableMesh",
+    patterns: [/\beditableMesh\b|control (?:mesh|cage|topology)|stable vertex ids?|semantic parts?|控制网格|控制笼|拓扑编辑|稳定(?:顶点|面)ID|语义部件/i],
+    lists: ["objectList", "editableMeshList"],
+    objTypes: ["editableMesh"],
+    selectionIds: ["complexMesh", "editableMesh", "meshModeling"],
+    requiredWhenMatched: true,
+    note: "Use objType editableMesh with stable vertex/face IDs, semantic part names, edges/creases and modifiers. Refine it through mesh.inspect/getTopology/validate/edit rather than rewriting the full mesh."
+  },
+  {
+    id: "subdivisionSurface",
+    patterns: [/subdivision surface|Catmull.?Clark|Loop subdivision|subdivide the mesh|细分曲面|Catmull.?Clark|Loop细分|网格细分/i],
+    lists: ["objectList", "editableMeshList"],
+    objTypes: ["editableMesh"],
+    selectionIds: ["complexMesh", "editableMesh", "subdivisionSurface"],
+    requiredWhenMatched: true,
+    note: "Use an editableMesh control cage plus Catmull-Clark (quad/n-gon) or Loop (triangle) modifier; the low-density topology remains the JSON source and the dense result is deterministic local runtime output. Prefer this local refinement when the silhouette is already correct instead of generating redundant control vertices."
+  },
+  {
+    id: "parametricSurface",
+    patterns: [/parametric surface|NURBS|B[eé]zier patch|lathe|loft|sweep surface|参数曲面|参数化曲面|NURBS|贝塞尔曲面|旋转成型|放样|扫掠/i],
+    lists: ["objectList"],
+    objTypes: ["parametricSurface", "nurbsSurface", "bezierPatch", "latheMesh", "loftMesh", "sweepMesh"],
+    selectionIds: ["complexMesh", "parametricSurface"],
+    requiredWhenMatched: true,
+    note: "Use parametricSurface, nurbsSurface, bezierPatch, latheMesh, loftMesh, or sweepMesh when the shape is compactly and deterministically described as a surface."
+  },
+  {
+    id: "implicitSurface",
+    patterns: [/implicit surface|signed distance|\bSDF\b|marching cubes|metaballs?|隐式曲面|有向距离|距离场|Marching Cubes|融球/i],
+    lists: ["objectList"],
+    objTypes: ["implicitSurface"],
+    selectionIds: ["complexMesh", "implicitSurface"],
+    requiredWhenMatched: true,
+    note: "Use objType implicitSurface with a composable SDF tree or scalar field, explicit bounds and resolution. ThreeJSON evaluates it to triangles without a synthetic mesh-size cap."
+  },
+  {
+    id: "meshModeling",
+    patterns: [/extrude faces?|inset faces?|bevel edges?|bridge loops?|loop cut|edit (?:vertices|faces|topology)|挤出面|内插面|倒角|桥接边环|环切|编辑(?:顶点|面|拓扑)/i],
+    lists: ["objectList", "editableMeshList"],
+    objTypes: ["editableMesh"],
+    selectionIds: ["complexMesh", "editableMesh", "meshModeling"],
+    requiredWhenMatched: true,
+    note: "Use mesh.edit atomic operations with baseRevision for vertex/face edits, semantic parts, creases, extrude, inset, bevel, bridge, loop-cut, mirror and modifier changes."
+  },
+  {
+    id: "meshMorph",
+    patterns: [/morph target|blend shape|shape key|morph animation|变形目标|形态键|混合形状|网格变形动画/i],
+    lists: ["objectList", "bufferMeshList"],
+    objTypes: ["bufferMesh", "externalModel"],
+    selectionIds: ["complexMesh", "meshMorph"],
+    requiredWhenMatched: true,
+    note: "Use bufferMesh geometry.morphAttributes plus morphTargetsRelative/morphInfluences, or a loaded model's existing morph targets controlled through morph.list/morph.set."
+  },
+  {
     id: "cameraControl",
     patterns: [/orthographic|ortho|isometric|bird.?eye|fly controls|fly mode|正交相机|俯视|飞行控制/i],
     lists: ["objectList"],

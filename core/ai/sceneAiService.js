@@ -307,13 +307,50 @@ function createEmptyChatCompletionError({ finishReason = null, reasoningChars = 
   return error;
 }
 
+function normalizeCompletionUsage(rawUsage, completionChars = 0) {
+  const usage = rawUsage && typeof rawUsage === "object" ? rawUsage : {};
+  const finite = (...values) => {
+    for (const value of values) {
+      const numeric = Number(value);
+      if (Number.isFinite(numeric) && numeric >= 0) return numeric;
+    }
+    return undefined;
+  };
+  const promptTokens = finite(usage.prompt_tokens, usage.input_tokens, usage.promptTokens, usage.inputTokens);
+  const completionTokens = finite(
+    usage.completion_tokens,
+    usage.output_tokens,
+    usage.completionTokens,
+    usage.outputTokens
+  );
+  const totalTokens = finite(
+    usage.total_tokens,
+    usage.totalTokens,
+    promptTokens !== undefined && completionTokens !== undefined
+      ? promptTokens + completionTokens
+      : undefined
+  );
+  const cost = finite(usage.cost, usage.total_cost, usage.totalCost);
+  const normalized = {
+    ...(promptTokens !== undefined ? { promptTokens } : {}),
+    ...(completionTokens !== undefined ? { completionTokens } : {}),
+    ...(totalTokens !== undefined ? { totalTokens } : {}),
+    ...(cost !== undefined ? { cost } : {}),
+    // Some OpenAI-compatible gateways omit usage, especially for SSE. This estimate is exposed
+    // as an estimate (never disguised as provider accounting) so an explicitly configured host
+    // budget can still stop a runaway output loop instead of being silently ignored.
+    estimatedCompletionTokens: Math.max(0, Math.ceil(Number(completionChars || 0) / 4))
+  };
+  return normalized;
+}
+
 /**
  * Read an OpenAI-compatible streaming response. Besides standard SSE deltas, tolerate two common
  * compatibility behaviours: a final event without a trailing newline, and a provider that ignores
  * `stream: true` and returns one ordinary JSON chat completion instead.
  * @param {ReadableStream<Uint8Array>} body
  * @param {(chunk: string) => void} [onDelta]
- * @param {(metadata:{finishReason:string|null,reasoningChars?:number,reasoningTokens?:number|null})=>void} [onCompletionMetadata]
+ * @param {(metadata:{finishReason:string|null,reasoningChars?:number,reasoningTokens?:number|null,usage?:object})=>void} [onCompletionMetadata]
  * @returns {Promise<string>}
  */
 async function readSseChatCompletionStream(body, onDelta, onCompletionMetadata) {
@@ -325,6 +362,7 @@ async function readSseChatCompletionStream(body, onDelta, onCompletionMetadata) 
   let finishReason = null;
   let reasoningChars = 0;
   let reasoningTokens = null;
+  let rawUsage = null;
   let sawSsePayload = false;
 
   const appendChoice = (json) => {
@@ -341,6 +379,9 @@ async function readSseChatCompletionStream(body, onDelta, onCompletionMetadata) 
     const rawReasoningTokens = json?.usage?.completion_tokens_details?.reasoning_tokens;
     if (typeof rawReasoningTokens === "number" && Number.isFinite(rawReasoningTokens)) {
       reasoningTokens = Math.max(0, rawReasoningTokens);
+    }
+    if (json?.usage && typeof json.usage === "object") {
+      rawUsage = { ...(rawUsage || {}), ...json.usage };
     }
     const delta = extractChatCompletionChoiceContent(choice);
     if (delta) {
@@ -412,7 +453,12 @@ async function readSseChatCompletionStream(body, onDelta, onCompletionMetadata) 
   }
 
   if (typeof onCompletionMetadata === "function") {
-    onCompletionMetadata({ finishReason, reasoningChars, reasoningTokens });
+    onCompletionMetadata({
+      finishReason,
+      reasoningChars,
+      reasoningTokens,
+      usage: normalizeCompletionUsage(rawUsage, content.length)
+    });
   }
   if (!content.trim()) {
     throw createEmptyChatCompletionError({ finishReason, reasoningChars, reasoningTokens });
@@ -673,7 +719,10 @@ async function requestChatCompletion({
       });
     }
     if (typeof onCompletionMetadata === "function") {
-      onCompletionMetadata({ finishReason: data?.choices?.[0]?.finish_reason || null });
+      onCompletionMetadata({
+        finishReason: data?.choices?.[0]?.finish_reason || null,
+        usage: normalizeCompletionUsage(data?.usage, content.length)
+      });
     }
     return content;
   } finally {
@@ -736,8 +785,6 @@ async function dryRunUpdateCommands(commands, sceneJsonString) {
   });
 }
 
-const DEFAULT_MAX_SCENE_SEGMENTS = 16;
-const HARD_MAX_SCENE_SEGMENTS = 64;
 const DEFAULT_AUTO_CONTINUE_MIN_CHARS = 8000;
 const SCENE_SEGMENT_CONTINUE_MARKER = "<<<THREEJSON_CONTINUE>>>";
 const SCENE_SEGMENT_COMPLETE_MARKER = "<<<THREEJSON_COMPLETE>>>";
@@ -856,6 +903,15 @@ function isSceneOutputCutoff(content, completionMetadata, options) {
   return String(content || "").length >= minChars;
 }
 
+function normalizeOptionalPositiveInteger(value) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? Math.max(1, Math.round(number)) : undefined;
+}
+
+function normalizeAdvisorySegmentEstimate(value, fallback = 1) {
+  return normalizeOptionalPositiveInteger(value) ?? Math.max(1, Math.round(Number(fallback) || 1));
+}
+
 function shouldRetryCompactSceneOutput(content, completionMetadata, options) {
   return options.compactRetryOnTruncation !== false &&
     isSceneOutputCutoff(content, completionMetadata, options);
@@ -886,22 +942,20 @@ function buildCompactSceneRetryMessage(prompt, referenceMaterial = "", options =
 }
 
 async function requestSegmentedSceneJsonContent(messages, options, maxTokens) {
-  const estimatedSegments = clampInteger(options.estimatedSegments, 1, 1, DEFAULT_MAX_SCENE_SEGMENTS);
-  const maxSegments = clampInteger(
-    options.maxSceneSegments,
-    DEFAULT_MAX_SCENE_SEGMENTS,
-    1,
-    HARD_MAX_SCENE_SEGMENTS
-  );
+  const estimatedSegments = normalizeAdvisorySegmentEstimate(options.estimatedSegments, 1);
+  // No engine-owned segment ceiling. maxSceneSegments is a user/host budget only.
+  const maxSegments = normalizeOptionalPositiveInteger(options.maxSceneSegments);
   const conversation = messages.map((message) => ({ ...message }));
   let assembled = "";
+  let previousFragment = "";
+  let consecutiveNoProgress = 0;
 
-  for (let segment = 1; segment <= maxSegments; segment += 1) {
+  for (let segment = 1; maxSegments === undefined || segment <= maxSegments; segment += 1) {
     emitSceneSegmentProgress(options, {
       status: "request",
       segment,
       estimatedSegments,
-      maxSegments
+        ...(maxSegments === undefined ? {} : { maxSegments })
     });
     const deltaForwarder = createSceneSegmentDeltaForwarder(options.onDelta);
     const rawContent = await requestChatCompletion({
@@ -921,7 +975,7 @@ async function requestSegmentedSceneJsonContent(messages, options, maxTokens) {
         status: "complete",
         segment,
         estimatedSegments,
-        maxSegments,
+        ...(maxSegments === undefined ? {} : { maxSegments }),
         explicitMarker: control === "complete"
       });
       return assembled;
@@ -931,10 +985,19 @@ async function requestSegmentedSceneJsonContent(messages, options, maxTokens) {
       status: "continue",
       segment,
       estimatedSegments,
-      maxSegments,
+        ...(maxSegments === undefined ? {} : { maxSegments }),
       implicitTruncation: detectedTruncation && control !== "continue"
     });
-    if (segment === maxSegments) {
+    const normalizedFragment = fragment.trim();
+    if (!normalizedFragment || normalizedFragment === previousFragment) consecutiveNoProgress += 1;
+    else consecutiveNoProgress = 0;
+    previousFragment = normalizedFragment;
+    if (consecutiveNoProgress >= 2) {
+      throw createSceneOutputLimitError(
+        "Scene JSON continuation stopped because the provider returned repeated or empty fragments without progress."
+      );
+    }
+    if (maxSegments !== undefined && segment === maxSegments) {
       break;
     }
     conversation.push(
@@ -943,9 +1006,7 @@ async function requestSegmentedSceneJsonContent(messages, options, maxTokens) {
     );
   }
 
-  throw createSceneOutputLimitError(
-    `Scene JSON was not completed after ${maxSegments} response segments. Try a provider/model with a larger context window or raise maxSceneSegments.`
-  );
+  throw createSceneOutputLimitError(`Scene JSON was not completed after the configured ${maxSegments} response segments.`);
 }
 
 function addSegmentedProtocolToMessages(messages, estimatedSegments) {
@@ -997,10 +1058,7 @@ async function requestJsonCompletionWithSegmentedRecovery(messages, options = {}
     phase: "segmented-recovery",
     reason: "provider-output-limit"
   });
-  const estimatedSegments = Math.max(
-    2,
-    clampInteger(options.estimatedSegments, 2, 1, DEFAULT_MAX_SCENE_SEGMENTS)
-  );
+  const estimatedSegments = Math.max(2, normalizeAdvisorySegmentEstimate(options.estimatedSegments, 2));
   return requestSegmentedSceneJsonContent(
     addSegmentedProtocolToMessages(messages, estimatedSegments),
     { ...options, taskKind, estimatedSegments },
@@ -1185,7 +1243,7 @@ async function maybeApplyCapabilityReview(prompt, sceneJsonString, options = {})
  * @param {object} [options={}] apiKey, provider, model, temperature, baseUrl, etc.; forwarded to requestChatCompletion
  * @param {"auto"|boolean} [options.segmentedOutput="auto"] Use multi-response output explicitly,
  *   disable it explicitly, or in auto mode use it only when estimatedSegments is greater than 1
- * @param {number} [options.maxSceneSegments=16] Maximum responses when segmented output is active (clamped to 1..64)
+ * @param {number} [options.maxSceneSegments] Optional caller-owned response budget when segmented output is active; omitted means no engine-owned segment ceiling
  * @param {boolean} [options.compactRetryOnTruncation=true] Recover a genuine one-shot cutoff by
  *   restarting under the compact segmented-continuation protocol
  * @returns {Promise<string>}
@@ -1204,7 +1262,7 @@ async function generateSceneJsonString(prompt, options = {}) {
   const maxTokens = normalizeOptionalMaxTokens(capabilityOptions.maxTokens);
   const referenceMaterial = await resolveReferenceMaterialForPrompt(effectivePrompt, capabilityOptions);
 
-  const estimatedSegments = clampInteger(capabilityOptions.estimatedSegments, 1, 1, DEFAULT_MAX_SCENE_SEGMENTS);
+  const estimatedSegments = normalizeAdvisorySegmentEstimate(capabilityOptions.estimatedSegments, 1);
   const segmentedOutput = shouldUseSegmentedSceneOutput(capabilityOptions, estimatedSegments);
   const systemPrompt = buildSceneGenerationSystemPrompt({ ...capabilityOptions, particleEffects });
   const messages = [
@@ -1572,7 +1630,25 @@ async function requestUpdatedSceneEditCommands(prompt, context = {}, options = {
           agentRound
         });
   const referenceMaterial = await resolveReferenceMaterialForPrompt(prompt, options);
-  const userContent = [baseUserContent, referenceMaterial].filter(Boolean).join("\n\n");
+  const userText = [baseUserContent, referenceMaterial].filter(Boolean).join("\n\n");
+  const visualFeedback = Array.isArray(context.visualFeedback)
+    ? context.visualFeedback
+        .map((item) => {
+          const url = String(item?.url || item?.dataUrl || item?.imageUrl || "").trim();
+          if (!/^(?:data:image\/|https?:\/\/)/i.test(url)) return null;
+          return {
+            type: "image_url",
+            image_url: {
+              url,
+              detail: ["low", "high", "auto"].includes(item?.detail) ? item.detail : "low"
+            }
+          };
+        })
+        .filter(Boolean)
+    : [];
+  const userContent = visualFeedback.length > 0
+    ? [{ type: "text", text: userText }, ...visualFeedback]
+    : userText;
 
   // Whenever the model is given the "auto" system prompt (commands preferred, full JSON allowed
   // for large restructures), the response parser below must accept both forms too — agent/
@@ -1588,16 +1664,18 @@ async function requestUpdatedSceneEditCommands(prompt, context = {}, options = {
         agentRound: agentRound || iterativeApply,
         iterativeApply,
         animationCapabilities: options.animationCapabilities,
-        selectedCapabilityIds: options.selectedCapabilityIds,
-        rendererBackend: options.rendererBackend,
-        includePreviewCapabilities: options.includePreviewCapabilities
-      })
+         selectedCapabilityIds: options.selectedCapabilityIds,
+         rendererBackend: options.rendererBackend,
+         includePreviewCapabilities: options.includePreviewCapabilities,
+         visualReviewAvailable: options.visualReviewAvailable === true
+       })
     : buildSceneCommandUpdateSystemPrompt({
         animationCapabilities: options.animationCapabilities,
-        selectedCapabilityIds: options.selectedCapabilityIds,
-        rendererBackend: options.rendererBackend,
-        includePreviewCapabilities: options.includePreviewCapabilities
-      });
+         selectedCapabilityIds: options.selectedCapabilityIds,
+         rendererBackend: options.rendererBackend,
+         includePreviewCapabilities: options.includePreviewCapabilities,
+         visualReviewAvailable: options.visualReviewAvailable === true
+       });
 
   let finishReason = null;
   const externalCompletionMetadata = options.onCompletionMetadata;

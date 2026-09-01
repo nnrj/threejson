@@ -26,9 +26,15 @@ test("scene-agent defaults use automatic construction and no engine-owned token 
   assert.equal(SCENE_AGENT_SETTINGS_DEFAULTS.ai.sceneGenerationMode, "auto");
   assert.equal(SCENE_AGENT_SETTINGS_DEFAULTS.ai.sceneMaxOutputTokens, 0);
   assert.equal(SCENE_AGENT_SETTINGS_DEFAULTS.ai.texturePipelineEnabled, true);
+  assert.equal(SCENE_AGENT_SETTINGS_DEFAULTS.io.turnDiffCheckpointInterval, 12);
   assert.deepEqual(resolveSceneAgentTokenOptions({ ai: { sceneMaxOutputTokens: 0 } }), {});
   assert.deepEqual(resolveSceneAgentTokenOptions({ ai: { sceneMaxOutputTokens: 12000 } }), { maxTokens: 12000 });
-  assert.deepEqual(resolveSceneAgentOptions({ ai: { maxAutoRefineRounds: 4 } }), { maxRefineRounds: 4 });
+  assert.deepEqual(resolveSceneAgentOptions({ ai: { maxAutoRefineRounds: 4 } }), {
+    maxRefineRounds: 4,
+    complexModelStrategy: "auto",
+    modelQuality: "balanced",
+    modelBudget: { maxTokens: undefined, maxCost: undefined, maxTimeMs: undefined }
+  });
 });
 
 test("scene-agent settings normalize enums and safety budgets without carrying a legacy root agent section", () => {
@@ -37,7 +43,9 @@ test("scene-agent settings normalize enums and safety budgets without carrying a
     agent: { enabled: true, depth: "deep" }
   });
   assert.equal(normalized.ai.sceneGenerationMode, "auto");
-  assert.equal(normalized.ai.maxAutoRefineRounds, 20);
+  assert.equal(normalized.ai.maxAutoRefineRounds, 999);
+  assert.equal(normalized.ai.agentPolicyVersion, 3);
+  assert.equal(normalized.io.turnDiffCheckpointInterval, 12);
   assert.equal(Object.hasOwn(normalized, "agent"), false);
   assert.equal(Object.hasOwn(normalized.ai, "agentDepth"), false);
 });

@@ -185,6 +185,90 @@ export const CORE_COMMAND_SPECS = [
     args: { id: "Root model threeJsonId.", target: "Morph name or index.", value: "Influence (clamped to 0..1 by default).", mesh: "Optional child mesh selector.", clamp: "Set false to allow values outside 0..1." },
     example: { v: COMMAND_API_VERSION, op: "morph.set", args: { id: "character", target: "Smile", value: 0.8 } },
     microDslExample: "morph.set id=character target=Smile value=0.8"
+  },
+  {
+    op: "mesh.inspect",
+    mode: "runtime",
+    summary: "Inspect mesh statistics, semantic parts, modifiers and current revision.",
+    args: { id: "Mesh threeJsonId." },
+    example: { v: COMMAND_API_VERSION, op: "mesh.inspect", args: { id: "model-1" } }
+  },
+  {
+    op: "mesh.getTopology",
+    mode: "runtime",
+    summary: "Read editableMesh control topology by part, IDs, bounds, or page without echoing a whole dense mesh.",
+    args: { id: "editableMesh threeJsonId.", part: "Optional semantic part.", vertexIds: "Optional vertex ID array.", faceIds: "Optional face ID array.", bounds: "Optional {min,max} spatial bounds.", page: "One-based page.", pageSize: "Page size." },
+    example: { v: COMMAND_API_VERSION, op: "mesh.getTopology", args: { id: "model-1", part: "body", page: 1, pageSize: 200 } }
+  },
+  {
+    op: "mesh.validate",
+    mode: "runtime",
+    summary: "Validate topology/index ranges and report degenerates, duplicate faces, winding, boundaries and non-manifold edges.",
+    args: { id: "Mesh threeJsonId.", checkSelfIntersectionRisk: "Optional broad-phase warning pass for non-adjacent faces with overlapping bounds." },
+    example: { v: COMMAND_API_VERSION, op: "mesh.validate", args: { id: "model-1" } }
+  },
+  {
+    op: "mesh.edit",
+    mode: "runtime",
+    summary: "Atomically edit stable-ID editableMesh topology and modifiers, guarded by baseRevision.",
+    args: { id: "editableMesh threeJsonId.", baseRevision: "Revision returned by mesh.inspect/getTopology.", operations: "Array of add/set/remove vertex/face, assignPart, crease, extrude, inset, bevel, bridge, loopCut, mirror, or modifier operations." },
+    example: { v: COMMAND_API_VERSION, op: "mesh.edit", args: { id: "model-1", baseRevision: 0, operations: [{ type: "setVertex", id: "v-1", position: [0, 1.2, 0] }] } }
+  },
+  {
+    op: "mesh.buffer.appendAttribute",
+    mode: "runtime",
+    summary: "Append values to a pending raw bufferMesh attribute transaction.",
+    args: { id: "bufferMesh threeJsonId.", baseRevision: "Current meshRevision.", name: "Attribute name.", itemSize: "Attribute itemSize.", values: "Numeric values." },
+    example: { v: COMMAND_API_VERSION, op: "mesh.buffer.appendAttribute", args: { id: "raw-1", baseRevision: 0, name: "position", itemSize: 3, values: [0, 0, 0] } }
+  },
+  {
+    op: "mesh.buffer.setAttributeRange",
+    mode: "runtime",
+    summary: "Replace a numeric range in a pending raw bufferMesh attribute transaction.",
+    args: { id: "bufferMesh threeJsonId.", baseRevision: "Current meshRevision.", name: "Attribute name.", offset: "Scalar offset.", values: "Replacement values.", expand: "Allow growing the array." },
+    example: { v: COMMAND_API_VERSION, op: "mesh.buffer.setAttributeRange", args: { id: "raw-1", baseRevision: 0, name: "position", offset: 0, values: [0, 1, 0] } }
+  },
+  {
+    op: "mesh.buffer.appendIndices",
+    mode: "runtime",
+    summary: "Append triangle indices to a pending raw bufferMesh transaction.",
+    args: { id: "bufferMesh threeJsonId.", baseRevision: "Current meshRevision.", values: "Non-negative integer indices." },
+    example: { v: COMMAND_API_VERSION, op: "mesh.buffer.appendIndices", args: { id: "raw-1", baseRevision: 0, values: [0, 1, 2] } }
+  },
+  {
+    op: "mesh.buffer.setIndexRange",
+    mode: "runtime",
+    summary: "Replace indices in a pending raw bufferMesh transaction.",
+    args: { id: "bufferMesh threeJsonId.", baseRevision: "Current meshRevision.", offset: "Index offset.", values: "Replacement indices.", expand: "Allow growing the index." },
+    example: { v: COMMAND_API_VERSION, op: "mesh.buffer.setIndexRange", args: { id: "raw-1", baseRevision: 0, offset: 0, values: [0, 2, 1] } }
+  },
+  {
+    op: "mesh.buffer.commit",
+    mode: "runtime",
+    summary: "Validate and atomically publish a pending bufferMesh transaction.",
+    args: { id: "bufferMesh threeJsonId.", baseRevision: "Revision on which the transaction is based." },
+    example: { v: COMMAND_API_VERSION, op: "mesh.buffer.commit", args: { id: "raw-1", baseRevision: 0 } }
+  },
+  {
+    op: "mesh.buffer.cancel",
+    mode: "runtime",
+    summary: "Discard a pending bufferMesh transaction.",
+    args: { id: "bufferMesh threeJsonId." },
+    example: { v: COMMAND_API_VERSION, op: "mesh.buffer.cancel", args: { id: "raw-1" } }
+  },
+  {
+    op: "mesh.bake",
+    mode: "runtime",
+    summary: "Bake evaluated editableMesh output into a complete raw bufferMesh descriptor.",
+    args: { id: "editableMesh threeJsonId.", includeDescriptor: "Return the full descriptor when true." },
+    example: { v: COMMAND_API_VERSION, op: "mesh.bake", args: { id: "model-1" } }
+  },
+  {
+    op: "mesh.renderViews",
+    mode: "runtime",
+    summary: "Ask an injected host renderer for orthographic/perspective model review views.",
+    args: { id: "Mesh threeJsonId.", views: "Optional view-name array.", size: "Optional output size." },
+    example: { v: COMMAND_API_VERSION, op: "mesh.renderViews", args: { id: "model-1", views: ["front", "right", "top", "perspective"] } }
   }
 ];
 

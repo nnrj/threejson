@@ -115,6 +115,12 @@ export function loadThreeBoxSettingsBundle() {
   if (!["auto", "direct", "draft_refine"].includes(merged.ai?.sceneGenerationMode)) {
     merged.ai.sceneGenerationMode = "auto";
   }
+  if (!["auto", "full-coordinates", "progressive"].includes(merged.ai?.complexModelStrategy)) {
+    merged.ai.complexModelStrategy = "auto";
+  }
+  if (!["draft", "balanced", "high", "custom"].includes(merged.ai?.modelQuality)) {
+    merged.ai.modelQuality = "balanced";
+  }
   const configuredSceneMaxTokens = Number(merged.ai?.sceneMaxOutputTokens);
   merged.ai.sceneMaxOutputTokens = Number.isFinite(configuredSceneMaxTokens) && configuredSceneMaxTokens > 0
     ? Math.round(configuredSceneMaxTokens)
@@ -131,16 +137,27 @@ export function loadThreeBoxSettingsBundle() {
   if (cached?.io?.sceneJsonFormat !== "standard" && cached?.io?.sceneJsonFormat !== "friendly") {
     merged.io.sceneJsonFormat = cached?.io?.copyFriendlyJson === true ? "friendly" : "standard";
   }
-  // Policy v1 used 20 as the default and ran the incremental loop for every scene. Migrate old
-  // cached bundles so existing users do not retain that accidental default forever. Explicitly
-  // smaller user values are preserved; direct turns no longer use this guard at all.
-  if (Number(cached?.ai?.agentPolicyVersion || 0) < 2) {
-    const legacyLimit = Number(cached?.ai?.maxAutoRefineRounds);
-    merged.ai.maxAutoRefineRounds = Number.isFinite(legacyLimit) && legacyLimit > 0
-      ? Math.min(6, Math.round(legacyLimit))
-      : THREEBOX_SETTINGS_DEFAULTS.ai.maxAutoRefineRounds;
-    merged.ai.agentPolicyVersion = 2;
+  const normalizeOptionalBudget = (value) => {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) && numeric > 0 ? numeric : 0;
+  };
+  if (Number(cached?.ai?.agentPolicyVersion || 0) < 3) {
+    // Previous versions silently installed engine-owned 6/16 round ceilings. They were not user
+    // choices, so remove them during the alpha schema migration.
+    merged.ai.maxAutoRefineRounds = 0;
+    merged.ai.maxSceneSegments = 0;
   }
+  merged.ai.maxAutoRefineRounds = Math.round(normalizeOptionalBudget(merged.ai.maxAutoRefineRounds));
+  merged.ai.maxSceneSegments = Math.round(normalizeOptionalBudget(merged.ai.maxSceneSegments));
+  merged.ai.modelBudget = isPlainSettingsObject(merged.ai.modelBudget) ? merged.ai.modelBudget : {};
+  merged.ai.modelBudget.maxTokens = Math.round(normalizeOptionalBudget(merged.ai.modelBudget.maxTokens));
+  merged.ai.modelBudget.maxCost = normalizeOptionalBudget(merged.ai.modelBudget.maxCost);
+  merged.ai.modelBudget.maxTimeMs = Math.round(normalizeOptionalBudget(merged.ai.modelBudget.maxTimeMs));
+  const checkpointInterval = Number(merged.io?.turnDiffCheckpointInterval);
+  merged.io.turnDiffCheckpointInterval = Number.isFinite(checkpointInterval) && checkpointInterval >= 0
+    ? Math.round(checkpointInterval)
+    : 12;
+  merged.ai.agentPolicyVersion = 3;
   ensureBuiltinProviderSeeded(merged);
   return merged;
 }

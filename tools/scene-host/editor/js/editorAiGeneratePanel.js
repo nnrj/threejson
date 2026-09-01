@@ -436,7 +436,6 @@ export function createEditorAiGeneratePanel(host) {
       const sceneTokenOptions = Number.isFinite(configuredSceneMaxTokens) && configuredSceneMaxTokens > 0
         ? { maxTokens: Math.round(configuredSceneMaxTokens) }
         : {};
-      const turnDeadlineAt = Date.now() + 180000;
       const providerOptions = {
         provider: creds.provider,
         apiKey: creds.apiKey,
@@ -444,8 +443,7 @@ export function createEditorAiGeneratePanel(host) {
         baseUrl: creds.baseUrl,
         providerAdapter: creds.providerAdapter,
         userId: creds.userId,
-        requestContext: createEditorAiTurnContext(userText),
-        turnDeadlineAt
+        requestContext: createEditorAiTurnContext(userText)
       };
       // The tab already fixes the intent to "generate". Automatic construction mode still uses
       // the core/ai negotiation criteria; explicit complete/incremental settings override only
@@ -463,7 +461,9 @@ export function createEditorAiGeneratePanel(host) {
           ...providerOptions,
           signal: abortController.signal,
           animationCapabilityMode: "auto",
-          sceneGenerationMode: host.getEditorSettings()?.ai?.sceneGenerationMode || "auto"
+          sceneGenerationMode: host.getEditorSettings()?.ai?.sceneGenerationMode || "auto",
+          complexModelStrategy: host.getEditorSettings()?.ai?.complexModelStrategy || "auto",
+          modelQuality: host.getEditorSettings()?.ai?.modelQuality || "balanced"
         }
       );
       let resultText;
@@ -528,6 +528,9 @@ export function createEditorAiGeneratePanel(host) {
           executionMode: negotiation.executionMode,
           refinementGoals: negotiation.refinementGoals,
           selectedCapabilityIds: negotiation.selectedCapabilityIds,
+          complexModelStrategy: negotiation.complexModelStrategy,
+          modelQuality: negotiation.modelQuality,
+          modelBudget: host.getEditorSettings()?.ai?.modelBudget,
           requiresAnimation: negotiation.requiresAnimation,
           onGenerationPhase: updateGenerateStatus,
           onAgentProgress: updateGenerateStatus,
@@ -575,6 +578,9 @@ export function createEditorAiGeneratePanel(host) {
           estimatedSegments: negotiation.estimatedSegments,
           estimatedOutputTokens: negotiation.estimatedOutputTokens,
           selectedCapabilityIds: negotiation.selectedCapabilityIds,
+          complexModelStrategy: negotiation.complexModelStrategy,
+          modelQuality: negotiation.modelQuality,
+          modelBudget: host.getEditorSettings()?.ai?.modelBudget,
           requiresAnimation: negotiation.requiresAnimation,
           onGenerationPhase: updateGenerateStatus,
           onAgentProgress: updateGenerateStatus,

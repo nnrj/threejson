@@ -228,6 +228,33 @@ export function createEditorHistory(host) {
     });
   }
 
+  function pushMeshCommandTransaction(threeJsonId, forwardCommand, undoCommand, label) {
+    if (!threeJsonId || !forwardCommand || !undoCommand) return;
+    pushEntry({
+      kind: "meshCommandTransaction",
+      threeJsonId,
+      forwardCommand: cloneJsonDeep(forwardCommand),
+      undoCommand: cloneJsonDeep(undoCommand),
+      label: label || "网格编辑",
+      capturedAt: Date.now()
+    });
+  }
+
+  async function applyMeshCommandEntry(entry, direction) {
+    const command = direction === "undo" ? entry.undoCommand : entry.forwardCommand;
+    const batch = await host.getCommandLayer()?.runBatch?.([command], {
+      label: `${direction === "undo" ? "撤销" : "重做"}：${entry.label}`,
+      historyReplay: true
+    });
+    const ok = batch?.ok !== false;
+    if (ok) {
+      host.getSceneReserialize?.()?.markSceneNeedsReserialize?.();
+      host.getSceneTree()?.syncPropInputs?.(host.getSelectedObject());
+      host.getSceneTree()?.render?.();
+    }
+    return ok;
+  }
+
   async function replaySceneSnapshot(snapshot, label) {
     if (!snapshot) {
       return false;
@@ -513,6 +540,18 @@ export function createEditorHistory(host) {
       syncMenuState();
       return { ok: Boolean(ok) };
     }
+    if (entry.kind === "meshCommandTransaction") {
+      const ok = await applyMeshCommandEntry(entry, "undo");
+      if (ok) {
+        state.future.push(entry);
+        afterObjectHistoryApplied();
+        host.showMessage(t("editor.message.undoDone", "Undone."), "info");
+      } else {
+        state.past.push(entry);
+      }
+      syncMenuState();
+      return { ok: Boolean(ok) };
+    }
     state.past.push(entry);
     syncMenuState();
     return { ok: false, error: "unsupported history entry" };
@@ -582,6 +621,19 @@ export function createEditorHistory(host) {
     }
     if (entry.kind === "objectAdd") {
       const ok = await applyObjectAddEntry(entry, "redo");
+      if (ok) {
+        state.past.push(entry);
+        trimDepth();
+        afterObjectHistoryApplied();
+        host.showMessage(t("editor.message.redoDone", "Redone."), "info");
+      } else {
+        state.future.push(entry);
+      }
+      syncMenuState();
+      return { ok: Boolean(ok) };
+    }
+    if (entry.kind === "meshCommandTransaction") {
+      const ok = await applyMeshCommandEntry(entry, "redo");
       if (ok) {
         state.past.push(entry);
         trimDepth();
@@ -665,6 +717,7 @@ export function createEditorHistory(host) {
     pushObjectRemoveEntry,
     pushObjectAddEntry,
     pushObjectObjJsonSnapshot,
+    pushMeshCommandTransaction,
     undo,
     redo,
     hasUndo,

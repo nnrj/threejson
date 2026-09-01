@@ -28,6 +28,8 @@ ThreeJSON is a scene engine. Unless there is an objective technical barrier, a g
 
 “Complete capability” does not mean “load everything by default.” WebGPU, TSL code, and similar features remain explicit subpath imports so the default path stays lightweight. Once a host opts in, however, the engine should expose a complete usable mechanism and leave the final trust decision to that host. Only genuinely unsupported combinations should fail, with structured diagnostics instead of silent degradation or a global ban.
 
+Resource budgets are policy as well. Core may accept explicit host-provided vertex, byte, or time budgets and return structured diagnostics, but their defaults must be unlimited. Core must not hard-code vertex, face, scene-byte, or AI-continuation ceilings to estimate tokens, cost, or device performance, and it must not silently replace a free-form model with primitives without user authorization.
+
 ## Core vs extensions boundary
 
 The following principles determine whether a new capability belongs in **core**, **`extensions/`**, or the **host**; they apply to any requirement (not limited to a particular controller type or gameplay mode). They complement the “explicitly out of core” items in [`docs/scope.md`](./scope.md)—those list typical **infrastructure / product-layer** concerns (private-network sync, ECS frameworks, production-grade editor UI, anti-cheat, etc.); this section provides **general criteria**.

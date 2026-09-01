@@ -1,0 +1,63 @@
+{
+  "version": "next",
+  "name": "complex-modeling-editable-animal-form",
+  "sceneConfig": {
+    "scene": { "background": "#071827" },
+    "camera": { "fov": 44, "near": 0.1, "far": 200, "position": { "x": 9, "y": 5, "z": 11 } },
+    "renderer": { "antialias": true },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 1.4, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#dbeafe", "intensity": 0.75 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1.55, "position": { "x": 8, "y": 12, "z": 9 } },
+      { "type": "directional", "color": "#22d3ee", "intensity": 0.6, "position": { "x": -8, "y": 2, "z": -7 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "objectList": [
+    {
+      "threeJsonId": "animal-fish-control-cage",
+      "name": "editable-organic-animal-body",
+      "objType": "editableMesh",
+      "position": { "x": 0, "y": 1.2, "z": 0 },
+      "topology": {
+        "revision": 0,
+        "vertices": [
+          { "id": "r0t", "position": [-3.1, 0.1, 0] }, { "id": "r0r", "position": [-3.1, 0, 0.12] }, { "id": "r0b", "position": [-3.1, -0.1, 0] }, { "id": "r0l", "position": [-3.1, 0, -0.12] },
+          { "id": "r1t", "position": [-2.0, 0.9, 0] }, { "id": "r1r", "position": [-2.0, 0, 0.72] }, { "id": "r1b", "position": [-2.0, -0.75, 0] }, { "id": "r1l", "position": [-2.0, 0, -0.72] },
+          { "id": "r2t", "position": [-0.4, 1.25, 0] }, { "id": "r2r", "position": [-0.4, 0.05, 1.0] }, { "id": "r2b", "position": [-0.4, -1.0, 0] }, { "id": "r2l", "position": [-0.4, 0.05, -1.0] },
+          { "id": "r3t", "position": [1.25, 1.05, 0] }, { "id": "r3r", "position": [1.25, 0.1, 0.88] }, { "id": "r3b", "position": [1.25, -0.82, 0] }, { "id": "r3l", "position": [1.25, 0.1, -0.88] },
+          { "id": "r4t", "position": [2.75, 0.65, 0] }, { "id": "r4r", "position": [2.75, 0.08, 0.45] }, { "id": "r4b", "position": [2.75, -0.5, 0] }, { "id": "r4l", "position": [2.75, 0.08, -0.45] },
+          { "id": "tail-t", "position": [4.25, 1.35, 0] }, { "id": "tail-r", "position": [3.45, 0.05, 0.1] }, { "id": "tail-b", "position": [4.25, -1.25, 0] }, { "id": "tail-l", "position": [3.45, 0.05, -0.1] }
+        ],
+        "faces": [
+          { "id": "nose", "vertices": ["r0t", "r0l", "r0b", "r0r"], "part": "head", "smooth": true },
+          { "id": "head-top", "vertices": ["r0t", "r0r", "r1r", "r1t"], "part": "head", "smooth": true },
+          { "id": "head-right", "vertices": ["r0r", "r0b", "r1b", "r1r"], "part": "head", "smooth": true },
+          { "id": "head-bottom", "vertices": ["r0b", "r0l", "r1l", "r1b"], "part": "head", "smooth": true },
+          { "id": "head-left", "vertices": ["r0l", "r0t", "r1t", "r1l"], "part": "head", "smooth": true },
+          { "id": "body-1t", "vertices": ["r1t", "r1r", "r2r", "r2t"], "part": "body", "smooth": true },
+          { "id": "body-1r", "vertices": ["r1r", "r1b", "r2b", "r2r"], "part": "body", "smooth": true },
+          { "id": "body-1b", "vertices": ["r1b", "r1l", "r2l", "r2b"], "part": "body", "smooth": true },
+          { "id": "body-1l", "vertices": ["r1l", "r1t", "r2t", "r2l"], "part": "body", "smooth": true },
+          { "id": "body-2t", "vertices": ["r2t", "r2r", "r3r", "r3t"], "part": "body", "smooth": true },
+          { "id": "body-2r", "vertices": ["r2r", "r2b", "r3b", "r3r"], "part": "body", "smooth": true },
+          { "id": "body-2b", "vertices": ["r2b", "r2l", "r3l", "r3b"], "part": "body", "smooth": true },
+          { "id": "body-2l", "vertices": ["r2l", "r2t", "r3t", "r3l"], "part": "body", "smooth": true },
+          { "id": "tail-root-t", "vertices": ["r3t", "r3r", "r4r", "r4t"], "part": "tail-root", "smooth": true },
+          { "id": "tail-root-r", "vertices": ["r3r", "r3b", "r4b", "r4r"], "part": "tail-root", "smooth": true },
+          { "id": "tail-root-b", "vertices": ["r3b", "r3l", "r4l", "r4b"], "part": "tail-root", "smooth": true },
+          { "id": "tail-root-l", "vertices": ["r3l", "r3t", "r4t", "r4l"], "part": "tail-root", "smooth": true },
+          { "id": "tail-fin-front", "vertices": ["r4t", "r4r", "tail-r", "tail-t"], "part": "tail-fin", "smooth": true },
+          { "id": "tail-fin-right", "vertices": ["r4r", "r4b", "tail-b", "tail-r"], "part": "tail-fin", "smooth": true },
+          { "id": "tail-fin-back", "vertices": ["r4b", "r4l", "tail-l", "tail-b"], "part": "tail-fin", "smooth": true },
+          { "id": "tail-fin-left", "vertices": ["r4l", "r4t", "tail-t", "tail-l"], "part": "tail-fin", "smooth": true },
+          { "id": "tail-tip", "vertices": ["tail-t", "tail-r", "tail-b", "tail-l"], "part": "tail-fin", "smooth": true }
+        ]
+      },
+      "modifiers": [{ "id": "organic-subdivision", "type": "catmullClark", "levels": 2 }],
+      "uvProjection": { "type": "spherical" },
+      "material": { "type": "physical", "color": "#06b6d4", "roughness": 0.28, "metalness": 0.12, "clearcoat": 0.65 }
+    }
+  ],
+  "threeJsonId": "complex-modeling-editable-animal-form"
+}

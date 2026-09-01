@@ -26,6 +26,7 @@ import {
 } from "./sceneTreeMaterialHelpers.js";
 import { syncEditorMeshVisualFromObjJson } from "./editorMeshVisualSync.js";
 import { createSceneTreeMaterialTree } from "./sceneTreeMaterialTree.js";
+import { createSceneTreeEditableMeshPanel } from "./sceneTreeEditableMeshPanel.js";
 import {
   getDomainEditState,
   resolveDomainDeployRoot
@@ -96,6 +97,7 @@ export function createSceneTreePanel(host) {
   const materialTree = createSceneTreeMaterialTree(host, {
     isPropSyncing: () => propSyncing
   });
+  const editableMeshPanel = createSceneTreeEditableMeshPanel(host);
 
   function isBlurRedeployEnabled() {
     return host.getEditorSettings()?.editing?.blurRedeployOnPropertyChange !== false;
@@ -407,6 +409,7 @@ export function createSceneTreePanel(host) {
     if (rootEl) {
       rootEl.innerHTML = "";
     }
+    editableMeshPanel.sync(null);
     syncPropInputs(null);
   }
 
@@ -426,6 +429,7 @@ export function createSceneTreePanel(host) {
   }
 
   function syncPropInputs(model) {
+    editableMeshPanel.sync(model);
     if (!prop.name) {
       return;
     }

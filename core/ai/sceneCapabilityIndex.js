@@ -26,7 +26,7 @@ Authoring shapes:
 
 Geometry and composition:
 - Basic primitives: box/floor/wall/glass/door/cabinet/road, sphere, cylinder, cone, torus, ring, capsule, plane.
-- Complex geometry: shapePlane, shapeExtrude, irregularPlane, irregularGeometry, bufferMesh, CSG joins/inters/holes.
+- Complex geometry: full bufferMesh attributes/index/groups/morph targets; stable-ID editableMesh control topology with modifiers; parametricSurface, nurbsSurface, bezierPatch, latheMesh, loftMesh, sweepMesh, implicitSurface; shapePlane/shapeExtrude/irregular geometry and CSG.
 - Native Three.js inference: objType native, geometry.type (TorusKnotGeometry, LatheGeometry, DodecahedronGeometry, etc.), parseMode auto|native, geometryRef/materialRef via assetLibrary.
 - Reuse and scale: groupList/subScene for assemblies, instancedList for repeated props, lineList only for visible paths/boundaries, tubeList for pipes/splines, spriteList for billboards.
 
@@ -60,7 +60,7 @@ Scene text (capability id: sceneText):
 - TextItem uses content, fontSize, color, position, optional billboard/anchor/align and sdf styling. Do not substitute descriptor name/label for visible content.
 
 Command and patch editing:
-- Core command mode supports scene.list, scene.validate, scene.applyPatch, scene.export, object.get/add/remove/patch/reconcile, material.patch, morph.list/set, camera.fit.
+- Core command mode supports scene.list/validate/applyPatch/export, object.get/add/remove/patch/reconcile, material.patch, morph.list/set, camera.fit, and mesh.inspect/getTopology/validate/edit/buffer.*/bake/renderViews.
 - Use commands for small edits and full JSON for broad restructuring. Use JSON Patch for minimal document-level edits when paths are clear.
 `;
 
@@ -79,6 +79,7 @@ ThreeJSON capability-selection index (selection only; do not author scene JSON i
 - Basic primitives, ordinary materials, camera, lighting, grouping, and common scene layout need no special capability id.
 - sceneText — visible words/titles/labels; infoPanel — text or media on a visible board/card; css3dPanel — interactive DOM/iframe UI in 3D.
 - group — multipart assemblies; instanced — many repeated objects; native — explicitly requested native Three.js geometry/ObjectLoader data.
+- complexMesh — genuinely free-form/organic/detailed mesh authoring; editableMesh — stable-ID control topology; rawBufferMesh — explicit complete coordinates; subdivisionSurface — Catmull-Clark/Loop; parametricSurface — parametric/NURBS/Bezier/lathe/loft/sweep; implicitSurface — SDF/scalar-field surface; meshModeling — topology operations; meshMorph — morph targets.
 - external — GLTF/GLB/OBJ/STL/PLY/FBX/USD/USDZ assets; audio — ambient/positional sound; shaderSurface — registered WebGL GLSL presets; postProcess — explicitly requested bloom/outline/FXAA/SMAA or registered pass presets.
 - events — clicks/pointer/keyboard behavior; lifecycle — scene/object ready/dispose behavior; declarativeAnimation — continuous transform/expression animation; animationGraph — imported-model clip state machines.
 - Select only ids whose detailed syntax/examples the authoring model actually needs. Do not select advanced capabilities for generic quality, realism, detail, or style wording.
@@ -146,6 +147,7 @@ function buildAgentCapabilityIndex(options = {}) {
       ? `- available renderer backends: ${list("rendererBackends")}`
       : `- renderer backend: ${requestedRendererBackend}`,
     `- materials: ${list("materials")}`,
+    `- objects: ${list("objects")}`,
     `- light types: ${list("lightTypes")}`,
     `- post-processing passes: ${list("passes")}`,
     `- model formats: ${list("modelFormats")}`,
@@ -193,11 +195,43 @@ Particle V2 capability ids:
 - Available sources in this host snapshot: ${list("particleSources")}. Available simulation backends: ${list("particleBackends")}.
 - emission supports static|continuous|burst with count/rate/duration/loop/seed; particle supports lifetime, velocity/rotation ranges, and size/color/opacity-over-life; simulation supports gravity, drag, noise, attractors, and none|wrap|bounce|kill boundaries; render supports points or billboard plus sprite/atlas fields.
 `;
+  const complexCapabilityIds = new Set([
+    "complexMesh", "editableMesh", "rawBufferMesh", "subdivisionSurface",
+    "parametricSurface", "implicitSurface", "meshModeling", "meshMorph"
+  ]);
+  const complexSelected = Array.isArray(options.selectedCapabilityIds)
+    && options.selectedCapabilityIds.some((id) => complexCapabilityIds.has(id));
+  const complexMeshAuthoring = negotiationOnly ? `
+Complex-model capability ids:
+- complexMesh — a genuinely free-form, organic, smooth, or detailed mesh that primitives cannot faithfully represent.
+- editableMesh — stable-ID low-density control topology suitable for progressive local refinement.
+- rawBufferMesh — user explicitly wants complete vertices/indices/attributes or BufferGeometry.
+- subdivisionSurface — Catmull-Clark/Loop subdivision of a control cage.
+- parametricSurface — parametric, NURBS, Bezier patch, lathe, loft, or sweep representation.
+- implicitSurface — SDF/scalar-field isosurface.
+- meshModeling — vertex/face topology operations such as extrude, inset, bevel, bridge and loop cut.
+- meshMorph — morph targets/blend shapes.
+- Generic requests for quality alone do not force complexMesh. Prefer primitives, native parametric geometry, instancing, or CSG whenever they faithfully express the final shape; select complexMesh only for irregular silhouette, free-form curvature, topology, morphing, or local surface detail those representations cannot express.
+- A clearly free-form requested object must not be downgraded to primitive blocks merely to shorten output. Its first draft should normally be a recognizable low-density editable surface that remains the control source, not disposable primitive scaffolding.
+` : complexSelected ? `
+Native complex-model authoring (selected capability ids include a complex-mesh feature):
+- Choose representation by shape, not by output convenience. Use primitives only for truly regular parts. A free-form model must use editableMesh, a compact surface/SDF descriptor, or raw bufferMesh; an external asset is optional and never a substitute for native expression.
+- editableMesh record: {threeJsonId,objType:"editableMesh",topology:{revision:0,vertices:[{id,position:[x,y,z],attributes?}],faces:[{id,vertices:[stableIds...],part,materialIndex,smooth}],edges:[{vertices:[id,id],crease:0..1}]},modifiers:[...],materials:[...]}. Faces may be triangles, quads, or n-gons. Preserve stable IDs and semantic part names.
+- Modifiers currently evaluated in core: mirror, catmullClark/subdivision, loopSubdivision, smooth, creaseNormal, edgeSplit, bevel, solidify, triangulate, tessellate, simplify, planar/box/cylindrical/spherical/triplanar UV projection, and normal/tangent recomputation. The control topology remains the JSON source.
+- Progressive editing: first mesh.inspect, then mesh.getTopology filtered by part/IDs/bounds/page when needed; issue one atomic mesh.edit {id,baseRevision,operations:[...]}; validate with mesh.validate. Operations: add/set/remove vertex/face, assignPart, setEdgeCrease, extrudeFaces, insetFaces, bevelEdges, bridgeLoops, loopCut, mirror, setModifier, setModifiers, reorderModifier. Never repeat the whole dense mesh in each round.
+- Local refinement: when silhouette/topology are already correct and only smoothness or evaluated density is lacking, use setModifier for Catmull-Clark on quad/n-gon cages or Loop on triangle cages, optionally followed by Smooth. Modifier evaluation uses local compute and preserves the low-density JSON control topology; do not ask the model to generate redundant vertices.
+- raw bufferMesh record: geometry.attributes maps arbitrary BufferAttribute names to {array,itemSize,type,normalized?}; geometry.index supports Uint16Array or Uint32Array; groups, drawRange, morphAttributes and morphTargetsRelative are supported. The compact positions/indices/normals/uvs shorthand remains valid. There is no ThreeJSON vertex/triangle/JSON-size limit; only actual invalid data or an explicitly supplied host meshBudget may reject it.
+- Large raw output can use mesh.buffer.appendAttribute/setAttributeRange/appendIndices/setIndexRange and ends with mesh.buffer.commit. Continue exact JSON/mesh transactions until complete; do not substitute a representative primitive because the response is long. If the user explicitly chose full coordinates, honor it.
+- Compact surfaces: parametricSurface geometry {expressions:{x,y,z},uRange,vRange,uSegments,vSegments}; nurbsSurface {controlPoints,degreeU,degreeV,knotsU?,knotsV?,uSegments,vSegments}; bezierPatch {controlPoints,uSegments,vSegments}; latheMesh {profile,segments}; loftMesh {sections}; sweepMesh {profile,path,segments}; implicitSurface {bounds,resolution,isoLevel,sdf} where SDF nodes include sphere/box/torus/capsule/union/intersection/subtract/smoothUnion/expression.
+- Morphs: bufferMesh geometry.morphAttributes.position/normal arrays plus morphTargetsRelative and record.morphInfluences. Existing loaded morphs use morph.list/morph.set.
+- For a complex-model draft, create a recognizable low-density silhouette with complete main parts and a subdivision modifier, render it immediately, then refine concrete semantic parts. End with # done only when the selected quality target is met; use # continue: <specific remaining part> only when more work is genuinely needed.
+` : "";
   return [
     (negotiationOnly
       ? THREE_JSON_AGENT_NEGOTIATION_INDEX_BASE
       : THREE_JSON_AGENT_CAPABILITY_INDEX_BASE).trim(),
     runtimeSnapshot,
+    complexMeshAuthoring.trim(),
     particleAuthoring.trim(),
     tslAuthoring.trim(),
     negotiationOnly ? "" : THREE_JSON_AGENT_TEXTURE_ACQUISITION_INDEX.trim()

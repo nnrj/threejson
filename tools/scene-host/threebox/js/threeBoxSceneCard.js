@@ -13,6 +13,7 @@ import {
 } from "./threeBoxMeshExportDialog.js";
 import { syncThreeBoxPreviewAuxiliaryLights } from "./threeBoxPreviewLights.js";
 import { ensureThreeBoxSceneCapabilitiesForPayload } from "./threeBoxAiCapabilities.js";
+import { captureMeshReviewViews } from "../../shared/js/meshViewCapture.js";
 
 const EDITOR_OPEN_SCENE_BRIDGE_PREFIX = "threejson.editor.openScene.";
 
@@ -67,8 +68,22 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
   canvasWrap.appendChild(textureBadge);
   let textureBadgeTimer = null;
 
+  function setDraftStatus(status = "") {
+    const state = String(status || "").trim().toLowerCase();
+    if (!state) {
+      draftBadge.hidden = true;
+      delete draftBadge.dataset.state;
+      return;
+    }
+    draftBadge.textContent = state === "paused"
+      ? t("threebox.sceneCard.draftPausedBadge", "草稿 · 细化已暂停")
+      : t("threebox.sceneCard.draftBadge", "草稿 · 自动细化中…");
+    draftBadge.dataset.state = state;
+    draftBadge.hidden = false;
+  }
+
   function setDraftState(isDraft) {
-    draftBadge.hidden = !isDraft;
+    setDraftStatus(isDraft ? "refining" : "");
   }
 
   function setTextureProgress(event = {}) {
@@ -378,7 +393,13 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
     if (!runtime || !Array.isArray(commands) || commands.length === 0) {
       return { ok: false, sceneMutated: false, results: [], error: "Scene preview runtime is not ready." };
     }
-    const { createCommandContext, executeCommands } = await import("threejson");
+    const [{ createCommandContext, executeCommands }, {
+      formatObjectGetFeedbackFromBatch,
+      extractVisualFeedbackFromBatch
+    }] = await Promise.all([
+      import("threejson"),
+      import("threejson/ai")
+    ]);
     if (!commandContext || commandContext.scene !== runtime.scene) {
       commandContext = createCommandContext({
         scene: runtime.scene,
@@ -389,7 +410,18 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
         // Keep the declarative document beside the live runtime. Document-level commands and a
         // later runtime snapshot can then preserve sceneConfig (notably authored lights) instead
         // of reconstructing it from preview-only objects.
-        document: currentSceneJson
+        document: currentSceneJson,
+        options: {
+          renderMeshViews: (request) => {
+            const enabled = typeof cardOptions.shouldProvideMeshVisionFeedback === "function"
+              ? cardOptions.shouldProvideMeshVisionFeedback() === true
+              : cardOptions.meshVisionFeedback === true;
+            if (!enabled) {
+              throw new Error("mesh.renderViews is unavailable for the selected AI provider.");
+            }
+            return captureMeshReviewViews({ ...request, renderer: runtime.renderer });
+          }
+        }
       });
     }
     const execResult = await executeCommands(commandContext, commands);
@@ -430,20 +462,15 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
         ? cardOptions.shouldUsePreviewAuxiliaryLights() !== false
         : cardOptions.previewAuxiliaryLights !== false
     );
-    const objectGetFeedback = results
-      .filter((entry) => entry?.ok && entry.op === "object.get" && entry.data)
-      .map((entry) => JSON.stringify({
-        threeJsonId: entry.data?.threeJsonId || entry.data?.id || "",
-        path: entry.data?.path ?? null,
-        value: entry.data?.value
-      }, null, 2))
-      .join("\n\n");
+    const objectGetFeedback = formatObjectGetFeedbackFromBatch(results);
+    const visualFeedback = extractVisualFeedbackFromBatch(results);
     return {
       ok: true,
       sceneMutated: options.readOnly === true ? false : results.some((entry) => entry?.ok !== false),
       execResult,
       results,
       objectGetFeedback,
+      visualFeedback,
       runtime
     };
   }
@@ -725,6 +752,7 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
     finalize,
     dispose,
     setTextureProgress,
+    setDraftStatus,
     setLabel,
     updateSceneJson,
     setPreviewAuxiliaryLightsEnabled: (enabled) =>

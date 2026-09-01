@@ -484,6 +484,59 @@
                 </select>
               </div>
             </div>
+            <div class="sceneTreePropSection" id="sceneTreePropMeshSection" hidden>
+              <div class="sceneTreePropSectionTitle">复杂网格</div>
+              <div id="sceneTreeMeshStats" class="propLine"></div>
+              <div id="sceneTreeMeshDiagnostics" class="propLine"></div>
+              <div class="sceneTreePropGrid">
+                <label for="sceneTreeMeshPart">语义部件</label>
+                <select id="sceneTreeMeshPart"></select>
+                <label for="sceneTreeMeshElementMode">控制元素选择</label>
+                <select id="sceneTreeMeshElementMode">
+                  <option value="vertex">顶点</option>
+                  <option value="edge">边</option>
+                  <option value="face">面</option>
+                  <option value="part">语义部件</option>
+                </select>
+                <label for="sceneTreeMeshVertex">控制顶点</label>
+                <select id="sceneTreeMeshVertex"></select>
+                <label for="sceneTreeMeshVertexPosition">顶点位置 (x,y,z)</label>
+                <input id="sceneTreeMeshVertexPosition" type="text" autocomplete="off" spellcheck="false" placeholder="0, 0, 0">
+                <label for="sceneTreeMeshEdge">控制边</label>
+                <select id="sceneTreeMeshEdge"></select>
+                <label for="sceneTreeMeshEdgeCrease">边折痕 (0–1)</label>
+                <input id="sceneTreeMeshEdgeCrease" type="number" min="0" max="1" step="0.05" value="0">
+                <label for="sceneTreeMeshFace">控制面</label>
+                <select id="sceneTreeMeshFace"></select>
+                <label for="sceneTreeMeshMorphTarget">Morph Target</label>
+                <select id="sceneTreeMeshMorphTarget"></select>
+                <label for="sceneTreeMeshMorphValue">Morph 权重</label>
+                <input id="sceneTreeMeshMorphValue" type="number" min="0" max="1" step="0.05" value="0">
+              </div>
+              <div class="sceneTreePropActions sceneTreeMeshActions">
+                <button type="button" class="miniBtn" id="sceneTreeMeshMoveVertexBtn">应用顶点坐标</button>
+                <button type="button" class="miniBtn" id="sceneTreeMeshGizmoBtn">坐标轴编辑选区</button>
+                <button type="button" class="miniBtn" id="sceneTreeMeshSetCreaseBtn">设置边折痕</button>
+                <button type="button" class="miniBtn" id="sceneTreeMeshAssignPartBtn">设置面部件</button>
+                <button type="button" class="miniBtn" id="sceneTreeMeshControlCageBtn">查看控制网格</button>
+                <button type="button" class="miniBtn" id="sceneTreeMeshValidateBtn">拓扑诊断</button>
+                <button type="button" class="miniBtn" id="sceneTreeMeshExtrudeBtn">拉伸面</button>
+                <button type="button" class="miniBtn" id="sceneTreeMeshInsetBtn">内插面</button>
+                <button type="button" class="miniBtn" id="sceneTreeMeshBevelBtn">倒角</button>
+                <button type="button" class="miniBtn" id="sceneTreeMeshBridgeBtn">桥接边环</button>
+                <button type="button" class="miniBtn" id="sceneTreeMeshLoopCutBtn">环切/加环</button>
+                <button type="button" class="miniBtn" id="sceneTreeMeshMirrorBtn">镜像</button>
+                <button type="button" class="miniBtn" id="sceneTreeMeshSubdivideBtn">细分曲面</button>
+                <button type="button" class="miniBtn" id="sceneTreeMeshSmoothBtn">平滑控制网格</button>
+                <button type="button" class="miniBtn" id="sceneTreeMeshApplyMorphBtn">应用 Morph</button>
+                <button type="button" class="miniBtn" id="sceneTreeMeshBakeBtn">Bake 为 BufferMesh</button>
+              </div>
+              <label for="sceneTreeMeshModifiers">Modifiers JSON</label>
+              <textarea id="sceneTreeMeshModifiers" rows="7" spellcheck="false"></textarea>
+              <div class="sceneTreePropActions">
+                <button type="button" class="miniBtn" id="sceneTreeMeshApplyModifiersBtn">应用 Modifier</button>
+              </div>
+            </div>
             <div class="sceneTreePropSection sceneTreePropSectionMaterial">
               <div class="sceneTreePropSectionTitle">材质</div>
               <div id="sceneTreeMaterialTreeRoot" class="sceneTreeMaterialTree" hidden></div>

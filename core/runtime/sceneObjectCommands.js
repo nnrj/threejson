@@ -13,7 +13,16 @@ const ASYNC_FIRST_OBJ_TYPES = new Set([
   "domain",
   "skinned",
   "audio",
-  "infopanel"
+  "infopanel",
+  "editablemesh",
+  "parametricsurface",
+  "bezierpatch",
+  "nurbssurface",
+  "lathemesh",
+  "loftmesh",
+  "sweepmesh",
+  "implicitsurface",
+  "sdfmesh"
 ]);
 
 function cloneJson(value) {

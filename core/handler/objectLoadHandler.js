@@ -17,6 +17,7 @@ import {
   runRecordDeployWithLifecycle
 } from "../runtime/objectLifecycle/index.js";
 import { runWithRuntimeContextScope } from "../runtime/runtimeContext.js";
+import { ensureOptionalSceneCapabilitiesForPayload } from "../capabilities/optionalCapabilityLoader.js";
 
 function resolveDeployTarget(target) {
   if (target?.isObject3D === true && target?.isScene !== true) {
@@ -108,6 +109,7 @@ async function deployJsonObjectAsync(target, record, options = {}) {
   assertRecordMode(options);
   assertObjectRecord(record);
   const normalized = resolveDeployRecord(record, options);
+  await ensureOptionalSceneCapabilitiesForPayload(normalized);
   const targetInfo = resolveDeployTarget(target);
   const ctx = buildDeployContext({ ...options, dynamicLifecycleDispatch: true }, targetInfo, normalized);
   let created = null;

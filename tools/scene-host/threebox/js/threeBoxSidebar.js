@@ -20,6 +20,33 @@ import { t } from "../../shared/i18n/index.js";
  * and vanished on every page refresh.
  */
 const TEMPLATE_GALLERY_EXPANDED_KEY = "threejson.threebox.templateGallery.expanded";
+const HISTORY_INITIAL_BATCH_SIZE = 18;
+const HISTORY_IDLE_BATCH_SIZE = 24;
+
+function scheduleSidebarRenderWork(callback) {
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(callback, { timeout: 300 });
+    return;
+  }
+  window.setTimeout(callback, 0);
+}
+
+/**
+ * Combines records loaded from IndexedDB with records created while that read was in flight.
+ * The live in-memory version wins: otherwise a fast first message could create a conversation,
+ * then the slower startup read would replace the array with an older snapshot and make that new
+ * conversation disappear from the sidebar.
+ */
+export function mergeHydratedSidebarRecords(loadedRecords, liveRecords) {
+  const merged = new Map();
+  for (const record of Array.isArray(loadedRecords) ? loadedRecords : []) {
+    if (record?.id) merged.set(record.id, record);
+  }
+  for (const record of Array.isArray(liveRecords) ? liveRecords : []) {
+    if (record?.id) merged.set(record.id, record);
+  }
+  return Array.from(merged.values());
+}
 
 function formatRelativeTime(ts) {
   const diffMs = Date.now() - ts;
@@ -39,7 +66,7 @@ function formatRelativeTime(ts) {
 }
 
 /**
- * @param {{ openAiConfig?: () => void, openSettings?: () => void, closeLeftDock?: () => void, onNewChat?: (conv: object) => void, onSelectConversation?: (id: string) => void, onDeleteConversation?: (conv: object, detail: { wasActive: boolean }) => void|Promise<void> }} [host]
+ * @param {{ openAiConfig?: () => void, openSettings?: () => void, closeLeftDock?: () => void, onNewChat?: (conv: object) => void, onSelectConversation?: (id: string) => void, onDeleteConversation?: (conv: object, detail: { wasActive: boolean }) => void|Promise<void>, onTemplateGalleryOpen?: () => void }} [host]
  */
 export function createThreeBoxSidebar(host = {}) {
   const templateSearchInput = document.getElementById("templateSearchInput");
@@ -67,6 +94,10 @@ export function createThreeBoxSidebar(host = {}) {
   let projects = [];
   let activeConversationId = null;
   let contextMenuTargetId = "";
+  let initialized = false;
+  let hydrated = false;
+  let hydrationPromise = null;
+  let historyRenderVersion = 0;
 
   function activeConversations() {
     return conversations
@@ -151,29 +182,47 @@ export function createThreeBoxSidebar(host = {}) {
     return el;
   }
 
+  function appendHistoryItemsInBatches(container, records, renderVersion, start = 0) {
+    if (!container || renderVersion !== historyRenderVersion || start >= records.length) {
+      return;
+    }
+    const batchSize = start === 0 ? HISTORY_INITIAL_BATCH_SIZE : HISTORY_IDLE_BATCH_SIZE;
+    const end = Math.min(records.length, start + batchSize);
+    const fragment = document.createDocumentFragment();
+    for (let index = start; index < end; index += 1) {
+      fragment.appendChild(buildHistoryItemEl(records[index]));
+    }
+    container.appendChild(fragment);
+    if (end < records.length) {
+      scheduleSidebarRenderWork(() =>
+        appendHistoryItemsInBatches(container, records, renderVersion, end)
+      );
+    }
+  }
+
   function renderHistoryList() {
+    const renderVersion = ++historyRenderVersion;
+    const active = activeConversations();
+    const archived = archivedConversationsList();
     if (historyListEl) {
       historyListEl.innerHTML = "";
-      const active = activeConversations();
       if (active.length === 0) {
         const hint = document.createElement("div");
         hint.className = "sidebarStubHint";
-        hint.textContent = t("threebox.sidebar.historyEmpty", "暂无聊天记录，点击「新聊天」开始。");
+        hint.textContent = hydrated
+          ? t("threebox.sidebar.historyEmpty", "暂无聊天记录，点击「新聊天」开始。")
+          : t("threebox.sidebar.historyLoading", "正在加载聊天历史…");
         historyListEl.appendChild(hint);
-      }
-      for (const conv of active) {
-        historyListEl.appendChild(buildHistoryItemEl(conv));
+      } else {
+        appendHistoryItemsInBatches(historyListEl, active, renderVersion);
       }
     }
     if (archivedListEl) {
       archivedListEl.innerHTML = "";
-      const archived = archivedConversationsList();
-      for (const conv of archived) {
-        archivedListEl.appendChild(buildHistoryItemEl(conv));
-      }
-      if (archivedSection) {
-        archivedSection.hidden = archived.length === 0;
-      }
+      appendHistoryItemsInBatches(archivedListEl, archived, renderVersion);
+    }
+    if (archivedSection) {
+      archivedSection.hidden = archived.length === 0;
     }
   }
 
@@ -540,28 +589,51 @@ export function createThreeBoxSidebar(host = {}) {
       /* ignore */
     }
     templateGallerySection.open = expanded;
+    if (expanded) {
+      host.onTemplateGalleryOpen?.();
+    }
     templateGallerySection.addEventListener("toggle", () => {
       try {
         localStorage.setItem(TEMPLATE_GALLERY_EXPANDED_KEY, templateGallerySection.open ? "1" : "0");
       } catch (_error) {
         /* ignore */
       }
+      if (templateGallerySection.open) {
+        host.onTemplateGalleryOpen?.();
+      }
     });
   }
 
-  async function init() {
+  async function hydrateSidebarData() {
     const [loadedConversations, loadedProjects] = await Promise.all([
       getAllConversations().catch(() => []),
       getAllProjects().catch(() => [])
     ]);
-    conversations = loadedConversations;
-    projects = loadedProjects;
+    conversations = mergeHydratedSidebarRecords(loadedConversations, conversations);
+    projects = mergeHydratedSidebarRecords(loadedProjects, projects);
+    hydrated = true;
     renderProjects();
     renderHistoryList();
+    if (searchChatModal?.hidden === false) {
+      renderSearchChatResults(searchChatInput?.value || "");
+    }
+  }
+
+  function init() {
+    if (initialized) {
+      return hydrationPromise;
+    }
+    initialized = true;
+    // Bind the shell first. IndexedDB hydration and a potentially large history DOM must never
+    // gate Settings, New chat, search, or the user menu.
     wireHistoryContextMenu();
     wireNav();
     wireUserMenu();
     wireTemplateGalleryMemory();
+    renderProjects();
+    renderHistoryList();
+    hydrationPromise = hydrateSidebarData();
+    return hydrationPromise;
   }
 
   /** Re-renders every dynamic (non data-i18n-attributed) list after a locale switch, so labels
@@ -577,6 +649,7 @@ export function createThreeBoxSidebar(host = {}) {
     getActiveConversationId: () => activeConversationId,
     createNewChat,
     ensureActiveConversation,
-    touchActiveConversation
+    touchActiveConversation,
+    whenHydrated: () => hydrationPromise || Promise.resolve()
   };
 }

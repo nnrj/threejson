@@ -194,6 +194,8 @@ Scene authoring rules:
     - Every standalone/new scene should include at least one ambient and one directional light unless the user's request clearly implies otherwise (e.g. "in total darkness except for one lamp"). A good default is ambient 0.45-0.65 plus directional 0.9-1.2 from above/front/side.
 15. Particle emitters are opt-in effects, not default scene dressing. Do not include particleEmitter/particleList unless the prompt or reference clearly calls for particles/weather/smoke/magic/dust/sparks/starfield.
 16. Keep one coherent spatial scale across the whole scene. Estimate the real relative dimensions of the largest container (room/site/floor) and its contents before writing records; size the support surface from the occupied bounds plus margins, not from an unrelated primitive example. Repeated full-size objects must have distinct planned positions. Before output, check object footprints for accidental overlap, confirm that walls/ceilings contain their contents, and fit camera position/target to the complete scene bounds. Domain defaults and generic primitive examples may use different scales, so never mix them blindly.
+17. Representation follows shape, not prestige. A box, cylinder, lathe, extrusion, repeated instance, or CSG result that exactly matches the requested form is preferable to a hand-authored vertex mesh. Use editableMesh, compact surfaces/SDF, or bufferMesh only when irregular silhouette, continuous free-form curvature, topology, morphing, or local surface features actually require them.
+18. A progressive free-form draft should normally be the first low-density editable surface that will continue to be refined, not a disposable pile of primitives that must later be rebuilt. Primitive/CSG blockouts remain appropriate for whole-scene layout, hard-surface assemblies, and subjects whose final representation is itself primitive/CSG.
 `;
 
 const THREE_JSON_TEXTURE_ACQUISITION_RULE = `
@@ -366,14 +368,17 @@ Common content objType values:
 - Geometry: box, floor, wall, glass, door, cabinet, road, sphere, cylinder, cone, torus, ring, capsule, plane.
 - Structure: group (nested children in subScene), line, tube, instanced, sprite, text.
 - Panels/effects: infoPanel, css3dPanel, shaderSurface, particleEmitter, points, wind, heatMap, audio.
-- Advanced/assets: native, shapePlane, shapeExtrude, irregularPlane, irregularGeometry, bufferMesh, skinned, externalModel.
+- Advanced/assets: native, shapePlane, shapeExtrude, irregularPlane, irregularGeometry, bufferMesh, editableMesh, parametricSurface, nurbsSurface, bezierPatch, latheMesh, loftMesh, sweepMesh, implicitSurface, skinned, externalModel.
 - Business features: domain with domain + handler + payload/items/options.
 
 Selection rules:
 - Use line only for a visible route, cable, boundary, outline, or path—not as generic decoration.
 - Use group.subScene for assemblies and instanced.transforms for many repeated objects.
 - Use infoPanel for static rendered signage, css3dPanel for interactive DOM, and text for floating/mesh/SDF scene text.
-- Use externalModel with modelPath for GLTF/GLB/OBJ assets; use native with geometry.type for Three.js-native geometry.
+- Choose the least complex representation that is still exact for the requested shape: primitives/native parametric geometry for regular forms, instancing for repetitions, and CSG for exact unions/cuts. Do not use editableMesh/raw bufferMesh merely because the user says "high quality" when those forms already represent the object faithfully.
+- Use externalModel with modelPath only when an external asset is actually desired. For native free-form authoring use editableMesh, full bufferMesh, or a compact surface/SDF objType; use native with geometry.type for a Three.js-native geometry.
+- A genuinely complex, organic, free-form, or continuously curved model must not be reduced to boxes/cylinders/spheres just to shorten JSON. Prefer a recognizable low-density editableMesh control cage plus deterministic subdivision; use raw bufferMesh when complete coordinates are requested.
+- When an editableMesh control cage already has the correct silhouette, increase evaluated smoothness/detail locally with Catmull-Clark (quad/n-gon), Loop (triangles), and optional Smooth modifiers instead of making the LLM invent redundant vertices. Add control topology only when the silhouette, features, or deformation actually require it.
 - Use domain records for supported business objects such as device.cabinet, stat.bar, port, nature.sky/water, and weather.
 - Use particleEmitter only for explicit or clearly implied particle/weather/smoke/dust/spark/magic/starfield effects.
 - Preserve every unrelated field during edits. Target objects by threeJsonId whenever possible.

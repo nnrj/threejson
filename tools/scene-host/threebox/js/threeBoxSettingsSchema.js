@@ -57,11 +57,18 @@ export const THREEBOX_SETTINGS_DEFAULTS = {
     textureAllowUnknownLicense: false,
     texturePersistenceMode: "remote",
     texturePbr: true,
-    maxSceneSegments: 16,
-    // Runaway guard used only for genuinely complex draft_refine turns. Direct generation is the
-    // default and never consumes this budget. The model/no-op guards normally stop much earlier.
-    maxAutoRefineRounds: 6,
-    agentPolicyVersion: 2
+    complexModelStrategy: "auto",
+    modelQuality: "balanced",
+    modelBudget: {
+      maxTokens: 0,
+      maxCost: 0,
+      maxTimeMs: 0
+    },
+    // Optional user budgets. Zero means unlimited; core/ai owns no default continuation or
+    // refinement ceiling.
+    maxSceneSegments: 0,
+    maxAutoRefineRounds: 0,
+    agentPolicyVersion: 3
   },
   io: {
     exportJsonIndent: 2,
@@ -69,6 +76,7 @@ export const THREEBOX_SETTINGS_DEFAULTS = {
     tjzAssetPolicy: "preserve",
     showMeshExportWarnings: true,
     turnCacheMode: "full",
+    turnDiffCheckpointInterval: 12,
     jsonViewerLineNumbers: true,
     jsonViewerHighlight: true
   },
@@ -196,19 +204,34 @@ export const THREEBOX_SETTINGS_FIELDS = [
   { section: "ai", path: "ai.textureAllowUnknownLicense", type: "checkbox", label: "允许自动使用许可未知的纹理" },
   {
     section: "ai",
+    path: "ai.complexModelStrategy",
+    type: "select",
+    label: "复杂模型生成策略",
+    options: [["auto", "自动（由 AI 判断）"], ["full-coordinates", "完整坐标"], ["progressive", "渐进建模"]]
+  },
+  {
+    section: "ai",
+    path: "ai.modelQuality",
+    type: "select",
+    label: "复杂模型质量",
+    options: [["draft", "草稿"], ["balanced", "平衡（推荐）"], ["high", "高质量"], ["custom", "自定义"]]
+  },
+  { section: "ai", path: "ai.modelBudget.maxTokens", type: "number", label: "复杂模型 Token 预算（0 = 不限制）", min: 0 },
+  { section: "ai", path: "ai.modelBudget.maxCost", type: "number", label: "复杂模型费用预算（需供应商计价；0 = 不限制）", min: 0, step: 0.01 },
+  { section: "ai", path: "ai.modelBudget.maxTimeMs", type: "number", label: "复杂模型时间预算毫秒（0 = 不限制）", min: 0 },
+  {
+    section: "ai",
     path: "ai.maxSceneSegments",
     type: "number",
-    label: "场景 JSON 最大续写轮数",
-    min: 1,
-    max: 64
+    label: "场景 JSON 续写预算（0 = 不限制）",
+    min: 0
   },
   {
     section: "ai",
     path: "ai.maxAutoRefineRounds",
     type: "number",
-    label: "复杂场景细化安全上限",
-    min: 1,
-    max: 20
+    label: "复杂场景细化预算（0 = 不限制）",
+    min: 0
   },
 
   { section: "io", path: "io.exportJsonIndent", type: "number", label: "导出 JSON 缩进", min: 0, max: 4 },
@@ -227,6 +250,7 @@ export const THREEBOX_SETTINGS_FIELDS = [
       ["diff", "仅保存差异（命令调整只存调整命令，重新打开时按需重放）"]
     ]
   },
+  { section: "io", path: "io.turnDiffCheckpointInterval", type: "number", label: "差异缓存 checkpoint 间隔（0 = 不创建）", min: 0, step: 1 },
   { section: "sync", path: "sync.enabled", type: "checkbox", label: "启用自建会话同步" },
   { section: "sync", path: "sync.endpoint", type: "text", label: "同步服务器地址", placeholder: "https://your-server.example/api", testEndpoint: "selfHostedSync" },
   { section: "sync", path: "sync.accessToken", type: "password", label: "同步访问令牌" },

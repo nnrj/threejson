@@ -1,0 +1,58 @@
+{
+  "version": "next",
+  "name": "complex-modeling-raw-buffer-morph",
+  "sceneConfig": {
+    "scene": { "background": "#0b1020" },
+    "camera": { "fov": 44, "near": 0.1, "far": 200, "position": { "x": 7, "y": 6, "z": 9 } },
+    "renderer": { "antialias": true },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 0.4, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#dbeafe", "intensity": 0.75 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1.6, "position": { "x": 7, "y": 12, "z": 8 } }
+    ],
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "objectList": [
+    {
+      "threeJsonId": "raw-morph-surface",
+      "name": "raw-buffer-morph-surface",
+      "objType": "bufferMesh",
+      "geometry": {
+        "attributes": {
+          "position": {
+            "itemSize": 3,
+            "type": "Float32Array",
+            "array": [-3,0,-3, -1,0.25,-3, 1,-0.15,-3, 3,0,-3, -3,0.35,-1, -1,0.8,-1, 1,0.5,-1, 3,0.2,-1, -3,-0.15,1, -1,0.55,1, 1,0.95,1, 3,0.1,1, -3,0,3, -1,0.1,3, 1,0.35,3, 3,0,3]
+          },
+          "uv": {
+            "itemSize": 2,
+            "type": "Float32Array",
+            "array": [0,0, 0.333,0, 0.667,0, 1,0, 0,0.333, 0.333,0.333, 0.667,0.333, 1,0.333, 0,0.667, 0.333,0.667, 0.667,0.667, 1,0.667, 0,1, 0.333,1, 0.667,1, 1,1]
+          },
+          "surfaceWeight": {
+            "itemSize": 1,
+            "type": "Float32Array",
+            "array": [0,0.35,0.35,0, 0.25,0.8,0.8,0.25, 0.25,0.8,0.8,0.25, 0,0.35,0.35,0]
+          }
+        },
+        "index": {
+          "type": "Uint16Array",
+          "array": [0,1,4, 1,5,4, 1,2,5, 2,6,5, 2,3,6, 3,7,6, 4,5,8, 5,9,8, 5,6,9, 6,10,9, 6,7,10, 7,11,10, 8,9,12, 9,13,12, 9,10,13, 10,14,13, 10,11,14, 11,15,14]
+        },
+        "morphAttributes": {
+          "position": [
+            {
+              "itemSize": 3,
+              "type": "Float32Array",
+              "array": [-3,0,-3, -1,0.55,-3, 1,0.35,-3, 3,0,-3, -3,0.5,-1, -1,1.6,-1, 1,1.25,-1, 3,0.4,-1, -3,0.2,1, -1,1.25,1, 1,1.75,1, 3,0.25,1, -3,0,3, -1,0.4,3, 1,0.65,3, 3,0,3]
+            }
+          ]
+        },
+        "morphTargetsRelative": false
+      },
+      "morphInfluences": [0.42],
+      "material": { "type": "physical", "color": "#38bdf8", "roughness": 0.26, "metalness": 0.3, "clearcoat": 0.55, "side": "double" }
+    }
+  ],
+  "threeJsonId": "complex-modeling-raw-buffer-morph"
+}

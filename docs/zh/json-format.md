@@ -147,6 +147,7 @@ ThreeJSON 支持两种等价写法：
 | `irregularPlaneList` | `irregularPlane` | 不规则平面。 |
 | `irregularGeometryList` | `irregularGeometry` | 不规则几何。 |
 | `bufferMeshList` | `bufferMesh` | 显式 BufferGeometry。 |
+| `editableMeshList` | `editableMesh` | 带稳定 ID、语义 part 和 modifier 的可编辑控制网格；详见[复杂模型专题](./complex-mesh.md)。 |
 | `audioList` | `audio` | 场景音频。 |
 | `skinnedList` | `skinned` | 骨骼模型。 |
 

@@ -1,5 +1,8 @@
+import * as THREE from "three";
 import { resolveParentThreeJsonId } from "../runtime/sceneObjectCommands.js";
 import { normalizeScenePayload } from "../handler/sceneFriendlyNormalizer.js";
+import { evaluateNumericExpression } from "../util/numericExpression.js";
+import { resolvePosition, resolveRotation, resolveScale } from "../util/vectorValue.js";
 
 /**
  * Compact spatial context for AI scene update (position, geometry summary, scale profile).
@@ -43,13 +46,318 @@ function toNumber(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
+function vectorRecord(value) {
+  return { x: value.x, y: value.y, z: value.z };
+}
+
+function pointFrom(value) {
+  if (Array.isArray(value) && value.length >= 3) {
+    const point = value.slice(0, 3).map((one) => Number(one));
+    return point.every(Number.isFinite) ? point : null;
+  }
+  if (isObjectRecord(value)) {
+    const point = [Number(value.x), Number(value.y), Number(value.z)];
+    return point.every(Number.isFinite) ? point : null;
+  }
+  return null;
+}
+
+function emptyBounds() {
+  return {
+    min: [Infinity, Infinity, Infinity],
+    max: [-Infinity, -Infinity, -Infinity],
+    pointCount: 0
+  };
+}
+
+function includePoint(bounds, point) {
+  if (!bounds || !Array.isArray(point) || point.length < 3 || !point.every(Number.isFinite)) return;
+  for (let axis = 0; axis < 3; axis += 1) {
+    bounds.min[axis] = Math.min(bounds.min[axis], point[axis]);
+    bounds.max[axis] = Math.max(bounds.max[axis], point[axis]);
+  }
+  bounds.pointCount += 1;
+}
+
+function finalizeBounds(bounds, source = "descriptor") {
+  if (!bounds || bounds.pointCount < 1 || !bounds.min.every(Number.isFinite) || !bounds.max.every(Number.isFinite)) return null;
+  return { min: bounds.min, max: bounds.max, source, pointCount: bounds.pointCount };
+}
+
+function boundsFromPointCollection(value, source = "descriptor-control") {
+  const bounds = emptyBounds();
+  const visit = (entry) => {
+    const point = pointFrom(entry);
+    if (point) {
+      includePoint(bounds, point);
+      return;
+    }
+    if (Array.isArray(entry)) {
+      for (const child of entry) visit(child);
+    }
+  };
+  visit(value);
+  return finalizeBounds(bounds, source);
+}
+
+function readBoundsDescriptor(value, source = "descriptor-explicit") {
+  if (!isObjectRecord(value)) return null;
+  const min = pointFrom(value.min);
+  const max = pointFrom(value.max);
+  if (!min || !max) return null;
+  return {
+    min: min.map((one, axis) => Math.min(one, max[axis])),
+    max: max.map((one, axis) => Math.max(one, min[axis])),
+    source
+  };
+}
+
+function arrayLikeValues(value) {
+  if (ArrayBuffer.isView(value)) return value;
+  if (Array.isArray(value)) return value;
+  if (isObjectRecord(value)) {
+    if (ArrayBuffer.isView(value.array) || Array.isArray(value.array)) return value.array;
+    if (ArrayBuffer.isView(value.data) || Array.isArray(value.data)) return value.data;
+  }
+  return null;
+}
+
+function boundsFromFlatPositions(value, itemSize = 3, source = "descriptor-vertices") {
+  const values = arrayLikeValues(value);
+  const stride = Math.max(3, Math.round(Number(itemSize) || 3));
+  if (!values || values.length < 3) return null;
+  const bounds = emptyBounds();
+  for (let i = 0; i + 2 < values.length; i += stride) {
+    const point = [Number(values[i]), Number(values[i + 1]), Number(values[i + 2])];
+    if (point.every(Number.isFinite)) includePoint(bounds, point);
+  }
+  return finalizeBounds(bounds, source);
+}
+
+function expandBounds(bounds, amount) {
+  if (!bounds || !Number.isFinite(amount) || amount <= 0) return bounds;
+  return {
+    ...bounds,
+    min: bounds.min.map((value) => value - amount),
+    max: bounds.max.map((value) => value + amount)
+  };
+}
+
+function boundsFromPrimitive(descriptor, geometry) {
+  const objType = String(descriptor.objType || "").toLowerCase();
+  const width = Number(geometry.width);
+  const height = Number(geometry.height);
+  const depth = Number(geometry.depth);
+  if (objType === "box" || objType === "floor" || objType === "wall" || objType === "glass" || Number.isFinite(width) || Number.isFinite(depth)) {
+    const half = [Math.abs(Number.isFinite(width) ? width : 0) / 2, Math.abs(Number.isFinite(height) ? height : 0) / 2, Math.abs(Number.isFinite(depth) ? depth : 0) / 2];
+    return { min: half.map((value) => -value), max: half, source: "descriptor-primitive" };
+  }
+  if (objType === "cylinder" || objType === "cone" || geometry.radiusTop != null || geometry.radiusBottom != null) {
+    const radius = Math.max(Math.abs(Number(geometry.radiusTop) || 0), Math.abs(Number(geometry.radiusBottom) || 0), Math.abs(Number(geometry.radius) || 0));
+    const halfHeight = Math.abs(Number(geometry.height) || 0) / 2;
+    return { min: [-radius, -halfHeight, -radius], max: [radius, halfHeight, radius], source: "descriptor-primitive" };
+  }
+  if (objType === "sphere" || (geometry.radius != null && geometry.width == null && geometry.radiusTop == null)) {
+    const radius = Math.abs(Number(geometry.radius) || 0);
+    return { min: [-radius, -radius, -radius], max: [radius, radius, radius], source: "descriptor-primitive" };
+  }
+  if (objType === "capsule") {
+    const radius = Math.abs(Number(geometry.radius) || 0);
+    const halfHeight = Math.abs(Number(geometry.length ?? geometry.height) || 0) / 2 + radius;
+    return { min: [-radius, -halfHeight, -radius], max: [radius, halfHeight, radius], source: "descriptor-primitive" };
+  }
+  if (objType === "torus") {
+    const outer = Math.abs(Number(geometry.radius) || 0) + Math.abs(Number(geometry.tube) || 0);
+    const tube = Math.abs(Number(geometry.tube) || 0);
+    return { min: [-outer, -tube, -outer], max: [outer, tube, outer], source: "descriptor-primitive" };
+  }
+  if (objType === "ring") {
+    const radius = Math.abs(Number(geometry.outerRadius ?? geometry.radius) || 0);
+    return { min: [-radius, -radius, 0], max: [radius, radius, 0], source: "descriptor-primitive" };
+  }
+  if (objType === "plane") {
+    const halfWidth = Math.abs(Number(geometry.width) || 0) / 2;
+    const halfHeight = Math.abs(Number(geometry.height) || 0) / 2;
+    return { min: [-halfWidth, -halfHeight, 0], max: [halfWidth, halfHeight, 0], source: "descriptor-primitive" };
+  }
+  return null;
+}
+
+function boundsFromParametric(geometry) {
+  const expressions = geometry.expressions || geometry.expression;
+  if (!isObjectRecord(expressions) || ![expressions.x, expressions.y, expressions.z].every((value) => typeof value === "string")) return null;
+  const uRange = Array.isArray(geometry.uRange) ? geometry.uRange : [0, 1];
+  const vRange = Array.isArray(geometry.vRange) ? geometry.vRange : [0, 1];
+  const bounds = emptyBounds();
+  try {
+    for (let vi = 0; vi <= 8; vi += 1) {
+      for (let ui = 0; ui <= 8; ui += 1) {
+        const s = ui / 8;
+        const t = vi / 8;
+        const u = toNumber(uRange[0]) + (toNumber(uRange[1]) - toNumber(uRange[0])) * s;
+        const v = toNumber(vRange[0]) + (toNumber(vRange[1]) - toNumber(vRange[0])) * t;
+        includePoint(bounds, [
+          evaluateNumericExpression(expressions.x, { u, v, s, t }),
+          evaluateNumericExpression(expressions.y, { u, v, s, t }),
+          evaluateNumericExpression(expressions.z, { u, v, s, t })
+        ]);
+      }
+    }
+  } catch (_error) {
+    return null;
+  }
+  return finalizeBounds(bounds, "descriptor-sampled");
+}
+
+function localBoundsFromDescriptor(descriptor) {
+  const geometry = isObjectRecord(descriptor.geometry) ? descriptor.geometry : {};
+  const explicit = readBoundsDescriptor(geometry.bounds || descriptor.bounds);
+  if (explicit) return explicit;
+  const objType = String(descriptor.objType || "").toLowerCase();
+  if (objType === "editablemesh") {
+    return boundsFromPointCollection((descriptor.topology?.vertices || []).map((vertex) => vertex?.position), "descriptor-control-cage");
+  }
+  if (objType === "buffermesh" || objType === "irregulargeometry" || objType === "irregularplane") {
+    const position = geometry.attributes?.position;
+    return boundsFromFlatPositions(position?.array ?? position?.data ?? position ?? geometry.positions ?? descriptor.positions, position?.itemSize || 3);
+  }
+  if (objType === "lathemesh") {
+    const profile = Array.isArray(geometry.profile || geometry.points) ? geometry.profile || geometry.points : [];
+    const bounds = emptyBounds();
+    for (const entry of profile) {
+      const radius = Math.abs(Number(Array.isArray(entry) ? entry[0] : entry?.x ?? entry?.radius) || 0);
+      const y = Number(Array.isArray(entry) ? entry[1] : entry?.y);
+      if (Number.isFinite(y)) {
+        includePoint(bounds, [-radius, y, -radius]);
+        includePoint(bounds, [radius, y, radius]);
+      }
+    }
+    return finalizeBounds(bounds, "descriptor-profile");
+  }
+  if (objType === "sweepmesh") {
+    const pathBounds = boundsFromPointCollection(geometry.path?.points || geometry.path, "descriptor-path");
+    const profile = Array.isArray(geometry.profile) ? geometry.profile : [];
+    const radius = profile.reduce((max, entry) => {
+      const x = Number(Array.isArray(entry) ? entry[0] : entry?.x);
+      const y = Number(Array.isArray(entry) ? entry[1] : entry?.y);
+      return Number.isFinite(x) && Number.isFinite(y) ? Math.max(max, Math.hypot(x, y)) : max;
+    }, 0);
+    return expandBounds(pathBounds, radius);
+  }
+  if (objType === "parametricsurface") {
+    return boundsFromParametric(geometry);
+  }
+  if (["nurbssurface", "bezierpatch"].includes(objType)) {
+    return boundsFromPointCollection(geometry.controlPoints, "descriptor-control-points");
+  }
+  if (objType === "loftmesh") {
+    return boundsFromPointCollection(geometry.sections, "descriptor-sections");
+  }
+  const points = geometry.points || geometry.vertices || geometry.positions;
+  return boundsFromPointCollection(points, "descriptor-points") || boundsFromPrimitive(descriptor, geometry);
+}
+
+function descriptorLocalMatrix(descriptor) {
+  const position = resolvePosition(descriptor.position);
+  const rotation = resolveRotation(descriptor.rotation);
+  const scale = resolveScale(descriptor.scale);
+  return new THREE.Matrix4().compose(
+    new THREE.Vector3(position.x, position.y, position.z),
+    new THREE.Quaternion().setFromEuler(new THREE.Euler(rotation.x, rotation.y, rotation.z)),
+    new THREE.Vector3(scale.x, scale.y, scale.z)
+  );
+}
+
+function transformBounds(bounds, matrix, source = bounds?.source || "descriptor") {
+  if (!bounds || !matrix) return bounds || null;
+  const result = new THREE.Box3();
+  result.makeEmpty();
+  for (const x of [bounds.min[0], bounds.max[0]]) {
+    for (const y of [bounds.min[1], bounds.max[1]]) {
+      for (const z of [bounds.min[2], bounds.max[2]]) {
+        result.expandByPoint(new THREE.Vector3(x, y, z).applyMatrix4(matrix));
+      }
+    }
+  }
+  if (result.isEmpty()) return null;
+  return { min: result.min.toArray(), max: result.max.toArray(), source };
+}
+
+function boundsFromRuntimeObject(object3D) {
+  if (!object3D?.isObject3D) return null;
+  object3D.updateWorldMatrix?.(true, false);
+  const box = new THREE.Box3().setFromObject(object3D, true);
+  if (box.isEmpty() || !box.min.toArray().every(Number.isFinite) || !box.max.toArray().every(Number.isFinite)) return null;
+  return { min: box.min.toArray(), max: box.max.toArray(), source: "runtime-evaluated" };
+}
+
+function boundsRecord(bounds) {
+  if (!bounds) return null;
+  return {
+    minX: bounds.min[0], maxX: bounds.max[0],
+    minY: bounds.min[1], maxY: bounds.max[1],
+    minZ: bounds.min[2], maxZ: bounds.max[2]
+  };
+}
+
+function boundsSize(bounds) {
+  if (!bounds) return 0;
+  return Math.max(...bounds.max.map((value, axis) => Math.abs(value - bounds.min[axis])));
+}
+
+function countPositionVertices(geometry) {
+  const position = geometry?.attributes?.position;
+  const values = arrayLikeValues(position?.array ?? position?.data ?? position ?? geometry?.positions);
+  const itemSize = Math.max(1, Math.round(Number(position?.itemSize) || 3));
+  return values ? Math.floor(values.length / itemSize) : null;
+}
+
+function countIndices(geometry) {
+  const values = arrayLikeValues(geometry?.index?.array ?? geometry?.index?.data ?? geometry?.index ?? geometry?.indices);
+  return values ? values.length : null;
+}
+
+function summarizeModifierTypes(modifiers) {
+  return [...new Set((Array.isArray(modifiers) ? modifiers : []).filter((item) => item?.enabled !== false).map((item) => String(item?.type || "").trim()).filter(Boolean))];
+}
+
 /**
  * @param {Record<string, unknown>} descriptor
  * @returns {string}
  */
-export function buildGeometrySummary(descriptor) {
+export function buildGeometrySummary(descriptor, options = {}) {
   const objType = String(descriptor.objType || "").toLowerCase();
   const geometry = isObjectRecord(descriptor.geometry) ? descriptor.geometry : null;
+  const runtimeGeometry = options.object3D?.geometry;
+  if (objType === "editablemesh") {
+    const topology = isObjectRecord(descriptor.topology) ? descriptor.topology : {};
+    const vertices = Array.isArray(topology.vertices) ? topology.vertices.length : 0;
+    const faces = Array.isArray(topology.faces) ? topology.faces.length : 0;
+    const parts = new Set((topology.faces || []).map((face) => face?.part).filter(Boolean)).size;
+    const modifiers = summarizeModifierTypes(descriptor.modifiers);
+    const evaluatedVertices = runtimeGeometry?.getAttribute?.("position")?.count;
+    return `editableMesh control=${vertices}v/${faces}f parts=${parts}${modifiers.length ? ` modifiers=${modifiers.join(",")}` : ""}${Number.isFinite(evaluatedVertices) ? ` evaluated=${evaluatedVertices}v` : ""}`;
+  }
+  if (objType === "buffermesh") {
+    const vertices = runtimeGeometry?.getAttribute?.("position")?.count ?? countPositionVertices(geometry);
+    const indexCount = runtimeGeometry?.index?.count ?? countIndices(geometry);
+    const triangles = Number.isFinite(indexCount) ? Math.floor(indexCount / 3) : Number.isFinite(vertices) ? Math.floor(vertices / 3) : null;
+    const attributes = runtimeGeometry?.attributes
+      ? Object.keys(runtimeGeometry.attributes)
+      : Object.keys(geometry?.attributes || {});
+    return `bufferMesh${Number.isFinite(vertices) ? ` ${vertices}v` : ""}${Number.isFinite(triangles) ? `/${triangles}t` : ""}${attributes.length ? ` attrs=${attributes.join(",")}` : ""}`;
+  }
+  if (["parametricsurface", "nurbssurface", "bezierpatch", "lathemesh", "loftmesh", "sweepmesh", "implicitsurface"].includes(objType)) {
+    const evaluatedVertices = runtimeGeometry?.getAttribute?.("position")?.count;
+    const detail = objType === "nurbssurface" || objType === "bezierpatch"
+      ? ` controls=${boundsFromPointCollection(geometry?.controlPoints)?.pointCount || "grid"}`
+      : objType === "loftmesh"
+        ? ` sections=${Array.isArray(geometry?.sections) ? geometry.sections.length : 0}`
+        : objType === "sweepmesh"
+          ? ` path=${Array.isArray(geometry?.path?.points || geometry?.path) ? (geometry.path?.points || geometry.path).length : 0}`
+          : "";
+    return `${objType}${detail}${Number.isFinite(evaluatedVertices) ? ` evaluated=${evaluatedVertices}v` : ""}`;
+  }
   if (!geometry) {
     return objType ? `${objType} unknown` : "unknown";
   }
@@ -80,67 +388,14 @@ export function buildGeometrySummary(descriptor) {
  * @param {Record<string, unknown>} descriptor
  * @returns {{ minX: number, maxX: number, minY: number, maxY: number, minZ: number, maxZ: number }|null}
  */
-export function buildFootprint(descriptor) {
-  const position = isObjectRecord(descriptor.position) ? descriptor.position : {};
-  const px = toNumber(position.x);
-  const py = toNumber(position.y);
-  const pz = toNumber(position.z);
-  const objType = String(descriptor.objType || "").toLowerCase();
-  const geometry = isObjectRecord(descriptor.geometry) ? descriptor.geometry : null;
-  if (!geometry) {
-    return {
-      minX: px,
-      maxX: px,
-      minY: py,
-      maxY: py,
-      minZ: pz,
-      maxZ: pz
-    };
-  }
-  if (objType === "cylinder" || geometry.radiusTop != null || geometry.radiusBottom != null) {
-    const r = toNumber(geometry.radiusTop ?? geometry.radiusBottom ?? geometry.radius);
-    const hh = toNumber(geometry.height) / 2;
-    return {
-      minX: px - r,
-      maxX: px + r,
-      minY: py - hh,
-      maxY: py + hh,
-      minZ: pz - r,
-      maxZ: pz + r
-    };
-  }
-  if (objType === "sphere" || (geometry.radius != null && geometry.width == null)) {
-    const r = toNumber(geometry.radius);
-    return {
-      minX: px - r,
-      maxX: px + r,
-      minY: py - r,
-      maxY: py + r,
-      minZ: pz - r,
-      maxZ: pz + r
-    };
-  }
-  if (objType === "box" || geometry.width != null || geometry.depth != null) {
-    const hw = toNumber(geometry.width) / 2;
-    const hh = toNumber(geometry.height) / 2;
-    const hd = toNumber(geometry.depth) / 2;
-    return {
-      minX: px - hw,
-      maxX: px + hw,
-      minY: py - hh,
-      maxY: py + hh,
-      minZ: pz - hd,
-      maxZ: pz + hd
-    };
-  }
-  return {
-    minX: px,
-    maxX: px,
-    minY: py,
-    maxY: py,
-    minZ: pz,
-    maxZ: pz
-  };
+export function buildFootprint(descriptor, options = {}) {
+  const runtimeBounds = boundsFromRuntimeObject(options.object3D);
+  if (runtimeBounds) return boundsRecord(runtimeBounds);
+  const worldMatrix = options.worldMatrix || descriptorLocalMatrix(descriptor);
+  const descriptorBounds = transformBounds(localBoundsFromDescriptor(descriptor), worldMatrix);
+  if (descriptorBounds) return boundsRecord(descriptorBounds);
+  const position = new THREE.Vector3().setFromMatrixPosition(worldMatrix);
+  return { minX: position.x, maxX: position.x, minY: position.y, maxY: position.y, minZ: position.z, maxZ: position.z };
 }
 
 /**
@@ -149,22 +404,32 @@ export function buildFootprint(descriptor) {
  */
 export function buildObjectSpatialCard(descriptor, options = {}) {
   const id = typeof descriptor.threeJsonId === "string" ? descriptor.threeJsonId.trim() : "";
-  const position = isObjectRecord(descriptor.position) ? descriptor.position : {};
+  const position = resolvePosition(descriptor.position);
+  const rotation = resolveRotation(descriptor.rotation);
+  const scale = resolveScale(descriptor.scale);
   const parentThreeJsonId =
     typeof options.parentThreeJsonId === "string" ? options.parentThreeJsonId.trim() : "";
+  const object3D = options.object3D;
+  const worldMatrix = object3D?.matrixWorld || options.worldMatrix || descriptorLocalMatrix(descriptor);
+  const runtimeBounds = boundsFromRuntimeObject(object3D);
+  const descriptorBounds = runtimeBounds || transformBounds(localBoundsFromDescriptor(descriptor), worldMatrix);
+  const worldPositionVector = object3D?.isObject3D
+    ? object3D.getWorldPosition(new THREE.Vector3())
+    : new THREE.Vector3().setFromMatrixPosition(worldMatrix);
+  const footprint = descriptorBounds ? boundsRecord(descriptorBounds) : buildFootprint(descriptor, { worldMatrix });
   return {
     threeJsonId: id,
     name: typeof descriptor.name === "string" ? descriptor.name : "",
     objType: typeof descriptor.objType === "string" ? descriptor.objType : "",
     ...(parentThreeJsonId ? { parentThreeJsonId } : {}),
-    position: {
-      x: toNumber(position.x),
-      y: toNumber(position.y),
-      z: toNumber(position.z)
-    },
-    geometrySummary: buildGeometrySummary(descriptor),
-    maxExtent: characteristicSizeFromDescriptor(descriptor),
-    footprint: buildFootprint(descriptor)
+    position,
+    ...(parentThreeJsonId ? { worldPosition: vectorRecord(worldPositionVector) } : {}),
+    rotation,
+    scale,
+    geometrySummary: buildGeometrySummary(descriptor, { object3D }),
+    maxExtent: descriptorBounds ? boundsSize(descriptorBounds) : characteristicSizeFromDescriptor(descriptor, { worldMatrix }),
+    footprint,
+    ...(descriptorBounds ? { boundsSource: descriptorBounds.source } : {})
   };
 }
 
@@ -172,21 +437,9 @@ export function buildObjectSpatialCard(descriptor, options = {}) {
  * @param {Record<string, unknown>} descriptor
  * @returns {number}
  */
-export function characteristicSizeFromDescriptor(descriptor) {
-  const geometry = isObjectRecord(descriptor.geometry) ? descriptor.geometry : null;
-  if (!geometry) {
-    return 0;
-  }
-  const objType = String(descriptor.objType || "").toLowerCase();
-  if (objType === "box" || geometry.width != null) {
-    return Math.max(toNumber(geometry.width), toNumber(geometry.height), toNumber(geometry.depth));
-  }
-  if (geometry.radius != null) {
-    const r = toNumber(geometry.radius);
-    const h = toNumber(geometry.height);
-    return h > 0 ? Math.max(r * 2, h) : r * 2;
-  }
-  return 0;
+export function characteristicSizeFromDescriptor(descriptor, options = {}) {
+  const bounds = transformBounds(localBoundsFromDescriptor(descriptor), options.worldMatrix || descriptorLocalMatrix(descriptor));
+  return boundsSize(bounds);
 }
 
 /**
@@ -284,7 +537,7 @@ export function buildObjectSpatialCardsFromScene(ctx) {
     seen.add(id);
     descriptorById.set(id, descriptor);
     const parentThreeJsonId = resolveParentThreeJsonId(node);
-    cards.push(buildObjectSpatialCard(descriptor, { parentThreeJsonId }));
+    cards.push(buildObjectSpatialCard(descriptor, { parentThreeJsonId, object3D: node }));
   });
   cards.sort((a, b) => String(a.name).localeCompare(String(b.name)));
   const totalCount = cards.length;
@@ -323,24 +576,25 @@ export function buildObjectSpatialCardsFromSceneJson(sceneJsonPayload) {
   }
   const objectList = Array.isArray(normalized?.objectList) ? normalized.objectList : [];
 
-  function walk(records, parentThreeJsonId) {
+  function walk(records, parentThreeJsonId, parentWorldMatrix) {
     for (let i = 0; i < records.length; i += 1) {
       const descriptor = records[i];
       if (!isObjectRecord(descriptor)) {
         continue;
       }
+      const worldMatrix = parentWorldMatrix.clone().multiply(descriptorLocalMatrix(descriptor));
       const id = typeof descriptor.threeJsonId === "string" ? descriptor.threeJsonId.trim() : "";
       if (id && !seen.has(id)) {
         seen.add(id);
         descriptorById.set(id, descriptor);
-        cards.push(buildObjectSpatialCard(descriptor, { parentThreeJsonId }));
+        cards.push(buildObjectSpatialCard(descriptor, { parentThreeJsonId, worldMatrix }));
       }
       if (Array.isArray(descriptor.subScene) && descriptor.subScene.length > 0) {
-        walk(descriptor.subScene, id || parentThreeJsonId);
+        walk(descriptor.subScene, id || parentThreeJsonId, worldMatrix);
       }
     }
   }
-  walk(objectList, "");
+  walk(objectList, "", new THREE.Matrix4());
 
   cards.sort((a, b) => String(a.name).localeCompare(String(b.name)));
   const totalCount = cards.length;
@@ -412,13 +666,46 @@ function objectNameOverlapsPromptTokens(name, tokens) {
  * @returns {object}
  */
 export function buildCompactReferenceDescriptor(descriptor) {
+  const spatial = buildObjectSpatialCard(descriptor);
+  const objType = String(descriptor.objType || "").toLowerCase();
+  const geometry = isObjectRecord(descriptor.geometry) ? descriptor.geometry : null;
+  const denseGeometry = objType === "editablemesh"
+    || objType === "buffermesh"
+    || ["parametricsurface", "nurbssurface", "bezierpatch", "lathemesh", "loftmesh", "sweepmesh", "implicitsurface", "irregulargeometry", "irregularplane"].includes(objType)
+    || Boolean(geometry?.attributes?.position || geometry?.positions || geometry?.controlPoints || geometry?.sections || geometry?.path);
   const compact = {
     threeJsonId: descriptor.threeJsonId,
     name: descriptor.name,
     objType: descriptor.objType,
-    position: descriptor.position,
-    geometry: descriptor.geometry
+    position: spatial.position,
+    rotation: spatial.rotation,
+    scale: spatial.scale,
+    geometrySummary: spatial.geometrySummary,
+    maxExtent: spatial.maxExtent,
+    footprint: spatial.footprint,
+    ...(denseGeometry ? {} : { geometry: descriptor.geometry })
   };
+  if (objType === "editablemesh") {
+    const topology = isObjectRecord(descriptor.topology) ? descriptor.topology : {};
+    compact.controlTopology = {
+      revision: Math.max(0, Math.round(Number(topology.revision) || 0)),
+      vertexCount: Array.isArray(topology.vertices) ? topology.vertices.length : 0,
+      faceCount: Array.isArray(topology.faces) ? topology.faces.length : 0,
+      parts: [...new Set((topology.faces || []).map((face) => face?.part).filter(Boolean))]
+    };
+    compact.modifiers = Array.isArray(descriptor.modifiers)
+      ? descriptor.modifiers.map((modifier) => ({
+          id: modifier?.id,
+          type: modifier?.type,
+          enabled: modifier?.enabled,
+          levels: modifier?.levels,
+          iterations: modifier?.iterations,
+          factor: modifier?.factor
+        }))
+      : [];
+  } else if (objType === "buffermesh") {
+    compact.meshRevision = Math.max(0, Math.round(Number(descriptor.meshRevision) || 0));
+  }
   if (isObjectRecord(descriptor.material)) {
     const material = descriptor.material;
     compact.material = {
@@ -426,6 +713,13 @@ export function buildCompactReferenceDescriptor(descriptor) {
       color: material.color,
       opacity: material.opacity
     };
+  }
+  if (Array.isArray(descriptor.materials)) {
+    compact.materials = descriptor.materials.map((material) => ({
+      type: material?.type,
+      color: material?.color,
+      opacity: material?.opacity
+    }));
   }
   return compact;
 }
@@ -467,7 +761,17 @@ export function pickReferenceObjects(prompt, cards, descriptorById, options = {}
     }
     seen.add(card.threeJsonId);
     const full = descriptorById?.get(card.threeJsonId);
-    matched.push(full ? buildCompactReferenceDescriptor(full) : card);
+    matched.push(full ? {
+      ...buildCompactReferenceDescriptor(full),
+      ...(card.parentThreeJsonId ? { parentThreeJsonId: card.parentThreeJsonId } : {}),
+      ...(card.worldPosition ? { worldPosition: card.worldPosition } : {}),
+      position: card.position,
+      rotation: card.rotation,
+      scale: card.scale,
+      maxExtent: card.maxExtent,
+      footprint: card.footprint,
+      ...(card.boundsSource ? { boundsSource: card.boundsSource } : {})
+    } : card);
     if (matched.length >= MAX_REFERENCE_OBJECTS) {
       break;
     }

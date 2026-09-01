@@ -10,6 +10,7 @@ import {
 import { getObjectByThreeJsonId } from "../handler/objectRegistry.js";
 import { isLoadableScenePayload } from "../handler/sceneFriendlyNormalizer.js";
 import { sanitizeAiJsonText, stripMarkdownCodeFence } from "./sceneJsonSanitize.js";
+import { buildCompactReferenceDescriptor } from "./sceneSpatialContext.js";
 
 const UPDATE_COMMAND_OPS = new Set([
   "scene.list",
@@ -22,10 +23,22 @@ const UPDATE_COMMAND_OPS = new Set([
   "object.patch",
   "object.reconcile",
   "material.patch",
-  "camera.fit"
+  "camera.fit",
+  "mesh.inspect",
+  "mesh.getTopology",
+  "mesh.validate",
+  "mesh.edit",
+  "mesh.buffer.appendAttribute",
+  "mesh.buffer.setAttributeRange",
+  "mesh.buffer.appendIndices",
+  "mesh.buffer.setIndexRange",
+  "mesh.buffer.commit",
+  "mesh.buffer.cancel",
+  "mesh.bake",
+  "mesh.renderViews"
 ]);
 
-const READ_ONLY_COMMAND_OPS = new Set(["object.get", "scene.list", "scene.validate", "scene.export"]);
+const READ_ONLY_COMMAND_OPS = new Set(["object.get", "scene.list", "scene.validate", "scene.export", "mesh.inspect", "mesh.getTopology", "mesh.validate", "mesh.renderViews"]);
 
 const MUTATING_COMMAND_OPS = new Set([
   "object.add",
@@ -34,6 +47,14 @@ const MUTATING_COMMAND_OPS = new Set([
   "material.patch",
   "scene.applyPatch",
   "scene.load"
+  ,"mesh.edit"
+  ,"mesh.buffer.appendAttribute"
+  ,"mesh.buffer.setAttributeRange"
+  ,"mesh.buffer.appendIndices"
+  ,"mesh.buffer.setIndexRange"
+  ,"mesh.buffer.commit"
+  ,"mesh.buffer.cancel"
+  ,"mesh.bake"
 ]);
 
 /**
@@ -55,6 +76,9 @@ export function isSceneMutatingCommandOp(op) {
     return true;
   }
   if (name.startsWith("scene.") && name !== "scene.list" && name !== "scene.validate") {
+    return true;
+  }
+  if (name.startsWith("mesh.") && !READ_ONLY_COMMAND_OPS.has(name)) {
     return true;
   }
   return false;
@@ -301,6 +325,7 @@ function buildCommandAdvancedCapabilityFragment(options = {}) {
   ].some((id) => selected.has(id));
   const tslSelected = selected.has("webgpuTsl") || String(options.rendererBackend || "").toLowerCase() === "webgpu";
   const tslCodeSelected = selected.has("tslCode");
+  const complexMeshSelected = ["complexMesh", "editableMesh", "rawBufferMesh", "subdivisionSurface", "parametricSurface", "implicitSurface", "meshModeling", "meshMorph"].some((id) => selected.has(id));
   const blocks = [];
   if (particleSelected) {
     blocks.push([
@@ -326,6 +351,21 @@ function buildCommandAdvancedCapabilityFragment(options = {}) {
       "- Prefer preset/graph when they express the effect cleanly. Preserve existing code byte-for-byte unless the user asks to change that shader/module; the host owns authorization policy."
     ].join("\n"));
   }
+  if (complexMeshSelected) {
+    const visualReviewRule = options.visualReviewAvailable === true
+      ? "- The host supports visual review for this turn. Use mesh.renderViews only after a visible mesh exists and only when another view can answer a concrete shape/proportion question; returned images are attached to the next round."
+      : "- Visual review is unavailable for this turn. Do not call mesh.renderViews; use mesh.inspect, mesh.getTopology and mesh.validate instead.";
+    blocks.push([
+      "Negotiated complex-mesh editing capability:",
+      "- Inspect only what is needed: mesh.inspect, then mesh.getTopology id=... part=... page=... pageSize=... and mesh.validate.",
+      visualReviewRule,
+      "- Change editableMesh with one atomic mesh.edit carrying the current baseRevision. Supported operations include add/set/remove vertex/face, assignPart, setEdgeCrease, extrudeFaces, insetFaces, bevelEdges, bridgeLoops, loopCut, mirror, setModifier, setModifiers and reorderModifier.",
+      "- If the control cage already has the correct silhouette and only looks faceted or low resolution, refine locally with deterministic modifiers instead of asking the model to invent more vertices: Catmull-Clark for quad/n-gon cages, Loop for triangle cages, and Smooth only when it improves the intended silhouette. The browser evaluates these modifiers locally while the control topology remains the JSON source.",
+      "- Do not use editableMesh/raw bufferMesh for an object that primitives, native parametric geometry, instancing, or CSG can represent faithfully. Complex mesh is for shape/topology that those exact representations cannot express.",
+      "- For raw complete coordinates, append/set attribute or index ranges in a mesh.buffer transaction and call mesh.buffer.commit only after the transaction is complete. There is no engine-owned vertex/triangle/segment quota.",
+      "- Preserve semantic part names and stable IDs. Do not rewrite or resend an entire dense mesh when a local part query and local operation suffice; do not reduce free-form geometry to primitive blocks merely to save output."
+    ].join("\n"));
+  }
   return blocks.join("\n\n");
 }
 
@@ -338,6 +378,15 @@ function buildCommandTextureAcquisitionFragment() {
   ].join("\n");
 }
 
+function buildEditScopeEconomyFragment() {
+  return [
+    "Edit-scope economy:",
+    "- When the request changes only position, rotation, scale, parent/layout, visibility, material, animation, camera, or another non-shape property, the compact spatial card and exact transform are sufficient. Use object.patch/material.patch/camera.fit directly.",
+    "- Do not request mesh topology or rendered review views for a transform-only or other non-shape edit. Dense vertex coordinates are intentionally omitted from compact context.",
+    "- Use mesh.inspect/getTopology/renderViews only when the mesh shape, topology, semantic part, modifier stack, or morph itself must change."
+  ].join("\n");
+}
+
 /**
  * @returns {string}
  */
@@ -346,6 +395,8 @@ function buildCommandPromptRulesFragment(options = {}) {
     buildUserIntentPriorityFragment(),
     "",
     buildScaleMatchingFragment(),
+    "",
+    buildEditScopeEconomyFragment(),
     "",
     buildGroupRulesFragment(),
     "",
@@ -379,7 +430,25 @@ export function formatObjectGetFeedbackFromBatch(results) {
   const blocks = [];
   for (let i = 0; i < results.length; i += 1) {
     const item = results[i];
-    if (!item?.ok || item.op !== "object.get") {
+    if (!item?.ok || !(item.op === "object.get" || item.op === "mesh.inspect" || item.op === "mesh.getTopology" || item.op === "mesh.validate" || item.op === "mesh.renderViews")) {
+      continue;
+    }
+    if (item.op !== "object.get") {
+      let result = item.data || null;
+      if (item.op === "mesh.renderViews" && result && typeof result === "object") {
+        result = {
+          ...result,
+          views: Array.isArray(result.views)
+            ? result.views.map((view) => ({
+                name: view?.name || view?.view || "view",
+                width: view?.width,
+                height: view?.height,
+                imageAttached: Boolean(view?.dataUrl || view?.imageUrl || view?.url)
+              }))
+            : []
+        };
+      }
+      blocks.push(JSON.stringify({ op: item.op, result }, null, 2));
       continue;
     }
     const id = item.data?.threeJsonId || item.data?.id || "";
@@ -401,6 +470,27 @@ export function formatObjectGetFeedbackFromBatch(results) {
   return blocks.length > 0 ? blocks.join("\n\n") : "";
 }
 
+/** Extract image-bearing mesh.renderViews results as OpenAI-compatible image parts. Keeping
+ * these separate from the textual command feedback prevents large data URLs from being echoed as
+ * plain text while still letting a vision-capable provider inspect the actual rendered views. */
+export function extractVisualFeedbackFromBatch(results) {
+  if (!Array.isArray(results)) return [];
+  const images = [];
+  for (const item of results) {
+    if (!item?.ok || item.op !== "mesh.renderViews") continue;
+    for (const view of Array.isArray(item.data?.views) ? item.data.views : []) {
+      const url = String(view?.dataUrl || view?.imageUrl || view?.url || "").trim();
+      if (!/^(?:data:image\/|https?:\/\/)/i.test(url)) continue;
+      images.push({
+        url,
+        detail: ["low", "high", "auto"].includes(view?.detail) ? view.detail : "low",
+        label: String(view?.name || view?.view || "mesh view")
+      });
+    }
+  }
+  return images;
+}
+
 /**
  * @param {string} op
  * @returns {boolean}
@@ -412,7 +502,8 @@ export function isAiSceneUpdateCommandOp(op) {
     name.startsWith("scene.") ||
     name.startsWith("object.") ||
     name.startsWith("material.") ||
-    name.startsWith("camera.")
+    name.startsWith("camera.") ||
+    name.startsWith("mesh.")
   );
 }
 
@@ -453,7 +544,9 @@ export function buildSceneCommandAutoUpdateSystemPrompt(options = {}) {
         "Agent iterative apply workflow:",
         "1. Finish bounded requests in ONE response whenever possible: output the complete minimal mutating command batch. You may append a final `# done` line in the SAME response.",
         "2. A successful mutating batch is treated as complete unless you append `# continue: <concrete remaining goal>`. Use that marker only when the change genuinely needs inspection or a separate independently verifiable stage. Never split work merely because iterative mode is available.",
-        "3. Intermediate rounds MAY use object.get to inspect descriptors (results are fed back), but do not inspect data already present in the supplied scene context.",
+        options.visualReviewAvailable === true
+          ? "3. Intermediate rounds MAY use object.get, mesh.inspect, mesh.getTopology, mesh.validate, or mesh.renderViews to inspect only the data needed for the next local edit; results and requested view images are fed back. Paginate or query a semantic part instead of echoing a dense mesh."
+          : "3. Intermediate rounds MAY use object.get, mesh.inspect, mesh.getTopology, or mesh.validate to inspect only the data needed for the next local edit; results are fed back. mesh.renderViews is unavailable for this turn. Paginate or query a semantic part instead of echoing a dense mesh.",
         "4. If the scene already matches the request, output `# done` only. If your current commands finish the request, append `# done` after those commands.",
         "5. Every `# continue` round must name and make progress toward a concrete remaining goal; never repeat an earlier command batch or manufacture cosmetic work to consume rounds."
       ]
@@ -462,7 +555,7 @@ export function buildSceneCommandAutoUpdateSystemPrompt(options = {}) {
         "Agent multi-round command workflow:",
         "1. Intermediate rounds MAY output object.get to inspect descriptors (results are fed back to you).",
         "2. The session MUST end with mutating commands or full scene JSON — never end with only object.get / scene.list.",
-        "3. Apply changes with object.patch (preferred), material.patch, object.add, object.remove, or scene.applyPatch."
+        "3. Apply ordinary changes with object.patch/material.patch/object.add/object.remove/scene.applyPatch. For editableMesh topology use mesh.edit with baseRevision; for forced complete coordinates use a mesh.buffer transaction and commit it."
       ]
     : [
         "Single-round workflow:",
@@ -473,11 +566,11 @@ export function buildSceneCommandAutoUpdateSystemPrompt(options = {}) {
   return [
     "You are a ThreeJSON scene editor.",
     "Apply the user's modification request using ONE of these output forms:",
-    "1. (Preferred) Executable command scripts — scene.* / object.* / camera.* (micro DSL or JSONL).",
+    "1. (Preferred) Executable command scripts — scene.* / object.* / mesh.* / camera.* (micro DSL or JSONL).",
     "2. (When restructuring many objects) Full valid ThreeJSON scene JSON.",
     "3. RFC 6902 JSON Patch as a JSON array or {\"patch\":[...]} when path-level edits are clearest.",
     "",
-    "Prefer commands for small edits (colors, moves, add/remove few objects, camera framing).",
+    "Prefer commands for small edits (colors, transforms, add/remove objects, stable-ID mesh topology edits, camera framing).",
     "Use full JSON only when commands or JSON Patch would be impractical.",
     "Do NOT output editor.* commands or markdown prose outside the script/JSON.",
     "",
@@ -591,7 +684,9 @@ export function buildSceneCommandUpdateUserMessage({
   if (selectionId) {
     const selectionBlock = {
       threeJsonId: selectionId,
-      descriptor: selectionDescriptor || null
+      descriptor: selectionDescriptor && typeof selectionDescriptor === "object"
+        ? buildCompactReferenceDescriptor(selectionDescriptor)
+        : null
     };
     parts.push(`Current selection:\n${JSON.stringify(selectionBlock, null, 2)}`);
   }

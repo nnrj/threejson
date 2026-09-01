@@ -24,6 +24,8 @@ import {
   buildObjectSpatialCardsFromSceneJson,
   buildSceneScaleProfile,
   matchIntentSignals,
+  formatObjectGetFeedbackFromBatch,
+  extractVisualFeedbackFromBatch,
   requestUpdatedSceneEditCommands,
   updateSceneJsonString as requestUpdatedSceneJsonString
 } from "threejson/ai";
@@ -34,6 +36,7 @@ import {
   createJsonScene
 } from "threejson";
 import { resolveSceneHostUrl, sceneHostAssetUrl } from "./sceneHostPaths.js";
+import { captureMeshReviewViews } from "./meshViewCapture.js";
 
 /** Resolves a repo-relative path (docs/zh/event-mechanism.md, assets/json/demo-show/...) to a
  * fetchable URL for core/ai/sceneReferenceCatalog.js's local doc/example retrieval — passed as
@@ -59,11 +62,15 @@ export function isProviderVisionCapable(provider) {
   return provider.provider !== "deepseek";
 }
 
-async function applyAiDraftCommands(commands, { sceneJsonString }) {
+async function applyAiDraftCommands(commands, { sceneJsonString, visualReviewAvailable = false }) {
   const baseSceneJson = parseSceneJsonString(sceneJsonString);
   const runtime = await createOffscreenRuntimeFromSceneJsonString(sceneJsonString);
   try {
-    const ctx = createCommandContextForRuntime(runtime, baseSceneJson);
+    const ctx = createCommandContextForRuntime(runtime, baseSceneJson, {
+      renderMeshViews: visualReviewAvailable
+        ? (request) => captureMeshReviewViews({ ...request, renderer: runtime.renderer })
+        : undefined
+    });
     const execResult = await executeCommands(ctx, commands);
     const results = Array.isArray(execResult.results) ? execResult.results : [];
     const ok = results.length ? results.every((item) => item.ok !== false) : execResult.ok !== false;
@@ -73,7 +80,12 @@ async function applyAiDraftCommands(commands, { sceneJsonString }) {
         error: results.find((item) => item.ok === false)?.error || "Draft refinement commands failed."
       };
     }
-    return { ok: true, sceneJsonString: exportRuntimeSceneJsonString(runtime, baseSceneJson) };
+    return {
+      ok: true,
+      sceneJsonString: exportRuntimeSceneJsonString(runtime, baseSceneJson),
+      objectGetFeedback: formatObjectGetFeedbackFromBatch(results),
+      visualFeedback: extractVisualFeedbackFromBatch(results)
+    };
   } finally {
     runtime.dispose?.();
   }
@@ -128,10 +140,14 @@ export async function runAiGenerateTurn({
   maxSceneSegments,
   maxTokens,
   selectedCapabilityIds,
+  complexModelStrategy = "auto",
+  modelQuality = "balanced",
+  modelBudget,
   rendererBackend,
   includePreviewCapabilities,
   requiresAnimation
 }) {
+  const visualReviewAvailable = isProviderVisionCapable(providerOptions);
   const animationCapabilities = typeof requiresAnimation === "boolean"
     ? requiresAnimation
     : Array.isArray(selectedCapabilityIds)
@@ -149,6 +165,9 @@ export async function runAiGenerateTurn({
     executionMode,
     refinementGoals,
     selectedCapabilityIds,
+    complexModelStrategy,
+    modelQuality,
+    modelBudget,
     requiresAnimation
   });
   const result = await runSceneAgent(
@@ -159,8 +178,16 @@ export async function runAiGenerateTurn({
       maxTokens: maxTokens ?? providerOptions?.maxTokens,
       stream: true,
       onDelta,
-      agent: { maxRefineRounds: agentOptions?.maxRefineRounds },
+      agent: {
+        maxRefineRounds: agentOptions?.maxRefineRounds,
+        complexModelStrategy,
+        modelQuality,
+        modelBudget
+      },
       executionMode,
+      complexModelStrategy,
+      modelQuality,
+      modelBudget,
       refinementGoals,
       resolveReferenceUrl: resolveSceneAiReferenceUrl,
       capabilityLookup,
@@ -173,9 +200,13 @@ export async function runAiGenerateTurn({
       rendererBackend,
       includePreviewCapabilities,
       animationCapabilities,
+      visualReviewAvailable,
       onGenerationPhase,
       onSceneDraft,
-      applyDraftCommands: applyAiDraftCommands,
+      applyDraftCommands: (commands, context) => applyAiDraftCommands(commands, {
+        ...context,
+        visualReviewAvailable
+      }),
       locale,
       onProgress: onAgentProgress
     }
@@ -201,6 +232,9 @@ export async function runAiImageGenerateTurn({
   executionMode = "direct",
   refinementGoals = [],
   selectedCapabilityIds,
+  complexModelStrategy = "auto",
+  modelQuality = "balanced",
+  modelBudget,
   rendererBackend,
   includePreviewCapabilities,
   requiresAnimation,
@@ -214,6 +248,7 @@ export async function runAiImageGenerateTurn({
   if (!image) {
     throw new Error("runAiImageGenerateTurn: image is required.");
   }
+  const visualReviewAvailable = isProviderVisionCapable(providerOptions);
   const animationCapabilities = typeof requiresAnimation === "boolean"
     ? requiresAnimation
     : Array.isArray(selectedCapabilityIds)
@@ -230,16 +265,28 @@ export async function runAiImageGenerateTurn({
       maxTokens: maxTokens ?? providerOptions?.maxTokens,
       executionMode,
       refinementGoals,
-      agent: { maxRefineRounds: agentOptions?.maxRefineRounds },
+      agent: {
+        maxRefineRounds: agentOptions?.maxRefineRounds,
+        complexModelStrategy,
+        modelQuality,
+        modelBudget
+      },
+      complexModelStrategy,
+      modelQuality,
+      modelBudget,
       resolveReferenceUrl: resolveSceneAiReferenceUrl,
       capabilityLookup,
       selectedCapabilityIds,
       rendererBackend,
       includePreviewCapabilities,
       animationCapabilities,
+      visualReviewAvailable,
       onGenerationPhase,
       onSceneDraft,
-      applyDraftCommands: applyAiDraftCommands,
+      applyDraftCommands: (commands, context) => applyAiDraftCommands(commands, {
+        ...context,
+        visualReviewAvailable
+      }),
       locale,
       onProgress: onAgentProgress
     }
@@ -406,14 +453,15 @@ function mapUpdateOutputModeToAgentInput(updateOutputMode) {
   return { outputMode: "commands", updateMode: undefined, stage: "commands" };
 }
 
-function createCommandContextForRuntime(runtime, documentPayload = null) {
+function createCommandContextForRuntime(runtime, documentPayload = null, options = {}) {
   return createCommandContext({
     scene: runtime.scene,
     camera: runtime.camera,
     renderer: runtime.renderer,
     controls: runtime.controls,
     runtime,
-    document: documentPayload
+    document: documentPayload,
+    options
   });
 }
 
@@ -461,6 +509,9 @@ async function runAiAgentAdjustTurn({
   locale,
   capabilityLookup,
   selectedCapabilityIds,
+  complexModelStrategy,
+  modelQuality,
+  modelBudget,
   rendererBackend,
   includePreviewCapabilities,
   animationCapabilities,
@@ -472,6 +523,7 @@ async function runAiAgentAdjustTurn({
   signal
 }) {
   const mode = mapUpdateOutputModeToAgentInput(updateOutputMode);
+  const visualReviewAvailable = isProviderVisionCapable(providerOptions);
   const baseSceneJson = parseSceneJsonString(targetSceneJsonString);
   const baseContextPayload = resolveContextPayload?.(baseSceneJson) || {};
   const updateContext = {
@@ -496,7 +548,15 @@ async function runAiAgentAdjustTurn({
         maxTokens: maxTokens ?? providerOptions?.maxTokens,
         stream: true,
         updateMode: mode.updateMode,
-        agent: { maxRefineRounds: agentOptions?.maxRefineRounds },
+        agent: {
+          maxRefineRounds: agentOptions?.maxRefineRounds,
+          complexModelStrategy,
+          modelQuality,
+          modelBudget
+        },
+        complexModelStrategy,
+        modelQuality,
+        modelBudget,
         resolveReferenceUrl: resolveSceneAiReferenceUrl,
         capabilityLookup,
         selectedCapabilityIds,
@@ -535,7 +595,12 @@ async function runAiAgentAdjustTurn({
       offscreenRuntime = await createOffscreenRuntimeFromSceneJsonString(targetSceneJsonString);
       offscreenCommandContext = createCommandContextForRuntime(
         offscreenRuntime,
-        offscreenBaseSceneJson
+        offscreenBaseSceneJson,
+        {
+          renderMeshViews: visualReviewAvailable
+            ? (request) => captureMeshReviewViews({ ...request, renderer: offscreenRuntime.renderer })
+            : undefined
+        }
       );
     }
     return offscreenRuntime;
@@ -567,8 +632,24 @@ async function runAiAgentAdjustTurn({
       const execResult = await executeCommands(offscreenCommandContext, commands);
       const results = Array.isArray(execResult.results) ? execResult.results : [];
       const ok = results.length ? results.every((r) => r.ok !== false) : execResult.ok !== false;
-      const sceneMutated = results.some((r) => r.ok);
-      return { ok, sceneMutated, execResult, error: results.find((r) => !r.ok)?.error };
+      const sceneMutated = results.some((r) => r.ok && ![
+        "object.get",
+        "scene.list",
+        "scene.validate",
+        "scene.export",
+        "mesh.inspect",
+        "mesh.getTopology",
+        "mesh.validate",
+        "mesh.renderViews"
+      ].includes(r.op));
+      return {
+        ok,
+        sceneMutated,
+        execResult,
+        objectGetFeedback: formatObjectGetFeedbackFromBatch(results),
+        visualFeedback: extractVisualFeedbackFromBatch(results),
+        error: results.find((r) => !r.ok)?.error
+      };
     };
     const result = await runSceneAgent(
       {
@@ -584,7 +665,15 @@ async function runAiAgentAdjustTurn({
         stream: true,
         // These callbacks opt the core runner into apply-as-you-go adjustment. The model stops as
         // soon as it is satisfied via # done; the configured round count is only a safety budget.
-        agent: { maxRefineRounds: agentOptions?.maxRefineRounds },
+        agent: {
+          maxRefineRounds: agentOptions?.maxRefineRounds,
+          complexModelStrategy,
+          modelQuality,
+          modelBudget
+        },
+        complexModelStrategy,
+        modelQuality,
+        modelBudget,
         resolveReferenceUrl: resolveSceneAiReferenceUrl,
         capabilityLookup,
         selectedCapabilityIds,
@@ -593,6 +682,7 @@ async function runAiAgentAdjustTurn({
         animationCapabilities,
         generationStrategy,
         estimatedSegments,
+        visualReviewAvailable,
         locale,
         signal,
         applyCommands,
@@ -694,6 +784,9 @@ export async function runAiAdjustTurn({
   locale,
   capabilityLookup,
   selectedCapabilityIds,
+  complexModelStrategy = "auto",
+  modelQuality = "balanced",
+  modelBudget,
   rendererBackend,
   includePreviewCapabilities,
   animationCapabilities,
@@ -830,6 +923,9 @@ export async function runAiAdjustTurn({
       locale,
       capabilityLookup,
       selectedCapabilityIds,
+      complexModelStrategy,
+      modelQuality,
+      modelBudget,
       rendererBackend,
       includePreviewCapabilities,
       animationCapabilities,

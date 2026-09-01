@@ -49,7 +49,21 @@ export const RUNTIME_OPS = new Set([
   "object.get",
   "object.reconcile",
   "material.patch",
-  "camera.fit"
+  "camera.fit",
+  "morph.list",
+  "morph.set",
+  "mesh.inspect",
+  "mesh.getTopology",
+  "mesh.validate",
+  "mesh.edit",
+  "mesh.buffer.appendAttribute",
+  "mesh.buffer.setAttributeRange",
+  "mesh.buffer.appendIndices",
+  "mesh.buffer.setIndexRange",
+  "mesh.buffer.commit",
+  "mesh.buffer.cancel",
+  "mesh.bake",
+  "mesh.renderViews"
 ]);
 
 export const DOCUMENT_OPS = new Set(["scene.validate", "scene.applyPatch"]);

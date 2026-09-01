@@ -136,6 +136,7 @@ Common lists:
 | `irregularPlaneList` | `irregularPlane` | Irregular planes. |
 | `irregularGeometryList` | `irregularGeometry` | Irregular geometry. |
 | `bufferMeshList` | `bufferMesh` | Explicit BufferGeometry. |
+| `editableMeshList` | `editableMesh` | Editable stable-ID control topology with semantic parts and modifiers; see [Complex Meshes](./complex-mesh.md). |
 | `audioList` | `audio` | Scene audio. |
 | `skinnedList` | `skinned` | Skinned models. |
 

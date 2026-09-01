@@ -56,6 +56,7 @@ const DEFAULT_FRIENDLY_SCENE_LIST_ORDER = [
   "shapePlaneList",
   "irregularPlaneList",
   "bufferMeshList",
+  "editableMeshList",
   "particleList",
   "spriteList",
   "tubeList",
@@ -156,6 +157,12 @@ const DEFAULT_FRIENDLY_SCENE_LIST_MAP = {
     scope: "worldInfo",
     family: "overlay",
     objType: "bufferMesh",
+    allowObjTypeOmit: true
+  },
+  editableMeshList: {
+    scope: "worldInfo",
+    family: "primary",
+    objType: "editableMesh",
     allowObjTypeOmit: true
   },
   particleList: {

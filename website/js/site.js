@@ -154,6 +154,7 @@ const DOCS = [
   ["README.md", "使用手册", "Manual", "入门"],
   ["api.md", "API", "API", "参考"],
   ["json-format.md", "JSON 配置", "JSON Config", "参考"],
+  ["complex-mesh.md", "复杂模型与渐进建模", "Complex Meshes", "参考"],
   ["runtime-object-commands.md", "运行时命令", "Runtime Commands", "运行时"],
   ["runtime-object-mutation-quickref.md", "运行时变更速查", "Runtime Mutation", "运行时"],
   ["event-mechanism.md", "事件机制", "Events", "运行时"],

@@ -44,6 +44,8 @@ test("buildSceneCommandUpdateSystemPrompt teaches single-round mutating commands
   assert.ok(prompt.includes("User intent priority"));
   assert.ok(prompt.includes("camera.fit"));
   assert.ok(prompt.includes("Scale matching"));
+  assert.ok(prompt.includes("Edit-scope economy"));
+  assert.match(prompt, /Do not request mesh topology.*transform-only/);
   assert.ok(prompt.includes("threeJsonId\":\"female-robot-grp"));
   assert.ok(prompt.includes("Never use parent=scene"));
   assert.ok(prompt.includes("female-robot-left-eye"));
@@ -84,6 +86,15 @@ test("command update prompt teaches negotiated Particle V2 and WebGPU TSL edits"
   assert.match(prompt, /"kind":"preset\|graph"/);
   assert.match(prompt, /Negotiated raw TSL code editing capability/);
   assert.match(prompt, /default factory returns a NodeMaterial/);
+});
+
+test("complex-mesh command guidance prefers local modifiers and does not overuse vertex meshes", () => {
+  const prompt = buildSceneCommandUpdateSystemPrompt({
+    selectedCapabilityIds: ["complexMesh", "editableMesh", "subdivisionSurface"]
+  });
+  assert.match(prompt, /refine locally with deterministic modifiers/);
+  assert.match(prompt, /Catmull-Clark for quad\/n-gon cages/);
+  assert.match(prompt, /Do not use editableMesh\/raw bufferMesh.*primitives.*CSG/);
 });
 
 test("buildSceneCommandAutoUpdateSystemPrompt distinguishes agent vs single round", () => {
@@ -153,6 +164,27 @@ test("buildSceneCommandUpdateUserMessage uses spatial cards instead of thin obje
   assert.ok(message.includes("Placement hints"));
   assert.equal(message.includes("Scene objects (1)"), false);
   assert.equal(message.includes("hidden"), false);
+});
+
+test("complex selected mesh context omits dense coordinates but keeps exact transform and bounds", () => {
+  const message = buildSceneCommandUpdateUserMessage({
+    modificationRequest: "move this model to x=20",
+    selectionId: "raw-model",
+    selectionDescriptor: {
+      threeJsonId: "raw-model",
+      objType: "bufferMesh",
+      position: { x: 2, y: 0, z: 0 },
+      geometry: {
+        attributes: { position: { array: [-11, -12, -13, 14, 15, 16], itemSize: 3 } },
+        index: { array: [0, 1, 1] }
+      }
+    }
+  });
+  assert.match(message, /raw-model/);
+  assert.match(message, /bufferMesh 2v\/1t/);
+  assert.match(message, /"x": 2/);
+  assert.doesNotMatch(message, /-11/);
+  assert.doesNotMatch(message, /14,\s*15,\s*16/);
 });
 
 test("buildSceneCommandUpdateUserMessage serializes an explicitly requested full-scene object", () => {

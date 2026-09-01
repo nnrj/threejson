@@ -10,6 +10,11 @@ const EDITOR_OBJ_TYPE_ALIASES = {
   irregularPlane: "irregularplane",
   irregularGeometry: "irregulargeometry",
   bufferMesh: "buffermesh",
+  editableMesh: "editablemesh",
+  parametricSurface: "parametricsurface",
+  bezierPatch: "bezierpatch",
+  sdfMesh: "sdfmesh",
+  latheMesh: "lathemesh",
   objModel: "externalmodel",
   leakLine: "leakline"
 };
@@ -199,6 +204,75 @@ export function buildEditorPrimitiveDescriptor(panelKey, host) {
           indices: [0, 1, 2]
         },
         material: mat("#909399")
+      };
+    case "editablemesh": {
+      const h = half;
+      const vertices = [
+        [-h, -h, -h], [h, -h, -h], [h, h, -h], [-h, h, -h],
+        [-h, -h, h], [h, -h, h], [h, h, h], [-h, h, h]
+      ].map((position, index) => ({ id: `v-${index + 1}`, position }));
+      return {
+        ...base,
+        topology: {
+          revision: 0,
+          vertices,
+          faces: [
+            { id: "f-front", vertices: ["v-5", "v-6", "v-7", "v-8"], part: "front", smooth: true },
+            { id: "f-back", vertices: ["v-2", "v-1", "v-4", "v-3"], part: "back", smooth: true },
+            { id: "f-left", vertices: ["v-1", "v-5", "v-8", "v-4"], part: "left", smooth: true },
+            { id: "f-right", vertices: ["v-6", "v-2", "v-3", "v-7"], part: "right", smooth: true },
+            { id: "f-top", vertices: ["v-8", "v-7", "v-3", "v-4"], part: "top", smooth: true },
+            { id: "f-bottom", vertices: ["v-1", "v-2", "v-6", "v-5"], part: "bottom", smooth: true }
+          ],
+          edges: []
+        },
+        modifiers: [{ id: "subdivision", type: "catmullClark", levels: 2 }],
+        uvProjection: { type: "box" },
+        material: mat("#7a9cff")
+      };
+    }
+    case "parametricsurface":
+      return {
+        ...base,
+        domain: { u: [-Math.PI, Math.PI], v: [-Math.PI, Math.PI] },
+        segments: { u: 48, v: 48 },
+        expressions: { x: "u", y: "0.22 * sin(2*u) * cos(2*v)", z: "v" },
+        material: { ...mat("#36cfc9"), side: "double" }
+      };
+    case "bezierpatch":
+      return {
+        ...base,
+        controlPoints: [
+          [[-h, 0, -h], [-h / 3, h * 0.4, -h], [h / 3, -h * 0.2, -h], [h, 0, -h]],
+          [[-h, h * 0.3, -h / 3], [-h / 3, h, -h / 3], [h / 3, h * 0.5, -h / 3], [h, h * 0.2, -h / 3]],
+          [[-h, -h * 0.2, h / 3], [-h / 3, h * 0.5, h / 3], [h / 3, h, h / 3], [h, h * 0.3, h / 3]],
+          [[-h, 0, h], [-h / 3, -h * 0.2, h], [h / 3, h * 0.4, h], [h, 0, h]]
+        ],
+        segments: { u: 32, v: 32 },
+        material: { ...mat("#b37feb"), side: "double" }
+      };
+    case "sdfmesh":
+      return {
+        ...base,
+        bounds: { min: [-h, -h, -h], max: [h, h, h] },
+        resolution: [32, 32, 32],
+        isoLevel: 0,
+        sdf: {
+          type: "smoothUnion",
+          smoothness: u * 0.16,
+          children: [
+            { type: "sphere", center: [-u * 0.18, 0, 0], radius: u * 0.34 },
+            { type: "sphere", center: [u * 0.18, u * 0.08, 0], radius: u * 0.3 }
+          ]
+        },
+        material: mat("#ff85c0")
+      };
+    case "lathemesh":
+      return {
+        ...base,
+        profile: [[0, -h], [h * 0.65, -h], [h, -h * 0.25], [h * 0.72, h * 0.45], [h * 0.35, h], [0, h]],
+        segments: 48,
+        material: mat("#ffc53d")
       };
     case "tube":
       return {

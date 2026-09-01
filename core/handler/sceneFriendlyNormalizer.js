@@ -955,6 +955,7 @@ function buildCompatPayloadFromCanonical(sourcePayload, canonicalPayload, splitS
     shapePlaneList: [],
     irregularPlaneList: [],
     bufferMeshList: [],
+    editableMeshList: [],
     shapeExtrudeList: [],
     irregularGeometryList: []
   };
@@ -1018,6 +1019,11 @@ function buildCompatPayloadFromCanonical(sourcePayload, canonicalPayload, splitS
         worldInfo.bufferMeshList = [];
       }
       worldInfo.bufferMeshList.push(record);
+    } else if (objType === "editablemesh") {
+      if (!Array.isArray(worldInfo.editableMeshList)) {
+        worldInfo.editableMeshList = [];
+      }
+      worldInfo.editableMeshList.push(record);
     } else if (objType === "shapeextrude") {
       if (!Array.isArray(worldInfo.shapeExtrudeList)) {
         worldInfo.shapeExtrudeList = [];
@@ -1242,6 +1248,9 @@ function resolveFriendlyFallbackListName(record) {
   }
   if (objType === "buffermesh") {
     return "bufferMeshList";
+  }
+  if (objType === "editablemesh") {
+    return "editableMeshList";
   }
   if (objType === "shapeextrude") {
     return "shapeExtrudeList";

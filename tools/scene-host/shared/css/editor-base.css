@@ -2711,7 +2711,8 @@ html, body {
     }
 
     .sceneTreePropGrid input[type="text"],
-    .sceneTreePropGrid input[type="number"] {
+    .sceneTreePropGrid input[type="number"],
+    .sceneTreePropGrid select {
       width: 100%;
       min-width: 0;
       padding: 3px 5px;
@@ -2750,6 +2751,20 @@ html, body {
 
     #sceneTreePropApplyBtn {
       align-self: flex-end;
+    }
+
+    .sceneTreeMeshActions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    #sceneTreeMeshModifiers {
+      width: 100%;
+      min-height: 96px;
+      box-sizing: border-box;
+      margin-top: 4px;
+      resize: vertical;
+      font: 11px/1.45 ui-monospace, Consolas, monospace;
     }
 
     .sceneTreePropSectionMaterial {

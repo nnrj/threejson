@@ -9,7 +9,7 @@ import {
   parseContour2D,
   resolveShapeSelfIntersectMode
 } from "../core/builder/shapeGeometryUtil.js";
-import { validateBufferMeshStats, BUFFER_MESH_MAX_VERTICES } from "../core/builder/bufferMeshLimits.js";
+import { validateBufferMeshStats } from "../core/builder/bufferMeshLimits.js";
 import { resolveIrregularPlaneRecord } from "../core/builder/irregularShapeResolver.js";
 import { resolveIrregularGeometryRecord } from "../core/builder/irregularShapeResolver.js";
 
@@ -56,14 +56,20 @@ test("resolveShapeSelfIntersectMode defaults reject", () => {
   assert.equal(resolveShapeSelfIntersectMode({ shapeValidation: { selfIntersect: "warn" } }), "warn");
 });
 
-test("validateBufferMeshStats rejects excess vertices", () => {
-  const bad = validateBufferMeshStats({
-    vertexCount: BUFFER_MESH_MAX_VERTICES + 1,
-    triangleCount: 3,
-    maxIndex: 2
+test("validateBufferMeshStats has no engine-owned size limit and honors an optional host budget", () => {
+  const unlimited = validateBufferMeshStats({
+    vertexCount: 2_000_000,
+    triangleCount: 3_000_000,
+    maxIndex: 1_999_999
   });
-  assert.equal(bad.ok, false);
-  assert.equal(bad.code, "E_BUFFER_MESH_LIMIT_EXCEEDED");
+  assert.equal(unlimited.ok, true);
+  const budgeted = validateBufferMeshStats({
+    vertexCount: 2_000_000,
+    triangleCount: 3_000_000,
+    maxIndex: 1_999_999
+  }, { maxVertices: 1000 });
+  assert.equal(budgeted.ok, false);
+  assert.equal(budgeted.code, "E_BUFFER_MESH_BUDGET_EXCEEDED");
 });
 
 test("resolveIrregularPlaneRecord shape default", () => {

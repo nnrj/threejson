@@ -57,6 +57,43 @@ test("website examples expose runnable TSL and WebGPU previews without WebGL thu
   }
 });
 
+test("website examples expose native complex-model coverage without external model substitution", () => {
+  const section = readManifest().find((entry) => entry.section === "complex-modeling");
+  assert.ok(section, "complex-modeling section should exist");
+  const ids = new Set(section.items.map((item) => item.id));
+  for (const expected of [
+    "editable-lounge-chair",
+    "loft-vehicle-shell",
+    "lathe-mechanical-spindle",
+    "sweep-bezier-plant",
+    "editable-animal-form",
+    "implicit-humanoid",
+    "implicit-asymmetric-organic",
+    "nurbs-freeform-product",
+    "raw-buffer-morph"
+  ]) {
+    assert.ok(ids.has(expected), `missing website complex-model example: ${expected}`);
+  }
+  const complexTypes = new Set([
+    "editableMesh", "bufferMesh", "parametricSurface", "bezierPatch", "nurbsSurface",
+    "latheMesh", "loftMesh", "sweepMesh", "implicitSurface"
+  ]);
+  for (const item of section.items) {
+    const scenePath = path.join(repoRoot, localPathFromReference(item.json));
+    assert.equal(fs.existsSync(scenePath), true, item.json);
+    const scene = JSON.parse(fs.readFileSync(scenePath, "utf8"));
+    assert.ok(
+      (scene.objectList || []).some((object) => complexTypes.has(object.objType)),
+      `${item.id} should demonstrate a native complex-mesh descriptor`
+    );
+    assert.equal(
+      (scene.objectList || []).some((object) => object.objType === "externalModel"),
+      false,
+      `${item.id} must not substitute an external asset for native expression`
+    );
+  }
+});
+
 test("website gallery distinguishes dedicated capability covers and skips external-only downloads", () => {
   const source = fs.readFileSync(path.join(repoRoot, "website", "js", "site.js"), "utf8");
   assert.match(source, /exampleCapabilityCover/);

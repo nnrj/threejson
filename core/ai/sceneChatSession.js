@@ -29,8 +29,9 @@ import { mergeRequiredCapabilityIds } from "./sceneCapability.js";
 // Negotiation, summaries and titles deliberately have no engine-owned completion ceiling. Their
 // prompts constrain response shape; callers may opt into independent stage-specific limits.
 const SCENE_TITLE_MAX_LENGTH = 80;
-const MAX_ESTIMATED_SCENE_SEGMENTS = 16;
 const SCENE_GENERATION_MODES = new Set(["auto", "direct", "draft_refine"]);
+const COMPLEX_MODEL_STRATEGIES = new Set(["auto", "full-coordinates", "progressive"]);
+const MODEL_QUALITY_LEVELS = new Set(["draft", "balanced", "high", "custom"]);
 /** Characters unsafe in a file/folder name across common filesystems — a generated title is used
  * verbatim as a chat host's download/export file name (see generateSceneTitle below). */
 const SCENE_TITLE_UNSAFE_CHARS = /[\\/:*?"<>|]/g;
@@ -125,6 +126,14 @@ function normalizeSceneGenerationMode(value) {
   return SCENE_GENERATION_MODES.has(value) ? value : "auto";
 }
 
+function normalizeComplexModelStrategy(value) {
+  return COMPLEX_MODEL_STRATEGIES.has(value) ? value : "auto";
+}
+
+function normalizeModelQuality(value) {
+  return MODEL_QUALITY_LEVELS.has(value) ? value : "balanced";
+}
+
 function buildExecutionModePolicyRules(sceneGenerationMode) {
   if (sceneGenerationMode === "direct") {
     return [
@@ -155,6 +164,7 @@ function buildClassifyIntentSystemPrompt(
   explicitRouteDirective = null
 ) {
   const normalizedGenerationMode = normalizeSceneGenerationMode(sceneGenerationMode);
+  const configuredComplexModelStrategy = normalizeComplexModelStrategy(capabilityOptions.complexModelStrategy);
   return [
     "You are the pre-generation negotiation model for a ThreeJSON 3D-scene app.",
     generationOnly
@@ -169,8 +179,8 @@ function buildClassifyIntentSystemPrompt(
     "",
     "Output shape (strict):",
     generationOnly
-      ? '{ "note": string, "generationStrategy": "single"|"segmented"|"compact", "estimatedSegments": integer, "estimatedOutputTokens": {"min": integer, "max": integer}, "executionMode": "direct"|"draft_refine", "refinementGoals": string[], "selectedCapabilityIds": string[], "requiresAnimation": boolean }'
-      : '{ "intent": "generate"|"adjust", "targetTurnId": string|null, "note": string, "generationStrategy": "single"|"segmented"|"compact", "estimatedSegments": integer, "estimatedOutputTokens": {"min": integer, "max": integer}, "executionMode": "direct"|"draft_refine", "refinementGoals": string[], "selectedCapabilityIds": string[], "requiresAnimation": boolean }',
+      ? '{ "note": string, "generationStrategy": "single"|"segmented"|"compact", "estimatedSegments": integer, "estimatedOutputTokens": {"min": integer, "max": integer}, "executionMode": "direct"|"draft_refine", "complexModelStrategy": "full-coordinates"|"progressive", "refinementGoals": string[], "selectedCapabilityIds": string[], "requiresAnimation": boolean }'
+      : '{ "intent": "generate"|"adjust", "targetTurnId": string|null, "note": string, "generationStrategy": "single"|"segmented"|"compact", "estimatedSegments": integer, "estimatedOutputTokens": {"min": integer, "max": integer}, "executionMode": "direct"|"draft_refine", "complexModelStrategy": "full-coordinates"|"progressive", "refinementGoals": string[], "selectedCapabilityIds": string[], "requiresAnimation": boolean }',
     "",
     "Rules:",
     ...(generationOnly
@@ -197,11 +207,26 @@ function buildClassifyIntentSystemPrompt(
         ]),
     '- "note" is one short sentence explaining your choice.',
     '- Choose "generationStrategy" before generation starts. "single" means the complete JSON clearly fits one response. "segmented" means the request genuinely needs multiple responses AND you can follow the host segmented-output protocol from the first response. "compact" means a literal/full expansion is too large or segmented output is unsuitable; preserve the visual intent with instancing, bounded representative populations, and fewer explicit records so complete JSON fits one response.',
+    '- If you are not confident that strict segmented output is supported, choose "compact", unless the user explicitly requires complete raw coordinates. A forced full-coordinates request must stay complete and may use as many continuation segments as needed.',
     '- Complexity features are optional safeguards, not a quality setting. Never choose "segmented" merely to improve quality, reasoning, correctness, or visual detail. Never begin a large one-shot response expecting the host to repair an arbitrary cutoff later.',
-    '- For "single" or "compact", estimatedSegments MUST be 1. For "segmented", use 2-16 and only when the requested JSON is clearly too large for one provider response. If you are not confident that strict segmented output is supported, choose "compact" instead.',
+    '- For "single" or "compact", estimatedSegments MUST be 1. For "segmented", estimate any positive count needed to finish the complete JSON; there is no engine-owned continuation ceiling. Do not choose compact merely to avoid a high segment count when the user asked for full coordinates.',
     '- estimatedOutputTokens is a broad advisory range for the usable scene-authoring output after applying ThreeJSON compaction (not hidden reasoning and not input/context tokens). Estimate honestly; it is planning metadata, never a hard cutoff and never a reason to omit requested content.',
     '- executionMode is independent from generationStrategy: generationStrategy controls how one complete JSON response is transported; executionMode controls complete generation versus incremental construction.',
     ...buildExecutionModePolicyRules(normalizedGenerationMode),
+    ...(configuredComplexModelStrategy === "full-coordinates"
+      ? [
+          '- The user explicitly selected complexModelStrategy="full-coordinates". Return that exact strategy. Raw BufferGeometry coordinates must remain complete; never substitute primitives, an external model, editableMesh, or a compact representative model merely because output is large.'
+        ]
+      : configuredComplexModelStrategy === "progressive"
+        ? [
+            '- The user explicitly selected complexModelStrategy="progressive". Return that exact strategy and executionMode="draft_refine" for a free-form complex model so a visible editableMesh blockout can be refined with mesh commands.'
+          ]
+        : [
+            '- complexModelStrategy is independent from whole-scene transport. Choose "progressive" for a free-form complex model that benefits from stable control topology and repeated local refinement; choose "full-coordinates" when the complete raw BufferGeometry should be authored directly or in transport segments. Ordinary primitive scenes do not need the complex pipeline, but still return the more appropriate value without forcing its use.',
+            '- Select complex capabilities from geometry needs, not from words such as "quality" or "detailed" alone. A regular form that primitives, native parametric geometry, instancing, or CSG express faithfully should keep that representation.',
+            '- Never reduce an organic, sculptural, vehicle-shell, furniture-shell, plant, animal, character, or other free-form subject to a pile of primitives solely to keep output short. Prefer a recognizable low-density editableMesh/subdivision or procedural-surface draft that remains the refinement source, or rawBufferMesh when full coordinates are appropriate.',
+            '- When the control silhouette is already correct and only evaluated smoothness/density is missing, plan local Catmull-Clark/Loop/Smooth modifier refinement rather than further model-authored vertices.'
+          ]),
     '- refinementGoals is empty for "direct". For "draft_refine", list 1-4 concrete remaining goals that can be completed and verified (for example "populate the four city districts"), not generic goals such as "improve quality" or "review the scene".',
     '- selectedCapabilityIds lists only the capability ids whose detailed syntax/examples the generation model needs. Do semantic reasoning; do not select capabilities merely because a keyword appears.',
     '- If the user asks to add, show, write, label, title, caption, or otherwise render visible words in the 3D scene, select "sceneText". Plain text defaults to SDF scene text. Select "infoPanel" instead only when the requested text needs a visible board/card/screen/panel backing; explicit extruded/beveled/solid lettering may use mesh text.',
@@ -265,6 +290,8 @@ async function classifyTurnIntent(input = {}, options = {}) {
     ? null
     : detectExplicitSceneRouteDirective(userPrompt);
   const sceneGenerationMode = normalizeSceneGenerationMode(options.sceneGenerationMode);
+  const configuredComplexModelStrategy = normalizeComplexModelStrategy(options.complexModelStrategy);
+  const configuredModelQuality = normalizeModelQuality(options.modelQuality);
   const fallbackExecutionMode = sceneGenerationMode === "draft_refine" ? "draft_refine" : "direct";
   const fallback = {
     intent: "generate",
@@ -275,6 +302,8 @@ async function classifyTurnIntent(input = {}, options = {}) {
     estimatedSegments: 1,
     estimatedOutputTokens: undefined,
     executionMode: fallbackExecutionMode,
+    complexModelStrategy: configuredComplexModelStrategy,
+    modelQuality: configuredModelQuality,
     refinementGoals: [],
     // Undefined preserves core/ai's local intent hints when negotiation could not be parsed.
     selectedCapabilityIds: undefined,
@@ -345,27 +374,52 @@ async function classifyTurnIntent(input = {}, options = {}) {
       || (typeof parsed?.note === "string" ? parsed.note.slice(0, 300) : "");
     const rawEstimatedSegments = Number(parsed?.estimatedSegments);
     const boundedSegments = Number.isFinite(rawEstimatedSegments)
-      ? Math.min(MAX_ESTIMATED_SCENE_SEGMENTS, Math.max(1, Math.round(rawEstimatedSegments)))
+      ? Math.max(1, Math.round(rawEstimatedSegments))
       : 1;
     const parsedStrategy = ["single", "segmented", "compact"].includes(parsed?.generationStrategy)
       ? parsed.generationStrategy
       : boundedSegments > 1
         ? "segmented"
         : "single";
-    const generationStrategy = parsedStrategy;
+    // A weak negotiation model may still return "compact" after the user explicitly selected
+    // full coordinates. Host policy is authoritative: transport the complete coordinate stream
+    // in segments instead of allowing that model mistake to simplify the mesh.
+    const generationStrategy = configuredComplexModelStrategy === "full-coordinates" && parsedStrategy === "compact"
+      ? "segmented"
+      : parsedStrategy;
     const estimatedSegments = generationStrategy === "segmented" ? Math.max(2, boundedSegments) : 1;
     const estimatedOutputTokens = normalizeEstimatedOutputTokens(parsed?.estimatedOutputTokens);
     const modelExecutionMode = parsed?.executionMode === "draft_refine" ? "draft_refine" : "direct";
-    const executionMode = sceneGenerationMode === "auto"
+    let executionMode = sceneGenerationMode === "auto"
       ? modelExecutionMode
       : sceneGenerationMode;
+    const modelComplexModelStrategy = parsed?.complexModelStrategy === "progressive"
+      ? "progressive"
+      : "full-coordinates";
+    const complexModelStrategy = configuredComplexModelStrategy === "auto"
+      ? modelComplexModelStrategy
+      : configuredComplexModelStrategy;
+    if (complexModelStrategy === "progressive" && intent === "generate") {
+      executionMode = "draft_refine";
+    }
     const refinementGoals = executionMode === "draft_refine" && Array.isArray(parsed?.refinementGoals)
       ? [...new Set(parsed.refinementGoals.map((goal) => String(goal || "").trim()).filter(Boolean))].slice(0, 4)
       : [];
     const selectedCapabilityIds = Array.isArray(parsed?.selectedCapabilityIds)
-      ? [...new Set(parsed.selectedCapabilityIds.map((id) => String(id || "").trim()).filter(Boolean))].slice(0, 12)
+      ? [...new Set(parsed.selectedCapabilityIds.map((id) => String(id || "").trim()).filter(Boolean))]
       : undefined;
-    const effectiveSelectedCapabilityIds = mergeRequiredCapabilityIds(userPrompt, selectedCapabilityIds);
+    let effectiveSelectedCapabilityIds = mergeRequiredCapabilityIds(userPrompt, selectedCapabilityIds);
+    if (complexModelStrategy === "progressive") {
+      effectiveSelectedCapabilityIds = [...new Set([
+        ...(effectiveSelectedCapabilityIds || []),
+        "complexMesh",
+        "editableMesh",
+        "subdivisionSurface",
+        "meshModeling"
+      ])];
+    } else if (complexModelStrategy === "full-coordinates" && effectiveSelectedCapabilityIds?.includes("complexMesh")) {
+      effectiveSelectedCapabilityIds = [...new Set([...effectiveSelectedCapabilityIds, "rawBufferMesh"])];
+    }
     const requiresAnimation = options.animationCapabilityMode === "on"
       ? true
       : options.animationCapabilityMode === "off"
@@ -385,6 +439,8 @@ async function classifyTurnIntent(input = {}, options = {}) {
       estimatedSegments,
       estimatedOutputTokens,
       executionMode,
+      complexModelStrategy,
+      modelQuality: configuredModelQuality,
       refinementGoals,
       selectedCapabilityIds: effectiveSelectedCapabilityIds,
       requiresAnimation
@@ -563,6 +619,9 @@ async function generateSceneTitle(input = {}, options = {}) {
  *   executionMode?: "direct"|"draft_refine",
  *   refinementGoals?: string[],
  *   selectedCapabilityIds?: string[],
+ *   complexModelStrategy?: "auto"|"full-coordinates"|"progressive",
+ *   modelQuality?: "draft"|"balanced"|"high"|"custom",
+ *   modelBudget?: {maxTokens?:number,maxCost?:number,maxTimeMs?:number},
  *   requiresAnimation?: boolean
  * }} input
  *   `includeReferenceLinks`: when true, adds a `referenceLinks` block pointing at the ThreeJSON
@@ -612,6 +671,16 @@ function buildStructuredTurnEnvelope(input = {}) {
       };
     }
     envelope.executionMode = input?.executionMode === "draft_refine" ? "draft_refine" : "direct";
+    envelope.complexModelStrategy = normalizeComplexModelStrategy(input?.complexModelStrategy);
+    envelope.modelQuality = normalizeModelQuality(input?.modelQuality);
+    if (input?.modelBudget && typeof input.modelBudget === "object") {
+      const modelBudget = {};
+      for (const key of ["maxTokens", "maxCost", "maxTimeMs"]) {
+        const value = Number(input.modelBudget[key]);
+        if (Number.isFinite(value) && value > 0) modelBudget[key] = value;
+      }
+      if (Object.keys(modelBudget).length) envelope.modelBudget = modelBudget;
+    }
     if (envelope.executionMode === "draft_refine" && Array.isArray(input?.refinementGoals)) {
       const goals = [...new Set(input.refinementGoals.map((goal) => String(goal || "").trim()).filter(Boolean))].slice(0, 4);
       if (goals.length) {

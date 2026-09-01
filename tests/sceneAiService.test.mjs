@@ -636,6 +636,32 @@ test("requestChatCompletion omits max_tokens by default and forwards an explicit
   assert.equal(bodies[1].max_tokens, 12345);
 });
 
+test("requestChatCompletion exposes normalized provider usage metadata", async () => {
+  let completionMetadata = null;
+  globalThis.fetch = async () => ({
+    ok: true,
+    async json() {
+      return {
+        choices: [{ message: { content: "model output" }, finish_reason: "stop" }],
+        usage: { prompt_tokens: 17, completion_tokens: 5, total_tokens: 22, cost: 0.002 }
+      };
+    }
+  });
+  await requestChatCompletion({
+    provider: "chatgpt",
+    apiKey: "test-key",
+    messages: [{ role: "user", content: "hello" }],
+    onCompletionMetadata: (metadata) => { completionMetadata = metadata; }
+  });
+  assert.deepEqual(completionMetadata.usage, {
+    promptTokens: 17,
+    completionTokens: 5,
+    totalTokens: 22,
+    cost: 0.002,
+    estimatedCompletionTokens: 3
+  });
+});
+
 test("requestChatCompletion applies explicit DeepSeek effort and sends built-in policy as context", async () => {
   const bodies = [];
   globalThis.fetch = async (_url, init) => {
@@ -1242,11 +1268,11 @@ test("generateSceneJsonString continues when the provider truncates before emitt
   assert.equal(JSON.parse(output).threeJsonId, "implicit-continuation");
 });
 
-test("generateSceneJsonString can continue beyond eight responses when complexity opts in", async () => {
+test("generateSceneJsonString can continue beyond sixty-four useful responses without a core ceiling", async () => {
   const replies = [
-    '{\n<<<THREEJSON_CONTINUE>>>',
-    ...Array.from({ length: 8 }, () => ' \n<<<THREEJSON_CONTINUE>>>'),
-    '"threeJsonId":"beyond-eight","sceneConfig":{"scene":{"background":"#111111"}}}\n<<<THREEJSON_COMPLETE>>>'
+    '{"threeJsonId":"beyond-sixty-four","metadata":{"parts":[\n<<<THREEJSON_CONTINUE>>>',
+    ...Array.from({ length: 65 }, (_, index) => `${index},\n<<<THREEJSON_CONTINUE>>>`),
+    '999]},"sceneConfig":{"scene":{"background":"#111111"}}}\n<<<THREEJSON_COMPLETE>>>'
   ];
   let requestCount = 0;
   globalThis.fetch = async () => {
@@ -1264,11 +1290,11 @@ test("generateSceneJsonString can continue beyond eight responses when complexit
     provider: "chatgpt",
     apiKey: "test-key",
     capabilityReview: false,
-    estimatedSegments: 10
+    estimatedSegments: 67
   });
 
-  assert.equal(requestCount, 10);
-  assert.equal(JSON.parse(output).threeJsonId, "beyond-eight");
+  assert.equal(requestCount, 67);
+  assert.equal(JSON.parse(output).threeJsonId, "beyond-sixty-four");
 });
 
 test("generateSceneJsonString honors the caller maxSceneSegments option", async () => {
@@ -1293,12 +1319,12 @@ test("generateSceneJsonString honors the caller maxSceneSegments option", async 
       segmentedOutput: true,
       maxSceneSegments: 2
     }),
-    /after 2 response segments/
+    /after the configured 2 response segments/
   );
   assert.equal(requestCount, 2);
 });
 
-test("classifyTurnIntent returns bounded segments and an advisory output estimate", async () => {
+test("classifyTurnIntent keeps the model's advisory segment estimate without turning it into a ceiling", async () => {
   let requestBody;
   globalThis.fetch = async (_url, init = {}) => {
     requestBody = JSON.parse(init.body);
@@ -1326,7 +1352,7 @@ test("classifyTurnIntent returns bounded segments and an advisory output estimat
 
   assert.equal(result.intent, "generate");
   assert.equal(result.generationStrategy, "segmented");
-  assert.equal(result.estimatedSegments, 16);
+  assert.equal(result.estimatedSegments, 99);
   assert.deepEqual(result.estimatedOutputTokens, { min: 18000, max: 42000 });
   assert.equal(result.executionMode, "direct");
   assert.match(requestBody.messages[0].content, /planning metadata, never a hard cutoff/);
@@ -1365,6 +1391,45 @@ test("classifyTurnIntent negotiates a compact strategy even when there are no pr
   assert.equal(result.generationStrategy, "compact");
   assert.equal(result.estimatedSegments, 1);
   assert.equal(result.executionMode, "direct");
+});
+
+test("classifyTurnIntent never accepts compact transport for forced full coordinates", async () => {
+  globalThis.fetch = async () => ({
+    ok: true,
+    async json() {
+      return {
+        choices: [{
+          message: {
+            content: JSON.stringify({
+              note: "incorrectly compacted by a weak negotiation model",
+              generationStrategy: "compact",
+              estimatedSegments: 1,
+              estimatedOutputTokens: { min: 10000, max: 80000 },
+              executionMode: "direct",
+              complexModelStrategy: "progressive",
+              refinementGoals: [],
+              selectedCapabilityIds: ["complexMesh"],
+              requiresAnimation: false
+            })
+          }
+        }]
+      };
+    }
+  });
+
+  const result = await classifyTurnIntent(
+    { userPrompt: "Output every vertex of the final mesh.", history: [] },
+    {
+      provider: "chatgpt",
+      apiKey: "test-key",
+      complexModelStrategy: "full-coordinates"
+    }
+  );
+
+  assert.equal(result.complexModelStrategy, "full-coordinates");
+  assert.equal(result.generationStrategy, "segmented");
+  assert.equal(result.estimatedSegments, 2);
+  assert.ok(result.selectedCapabilityIds.includes("rawBufferMesh"));
 });
 
 test("classifyTurnIntent negotiates incremental execution independently from transport", async () => {
@@ -1430,6 +1495,9 @@ test("classifyTurnIntent automatic mode exposes concrete complexity criteria to 
   assert.match(systemPrompt, /Judge authoring\/output complexity, not how impressive the scene sounds/);
   assert.match(systemPrompt, /If uncertain, choose "direct"/);
   assert.match(systemPrompt, /provider explicitly reports a real output-length cutoff/);
+  assert.match(systemPrompt, /Select complex capabilities from geometry needs/);
+  assert.match(systemPrompt, /low-density editableMesh\/subdivision or procedural-surface draft/);
+  assert.match(systemPrompt, /local Catmull-Clark\/Loop\/Smooth modifier refinement/);
   assert.equal(result.executionMode, "direct");
 });
 

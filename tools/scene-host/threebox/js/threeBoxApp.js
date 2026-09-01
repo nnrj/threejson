@@ -4,7 +4,13 @@ import { createThreeBoxTemplateGallery } from "./threeBoxTemplateGallery.js";
 import { createThreeBoxSettingsModal } from "./threeBoxSettingsModal.js";
 import { createThreeBoxChatPanel } from "./threeBoxChatPanel.js";
 import { createThreeBoxSceneCard } from "./threeBoxSceneCard.js";
-import { putTurn as putTurnRaw, getTurn, getTurnsForConversation, getAllConversations, createTurnId } from "./threeBoxSessionStore.js";
+import {
+  putTurn as putTurnRaw,
+  getTurn,
+  getTurnsForConversation,
+  createTurnId,
+  shouldCreateTurnDiffCheckpoint
+} from "./threeBoxSessionStore.js";
 import { createThreeBoxSelfHostedSync } from "./threeBoxSelfHostedSync.js";
 import { createThreeBoxCloudMigration } from "./threeBoxCloudMigration.js";
 import { createThreeBoxBuiltinNotifications } from "./threeBoxBuiltinNotifications.js";
@@ -141,6 +147,23 @@ function populateComposerModelSelect(settings) {
   select.value = providers.some((p) => p.id === previousValue) ? previousValue : defaultId;
 }
 
+function scheduleNonCriticalStartupTask(task) {
+  const run = () => {
+    try {
+      void Promise.resolve(task()).catch((error) =>
+        console.warn("[threebox] deferred startup task failed:", error)
+      );
+    } catch (error) {
+      console.warn("[threebox] deferred startup task failed:", error);
+    }
+  };
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(run);
+  } else {
+    window.setTimeout(run, 1000);
+  }
+}
+
 async function main() {
   let selfHostedSync = null;
   let builtinNotifications = null;
@@ -203,8 +226,12 @@ async function main() {
     sidebar?.refresh();
     templateGallery?.refresh();
   }
-  // Bootstrap the locale before any dynamic content renders for the first time.
-  await initHostI18n(settingsModal.getSettings()?.general?.locale);
+  // Resolve the locale synchronously, but do not hold the entire shell behind the Chinese catalog
+  // fetch. The HTML/JS already contains localized fallbacks; the completed catalog is applied
+  // after primary interaction wiring below.
+  const initialLocaleReady = initHostI18n(settingsModal.getSettings()?.general?.locale).catch((error) => {
+    console.warn("[threebox] locale catalog load failed:", error);
+  });
   applyShellI18n(document);
 
   builtinPrivacyController = createBuiltinProviderPrivacyController({
@@ -224,11 +251,13 @@ async function main() {
   const attachedContext = createThreeBoxAttachedContext({
     sceneCardOptions: {
       shouldUsePreviewAuxiliaryLights: () =>
-        settingsModal.getSettings()?.general?.previewAuxiliaryLights !== false
+        settingsModal.getSettings()?.general?.previewAuxiliaryLights !== false,
+      shouldProvideMeshVisionFeedback: getVisionCapable
     }
   });
   const templateGallery = createThreeBoxTemplateGallery({
-    onSelectTemplate: (item, payload) => attachedContext.setTemplate(item, payload)
+    onSelectTemplate: (item, payload) => attachedContext.setTemplate(item, payload),
+    shouldDeferBackgroundWork: () => activeAbortController !== null
   });
   const resourceLibrary = createThreeBoxResourceLibrary({ attachedContext });
   resourceLibrary.init();
@@ -260,6 +289,7 @@ async function main() {
       settingsModal.getSettings()?.io?.showMeshExportWarnings !== false,
     shouldUsePreviewAuxiliaryLights: () =>
       settingsModal.getSettings()?.general?.previewAuxiliaryLights !== false,
+    shouldProvideMeshVisionFeedback: getVisionCapable,
     assetGateway: () => {
       const settings = settingsModal.getSettings();
       const baseUrl = settings?.general?.assetGatewayUrl?.trim();
@@ -487,6 +517,23 @@ async function main() {
     return btn;
   }
 
+  /** Continues from the most recent saved draft as a normal follow-up adjustment. This keeps the
+   * paused topology as the authoritative context instead of restarting the original generation. */
+  function buildContinueRefinementButton() {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "chatRetryBtn";
+    btn.innerHTML = `${RETRY_ICON}<span>${t("threebox.chat.continueRefinement", "继续细化")}</span>`;
+    btn.addEventListener("click", () => {
+      btn.disabled = true;
+      void chatPanel.sendMessage(t(
+        "threebox.chat.continueRefinementPrompt",
+        "继续细化当前复杂模型，保留现有设计与已经完成的部分，并完成尚未达到质量目标的细节。"
+      ));
+    });
+    return btn;
+  }
+
   /** Appended next to the retry button when a turn fails because the built-in trial provider's
    * quota ran out (error.code === "BUILTIN_QUOTA_EXCEEDED") — a small-print user has no idea
    * where "the settings" are, so this jumps straight to the AI section instead of making them
@@ -593,7 +640,7 @@ async function main() {
     if (agentResult.completed === false && agentResult.stopReason === "budget_exhausted") {
       lines.unshift(t(
         "threebox.agent.refineBudgetExhausted",
-        "已达到自动细化轮数上限；当前场景可用，但 AI 未明确确认已经完善完成。"
+        "已达到您配置的细化预算；当前场景可用，但 AI 尚未确认已经完善完成。"
       ));
     }
     const more = agentResult.steps.length > lines.length ? `\n... ${agentResult.steps.length - lines.length} more step(s)` : "";
@@ -648,11 +695,13 @@ async function main() {
     generationStrategy = "single",
     executionMode = "direct",
     refinementGoals = [],
-    turnDeadlineAt = Date.now() + 180000,
+    turnDeadlineAt,
     abortController: providedAbortController,
     estimatedSegments = 1,
     estimatedOutputTokens,
     selectedCapabilityIds,
+    complexModelStrategy,
+    modelQuality,
     requiresAnimation
   }) {
     const rendererBackend = await resolveActiveAiRendererBackend(text, selectedCapabilityIds);
@@ -661,7 +710,7 @@ async function main() {
     const providerOptions = {
       ...await resolveProviderOptionsForRequest(settings, selectedProviderId),
       requestContext: turnContext,
-      turnDeadlineAt
+      ...(turnDeadlineAt ? { turnDeadlineAt } : {})
     };
 
     const initialActivity = api.takeInitialActivity?.();
@@ -681,12 +730,14 @@ async function main() {
     let previewRenderQueue = Promise.resolve();
     let previewQueueOpen = true;
     let lastQueuedPreviewJson = "";
+    let latestValidPreviewJson = "";
     api.appendToBody(textEl, sceneCard.el);
     const queueScenePreview = (sceneJsonString, progress = {}) => {
       if (!sceneJsonString || sceneJsonString === lastQueuedPreviewJson) {
         return;
       }
       lastQueuedPreviewJson = sceneJsonString;
+      latestValidPreviewJson = sceneJsonString;
       previewRenderQueue = previewRenderQueue
         .catch((error) => {
           console.warn("[threebox] previous agent preview render failed:", error);
@@ -767,6 +818,10 @@ async function main() {
           if (draftPreviewStarted || !draftJsonString) {
             return;
           }
+          latestValidPreviewJson = draftJsonString;
+          chatPanel.setBusy(true, {
+            stopLabel: t("threebox.chat.pauseRefinement", "暂停细化")
+          });
           draftPreviewStarted = true;
           draftPreviewPromise = Promise.resolve()
             .then(() => sceneCard.render(
@@ -791,6 +846,9 @@ async function main() {
         maxSceneSegments: settings.ai?.maxSceneSegments,
         ...resolveThreeBoxSceneTokenOptions(settings),
         selectedCapabilityIds,
+        complexModelStrategy: complexModelStrategy || settings.ai?.complexModelStrategy || "auto",
+        modelQuality: modelQuality || settings.ai?.modelQuality || "balanced",
+        modelBudget: settings.ai?.modelBudget,
         rendererBackend,
         includePreviewCapabilities: rendererBackend === "webgpu",
         requiresAnimation,
@@ -805,6 +863,7 @@ async function main() {
       const generatedSceneJsonString = JSON.stringify(generatedSceneJson, null, 2);
       const outputSceneJsonString = projectSceneForUser(generatedSceneJsonString, settings);
       const outputSceneJson = JSON.parse(outputSceneJsonString);
+      const refinementIncomplete = agentResult?.completed === false;
 
       streaming.remove();
       const agentSummary = buildAgentProcessSummary(agentResult);
@@ -880,6 +939,8 @@ async function main() {
         spatialSummary: "",
         recapSummary: "",
         sceneTitle: "",
+        refinementIncomplete,
+        refinementStopReason: refinementIncomplete ? String(agentResult?.stopReason || "incomplete") : "",
         createdAt: Date.now()
       });
       startTurnTexturePipeline({
@@ -900,6 +961,9 @@ async function main() {
         recap = (await recapPromise) || t("threebox.app.defaultGenerateRecap", "已根据您的描述生成场景。");
         api.appendToBody(textEl, api.buildSummaryBlock(recap));
       }
+      if (refinementIncomplete) {
+        api.appendToBody(textEl, buildContinueRefinementButton());
+      }
 
       await updateStoredTurn(turnId, (turn) => ({
         ...turn,
@@ -911,6 +975,61 @@ async function main() {
     } catch (error) {
       clearBusyIfCurrent();
       streaming.remove();
+      // Once a validated draft has reached the canvas, Stop means "pause refinement": keep the
+      // useful model and its revision as a normal turn so a later message can continue from it.
+      // Before the first valid draft exists, Stop retains the ordinary cancelled-turn behavior.
+      if (isAbortError(error) && latestValidPreviewJson) {
+        await Promise.allSettled([draftPreviewPromise, previewRenderQueue].filter(Boolean));
+        previewQueueOpen = false;
+        let pausedCanonicalJsonString = "";
+        try {
+          pausedCanonicalJsonString = await sceneCard.exportSceneJsonString({ label: text, draft: true });
+        } catch (exportError) {
+          console.warn("[threebox] failed to export paused refinement runtime:", exportError);
+        }
+        pausedCanonicalJsonString ||= latestValidPreviewJson;
+        try {
+          const pausedOutputJsonString = projectSceneForUser(pausedCanonicalJsonString, settings);
+          const pausedOutputJson = JSON.parse(pausedOutputJsonString);
+          if (!sceneCard.getRuntime()) {
+            await sceneCard.render(pausedOutputJson, { label: text, draft: true });
+          } else {
+            sceneCard.updateSceneJson(pausedOutputJson);
+          }
+          sceneCard.setLabel(text);
+          sceneCard.setDraftStatus?.("paused");
+          sceneCardsByTurnId.set(turnId, sceneCard);
+          api.insertBeforeBody(textEl, api.buildJsonCollapse(pausedOutputJsonString), sceneCard.el);
+          const pausedMessage = t(
+            "threebox.app.refinementPaused",
+            "细化已暂停，当前草模已保留。您可以继续使用、下载或稍后继续细化。"
+          );
+          api.updateAssistantMessage(textEl, pausedMessage);
+          api.appendToBody(textEl, buildContinueRefinementButton());
+          await putTurn({
+            id: turnId,
+            conversationId,
+            seq: Date.now(),
+            userPrompt: text,
+            mode: "generate",
+            targetTurnId: null,
+            stage: "draft-paused",
+            sceneJson: pausedOutputJsonString,
+            commands: null,
+            spatialSummary: "",
+            recapSummary: pausedMessage,
+            sceneTitle: text,
+            refinementIncomplete: true,
+            refinementStopReason: "user_paused",
+            createdAt: Date.now()
+          });
+          sidebar.touchActiveConversation(text);
+          api.finishTurnScroll();
+          return;
+        } catch (pauseError) {
+          console.warn("[threebox] failed to preserve paused refinement:", pauseError);
+        }
+      }
       sceneCard?.dispose?.();
       sceneCard?.el.remove();
       await persistUnsuccessfulTurn({
@@ -940,6 +1059,8 @@ async function main() {
         estimatedSegments,
         estimatedOutputTokens,
         selectedCapabilityIds,
+        complexModelStrategy,
+        modelQuality,
         requiresAnimation
       }));
       api.finishTurnScroll();
@@ -951,9 +1072,11 @@ async function main() {
     turnId,
     targetTurnId,
     turnContext = createBuiltinAiTurnContext(turnId, text),
-    turnDeadlineAt = Date.now() + 180000,
+    turnDeadlineAt,
     abortController: providedAbortController,
     selectedCapabilityIds,
+    complexModelStrategy,
+    modelQuality,
     requiresAnimation,
     generationStrategy = "single",
     estimatedSegments = 1
@@ -963,7 +1086,7 @@ async function main() {
     const providerOptions = {
       ...await resolveProviderOptionsForRequest(settings, selectedProviderId),
       requestContext: turnContext,
-      turnDeadlineAt
+      ...(turnDeadlineAt ? { turnDeadlineAt } : {})
     };
 
     const targetTurn = await getTurn(targetTurnId);
@@ -976,6 +1099,8 @@ async function main() {
         turnDeadlineAt,
         abortController: providedAbortController,
         selectedCapabilityIds,
+        complexModelStrategy,
+        modelQuality,
         requiresAnimation
       });
     }
@@ -991,6 +1116,8 @@ async function main() {
         turnDeadlineAt,
         abortController: providedAbortController,
         selectedCapabilityIds,
+        complexModelStrategy,
+        modelQuality,
         requiresAnimation
       });
     }
@@ -1016,6 +1143,8 @@ async function main() {
     let previewRenderQueue = Promise.resolve();
     let previewQueueOpen = true;
     let lastQueuedPreviewJson = "";
+    let adjustmentProgressed = false;
+    let latestValidPreviewJson = "";
     const adjustmentUsesSceneCardRuntime = true;
     api.appendToBody(textEl, sceneCard.el);
     const queueScenePreview = (sceneJsonString, progress = {}) => {
@@ -1023,6 +1152,13 @@ async function main() {
         return;
       }
       lastQueuedPreviewJson = sceneJsonString;
+      if (progress.kind === "stage_preview" || progress.kind === "scene_ready") {
+        adjustmentProgressed = true;
+        chatPanel.setBusy(true, {
+          stopLabel: t("threebox.chat.pauseRefinement", "暂停细化")
+        });
+      }
+      latestValidPreviewJson = sceneJsonString;
       previewRenderQueue = previewRenderQueue
         .catch((error) => {
           console.warn("[threebox] previous adjustment preview render failed:", error);
@@ -1081,6 +1217,9 @@ async function main() {
         globalPromptPrefix: settings.ai?.globalPromptPrefix,
         includeReferenceLinks: settings.ai?.attachReferenceLinks !== false,
         selectedCapabilityIds,
+        complexModelStrategy: complexModelStrategy || settings.ai?.complexModelStrategy || "auto",
+        modelQuality: modelQuality || settings.ai?.modelQuality || "balanced",
+        modelBudget: settings.ai?.modelBudget,
         requiresAnimation
       });
 
@@ -1097,6 +1236,9 @@ async function main() {
         locale: getHostLocale(),
         capabilityLookup: settings.ai?.capabilityLookupEnabled !== false,
         selectedCapabilityIds,
+        complexModelStrategy: complexModelStrategy || settings.ai?.complexModelStrategy || "auto",
+        modelQuality: modelQuality || settings.ai?.modelQuality || "balanced",
+        modelBudget: settings.ai?.modelBudget,
         rendererBackend,
         includePreviewCapabilities: rendererBackend === "webgpu",
         animationCapabilities: requiresAnimation === true,
@@ -1109,11 +1251,18 @@ async function main() {
         // it as the authoritative command runtime instead of constructing a second hidden scene.
         applyCommands: async (commands, meta = {}) => {
           await initialScenePreviewPromise;
-          return sceneCard.applyCommandsWithResult(commands, {
+          const applied = await sceneCard.applyCommandsWithResult(commands, {
             label: text,
             draft: true,
             readOnly: meta.readOnly === true
           });
+          if (applied?.sceneMutated) {
+            adjustmentProgressed = true;
+            chatPanel.setBusy(true, {
+              stopLabel: t("threebox.chat.pauseRefinement", "暂停细化")
+            });
+          }
+          return applied;
         },
         refreshContext: async () => {
           await initialScenePreviewPromise;
@@ -1138,6 +1287,7 @@ async function main() {
       const sceneJsonString = result.sceneJsonString;
       const outputSceneJsonString = projectSceneForUser(sceneJsonString, settings);
       const outputSceneJson = JSON.parse(outputSceneJsonString);
+      const refinementIncomplete = result.agentResult?.completed === false;
 
       streaming.remove();
       const agentSummary = buildAgentProcessSummary(result.agentResult);
@@ -1180,14 +1330,23 @@ async function main() {
           api.buildSummaryBlock(recap)
         );
       }
+      if (refinementIncomplete) {
+        api.appendToBody(textEl, buildContinueRefinementButton());
+      }
 
       // `commands`/`patch` are stored for display (item ④'s "查看调整命令/JSON Patch" collapse)
       // regardless of cache mode. Only whether sceneJson itself is also stored is gated by
       // io.turnCacheMode — diff mode drops it for "commands"-stage turns (the only stage with a
       // replayable delta; json-incremental/json-full always keep the full JSON since there's no
-      // cheaper way to reconstruct them).
+      // cheaper way to reconstruct them). Diff mode periodically stores one full checkpoint so
+      // a long progressive-modeling history never needs to replay an unbounded command chain.
       const diffCacheEligible = result.stage === "commands" && result.commands?.length;
-      const useDiffCache = settings.io?.turnCacheMode === "diff" && diffCacheEligible;
+      const diffMode = settings.io?.turnCacheMode === "diff" && diffCacheEligible;
+      const writeDiffCheckpoint = diffMode && shouldCreateTurnDiffCheckpoint(
+        await getTurnsForConversation(conversationId),
+        settings.io?.turnDiffCheckpointInterval
+      );
+      const useDiffCache = diffMode && !writeDiffCheckpoint;
       await putTurn({
         id: turnId,
         conversationId,
@@ -1197,11 +1356,14 @@ async function main() {
         targetTurnId,
         stage: result.stage,
         sceneJson: useDiffCache ? null : outputSceneJsonString,
+        cacheCheckpoint: writeDiffCheckpoint,
         commands: result.stage === "commands" ? result.commands || null : null,
         patch: result.stage === "json-incremental" ? result.patch || null : null,
         spatialSummary: "",
         recapSummary: recap,
         sceneTitle,
+        refinementIncomplete,
+        refinementStopReason: refinementIncomplete ? String(result.agentResult?.stopReason || "incomplete") : "",
         createdAt: Date.now()
       });
       startTurnTexturePipeline({
@@ -1223,6 +1385,58 @@ async function main() {
     } catch (error) {
       clearBusyIfCurrent();
       streaming.remove();
+      if (isAbortError(error) && adjustmentProgressed) {
+        await Promise.allSettled([initialScenePreviewPromise, previewRenderQueue].filter(Boolean));
+        previewQueueOpen = false;
+        let pausedCanonicalJsonString = "";
+        try {
+          pausedCanonicalJsonString = await sceneCard.exportSceneJsonString({ label: text, draft: true });
+        } catch (exportError) {
+          console.warn("[threebox] failed to export paused adjustment runtime:", exportError);
+        }
+        pausedCanonicalJsonString ||= latestValidPreviewJson;
+        try {
+          const pausedOutputJsonString = projectSceneForUser(pausedCanonicalJsonString, settings);
+          const pausedOutputJson = JSON.parse(pausedOutputJsonString);
+          sceneCard.updateSceneJson(pausedOutputJson);
+          const sceneTitle = targetTurn.sceneTitle || targetTurn.userPrompt || text;
+          sceneCard.setLabel(sceneTitle);
+          sceneCard.setDraftStatus?.("paused");
+          sceneCardsByTurnId.set(turnId, sceneCard);
+          api.insertBeforeBody(textEl, api.buildJsonCollapse(pausedOutputJsonString), sceneCard.el);
+          const pausedMessage = t(
+            "threebox.app.refinementPaused",
+            "细化已暂停，当前草模已保留。您可以继续使用、下载或稍后继续细化。"
+          );
+          api.updateAssistantMessage(textEl, pausedMessage);
+          api.appendToBody(textEl, buildContinueRefinementButton());
+          await putTurn({
+            id: turnId,
+            conversationId,
+            seq: Date.now(),
+            userPrompt: text,
+            mode: "adjust",
+            targetTurnId,
+            stage: "adjust-paused",
+            sceneJson: pausedOutputJsonString,
+            commands: null,
+            patch: null,
+            spatialSummary: "",
+            recapSummary: pausedMessage,
+            sceneTitle,
+            refinementIncomplete: true,
+            refinementStopReason: "user_paused",
+            createdAt: Date.now()
+          });
+          sidebar.touchActiveConversation(text);
+          api.finishTurnScroll();
+          return;
+        } catch (pauseError) {
+          console.warn("[threebox] failed to preserve paused adjustment:", pauseError);
+        }
+      }
+      sceneCard?.dispose?.();
+      sceneCard?.el.remove();
       await persistUnsuccessfulTurn({
         conversationId,
         turnId,
@@ -1384,7 +1598,6 @@ async function main() {
     const conversationId = sidebar.ensureActiveConversation().id;
     const turnId = createTurnId();
     const turnContext = createBuiltinAiTurnContext(turnId, text);
-    const turnDeadlineAt = Date.now() + 180000;
     const turnAbortController = new AbortController();
     activeAbortController = turnAbortController;
     chatPanel.setBusy(true);
@@ -1409,10 +1622,11 @@ async function main() {
       {
         ...providerOptions,
         requestContext: turnContext,
-        turnDeadlineAt,
         signal: turnAbortController.signal,
         animationCapabilityMode,
         sceneGenerationMode,
+        complexModelStrategy: settings.ai?.complexModelStrategy || "auto",
+        modelQuality: settings.ai?.modelQuality || "balanced",
         rendererBackend: "auto",
         includePreviewCapabilities: true,
         // Advertise an on-demand host capability during negotiation without downloading the
@@ -1429,9 +1643,10 @@ async function main() {
         turnId,
         targetTurnId: route.targetTurnId,
         turnContext,
-        turnDeadlineAt,
         abortController: turnAbortController,
         selectedCapabilityIds: classified.selectedCapabilityIds,
+        complexModelStrategy: classified.complexModelStrategy,
+        modelQuality: classified.modelQuality,
         requiresAnimation: classified.requiresAnimation,
         generationStrategy: classified.generationStrategy,
         executionMode: classified.executionMode,
@@ -1443,7 +1658,6 @@ async function main() {
         conversationId,
         turnId,
         turnContext,
-        turnDeadlineAt,
         abortController: turnAbortController,
         generationStrategy: classified.generationStrategy,
         executionMode: classified.executionMode,
@@ -1451,6 +1665,8 @@ async function main() {
         estimatedSegments: classified.estimatedSegments,
         estimatedOutputTokens: classified.estimatedOutputTokens,
         selectedCapabilityIds: classified.selectedCapabilityIds,
+        complexModelStrategy: classified.complexModelStrategy,
+        modelQuality: classified.modelQuality,
         requiresAnimation: classified.requiresAnimation
       });
     }
@@ -1551,9 +1767,15 @@ async function main() {
       const sceneCard = createConfiguredSceneCard();
       chatPanel.appendToBody(textEl, sceneCard.el);
       await sceneCard.render(JSON.parse(outputSceneJsonString), { label: turn.sceneTitle || turn.userPrompt });
+      if (turn.refinementIncomplete === true) {
+        sceneCard.setDraftStatus?.("paused");
+      }
       sceneCardsByTurnId.set(turn.id, sceneCard);
       if (turn.recapSummary) {
         chatPanel.appendToBody(textEl, chatPanel.buildSummaryBlock(turn.recapSummary));
+      }
+      if (turn.refinementIncomplete === true) {
+        chatPanel.appendToBody(textEl, buildContinueRefinementButton());
       }
     }
     // Replaying history re-triggers appendMessage("user", ...)'s "pin near top" scroll for every
@@ -1564,7 +1786,12 @@ async function main() {
   }
 
   sidebar = createThreeBoxSidebar({
-    onTemplateSearch: (query) => templateGallery.filter(query),
+    onTemplateSearch: (query) => {
+      void templateGallery.init().then(() => templateGallery.filter(query));
+    },
+    onTemplateGalleryOpen: () => {
+      void templateGallery.init();
+    },
     openAiConfig: () => {
       settingsModal.open("ai");
       viewChrome.closeLeftDock();
@@ -1604,14 +1831,26 @@ async function main() {
       chatPanel.clear();
     }
   });
-  await sidebar.init();
-  if (selfHostedSync.isConfigured()) void selfHostedSync.syncNow().catch((error) => console.warn("[threebox sync]", error));
-  await templateGallery.init();
+  // `init()` binds all shell actions synchronously and hydrates IndexedDB history in the
+  // background. A user may open Settings or start a new chat immediately; sidebar hydration
+  // merges any conversation created during the read instead of overwriting it.
+  void sidebar.init().catch((error) => console.warn("[threebox] sidebar hydration failed:", error));
 
+  // Composer affordances (auto-grow, suggestions, uploads and drag/drop) are primary interaction,
+  // so wire them before any template manifest or thumbnail work begins.
   wireThreeBoxComposerStub({
     getVisionCapable,
     attachedContext,
     onResourceAdded: () => resourceLibrary.refresh()
+  });
+
+  if (selfHostedSync.isConfigured()) void selfHostedSync.syncNow().catch((error) => console.warn("[threebox sync]", error));
+  scheduleNonCriticalStartupTask(() => templateGallery.init());
+  void initialLocaleReady.then(() => {
+    applyShellI18n(document);
+    viewChrome.refresh();
+    sidebar.refresh();
+    templateGallery.refresh();
   });
 }
 

@@ -146,11 +146,14 @@ export const EDITOR_SETTINGS_DEFAULTS = {
       providers: [],
       defaultProviderId: "",
       builtinBackendUrl: DEFAULT_BUILTIN_BACKEND_URL,
-      // Runaway guard used only when a complex generation/adjustment genuinely continues.
-      maxAutoRefineRounds: 6,
-      agentPolicyVersion: 2,
+      // Optional host/user budget. Zero means the engine does not impose a refinement-round ceiling.
+      maxAutoRefineRounds: 0,
+      agentPolicyVersion: 3,
       agentFitViewEachRound: false,
       sceneGenerationMode: "auto",
+      complexModelStrategy: "auto",
+      modelQuality: "balanced",
+      modelBudget: { maxTokens: 0, maxCost: 0, maxTimeMs: 0 },
       // 0 keeps the engine neutral: max_tokens is omitted and the provider/server decides.
       sceneMaxOutputTokens: 0,
       incrementalUpdate: false,
@@ -845,11 +848,36 @@ export const EDITOR_SETTINGS_FIELDS = [
     },
     {
       section: "ai",
+      path: "ai.complexModelStrategy",
+      type: "select",
+      label: "复杂模型生成策略",
+      options: [
+        { value: "auto", label: "自动（由 AI 判断）" },
+        { value: "full-coordinates", label: "完整坐标" },
+        { value: "progressive", label: "渐进建模" }
+      ]
+    },
+    {
+      section: "ai",
+      path: "ai.modelQuality",
+      type: "select",
+      label: "复杂模型质量",
+      options: [
+        { value: "draft", label: "草稿" },
+        { value: "balanced", label: "平衡（推荐）" },
+        { value: "high", label: "高质量" },
+        { value: "custom", label: "自定义" }
+      ]
+    },
+    { section: "ai", path: "ai.modelBudget.maxTokens", type: "number", label: "复杂模型 Token 预算（0 = 不限制）", min: 0 },
+    { section: "ai", path: "ai.modelBudget.maxCost", type: "number", label: "复杂模型费用预算（需供应商计价；0 = 不限制）", min: 0, step: 0.01 },
+    { section: "ai", path: "ai.modelBudget.maxTimeMs", type: "number", label: "复杂模型时间预算毫秒（0 = 不限制）", min: 0 },
+    {
+      section: "ai",
       path: "ai.maxAutoRefineRounds",
       type: "number",
-      label: "复杂场景细化安全上限",
-      min: 1,
-      max: 20
+      label: "复杂场景细化预算（0 = 不限制）",
+      min: 0
     },
     {
       section: "ai",

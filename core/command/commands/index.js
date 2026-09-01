@@ -15,6 +15,20 @@ import {
 import { handleMaterialPatch } from "./material.js";
 import { handleCameraFit } from "./camera.js";
 import { handleMorphList, handleMorphSet } from "./morph.js";
+import {
+  handleMeshBake,
+  handleMeshBufferAppendAttribute,
+  handleMeshBufferAppendIndices,
+  handleMeshBufferCancel,
+  handleMeshBufferCommit,
+  handleMeshBufferSetAttributeRange,
+  handleMeshBufferSetIndexRange,
+  handleMeshEdit,
+  handleMeshGetTopology,
+  handleMeshInspect,
+  handleMeshRenderViews,
+  handleMeshValidate
+} from "./mesh.js";
 
 /** @typedef {(ctx: import("../types.js").CommandContext, args: object) => unknown | Promise<unknown>} CommandHandler */
 
@@ -33,5 +47,17 @@ export const CORE_COMMAND_HANDLERS = {
   "material.patch": handleMaterialPatch,
   "camera.fit": handleCameraFit,
   "morph.list": handleMorphList,
-  "morph.set": handleMorphSet
+  "morph.set": handleMorphSet,
+  "mesh.inspect": handleMeshInspect,
+  "mesh.getTopology": handleMeshGetTopology,
+  "mesh.validate": handleMeshValidate,
+  "mesh.edit": handleMeshEdit,
+  "mesh.buffer.appendAttribute": handleMeshBufferAppendAttribute,
+  "mesh.buffer.setAttributeRange": handleMeshBufferSetAttributeRange,
+  "mesh.buffer.appendIndices": handleMeshBufferAppendIndices,
+  "mesh.buffer.setIndexRange": handleMeshBufferSetIndexRange,
+  "mesh.buffer.commit": handleMeshBufferCommit,
+  "mesh.buffer.cancel": handleMeshBufferCancel,
+  "mesh.bake": handleMeshBake,
+  "mesh.renderViews": handleMeshRenderViews
 };

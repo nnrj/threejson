@@ -3,7 +3,9 @@ import { test } from "node:test";
 import {
   buildFootprint,
   buildGeometrySummary,
+  buildCompactReferenceDescriptor,
   buildObjectSpatialCard,
+  buildObjectSpatialCardsFromSceneJson,
   buildPlacementHints,
   buildSceneScaleProfile,
   extractPromptTokens,
@@ -54,6 +56,72 @@ test("buildObjectSpatialCard and buildSceneScaleProfile", () => {
   assert.equal(profile.objectCount, 1);
   assert.ok(profile.characteristicSize >= 30);
   assert.ok(profile.typicalPartRange.includes("40"));
+});
+
+test("complex mesh spatial cards carry bounds and counts without embedding dense coordinates", () => {
+  const descriptor = {
+    threeJsonId: "raw-shell",
+    name: "raw-shell",
+    objType: "bufferMesh",
+    position: { x: 10, y: 2, z: -4 },
+    scale: { x: 2, y: 1, z: 0.5 },
+    geometry: {
+      attributes: {
+        position: { array: [-1, -2, -3, 1, 2, 3], itemSize: 3 },
+        normal: { array: [0, 1, 0, 0, 1, 0], itemSize: 3 }
+      },
+      index: { array: [0, 1, 1] }
+    }
+  };
+  const card = buildObjectSpatialCard(descriptor);
+  assert.match(card.geometrySummary, /bufferMesh 2v\/1t/);
+  assert.equal(card.footprint.minX, 8);
+  assert.equal(card.footprint.maxX, 12);
+  assert.equal(card.footprint.minY, 0);
+  assert.equal(card.footprint.maxY, 4);
+  assert.equal(card.footprint.minZ, -5.5);
+  assert.equal(card.footprint.maxZ, -2.5);
+
+  const compact = buildCompactReferenceDescriptor(descriptor);
+  const text = JSON.stringify(compact);
+  assert.match(text, /bufferMesh/);
+  assert.doesNotMatch(text, /-1,-2,-3/);
+  assert.equal(Object.hasOwn(compact, "geometry"), false);
+});
+
+test("JSON-only spatial context composes nested transforms for editable meshes", () => {
+  const scene = {
+    threeJsonId: "nested-scene",
+    objectList: [{
+      threeJsonId: "assembly",
+      objType: "group",
+      position: { x: 20, y: 0, z: 0 },
+      subScene: [{
+        threeJsonId: "control-shell",
+        name: "control-shell",
+        objType: "editableMesh",
+        position: { x: 3, y: 0, z: 0 },
+        topology: {
+          revision: 4,
+          vertices: [
+            { id: "a", position: [-2, 0, -1] },
+            { id: "b", position: [2, 0, -1] },
+            { id: "c", position: [0, 4, 1] }
+          ],
+          faces: [{ id: "body", vertices: ["a", "b", "c"], part: "body" }]
+        },
+        modifiers: [{ id: "subdivision", type: "loop", levels: 2 }]
+      }]
+    }]
+  };
+  const { cards } = buildObjectSpatialCardsFromSceneJson(scene);
+  const card = cards.find((item) => item.threeJsonId === "control-shell");
+  assert.ok(card);
+  assert.deepEqual(card.worldPosition, { x: 23, y: 0, z: 0 });
+  assert.equal(card.footprint.minX, 21);
+  assert.equal(card.footprint.maxX, 25);
+  assert.equal(card.boundsSource, "descriptor-control-cage");
+  assert.match(card.geometrySummary, /control=3v\/1f/);
 });
 
 test("pickReferenceObjects uses prompt token overlap with object names", () => {

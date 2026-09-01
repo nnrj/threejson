@@ -211,11 +211,21 @@ export function getCredentials(host) {
   return creds;
 }
 
-/** Resolve the runaway guard used only when an operation genuinely continues incrementally. */
+/** Resolve optional user budgets. Zero means the model-driven loop has no quality-round limit. */
 export function getAgentOptions(host) {
   const ai = host.getEditorSettings()?.ai || {};
+  const modelBudget = ai.modelBudget || {};
   return {
-    maxRefineRounds: ai.maxAutoRefineRounds,
+    ...(Number(ai.maxAutoRefineRounds) > 0
+      ? { maxRefineRounds: Math.round(Number(ai.maxAutoRefineRounds)) }
+      : {}),
+    complexModelStrategy: ai.complexModelStrategy || "auto",
+    modelQuality: ai.modelQuality || "balanced",
+    modelBudget: {
+      maxTokens: Number(modelBudget.maxTokens) > 0 ? Number(modelBudget.maxTokens) : undefined,
+      maxCost: Number(modelBudget.maxCost) > 0 ? Number(modelBudget.maxCost) : undefined,
+      maxTimeMs: Number(modelBudget.maxTimeMs) > 0 ? Number(modelBudget.maxTimeMs) : undefined
+    },
     fitViewEachRound: ai.agentFitViewEachRound === true
   };
 }

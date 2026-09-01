@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import { test, mock } from "node:test";
 import { validateSceneJson } from "../core/ai/agentTools.js";
 import { runSceneAgent } from "../core/ai/sceneAgent.js";
+import {
+  extractVisualFeedbackFromBatch,
+  formatObjectGetFeedbackFromBatch
+} from "../core/ai/sceneCommandSkill.js";
 
 const MINIMAL_SCENE = {
   threeJsonId: "agent-test",
@@ -110,6 +114,25 @@ test("runSceneAgent uses one complete generation call by default", async () => {
   }
 });
 
+test("mesh review feedback keeps image payloads out of text and exposes them separately", () => {
+  const results = [{
+    ok: true,
+    op: "mesh.renderViews",
+    data: {
+      threeJsonId: "model-1",
+      views: [{ name: "front", width: 320, height: 240, dataUrl: "data:image/png;base64,AA==" }]
+    }
+  }];
+  const textFeedback = formatObjectGetFeedbackFromBatch(results);
+  assert.match(textFeedback, /"imageAttached": true/);
+  assert.doesNotMatch(textFeedback, /data:image/);
+  assert.deepEqual(extractVisualFeedbackFromBatch(results), [{
+    url: "data:image/png;base64,AA==",
+    detail: "low",
+    label: "front"
+  }]);
+});
+
 test("structured envelope metadata does not create a false animation review", async () => {
   const scenePayload = JSON.stringify(MINIMAL_SCENE);
   const fetchMock = mock.fn(async () => ({
@@ -135,6 +158,69 @@ test("structured envelope metadata does not create a false animation review", as
     assert.equal(result.executionMode, "direct");
     assert.equal(fetchMock.mock.calls.length, 1, JSON.stringify(result.steps));
     assert.equal(result.steps.some((step) => step.kind === "capability_review" && step.attempt), false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("runSceneAgent enforces only an explicitly configured aggregate model token budget", async () => {
+  const scenePayload = JSON.stringify(MINIMAL_SCENE);
+  let requestBody = null;
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = mock.fn(async (_url, init = {}) => {
+    requestBody = JSON.parse(init.body);
+    return {
+      ok: true,
+      async json() {
+        return {
+          choices: [{ message: { content: scenePayload }, finish_reason: "stop" }],
+          usage: { prompt_tokens: 80, completion_tokens: 50, total_tokens: 130 }
+        };
+      }
+    };
+  });
+  try {
+    await assert.rejects(
+      runSceneAgent(
+        { mode: "generate", prompt: "a simple box" },
+        {
+          apiKey: "test-key",
+          provider: "deepseek",
+          modelBudget: { maxTokens: 100 }
+        }
+      ),
+      (error) => error?.code === "AI_MODEL_TOKEN_BUDGET_EXCEEDED"
+    );
+    assert.equal(requestBody.max_tokens, 100);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("runSceneAgent rejects an explicit cost budget when the provider cannot account for cost", async () => {
+  const scenePayload = JSON.stringify(MINIMAL_SCENE);
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = mock.fn(async () => ({
+    ok: true,
+    async json() {
+      return {
+        choices: [{ message: { content: scenePayload }, finish_reason: "stop" }],
+        usage: { prompt_tokens: 10, completion_tokens: 10, total_tokens: 20 }
+      };
+    }
+  }));
+  try {
+    await assert.rejects(
+      runSceneAgent(
+        { mode: "generate", prompt: "a simple box" },
+        {
+          apiKey: "test-key",
+          provider: "deepseek",
+          modelBudget: { maxCost: 1 }
+        }
+      ),
+      (error) => error?.code === "AI_MODEL_COST_ESTIMATOR_REQUIRED"
+    );
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -273,6 +359,55 @@ test("runSceneAgent escalates a real direct output cutoff to incremental constru
   }
 });
 
+test("forced full-coordinate generation recovers by segmented transport without changing representation", async () => {
+  const rawBufferScene = JSON.stringify({
+    threeJsonId: "raw-buffer-scene",
+    objectList: [{
+      threeJsonId: "raw-model",
+      objType: "bufferMesh",
+      geometry: {
+        attributes: { position: { array: [0, 0, 0, 1, 0, 0, 0, 1, 0], itemSize: 3, type: "Float32Array" } },
+        index: { array: [0, 1, 2], type: "Uint16Array" }
+      }
+    }]
+  });
+  const requestBodies = [];
+  let call = 0;
+  const fetchMock = mock.fn(async (_url, init = {}) => {
+    call += 1;
+    requestBodies.push(JSON.parse(init.body));
+    const content = call === 1 ? '{"threeJsonId":"raw-cut-off","objectList":[' : rawBufferScene;
+    return {
+      ok: true,
+      async text() { return ""; },
+      async json() {
+        return { choices: [{ message: { content }, finish_reason: call === 1 ? "length" : "stop" }] };
+      }
+    };
+  });
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = fetchMock;
+  try {
+    const result = await runSceneAgent(
+      { mode: "generate", prompt: "Generate a free-form raw BufferGeometry with complete coordinates." },
+      {
+        apiKey: "test-key",
+        provider: "deepseek",
+        complexModelStrategy: "full-coordinates",
+        selectedCapabilityIds: ["complexMesh", "rawBufferMesh"]
+      }
+    );
+    assert.equal(result.executionMode, "direct");
+    assert.equal(result.steps.some((step) => step.kind === "execution_fallback"), false);
+    assert.equal(JSON.parse(result.sceneJsonString).objectList[0].objType, "bufferMesh");
+    assert.equal(fetchMock.mock.calls.length, 2);
+    assert.match(requestBodies[1].messages[0].content, /SEGMENTED OUTPUT PROTOCOL/);
+    assert.match(requestBodies[1].messages.at(-1).content, /complete scene again from the beginning/i);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("runSceneAgent recovers when both direct generation and the first structural draft hit their limits", async () => {
   const scenePayload = JSON.stringify(MINIMAL_SCENE);
   const requestBodies = [];
@@ -317,6 +452,8 @@ test("runSceneAgent recovers when both direct generation and the first structura
     assert.equal(Object.hasOwn(requestBodies[3], "max_tokens"), false);
     assert.match(requestBodies[2].messages.at(-1).content, /STRUCTURAL DRAFT CONTRACT/);
     assert.match(requestBodies[2].messages.at(-1).content, /do not obey or invent an arbitrary token or object-count quota/);
+    assert.match(requestBodies[2].messages.at(-1).content, /recognizable low-density editableMesh or compact surface/);
+    assert.match(requestBodies[2].messages.at(-1).content, /not a mandatory pre-stage for every complex model/);
     assert.match(requestBodies[3].messages[0].content, /SEGMENTED OUTPUT PROTOCOL/);
     assert.match(requestBodies[3].messages.at(-1).content, /COMPACT STRUCTURAL-DRAFT REGENERATION REQUIREMENT/);
     assert.doesNotMatch(requestBodies[3].messages.at(-1).content, /Generate the complete scene again/);
@@ -399,7 +536,9 @@ test("runSceneAgent respects a caller-configured maxRefineRounds cap", async () 
     call += 1;
     const content = call === 1
       ? "- floor"
-      : JSON.stringify({ ...MINIMAL_SCENE, threeJsonId: `agent-test-${call}` });
+      : call === 2
+        ? JSON.stringify({ ...MINIMAL_SCENE, threeJsonId: `agent-test-${call}` })
+        : `${JSON.stringify({ ...MINIMAL_SCENE, threeJsonId: `agent-test-${call}` })}\n# continue`;
     return {
       ok: true,
       async text() {
@@ -468,15 +607,14 @@ test("runSceneAgent update commands agent repairs invalid script", async () => {
   let call = 0;
   const fetchMock = mock.fn(async () => {
     call += 1;
-    // 1: outline (free text), 2: bad round-1 reply, 3: still-bad round-2 reply, 4: valid commands
+    // Direct adjustment skips a ceremonial outline. Two invalid replies are repaired by the
+    // third useful response; the three-attempt guard is an anomaly guard, not a quality budget.
     const content =
       call === 1
-        ? "- outline text"
+        ? "- patch floor color"
         : call === 2
-          ? "- patch floor color"
-          : call === 3
-            ? "not a command script"
-            : validCommands;
+          ? "not a command script"
+          : validCommands;
     return {
       ok: true,
       async text() {
@@ -820,6 +958,79 @@ test("runSceneAgent iterative apply execs commands and skips final exec batch", 
     assert.equal(fetchCall, 2);
     assert.ok(progress.includes("commands_applied"));
     assert.ok(progress.includes("refine"));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("runSceneAgent feeds paged mesh readback and host-rendered views into the next refinement request", async () => {
+  const currentScene = JSON.stringify(MINIMAL_SCENE);
+  const changedScene = sceneWithFloorColor("#334455");
+  const requestBodies = [];
+  let fetchCall = 0;
+  let applyCall = 0;
+  let refreshCall = 0;
+  const fetchMock = mock.fn(async (_url, init = {}) => {
+    fetchCall += 1;
+    requestBodies.push(JSON.parse(init.body));
+    const content = fetchCall === 1
+      ? "- inspect the local topology, then refine it"
+      : fetchCall === 2
+        ? 'mesh.getTopology id=model-1 part=body page=2 pageSize=50\nmesh.renderViews id=model-1 views=["front","perspective"]'
+        : 'object.patch id=floor partial={"material":{"color":"#334455"}}\n# done';
+    return {
+      ok: true,
+      async text() { return ""; },
+      async json() { return { choices: [{ message: { content } }] }; }
+    };
+  });
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = fetchMock;
+  try {
+    const result = await runSceneAgent(
+      {
+        mode: "update",
+        prompt: "refine the body topology",
+        currentSceneJsonString: currentScene,
+        outputMode: "commands",
+        updateContext: { objectList: [{ threeJsonId: "model-1", objType: "editableMesh" }] }
+      },
+      {
+        apiKey: "test-key",
+        provider: "deepseek",
+        generationStrategy: "segmented",
+        visualReviewAvailable: true,
+        applyCommands: async (_commands, meta) => {
+          applyCall += 1;
+          if (meta.readOnly) {
+            return {
+              ok: true,
+              sceneMutated: false,
+              objectGetFeedback: '{"op":"mesh.getTopology","result":{"page":2,"hasMore":true}}',
+              visualFeedback: [{ url: "data:image/png;base64,AA==", detail: "low", label: "front" }]
+            };
+          }
+          return { ok: true, sceneMutated: true };
+        },
+        refreshContext: async () => {
+          refreshCall += 1;
+          return {
+            currentSceneJsonString: refreshCall === 1 ? currentScene : changedScene,
+            objectList: []
+          };
+        }
+      }
+    );
+    assert.equal(result.completed, true);
+    assert.equal(result.stopReason, "model_done");
+    assert.equal(applyCall, 2);
+    assert.equal(fetchCall, 3);
+    const followUpContent = requestBodies[2].messages[1].content;
+    assert.ok(Array.isArray(followUpContent));
+    assert.match(followUpContent[0].text, /mesh\.getTopology/);
+    assert.match(followUpContent[0].text, /"page":2/);
+    assert.equal(followUpContent[1].type, "image_url");
+    assert.equal(followUpContent[1].image_url.url, "data:image/png;base64,AA==");
   } finally {
     globalThis.fetch = originalFetch;
   }

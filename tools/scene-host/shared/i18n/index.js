@@ -16,6 +16,7 @@ const LOCALE_STORAGE_KEY = "threejson.host.locale";
 
 let catalog = {};
 let currentLocale = "en-US";
+let catalogLoadSequence = 0;
 
 export function normalizeLocale(raw) {
   const tag = String(raw || "")
@@ -60,8 +61,9 @@ export function resolveHostLocale(settingsLocale) {
 
 export async function loadHostLocaleCatalog(locale) {
   const loc = SUPPORTED.has(locale) ? locale : normalizeLocale(locale);
+  const loadSequence = ++catalogLoadSequence;
   if (loc === "en-US") {
-    catalog = {
+    const nextCatalog = {
       ...EDITOR_SETTINGS_LABELS_EN,
       ...EDITOR_SHELL_LABELS_EN,
       ...PLAYER_SETTINGS_LABELS_EN,
@@ -69,8 +71,11 @@ export async function loadHostLocaleCatalog(locale) {
       ...THREEBOX_SHELL_LABELS_EN,
       ...BUILTIN_PROVIDER_PRIVACY_LABELS_EN
     };
-    currentLocale = loc;
-    return catalog;
+    if (loadSequence === catalogLoadSequence) {
+      catalog = nextCatalog;
+      currentLocale = loc;
+    }
+    return nextCatalog;
   }
   async function fetchJson(name) {
     const res = await fetch(new URL(`./locales/${name}`, import.meta.url));
@@ -83,9 +88,13 @@ export async function loadHostLocaleCatalog(locale) {
     fetchJson(`player-shell.${loc}.json`),
     fetchJson(`threebox-shell.${loc}.json`)
   ]);
-  catalog = { ...settings, ...editorShell, ...playerSettings, ...playerShell, ...threeboxShell };
-  currentLocale = loc;
-  return catalog;
+  const nextCatalog = { ...settings, ...editorShell, ...playerSettings, ...playerShell, ...threeboxShell };
+  // A slower startup fetch must not overwrite a newer locale selected from Settings.
+  if (loadSequence === catalogLoadSequence) {
+    catalog = nextCatalog;
+    currentLocale = loc;
+  }
+  return nextCatalog;
 }
 
 export function getHostLocale() {
@@ -154,11 +163,17 @@ function englishizeKey(key) {
 
 export async function initHostI18n(settingsLocale) {
   const locale = resolveHostLocale(settingsLocale);
-  await loadHostLocaleCatalog(locale);
+  // Publish the resolved locale before any catalog fetch. Native scene-host pages already carry
+  // localized fallback copy in their HTML/JS, so they can bind their shell interactions
+  // immediately while a non-English catalog loads in the background. Without this assignment,
+  // `t()` still believes the page is English during that window and replaces useful fallbacks
+  // with generated key labels.
+  currentLocale = locale;
   if (typeof document !== "undefined") {
     document.documentElement.lang = locale === "zh-CN" ? "zh-CN" : "en";
   }
   setHostLocaleStorage(locale);
+  await loadHostLocaleCatalog(locale);
   return locale;
 }
 

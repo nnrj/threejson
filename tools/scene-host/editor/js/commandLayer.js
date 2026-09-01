@@ -13,6 +13,7 @@ import {
 } from "../../../../core/command/index.js";
 import { registerEditorCommands } from "../lib/command/index.js";
 import { resolveRemoveCaptureSubtree } from "./sceneTreeContextMenu.js";
+import { captureMeshReviewViews } from "../../shared/js/meshViewCapture.js";
 
 export function createCommandLayer(host) {
   let registry = null;
@@ -35,7 +36,12 @@ export function createCommandLayer(host) {
       renderer: host.getRenderer() ?? null,
       controls: host.getControls() ?? null,
       document: host.getSysConfig()?.jsonData ?? null,
-      options: {}
+      options: {
+        renderMeshViews: (request) => captureMeshReviewViews({
+          ...request,
+          renderer: host.getRenderer() ?? null
+        })
+      }
     });
   }
 
@@ -164,6 +170,62 @@ export function createCommandLayer(host) {
           } else if (op === "scene.load") {
             const loaded = await host.ingestScenePayload(cmd.args?.json, options.label || "scene.load", cmd.args?.options || {});
             result = { ok: Boolean(loaded), op, mode: "runtime", error: loaded ? null : "scene.load failed" };
+          } else if (op === "morph.set") {
+            const id = String(cmd.args?.id || "").trim();
+            const beforeObj = getObjectByThreeJsonId(id);
+            const beforeObjJson = beforeObj
+              ? host.getSceneTree()?.captureObjectHistorySnapshot?.(id, beforeObj)
+              : null;
+            result = await executeCommand(ctx, cmd, { registry, skipRuntimeGuard: true });
+            if (result.ok) {
+              if (options.historyReplay !== true && beforeObjJson) {
+                const afterObj = getObjectByThreeJsonId(id);
+                const afterObjJson = host.getSceneTree()?.captureObjectHistorySnapshot?.(id, afterObj);
+                if (afterObjJson) {
+                  host.getEditorHistory()?.pushObjectObjJsonSnapshot?.(
+                    id,
+                    beforeObjJson,
+                    afterObjJson,
+                    options.label || "Morph 编辑"
+                  );
+                }
+              }
+              markCommandSceneDirty();
+              host.getSceneTree()?.syncPropInputs?.(host.getSelectedObject());
+            }
+          } else if (op.startsWith("mesh.")) {
+            const id = String(cmd.args?.id || "").trim();
+            const mutating = op === "mesh.edit" || op === "mesh.bake" || op === "mesh.buffer.commit";
+            const beforeObj = mutating ? getObjectByThreeJsonId(id) : null;
+            const beforeObjJson = beforeObj
+              ? host.getSceneTree()?.captureObjectHistorySnapshot?.(id, beforeObj)
+              : null;
+            result = await executeCommand(ctx, cmd, { registry, skipRuntimeGuard: true });
+            if (result.ok && mutating) {
+              if (options.historyReplay !== true) {
+                if (result.data?.undo) {
+                  host.getEditorHistory()?.pushMeshCommandTransaction?.(
+                    id,
+                    cmd,
+                    result.data.undo,
+                    options.label || "网格编辑"
+                  );
+                } else if (beforeObjJson) {
+                  const afterObj = getObjectByThreeJsonId(id);
+                  const afterObjJson = host.getSceneTree()?.captureObjectHistorySnapshot?.(id, afterObj);
+                  if (afterObjJson) {
+                    host.getEditorHistory()?.pushObjectObjJsonSnapshot?.(
+                      id,
+                      beforeObjJson,
+                      afterObjJson,
+                      options.label || "网格编辑"
+                    );
+                  }
+                }
+              }
+              markCommandSceneDirty();
+              host.getSceneTree()?.syncPropInputs?.(host.getSelectedObject());
+            }
           } else {
             result = await executeCommand(ctx, cmd, { registry, skipRuntimeGuard: op === "object.get" });
           }

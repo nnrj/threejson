@@ -1,11 +1,17 @@
-import { buildStructuredTurnEnvelope, parseSceneJsonString } from "threejson/ai";
-import { sceneToStandardJsonSimple } from "threejson";
 import {
   batchResultsHaveSceneMutation,
   batchResultsHaveSuccessfulAdjustment,
-  formatObjectGetFeedbackFromBatch
-} from "../../../../core/ai/sceneCommandSkill.js";
-import { resolveAiAdjustContextPayload, runAiAdjustTurn } from "../../shared/js/aiTurnOrchestrator.js";
+  buildStructuredTurnEnvelope,
+  extractVisualFeedbackFromBatch,
+  formatObjectGetFeedbackFromBatch,
+  parseSceneJsonString
+} from "threejson/ai";
+import { sceneToStandardJsonSimple } from "threejson";
+import {
+  isProviderVisionCapable,
+  resolveAiAdjustContextPayload,
+  runAiAdjustTurn
+} from "../../shared/js/aiTurnOrchestrator.js";
 import {
   applyScenePayload,
   checkBuiltinProviderAvailability,
@@ -394,12 +400,16 @@ export function createEditorAiAdjustPanel(host) {
       };
       const targetSceneJsonString = await getSceneJsonText();
       const targetSceneJson = parseSceneJsonString(targetSceneJsonString);
-      const contextPayload = resolveAiAdjustContextPayload(targetSceneJson, host.getEditorSettings()?.ai || {});
+      const aiSettings = host.getEditorSettings()?.ai || {};
+      const contextPayload = resolveAiAdjustContextPayload(targetSceneJson, aiSettings);
       const envelope = buildStructuredTurnEnvelope({
         userPrompt: effectivePrompt,
         intent: "adjust",
         contextPayload,
-        includeReferenceLinks: true
+        includeReferenceLinks: true,
+        complexModelStrategy: aiSettings.complexModelStrategy || "auto",
+        modelQuality: aiSettings.modelQuality || "balanced",
+        modelBudget: aiSettings.modelBudget
       });
       const updateOutputMode = host.getEditorSettings()?.ai?.updateOutputMode || "auto";
       const liveBatchResults = [];
@@ -411,6 +421,9 @@ export function createEditorAiAdjustPanel(host) {
         providerOptions,
         ...sceneTokenOptions,
         agentOptions,
+        complexModelStrategy: aiSettings.complexModelStrategy || "auto",
+        modelQuality: aiSettings.modelQuality || "balanced",
+        modelBudget: aiSettings.modelBudget,
         updateOutputMode,
         strictOutputMode: updateOutputMode !== "auto",
         resolveContextPayload: (sceneJson) => resolveAiAdjustContextPayload(sceneJson, host.getEditorSettings()?.ai || {}),
@@ -429,6 +442,9 @@ export function createEditorAiAdjustPanel(host) {
             ok: batch?.ok !== false,
             sceneMutated,
             objectGetFeedback: formatObjectGetFeedbackFromBatch(results),
+            visualFeedback: isProviderVisionCapable(providerOptions)
+              ? extractVisualFeedbackFromBatch(results)
+              : [],
             error: results.find((item) => item?.ok === false)?.error
           };
         },

@@ -24,7 +24,7 @@ export function createThreeBoxChatPanel(host = {}) {
   let busyStoppable = false;
   let turnSpacer = null;
 
-  /** Toggles the composer's send button into a stop button for the duration of an in-flight
+  /** Toggles the composer's send button into a stop/pause button for the duration of an in-flight
    * generate/adjust turn — clicking it while busy calls `host.onStopRequested` instead of
    * sending, and Enter is ignored (the existing text stays in the composer rather than queuing a
    * second concurrent turn). The caller (threeBoxApp.js) is responsible for pairing every
@@ -39,7 +39,7 @@ export function createThreeBoxChatPanel(host = {}) {
     composerSendBtn.innerHTML = busyStoppable ? STOP_ICON : SEND_ICON;
     composerSendBtn.classList.toggle("composerSendBtnStop", busyStoppable);
     const label = busyStoppable
-      ? t("threebox.shell.stop", "停止")
+      ? String(options.stopLabel || t("threebox.shell.stop", "停止"))
       : busy
         ? t("threebox.chat.preparingAction", "正在准备…")
         : t("threebox.shell.send", "发送");

@@ -69,6 +69,11 @@ function getModelPanelGroups() {
       { key: "irregularGeometry", label: modelLabel("irregularGeometry", "不规则集合体"), kind: "objType" },
       { key: "tube", label: modelLabel("tube", "管线"), kind: "objType" },
       { key: "bufferMesh", label: modelLabel("bufferMesh", "缓冲网格"), kind: "objType" },
+      { key: "editableMesh", label: modelLabel("editableMesh", "可编辑控制网格"), kind: "objType" },
+      { key: "parametricSurface", label: modelLabel("parametricSurface", "参数曲面"), kind: "objType" },
+      { key: "bezierPatch", label: modelLabel("bezierPatch", "Bézier 曲面片"), kind: "objType" },
+      { key: "sdfMesh", label: modelLabel("sdfMesh", "SDF 隐式曲面"), kind: "objType" },
+      { key: "latheMesh", label: modelLabel("latheMesh", "旋转曲面"), kind: "objType" },
       { key: "instanced", label: modelLabel("instanced", "实例化模型"), kind: "objType" }
     ],
     fx: [

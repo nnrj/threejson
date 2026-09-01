@@ -316,7 +316,17 @@ function deployObjectRecord(targetRoot, record, ctx = {}) {
     return;
   }
   if (objType === "buffermesh") {
-    createBufferMesh(record, targetRoot);
+    createBufferMesh(record, targetRoot, ctx);
+    return;
+  }
+  if (objType === "editablemesh") {
+    if (deployByObjTypeExtension(record, targetRoot, ctx)) return;
+    log.warn("[sceneLoad] editableMesh capability is not registered; use createJsonScene() or import threejson/complex-mesh before a synchronous load.");
+    return;
+  }
+  if (["parametricsurface", "bezierpatch", "nurbssurface", "lathemesh", "loftmesh", "sweepmesh", "implicitsurface", "sdfmesh"].includes(objType)) {
+    if (deployByObjTypeExtension(record, targetRoot, ctx)) return;
+    log.warn(`[sceneLoad] ${objType} capability is not registered; use createJsonScene() or import threejson/complex-mesh before a synchronous load.`);
     return;
   }
   if (objType === "irregularplane") {

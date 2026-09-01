@@ -38,3 +38,7 @@ import {
 | 撤销删除 | `addObjectFromDescriptor(removedDescriptor, { parent })` |
 
 持久化与 `worldInfo.boxModelList` 无关；见 [lab/scene-canonical-collect-roadmap.md](../../lab/scene-canonical-collect-roadmap.md)。
+
+## 复杂网格命令
+
+`mesh.inspect`、`mesh.getTopology`、`mesh.validate`、`mesh.edit`、`mesh.buffer.*`、`mesh.bake` 和 `mesh.renderViews` 通过统一 command executor 提供。它们使用 revision 防止过期拓扑写入，并在完整校验和预构建成功后原子提交。完整参数、控制网格 schema、二进制 buffer 和渐进生成流程见[复杂模型与渐进建模](./complex-mesh.md)。

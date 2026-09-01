@@ -1,0 +1,54 @@
+{
+  "version": "next",
+  "name": "complex-modeling-editable-lounge-chair",
+  "sceneConfig": {
+    "scene": { "background": "#111827" },
+    "camera": { "fov": 46, "near": 0.1, "far": 200, "position": { "x": 7, "y": 5, "z": 10 } },
+    "renderer": { "antialias": true },
+    "controls": { "enableDamping": true, "target": { "x": 0, "y": 1.5, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#dbeafe", "intensity": 0.8 },
+      { "type": "directional", "color": "#ffffff", "intensity": 1.6, "position": { "x": 7, "y": 12, "z": 8 } }
+    ],
+    "helpers": { "grid": { "size": 20, "divisions": 20, "colorCenterLine": "#334155", "colorGrid": "#1e293b" } },
+    "renderLoop": { "autoResize": true, "firstAutoResize": true }
+  },
+  "objectList": [
+    {
+      "threeJsonId": "lounge-chair-shell",
+      "name": "editable-lounge-chair",
+      "objType": "editableMesh",
+      "topology": {
+        "revision": 0,
+        "vertices": [
+          { "id": "r0c0", "position": [-1.55, 0.75, 1.7] }, { "id": "r0c1", "position": [-0.52, 0.55, 1.85] }, { "id": "r0c2", "position": [0.52, 0.55, 1.85] }, { "id": "r0c3", "position": [1.55, 0.75, 1.7] },
+          { "id": "r1c0", "position": [-1.65, 0.7, 0.25] }, { "id": "r1c1", "position": [-0.55, 0.5, 0.35] }, { "id": "r1c2", "position": [0.55, 0.5, 0.35] }, { "id": "r1c3", "position": [1.65, 0.7, 0.25] },
+          { "id": "r2c0", "position": [-1.55, 1.0, -1.15] }, { "id": "r2c1", "position": [-0.52, 0.82, -1.3] }, { "id": "r2c2", "position": [0.52, 0.82, -1.3] }, { "id": "r2c3", "position": [1.55, 1.0, -1.15] },
+          { "id": "r3c0", "position": [-1.4, 3.5, -2.0] }, { "id": "r3c1", "position": [-0.48, 3.75, -2.2] }, { "id": "r3c2", "position": [0.48, 3.75, -2.2] }, { "id": "r3c3", "position": [1.4, 3.5, -2.0] }
+        ],
+        "faces": [
+          { "id": "seat-00", "vertices": ["r0c0", "r0c1", "r1c1", "r1c0"], "part": "seat", "smooth": true },
+          { "id": "seat-01", "vertices": ["r0c1", "r0c2", "r1c2", "r1c1"], "part": "seat", "smooth": true },
+          { "id": "seat-02", "vertices": ["r0c2", "r0c3", "r1c3", "r1c2"], "part": "seat", "smooth": true },
+          { "id": "seat-10", "vertices": ["r1c0", "r1c1", "r2c1", "r2c0"], "part": "seat", "smooth": true },
+          { "id": "seat-11", "vertices": ["r1c1", "r1c2", "r2c2", "r2c1"], "part": "seat", "smooth": true },
+          { "id": "seat-12", "vertices": ["r1c2", "r1c3", "r2c3", "r2c2"], "part": "seat", "smooth": true },
+          { "id": "back-0", "vertices": ["r2c0", "r2c1", "r3c1", "r3c0"], "part": "backrest", "smooth": true },
+          { "id": "back-1", "vertices": ["r2c1", "r2c2", "r3c2", "r3c1"], "part": "backrest", "smooth": true },
+          { "id": "back-2", "vertices": ["r2c2", "r2c3", "r3c3", "r3c2"], "part": "backrest", "smooth": true }
+        ],
+        "edges": [
+          { "vertices": ["r0c0", "r0c1"], "crease": 0.35 },
+          { "vertices": ["r0c2", "r0c3"], "crease": 0.35 }
+        ]
+      },
+      "modifiers": [
+        { "id": "chair-subdivision", "type": "catmullClark", "levels": 2 },
+        { "id": "chair-thickness", "type": "solidify", "thickness": 0.16, "sidePart": "edge" }
+      ],
+      "uvProjection": { "type": "triplanar", "scaleU": 0.35, "scaleV": 0.35 },
+      "material": { "type": "physical", "color": "#d97757", "roughness": 0.62, "metalness": 0.03, "clearcoat": 0.18 }
+    }
+  ],
+  "threeJsonId": "complex-modeling-editable-lounge-chair"
+}

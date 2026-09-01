@@ -21,9 +21,12 @@ export const SCENE_AGENT_SETTINGS_DEFAULTS = Object.freeze({
     textureAllowUnknownLicense: false,
     texturePersistenceMode: "remote",
     texturePbr: true,
-    maxSceneSegments: 16,
-    maxAutoRefineRounds: 6,
-    agentPolicyVersion: 2
+    complexModelStrategy: "auto",
+    modelQuality: "balanced",
+    modelBudget: { maxTokens: 0, maxCost: 0, maxTimeMs: 0 },
+    maxSceneSegments: 0,
+    maxAutoRefineRounds: 0,
+    agentPolicyVersion: 3
   },
   io: {
     exportJsonIndent: 2,
@@ -31,6 +34,7 @@ export const SCENE_AGENT_SETTINGS_DEFAULTS = Object.freeze({
     tjzAssetPolicy: "preserve",
     showMeshExportWarnings: true,
     turnCacheMode: "full",
+    turnDiffCheckpointInterval: 12,
     jsonViewerLineNumbers: true,
     jsonViewerHighlight: true
   }
@@ -39,6 +43,8 @@ export const SCENE_AGENT_SETTINGS_DEFAULTS = Object.freeze({
 const ENUMS = {
   "ai.thinkingPreference": new Set(["disabled", "high", "max", "inherit"]),
   "ai.sceneGenerationMode": new Set(["auto", "direct", "draft_refine"]),
+  "ai.complexModelStrategy": new Set(["auto", "full-coordinates", "progressive"]),
+  "ai.modelQuality": new Set(["draft", "balanced", "high", "custom"]),
   "ai.updateOutputMode": new Set(["commands", "json-incremental", "json-full"]),
   "ai.animationCapabilityMode": new Set(["auto", "on", "off"]),
   "ai.textureStrategy": new Set(["semantic-hybrid", "manifest", "search", "generate"]),
@@ -75,15 +81,42 @@ export function normalizeSceneAgentSettings(input = {}) {
     if (!allowed.has(result[section][key])) result[section][key] = defaults[section][key];
   }
   result.ai.sceneMaxOutputTokens = finiteInt(result.ai.sceneMaxOutputTokens, 0, 0, Number.MAX_SAFE_INTEGER);
-  result.ai.maxSceneSegments = finiteInt(result.ai.maxSceneSegments, 16, 1, 64);
-  result.ai.maxAutoRefineRounds = finiteInt(result.ai.maxAutoRefineRounds, 6, 1, 20);
-  result.ai.agentPolicyVersion = 2;
+  result.ai.maxSceneSegments = finiteInt(result.ai.maxSceneSegments, 0, 0, Number.MAX_SAFE_INTEGER);
+  result.ai.maxAutoRefineRounds = finiteInt(result.ai.maxAutoRefineRounds, 0, 0, Number.MAX_SAFE_INTEGER);
+  const modelBudget = result.ai.modelBudget && typeof result.ai.modelBudget === "object"
+    ? result.ai.modelBudget
+    : {};
+  result.ai.modelBudget = {
+    maxTokens: finiteInt(modelBudget.maxTokens, 0, 0, Number.MAX_SAFE_INTEGER),
+    maxCost: Number.isFinite(Number(modelBudget.maxCost)) && Number(modelBudget.maxCost) > 0
+      ? Number(modelBudget.maxCost)
+      : 0,
+    maxTimeMs: finiteInt(modelBudget.maxTimeMs, 0, 0, Number.MAX_SAFE_INTEGER)
+  };
+  result.ai.agentPolicyVersion = 3;
+  result.io.turnDiffCheckpointInterval = finiteInt(
+    result.io.turnDiffCheckpointInterval,
+    12,
+    0,
+    Number.MAX_SAFE_INTEGER
+  );
   return result;
 }
 
 export function resolveSceneAgentOptions(settings = {}) {
   const normalized = normalizeSceneAgentSettings(settings);
-  return { maxRefineRounds: normalized.ai.maxAutoRefineRounds };
+  return {
+    ...(normalized.ai.maxAutoRefineRounds > 0
+      ? { maxRefineRounds: normalized.ai.maxAutoRefineRounds }
+      : {}),
+    complexModelStrategy: normalized.ai.complexModelStrategy,
+    modelQuality: normalized.ai.modelQuality,
+    modelBudget: {
+      maxTokens: normalized.ai.modelBudget.maxTokens || undefined,
+      maxCost: normalized.ai.modelBudget.maxCost || undefined,
+      maxTimeMs: normalized.ai.modelBudget.maxTimeMs || undefined
+    }
+  };
 }
 
 export function resolveSceneAgentTokenOptions(settings = {}) {

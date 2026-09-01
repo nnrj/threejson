@@ -1,11 +1,18 @@
 export interface SceneAgentSettings {
   ai: Record<string, unknown> & {
     sceneGenerationMode: "auto" | "direct" | "draft_refine";
+    complexModelStrategy: "auto" | "full-coordinates" | "progressive";
+    modelQuality: "draft" | "balanced" | "high" | "custom";
+    modelBudget: { maxTokens: number; maxCost: number; maxTimeMs: number };
     updateOutputMode: "commands" | "json-incremental" | "json-full";
     maxAutoRefineRounds: number;
+    maxSceneSegments: number;
     sceneMaxOutputTokens: number;
   };
-  io: Record<string, unknown> & { turnCacheMode: "full" | "diff" };
+  io: Record<string, unknown> & {
+    turnCacheMode: "full" | "diff";
+    turnDiffCheckpointInterval: number;
+  };
 }
 
 export interface SceneAgentEvent {

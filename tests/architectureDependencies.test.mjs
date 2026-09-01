@@ -226,6 +226,21 @@ test("optional dynamic-runtime stores are not created by every RuntimeContext", 
   assert.doesNotMatch(source, /ctx\.(?:entityRegistry|frameCommitScheduler)\s*=/);
 });
 
+test("complex modeling stays descriptor-activated and outside ordinary core imports", async () => {
+  const optionalLoaderPath = path.join(REPO_ROOT, "core", "capabilities", "optionalCapabilityLoader.js");
+  const optionalLoaderSource = fs.readFileSync(optionalLoaderPath, "utf8");
+  for (const entry of ["core/index.js", "core/runtime.js"]) {
+    const source = fs.readFileSync(path.join(REPO_ROOT, entry), "utf8");
+    assert.doesNotMatch(source, /complexMeshCapability|editableMeshBuilder|proceduralMeshBuilder/, entry);
+  }
+  assert.match(optionalLoaderSource, /import\("\.\.\/builder\/complexMeshCapability\.js"\)/);
+  const rootManifest = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "package.json"), "utf8"));
+  assert.equal(rootManifest.exports?.["./complex-mesh"], "./core/builder/complexMeshCapability.js");
+  const { sceneUsesComplexMesh } = await import("../core/capabilities/optionalCapabilityLoader.js");
+  assert.equal(sceneUsesComplexMesh({ objectList: [{ objType: "box" }] }), false);
+  assert.equal(sceneUsesComplexMesh({ objectList: [{ objType: "editableMesh" }] }), true);
+});
+
 test("domains never import host tools", () => {
   const toolsRoot = path.join(REPO_ROOT, "tools") + path.sep;
   const violations = [];

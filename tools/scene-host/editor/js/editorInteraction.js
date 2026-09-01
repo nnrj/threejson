@@ -52,6 +52,7 @@ export function createEditorInteraction(host) {
   let highlightPageSetup = null;
   let objectEditActive = false;
   let dragSnapshot = null;
+  let meshElementTransformSession = null;
   let listenersBound = false;
 
   function isCanvasDirtySuppressed() {
@@ -177,8 +178,11 @@ export function createEditorInteraction(host) {
   }
 
   function detachGizmo() {
+    const transientSession = meshElementTransformSession;
+    meshElementTransformSession = null;
     objectEditActive = false;
     transformControls?.detach?.();
+    transientSession?.onDetach?.(transientSession.target);
     getSysConfig().impactCheckFlag = false;
     hideBoxEdge();
     syncTransModeButtonsVisibility();
@@ -199,6 +203,15 @@ export function createEditorInteraction(host) {
     transformControls.addEventListener("mouseDown", () => {
       void host.getAiSidebar?.()?.interruptAiSessionIfActive?.("编辑场景物体");
       const target = transformControls?.object || host.getSelectedObject();
+      if (meshElementTransformSession?.target === target) {
+        meshElementTransformSession.before = {
+          position: target.position.clone(),
+          quaternion: target.quaternion.clone(),
+          scale: target.scale.clone()
+        };
+        if (getControls()) getControls().enabled = false;
+        return;
+      }
       const id = String(target?.userData?.objJson?.threeJsonId || "").trim();
       const before = snapshotBoxModelTransformFromObject3D(target);
       dragSnapshot = id && before ? { threeJsonId: id, before } : null;
@@ -215,6 +228,30 @@ export function createEditorInteraction(host) {
         getControls().enabled = true;
       }
       const target = transformControls?.object || host.getSelectedObject();
+      if (meshElementTransformSession?.target === target) {
+        const session = meshElementTransformSession;
+        const before = session.before;
+        session.before = null;
+        const changed = !before
+          || !before.position.equals(target.position)
+          || !before.quaternion.equals(target.quaternion)
+          || !before.scale.equals(target.scale);
+        if (changed) {
+          const transform = {
+            position: target.position.clone(),
+            quaternion: target.quaternion.clone(),
+            scale: target.scale.clone()
+          };
+          const commit = typeof session.onCommitTransform === "function"
+            ? session.onCommitTransform(transform, before)
+            : session.onCommit?.(target.position.clone(), before?.position);
+          void Promise.resolve(commit).catch((error) => {
+            host.showMessage(`控制网格顶点更新失败：${error?.message || error}`, "error");
+          });
+        }
+        dragSnapshot = null;
+        return;
+      }
       if (!isCanvasDirtySuppressed() && target) {
         syncBoxModelTransformFromObject3D(target);
         host.getEditorDomainDrillIn?.()?.syncEditStateAfterTransform?.(target);
@@ -349,6 +386,11 @@ export function createEditorInteraction(host) {
       return;
     }
     if (obj && isEditableMesh(obj, boxEdge) && obj.name !== "XYZ") {
+      if (meshElementTransformSession) {
+        const previous = meshElementTransformSession;
+        meshElementTransformSession = null;
+        previous.onDetach?.(previous.target);
+      }
       objectEditActive = true;
       transformControls.attach(obj);
       sysConfig.rightClickedFlag = false;
@@ -358,6 +400,33 @@ export function createEditorInteraction(host) {
       showBoxEdge(obj);
       host.setEventNotice?.("编辑模式：拖动坐标轴编辑物体；右键退出编辑并恢复场景模式。");
     }
+  }
+
+  /** Attach the existing TransformControls to an editor-only control-mesh element. The caller
+   * owns the transient target and receives one commit callback on mouse-up. */
+  function attachMeshElementTransform(target, options = {}) {
+    if (!target?.isObject3D) return false;
+    ensureTransformControls();
+    if (!transformControls) return false;
+    if (meshElementTransformSession) {
+      const previous = meshElementTransformSession;
+      meshElementTransformSession = null;
+      previous.onDetach?.(previous.target);
+    }
+    meshElementTransformSession = {
+      target,
+      onCommit: options.onCommit,
+      onCommitTransform: options.onCommitTransform,
+      onDetach: options.onDetach,
+      before: null
+    };
+    objectEditActive = true;
+    transformControls.attach(target);
+    switchTransMode(options.mode || "translate", true);
+    syncTransModeButtonsVisibility();
+    hideBoxEdge();
+    host.setEventNotice?.("控制网格模式：可切换移动、旋转、缩放；提交后选中控制元素会原子更新。");
+    return true;
   }
 
   function exitEditMode() {
@@ -631,6 +700,7 @@ export function createEditorInteraction(host) {
     getTransformControls: () => transformControls,
     getComposer: () => composer,
     getTransformControlsHelper: () => transformControlsHelper,
+    attachMeshElementTransform,
     isObjectEditActive: () => objectEditActive,
     syncTransModeButtonsVisibility,
     syncDragControlsFromSettings,

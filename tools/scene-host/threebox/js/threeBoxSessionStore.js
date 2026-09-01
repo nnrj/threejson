@@ -113,6 +113,23 @@ export async function getAllTurns() {
   return getAll(STORE_TURNS);
 }
 
+/** Decide whether the next replayable command turn should carry a full-scene checkpoint.
+ * A value <= 0 disables periodic checkpoints. The initial generation/full-JSON turn already
+ * supplies the first checkpoint, so only consecutive sceneJson:null command turns are counted. */
+export function shouldCreateTurnDiffCheckpoint(orderedTurns, interval = 12) {
+  const normalizedInterval = Math.max(0, Math.round(Number(interval) || 0));
+  if (normalizedInterval === 0) return false;
+  let consecutiveDiffTurns = 0;
+  for (let index = (orderedTurns?.length || 0) - 1; index >= 0; index -= 1) {
+    const turn = orderedTurns[index];
+    if (typeof turn?.sceneJson === "string" && turn.sceneJson.trim()) break;
+    if (turn?.stage === "commands" && Array.isArray(turn.commands) && turn.commands.length > 0) {
+      consecutiveDiffTurns += 1;
+    }
+  }
+  return consecutiveDiffTurns >= normalizedInterval - 1;
+}
+
 export async function deleteTurnsForConversation(conversationId) {
   const turns = await getTurnsForConversation(conversationId);
   await withStore(STORE_TURNS, "readwrite", (store) => {

@@ -51,7 +51,10 @@ test("image generation wires the same incremental draft command executor as text
     source.indexOf("export async function runAiImageGenerateTurn"),
     source.indexOf("export async function classifyAiTurnIntent")
   );
-  assert.match(imageRunner, /applyDraftCommands:\s*applyAiDraftCommands/);
+  assert.match(
+    imageRunner,
+    /applyDraftCommands:\s*\(commands, context\) => applyAiDraftCommands\(commands,[\s\S]*visualReviewAvailable/
+  );
   assert.doesNotMatch(source, /maxTokens\s*=\s*\d+/);
   assert.doesNotMatch(hostKitSource, /maxTokens\s*=\s*\d+/);
 });
