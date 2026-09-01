@@ -17,7 +17,6 @@ const THUMB_CACHE_KEY = "threejson.threebox.thumbCache.v1";
 const THUMB_CACHE_TTL_MS = 3 * 24 * 60 * 60 * 1000;
 const THUMB_WIDTH = 320;
 const THUMB_HEIGHT = 200;
-const THUMB_LOAD_TIMEOUT_MS = 8000;
 const MANIFEST_REPO_RELATIVE_PATH = "assets/json/other/threebox/manifest.json";
 const PLACEHOLDER_THUMB_URL = sceneHostAssetUrl("assets/img/logo/threejson-logo-256.png");
 
@@ -140,13 +139,6 @@ function localizedTitle(item) {
   return item.title || item.id;
 }
 
-function withTimeout(promise, ms) {
-  return Promise.race([
-    promise,
-    new Promise((_resolve, reject) => setTimeout(() => reject(new Error("thumbnail timeout")), ms))
-  ]);
-}
-
 async function captureTemplateThumbnail(jsonUrl) {
   const { createJsonScene, captureSceneFrame } = await loadCoreModule();
   const resolvedUrl = resolveSceneHostUrl(jsonUrl);
@@ -154,25 +146,30 @@ async function captureTemplateThumbnail(jsonUrl) {
   const payload = await response.json();
   const canvas = getThumbCanvas();
   let captured = null;
-  const runtime = await enqueueThreeBoxSceneLoad(() =>
-    createJsonScene(withReducedQuality(payload), {
-      canvas,
-      resetScene: true,
-      assetsBase: sceneHostAssetUrl("assets/"),
-      onSceneReady: async (ctx) => {
-        captured = await captureSceneFrame(ctx, {
-          as: "dataUrl",
-          mimeType: "image/jpeg",
-          quality: 0.72,
-          offscreen: true,
-          offscreenWidth: THUMB_WIDTH,
-          offscreenHeight: THUMB_HEIGHT
-        });
-      }
-    })
-  );
-  runtime?.dispose?.();
-  return captured?.dataUrl || null;
+  let activeRuntime = null;
+  try {
+    activeRuntime = await enqueueThreeBoxSceneLoad(() =>
+      createJsonScene(withReducedQuality(payload), {
+        canvas,
+        resetScene: true,
+        assetsBase: sceneHostAssetUrl("assets/"),
+        onRuntimeReady: ({ runtime }) => { activeRuntime = runtime; },
+        onSceneReady: async (ctx) => {
+          captured = await captureSceneFrame(ctx, {
+            as: "dataUrl",
+            mimeType: "image/jpeg",
+            quality: 0.72,
+            offscreen: true,
+            offscreenWidth: THUMB_WIDTH,
+            offscreenHeight: THUMB_HEIGHT
+          });
+        }
+      })
+    );
+    return captured?.dataUrl || null;
+  } finally {
+    activeRuntime?.dispose?.();
+  }
 }
 
 /** Yields to the browser's idle time between captures (rather than just the next microtask) so a
@@ -199,9 +196,26 @@ function hasPendingUserInput() {
   }
 }
 
+function hasVisibleForegroundSceneCanvas() {
+  for (const canvas of document.querySelectorAll("canvas.sceneCardCanvas")) {
+    if (!canvas.isConnected || canvas === thumbCanvas) continue;
+    const rect = canvas.getBoundingClientRect();
+    if (
+      rect.width > 0
+      && rect.height > 0
+      && rect.right >= 0
+      && rect.left <= window.innerWidth
+      && rect.bottom >= 0
+      && rect.top <= window.innerHeight
+    ) return true;
+  }
+  return false;
+}
+
 function shouldDeferThumbnailTask(task) {
   return isThreeBoxSceneLoadBusy()
     || hasPendingUserInput()
+    || hasVisibleForegroundSceneCanvas()
     || task?.shouldDeferBackgroundWork?.() === true;
 }
 
@@ -231,7 +245,9 @@ async function runThumbQueue() {
       continue;
     }
     try {
-      const dataUrl = await withTimeout(captureTemplateThumbnail(task.jsonUrl), THUMB_LOAD_TIMEOUT_MS);
+      // Do not race this against a cosmetic timeout: Promise.race cannot cancel createJsonScene,
+      // so the old renderer used to keep running while the queue started another one.
+      const dataUrl = await captureTemplateThumbnail(task.jsonUrl);
       if (dataUrl) {
         cache[task.jsonUrl] = { dataUrl, ts: Date.now() };
         writeThumbCache(cache);

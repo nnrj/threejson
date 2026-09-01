@@ -19,6 +19,8 @@
   border: 1px solid var(--scene-agent-line);
   border-radius: 14px 14px 0 0;
   background: var(--scene-agent-canvas);
+  isolation: isolate;
+  contain: paint;
 }
 :where(.sceneAgentSceneCard) :where(.sceneCardCanvasWrap:fullscreen) {
   max-height: none;
@@ -47,11 +49,10 @@
   max-width: calc(100% - 20px);
   border: 1px solid var(--scene-agent-line);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--scene-agent-panel) 86%, transparent);
+  background: color-mix(in srgb, var(--scene-agent-panel) 94%, transparent);
   color: var(--scene-agent-text);
   font-size: 12px;
   pointer-events: none;
-  backdrop-filter: blur(7px);
 }
 :where(.sceneAgentSceneCard) :where(.sceneCardLoadingMask)::before {
   content: "";
@@ -128,11 +129,10 @@
   border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
   border-radius: 999px;
   padding: 5px 9px;
-  background: color-mix(in srgb, var(--panel, #1c1d20) 88%, transparent);
+  background: color-mix(in srgb, var(--panel, #1c1d20) 94%, transparent);
   color: var(--text, #f2f4f8);
   font-size: 12px;
   line-height: 1.2;
-  backdrop-filter: blur(8px);
 }
 .sceneCardTextureBadge { top: 42px; }
 .sceneCardTextureBadge[data-state="working"]::before {

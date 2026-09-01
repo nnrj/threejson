@@ -8,6 +8,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { sceneHostAssetUrl } from "@threejson/host-kit/js/sceneHostPaths.js";
+import { createCanvasRenderActivity } from "@threejson/host-kit/js/canvasRenderActivity.js";
 import { enqueueSceneAgentLoad } from "./sceneLoadQueue.js";
 import { removeSceneAgentPreviewLights, syncSceneAgentPreviewLights } from "./previewLights.js";
 
@@ -99,6 +100,7 @@ export function useSceneCardRuntime(options = {}) {
   const runtimeRef = useRef(null);
   const commandContextRef = useRef(null);
   const liveResizeObserverRef = useRef(null);
+  const renderActivityRef = useRef(null);
   const renderSeqRef = useRef(0);
   const currentSceneJsonRef = useRef(null);
   const currentLabelRef = useRef(translate(options, "sceneAgent.sceneCard.defaultLabel", "Scene"));
@@ -111,6 +113,32 @@ export function useSceneCardRuntime(options = {}) {
   const [textureProgress, setTextureProgressState] = useState(null);
 
   const toast = useCallback((msg, kind) => optionsRef.current.showToast?.(msg, kind), []);
+
+  const syncRuntimeActivity = useCallback((forceFrame = false) => {
+    if (renderActivityRef.current) {
+      return renderActivityRef.current.sync({ forceFrame });
+    }
+    const runtime = runtimeRef.current;
+    if (!runtime) return false;
+    runtime.start?.();
+    if (forceFrame) runtime.renderOnce?.();
+    return true;
+  }, []);
+
+  useEffect(() => {
+    const wrap = canvasWrapRef.current;
+    if (!wrap) return undefined;
+    const activity = createCanvasRenderActivity({
+      element: wrap,
+      getRuntime: () => runtimeRef.current
+    });
+    renderActivityRef.current = activity;
+    activity.start();
+    return () => {
+      activity.dispose();
+      if (renderActivityRef.current === activity) renderActivityRef.current = null;
+    };
+  }, []);
 
   const setLabel = useCallback((label) => {
     const next = String(label || "").trim();
@@ -160,6 +188,7 @@ export function useSceneCardRuntime(options = {}) {
       liveResizeObserverRef.current = null;
       runtimeRef.current?.dispose?.();
       runtimeRef.current = null;
+      renderActivityRef.current?.sync();
       commandContextRef.current = null;
       currentSceneJsonRef.current = sceneJsonPayload;
       setDraft(renderOptions.draft === true);
@@ -211,10 +240,10 @@ export function useSceneCardRuntime(options = {}) {
         }
         if (runtimeRef.current !== nextRuntime) {
           runtimeRef.current = nextRuntime;
-          runtimeRef.current.start?.();
           watchLiveResize();
         }
         runtimeRef.current.resize?.({ width, height });
+        syncRuntimeActivity(true);
         showCompactLoadingProgress();
         return true;
       };
@@ -253,7 +282,7 @@ export function useSceneCardRuntime(options = {}) {
       }
       return runtimeRef.current;
     },
-    [setLabel, showCompactLoadingProgress, watchLiveResize]
+    [setLabel, showCompactLoadingProgress, syncRuntimeActivity, watchLiveResize]
   );
 
   const updateSceneJson = useCallback((sceneJson) => {
@@ -281,8 +310,8 @@ export function useSceneCardRuntime(options = {}) {
     const execResult = await executeCommands(commandContextRef.current, commands);
     if (commandContextRef.current.runtime && commandContextRef.current.runtime !== runtimeRef.current) {
       runtimeRef.current = commandContextRef.current.runtime;
-      runtimeRef.current.start?.();
       watchLiveResize();
+      syncRuntimeActivity(true);
     }
     const results = Array.isArray(execResult?.results) ? execResult.results : [];
     const failed = results.find((entry) => entry?.ok === false);
@@ -314,7 +343,7 @@ export function useSceneCardRuntime(options = {}) {
       objectGetFeedback,
       runtime: runtimeRef.current
     };
-  }, [setLabel, updateSceneJson, watchLiveResize]);
+  }, [setLabel, syncRuntimeActivity, updateSceneJson, watchLiveResize]);
 
   const applyCommandsWithResult = useCallback((commands, commandOptions = {}) =>
     executeCommandBatch(commands, commandOptions), [executeCommandBatch]);

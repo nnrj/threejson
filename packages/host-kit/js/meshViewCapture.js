@@ -52,6 +52,37 @@ function pixelsToDataUrl(pixels, width, height, mimeType, quality) {
   return canvas.toDataURL(mimeType, quality);
 }
 
+function captureRendererState(renderer) {
+  return {
+    target: renderer.getRenderTarget(),
+    activeCubeFace: renderer.getActiveCubeFace?.() || 0,
+    activeMipmapLevel: renderer.getActiveMipmapLevel?.() || 0,
+    viewport: renderer.getViewport(new THREE.Vector4()).clone(),
+    scissor: renderer.getScissor(new THREE.Vector4()).clone(),
+    scissorTest: renderer.getScissorTest(),
+    clearColor: renderer.getClearColor(new THREE.Color()).clone(),
+    clearAlpha: renderer.getClearAlpha(),
+    autoClear: renderer.autoClear,
+    autoClearColor: renderer.autoClearColor,
+    autoClearDepth: renderer.autoClearDepth,
+    autoClearStencil: renderer.autoClearStencil,
+    xrEnabled: renderer.xr?.enabled
+  };
+}
+
+function restoreRendererState(renderer, state) {
+  renderer.setRenderTarget(state.target, state.activeCubeFace, state.activeMipmapLevel);
+  renderer.setViewport(state.viewport);
+  renderer.setScissor(state.scissor);
+  renderer.setScissorTest(state.scissorTest);
+  renderer.setClearColor(state.clearColor, state.clearAlpha);
+  renderer.autoClear = state.autoClear;
+  renderer.autoClearColor = state.autoClearColor;
+  renderer.autoClearDepth = state.autoClearDepth;
+  renderer.autoClearStencil = state.autoClearStencil;
+  if (renderer.xr && state.xrEnabled !== undefined) renderer.xr.enabled = state.xrEnabled;
+}
+
 /**
  * Capture isolated model views without resizing or repainting the visible host canvas. The host
  * decides whether to expose this callback to core commands; core itself never imports DOM/canvas.
@@ -95,14 +126,15 @@ export async function captureMeshReviewViews({
   });
   target.texture.colorSpace = renderer.outputColorSpace || THREE.SRGBColorSpace;
   const pixels = new Uint8Array(width * height * 4);
-  const previousTarget = renderer.getRenderTarget();
-  const previousClearColor = renderer.getClearColor(new THREE.Color()).clone();
-  const previousClearAlpha = renderer.getClearAlpha();
-  const previousXrEnabled = renderer.xr?.enabled;
+  const rendererState = captureRendererState(renderer);
   const captured = [];
   try {
     if (renderer.xr) renderer.xr.enabled = false;
     renderer.setRenderTarget(target);
+    renderer.setViewport(0, 0, width, height);
+    renderer.setScissor(0, 0, width, height);
+    renderer.setScissorTest(false);
+    renderer.autoClear = false;
     renderer.setClearColor(previewScene.background, 1);
     for (const rawName of Array.isArray(views) && views.length ? views : ["perspective"]) {
       const name = String(rawName || "perspective").trim().toLowerCase();
@@ -124,9 +156,7 @@ export async function captureMeshReviewViews({
       });
     }
   } finally {
-    renderer.setRenderTarget(previousTarget);
-    renderer.setClearColor(previousClearColor, previousClearAlpha);
-    if (renderer.xr && previousXrEnabled !== undefined) renderer.xr.enabled = previousXrEnabled;
+    restoreRendererState(renderer, rendererState);
     target.dispose();
     previewScene.clear();
   }

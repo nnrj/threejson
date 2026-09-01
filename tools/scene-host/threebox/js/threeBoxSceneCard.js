@@ -14,6 +14,7 @@ import {
 import { syncThreeBoxPreviewAuxiliaryLights } from "./threeBoxPreviewLights.js";
 import { ensureThreeBoxSceneCapabilitiesForPayload } from "./threeBoxAiCapabilities.js";
 import { captureMeshReviewViews } from "../../shared/js/meshViewCapture.js";
+import { createCanvasRenderActivity } from "../../shared/js/canvasRenderActivity.js";
 
 const EDITOR_OPEN_SCENE_BRIDGE_PREFIX = "threejson.editor.openScene.";
 
@@ -174,6 +175,11 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
   let currentSceneJson = null;
   let renderSeq = 0;
   let currentLabel = t("threebox.sceneCard.defaultLabel", "ThreeBox 场景");
+  const renderActivity = createCanvasRenderActivity({
+    element: canvasWrap,
+    getRuntime: () => runtime
+  });
+  renderActivity.start();
 
   function setLabel(label) {
     const nextLabel = String(label || "").trim();
@@ -281,6 +287,7 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
     liveResizeObserver = null;
     runtime?.dispose?.();
     runtime = null;
+    renderActivity.sync();
     commandContext = null;
     currentSceneJson = sceneJsonPayload;
     setDraftState(options.draft === true);
@@ -331,10 +338,10 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
       }
       if (runtime !== nextRuntime) {
         runtime = nextRuntime;
-        runtime.start?.();
         watchLiveResize();
       }
       runtime.resize?.({ width, height });
+      renderActivity.sync({ forceFrame: true });
       showCompactLoadingProgress();
       return true;
     };
@@ -427,8 +434,8 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
     const execResult = await executeCommands(commandContext, commands);
     if (commandContext.runtime && commandContext.runtime !== runtime) {
       runtime = commandContext.runtime;
-      runtime.start?.();
       watchLiveResize();
+      renderActivity.sync({ forceFrame: true });
       syncThreeBoxPreviewAuxiliaryLights(
         runtime.scene,
         typeof cardOptions.shouldUsePreviewAuxiliaryLights === "function"
@@ -541,6 +548,7 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
     textureBadgeTimer = null;
     liveResizeObserver?.disconnect();
     liveResizeObserver = null;
+    renderActivity.dispose();
     runtime?.dispose?.();
     runtime = null;
     commandContext = null;

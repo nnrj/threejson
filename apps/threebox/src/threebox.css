@@ -116,7 +116,7 @@ button { font: inherit; }
 .sceneCardCanvasWrap {
   position: relative; width: 100%; aspect-ratio: 16 / 9; max-height: 420px;
   border: 1px solid var(--line); border-radius: 14px 14px 0 0; overflow: hidden;
-  background: var(--canvas-bg);
+  background: var(--canvas-bg); isolation: isolate; contain: paint;
 }
 .sceneCardCanvasWrap:fullscreen { max-height: none; border-radius: 0; aspect-ratio: auto; }
 .sceneCardCanvas { display: block; width: 100%; height: 100%; }
@@ -128,25 +128,25 @@ button { font: inherit; }
 .sceneCardLoadingMask.sceneCardLoadingMaskCompact {
   inset: 10px 10px auto auto; max-width: calc(100% - 20px); padding: 7px 10px;
   justify-content: flex-start; border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
-  border-radius: 999px; background: color-mix(in srgb, var(--panel2) 86%, transparent);
+  border-radius: 999px; background: color-mix(in srgb, var(--panel2) 94%, transparent);
   color: var(--text); font-size: 12px; line-height: 1.35; pointer-events: none;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.24); backdrop-filter: blur(7px);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.24);
 }
 .sceneCardLoadingMask[hidden] { display: none; }
 .sceneCardDraftBadge {
   position: absolute; top: 10px; left: 10px; z-index: 3; pointer-events: none;
   padding: 5px 11px; border-radius: 999px; font-size: 12px; line-height: 1.35;
   border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
-  background: color-mix(in srgb, var(--panel2) 86%, transparent); color: var(--text);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.24); backdrop-filter: blur(7px);
+  background: color-mix(in srgb, var(--panel2) 94%, transparent); color: var(--text);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.24);
 }
 .sceneCardDraftBadge[hidden] { display: none; }
 .sceneCardTextureBadge {
   position: absolute; right: 10px; bottom: 10px; z-index: 3; pointer-events: none;
   padding: 5px 11px; border-radius: 999px; font-size: 12px; line-height: 1.35;
   border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
-  background: color-mix(in srgb, var(--panel2) 88%, transparent); color: var(--text);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.24); backdrop-filter: blur(7px);
+  background: color-mix(in srgb, var(--panel2) 94%, transparent); color: var(--text);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.24);
 }
 .sceneCardTextureBadge[data-state="working"]::before {
   content: ""; width: 10px; height: 10px; margin-right: 7px; display: inline-block;

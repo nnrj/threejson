@@ -14,7 +14,6 @@ const THUMB_CACHE_KEY = "threejson.threebox.thumbCache.v1";
 const THUMB_CACHE_TTL_MS = 3 * 24 * 60 * 60 * 1000;
 const THUMB_WIDTH = 320;
 const THUMB_HEIGHT = 200;
-const THUMB_LOAD_TIMEOUT_MS = 8000;
 
 export const PLACEHOLDER_THUMB_URL = sceneHostAssetUrl("assets/img/logo/threejson-logo-256.png");
 
@@ -127,32 +126,30 @@ async function captureTemplateThumbnail(jsonUrl) {
   const payload = await response.json();
   const canvas = getThumbCanvas();
   let captured = null;
-  const runtime = await enqueueSceneAgentLoad(() =>
-    createJsonScene(withReducedQuality(payload), {
-      canvas,
-      resetScene: true,
-      assetsBase: sceneHostAssetUrl("assets/"),
-      onSceneReady: async (ctx) => {
-        captured = await captureSceneFrame(ctx, {
-          as: "dataUrl",
-          mimeType: "image/jpeg",
-          quality: 0.72,
-          offscreen: true,
-          offscreenWidth: THUMB_WIDTH,
-          offscreenHeight: THUMB_HEIGHT
-        });
-      }
-    })
-  );
-  runtime?.dispose?.();
-  return captured?.dataUrl || null;
-}
-
-function withTimeout(promise, ms) {
-  return Promise.race([
-    promise,
-    new Promise((_resolve, reject) => setTimeout(() => reject(new Error("thumbnail timeout")), ms))
-  ]);
+  let activeRuntime = null;
+  try {
+    activeRuntime = await enqueueSceneAgentLoad(() =>
+      createJsonScene(withReducedQuality(payload), {
+        canvas,
+        resetScene: true,
+        assetsBase: sceneHostAssetUrl("assets/"),
+        onRuntimeReady: ({ runtime }) => { activeRuntime = runtime; },
+        onSceneReady: async (ctx) => {
+          captured = await captureSceneFrame(ctx, {
+            as: "dataUrl",
+            mimeType: "image/jpeg",
+            quality: 0.72,
+            offscreen: true,
+            offscreenWidth: THUMB_WIDTH,
+            offscreenHeight: THUMB_HEIGHT
+          });
+        }
+      })
+    );
+    return captured?.dataUrl || null;
+  } finally {
+    activeRuntime?.dispose?.();
+  }
 }
 
 /** Yields to the browser's idle time between captures so a multi-template burst is spread across
@@ -167,6 +164,42 @@ function idleYield() {
   });
 }
 
+function hasPendingUserInput() {
+  try {
+    return navigator.scheduling?.isInputPending?.({ includeContinuous: true }) === true;
+  } catch {
+    return false;
+  }
+}
+
+function hasVisibleForegroundSceneCanvas() {
+  for (const canvas of document.querySelectorAll("canvas.sceneCardCanvas")) {
+    if (!canvas.isConnected || canvas === thumbCanvas) continue;
+    const rect = canvas.getBoundingClientRect();
+    if (
+      rect.width > 0
+      && rect.height > 0
+      && rect.right >= 0
+      && rect.left <= window.innerWidth
+      && rect.bottom >= 0
+      && rect.top <= window.innerHeight
+    ) return true;
+  }
+  return false;
+}
+
+function shouldDeferThumbnailTask() {
+  return isSceneAgentLoadBusy() || hasPendingUserInput() || hasVisibleForegroundSceneCanvas();
+}
+
+function retryThumbQueueLater() {
+  thumbQueueScheduled = true;
+  setTimeout(() => {
+    thumbQueueScheduled = false;
+    scheduleThumbQueue();
+  }, 1200);
+}
+
 async function runThumbQueue() {
   if (thumbQueueRunning) {
     return;
@@ -175,12 +208,19 @@ async function runThumbQueue() {
   thumbQueueRunning = true;
   const cache = readThumbCache();
   while (thumbQueue.length > 0) {
+    if (shouldDeferThumbnailTask()) {
+      thumbQueueRunning = false;
+      retryThumbQueueLater();
+      return;
+    }
     const task = thumbQueue.shift();
     if (!task.isLive()) {
       continue;
     }
     try {
-      const dataUrl = await withTimeout(captureTemplateThumbnail(task.jsonUrl), THUMB_LOAD_TIMEOUT_MS);
+      // A timeout race cannot cancel createJsonScene; awaiting it keeps this optional queue truly
+      // serial instead of leaving timed-out WebGL renderers alive behind newer captures.
+      const dataUrl = await captureTemplateThumbnail(task.jsonUrl);
       if (dataUrl) {
         cache[task.jsonUrl] = { dataUrl, ts: Date.now() };
         writeThumbCache(cache);
@@ -202,9 +242,8 @@ function scheduleThumbQueue() {
   }
   thumbQueueScheduled = true;
   const run = () => {
-    if (isSceneAgentLoadBusy()) {
-      thumbQueueScheduled = false;
-      scheduleThumbQueue();
+    if (shouldDeferThumbnailTask()) {
+      retryThumbQueueLater();
       return;
     }
     void runThumbQueue();

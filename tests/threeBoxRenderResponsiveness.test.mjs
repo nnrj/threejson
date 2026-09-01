@@ -9,7 +9,7 @@ async function readWorkspaceFile(relativePath) {
 test("ThreeBox starts its scene runtime before asynchronous deployment finishes", async () => {
   const source = await readWorkspaceFile("tools/scene-host/threebox/js/threeBoxSceneCard.js");
   assert.match(source, /onRuntimeReady:\s*\(\{ runtime: readyRuntime \}\)\s*=>\s*\{\s*activateRuntime\(readyRuntime\)/);
-  assert.match(source, /runtime\.start\?\.\(\)/);
+  assert.match(source, /renderActivity\.sync\(\{ forceFrame: true \}\)/);
   assert.match(source, /onDeployProgress:\s*\(\{ runtime: deployingRuntime, deploy \}\)/);
   assert.match(source, /showCompactLoadingProgress\(deploy\)/);
 });
