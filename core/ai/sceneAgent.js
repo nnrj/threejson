@@ -226,7 +226,7 @@ function buildComplexModelAuthoringHint(strategy, quality) {
   return [
     "COMPLEX MODEL STRATEGY: automatic.",
     qualityLine,
-    "Choose the least complex representation that faithfully expresses each semantic part: primitives/native geometry/instancing/CSG for exact regular forms, compact surfaces or editableMesh for free-form progressive work, and raw bufferMesh when complete coordinates are appropriate. A car should normally combine regular wheels/axles with a continuous curved body and cabin shell; the absence of words such as 'complex' or 'smooth' does not make that shell primitive. Never downgrade a complex subject to primitive assemblies solely to shorten output, and never use a complex mesh merely because quality is requested."
+    "Choose the least complex representation that faithfully expresses the final shape: primitives/native geometry/instancing/CSG for exact regular forms, compact surfaces or editableMesh for free-form progressive work, and raw bufferMesh when complete coordinates are appropriate. Never downgrade a complex subject to primitive assemblies solely to shorten output, and never use a complex mesh merely because quality is requested."
   ].join("\n");
 }
 

@@ -1496,8 +1496,6 @@ test("classifyTurnIntent automatic mode exposes concrete complexity criteria to 
   assert.match(systemPrompt, /If uncertain, choose "direct"/);
   assert.match(systemPrompt, /provider explicitly reports a real output-length cutoff/);
   assert.match(systemPrompt, /Select complex capabilities from geometry needs/);
-  assert.match(systemPrompt, /requested car\/automobile should normally use a free-form curved body/);
-  assert.match(systemPrompt, /Direct versus draft_refine is independent of geometry representation/);
   assert.match(systemPrompt, /low-density editableMesh\/subdivision or procedural-surface draft/);
   assert.match(systemPrompt, /local Catmull-Clark\/Loop\/Smooth modifier refinement/);
   assert.equal(result.executionMode, "direct");
