@@ -117,6 +117,14 @@ test("Shower friendly JSON keeps editable complex-model examples as evaluated me
       mesh.geometry.getAttribute("position").count > 24,
       `${fileName} should contain the evaluated subdivision geometry`
     );
+    if (fileName === "editable-lounge-chair.json") {
+      target.updateMatrixWorld(true);
+      const hits = new THREE.Raycaster(
+        new THREE.Vector3(0, 10, 0.8),
+        new THREE.Vector3(0, -1, 0)
+      ).intersectObject(mesh, false);
+      assert.ok(hits.length > 0, "the lounge-chair seat must be visible from above with front-side culling");
+    }
   }
 });
 

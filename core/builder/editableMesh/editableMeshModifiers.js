@@ -335,7 +335,7 @@ export function solidifyEditableTopology(input, modifier = {}) {
   const topology = cloneEditableMeshTopology(input);
   const thickness = Number(modifier.thickness);
   const distance = Number.isFinite(thickness) ? thickness : 0.1;
-  const { vertexById, edgeFaces } = buildTopologyIndexes(topology);
+  const { vertexById, faceById, edgeFaces } = buildTopologyIndexes(topology);
   const normals = new Map(topology.vertices.map((vertex) => [vertex.id, new THREE.Vector3()]));
   for (const face of topology.faces) {
     const a = vector(vertexById.get(face.vertices[0]).vertex.position);
@@ -358,8 +358,23 @@ export function solidifyEditableTopology(input, modifier = {}) {
   }
   for (const [key, faces] of edgeFaces) {
     if (faces.length !== 1) continue;
-    const [a, b] = key.split("\u0000");
-    topology.faces.push({ id: nextId("f-solid-side", faceIds), vertices: [a, b, innerId.get(b), innerId.get(a)], part: modifier.sidePart || "solidify-side", materialIndex: Math.max(0, Math.round(Number(modifier.materialIndex) || 0)), smooth: false });
+    const boundaryFace = faceById.get(faces[0])?.face;
+    if (!boundaryFace) continue;
+    let a = null;
+    let b = null;
+    for (let index = 0; index < boundaryFace.vertices.length; index += 1) {
+      const current = boundaryFace.vertices[index];
+      const next = boundaryFace.vertices[(index + 1) % boundaryFace.vertices.length];
+      if (canonicalEdgeKey(current, next) !== key) continue;
+      a = current;
+      b = next;
+      break;
+    }
+    if (!a || !b) continue;
+    // A closed, consistently wound shell must traverse each shared edge in opposite
+    // directions. The outer face uses a -> b, so the side closes with b -> a; the
+    // reversed inner face uses inner(b) -> inner(a), so the side uses the inverse.
+    topology.faces.push({ id: nextId("f-solid-side", faceIds), vertices: [a, innerId.get(a), innerId.get(b), b], part: modifier.sidePart || "solidify-side", materialIndex: Math.max(0, Math.round(Number(modifier.materialIndex) || 0)), smooth: false });
   }
   return topology;
 }

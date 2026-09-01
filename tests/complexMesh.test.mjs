@@ -11,6 +11,7 @@ import {
   buildEditableMeshGeometry,
   buildProceduralMeshGeometry,
   loopSubdivisionEditableTopology,
+  solidifyEditableTopology,
   validateEditableMeshTopology
 } from "threejson/complex-mesh";
 import { clearObjectRegistry } from "../core/handler/objectRegistry.js";
@@ -181,6 +182,50 @@ test("editableMesh deterministically evaluates a control cage through Catmull-Cl
   assert.deepEqual(Array.from(first.geometry.index.array), Array.from(second.geometry.index.array));
   first.geometry.dispose();
   second.geometry.dispose();
+});
+
+test("editableMesh triangulation preserves the declared 3D winding on every projection axis", () => {
+  const cases = [
+    { normal: new THREE.Vector3(0, 0, 1), positions: [[-1, -1, 0], [1, -1, 0], [1, 1, 0], [-1, 1, 0]] },
+    { normal: new THREE.Vector3(0, 1, 0), positions: [[-1, 0, 1], [1, 0, 1], [1, 0, -1], [-1, 0, -1]] },
+    { normal: new THREE.Vector3(1, 0, 0), positions: [[0, -1, -1], [0, 1, -1], [0, 1, 1], [0, -1, 1]] }
+  ];
+  for (const [caseIndex, fixture] of cases.entries()) {
+    const built = buildEditableMeshGeometry({
+      objType: "editableMesh",
+      topology: {
+        vertices: fixture.positions.map((position, index) => ({ id: `v-${index}`, position })),
+        faces: [{ id: `face-${caseIndex}`, vertices: ["v-0", "v-1", "v-2", "v-3"] }]
+      }
+    });
+    assert.ok(built.geometry, built.error);
+    const position = built.geometry.getAttribute("position");
+    const index = built.geometry.index.array;
+    for (let offset = 0; offset < index.length; offset += 3) {
+      const a = new THREE.Vector3().fromBufferAttribute(position, index[offset]);
+      const b = new THREE.Vector3().fromBufferAttribute(position, index[offset + 1]);
+      const c = new THREE.Vector3().fromBufferAttribute(position, index[offset + 2]);
+      const triangleNormal = b.sub(a).cross(c.sub(a));
+      assert.ok(triangleNormal.dot(fixture.normal) > 0, `projection case ${caseIndex} reversed a triangle`);
+    }
+    built.geometry.dispose();
+  }
+});
+
+test("editableMesh solidify creates a consistently wound closed shell", () => {
+  const solidified = solidifyEditableTopology({
+    vertices: [
+      { id: "a", position: [-1, -1, 0] },
+      { id: "b", position: [1, -1, 0] },
+      { id: "c", position: [1, 1, 0] },
+      { id: "d", position: [-1, 1, 0] }
+    ],
+    faces: [{ id: "front", vertices: ["a", "b", "c", "d"] }]
+  }, { thickness: 0.2 });
+  const validation = validateEditableMeshTopology(solidified);
+  assert.equal(validation.ok, true);
+  assert.equal(validation.statistics.boundaryEdgeCount, 0);
+  assert.equal(validation.statistics.windingWarningCount, 0);
 });
 
 test("Loop subdivision uses the Loop boundary and edge-point rules", () => {

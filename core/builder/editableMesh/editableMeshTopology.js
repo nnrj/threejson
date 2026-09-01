@@ -130,11 +130,27 @@ function projectFaceTo2D(face, vertexById) {
 export function triangulateEditableFace(face, vertexById) {
   if (face.vertices.length === 3) return [[0, 1, 2]];
   const projected = projectFaceTo2D(face, vertexById);
-  const triangles = THREE.ShapeUtils.triangulateShape(projected, []);
-  if (triangles.length > 0) return triangles;
-  const fallback = [];
-  for (let i = 1; i < face.vertices.length - 1; i += 1) fallback.push([0, i, i + 1]);
-  return fallback;
+  const triangulated = THREE.ShapeUtils.triangulateShape(projected, []);
+  const triangles = triangulated.length > 0
+    ? triangulated
+    : Array.from({ length: Math.max(0, face.vertices.length - 2) }, (_, index) => [0, index + 1, index + 2]);
+
+  // ShapeUtils triangulates a 2D projection with its own winding convention. Dropping
+  // one of the 3D axes can invert that convention (notably X/Z projections), making an
+  // otherwise correctly wound control face render only from its back side. Re-orient
+  // every emitted triangle to the face's declared Newell normal so the JSON topology
+  // remains the authoritative winding regardless of the projection axis.
+  const faceNormal = newellNormal(face, vertexById);
+  if (faceNormal.lengthSq() <= 1e-24) return triangles;
+  return triangles.map((triangle) => {
+    const a = new THREE.Vector3(...vertexById.get(face.vertices[triangle[0]]).vertex.position);
+    const b = new THREE.Vector3(...vertexById.get(face.vertices[triangle[1]]).vertex.position);
+    const c = new THREE.Vector3(...vertexById.get(face.vertices[triangle[2]]).vertex.position);
+    const triangleNormal = b.sub(a).cross(c.sub(a));
+    return triangleNormal.dot(faceNormal) < 0
+      ? [triangle[0], triangle[2], triangle[1]]
+      : triangle;
+  });
 }
 
 function faceArea(face, vertexById) {
