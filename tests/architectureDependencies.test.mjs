@@ -239,6 +239,8 @@ test("complex modeling stays descriptor-activated and outside ordinary core impo
   const { sceneUsesComplexMesh } = await import("../core/capabilities/optionalCapabilityLoader.js");
   assert.equal(sceneUsesComplexMesh({ objectList: [{ objType: "box" }] }), false);
   assert.equal(sceneUsesComplexMesh({ objectList: [{ objType: "editableMesh" }] }), true);
+  assert.equal(sceneUsesComplexMesh({ worldInfo: { editableMeshList: [{ topology: {} }] } }), true);
+  assert.equal(sceneUsesComplexMesh({ worldInfo: { editableMeshList: [] } }), false);
 });
 
 test("domains never import host tools", () => {

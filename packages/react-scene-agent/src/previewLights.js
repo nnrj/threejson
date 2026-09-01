@@ -33,6 +33,8 @@ export function syncSceneAgentPreviewLights(scene, enabled = true) {
   group.name = SCENE_AGENT_PREVIEW_LIGHTS_NAME;
   group.userData = {
     __sceneAgentPreviewOnly: true,
+    __threeJsonRuntimeOnly: true,
+    __threeJsonExportExcluded: true,
     objJson: { objType: "light", type: "scene-agent-preview-auxiliary" }
   };
 

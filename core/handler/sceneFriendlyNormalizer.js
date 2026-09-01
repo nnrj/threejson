@@ -594,6 +594,9 @@ function normalizeCanonicalObjectRecord(record, options = {}) {
   if (shapeType === "buffermesh") {
     return applyCanonicalObjType(record, "bufferMesh");
   }
+  if (shapeType === "editablemesh") {
+    return applyCanonicalObjType(record, "editableMesh");
+  }
   if (shapeType === "irregularplane") {
     return applyCanonicalObjType(record, "irregularPlane");
   }

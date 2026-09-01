@@ -223,8 +223,8 @@ export function useSceneCardRuntime(options = {}) {
       };
 
       let auxiliaryLightsSynced = false;
-      const syncAuxiliaryLights = (nextRuntime) => {
-        if (auxiliaryLightsSynced || seq !== renderSeqRef.current || !nextRuntime?.scene) {
+      const syncAuxiliaryLights = (nextRuntime, { force = false } = {}) => {
+        if ((!force && auxiliaryLightsSynced) || seq !== renderSeqRef.current || !nextRuntime?.scene) {
           return;
         }
         const enabled =
@@ -233,6 +233,9 @@ export function useSceneCardRuntime(options = {}) {
             : optionsRef.current.previewAuxiliaryLights !== false;
         syncSceneAgentPreviewLights(nextRuntime.scene, enabled);
         auxiliaryLightsSynced = true;
+        // Deployment may reset scene children after the first progress event. The final forced
+        // sync also renders once, which matters when history cards pause their loops off-screen.
+        if (runtimeRef.current === nextRuntime) syncRuntimeActivity(true);
       };
       const activateRuntime = (nextRuntime) => {
         if (!nextRuntime || seq !== renderSeqRef.current) {
@@ -266,7 +269,7 @@ export function useSceneCardRuntime(options = {}) {
               syncAuxiliaryLights(deployingRuntime);
               showCompactLoadingProgress(deploy);
             },
-            onSceneReady: ({ runtime: readyRuntime }) => syncAuxiliaryLights(readyRuntime)
+            onSceneReady: ({ runtime: readyRuntime }) => syncAuxiliaryLights(readyRuntime, { force: true })
           })
         );
         if (seq !== renderSeqRef.current) {
@@ -274,7 +277,7 @@ export function useSceneCardRuntime(options = {}) {
           return null;
         }
         activateRuntime(nextRuntime);
-        syncAuxiliaryLights(nextRuntime);
+        syncAuxiliaryLights(nextRuntime, { force: true });
       } finally {
         if (seq === renderSeqRef.current) {
           setLoadingText(null);

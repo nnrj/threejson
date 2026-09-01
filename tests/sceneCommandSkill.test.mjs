@@ -95,6 +95,7 @@ test("complex-mesh command guidance prefers local modifiers and does not overuse
   assert.match(prompt, /refine locally with deterministic modifiers/);
   assert.match(prompt, /Catmull-Clark for quad\/n-gon cages/);
   assert.match(prompt, /Do not use editableMesh\/raw bufferMesh.*primitives.*CSG/);
+  assert.match(prompt, /For a car.*wheels and axles.*body\/cabin shell/);
 });
 
 test("buildSceneCommandAutoUpdateSystemPrompt distinguishes agent vs single round", () => {

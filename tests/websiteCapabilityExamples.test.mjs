@@ -3,6 +3,12 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import * as THREE from "three";
+import { deployJsonScene } from "../core/runtime.js";
+import {
+  buildFriendlyScenePayloadFromCanonical,
+  normalizeScenePayload
+} from "../core/scenePayload.js";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const manifestPath = path.join(repoRoot, "assets", "json", "demo-show", "manifest.json");
@@ -90,6 +96,26 @@ test("website examples expose native complex-model coverage without external mod
       (scene.objectList || []).some((object) => object.objType === "externalModel"),
       false,
       `${item.id} must not substitute an external asset for native expression`
+    );
+  }
+});
+
+test("Shower friendly JSON keeps editable complex-model examples as evaluated meshes", async () => {
+  for (const fileName of ["editable-lounge-chair.json", "editable-animal-form.json"]) {
+    const scenePath = path.join(repoRoot, "assets", "json", "demo-show", "complex-modeling", fileName);
+    const source = JSON.parse(fs.readFileSync(scenePath, "utf8"));
+    const normalized = normalizeScenePayload(source);
+    const friendly = buildFriendlyScenePayloadFromCanonical(source, normalized.payload);
+    assert.equal(friendly.worldInfo.editableMeshList[0].objType, undefined);
+
+    const target = new THREE.Scene();
+    await deployJsonScene(target, friendly);
+    const mesh = target.getObjectByName(source.objectList[0].name);
+    assert.equal(mesh?.isMesh, true, `${fileName} should deploy a mesh`);
+    assert.equal(mesh.geometry.type, "BufferGeometry", `${fileName} must not fall back to BoxGeometry`);
+    assert.ok(
+      mesh.geometry.getAttribute("position").count > 24,
+      `${fileName} should contain the evaluated subdivision geometry`
     );
   }
 });

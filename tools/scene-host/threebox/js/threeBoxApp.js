@@ -861,8 +861,8 @@ async function main() {
       // invariant before the first/final render instead of sending a TSL scene to WebGL.
       const generatedSceneJson = projectSceneToRendererBackend(sceneJson, rendererBackend);
       const generatedSceneJsonString = JSON.stringify(generatedSceneJson, null, 2);
-      const outputSceneJsonString = projectSceneForUser(generatedSceneJsonString, settings);
-      const outputSceneJson = JSON.parse(outputSceneJsonString);
+      let outputSceneJsonString = projectSceneForUser(generatedSceneJsonString, settings);
+      let outputSceneJson = JSON.parse(outputSceneJsonString);
       const refinementIncomplete = agentResult?.completed === false;
 
       streaming.remove();
@@ -916,6 +916,17 @@ async function main() {
         console.warn("[threebox] superseded agent preview render failed:", error);
       });
       await sceneCard.finalize(outputSceneJson, { label: text });
+      // Persist the scene the user actually saw, not merely the provider's pre-runtime JSON.
+      // ThreeJSON may have materialized omitted lighting/camera defaults and normalized material
+      // or texture descriptors while building the card. Saving the live snapshot makes reopening
+      // a conversation a lossless round trip; host-only preview helpers are excluded by export.
+      const runtimeSceneJsonString = await sceneCard.exportSceneJsonString({ label: text });
+      if (runtimeSceneJsonString) {
+        outputSceneJsonString = projectSceneForUser(runtimeSceneJsonString, settings);
+        outputSceneJson = JSON.parse(outputSceneJsonString);
+        sceneCard.updateSceneJson(outputSceneJson);
+        jsonCollapse.updateJson?.(outputSceneJsonString);
+      }
       sceneCardsByTurnId.set(turnId, sceneCard);
 
       // Texture assignments must target the same descriptor shape that the card rendered and
@@ -1285,8 +1296,8 @@ async function main() {
 
       const sceneJson = result.sceneJson;
       const sceneJsonString = result.sceneJsonString;
-      const outputSceneJsonString = projectSceneForUser(sceneJsonString, settings);
-      const outputSceneJson = JSON.parse(outputSceneJsonString);
+      let outputSceneJsonString = projectSceneForUser(sceneJsonString, settings);
+      let outputSceneJson = JSON.parse(outputSceneJsonString);
       const refinementIncomplete = result.agentResult?.completed === false;
 
       streaming.remove();
@@ -1314,6 +1325,13 @@ async function main() {
         console.warn("[threebox] superseded adjustment preview render failed:", error);
       });
       await sceneCard.finalize(outputSceneJson, { label: text });
+      const runtimeSceneJsonString = await sceneCard.exportSceneJsonString({ label: text });
+      if (runtimeSceneJsonString) {
+        outputSceneJsonString = projectSceneForUser(runtimeSceneJsonString, settings);
+        outputSceneJson = JSON.parse(outputSceneJsonString);
+        sceneCard.updateSceneJson(outputSceneJson);
+        jsonCollapse.updateJson?.(outputSceneJsonString);
+      }
       sceneCardsByTurnId.set(turnId, sceneCard);
 
       // Keep the texture document aligned with the scene-card descriptor shape. This matters

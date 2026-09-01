@@ -1376,7 +1376,9 @@ export function App() {
             ...sceneProviderOptions,
             signal: controller.signal,
             animationCapabilityMode: settings.ai.animationCapabilityMode || "auto",
-            sceneGenerationMode: settings.ai.sceneGenerationMode || "auto"
+            sceneGenerationMode: settings.ai.sceneGenerationMode || "auto",
+            complexModelStrategy: settings.ai.complexModelStrategy || "auto",
+            modelQuality: settings.ai.modelQuality || "balanced"
           }
         );
 
@@ -1429,7 +1431,9 @@ export function App() {
             includeReferenceLinks: settings.ai.attachReferenceLinks,
             globalPromptPrefix: settings.ai.globalPromptPrefix || undefined,
             selectedCapabilityIds: negotiation.selectedCapabilityIds,
-            requiresAnimation: negotiation.requiresAnimation
+            requiresAnimation: negotiation.requiresAnimation,
+            complexModelStrategy: negotiation.complexModelStrategy || settings.ai.complexModelStrategy || "auto",
+            modelQuality: negotiation.modelQuality || settings.ai.modelQuality || "balanced"
           });
           const result = await runAiAdjustTurn({
             userPrompt,
@@ -1443,8 +1447,8 @@ export function App() {
             capabilityLookup: settings.ai.capabilityLookupEnabled,
             selectedCapabilityIds: negotiation.selectedCapabilityIds,
             animationCapabilities: negotiation.requiresAnimation === true,
-            complexModelStrategy: settings.ai.complexModelStrategy || "auto",
-            modelQuality: settings.ai.modelQuality || "balanced",
+            complexModelStrategy: negotiation.complexModelStrategy || settings.ai.complexModelStrategy || "auto",
+            modelQuality: negotiation.modelQuality || settings.ai.modelQuality || "balanced",
             modelBudget: agentOptions.modelBudget,
             generationStrategy: negotiation.generationStrategy,
             estimatedSegments: negotiation.estimatedSegments,
@@ -1505,8 +1509,8 @@ export function App() {
             estimatedOutputTokens: negotiation.estimatedOutputTokens,
             selectedCapabilityIds: negotiation.selectedCapabilityIds,
             requiresAnimation: negotiation.requiresAnimation,
-            complexModelStrategy: settings.ai.complexModelStrategy || "auto",
-            modelQuality: settings.ai.modelQuality || "balanced",
+            complexModelStrategy: negotiation.complexModelStrategy || settings.ai.complexModelStrategy || "auto",
+            modelQuality: negotiation.modelQuality || settings.ai.modelQuality || "balanced",
             modelBudget: agentOptions.modelBudget,
             agentOptions,
             ...resolveSceneAgentTokenOptions(settings),
@@ -1536,7 +1540,7 @@ export function App() {
 
         setStream("");
         const rawSnapshot = sceneJsonString ?? JSON.stringify(sceneJson);
-        const snapshot = projectSceneAgentJsonString(
+        let snapshot = projectSceneAgentJsonString(
           rawSnapshot,
           settings.io.sceneJsonFormat === "friendly" ? "friendly" : "standard"
         );
@@ -1547,6 +1551,15 @@ export function App() {
         });
         const finalSceneCard = await waitForSceneCard(assistantId);
         await finalSceneCard?.finalize(sceneJson, { label: userPrompt });
+        const runtimeSnapshot = await finalSceneCard?.exportSceneJsonString({ label: userPrompt });
+        if (runtimeSnapshot) {
+          snapshot = projectSceneAgentJsonString(
+            runtimeSnapshot,
+            settings.io.sceneJsonFormat === "friendly" ? "friendly" : "standard"
+          );
+          sceneJson = JSON.parse(snapshot);
+          finalSceneCard.updateSceneJson(sceneJson);
+        }
         const verifiedAdjustSummary = adjusting && settings.ai.includeTurnSummary
           ? L(`已通过 ${stage} 调整了场景。`, `Adjusted the scene via ${stage}.`)
           : "";

@@ -110,6 +110,22 @@ test("explicit particle-raster and TSL requests survive an incomplete model capa
   );
 });
 
+test("intrinsically curved subjects select complex modeling without requiring quality adjectives", () => {
+  for (const prompt of [
+    "生成一辆汽车",
+    "Create a sedan"
+  ]) {
+    const matched = matchIntentSignals(prompt).map((signal) => signal.id);
+    assert.ok(matched.includes("complexMesh"), `expected complexMesh for: ${prompt}`);
+    assert.deepEqual(
+      mergeRequiredCapabilityIds(prompt, []),
+      ["complexMesh", "editableMesh", "meshModeling", "subdivisionSurface"]
+    );
+  }
+
+  assert.ok(!matchIntentSignals("创建一个蓝色立方体").some((signal) => signal.id === "complexMesh"));
+});
+
 test("capability fit understands Particle V2 raster sources and WebGPU TSL materials", () => {
   const particleFit = evaluateCapabilityFit("用粒子组成 Logo 图案", {
     objectList: [{

@@ -17,6 +17,7 @@ import {
 } from "./rendererBackendRegistry.js";
 import {
   ensureOptionalSceneCapabilitiesForPayload,
+  isComplexMeshObjType,
   sceneUsesAdvancedWebglPass,
   sceneUsesExtraControls,
   sceneUsesRasterParticleSource
@@ -628,6 +629,12 @@ function deployCanonicalRecord(overlayRoot, record, ctx) {
     return;
   }
   if (deployByObjTypeExtension(record, overlayRoot, ctx)) {
+    return;
+  }
+  if (isComplexMeshObjType(objType)) {
+    log.warn(
+      `[sceneLoad] ${objType} capability is not registered; use createJsonScene() or import threejson/complex-mesh before a synchronous load.`
+    );
     return;
   }
   deployMeshWithDomains(overlayRoot, record, ctx);

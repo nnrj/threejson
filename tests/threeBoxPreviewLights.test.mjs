@@ -113,3 +113,50 @@ test("runtime snapshot preserves hemisphere light colors", () => {
     jsonOrigin: "config"
   });
 });
+
+test("a visible ThreeBox runtime snapshot materializes omitted default lights and preserves materials", () => {
+  const source = {
+    version: "next",
+    sceneConfig: { background: "#add8e6" },
+    objectList: [{
+      threeJsonId: "colored-ground",
+      objType: "box",
+      width: 5,
+      height: 0.2,
+      depth: 5,
+      material: { type: "standard", color: "#44aa33", roughness: 0.8 }
+    }]
+  };
+  const runtime = createJsonSceneSimple(source, {
+    autoFillLights: true,
+    autoFillCamera: true,
+    autoFitCamera: false
+  });
+  syncThreeBoxPreviewAuxiliaryLights(runtime.scene, true);
+
+  const saved = sceneToStandardJsonSimple(runtime.scene, {
+    merge: false,
+    runtimeTarget: runtime,
+    basePayload: source
+  });
+  assert.equal(saved.sceneConfig.lights.length, 3);
+  assert.equal(saved.objectList[0].material.color, "#44aa33");
+  assert.equal(saved.objectList[0].material.roughness, 0.8);
+  assert.equal(saved.sceneConfig.lights.some((light) => light.type === "threebox-preview-auxiliary"), false);
+
+  const reloaded = createJsonSceneSimple(saved, {
+    autoFillLights: false,
+    autoFillCamera: false,
+    autoFitCamera: false
+  });
+  assert.equal(reloaded.scene.children.some((child) => child.name === THREEBOX_PREVIEW_LIGHTS_NAME), false);
+  assert.equal(reloaded.scene.children.filter((child) => child.isLight).length, 3);
+  let mesh = null;
+  reloaded.scene.traverse((object) => {
+    if (object?.userData?.objJson?.threeJsonId === "colored-ground") mesh = object;
+  });
+  assert.ok(mesh?.isMesh);
+  assert.equal(mesh.material.color.getHexString(), "44aa33");
+  reloaded.dispose();
+  runtime.dispose();
+});

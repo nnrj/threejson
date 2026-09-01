@@ -34,6 +34,7 @@ import {
   deployNativeObjectRecordWithFallback
 } from "./nativeObjectDispatch.js";
 import { shouldDeployNativeOnly } from "./nativeParseMode.js";
+import { isComplexMeshObjType } from "../capabilities/optionalCapabilityLoader.js";
 import { deploySubSceneChildren, deploySubSceneChildrenAsync } from "./subSceneDeploy.js";
 import { runRecordDeployWithLifecycle } from "../runtime/objectLifecycle/index.js";
 
@@ -96,7 +97,7 @@ function shouldFallbackDeployMesh(record, deployResult) {
     return false;
   }
   const objType = normalizeObjType(record?.objType);
-  return !SUBSCENE_NO_MESH_FALLBACK_TYPES.has(objType);
+  return !SUBSCENE_NO_MESH_FALLBACK_TYPES.has(objType) && !isComplexMeshObjType(objType);
 }
 
 function finalizeSubSceneChildDeploy(holder, parent, child, deployResult) {

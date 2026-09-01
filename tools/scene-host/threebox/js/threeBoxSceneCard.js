@@ -322,8 +322,8 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
       renderLoop: { ...payload.sceneConfig?.renderLoop, autoResize: false, firstAutoResize: false }
     };
     let auxiliaryLightsSynced = false;
-    const syncAuxiliaryLights = (nextRuntime) => {
-      if (auxiliaryLightsSynced || seq !== renderSeq || !nextRuntime?.scene) {
+    const syncAuxiliaryLights = (nextRuntime, { force = false } = {}) => {
+      if ((!force && auxiliaryLightsSynced) || seq !== renderSeq || !nextRuntime?.scene) {
         return;
       }
       const auxiliaryLightsEnabled = typeof cardOptions.shouldUsePreviewAuxiliaryLights === "function"
@@ -331,6 +331,12 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
         : cardOptions.previewAuxiliaryLights !== false;
       syncThreeBoxPreviewAuxiliaryLights(nextRuntime.scene, auxiliaryLightsEnabled);
       auxiliaryLightsSynced = true;
+      // A deploy can replace/reset scene children after the first progress callback. Re-sync on
+      // the final scene-ready callback and paint another frame so a restored card never displays
+      // the last pre-light frame while its off-screen render loop is paused.
+      if (runtime === nextRuntime) {
+        renderActivity.sync({ forceFrame: true });
+      }
     };
     const activateRuntime = (nextRuntime) => {
       if (!nextRuntime || seq !== renderSeq) {
@@ -369,7 +375,7 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
             showCompactLoadingProgress(deploy);
           },
           onSceneReady: ({ runtime: readyRuntime }) => {
-            syncAuxiliaryLights(readyRuntime);
+            syncAuxiliaryLights(readyRuntime, { force: true });
           }
         })
       );
@@ -378,7 +384,7 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
         return null;
       }
       activateRuntime(nextRuntime);
-      syncAuxiliaryLights(nextRuntime);
+      syncAuxiliaryLights(nextRuntime, { force: true });
     } finally {
       if (seq === renderSeq) {
         loadingMask.hidden = true;

@@ -13,6 +13,10 @@ const COMPLEX_MESH_TYPES = new Set([
   "sdfmesh"
 ]);
 
+export function isComplexMeshObjType(value) {
+  return COMPLEX_MESH_TYPES.has(String(value || "").trim().toLowerCase());
+}
+
 function collectBufferMeshRecords(value, out = [], seen = new WeakSet()) {
   if (!value || typeof value !== "object" || seen.has(value)) return out;
   seen.add(value);
@@ -113,8 +117,10 @@ function containsComplexMesh(value, seen = new WeakSet()) {
   if (!value || typeof value !== "object" || seen.has(value)) return false;
   seen.add(value);
   if (Array.isArray(value)) return value.some((entry) => containsComplexMesh(entry, seen));
-  const objType = typeof value.objType === "string" ? value.objType.trim().toLowerCase() : "";
-  if (COMPLEX_MESH_TYPES.has(objType)) return true;
+  if (isComplexMeshObjType(value.objType)) return true;
+  // Friendly JSON intentionally omits objType inside a typed list. Detect the list itself before
+  // normalization so createJsonScene can load the optional builder prior to deployment.
+  if (Array.isArray(value.editableMeshList) && value.editableMeshList.length > 0) return true;
   return Object.values(value).some((entry) => containsComplexMesh(entry, seen));
 }
 

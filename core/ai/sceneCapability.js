@@ -206,12 +206,16 @@ const INTENT_SIGNALS = [
   },
   {
     id: "complexMesh",
-    patterns: [/complex (?:3d )?(?:model|mesh|shape)|organic (?:model|mesh|shape)|freeform (?:model|surface)|detailed (?:model|mesh)|smooth (?:character|creature|vehicle body|product shell)|复杂(?:三维|3D)?(?:模型|网格|曲面)|有机(?:模型|造型|曲面)|自由曲面|精细(?:模型|网格)|平滑(?:外壳|角色|动物|人体)/i],
+    patterns: [
+      /complex (?:3d )?(?:model|mesh|shape)|organic (?:model|mesh|shape)|freeform (?:model|surface)|detailed (?:model|mesh)|smooth (?:character|creature|vehicle body|product shell)/i,
+      /\b(?:cars?|automobiles?|sedans?|coupes?|supercars?|sports cars?|vehicle bod(?:y|ies)|aircraft fuselages?|boat hulls?)\b/i,
+      /复杂(?:三维|3D)?(?:模型|网格|曲面)|有机(?:模型|造型|曲面)|自由曲面|精细(?:模型|网格)|平滑(?:外壳|角色|动物|人体)|汽车|轿车|跑车|车身|飞机机身|船体/i
+    ],
     lists: ["objectList", "editableMeshList", "bufferMeshList"],
     objTypes: ["editableMesh", "bufferMesh", "parametricSurface", "nurbsSurface", "bezierPatch", "loftMesh", "sweepMesh", "implicitSurface"],
     selectionIds: ["complexMesh", "editableMesh", "meshModeling", "subdivisionSurface"],
     requiredWhenMatched: true,
-    note: "Represent genuinely free-form geometry with editableMesh control topology, a compact surface/SDF descriptor, or raw bufferMesh coordinates. Do not downgrade it to primitive blocks merely because explicit coordinates are longer, and do not select this capability when primitives/native geometry/CSG already express the final form exactly."
+    note: "Represent genuinely free-form geometry with editableMesh control topology, a compact surface/SDF descriptor, or raw bufferMesh coordinates. The subject noun itself can imply free-form geometry: for example a car needs a curved body/cabin shell even if wheels and axles remain regular geometry. Do not downgrade it to primitive blocks merely because explicit coordinates are longer, and do not select this capability when primitives/native geometry/CSG already express the final form exactly."
   },
   {
     id: "rawBufferMesh",
