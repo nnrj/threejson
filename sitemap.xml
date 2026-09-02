@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Hash routes are views of the website document, not independently crawlable URLs. -->
+  <url>
+    <loc>https://threejson.org/website/</loc>
+  </url>
+  <url>
+    <loc>https://threejson.org/tools/scene-host/threebox/</loc>
+  </url>
+  <url>
+    <loc>https://threejson.org/tools/scene-host/editor/</loc>
+  </url>
+  <url>
+    <loc>https://threejson.org/tools/scene-host/player/</loc>
+  </url>
+  <url>
+    <loc>https://threejson.org/tools/scene-host/shower/</loc>
+  </url>
+  <url>
+    <loc>https://threejson.org/examples/html-demo/demo.html</loc>
+  </url>
+  <url>
+    <loc>https://threejson.org/examples/webgpu/</loc>
+  </url>
+</urlset>
