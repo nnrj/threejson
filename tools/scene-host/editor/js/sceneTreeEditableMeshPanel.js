@@ -207,7 +207,8 @@ export function createSceneTreeEditableMeshPanel(host) {
 
   function updateEdgeCreaseInput() {
     const edge = selectedEdge();
-    if (dom.edgeCrease) dom.edgeCrease.value = edge ? String(edge.crease) : "0";
+    const crease = Number(edge?.crease);
+    if (dom.edgeCrease) dom.edgeCrease.value = edge && Number.isFinite(crease) ? String(crease) : "0";
   }
 
   function morphTargets(object3D = current) {
