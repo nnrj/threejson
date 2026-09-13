@@ -24,6 +24,7 @@ import { createTweenGroupStore } from "../compat/adapters/tween.js";
 import { createAnimationMixerStore } from "../handler/animationMixerRegistry.js";
 import { createAnimationStateMachineStore } from "../handler/animationStateMachine.js";
 import { createScenePassRegistryStore } from "../util/scenePassRuntime.js";
+import { createPreparedCapabilityStore } from "../capabilities/scenePreparationRegistry.js";
 
 /**
  * THREE-revision/sceneConfig compat context for the in-progress deploy (see
@@ -104,6 +105,7 @@ const DISPOSE_ORDER = [
   "shaderMotion",
   "tweenGroup",
   "deployScheduler",
+  "capabilityResources",
   "assetResolver",
   "assetRegistry",
   "textureUrlCache",
@@ -139,6 +141,7 @@ function createRuntimeContext() {
     __isThreeJsonRuntimeContext: true,
     signal: lifetime.signal,
     disposed: false,
+    capabilityResources: createPreparedCapabilityStore(),
     dispose() {
       if (ctx.disposed) return;
       ctx.disposed = true;
@@ -262,11 +265,10 @@ function isRuntimeContext(value) {
  * @param {*} [sceneOrObjectOrCtx]
  * @returns {RuntimeContext}
  */
-function resolveRuntimeContext(sceneOrObjectOrCtx) {
+function resolveRuntimeContext(sceneOrObjectOrCtx, { fallback = true } = {}) {
   if (!sceneOrObjectOrCtx) {
     return synchronousContextStack[synchronousContextStack.length - 1] ??
-      lastAttachedContext ??
-      getOrCreateDefaultRuntimeContext();
+      (fallback ? lastAttachedContext ?? getOrCreateDefaultRuntimeContext() : undefined);
   }
   if (isRuntimeContext(sceneOrObjectOrCtx)) {
     return sceneOrObjectOrCtx;
@@ -287,8 +289,7 @@ function resolveRuntimeContext(sceneOrObjectOrCtx) {
     node = node.parent ?? null;
   }
   return synchronousContextStack[synchronousContextStack.length - 1] ??
-    lastAttachedContext ??
-    getOrCreateDefaultRuntimeContext();
+    (fallback ? lastAttachedContext ?? getOrCreateDefaultRuntimeContext() : undefined);
 }
 
 /**

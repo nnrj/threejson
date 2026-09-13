@@ -1538,7 +1538,6 @@ async function createJsonScene(payload, options = {}) {
   const preparation = await ensureOptionalSceneCapabilitiesForPayload(payload, options);
   options = { ...options, preparedBufferReferences: preparation.bufferReferences };
   assertPayloadCapabilitiesBeforePreparation(payload);
-  await runSceneCapabilityPreparers(payload, options);
   await ensureCsgBrushOpsForPayload(payload);
   const restoreAssetsBase = applyAssetsBaseForLoad(payload, options);
   const css3dIntegration = integrateCss3dIntoSceneLoad(options);
@@ -1576,6 +1575,7 @@ async function createJsonScene(payload, options = {}) {
   });
 
   try {
+    runtimeCtx.capabilityResources.adopt(await runSceneCapabilityPreparers(payload, { ...options, runtimeScope: runtimeCtx }));
     await bus.emit(LOAD_PHASE.beforeNormalize, baseCtx);
 
     const normalized = normalizeScenePayloadWithRuntimeDefaults(payload, loadOptions);
@@ -1710,7 +1710,8 @@ async function deployObjectRecordIntoRuntime(target, record, options = {}) {
   resolveRuntimeContext(target).registerEmbeddedResources?.(record);
   resolveRuntimeContext(target).registerPreparedBufferReferences?.(preparation.bufferReferences);
   assertPayloadCapabilitiesBeforePreparation(record, targetBackend, { forceBackend: true });
-  await runSceneCapabilityPreparers(record, options);
+  const optionalResources = await runSceneCapabilityPreparers(record, { ...options, runtimeScope: target });
+  resolveRuntimeContext(target).capabilityResources.adopt(optionalResources);
   await ensureRectAreaLightSupport([record], targetBackend);
   await ensureCsgBrushOpsForPayload(record);
   const { deployJsonObjectAsync } = await getObjectLoadHandler();
@@ -1852,7 +1853,8 @@ async function deployJsonScene(target, payload, options = {}) {
   const preparation = await ensureOptionalSceneCapabilitiesForPayload(payload, options);
   resolveRuntimeContext(target).registerPreparedBufferReferences?.(preparation.bufferReferences);
   assertPayloadCapabilitiesBeforePreparation(payload, targetBackend, { forceBackend: true });
-  await runSceneCapabilityPreparers(payload, options);
+  const optionalResources = await runSceneCapabilityPreparers(payload, { ...options, runtimeScope: target });
+  resolveRuntimeContext(target).capabilityResources.adopt(optionalResources);
   await ensureCsgBrushOpsForPayload(payload);
   resolveRuntimeContext(target).registerEmbeddedResources?.(payload);
   // Deploying into an existing target (no new Scene): only cancel *this* target's

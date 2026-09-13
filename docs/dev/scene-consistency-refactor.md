@@ -229,3 +229,25 @@ must remain distinguishable from loader, material, authorization and GPU failure
   is fixed, including document/session import mappings in the generator template.
 - See [design contract and limits](./scene-design.md). Remaining end-to-end scenario
   checks and optional resource/compute integration are still tracked above.
+
+## Implementation evidence: optional WebGPU resource ownership
+
+- TSL graph images and prepared module factories now belong to one load/runtime,
+  not a global URL cache. Material sampling uses independently owned texture views.
+  A builder without a scope cannot borrow resources from the last history canvas.
+- Preparers return disposable resource groups. Failed preparation disposes previous
+  groups; runtime disposal retires its own groups. Cancellation cannot publish a
+  late image or code factory. Application policy/authorization remains independent
+  from resource ownership; the explicit code entry still defaults to trusted.
+- Graph URLs and relative images resolve before delivery proxies. Embedded graphs
+  and relative images reload offline. The arbitrary 256-node graph limit is gone.
+- Direct preparer consumers must retain the returned group, pass `graphResources`
+  or `codeResources` when constructing materials, and dispose it when finished.
+  `createJsonScene` manages this automatically. `getTslCodeExecutionState(resources)`
+  reports that group's count; `clearPreparedTslCode(resources)` disposes only it.
+- 27 targeted behavioral tests passed. This does not make JavaScript transactional:
+  executing a module can have page-level side effects that cannot be rolled back.
+  Normal remote ESM still uses the browser module loader to retain dependency/import
+  map semantics. For exact-byte execution/integrity (including dependencies), a
+  host `moduleLoader` must execute the supplied verified bytes; fetching a hash and
+  then importing a mutable remote URL is not an atomic integrity guarantee.

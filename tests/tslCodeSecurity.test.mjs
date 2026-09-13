@@ -4,8 +4,9 @@ import {
   TSL_CODE_SECURITY_NOTICE,
   clearPreparedTslCode,
   configureTslCodeExecution,
-  getTslCodeExecutionState,
-  prepareTslCodeForPayload
+  getTslCodeExecutionState as getPolicyState,
+  prepareTslCodeForPayload as prepareCode,
+  revokeTslCodeAuthorization
 } from "../webgpu/tslCode.js";
 import { createTslMaterialFromDescriptor } from "../webgpu/tslMaterial.js";
 import { createJsonScene } from "../core/handler/sceneLoadHandler.js";
@@ -18,8 +19,18 @@ const payload = (code) => ({
   }]
 });
 
+let currentResources;
+const preparations = [];
+async function prepareTslCodeForPayload(scene, options) {
+  currentResources = await prepareCode(scene, options);
+  preparations.push(currentResources);
+  return currentResources;
+}
+const getTslCodeExecutionState = () => getPolicyState(currentResources);
+
 test.afterEach(() => {
-  clearPreparedTslCode();
+  for (const resources of preparations.splice(0)) clearPreparedTslCode(resources);
+  currentResources = undefined;
   configureTslCodeExecution({ executionPolicy: "trusted" });
 });
 
@@ -83,7 +94,7 @@ test("code factories may return a complete material, one node, or mutate the sup
   const completeMaterial = createTslMaterialFromDescriptor({
     type: "tsl",
     tsl: { kind: "code", source: { inline: materialCode } }
-  });
+  }, { codeResources: currentResources });
   assert.equal(completeMaterial.isMeshPhysicalNodeMaterial, true);
   assert.equal(completeMaterial.clearcoat, 0.75);
 
@@ -92,7 +103,7 @@ test("code factories may return a complete material, one node, or mutate the sup
   const nodeMaterial = createTslMaterialFromDescriptor({
     type: "tsl",
     tsl: { kind: "code", source: { inline: nodeCode } }
-  });
+  }, { codeResources: currentResources });
   assert.equal(nodeMaterial.colorNode.isNode, true);
 
   const mutateCode = "export default (_params, { material, TSL }) => { material.emissiveNode = TSL.color('#00ff88'); };";
@@ -100,7 +111,7 @@ test("code factories may return a complete material, one node, or mutate the sup
   const mutatedMaterial = createTslMaterialFromDescriptor({
     type: "tsl",
     tsl: { kind: "code", source: { inline: mutateCode } }
-  });
+  }, { codeResources: currentResources });
   assert.equal(mutatedMaterial.emissiveNode.isNode, true);
 
   completeMaterial.dispose();
@@ -158,4 +169,45 @@ test("changing application policy clears factories prepared under the old policy
   assert.equal(getTslCodeExecutionState().preparedCount, 1);
   configureTslCodeExecution({ executionPolicy: "disabled" });
   assert.equal(getTslCodeExecutionState().preparedCount, 0);
+});
+
+test("the same code URL has independently prepared factories in concurrent loads", async () => {
+  const scene = { objectList: [{ objType: "box", material: { type: "tsl", tsl: { kind: "code", source: { url: "https://example.test/model.js" } } } }] };
+  const prepare = (color) => prepareTslCodeForPayload(scene, {
+    fetch: async () => new Response(`export default (_p, { TSL }) => ({ color: TSL.color('${color}') });`),
+    tslCode: { moduleLoader: ({ code, hash }) => import(`data:text/javascript,${encodeURIComponent(code)}#${hash}`) }
+  });
+  const [first, second] = await Promise.all([prepare("#ff0000"), prepare("#0000ff")]);
+  const descriptor = scene.objectList[0].material;
+  const red = createTslMaterialFromDescriptor(descriptor, { codeResources: first });
+  const blue = createTslMaterialFromDescriptor(descriptor, { codeResources: second });
+  assert.equal(red.colorNode.node.value.getHexString(), "ff0000");
+  assert.equal(blue.colorNode.node.value.getHexString(), "0000ff");
+  first.dispose();
+  assert.throws(() => createTslMaterialFromDescriptor(descriptor, { codeResources: first }), { code: "E_TSL_CODE_NOT_PREPARED" });
+  assert.equal(second.size, 1);
+  red.dispose(); blue.dispose();
+});
+
+test("hash revocation invalidates only matching prepared code", async () => {
+  let approvedHash;
+  const source = "export default (_p, { TSL }) => ({ color: TSL.color('#728195') });";
+  const resources = await prepareTslCodeForPayload(payload(source), {
+    tslCode: { executionPolicy: "prompt", authorize: async ({ hash }) => { approvedHash = hash; return true; } }
+  });
+  assert.equal(resources.size, 1);
+  await revokeTslCodeAuthorization(approvedHash);
+  assert.equal(resources.size, 0);
+});
+
+test("cancellation never publishes a late code factory", async () => {
+  const controller = new AbortController();
+  let release, started;
+  const ready = new Promise((resolve) => { started = resolve; });
+  const loading = prepareTslCodeForPayload(payload("export default () => ({});"), {
+    signal: controller.signal,
+    tslCode: { moduleLoader: async () => { started(); await new Promise((resolve) => { release = resolve; }); return { default: () => ({}) }; } }
+  });
+  await ready; controller.abort(); release();
+  await assert.rejects(loading, { name: "AbortError" });
 });

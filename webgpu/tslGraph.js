@@ -1,8 +1,10 @@
 import * as THREE from "three";
 import * as TSL from "three/tsl";
-
-const graphCache = new Map();
-const textureCache = new Map();
+import { createSceneResourcePolicy } from "../core/resource/sceneResourcePolicy.js";
+import { requestTexture, whenTextureReady } from "../core/resource/textureRequest.js";
+import { findPreparedResource, resolvePreparedResourceSource } from "./preparedResources.js";
+import { createAssetResolver } from "../core/resource/assetResolver.js";
+import { createAssetRegistryStore } from "../core/cache/assetRegistry.js";
 const graphNodeCompilers = new Map();
 const SAFE_OUTPUT_NAME = /^[A-Za-z][A-Za-z0-9]*$/;
 const SAFE_TSL_EXPORT_NAME = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
@@ -26,12 +28,16 @@ export function unregisterTslGraphNode(type) {
   return graphNodeCompilers.delete(String(type || "").trim().toLowerCase());
 }
 
+function graphKey(descriptor) {
+  return descriptor?.source?.url ? `url:${descriptor.source.url.trim()}` : `inline:${JSON.stringify(graphSource(descriptor))}`;
+}
+
 function graphSource(tslDescriptor) {
+  if (tslDescriptor?.graphVersion) return tslDescriptor;
   const source = tslDescriptor?.source;
   if (source?.inline && typeof source.inline === "object") return source.inline;
   if (source?.graph && typeof source.graph === "object") return source.graph;
   if (tslDescriptor?.graph && typeof tslDescriptor.graph === "object") return tslDescriptor.graph;
-  if (typeof source?.url === "string") return graphCache.get(source.url.trim()) || null;
   return null;
 }
 
@@ -39,7 +45,7 @@ function nodesById(graph) {
   const list = Array.isArray(graph?.nodes)
     ? graph.nodes
     : Object.entries(graph?.nodes || {}).map(([id, node]) => ({ id, ...node }));
-  if (!list.length || list.length > 256) throw new TslGraphError("TSL graph must contain 1..256 nodes");
+  if (!list.length) throw new TslGraphError("TSL graph must contain at least one node");
   const map = new Map();
   for (const node of list) {
     const id = typeof node?.id === "string" ? node.id.trim() : "";
@@ -57,16 +63,19 @@ function constant(value, valueType) {
   return TSL.float(Number(value) || 0);
 }
 
-function resolveTextureNode(node, resolveInput) {
-  const texture = node.texture?.isTexture
+function resolveTextureNode(node, resolveInput, prepared, options) {
+  let texture = node.texture?.isTexture
     ? node.texture
-    : textureCache.get(String(node.url || "").trim());
+    : prepared?.textures.get(node.id);
   if (!texture) throw new TslGraphError(`Texture node "${node.id}" has no prepared texture`, "E_TSL_GRAPH_TEXTURE_UNAVAILABLE");
+  if (options.ownTexture) texture = options.ownTexture(texture, node);
   return TSL.texture(texture, node.uv ? resolveInput(node.uv) : TSL.uv(Number(node.channel) || 0));
 }
 
 export function compileTslGraph(graphOrDescriptor, options = {}) {
-  const graph = graphOrDescriptor?.graphVersion ? graphOrDescriptor : graphSource(graphOrDescriptor);
+  const key = graphKey(graphOrDescriptor);
+  const prepared = options.graphResources ? options.graphResources.get(key) : findPreparedResource(options, "webgpu-tsl-graphs", (resources) => resources.get(key));
+  const graph = prepared?.graph || graphSource(graphOrDescriptor);
   if (!graph || Number(graph.graphVersion) !== 1) throw new TslGraphError("TSL graphVersion:1 is required");
   const definitions = nodesById(graph); const resolved = new Map(); const resolving = new Set();
   const resolveInput = (value) => {
@@ -99,7 +108,7 @@ export function compileTslGraph(graphOrDescriptor, options = {}) {
     else if (type === "uv") value = TSL.uv(Number(node.channel) || 0);
     else if (type === "position") value = ({ local: TSL.positionLocal, world: TSL.positionWorld, view: TSL.positionView })[node.space] || TSL.positionLocal;
     else if (type === "normal") value = ({ world: TSL.normalWorld, view: TSL.normalView })[node.space] || TSL.normalLocal;
-    else if (type === "texture") value = resolveTextureNode(node, resolveInput);
+    else if (type === "texture") value = resolveTextureNode(node, resolveInput, prepared, options);
     else if (["add","sub","mul","div","pow","min","max","dot","cross"].includes(type)) value = TSL[type](...(args.length ? args : [resolveInput(node.a), resolveInput(node.b)]));
     else if (["sin","cos","abs","fract","normalize","length"].includes(type)) value = TSL[type](unaryInput());
     else if (type === "mix") value = TSL.mix(resolveInput(node.a), resolveInput(node.b), resolveInput(node.factor ?? node.t));
@@ -163,44 +172,57 @@ export function compileTslGraph(graphOrDescriptor, options = {}) {
 
 function visit(value, visitor, seen = new WeakSet()) {
   if (!value || typeof value !== "object" || seen.has(value)) return; seen.add(value);
+  if (ArrayBuffer.isView(value) || (Array.isArray(value) && typeof value[0] === "number")) return;
   if (String(value.type || "").trim().toLowerCase() === "tsl") visitor(value.tsl, value);
   if (Array.isArray(value)) value.forEach((entry) => visit(entry, visitor, seen));
   else Object.values(value).forEach((entry) => visit(entry, visitor, seen));
 }
 
-async function loadTexture(url) {
-  if (textureCache.has(url)) return textureCache.get(url);
-  const texture = await new THREE.TextureLoader().loadAsync(url); textureCache.set(url, texture); return texture;
-}
-
-export async function prepareTslGraphsForPayload(payload) {
-  const tasks = [];
-  visit(payload, (tsl) => {
-    if (!tsl || String(tsl.kind || "").toLowerCase() !== "graph") return;
-    const url = typeof tsl.source?.url === "string" ? tsl.source.url.trim() : "";
-    if (url && !graphCache.has(url)) tasks.push(fetch(url, { mode: "cors", credentials: "omit" }).then((response) => {
-      if (!response.ok) throw new TslGraphError(`TSL graph request failed: HTTP ${response.status}`, "E_TSL_GRAPH_FETCH_FAILED");
-      return response.json();
-    }).then((graph) => { nodesById(graph); graphCache.set(url, graph); }));
-    const graph = graphSource(tsl);
-    if (graph) {
-      const defs = Array.isArray(graph.nodes) ? graph.nodes : Object.values(graph.nodes || {});
-      for (const node of defs) if (String(node?.type || "").toLowerCase() === "texture" && typeof node.url === "string") tasks.push(loadTexture(node.url.trim()));
+export async function prepareTslGraphsForPayload(payload, options = {}) {
+  const descriptors = new Map();
+  visit(payload, (tsl) => { if (String(tsl?.kind || "").toLowerCase() === "graph") descriptors.set(graphKey(tsl), tsl); });
+  if (!descriptors.size) return undefined;
+  const policy = createSceneResourcePolicy(options.sceneJsonRoot || payload, options), registry = createAssetRegistryStore();
+  registry.registerAssetLibrary((options.sceneJsonRoot || payload).assetLibrary);
+  const controller = new AbortController(), signal = options.signal ? AbortSignal.any([controller.signal, options.signal]) : controller.signal;
+  const resolver = createAssetResolver(), textures = new Map(), graphs = new Map();
+  let disposed = false;
+  const resources = {
+    get: (key) => disposed ? undefined : graphs.get(key),
+    dispose() { if (disposed) return; disposed = true; controller.abort(); for (const texture of textures.values()) texture.dispose(); resolver.dispose(); graphs.clear(); textures.clear(); }
+  };
+  const sourceUrl = (raw, base) => {
+    let url = String(raw).trim();
+    if (url.startsWith("lib://")) {
+      url = registry.resolveLibTokenToUrl(url.slice(6));
+      if (!url) throw new TslGraphError(`Unknown texture library token: ${raw}`, "E_TSL_GRAPH_TEXTURE_UNAVAILABLE");
     }
+    return resolvePreparedResourceSource(url, policy, options, base);
+  };
+  const tasks = [...descriptors].map(async ([key, tsl]) => {
+    let graph = graphSource(tsl), base;
+    if (tsl.source?.url) {
+      base = sourceUrl(tsl.source.url);
+      const response = await (options.fetch || fetch)(await policy.resolveAssetUrl(base, { kind: "json" }), { mode: "cors", credentials: "omit", signal });
+      if (!response.ok) throw new TslGraphError(`TSL graph request failed: HTTP ${response.status}`, "E_TSL_GRAPH_FETCH_FAILED");
+      graph = await response.json();
+    }
+    signal.throwIfAborted();
+    if (Number(graph?.graphVersion) !== 1) throw new TslGraphError("TSL graphVersion:1 is required");
+    const entry = { graph, textures: new Map() }; graphs.set(key, entry);
+    const waits = [];
+    for (const node of nodesById(graph).values()) {
+      if (String(node?.type || "").toLowerCase() !== "texture" || node.texture?.isTexture || typeof node.url !== "string") continue;
+      const url = sourceUrl(node.url, base);
+      if (!textures.has(url)) textures.set(url, requestTexture(url, {
+        runtimeScope: options.runtimeScope, assetResolver: resolver, candidates: [url],
+        loader: options.textureLoader || options.loader, signal, resolveRuntimeUrl: policy.resolveAssetUrl
+      }));
+      const texture = textures.get(url); entry.textures.set(node.id, texture); waits.push(whenTextureReady(texture));
+    }
+    await Promise.all(waits); signal.throwIfAborted();
+    compileTslGraph(tsl, { ...options, graphResources: resources });
   });
-  await Promise.all(tasks);
-  // URL-fetched graphs may themselves contain textures, so run one bounded second pass.
-  const textureTasks = [];
-  visit(payload, (tsl) => {
-    const graph = graphSource(tsl); const defs = Array.isArray(graph?.nodes) ? graph.nodes : Object.values(graph?.nodes || {});
-    for (const node of defs) if (String(node?.type || "").toLowerCase() === "texture" && typeof node.url === "string") textureTasks.push(loadTexture(node.url.trim()));
-  });
-  await Promise.all(textureTasks);
-  // Compile once during preparation so cycles, missing references, invalid outputs, and unsafe
-  // swizzles fail before the runtime starts deploying scene objects.
-  visit(payload, (tsl) => {
-    if (tsl && String(tsl.kind || "").toLowerCase() === "graph") compileTslGraph(tsl);
-  });
+  try { await Promise.all(tasks); return resources; }
+  catch (error) { resources.dispose(); await Promise.allSettled(tasks); throw error; }
 }
-
-export function _clearTslGraphCachesForTests() { for (const texture of textureCache.values()) texture.dispose?.(); textureCache.clear(); graphCache.clear(); }

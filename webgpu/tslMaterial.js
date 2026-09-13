@@ -1,9 +1,10 @@
 import * as WEBGPU from "three/webgpu";
 import * as TSL from "three/tsl";
 import { compileTslGraph } from "./tslGraph.js";
+import { cloneTextureResource } from "../core/resource/textureRequest.js";
+import { findPreparedResource } from "./preparedResources.js";
 
 const presets = new Map();
-const preparedCodeFactories = new Map();
 const MATERIAL_TEXTURE_FIELDS = [
   "map", "alphaMap", "aoMap", "lightMap", "emissiveMap", "bumpMap", "normalMap",
   "displacementMap", "envMap", "roughnessMap", "metalnessMap", "specularMap",
@@ -19,8 +20,6 @@ export function registerTslPreset(id, factory) {
   presets.set(key, factory);
 }
 export function getTslPreset(id) { return presets.get(String(id || "").trim()) ?? null; }
-export function registerPreparedTslCode(sourceKey, factory) { preparedCodeFactories.set(sourceKey, factory); }
-export function unregisterPreparedTslCode(sourceKey) { return preparedCodeFactories.delete(sourceKey); }
 
 function baseMaterial(type) {
   const key = String(type || "standard").toLowerCase();
@@ -135,52 +134,67 @@ export function createTslMaterialFromDescriptor(descriptor = {}, context = {}) {
   const tsl = descriptor.tsl && typeof descriptor.tsl === "object" ? descriptor.tsl : {};
   const kind = String(tsl.kind || "preset").trim().toLowerCase();
   let material = baseMaterial(descriptor.base);
-  const inheritMode = descriptor.inheritOriginal
-    ?? descriptor.inheritOriginalMaterial
-    ?? context.binding?.inheritOriginal
-    ?? false;
-  inheritOriginalMaterial(material, context.originalMaterial, inheritMode);
-  applyClassicFields(material, descriptor);
-  let outputs;
-  if (kind === "preset") {
-    const id = tsl.preset ?? tsl.id ?? tsl.source?.id;
-    const preset = getTslPreset(id);
-    if (!preset) throw new Error(`[tslMaterial] unknown preset: ${String(id || "")}`);
-    outputs = preset(tsl.params || {}, { ...context, descriptor, material, TSL, WEBGPU });
-  } else if (kind === "graph") {
-    outputs = compileTslGraph(tsl, context);
-  } else if (kind === "code") {
-    const sourceKey = typeof tsl.source?.url === "string" ? `url:${tsl.source.url.trim()}` : `inline:${String(tsl.source?.inline || "")}`;
-    const factory = preparedCodeFactories.get(sourceKey);
-    if (!factory) throw Object.assign(
-      new Error("TSL code was not prepared; import threejson/tsl-code and verify the host execution policy"),
-      { code: "E_TSL_CODE_NOT_PREPARED" }
-    );
-    const result = factory(tsl.params || {}, { ...context, descriptor, material, TSL, WEBGPU });
-    if (result?.isMaterial === true) {
-      material = result;
-      inheritOriginalMaterial(material, context.originalMaterial, inheritMode);
-      applyClassicFields(material, descriptor);
-      outputs = null;
-    } else if (result?.isNode === true) {
-      outputs = { color: result };
-    } else if (result === undefined || (result && typeof result === "object")) {
-      // Returning undefined lets a code factory mutate context.material directly.
-      outputs = result;
-    } else {
-      const error = new Error(
-        "TSL code factory must return a NodeMaterial, a TSL node, an output-node map, or undefined"
+  const ownedTextures = new Set();
+  const ownTexture = (source, node) => {
+    const texture = cloneTextureResource(source); ownedTextures.add(texture);
+    if (node.colorSpace === "srgb") texture.colorSpace = WEBGPU.SRGBColorSpace;
+    else if (node.colorSpace === "linear" || node.colorSpace === "none") texture.colorSpace = WEBGPU.NoColorSpace;
+    if (Array.isArray(node.repeat)) { texture.repeat.fromArray(node.repeat); texture.wrapS = texture.wrapT = WEBGPU.RepeatWrapping; }
+    if (Array.isArray(node.offset)) texture.offset.fromArray(node.offset);
+    if (typeof node.flipY === "boolean") texture.flipY = node.flipY;
+    texture.needsUpdate = true;
+    return texture;
+  };
+  try {
+    const inheritMode = descriptor.inheritOriginal
+      ?? descriptor.inheritOriginalMaterial
+      ?? context.binding?.inheritOriginal
+      ?? false;
+    inheritOriginalMaterial(material, context.originalMaterial, inheritMode);
+    applyClassicFields(material, descriptor);
+    let outputs;
+    if (kind === "preset") {
+      const id = tsl.preset ?? tsl.id ?? tsl.source?.id;
+      const preset = getTslPreset(id);
+      if (!preset) throw new Error(`[tslMaterial] unknown preset: ${String(id || "")}`);
+      outputs = preset(tsl.params || {}, { ...context, descriptor, material, TSL, WEBGPU });
+    } else if (kind === "graph") {
+      outputs = compileTslGraph(tsl, { ...context, ownTexture });
+    } else if (kind === "code") {
+      const sourceKey = typeof tsl.source?.url === "string" ? `url:${tsl.source.url.trim()}` : `inline:${String(tsl.source?.inline || "")}`;
+      const factory = context.codeResources ? context.codeResources.get(sourceKey) : findPreparedResource(context, "tsl-code-module", (resources) => resources.get(sourceKey));
+      if (!factory) throw Object.assign(
+        new Error("TSL code was not prepared; import threejson/tsl-code and verify the host execution policy"),
+        { code: "E_TSL_CODE_NOT_PREPARED" }
       );
-      error.code = "E_TSL_CODE_RESULT_INVALID";
-      throw error;
+      const result = factory(tsl.params || {}, { ...context, descriptor, material, TSL, WEBGPU });
+      if (result?.isMaterial === true) {
+        if (result !== material) material.dispose();
+        material = result;
+        inheritOriginalMaterial(material, context.originalMaterial, inheritMode);
+        applyClassicFields(material, descriptor);
+        outputs = null;
+      } else if (result?.isNode === true) {
+        outputs = { color: result };
+      } else if (result === undefined || (result && typeof result === "object" && typeof result.then !== "function")) {
+        // Returning undefined lets a code factory mutate context.material directly.
+        outputs = result;
+      } else {
+        const error = new Error(
+          "TSL code factory must return a NodeMaterial, a TSL node, an output-node map, or undefined"
+        );
+        error.code = "E_TSL_CODE_RESULT_INVALID";
+        throw error;
+      }
+    } else {
+      throw new Error(`[tslMaterial] unsupported kind: ${kind}`);
     }
-  } else {
-    throw new Error(`[tslMaterial] unsupported kind: ${kind}`);
-  }
-  if (outputs) applyOutputs(material, outputs);
-  material.userData = { ...(material.userData || {}), threeJsonTsl: { kind, graphVersion: tsl.graphVersion ?? tsl.source?.inline?.graphVersion } };
-  material.needsUpdate = true;
-  return material;
+    if (outputs) applyOutputs(material, outputs);
+    material.userData = { ...(material.userData || {}), threeJsonTsl: { kind, graphVersion: tsl.graphVersion ?? tsl.source?.inline?.graphVersion } };
+    material.needsUpdate = true;
+    material.addEventListener("dispose", () => { for (const texture of ownedTextures) texture.dispose(); ownedTextures.clear(); });
+    return material;
+  } catch (error) { material.dispose(); for (const texture of ownedTextures) texture.dispose(); throw error; }
 }
 
 registerTslPreset("solid", (params) => ({ color: TSL.color(params.color || "#ffffff") }));

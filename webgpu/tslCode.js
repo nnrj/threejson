@@ -3,7 +3,8 @@
 import "./index.js";
 import { registerSceneCapability } from "../core/capabilities/sceneCapabilityManifest.js";
 import { registerSceneCapabilityPreparer } from "../core/capabilities/scenePreparationRegistry.js";
-import { registerPreparedTslCode, unregisterPreparedTslCode } from "./tslMaterial.js";
+import { createSceneResourcePolicy } from "../core/resource/sceneResourcePolicy.js";
+import { resolvePreparedResourceSource } from "./preparedResources.js";
 
 export const TSL_CODE_EXECUTION_POLICIES = Object.freeze([
   "trusted",
@@ -18,7 +19,9 @@ export const TSL_CODE_SECURITY_NOTICE =
   "confirmed, restricted, or disabled.";
 
 const memoryAuthorizations = new Set();
-const preparedSources = new Map();
+// Permission revocations are application policy; module factories belong to a load.
+const revokedVersions = new Map();
+let configurationVersion = 0;
 
 // The module itself is an explicit optional import, so capability-first `trusted` is the default.
 // Applications receiving untrusted scenes can select prompt/restricted/disabled before loading.
@@ -59,6 +62,7 @@ function sourceKey(source) {
 function visitCodeDescriptors(value, out, seen = new WeakSet()) {
   if (!value || typeof value !== "object" || seen.has(value)) return;
   seen.add(value);
+  if (ArrayBuffer.isView(value) || (Array.isArray(value) && typeof value[0] === "number")) return;
   if (
     String(value.type || "").trim().toLowerCase() === "tsl"
     && String(value.tsl?.kind || "").trim().toLowerCase() === "code"
@@ -75,7 +79,7 @@ async function sha256(text) {
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-async function readSource(source) {
+async function readSource(source, options, resourcePolicy) {
   if (typeof source?.inline === "string" && source.inline.trim()) return source.inline;
   const url = typeof source?.url === "string" ? source.url.trim() : "";
   if (!url) {
@@ -83,7 +87,9 @@ async function readSource(source) {
       code: "E_TSL_CODE_SOURCE_MISSING"
     });
   }
-  const response = await fetch(url, { mode: "cors", credentials: "omit", cache: "no-store" });
+  const response = await (options.fetch || fetch)(await resourcePolicy.resolveAssetUrl(url, { kind: "script" }), {
+    mode: "cors", credentials: "omit", cache: "no-store", signal: options.signal
+  });
   if (!response.ok) {
     throw Object.assign(new Error(`TSL code request failed: HTTP ${response.status}`), {
       code: "E_TSL_CODE_FETCH_FAILED"
@@ -105,13 +111,13 @@ function assertSelfContainedModule(code) {
   }
 }
 
-async function isAuthorized(hash, source, code, policy) {
+async function isAuthorized(hash, source, code, policy, config) {
   if (policy === "trusted") return true;
   const authorizationKey = `${hash}|${sourceKey(source)}`;
   if (memoryAuthorizations.has(authorizationKey)) return true;
-  if (await settings.storage?.isAuthorized?.({ hash, source, policy })) return true;
-  if (typeof settings.authorize !== "function") return false;
-  const approved = await settings.authorize({
+  if (await config.storage?.isAuthorized?.({ hash, source, policy })) return true;
+  if (typeof config.authorize !== "function") return false;
+  const approved = await config.authorize({
     hash,
     source,
     code,
@@ -120,7 +126,7 @@ async function isAuthorized(hash, source, code, policy) {
   });
   if (approved !== true) return false;
   memoryAuthorizations.add(authorizationKey);
-  await settings.storage?.remember?.({ hash, source, policy });
+  await config.storage?.remember?.({ hash, source, policy });
   return true;
 }
 
@@ -164,11 +170,11 @@ async function defaultImportModule({ code, source, hash }) {
   }
 }
 
-async function importSourceModule({ code, source, hash, policy }) {
+async function importSourceModule({ code, source, hash, policy, config, signal }) {
   const defaultImport = () => defaultImportModule({ code, source, hash });
   try {
-    if (typeof settings.moduleLoader === "function") {
-      return await settings.moduleLoader({ code, source, hash, policy, defaultImport });
+    if (typeof config.moduleLoader === "function") {
+      return await config.moduleLoader({ code, source, hash, policy, signal, defaultImport });
     }
     return await defaultImport();
   } catch (cause) {
@@ -183,16 +189,19 @@ async function importSourceModule({ code, source, hash, policy }) {
   }
 }
 
-async function prepareOne(tsl) {
-  const policy = settings.executionPolicy;
+async function prepareOne(tsl, options, config, resourcePolicy) {
+  const policy = config.executionPolicy;
   if (policy === "disabled") {
     throw Object.assign(new Error("TSL code execution is disabled by the host"), {
       code: "E_TSL_CODE_DISABLED"
     });
   }
-  const source = tsl.source && typeof tsl.source === "object" ? tsl.source : {};
+  options.signal?.throwIfAborted();
+  const source = { ...(tsl.source && typeof tsl.source === "object" ? tsl.source : {}) };
   const key = sourceKey(source);
-  const code = await readSource(source);
+  if (typeof source.url === "string") source.url = resolvePreparedResourceSource(source.url, resourcePolicy, options);
+  const code = await readSource(source, options, resourcePolicy);
+  options.signal?.throwIfAborted();
   const hash = await sha256(code);
   const expected = typeof source.sha256 === "string" ? source.sha256.trim().toLowerCase() : "";
   if (expected && expected !== hash) {
@@ -203,7 +212,7 @@ async function prepareOne(tsl) {
     });
   }
   if (policy === "restricted") assertSelfContainedModule(code);
-  if (!(await isAuthorized(hash, source, code, policy))) {
+  if (!(await isAuthorized(hash, source, code, policy, config))) {
     throw Object.assign(new Error("TSL code was not authorized by the host"), {
       code: "E_TSL_CODE_NOT_AUTHORIZED",
       hash,
@@ -211,18 +220,19 @@ async function prepareOne(tsl) {
     });
   }
 
-  const previous = preparedSources.get(key);
-  if (previous?.hash === hash && previous?.policy === policy) return;
-  const module = await importSourceModule({ code, source, hash, policy });
+  options.signal?.throwIfAborted();
+  const revocation = revokedVersions.get(hash) || 0;
+  // Embedded files are already immutable bytes; import them without a second URL fetch.
+  const moduleSource = source.url?.startsWith("pack://") ? { inline: code } : source;
+  const module = await importSourceModule({ code, source: moduleSource, hash, policy, config, signal: options.signal });
+  options.signal?.throwIfAborted();
   if (typeof module?.default !== "function") {
     throw Object.assign(
       new Error("TSL code module must default-export a material/node factory"),
       { code: "E_TSL_CODE_EXPORT_INVALID" }
     );
   }
-  if (previous) unregisterPreparedTslCode(key);
-  preparedSources.set(key, { hash, source, policy });
-  registerPreparedTslCode(key, module.default);
+  return { key, hash, source, policy, revocation, factory: module.default };
 }
 
 /**
@@ -233,7 +243,7 @@ async function prepareOne(tsl) {
  * - disabled: application refuses TSL code scenes
  */
 export function configureTslCodeExecution(options = {}) {
-  clearPreparedTslCode();
+  configurationVersion++;
   settings = {
     executionPolicy: normalizeExecutionPolicy(
       options.executionPolicy ?? options.policy ?? "trusted"
@@ -246,20 +256,45 @@ export function configureTslCodeExecution(options = {}) {
   return getTslCodeExecutionState();
 }
 
-export function getTslCodeExecutionState() {
+export function getTslCodeExecutionState(resources) {
   return {
     executionPolicy: settings.executionPolicy,
     enabled: settings.executionPolicy !== "disabled",
-    preparedCount: preparedSources.size,
+    preparedCount: resources?.size || 0,
     rememberedHashCount: memoryAuthorizations.size,
     hasCustomModuleLoader: typeof settings.moduleLoader === "function"
   };
 }
 
-export async function prepareTslCodeForPayload(payload) {
+export async function prepareTslCodeForPayload(payload, options = {}) {
   const descriptors = [];
   visitCodeDescriptors(payload, descriptors);
-  for (const descriptor of descriptors) await prepareOne(descriptor);
+  if (!descriptors.length) return undefined;
+  const explicit = options.tslCode && typeof options.tslCode === "object";
+  const config = { ...settings, ...(explicit ? options.tslCode : {}) };
+  config.executionPolicy = normalizeExecutionPolicy(config.executionPolicy);
+  const version = configurationVersion, entries = new Map();
+  const controller = new AbortController();
+  const signal = options.signal ? AbortSignal.any([controller.signal, options.signal]) : controller.signal;
+  const resourcePolicy = createSceneResourcePolicy(options.sceneJsonRoot || payload, options);
+  let disposed = false;
+  const available = () => !disposed && (explicit || version === configurationVersion);
+  const resources = {
+    get size() { return available() ? [...entries.values()].filter((entry) => resources.get(entry.key)).length : 0; },
+    get(key) {
+      const entry = available() ? entries.get(key) : undefined;
+      return entry && entry.revocation === (revokedVersions.get(entry.hash) || 0) ? entry.factory : undefined;
+    },
+    dispose() { if (disposed) return; disposed = true; controller.abort(); entries.clear(); }
+  };
+  try {
+    for (const descriptor of descriptors) if (!entries.has(sourceKey(descriptor.source))) {
+      const entry = await prepareOne(descriptor, { ...options, signal }, config, resourcePolicy);
+      if (!available()) throw Object.assign(new Error("TSL host policy changed during scene preparation"), { code: "E_TSL_CODE_POLICY_CHANGED" });
+      entries.set(entry.key, entry);
+    }
+    return resources;
+  } catch (error) { resources.dispose(); throw error; }
 }
 
 export async function revokeTslCodeAuthorization(hash) {
@@ -267,18 +302,12 @@ export async function revokeTslCodeAuthorization(hash) {
   for (const key of [...memoryAuthorizations]) {
     if (key.startsWith(`${normalized}|`)) memoryAuthorizations.delete(key);
   }
-  for (const [key, prepared] of preparedSources) {
-    if (prepared.hash === normalized) {
-      preparedSources.delete(key);
-      unregisterPreparedTslCode(key);
-    }
-  }
+  revokedVersions.set(normalized, (revokedVersions.get(normalized) || 0) + 1);
   await settings.storage?.revoke?.({ hash: normalized });
 }
 
-export function clearPreparedTslCode() {
-  for (const key of preparedSources.keys()) unregisterPreparedTslCode(key);
-  preparedSources.clear();
+export function clearPreparedTslCode(resources) {
+  resources?.dispose();
 }
 
 registerSceneCapabilityPreparer("tsl-code-module", prepareTslCodeForPayload);
