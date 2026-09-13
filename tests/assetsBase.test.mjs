@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
+import { Texture } from "three";
 
 import {
   ASSETS_PACKAGE_VERSION,
@@ -18,7 +19,7 @@ import {
   setAssetsBaseMode,
   setAssetsBaseUrl
 } from "../core/util/assetsBase.js";
-import { loadTextureFromMaterialJson } from "../core/util/loadTextureFromMaterialJson.js";
+import { loadTextureFromMaterialJson, whenTextureReady } from "../core/util/loadTextureFromMaterialJson.js";
 test("ASSETS_PACKAGE_VERSION matches the workspace @threejson/assets package", () => {
   // Catches exactly the drift that once let this go stale (pinned to 1.0.0 well after 1.1.2 had
   // shipped, silently missing files the newer version had) — see assetsBase.js's docblock.
@@ -103,7 +104,7 @@ test("resolveAssetsBaseFromLoad prefers createJsonScene options over sceneConfig
 test("loadTextureFromMaterialJson falls back from local assets to CDN", async () => {
   setAssetsBaseMode("local-first");
   const calls = [];
-  const primaryTexture = { repeat: { set() {} } };
+  const primaryTexture = new Texture();
   const loader = {
     load(url, onLoad, _onProgress, onError) {
       calls.push(url);
@@ -111,27 +112,24 @@ test("loadTextureFromMaterialJson falls back from local assets to CDN", async ()
         queueMicrotask(() => onError(new Error("missing local asset")));
         return primaryTexture;
       }
-      queueMicrotask(() => onLoad({
-        image: "cdn-image",
-        source: "cdn-source",
-        flipY: false,
-        colorSpace: "srgb"
-      }));
-      return { repeat: { set() {} } };
+      const loaded = new Texture("cdn-image");
+      loaded.flipY = false;
+      queueMicrotask(() => onLoad(loaded));
+      return loaded;
     }
   };
   const texture = loadTextureFromMaterialJson(
     { textureUrl: "/assets/textures/fallback-test.png" },
     { loader }
   );
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  assert.equal(texture, primaryTexture);
+  await whenTextureReady(texture);
+  assert.notEqual(texture, primaryTexture, "the failed candidate is not the owned texture view");
   assert.deepEqual(calls, [
     "/assets/textures/fallback-test.png",
     `${DEFAULT_CDN_ASSETS_BASE}/textures/fallback-test.png`
   ]);
   assert.equal(texture.image, "cdn-image");
   assert.equal(texture.userData.threeJsonResolvedUrl, `${DEFAULT_CDN_ASSETS_BASE}/textures/fallback-test.png`);
+  texture.dispose();
   setAssetsBaseMode("base-first");
 });

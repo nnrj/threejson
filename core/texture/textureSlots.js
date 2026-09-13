@@ -36,6 +36,24 @@ export const MATERIAL_TEXTURE_SLOTS = Object.freeze({
 
 export const MATERIAL_TEXTURE_SLOT_NAMES = Object.freeze(Object.keys(MATERIAL_TEXTURE_SLOTS));
 
+export const PHYSICAL_MATERIAL_SLOTS = new Set([
+  "clearcoat", "clearcoatRoughness", "clearcoatNormal", "transmission", "thickness",
+  "sheenColor", "sheenRoughness", "specularColor", "specularIntensity", "anisotropy",
+  "iridescence", "iridescenceThickness"
+]);
+export const STANDARD_MATERIAL_SLOTS = new Set([
+  "normal", "roughness", "metalness", "ao", "emissive", "bump", "displacement"
+]);
+
+/** Material promotion is monotonic; attaching a map must not remove authored shading features. */
+export function applyTextureMaterialSemantics(material, maps) {
+  const type = String(material.type || "").toLowerCase();
+  if (Object.keys(maps || {}).some((slot) => PHYSICAL_MATERIAL_SLOTS.has(slot))) material.type = "physical";
+  else if (Object.keys(maps || {}).some((slot) => STANDARD_MATERIAL_SLOTS.has(slot)) && !["physical", "meshphysicalmaterial"].includes(type)) material.type = "standard";
+  if (maps?.opacity) material.transparent = true;
+  return material;
+}
+
 const MATERIAL_CONTAINER_KEYS = new Set(["material", "materials", "materialArr"]);
 // Boolean operands are build-time geometry inputs. The CSG evaluator deliberately replaces an
 // operand's material with the root mesh material, then discards the operand mesh. Exposing those

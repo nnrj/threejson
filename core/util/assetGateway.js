@@ -1,4 +1,7 @@
 /** Generic static-resource URL resolution for image, video, audio, model and JSON assets. */
+import { MATERIAL_TEXTURE_SLOTS } from "../texture/textureSlots.js";
+
+const TEXTURE_KEYS = new Set(["map", ...Object.values(MATERIAL_TEXTURE_SLOTS).map((slot) => slot.descriptorField)]);
 
 const URL_KEYS = new Set([
   "textureUrl",
@@ -71,7 +74,7 @@ export function resolveAssetUrl(url, config, context = {}) {
 }
 
 /** Apply an asset gateway to a normalized runtime payload in-place. */
-export function applyAssetGatewayToPayload(payload, config) {
+export function applyAssetGatewayToPayload(payload, config, options = {}) {
   if (!config || config.enabled === false || !payload || typeof payload !== "object") return payload;
   const visit = (value, parent = null, key = "") => {
     if (Array.isArray(value)) {
@@ -80,6 +83,7 @@ export function applyAssetGatewayToPayload(payload, config) {
     }
     if (!isPlainObject(value)) return;
     for (const [childKey, childValue] of Object.entries(value)) {
+      if (childKey === "textureResources" || (options.deferTextures && TEXTURE_KEYS.has(childKey))) continue;
       if (URL_KEYS.has(childKey) && isProxyableUrl(childValue)) {
         value[childKey] = resolveAssetUrl(childValue, config, {
           kind: inferAssetKind(childKey, value),

@@ -10,7 +10,7 @@ const LIB_PREFIX = "lib://";
  * @param {object|null|undefined} materialJson
  * @returns {string|null}
  */
-function resolveTextureSource(materialJson) {
+function resolveTextureSource(materialJson, runtimeScope) {
   if (!materialJson || typeof materialJson !== "object" || Array.isArray(materialJson)) {
     return null;
   }
@@ -26,7 +26,7 @@ function resolveTextureSource(materialJson) {
   }
   if (trimmed.toLowerCase().startsWith(LIB_PREFIX)) {
     const token = trimmed.slice(LIB_PREFIX.length).trim();
-    return resolveLibTokenToUrl(token);
+    return resolveLibTokenToUrl(token, runtimeScope);
   }
   return trimmed;
 }

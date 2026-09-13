@@ -1,4 +1,5 @@
 /** Runtime resource tracking and disposal capability. */
+export { createAssetResolver } from "./resource/assetResolver.js";
 export {
   disposeTrackedResources,
   disposeTrackedSceneResources,

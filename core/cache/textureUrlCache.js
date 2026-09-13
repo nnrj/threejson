@@ -41,7 +41,7 @@ export function createTextureUrlCacheStore() {
 
   function rememberCanonicalTexture(url, texture) {
     const key = typeof url === "string" ? url.trim() : "";
-    if (!cacheEnabled || !key || !texture) {
+    if (!cacheEnabled || !key || !texture?.image) {
       return;
     }
     if (!canonicalByUrl.has(key)) {

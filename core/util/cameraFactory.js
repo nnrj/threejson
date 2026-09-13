@@ -41,6 +41,14 @@ function applyCameraOrientation(camera, config = {}) {
   if (!camera) {
     return;
   }
+  if (config.up) {
+    const up = toVector3(config.up, { x: 0, y: 1, z: 0 });
+    camera.up.set(up.x, up.y, up.z);
+  }
+  if (Array.isArray(config.quaternion) && config.quaternion.length === 4) {
+    camera.quaternion.fromArray(config.quaternion).normalize();
+    return;
+  }
   const lookAt = config.lookAt && typeof config.lookAt === "object" ? config.lookAt : null;
   if (lookAt) {
     const target = toVector3(lookAt, { x: 0, y: 0, z: 0 });
@@ -135,6 +143,7 @@ export function createCameraFromDescriptor(cameraConfig = {}, width = 1, height 
     far
   );
   camera.position.set(position.x, position.y, position.z);
+  if (Number.isFinite(cameraConfig.zoom)) camera.zoom = cameraConfig.zoom;
   applyCameraOrientation(camera, cameraConfig);
   camera.updateProjectionMatrix();
   return camera;

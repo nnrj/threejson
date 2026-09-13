@@ -126,6 +126,7 @@ import {
 import { clearAssetRegistry, registerAssetLibrary } from "../cache/assetRegistry.js";
 import { configureTextureUrlCacheForDeploy } from "../cache/textureUrlCache.js";
 import { applyAssetGatewayToPayload } from "../util/assetGateway.js";
+import { configureSceneResourcePolicy } from "../resource/sceneResourcePolicy.js";
 import { configureInfoPanelForDeploy } from "../builder/infoPanelBuilder.js";
 import { configureTextureDefaultsForDeploy } from "../util/textureSampling.js";
 import {
@@ -146,7 +147,8 @@ import {
 } from "../util/cameraFactory.js";
 import { deploySubSceneChildren, deploySubSceneChildrenAsync } from "./subSceneDeploy.js";
 import { deploySubSceneUnderParent } from "./objectDispatchHandler.js";
-import { resolveRuntimeContext, createRuntimeContext, attachRuntimeContext } from "../runtime/runtimeContext.js";
+import { resolveRuntimeContext, createRuntimeContext, attachRuntimeContext, runWithRuntimeContextScope } from "../runtime/runtimeContext.js";
+import { bindLightRelationships } from "../builder/lightFactory.js";
 
 const CONTENT_CLEAR_SYSTEM_TAGS = [
   "objects",
@@ -643,7 +645,7 @@ function deployCanonicalRecord(overlayRoot, record, ctx) {
 
 function deployOneCanonicalRecordSync(overlayRoot, record, ctx) {
   return runRecordDeployWithLifecycle(record, ctx?.objectLifecycle ?? null, () => {
-    return deployCanonicalRecord(overlayRoot, record, ctx);
+    return runWithRuntimeContextScope(overlayRoot, () => deployCanonicalRecord(overlayRoot, record, ctx));
   });
 }
 
@@ -675,7 +677,8 @@ function deployOneCanonicalRecord(overlayRoot, record, ctx) {
     }
     return deployCanonicalRecord(overlayRoot, record, ctx);
   };
-  return runRecordDeployWithLifecycle(record, lifecycleCtx, runDeploy, { awaitSideEffects: true });
+  return runRecordDeployWithLifecycle(record, lifecycleCtx,
+    () => runWithRuntimeContextScope(overlayRoot, runDeploy), { awaitSideEffects: true });
 }
 
 function wrapRuntimeWithArchiveDispose(runtime, archiveDispose, nestedDisposeList = []) {
@@ -1500,7 +1503,7 @@ function normalizeScenePayloadWithRuntimeDefaults(payload, options = {}) {
     normalizeOpts.subSceneNormalizePolicy = options.subSceneNormalizePolicy;
   }
   const normalized = normalizeScenePayload(payload, normalizeOpts);
-  applyAssetGatewayToPayload(normalized, options.assetGateway ?? options.resourceProxy);
+  applyAssetGatewayToPayload(normalized, options.assetGateway ?? options.resourceProxy, { deferTextures: true });
   applySceneRuntimeDefaults(normalized, runtimeOptions);
   normalized.runtimeLoadOptions = runtimeOptions;
   return normalized;
@@ -1532,7 +1535,7 @@ async function createJsonScene(payload, options = {}) {
   // about-to-be-created Scene below, so this scene's object identity, deploy scheduler,
   // event bindings, animation registries, asset/texture caches, etc. never collide with
   // a concurrently-mounted sibling canvas's. Single-canvas callers see no behavior change.
-  const runtimeCtx = createRuntimeContext();
+  const runtimeCtx = configureSceneResourcePolicy(createRuntimeContext(), payload, options);
 
   const loadOptions = {
     ...mergedLoadOptions,
@@ -1585,6 +1588,7 @@ async function createJsonScene(payload, options = {}) {
       ...loadOptions,
       resetScene: true
     });
+    bindLightRelationships(deployed.scene);
 
     await bus.emit(LOAD_PHASE.afterDeploy, {
       ...baseCtx,
@@ -1623,6 +1627,8 @@ async function createJsonScene(payload, options = {}) {
     attachLifecycleBusToRuntime(deployed, bus, runtimeCtx);
     return deployed;
   } catch (error) {
+    runtimeCtx.dispose();
+    baseCtx.runtime?.dispose?.();
     await bus.emit(LOAD_PHASE.onError, {
       ...baseCtx,
       phase: LOAD_PHASE.onError,
@@ -1730,7 +1736,7 @@ async function createJsonSceneFromObjectRecord(record, options = {}) {
   try {
   const { bus } = resolveLifecycleHooks(options);
   bindPluginHostToLifecycleBus(options, bus);
-  const runtimeCtx = createRuntimeContext();
+  const runtimeCtx = configureSceneResourcePolicy(createRuntimeContext(), record, options);
   const loadOptions = { ...options, _lifecycleBus: bus, _runtimeContext: runtimeCtx };
   loadOptions._objectLifecycle = resolveSceneLoadObjectLifecycle(options, record);
   const normalized = normalizeScenePayloadWithRuntimeDefaults(
@@ -1825,7 +1831,7 @@ function createJsonSceneSimple(payload, options = {}) {
   assertCsgBrushOpsReadyForPayload(payload);
   const { bus } = resolveLifecycleHooks(options);
   bindPluginHostToLifecycleBus(options, bus);
-  const runtimeCtx = createRuntimeContext();
+  const runtimeCtx = configureSceneResourcePolicy(createRuntimeContext(), payload, options);
   const loadOptions = { ...options, _lifecycleBus: bus, _runtimeContext: runtimeCtx };
   loadOptions._objectLifecycle = resolveSceneLoadObjectLifecycle(options, payload);
   // See createJsonScene: fresh Scene per call, no prior run of *this* context to cancel.
@@ -1853,6 +1859,7 @@ function createJsonSceneSimple(payload, options = {}) {
     ...loadOptions,
     resetScene: true
   });
+  bindLightRelationships(deployed.scene);
   applyAutoFitCameraToRuntime(
     deployed.camera,
     deployed.controls,
@@ -1890,6 +1897,7 @@ async function deployJsonScene(target, payload, options = {}) {
   const normalized = normalizeScenePayloadWithRuntimeDefaults(payload, options);
   await ensureRectAreaLightSupport(normalized.lightsConfig, targetBackend);
   const deployed = await deployIntoTarget(target, normalized, options);
+  bindLightRelationships(deployed.scene || deployed);
   const runtime = extractDeploymentTarget(deployed);
   applyAutoFitCameraToRuntime(
     runtime.camera,

@@ -26,7 +26,9 @@ test("textureUrlCache enabled from sceneConfig.extensions.assetLibrary", () => {
     }
   });
   assert.equal(isTextureUrlCacheEnabled(), true);
-  const canonical = { isTexture: true, url: "/tex/a.png" };
+  rememberCanonicalTexture("/tex/a.png", { isTexture: true });
+  assert.equal(getCanonicalTexture("/tex/a.png"), null, "pending/failed textures must not poison the cache");
+  const canonical = { isTexture: true, image: { width: 4, height: 4 }, url: "/tex/a.png" };
   rememberCanonicalTexture("/tex/a.png", canonical);
   assert.equal(getCanonicalTexture("/tex/a.png"), canonical);
   configureTextureUrlCacheForDeploy({ sceneConfig: {} });

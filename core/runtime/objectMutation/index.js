@@ -3,6 +3,7 @@ import { getObjectByThreeJsonId } from "../../handler/objectRegistry.js";
 import { markDescriptorBindingJsonDirty, redeployObject } from "../../handler/sceneDescriptorBinding.js";
 import { applyVisibilityFromDescriptor } from "../../util/util.js";
 import { applyTextureRepeatToMap, loadTextureFromMaterialJson } from "../../util/loadTextureFromMaterialJson.js";
+import { bindTextureWhenReady } from "../../resource/textureRequest.js";
 import { resolveTextureSource } from "../../util/resolveTextureSource.js";
 import { getDeployTextureContext, syncTexturePropsToMap } from "../../util/textureSampling.js";
 import { getByPath, setByPath } from "../../util/jsonPointer.js";
@@ -90,29 +91,11 @@ function materialsHaveLoadedUrl(mats, resolvedUrl) {
   });
 }
 
-function assignLoadedTextureToMaterials(mats, texture) {
-  for (let i = 0; i < mats.length; i += 1) {
-    const mat = mats[i];
-    if (!mat) {
-      continue;
-    }
-    const oldMap = mat.map;
-    mat.map = texture;
-    mat.needsUpdate = true;
-    if (oldMap && oldMap !== texture) {
-      oldMap.dispose?.();
-    }
-  }
-}
-
 function createTextureReloadPending(mats, materialPatch, options) {
-  const pending = Promise.resolve(loadTextureFromMaterialJson(materialPatch)).then((texture) => {
-    if (!texture) {
-      return null;
-    }
-    assignLoadedTextureToMaterials(mats, texture);
-    return texture;
-  });
+  const pending = Promise.all(mats.filter(Boolean).map((mat) => {
+    const texture = loadTextureFromMaterialJson(materialPatch, options);
+    return texture ? bindTextureWhenReady(mat, "map", texture, options) : null;
+  }));
   if (options.awaitTextures !== true) {
     pending.catch(() => {});
     return null;
@@ -169,7 +152,7 @@ function applyMaterialPatch(mesh, materialPatch, options = {}) {
         mat.needsUpdate = true;
       }
     } else {
-      const resolvedUrl = resolveTextureSource(materialPatch);
+      const resolvedUrl = resolveTextureSource(materialPatch, options.runtimeScope || options.scene);
       const allHaveMap = mats.length > 0 && mats.every((mat) => Boolean(mat?.map));
       const canReuseMaps = allHaveMap && materialsHaveLoadedUrl(mats, resolvedUrl);
       if (canReuseMaps) {
@@ -271,6 +254,7 @@ function applyObjectPartial(threeJsonId, partial, options = {}) {
   maybeMarkDirty(descriptor, options);
   const needsRedeploy = keys.some((k) => isRedeployTopLevelKey(k)) || partialNeedsRedeploy(partial);
   const { pending } = syncObjectFromDescriptor(base.object3D, descriptor, {
+    ...options, runtimeScope: options.runtimeScope || options.scene || base.object3D,
     awaitTextures: false
   });
   if (pending) {
@@ -294,6 +278,7 @@ async function applyObjectPartialAsync(threeJsonId, partial, options = {}) {
   maybeMarkDirty(descriptor, options);
   const needsRedeploy = keys.some((k) => isRedeployTopLevelKey(k)) || partialNeedsRedeploy(partial);
   const { pending } = syncObjectFromDescriptor(base.object3D, descriptor, {
+    ...options, runtimeScope: options.runtimeScope || options.scene || base.object3D,
     awaitTextures: true
   });
   if (pending) {
@@ -324,6 +309,7 @@ function applyObjectChange(threeJsonId, path, value, options = {}) {
   const topLevelKey = getTopLevelKey(normalizedPath);
   const needsRedeploy = kind === "structural" || isRedeployTopLevelKey(topLevelKey) || pathNeedsRedeploy(normalizedPath);
   const { pending } = syncObjectFromDescriptor(base.object3D, base.descriptor, {
+    ...options, runtimeScope: options.runtimeScope || options.scene || base.object3D,
     awaitTextures: false
   });
   if (pending) {
@@ -359,6 +345,7 @@ async function applyObjectChangeAsync(threeJsonId, path, value, options = {}) {
   const topLevelKey = getTopLevelKey(normalizedPath);
   const needsRedeploy = kind === "structural" || isRedeployTopLevelKey(topLevelKey) || pathNeedsRedeploy(normalizedPath);
   const { pending } = syncObjectFromDescriptor(base.object3D, base.descriptor, {
+    ...options, runtimeScope: options.runtimeScope || options.scene || base.object3D,
     awaitTextures: true
   });
   if (pending) {
@@ -396,6 +383,7 @@ function applyObjectSnapshot(threeJsonId, snapshot, options = {}) {
     Object.keys(snapshot).some((k) => isRedeployTopLevelKey(k)) ||
     (Array.isArray(snapshot.materials) && snapshot.materials.length === 6);
   const { pending } = syncObjectFromDescriptor(base.object3D, base.descriptor, {
+    ...options, runtimeScope: options.runtimeScope || options.scene || base.object3D,
     awaitTextures: false
   });
   if (pending) {
@@ -420,6 +408,7 @@ async function applyObjectSnapshotAsync(threeJsonId, snapshot, options = {}) {
     Object.keys(snapshot).some((k) => isRedeployTopLevelKey(k)) ||
     (Array.isArray(snapshot.materials) && snapshot.materials.length === 6);
   const { pending } = syncObjectFromDescriptor(base.object3D, base.descriptor, {
+    ...options, runtimeScope: options.runtimeScope || options.scene || base.object3D,
     awaitTextures: true
   });
   if (pending) {

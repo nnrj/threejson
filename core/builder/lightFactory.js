@@ -111,11 +111,24 @@ export function createLightBundleFromDescriptor(descriptor = {}, options = {}) {
     throw error;
   }
 
-  if (type !== "ambient" && type !== "hemisphere") {
+  if (descriptor.position || (type !== "ambient" && type !== "hemisphere")) {
     const position = vector3(descriptor.position, { x: 0, y: 1, z: 0 });
     light.position.set(position.x, position.y, position.z);
   }
 
+  light.name = String(descriptor.name || "");
+  light.visible = descriptor.visible !== false;
+  light.castShadow = descriptor.castShadow === true;
+  if (Number.isInteger(descriptor.layers)) light.layers.mask = descriptor.layers;
+  if (Array.isArray(descriptor.quaternion) && descriptor.quaternion.length === 4) light.quaternion.fromArray(descriptor.quaternion).normalize();
+  if (light.shadow && descriptor.shadow) {
+    const shadow = descriptor.shadow;
+    for (const key of ["bias", "normalBias", "radius", "blurSamples"]) if (Number.isFinite(shadow[key])) light.shadow[key] = shadow[key];
+    if (shadow.mapSize) light.shadow.mapSize.set(finiteOr(shadow.mapSize.width ?? shadow.mapSize.x, 512), finiteOr(shadow.mapSize.height ?? shadow.mapSize.y, 512));
+    for (const key of ["near", "far", "left", "right", "top", "bottom", "fov", "zoom"]) if (key in light.shadow.camera && Number.isFinite(shadow.camera?.[key])) light.shadow.camera[key] = shadow.camera[key];
+    light.shadow.camera.updateProjectionMatrix();
+  }
+  light.userData.objJson = { ...JSON.parse(JSON.stringify(descriptor)), objType: "light" };
   const attachments = [];
   if ((type === "spot" || type === "directional") && descriptor.target && typeof descriptor.target === "object") {
     const target = new THREE.Object3D();
@@ -123,10 +136,39 @@ export function createLightBundleFromDescriptor(descriptor = {}, options = {}) {
     target.position.set(targetPosition.x, targetPosition.y, targetPosition.z);
     light.target = target;
     attachments.push(target);
-  } else if (type === "rectarea" && descriptor.target && typeof descriptor.target === "object") {
+  } else if (type === "rectarea" && !descriptor.quaternion && descriptor.target && typeof descriptor.target === "object") {
     const targetPosition = vector3(descriptor.target);
     light.lookAt(targetPosition.x, targetPosition.y, targetPosition.z);
   }
 
   return { light, attachments, type };
+}
+
+/** Resolve light relationships after authored parents/targets have been deployed. */
+export function bindLightRelationships(scene) {
+  if (!scene?.traverse) return;
+  const objects = new Map();
+  const lights = [];
+  scene.traverse((object) => {
+    const id = object.userData?.objJson?.threeJsonId || object.userData?.threeJsonId;
+    if (id) objects.set(id, object);
+    if (object.isLight && object.userData?.objJson) lights.push(object);
+  });
+  for (const light of lights) {
+    const descriptor = light.userData.objJson;
+    if (descriptor.parentThreeJsonId) {
+      const parent = objects.get(descriptor.parentThreeJsonId);
+      if (!parent) throw Object.assign(new Error(`Light parent not found: ${descriptor.parentThreeJsonId}`), { code: "E_LIGHT_PARENT_NOT_FOUND" });
+      for (let ancestor = parent; ancestor; ancestor = ancestor.parent) if (ancestor === light) throw new Error("Light parent cycle.");
+      if (light.parent !== parent) parent.add(light);
+    }
+    if (descriptor.targetThreeJsonId) {
+      const target = objects.get(descriptor.targetThreeJsonId);
+      if (!target) throw Object.assign(new Error(`Light target not found: ${descriptor.targetThreeJsonId}`), { code: "E_LIGHT_TARGET_NOT_FOUND" });
+      const oldTarget = light.target;
+      light.target = target;
+      if (oldTarget?.parent === scene && !oldTarget.userData?.objJson) scene.remove(oldTarget);
+    }
+  }
+  scene.updateMatrixWorld(true);
 }

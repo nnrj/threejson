@@ -122,11 +122,11 @@ function dedupeUrls(urls) {
  * @param {string} relativePath
  * @returns {string[]}
  */
-export function assetUrlCandidates(relativePath) {
-  const mode = normalizeAssetsBaseMode(runtimeMode);
+export function assetUrlCandidates(relativePath, policy = {}) {
+  const mode = normalizeAssetsBaseMode(policy.mode ?? runtimeMode);
   const localUrl = assetUrlFromBase(LOCAL_ASSETS_BASE, relativePath);
   const cdnUrl = assetUrlFromBase(DEFAULT_CDN_ASSETS_BASE, relativePath);
-  const baseUrl = assetUrlFromBase(runtimeBase, relativePath);
+  const baseUrl = assetUrlFromBase(policy.base ?? runtimeBase, relativePath);
   if (mode === ASSETS_BASE_MODE_CDN_FIRST) {
     return dedupeUrls([cdnUrl, localUrl]);
   }
@@ -172,7 +172,7 @@ export function resolvePublicAssetUrl(url) {
  * @param {string} url
  * @returns {string[]}
  */
-export function resolvePublicAssetUrlCandidates(url) {
+export function resolvePublicAssetUrlCandidates(url, policy = {}) {
   if (typeof url !== "string") {
     return [];
   }
@@ -184,9 +184,17 @@ export function resolvePublicAssetUrlCandidates(url) {
     return [input];
   }
   if (input.startsWith("/assets/")) {
-    return assetUrlCandidates(input.slice("/assets/".length));
+    return assetUrlCandidates(input.slice("/assets/".length), policy);
   }
   return [input];
+}
+
+/** An immutable per-scene policy, independent of concurrent global overrides. */
+export function createAssetUrlPolicy(payload = {}, options = {}) {
+  const base = resolveAssetsBaseFromLoad(payload, options) || getAssetsBaseUrl();
+  const mode = resolveAssetsBaseModeFromLoad(payload, options)
+    || (resolveAssetsBaseFromLoad(payload, options) ? ASSETS_BASE_MODE_BASE_FIRST : getAssetsBaseMode());
+  return Object.freeze({ base, mode });
 }
 
 /**

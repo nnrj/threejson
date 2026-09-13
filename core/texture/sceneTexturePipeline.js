@@ -1,6 +1,7 @@
 import { getByPointer, setByPointer } from "../util/jsonPointer.js";
 import {
   MATERIAL_TEXTURE_SLOT_NAMES,
+  applyTextureMaterialSemantics,
   groupMaterialTextureSlots,
   listMaterialTextureSlots
 } from "./textureSlots.js";
@@ -9,9 +10,6 @@ import { applyTextureAssignmentAsync } from "./runtimeTextureAssignment.js";
 
 const GENERATION_KINDS = new Set(["image", "seamless", "spherical", "pbr-set", "pbr-derive"]);
 const SOURCE_PREFERENCES = new Set(["auto", "manifest", "search", "pbr-library", "generate"]);
-const STANDARD_MATERIAL_SLOTS = new Set([
-  "normal", "roughness", "metalness", "ao", "emissive", "bump", "displacement"
-]);
 
 function cloneJson(value) {
   return JSON.parse(JSON.stringify(value));
@@ -299,10 +297,22 @@ function setAssignmentOnScene(scene, assignment) {
 }
 
 function setMaterialProperties(material, assignment) {
-  if (Object.keys(assignment.maps || {}).some((slot) => STANDARD_MATERIAL_SLOTS.has(slot))) {
-    material.type = "standard";
+  applyTextureMaterialSemantics(material, assignment.maps);
+  const candidate = assignment.candidate;
+  if (candidate) {
+    const resources = { ...(material.textureResources || {}) };
+    for (const [slot, source] of Object.entries(assignment.maps || {})) {
+      // Persist source/provenance and durable archive replicas, never proxy URLs with keys.
+      const replica = candidate.archived ? candidate.runtimeMaps?.[slot] : null;
+      resources[slot] = {
+        source,
+        ...(candidate.license ? { license: cloneJson(candidate.license) } : {}),
+        ...(candidate.attribution ? { attribution: candidate.attribution } : {}),
+        ...(replica && /^https?:\/\//i.test(replica) && !/[?&](?:key|token)=/i.test(replica) ? { replicas: [replica] } : {})
+      };
+    }
+    material.textureResources = resources;
   }
-  if (assignment.maps?.opacity) material.transparent = true;
 }
 
 async function runWithConcurrency(items, limit, worker) {

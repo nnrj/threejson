@@ -105,6 +105,11 @@ test("runtime snapshot preserves hemisphere light colors", () => {
   assert.equal(saved.sceneConfig.lights.length, 1);
   assert.deepEqual(saved.sceneConfig.lights[0], {
     type: "hemisphere",
+    name: "",
+    visible: true,
+    castShadow: false,
+    layers: 1,
+    quaternion: [0, 0, 0, 1],
     color: "#87ceeb",
     intensity: 0.65,
     position: { x: 0, y: 1, z: 0 },

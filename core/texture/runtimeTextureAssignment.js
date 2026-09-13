@@ -7,6 +7,7 @@ import { resolveLibTokenToUrl } from "../cache/assetRegistry.js";
 import { applyTextureRepeatToMap } from "../util/loadTextureFromMaterialJson.js";
 import { applyTexturePropsFromRecord } from "../util/textureSampling.js";
 import { MATERIAL_TEXTURE_SLOTS } from "./textureSlots.js";
+import { requestTexture, whenTextureReady, cloneTextureResource } from "../resource/textureRequest.js";
 
 function abortError(signal) {
   return signal?.reason || new DOMException("Texture assignment aborted.", "AbortError");
@@ -32,50 +33,8 @@ function resolveRuntimeTextureSource(url, runtimeScope) {
 }
 
 function textureLoaderPromise(url, options = {}) {
-  const loader = options.loader || new THREE.TextureLoader();
-  let source;
-  try {
-    source = resolveRuntimeTextureSource(url, options.runtimeScope);
-  } catch (error) {
-    return Promise.reject(error);
-  }
-  const candidates = resolvePublicAssetUrlCandidates(source);
-  return new Promise((resolve, reject) => {
-    const loadAt = (index, previousError) => {
-      if (options.signal?.aborted) {
-        reject(abortError(options.signal));
-        return;
-      }
-      const candidate = candidates[index];
-      if (!candidate) {
-        reject(previousError || new Error(`Unable to load texture: ${source}`));
-        return;
-      }
-      loader.load(candidate, (texture) => {
-        if (options.signal?.aborted) {
-          texture.dispose?.();
-          reject(abortError(options.signal));
-          return;
-        }
-        texture.userData = texture.userData || {};
-        texture.userData.threeJsonResolvedUrl = candidate;
-        if (candidate.startsWith("blob:") && typeof URL?.revokeObjectURL === "function") {
-          const dispose = texture.dispose.bind(texture);
-          let revoked = false;
-          texture.dispose = () => {
-            dispose();
-            if (!revoked) {
-              revoked = true;
-              URL.revokeObjectURL(candidate);
-            }
-          };
-        }
-        trackDisposableResource(texture);
-        resolve(texture);
-      }, undefined, (error) => loadAt(index + 1, error));
-    };
-    loadAt(0);
-  });
+  const source = resolveRuntimeTextureSource(url, options.runtimeScope);
+  return whenTextureReady(requestTexture(source, options));
 }
 
 function materialIndexFromPointer(pointer) {
@@ -88,6 +47,9 @@ function collectMaterialTargets(root, relativePointer) {
   const targets = [];
   root.traverse?.((object) => {
     if (!object?.isMesh || !object.material) return;
+    // A nested authored mesh owns its own material. A group assignment must not
+    // recolor every independently described descendant.
+    if (object !== root && object.userData?.objJson && object.userData.objJson !== root.userData?.objJson) return;
     const materials = Array.isArray(object.material) ? object.material : [object.material];
     if (requestedIndex !== null) {
       // Builders are allowed to collapse a descriptor's six identical face materials into one
@@ -241,6 +203,8 @@ export async function applyTextureAssignmentAsync(runtime, assignment, options =
   if (!targets.length) throw new Error("Texture target has no runtime mesh material.");
 
   const loaded = {};
+  let preloadFailed = false;
+  const materialSignature = JSON.stringify(materialDescriptor);
   try {
     await Promise.all(Object.entries(assignment.maps || {}).map(async ([slot, authoritativeUrl]) => {
       const definition = MATERIAL_TEXTURE_SLOTS[slot];
@@ -256,6 +220,10 @@ export async function applyTextureAssignmentAsync(runtime, assignment, options =
           loader: options.loader
         });
       if (!texture?.isTexture) throw new Error(`Texture loader returned no THREE.Texture for ${slot}.`);
+      if (preloadFailed || options.signal?.aborted) {
+        texture.dispose?.();
+        throw abortError(options.signal);
+      }
       applyTextureRepeatToMap(texture, materialDescriptor);
       applyTexturePropsFromRecord(texture, "imageMap", materialDescriptor);
       if ("colorSpace" in texture) {
@@ -264,7 +232,14 @@ export async function applyTextureAssignmentAsync(runtime, assignment, options =
       loaded[slot] = texture;
     }));
     checkCurrent(assignment, options);
+    if (getObjectByThreeJsonId(assignment.threeJsonId, runtimeScope) !== object3D
+      || object3D.userData?.objJson !== descriptor
+      || JSON.stringify(getByPointer(descriptor, assignment.relativeMaterialPointer || "/material")) !== materialSignature
+      || targets.some((target) => (Array.isArray(target.object.material) ? target.object.material[target.index] : target.object.material) !== target.material)) {
+      throw Object.assign(new Error("Texture target changed while its resources were loading."), { code: "STALE_TEXTURE_ASSIGNMENT" });
+    }
   } catch (error) {
+    preloadFailed = true;
     Object.values(loaded).forEach((texture) => texture?.dispose?.());
     throw error;
   }
@@ -292,7 +267,7 @@ export async function applyTextureAssignmentAsync(runtime, assignment, options =
       for (const [slot, texture] of Object.entries(loaded)) {
         const runtimeField = MATERIAL_TEXTURE_SLOTS[slot].runtimeField;
         mapsBefore[runtimeField] = target.material[runtimeField];
-        target.material[runtimeField] = texture.clone();
+        target.material[runtimeField] = cloneTextureResource(texture);
         trackDisposableResource(target.material[runtimeField]);
       }
       if (loaded.opacity) target.material.transparent = true;

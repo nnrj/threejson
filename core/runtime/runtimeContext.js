@@ -1,4 +1,5 @@
 import { log } from "../util/logger.js";
+import { createAssetResolver } from "../resource/assetResolver.js";
 import { createBucketIndexStore } from "../handler/bucketIndex.js";
 import { createObjTypeIndexStore } from "../handler/objTypeIndex.js";
 import { createDomainIndexStore } from "../handler/domainIndex.js";
@@ -103,6 +104,7 @@ const DISPOSE_ORDER = [
   "shaderMotion",
   "tweenGroup",
   "deployScheduler",
+  "assetResolver",
   "assetRegistry",
   "textureUrlCache",
   "textureSampling",
@@ -176,6 +178,7 @@ function createRuntimeContext() {
   ctx.eventManagerSlot = createEventManagerSlotStore();
   ctx.assetRegistry = createAssetRegistryStore();
   ctx.textureUrlCache = createTextureUrlCacheStore();
+  ctx.assetResolver = createAssetResolver();
   ctx.textureSampling = createTextureSamplingStore();
   ctx.infoPanelDeploy = createInfoPanelDeployStore();
   ctx.audioSession = createAudioSessionStore();

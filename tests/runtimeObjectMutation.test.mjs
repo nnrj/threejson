@@ -265,7 +265,8 @@ test("applyObjectChange reloads texture when textureUrl changes on existing map"
   try {
     const res = applyObjectChange("tex-url", "material.textureUrl", "/textures/new.png");
     assert.equal(res.ok, true);
-    await Promise.resolve();
+    assert.equal(mesh.material.map, oldTex, "preserve the old texture until the replacement is ready");
+    await new Promise((resolve) => setImmediate(resolve));
 
     assert.notEqual(mesh.material.map, oldTex);
     assert.equal(mesh.material.map?.userData?.threeJsonResolvedUrl, "/textures/new.png");

@@ -1,5 +1,5 @@
 import { JSON_ORIGIN_CONFIG } from "./sceneJsonOrigin.js";
-import { Vector3 } from "three";
+import { Vector3, Quaternion } from "three";
 import { detectRendererBackend } from "../handler/rendererBackendRegistry.js";
 
 /**
@@ -24,15 +24,17 @@ export function extractCameraConfigFromRuntime(target, scene) {
   if (!camera) {
     return null;
   }
+  const position = camera.getWorldPosition(new Vector3());
   return {
+    type: camera.isOrthographicCamera ? "orthographic" : "perspective",
+    ...(camera.isOrthographicCamera ? { left: camera.left, right: camera.right, top: camera.top, bottom: camera.bottom } : {}),
+    zoom: camera.zoom,
+    up: { x: camera.up.x, y: camera.up.y, z: camera.up.z },
+    quaternion: camera.getWorldQuaternion(new Quaternion()).toArray(),
     fov: safeNum(camera.fov, 60),
     near: safeNum(camera.near, 0.1),
     far: safeNum(camera.far, 2500),
-    position: {
-      x: safeNum(camera.position?.x, 0),
-      y: safeNum(camera.position?.y, 0),
-      z: safeNum(camera.position?.z, 5)
-    }
+    position: { x: position.x, y: position.y, z: position.z }
   };
 }
 
@@ -137,6 +139,7 @@ export function extractLightsConfigFromScene(scene) {
     return [];
   }
   const out = [];
+  scene.updateMatrixWorld?.(true);
   scene.traverse((obj) => {
     if (isRuntimeOnlyLight(obj)) {
       return;
@@ -145,16 +148,33 @@ export function extractLightsConfigFromScene(scene) {
     if (!type) {
       return;
     }
+    const parentId = !obj.parent?.isScene && (obj.parent?.userData?.objJson?.threeJsonId || obj.parent?.userData?.threeJsonId);
+    const position = parentId ? obj.position : obj.getWorldPosition(new Vector3());
+    const orientation = parentId ? obj.quaternion : obj.getWorldQuaternion(new Quaternion());
     const entry = {
+      ...(obj.userData?.objJson ? JSON.parse(JSON.stringify(obj.userData.objJson)) : {}),
       type,
+      name: obj.name,
+      visible: obj.visible,
+      castShadow: obj.castShadow,
+      layers: obj.layers.mask,
+      quaternion: orientation.toArray(),
       color: `#${obj.color?.getHexString?.() || "ffffff"}`,
       intensity: safeNum(obj.intensity, 1),
-      position: {
-        x: safeNum(obj.position?.x, 0),
-        y: safeNum(obj.position?.y, 0),
-        z: safeNum(obj.position?.z, 0)
-      }
+      position: { x: position.x, y: position.y, z: position.z }
     };
+    delete entry.objType;
+    if (parentId) entry.parentThreeJsonId = parentId;
+    else delete entry.parentThreeJsonId;
+    if (obj.shadow) {
+      const camera = obj.shadow.camera;
+      entry.shadow = {
+        bias: obj.shadow.bias, normalBias: obj.shadow.normalBias, radius: obj.shadow.radius,
+        blurSamples: obj.shadow.blurSamples,
+        mapSize: { width: obj.shadow.mapSize.x, height: obj.shadow.mapSize.y },
+        camera: Object.fromEntries(["near", "far", "left", "right", "top", "bottom", "fov", "zoom"].filter((key) => Number.isFinite(camera?.[key])).map((key) => [key, camera[key]]))
+      };
+    }
     if (type === "hemisphere") {
       entry.skyColor = `#${obj.color?.getHexString?.() || "ffffff"}`;
       entry.groundColor = `#${obj.groundColor?.getHexString?.() || "444444"}`;
@@ -166,24 +186,24 @@ export function extractLightsConfigFromScene(scene) {
     if (type === "spot") {
       entry.angle = safeNum(obj.angle, Math.PI / 3);
       entry.penumbra = safeNum(obj.penumbra, 0);
+    }
+    if (type === "spot" || type === "directional") {
       if (obj.target?.position) {
+        const targetPosition = obj.target.getWorldPosition(new Vector3());
         entry.target = {
-          x: safeNum(obj.target.position.x, 0),
-          y: safeNum(obj.target.position.y, 0),
-          z: safeNum(obj.target.position.z, 0)
+          x: targetPosition.x,
+          y: targetPosition.y,
+          z: targetPosition.z
         };
+        const targetId = obj.target.userData?.objJson?.threeJsonId;
+        if (targetId) entry.targetThreeJsonId = targetId;
+        else delete entry.targetThreeJsonId;
       }
     }
     if (type === "rectarea") {
       entry.width = safeNum(obj.width, 10);
       entry.height = safeNum(obj.height, 10);
-      const direction = new Vector3(0, 0, -1);
-      obj.getWorldDirection?.(direction);
-      entry.target = {
-        x: safeNum(obj.position?.x, 0) + safeNum(direction.x, 0),
-        y: safeNum(obj.position?.y, 0) + safeNum(direction.y, 0),
-        z: safeNum(obj.position?.z, 0) + safeNum(direction.z, -1)
-      };
+      delete entry.target; // quaternion also retains roll.
     }
     out.push(entry);
   });

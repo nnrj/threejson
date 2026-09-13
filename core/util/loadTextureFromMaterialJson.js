@@ -8,11 +8,8 @@ import { createGifCanvasTextureFromMaterialJson } from "./gifAnimatedTexture.js"
 import { resolveTextureSource } from "./resolveTextureSource.js";
 import { resolvePublicAssetUrlCandidates } from "./assetsBase.js";
 import { applyTexturePropsFromRecord } from "./textureSampling.js";
-import {
-  getCanonicalTexture,
-  isTextureUrlCacheEnabled,
-  rememberCanonicalTexture
-} from "../cache/textureUrlCache.js";
+import { requestTexture, bindTextureWhenReady, whenTextureReady } from "../resource/textureRequest.js";
+import { resolveRuntimeContext } from "../runtime/runtimeContext.js";
 import { MATERIAL_TEXTURE_SLOTS } from "../texture/textureSlots.js";
 
 const MATERIAL_TEXTURE_FIELD_TO_SLOT = Object.freeze({
@@ -149,34 +146,6 @@ function createVideoTextureFromMaterialJson(materialJson, url, opts = {}) {
   return texture;
 }
 
-function copyLoadedTextureIntoTarget(target, loaded, url) {
-  if (!target || !loaded) {
-    return;
-  }
-  target.image = loaded.image;
-  target.source = loaded.source;
-  target.flipY = loaded.flipY;
-  target.colorSpace = loaded.colorSpace;
-  target.needsUpdate = true;
-  tagTextureResolvedUrl(target, url);
-}
-
-function loadTextureFallbackCandidate(loader, urls, index, target, cacheKey, previousError) {
-  const url = urls[index];
-  if (!url) {
-    log.error("Texture load failed:", urls[0], previousError);
-    return;
-  }
-  loader.load(
-    url,
-    (loaded) => {
-      copyLoadedTextureIntoTarget(target, loaded, url);
-      rememberCanonicalTexture(cacheKey, target);
-    },
-    undefined,
-    (err) => loadTextureFallbackCandidate(loader, urls, index + 1, target, cacheKey, err)
-  );
-}
 /**
  * @param {object} materialJson
  * @param {{
@@ -191,7 +160,8 @@ function loadTextureFromMaterialJson(materialJson, opts = {}) {
   if (!materialJson || typeof materialJson !== "object") {
     return null;
   }
-  const rawUrl = resolveTextureSource(materialJson);
+  const runtimeScope = resolveRuntimeContext(opts.runtimeScope);
+  const rawUrl = resolveTextureSource(materialJson, runtimeScope);
   if (!rawUrl) {
     return null;
   }
@@ -222,30 +192,8 @@ function loadTextureFromMaterialJson(materialJson, opts = {}) {
     return texture;
   }
 
-  if (isTextureUrlCacheEnabled()) {
-    const canonical = getCanonicalTexture(rawUrl);
-    if (canonical) {
-      const tex = canonical.clone();
-      trackDisposableResource(tex);
-      applyTextureRepeatToMap(tex, materialJson, opts);
-      applyTexturePropsFromRecord(tex, "imageMap", materialJson);
-      tagTextureResolvedUrl(tex, canonical.userData?.threeJsonResolvedUrl || url);
-      return tex;
-    }
-  }
-
-  const loader = opts.loader ?? new THREE.TextureLoader();
-  const texture = loader.load(
-    url,
-    (loaded) => {
-      tagTextureResolvedUrl(loaded, url);
-      rememberCanonicalTexture(rawUrl, loaded);
-    },
-    undefined,
-    (err) => loadTextureFallbackCandidate(loader, urls, 1, texture, rawUrl, err)
-  );
+  const texture = requestTexture(rawUrl, { ...opts, runtimeScope, replicas: opts.replicas || materialJson.textureResources?.baseColor?.replicas });
   trackDisposableResource(texture);
-  rememberCanonicalTexture(rawUrl, texture);
   applyTextureRepeatToMap(texture, materialJson, opts);
   applyTexturePropsFromRecord(texture, "imageMap", materialJson);
   tagTextureResolvedUrl(texture, url);
@@ -276,18 +224,19 @@ function applyMaterialTextureSetFromJson(threeMaterial, materialJson, opts = {})
     const source = field === "textureUrl" || field === "map"
       ? materialJson
       : { ...materialJson, textureUrl: rawUrl.trim(), textureKind: "image", mapSourceKind: "image" };
-    const texture = loadTextureFromMaterialJson(source, opts);
+    const texture = loadTextureFromMaterialJson(source, {
+      ...opts,
+      replicas: materialJson.textureResources?.[slot]?.replicas
+    });
     if (!texture) continue;
     if (definition.color && "colorSpace" in texture) {
       texture.colorSpace = THREE.SRGBColorSpace;
     } else if ("colorSpace" in texture) {
       texture.colorSpace = THREE.NoColorSpace;
     }
-    threeMaterial[definition.runtimeField] = texture;
+    bindTextureWhenReady(threeMaterial, definition.runtimeField, texture, opts);
     applied[slot] = texture;
   }
-  if (applied.opacity) threeMaterial.transparent = true;
-  if (Object.keys(applied).length) threeMaterial.needsUpdate = true;
   return applied;
 }
 
@@ -319,6 +268,7 @@ export {
   isDefaultTextureRepeat,
   normalizeTextureRepeatComponent,
   loadTextureFromMaterialJson,
+  whenTextureReady,
   createVideoTextureFromMaterialJson,
   normalizeMaterialTextureKind,
   applyTextureRepeatToMap,

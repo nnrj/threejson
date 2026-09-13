@@ -1,0 +1,73 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import * as THREE from "three";
+import { createLightBundleFromDescriptor, bindLightRelationships } from "../core/builder/lightFactory.js";
+import { extractLightsConfigFromScene, extractCameraConfigFromRuntime } from "../core/util/sceneRuntimeConfigExport.js";
+import { createCameraFromDescriptor } from "../core/util/cameraFactory.js";
+
+test("light capture and construction retain targets, shadow settings, visibility, layers and parent space", () => {
+  const scene = new THREE.Scene();
+  const parent = new THREE.Group();
+  parent.userData.objJson = { threeJsonId: "parent" };
+  parent.position.set(10, 0, 0);
+  parent.rotation.y = 0.4;
+  const light = new THREE.DirectionalLight(0xffccbb, 3);
+  light.userData.objJson = { threeJsonId: "key-light" };
+  light.position.set(1, 2, 3);
+  light.target.position.set(4, 5, 6);
+  light.castShadow = true;
+  light.visible = false;
+  light.layers.set(3);
+  light.shadow.bias = -0.002;
+  light.shadow.normalBias = 0.1;
+  light.shadow.mapSize.set(2048, 1024);
+  light.shadow.camera.left = -17;
+  parent.add(light);
+  scene.add(parent, light.target);
+  const [record] = extractLightsConfigFromScene(scene);
+  const fresh = new THREE.Scene();
+  const freshParent = parent.clone(false);
+  fresh.add(freshParent);
+  const bundle = createLightBundleFromDescriptor(record);
+  fresh.add(bundle.light, ...bundle.attachments);
+  bindLightRelationships(fresh);
+  assert.equal(bundle.light.parent, freshParent);
+  assert.deepEqual(bundle.light.getWorldPosition(new THREE.Vector3()).toArray(), light.getWorldPosition(new THREE.Vector3()).toArray());
+  assert.deepEqual(bundle.light.target.position.toArray(), [4, 5, 6]);
+  assert.equal(bundle.light.castShadow, true);
+  assert.equal(bundle.light.visible, false);
+  assert.equal(bundle.light.layers.mask, light.layers.mask);
+  assert.equal(bundle.light.shadow.bias, -0.002);
+  assert.equal(bundle.light.shadow.camera.left, -17);
+  assert.deepEqual(bundle.light.shadow.mapSize.toArray(), [2048, 1024]);
+  assert.equal(record.threeJsonId, "key-light");
+});
+
+test("anonymous-parent light captures world coordinates instead of orphaned local coordinates", () => {
+  const scene = new THREE.Scene();
+  const group = new THREE.Group();
+  group.position.x = 10;
+  const light = new THREE.PointLight();
+  light.position.x = 2;
+  group.add(light);
+  scene.add(group);
+  const [record] = extractLightsConfigFromScene(scene);
+  assert.equal(record.parentThreeJsonId, undefined);
+  assert.equal(record.position.x, 12);
+});
+
+test("camera capture preserves orthographic projection, zoom, world pose and up vector", () => {
+  const camera = new THREE.OrthographicCamera(-3, 7, 9, -2, 0.5, 900);
+  camera.position.set(2, 3, 4);
+  camera.up.set(0, 0, 1);
+  camera.lookAt(0, 0, 0);
+  camera.zoom = 1.6;
+  const record = extractCameraConfigFromRuntime({ camera });
+  const copy = createCameraFromDescriptor(record, 400, 300);
+  assert.equal(copy.isOrthographicCamera, true);
+  assert.equal(copy.left, -3);
+  assert.equal(copy.right, 7);
+  assert.equal(copy.zoom, 1.6);
+  assert.deepEqual(copy.up.toArray(), camera.up.toArray());
+  assert.ok(copy.quaternion.angleTo(camera.quaternion) < 1e-7);
+});
