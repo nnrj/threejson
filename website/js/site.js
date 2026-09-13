@@ -1,3 +1,5 @@
+import { FALLBACK_CONTRIBUTORS, loadContributors } from "./contributors.js";
+
 const ROOT = new URL("../../", import.meta.url);
 const READER = new URL("../../tools/reader/reader.html", import.meta.url);
 const MANIFEST_URL = new URL("../../assets/json/demo-show/manifest.json", import.meta.url);
@@ -79,6 +81,12 @@ const I18N = {
     "examples.tools.autoBuild": "自动构建缩略图缓存",
     "download.title": "下载 ThreeJSON",
     "contributors.title": "贡献者",
+    "contributors.loading": "正在从 GitHub 更新贡献者名单…",
+    "contributors.github": "感谢每一位贡献者！以下名单来自 GitHub 仓库。",
+    "contributors.fallback": "暂时无法从 GitHub 获取名单，以下显示备用名单。",
+    "contributors.commits": "提交贡献：{count}",
+    "contributors.maintainer": "ThreeJSON 维护者。",
+    "contributors.viewAll": "在 GitHub 查看贡献记录 ↗",
     "deps.title": "依赖项",
     "contact.title": "联系我们",
     "contact.intro": "有问题可以联系邮箱反馈，或访问 ThreeJSON 的 GitHub 仓库提 issues。",
@@ -141,6 +149,12 @@ const I18N = {
     "examples.tools.autoBuild": "Auto-Build Thumbnail Cache",
     "download.title": "Download ThreeJSON",
     "contributors.title": "Contributors",
+    "contributors.loading": "Updating the contributors list from GitHub…",
+    "contributors.github": "Thank you to everyone who contributes! This list comes from the GitHub repository.",
+    "contributors.fallback": "GitHub is temporarily unavailable. Showing the fallback list.",
+    "contributors.commits": "Commits: {count}",
+    "contributors.maintainer": "ThreeJSON maintainer.",
+    "contributors.viewAll": "View contributions on GitHub ↗",
     "deps.title": "Dependencies",
     "contact.title": "Contact Us",
     "contact.intro": "Have a question? Reach us by email, or file an issue on the ThreeJSON GitHub repository.",
@@ -817,12 +831,60 @@ function renderContributors() {
   app.innerHTML = `
     <section class="page">
       <h1>${t("contributors.title")}</h1>
-      <article class="card">
-        <img class="avatar" src="https://github.com/nnrj.png" alt="nnrj">
-        <h3><a href="https://github.com/nnrj" target="_blank" rel="noreferrer">nnrj</a></h3>
-        <p>ThreeJSON maintainer.</p>
-      </article>
+      <p class="contributorsStatus" role="status">${t("contributors.loading")}</p>
+      <div class="cardGrid contributorsGrid"></div>
+      <p><a class="contributorsSource" href="https://github.com/nnrj/threejson/graphs/contributors" target="_blank" rel="noopener noreferrer">${t("contributors.viewAll")}</a></p>
     </section>`;
+  const grid = app.querySelector(".contributorsGrid");
+  const status = app.querySelector(".contributorsStatus");
+  renderContributorCards(grid, FALLBACK_CONTRIBUTORS);
+  void loadContributors().then(({ contributors, source }) => {
+    // A route or language change replaces the page. Never overwrite that newer render.
+    if (!grid.isConnected) return;
+    renderContributorCards(grid, contributors);
+    status.textContent = t(`contributors.${source}`);
+  });
+}
+
+function renderContributorCards(grid, contributors) {
+  grid.replaceChildren(...contributors.map((contributor) => {
+    const card = document.createElement("a");
+    card.className = "card contributorCard";
+    card.href = contributor.profileUrl;
+    card.target = "_blank";
+    card.rel = "noopener noreferrer";
+
+    const avatar = document.createElement("span");
+    avatar.className = "contributorAvatar";
+    avatar.setAttribute("aria-hidden", "true");
+    avatar.textContent = contributor.login.slice(0, 2).toUpperCase();
+    const image = document.createElement("img");
+    image.className = "avatar";
+    image.alt = "";
+    image.width = image.height = 72;
+    image.loading = "lazy";
+    image.decoding = "async";
+    image.addEventListener("error", () => image.remove(), { once: true });
+    image.src = contributor.avatarUrl;
+    avatar.append(image);
+
+    const name = document.createElement("h3");
+    name.textContent = contributor.name;
+    card.append(avatar, name);
+    if (contributor.name !== contributor.login) {
+      const login = document.createElement("p");
+      login.textContent = `@${contributor.login}`;
+      card.append(login);
+    }
+    if (contributor.contributions !== null || contributor.maintainer) {
+      const detail = document.createElement("p");
+      detail.textContent = contributor.maintainer
+        ? t("contributors.maintainer")
+        : t("contributors.commits").replace("{count}", contributor.contributions.toLocaleString(lang));
+      card.append(detail);
+    }
+    return card;
+  }));
 }
 
 function renderContact() {

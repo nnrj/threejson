@@ -666,6 +666,29 @@ a { color: inherit; text-decoration: none; }
   border-radius: 50%;
 }
 
+.contributorsGrid {
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+}
+
+.contributorCard { display: block; overflow-wrap: anywhere; }
+.contributorCard:hover { border-color: var(--brand); }
+.contributorCard:focus-visible { outline: 2px solid var(--brand); outline-offset: 4px; }
+.contributorCard p { margin: 0; }
+.contributorAvatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  margin-bottom: 16px;
+  border-radius: 50%;
+  background: var(--line);
+  color: var(--muted);
+  font-size: 24px;
+}
+.contributorAvatar .avatar { position: absolute; inset: 0; object-fit: cover; }
+.contributorsSource { color: var(--brand); text-decoration: underline; text-underline-offset: 3px; }
+
 .pillList {
   display: flex;
   flex-wrap: wrap;
