@@ -4,7 +4,8 @@
 
 import { resolveLibTokenToEventScript } from "../../cache/assetRegistry.js";
 import { log } from "../../util/logger.js";
-import { resolvePublicAssetUrl } from "../../util/assetsBase.js";
+import { resolveRuntimeResourceUrl } from "../../resource/runtimeResourceUrl.js";
+import { resolveRuntimeContext } from "../runtimeContext.js";
 import { LIB_PREFIX } from "../../util/resolveTextureSource.js";
 import { isEventScriptReference } from "./scriptReference.js";
 
@@ -23,13 +24,17 @@ function normalizeText(value) {
  * @param {string} url
  * @returns {Promise<string|null>}
  */
-async function fetchScriptTextFromUrl(url) {
+async function fetchScriptTextFromUrl(url, ctx = {}) {
   const target = normalizeText(url);
   if (!target) {
     return null;
   }
   try {
-    const response = await fetch(resolvePublicAssetUrl(target));
+    const scope = ctx.runtimeScope ?? ctx.scene ?? ctx.sceneRuntime?.scene ?? ctx.sceneRuntime;
+    const context = resolveRuntimeContext(scope);
+    const signal = ctx.signal ?? context.loadSignal;
+    signal?.throwIfAborted();
+    const response = await fetch(resolveRuntimeResourceUrl(target, scope), { signal });
     if (!response.ok) {
       log.warn("[eventMechanism] resolveEventScriptSource fetch failed", {
         url: target,
@@ -37,8 +42,11 @@ async function fetchScriptTextFromUrl(url) {
       });
       return null;
     }
-    return await response.text();
+    const text = await response.text();
+    signal?.throwIfAborted();
+    return text;
   } catch (error) {
+    if (error?.name === "AbortError") throw error;
     log.warn("[eventMechanism] resolveEventScriptSource fetch error", { url: target, error });
     return null;
   }
@@ -65,7 +73,7 @@ async function resolveScriptUrl(scriptUrl, ctx = {}) {
       return { kind: "lib", source: hit.source, scriptUrl: url };
     }
     if (typeof hit.url === "string" && hit.url.length > 0) {
-      const fetched = await fetchScriptTextFromUrl(hit.url);
+      const fetched = await fetchScriptTextFromUrl(hit.url, ctx);
       if (!fetched) {
         return null;
       }
@@ -74,7 +82,7 @@ async function resolveScriptUrl(scriptUrl, ctx = {}) {
     log.warn("[eventMechanism] eventScript lib entry has no source/url", { token, threeJsonId: ctx.threeJsonId });
     return null;
   }
-  const fetched = await fetchScriptTextFromUrl(url);
+  const fetched = await fetchScriptTextFromUrl(url, ctx);
   if (!fetched) {
     return null;
   }

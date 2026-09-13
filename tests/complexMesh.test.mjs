@@ -18,6 +18,7 @@ import { clearObjectRegistry } from "../core/handler/objectRegistry.js";
 import { ensureOptionalSceneCapabilitiesForPayload } from "../core/capabilities/optionalCapabilityLoader.js";
 import { packPayloadToTjz } from "../core/util/archiveExportUtil.js";
 import { parseTjzArchiveForScene } from "../core/archive/tjzArchive.js";
+import { createSceneResourcePolicy } from "../core/resource/sceneResourcePolicy.js";
 
 function cubeEditable(id = "editable-1") {
   return {
@@ -144,8 +145,9 @@ test("bufferMesh binary references survive .tjz tryPack and rebuild", async () =
   });
   const parsed = await parseTjzArchiveForScene(archive);
   try {
-    await ensureOptionalSceneCapabilitiesForPayload(parsed.payload);
-    const built = buildBufferMeshGeometry(parsed.payload.objectList[0]);
+    const prepared = await ensureOptionalSceneCapabilitiesForPayload(parsed.payload);
+    const policy = createSceneResourcePolicy(parsed.payload, { preparedBufferReferences: prepared.bufferReferences });
+    const built = buildBufferMeshGeometry(parsed.payload.objectList[0], { resolveBufferReference: policy.resolveBufferReference });
     assert.ok(built.geometry, built.error);
     assert.deepEqual(Array.from(built.geometry.getAttribute("position").array), [0, 0, 0, 1, 0, 0, 0, 1, 0]);
     assert.deepEqual(Array.from(built.geometry.index.array), [0, 1, 2]);

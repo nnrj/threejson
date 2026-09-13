@@ -22,7 +22,7 @@ export function createSessionCommandAdapter(session, options = {}) {
           throw documentError("QUERY_REQUIRES_COMMIT", `Commit the changed external/Domain object before requesting ${op}.`);
         }
         const { prepareDocumentMeshGeometry } = await import("./sceneIncrementalPreparation.js");
-        geometry = (await prepareDocumentMeshGeometry(record, runtimeOptions())).geometry;
+        geometry = (await prepareDocumentMeshGeometry(record, { ...runtimeOptions(), runtimeScope: session.runtime.scene, resourcePayload: document.root })).geometry;
         object = new THREE.Mesh(geometry, original?.material || []);
         applyObjectTransform(object, record);
         object.updateMatrixWorld(true);

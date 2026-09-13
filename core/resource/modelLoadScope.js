@@ -42,16 +42,17 @@ export function createModelLoadScope(scene, options = {}, fallbackManager) {
   const getHandler = manager.getHandler.bind(manager);
   manager.getHandler = (url) => getHandler(url) || upstream?.getHandler?.(url) || null;
   const start = manager.itemStart.bind(manager), end = manager.itemEnd.bind(manager), error = manager.itemError.bind(manager);
-  manager.itemStart = (url) => { pending++; start(url); upstream?.itemStart?.(url); };
+  const report = (method, url) => { try { upstream?.[method]?.(url); } catch { /* observers cannot break acquisition accounting */ } };
+  manager.itemStart = (url) => { pending++; start(url); report("itemStart", url); };
   manager.itemEnd = (url) => {
-    pending = Math.max(0, pending - 1); end(url); upstream?.itemEnd?.(url);
+    pending = Math.max(0, pending - 1); end(url); report("itemEnd", url);
     if (!pending) queueMicrotask(() => {
       if (pending) return;
       for (const waiter of waiters) waiter.resolve();
       waiters.clear();
     });
   };
-  manager.itemError = (url) => { error(url); upstream?.itemError?.(url); };
+  manager.itemError = (url) => { error(url); report("itemError", url); };
   return {
     context, manager, signal: controller.signal, run, check,
     resolvePath(source, base = "") {

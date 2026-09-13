@@ -41,7 +41,7 @@ import {
 import { deployByObjTypeExtension } from "./sceneExtensionRegistry.js";
 import { invokeDomainModel } from "./businessDomainModelDispatch.js";
 import { deployMeshWithDomains } from "./businessDomainRegistry.js";
-import { normalizeScenePayload } from "./sceneFriendlyNormalizer.js";
+import { normalizeScenePayload, buildStandardScenePayloadFromCanonical } from "./sceneFriendlyNormalizer.js";
 import {
   applyAutoFitCameraToRuntime,
   applySceneRuntimeDefaults,
@@ -436,10 +436,14 @@ async function deployArchiveExternalModel(record, overlayRoot, ctx = {}) {
   }
   archiveCtx.visitedModelPaths.add(pathKey);
   const parseTjzArchiveForScene = await getParseTjzArchiveForScene();
-  const parsed = await parseTjzArchiveForScene(record.modelPath, {
-    missingAssetPolicy: ctx.missingAssetPolicy,
-    onWarning: ctx.onWarning
-  });
+  const resourceContext = resolveRuntimeContext(overlayRoot);
+  const source = await resourceContext.resolveAssetUrl?.(record.modelPath, { kind: "binary" }) || record.modelPath;
+  let parsed;
+  try {
+    parsed = await parseTjzArchiveForScene(typeof source === "string" ? source : source.url, {
+      missingAssetPolicy: ctx.missingAssetPolicy, onWarning: ctx.onWarning
+    });
+  } finally { source?.release?.(); }
   const payload = resolveScenePayloadForLoad(parsed.payload, {
     label: record.name || record.modelPath
   });
@@ -574,7 +578,7 @@ function deployCanonicalRecord(overlayRoot, record, ctx) {
     return;
   }
   if (objType === "buffermesh") {
-    createBufferMesh(record, overlayRoot);
+    createBufferMesh(record, overlayRoot, { ...ctx, throwOnError: true });
     return;
   }
   if (objType === "irregularplane") {
@@ -1135,7 +1139,7 @@ async function deployIntoTarget(target, normalized, options = {}) {
 
   return {
     ...runtime,
-    normalizedPayload: normalized.payload
+    normalizedPayload: buildStandardScenePayloadFromCanonical(normalized.sourcePayload, normalized.payload)
   };
 }
 
@@ -1225,7 +1229,7 @@ function deployIntoTargetSimple(target, normalized, options = {}) {
 
   return {
     ...runtime,
-    normalizedPayload: normalized.payload
+    normalizedPayload: buildStandardScenePayloadFromCanonical(normalized.sourcePayload, normalized.payload)
   };
 }
 
@@ -1518,7 +1522,8 @@ function resolveRuntimeLoadOptions(normalized, callerOptions = {}) {
 }
 
 async function createJsonScene(payload, options = {}) {
-  await ensureOptionalSceneCapabilitiesForPayload(payload);
+  const preparation = await ensureOptionalSceneCapabilitiesForPayload(payload, options);
+  options = { ...options, preparedBufferReferences: preparation.bufferReferences };
   assertPayloadCapabilitiesBeforePreparation(payload);
   await runSceneCapabilityPreparers(payload, options);
   await ensureCsgBrushOpsForPayload(payload);
@@ -1688,7 +1693,9 @@ async function deployObjectRecordIntoRuntime(target, record, options = {}) {
     throw new Error("deployObjectRecordIntoRuntime: expected object record with objType");
   }
   const targetBackend = rendererBackendForTarget(target);
-  await ensureOptionalSceneCapabilitiesForPayload(record);
+  const preparation = await ensureOptionalSceneCapabilitiesForPayload(record, options);
+  resolveRuntimeContext(target).registerEmbeddedResources?.(record);
+  resolveRuntimeContext(target).registerPreparedBufferReferences?.(preparation.bufferReferences);
   assertPayloadCapabilitiesBeforePreparation(record, targetBackend, { forceBackend: true });
   await runSceneCapabilityPreparers(record, options);
   await ensureRectAreaLightSupport([record], targetBackend);
@@ -1829,10 +1836,12 @@ function createJsonSceneSimple(payload, options = {}) {
  */
 async function deployJsonScene(target, payload, options = {}) {
   const targetBackend = rendererBackendForTarget(target);
-  await ensureOptionalSceneCapabilitiesForPayload(payload);
+  const preparation = await ensureOptionalSceneCapabilitiesForPayload(payload, options);
+  resolveRuntimeContext(target).registerPreparedBufferReferences?.(preparation.bufferReferences);
   assertPayloadCapabilitiesBeforePreparation(payload, targetBackend, { forceBackend: true });
   await runSceneCapabilityPreparers(payload, options);
   await ensureCsgBrushOpsForPayload(payload);
+  resolveRuntimeContext(target).registerEmbeddedResources?.(payload);
   // Deploying into an existing target (no new Scene): only cancel *this* target's
   // own in-flight scheduled deploy, never a sibling canvas's.
   cancelActiveDeployScheduler(target);

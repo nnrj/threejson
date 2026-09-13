@@ -1,4 +1,5 @@
 import { log } from "../util/logger.js";
+import { inferResourceMimeType } from "../resource/embeddedResources.js";
 import {
   createObjectUrlRegistry,
   isPackRef,
@@ -12,7 +13,7 @@ function cloneJson(value) {
 function fileMapToBlobMap(fileMap) {
   const out = new Map();
   for (const [path, bytes] of fileMap.entries()) {
-    out.set(path, new Blob([bytes]));
+    out.set(path, new Blob([bytes], { type: inferResourceMimeType(path) }));
   }
   return out;
 }
@@ -28,6 +29,7 @@ function rewritePackRefsToObjectUrls(payload, blobMap, options = {}) {
   const onWarning = typeof options.onWarning === "function" ? options.onWarning : (msg) => log.warn(msg);
   const urlRegistry = createObjectUrlRegistry();
   const missing = [];
+  const resolvedUrls = new Map();
 
   function walk(node) {
     if (!node || typeof node !== "object") {
@@ -53,7 +55,8 @@ function rewritePackRefsToObjectUrls(payload, blobMap, options = {}) {
           onWarning(msg);
           continue;
         }
-        node[key] = urlRegistry.add(blob);
+        if (!resolvedUrls.has(archivePath)) resolvedUrls.set(archivePath, urlRegistry.add(blob));
+        node[key] = resolvedUrls.get(archivePath);
         continue;
       }
       node[key] = walk(value);
@@ -61,7 +64,9 @@ function rewritePackRefsToObjectUrls(payload, blobMap, options = {}) {
     return node;
   }
 
-  const rewritten = walk(cloneJson(payload));
+  let rewritten;
+  try { rewritten = walk(cloneJson(payload)); }
+  catch (error) { urlRegistry.dispose(); throw error; }
   return {
     payload: rewritten,
     dispose: () => urlRegistry.dispose(),

@@ -35,6 +35,7 @@ export function createSceneSessionRuntimeDriver(options = {}) {
       try {
         context.signal?.throwIfAborted();
         next = await create(formatAuthoring(document, { format: "standard" }), {
+          backdropFailurePolicy: previous ? "error" : "preserve",
           ...options, ...context.prepareOptions, ...viewport?.options, canvas: viewport?.canvas || options.canvas, signal: context.signal
         });
         if (context.prepareOptions?.requiredTextureBindings?.length) {

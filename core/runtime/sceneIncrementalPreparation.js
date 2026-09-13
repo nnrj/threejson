@@ -6,6 +6,8 @@ import { applyMaterialTextureSetFromJson, applyTextureRepeatToMap, whenTextureRe
 import { cloneTextureResource, isManagedTexture, getMaterialTextureRequest, getTextureLoadState } from "../resource/textureRequest.js";
 import { MATERIAL_TEXTURE_SLOTS } from "../texture/textureSlots.js";
 import { applyObjectTransform } from "../util/objectTransform.js";
+import { createSceneResourcePolicy } from "../resource/sceneResourcePolicy.js";
+import { resolveRuntimeContext } from "./runtimeContext.js";
 
 const POSE = new Set(["position", "rotation", "quaternion", "scale", "visible", "name", "castShadow", "receiveShadow", "renderOrder", "frustumCulled"]);
 const DATA = new Set(["label", "metadata", "businessInfo", "jsonOrigin"]);
@@ -107,7 +109,11 @@ export async function prepareDocumentMeshGeometry(record, options = {}) {
     built = buildEditableMeshGeometry(record, options);
   } else if (type === "buffermesh") {
     const { buildBufferMeshGeometry } = await import("../builder/bufferMeshBuilder.js");
-    built = buildBufferMeshGeometry(record, options);
+    const { ensureOptionalSceneCapabilitiesForPayload } = await import("../capabilities/optionalCapabilityLoader.js");
+    const resolveBufferReference = options.resolveBufferReference ?? resolveRuntimeContext(options.runtimeScope).resolveBufferReference;
+    const preparation = await ensureOptionalSceneCapabilitiesForPayload(record, { ...options, resolveBufferReference });
+    const policy = createSceneResourcePolicy(options.resourcePayload || record, { ...options, resolveBufferReference, preparedBufferReferences: preparation.bufferReferences });
+    built = buildBufferMeshGeometry(record, { ...options, resolveBufferReference: policy.resolveBufferReference });
   } else built = { geometry: createGeometryFromDescriptor(record) };
   if (!built.geometry) throw documentError(built.code || "INVALID_GEOMETRY", built.error || "Geometry preparation failed.");
   return built;
@@ -198,7 +204,7 @@ export async function prepareIncrementalSceneChanges(runtime, document, context,
       }
       if ([...fields].some((field) => MATERIAL.has(field))) item.material = await prepareMaterials(object, before, entry.record, { ...options, runtimeScope: runtime.scene, signal: context.signal });
       if ([...fields].some((field) => GEOMETRY.has(field))) {
-        item.geometry = await prepareDocumentMeshGeometry(entry.record, options);
+        item.geometry = await prepareDocumentMeshGeometry(entry.record, { ...options, signal: context.signal, runtimeScope: runtime.scene, resourcePayload: document.root });
         item.ranges = geometryRanges(object.geometry, item.geometry.geometry);
       }
       context.signal?.throwIfAborted();

@@ -15,6 +15,8 @@ import { applyVisibilityFromDescriptor } from "../util/util.js";
 import { validateBufferMeshStats } from "./bufferMeshLimits.js";
 import { applyParallelToOrRotation } from "./shapeTransformUtil.js";
 import { createMaterialFromDescriptor } from "./material/materialFactory.js";
+import { resolveRuntimeContext } from "../runtime/runtimeContext.js";
+import { applyMaterialTextureSetFromJson } from "../util/loadTextureFromMaterialJson.js";
 
 const TYPED_ARRAY_TYPES = Object.freeze({
   Float32Array,
@@ -122,15 +124,6 @@ function resolveReferenceValue(reference, geometryDescriptor, options) {
   }
   const buffers = geometryDescriptor?.buffers;
   const key = typeof reference === "string" ? reference : reference?.id || reference?.buffer;
-  const resolvedBuffers = geometryDescriptor?.__threeJsonResolvedBuffers;
-  if (resolvedBuffers instanceof Map) {
-    const direct = resolvedBuffers.get(reference) ?? resolvedBuffers.get(key);
-    if (direct !== undefined && direct !== null) return direct;
-    const declared = key && buffers && typeof buffers === "object" ? buffers[key] : undefined;
-    const declaredUrl = typeof declared === "string" ? declared : declared?.url;
-    const resolved = resolvedBuffers.get(declaredUrl);
-    if (resolved !== undefined && resolved !== null) return resolved;
-  }
   if (key && buffers && typeof buffers === "object" && buffers[key] !== undefined) return buffers[key];
   throw meshError("E_BUFFER_MESH_BUFFER_REF", `Unresolved mesh buffer reference \"${String(key || reference)}\".`);
 }
@@ -454,13 +447,17 @@ export function createBufferMesh(record, parent, ctx = {}) {
   if (!record || !parent) return null;
   const built = buildBufferMeshGeometry(record, {
     meshBudget: ctx?.meshBudget ?? ctx?.options?.meshBudget,
-    resolveBufferReference: ctx?.resolveBufferReference ?? ctx?.options?.resolveBufferReference
+    resolveBufferReference: ctx?.resolveBufferReference ?? ctx?.options?.resolveBufferReference ?? resolveRuntimeContext(parent).resolveBufferReference
   });
   if (!built.geometry) {
+    if (ctx.throwOnError) throw Object.assign(new Error(built.error || "Invalid bufferMesh geometry."), { code: built.code || "INVALID_GEOMETRY" });
     log.warn("[bufferMesh]", built.code || "build failed", built.error || "", record?.name || "");
     return null;
   }
   const mesh = new THREE.Mesh(built.geometry, buildBufferMeshMaterials(record));
+  const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+  const descriptors = record.materials?.length ? record.materials : [record.material || {}];
+  materials.forEach((material, index) => applyMaterialTextureSetFromJson(material, descriptors[index] || {}, { runtimeScope: parent }));
   trackDisposableResource(mesh);
   applyBufferMeshRecord(mesh, record);
   setUserDataObjJson(mesh, record);

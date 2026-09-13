@@ -6,10 +6,17 @@
 import * as THREE from "three";
 import { log } from "../util/logger.js";
 import { resolvePublicAssetUrl } from "../util/assetsBase.js";
+import { resolveRuntimeResourceUrl } from "../resource/runtimeResourceUrl.js";
+import { resolveRuntimeContext } from "../runtime/runtimeContext.js";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
 import { PMREMGenerator } from "three";
 
 const OWNED = "threeJsonOwnedBackdrop";
+const pendingBackdrops = new WeakMap();
+
+function releaseBackdrop(entry) {
+  try { entry?.dispose?.(); } catch (error) { log.warn("sceneBackdropResolver: dispose observer failed", error); }
+}
 
 function markOwnedTexture(tex) {
   if (tex && tex.isTexture) {
@@ -28,6 +35,7 @@ function disposeIfOwned(tex) {
  * @param {import("three").Scene} scene
  */
 export function disposeThreeJsonSceneBackdrop(scene) {
+  if (scene) pendingBackdrops.delete(scene);
   const bag = scene?.userData?.threeJsonBackdropDisposable;
   if (!bag) {
     return;
@@ -40,11 +48,6 @@ export function disposeThreeJsonSceneBackdrop(scene) {
     }
   }
   delete scene.userData.threeJsonBackdropDisposable;
-}
-
-function setBackdropDisposable(scene, disposeFn) {
-  disposeThreeJsonSceneBackdrop(scene);
-  scene.userData.threeJsonBackdropDisposable = { dispose: disposeFn };
 }
 
 function hasOwn(obj, key) {
@@ -81,7 +84,7 @@ function applyLdrColorSpace(texture, hint) {
  * @param {import("three").LoadingManager} [deps.loadingManager]
  */
 function applyLoaderPaths(loader, deps = {}) {
-  if (typeof deps.path === "string" && deps.path !== "") {
+  if (!deps.resolveUrl && typeof deps.path === "string" && deps.path !== "") {
     loader.setPath(deps.path.endsWith("/") ? deps.path : `${deps.path}/`);
   }
   const rp = typeof deps.resourcePath === "string" ? deps.resourcePath.trim() : "";
@@ -212,7 +215,7 @@ export async function resolveSceneBackgroundValue(value, deps = {}) {
     }
     const loader = new THREE.TextureLoader(deps.loadingManager);
     applyLoaderPaths(loader, deps);
-    const tex = await loadTextureAsync(loader, resolvePublicAssetUrl(url));
+    const tex = await loadTextureAsync(loader, deps.resolveUrl?.(url) ?? resolvePublicAssetUrl(url));
     tex.mapping = THREE.EquirectangularReflectionMapping;
     applyLdrColorSpace(tex, value.colorSpace);
     markOwnedTexture(tex);
@@ -229,7 +232,7 @@ export async function resolveSceneBackgroundValue(value, deps = {}) {
       const loader = new THREE.CubeTextureLoader(deps.loadingManager);
       applyLoaderPaths(loader, deps);
       const cube = await new Promise((resolve, reject) => {
-        loader.load(urls, resolve, undefined, reject);
+        loader.load(urls.map((url) => deps.resolveUrl?.(url) ?? resolvePublicAssetUrl(url)), resolve, undefined, reject);
       });
       applyLdrColorSpace(cube, value.colorSpace);
       markOwnedTexture(cube);
@@ -240,7 +243,7 @@ export async function resolveSceneBackgroundValue(value, deps = {}) {
       log.warn("sceneBackdropResolver: cube single-image layout requires url");
       return null;
     }
-    const absUrl = buildAbsoluteUrl(resolvePublicAssetUrl(singleUrl), deps);
+    const absUrl = deps.resolveUrl?.(singleUrl) ?? buildAbsoluteUrl(resolvePublicAssetUrl(singleUrl), deps);
     const img = await loadImageAsync(absUrl, deps.crossOrigin);
     let faces;
     if (layout === "cross-h" || layout === "cross-horizontal") {
@@ -260,7 +263,7 @@ export async function resolveSceneBackgroundValue(value, deps = {}) {
 }
 
 function buildAbsoluteUrl(url, deps) {
-  if (/^https?:\/\//i.test(url) || url.startsWith("data:") || url.startsWith("blob:")) {
+  if (/^[a-z][a-z\d+.-]*:/i.test(url)) {
     return url;
   }
   const base =
@@ -302,7 +305,7 @@ export async function resolveSceneEnvironmentValue(value, renderer, deps = {}) {
     }
     const loader = new THREE.TextureLoader(deps.loadingManager);
     applyLoaderPaths(loader, deps);
-    const equirectTex = await loadTextureAsync(loader, resolvePublicAssetUrl(url));
+    const equirectTex = await loadTextureAsync(loader, deps.resolveUrl?.(url) ?? resolvePublicAssetUrl(url));
     equirectTex.mapping = THREE.EquirectangularReflectionMapping;
     applyLdrColorSpace(equirectTex, value.colorSpace);
     return pmremEnvironmentFromEquirectTexture(equirectTex, renderer, { disposeSource: true });
@@ -320,7 +323,7 @@ export async function resolveSceneEnvironmentValue(value, renderer, deps = {}) {
   const rgbLoader = new RGBELoader(deps.loadingManager);
   applyLoaderPaths(rgbLoader, deps);
   const hdrTexture = await new Promise((resolve, reject) => {
-    rgbLoader.load(resolvePublicAssetUrl(url), resolve, undefined, reject);
+    rgbLoader.load(deps.resolveUrl?.(url) ?? resolvePublicAssetUrl(url), resolve, undefined, reject);
   });
 
   return pmremEnvironmentFromEquirectTexture(hdrTexture, renderer, { disposeSource: true });
@@ -368,45 +371,58 @@ export async function applySceneBackdropFromHints(scene, sceneHints = {}, render
     crossOrigin: deps.crossOrigin ?? sceneHints.crossOrigin,
     loadingManager: deps.loadingManager
   };
-
-  const disposeFns = [];
-
-  if (hasOwn(sceneHints, "background")) {
-    const bg = await resolveSceneBackgroundValue(sceneHints.background, mergedDeps);
-    scene.background = bg;
-    if (bg && bg.isTexture) {
-      disposeFns.push(() => disposeIfOwned(bg));
+  mergedDeps.resolveUrl = deps.resolveUrl || ((url) => resolveRuntimeResourceUrl(buildAbsoluteUrl(url, mergedDeps), scene));
+  const context = resolveRuntimeContext(scene), signal = deps.signal ?? context.loadSignal;
+  const token = {}, prepared = new Map(), diagnostics = [];
+  pendingBackdrops.set(scene, token);
+  const assertCurrent = () => {
+    signal?.throwIfAborted();
+    if (pendingBackdrops.get(scene) !== token) throw new DOMException("Backdrop request superseded or disposed", "AbortError");
+  };
+  try {
+    assertCurrent();
+    for (const field of ["background", "environment"]) {
+      if (!hasOwn(sceneHints, field)) continue;
+      if (field === "environment" && sceneHints[field] && !renderer) {
+        log.warn("sceneBackdropResolver: environment configured but renderer missing; skipped");
+        continue;
+      }
+      try {
+        const result = field === "background"
+          ? { texture: await resolveSceneBackgroundValue(sceneHints[field], mergedDeps) }
+          : await resolveSceneEnvironmentValue(sceneHints[field], renderer, mergedDeps);
+        const value = result?.texture ?? null;
+        prepared.set(field, { value, dispose: result?.disposeFn || (() => disposeIfOwned(value)) });
+      } catch (error) {
+        if (error?.name === "AbortError" || (deps.failurePolicy ?? context.backdropFailurePolicy) === "error") throw error;
+        const diagnostic = { code: "BACKDROP_RESOURCE_FAILED", field, source: sceneHints[field], message: String(error?.message || error) };
+        diagnostics.push(diagnostic);
+        (context.resourceDiagnostics ||= []).push(diagnostic);
+        try { deps.onDiagnostic?.(diagnostic); } catch { /* observers do not own loading */ }
+        log.warn("sceneBackdropResolver: keeping previous backdrop", diagnostic);
+      }
+      assertCurrent();
     }
-  }
-
-  if (hasOwn(sceneHints, "environment")) {
-    if (!renderer) {
-      log.warn("sceneBackdropResolver: environment configured but renderer missing; skipped");
-    } else {
-      const envResult = await resolveSceneEnvironmentValue(sceneHints.environment, renderer, mergedDeps);
-      if (envResult && envResult.texture) {
-        scene.environment = envResult.texture;
-        disposeFns.push(envResult.disposeFn);
-      }
+    const previous = scene.userData.threeJsonBackdropDisposable;
+    const slots = new Map(previous?.slots || []);
+    // Replace only successful slots. Disposing an old slot must not clear its replacement.
+    for (const [field, entry] of prepared) {
+      const old = slots.get(field);
+      scene[field] = entry.value; slots.set(field, entry);
+      if (old && old.value !== entry.value) releaseBackdrop(old);
     }
-  }
-
-  if (disposeFns.length > 0) {
-    setBackdropDisposable(scene, () => {
-      for (let i = disposeFns.length - 1; i >= 0; i--) {
-        try {
-          disposeFns[i]();
-        } catch (_e) {
-          /* ignore */
-        }
+    scene.userData.threeJsonBackdropDisposable = { slots, dispose() {
+      for (const [field, entry] of slots) {
+        releaseBackdrop(entry);
+        if (scene[field] === entry.value) scene[field] = null;
       }
-      if (scene.background?.userData?.[OWNED] === true) {
-        scene.background = null;
-      }
-      if (scene.environment?.userData?.[OWNED] === true) {
-        scene.environment = null;
-      }
-    });
+      slots.clear();
+    } };
+    prepared.clear();
+    return { diagnostics };
+  } finally {
+    for (const entry of prepared.values()) releaseBackdrop(entry);
+    if (pendingBackdrops.get(scene) === token) pendingBackdrops.delete(scene);
   }
 }
 

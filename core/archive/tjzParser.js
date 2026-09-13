@@ -68,6 +68,7 @@ async function parseTjzArchive(input, options = {}) {
     manifest,
     payload
   });
+  const sourceId = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 
   return {
     payload,
@@ -75,6 +76,7 @@ async function parseTjzArchive(input, options = {}) {
     entryKind,
     entryPath,
     fileMap,
+    sourceId,
     sourceName: options.sourceName || null
   };
 }

@@ -176,3 +176,21 @@ must remain distinguishable from loader, material, authorization and GPU failure
   document. Hidden legacy fields cannot overwrite per-face material edits.
 - Local suite checkpoint: 1,377 passed, 1 existing skip. Archive ownership,
   comprehensive scenario browser checks and other checklist entries remain open.
+
+## Implementation evidence: portable archives and backdrop ownership
+
+- Archive import no longer substitutes page-lifetime blob URLs into saved scene
+  data. Stable namespaced pack references and portable assetLibrary file entries
+  survive runtime disposal, JSON save/reload and re-packing without duplicate bytes.
+- Runtime normalized payloads retain the full authoring envelope, including asset
+  libraries and metadata. Binary BufferGeometry preparation is separate from the
+  immutable document and works through incremental edits and undo.
+- Actual GLTF loading tests cover relative binary files inside an offline archive.
+  Model, texture, audio, font and script boundaries resolve embedded files in their
+  owning scene. Partial Editor archive import now uses its transactional timeline.
+- Reproduced an old backdrop bug: disposing the previous map could clear the new
+  successful map. Slot-specific ownership now preserves successful replacements,
+  retains old values on failure and disposes cancelled/late results.
+- See [archive ownership](./archive-resource-ownership.md) for storage overhead,
+  policy choices and limitations of previously persisted blob-only records.
+- Local checkpoint: 1,385 tests passed, 1 existing skip.

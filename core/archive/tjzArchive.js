@@ -5,11 +5,12 @@ import {
   readInputAsUint8Array
 } from "../util/archiveCommon.js";
 import { parseTjzArchive } from "./tjzParser.js";
-import { fileMapToBlobMap, rewritePackRefsToObjectUrls } from "./tjzAssetRewrite.js";
+import { createArchiveResourceDocument } from "./tjzResourceDocument.js";
+import { log } from "../util/logger.js";
 import { resolveArchiveEntryKind } from "../util/archiveEntryKind.js";
 
 /**
- * Parse archive and rewrite `pack://` refs to `blob:` URLs.
+ * Parse an archive into portable authoring JSON with stable pack references.
  * @param {*} input
  * @param {{
  *   missingAssetPolicy?: "warn"|"error",
@@ -19,10 +20,9 @@ import { resolveArchiveEntryKind } from "../util/archiveEntryKind.js";
 async function parseTjzArchiveForScene(input, options = {}) {
   const parsed = await parseTjzArchive(input);
   const policy = options.missingAssetPolicy || parsed.manifest?.missingAssetPolicy || "warn";
-  const blobMap = fileMapToBlobMap(parsed.fileMap);
-  const rewritten = rewritePackRefsToObjectUrls(parsed.payload, blobMap, {
+  const rewritten = createArchiveResourceDocument(parsed, {
     missingAssetPolicy: policy,
-    onWarning: options.onWarning
+    onWarning: options.onWarning || ((message) => log.warn(message))
   });
   return {
     payload: rewritten.payload,
@@ -32,8 +32,9 @@ async function parseTjzArchiveForScene(input, options = {}) {
       payload: parsed.payload
     }),
     entryPath: parsed.entryPath,
-    dispose: rewritten.dispose,
-    objectUrlCount: rewritten.objectUrlCount,
+    // Retained for the parser resource-lifetime API; no runtime URL is allocated.
+    dispose() {},
+    objectUrlCount: 0,
     missing: rewritten.missing
   };
 }

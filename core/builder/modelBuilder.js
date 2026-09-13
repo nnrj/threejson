@@ -2149,7 +2149,9 @@ function loadGltf(glbObj, scene, loadOptions = {}) {
     });
 }
 function inferExternalModelTypeFromPath(modelPath) {
-    return typeof modelPath === "string" ? modelPath.trim().split(/[?#]/)[0].split(".").slice(1).pop()?.toLowerCase() || "" : "";
+    if (typeof modelPath !== "string" || /^(data|blob):/i.test(modelPath)) return "";
+    const leaf = modelPath.trim().split(/[?#]/)[0].split("/").pop();
+    return /\.([a-z\d]+)$/i.exec(leaf || "")?.[1].toLowerCase() || "";
 }
 
 /**
@@ -2398,13 +2400,13 @@ async function loadThreeNativeObjectJsonFromUrlAsync(modelInfo, scene, deps = {}
   if (!modelInfo?.modelPath || !scene) return null;
   return withModelLoadScope(scene, deps, modelLoadingManager, async (scope) => {
     const loader = new THREE.ObjectLoader(scope.manager);
-    if (modelInfo.path) loader.setPath(scope.resolvePath(modelInfo.path));
+    const basePath = modelInfo.path ? scope.resolvePath(modelInfo.path) : "";
     if (modelInfo.resourcePath) {
       const path = scope.resolvePath(modelInfo.resourcePath);
       loader.setResourcePath(path.endsWith("/") ? path : path + "/");
     }
     if (modelInfo.crossOrigin) loader.setCrossOrigin(modelInfo.crossOrigin);
-    const object = scope.own(await loader.loadAsync(scope.resolvePath(modelInfo.modelPath)));
+    const object = scope.own(await loader.loadAsync(scope.resolvePath(modelInfo.modelPath, basePath && (basePath.endsWith("/") ? basePath : basePath + "/"))));
     await scope.settled();
     scope.run(() => {
       discardUndecodedModelTextures(object);

@@ -1,6 +1,7 @@
 import { packTjzArchive } from "../archive/tjzPackager.js";
 import { isEventScriptReference } from "../runtime/eventMechanism/scriptReference.js";
 import { LIB_PREFIX } from "./resolveTextureSource.js";
+import { extractArchiveResourceFiles } from "../archive/tjzResourceDocument.js";
 
 const ASSET_CANDIDATE_KEYS = new Set([
   "textureUrl",
@@ -239,7 +240,9 @@ function rewriteRefsToPack(payload, rewriteMap) {
 }
 
 async function collectAssetsFromPayload(payload, options = {}) {
-  const assets = {};
+  const embedded = extractArchiveResourceFiles(payload);
+  payload = embedded.payload;
+  const assets = Object.fromEntries(embedded.assets);
   const rewriteMap = new Map();
   const refs = [];
   const packOptions = { ...options, payload };
@@ -247,12 +250,14 @@ async function collectAssetsFromPayload(payload, options = {}) {
   const uniqueRefs = Array.from(new Set(refs));
   for (let i = 0; i < uniqueRefs.length; i++) {
     const ref = uniqueRefs[i];
+    if (ref.startsWith("pack://")) continue;
     const bytes = await tryResolveAssetBytes(ref, packOptions);
     if (!bytes) {
       continue;
     }
     const ext = guessAssetExt(ref);
-    const fileName = `assets/item_${i + 1}.${ext}`;
+    let fileName = `assets/item_${i + 1}.${ext}`, collision = 1;
+    while (Object.hasOwn(assets, fileName)) fileName = `assets/item_${i + 1}_${collision++}.${ext}`;
     assets[fileName] = bytes;
     rewriteMap.set(ref, `pack://${fileName}`);
   }

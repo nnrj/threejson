@@ -16,7 +16,7 @@ import {
   scenePayloadHasLifecycleEventBindings,
   runRecordDeployWithLifecycle
 } from "../runtime/objectLifecycle/index.js";
-import { runWithRuntimeContextScope } from "../runtime/runtimeContext.js";
+import { runWithRuntimeContextScope, resolveRuntimeContext } from "../runtime/runtimeContext.js";
 import { ensureOptionalSceneCapabilitiesForPayload } from "../capabilities/optionalCapabilityLoader.js";
 
 function resolveDeployTarget(target) {
@@ -109,8 +109,11 @@ async function deployJsonObjectAsync(target, record, options = {}) {
   assertRecordMode(options);
   assertObjectRecord(record);
   const normalized = resolveDeployRecord(record, options);
-  await ensureOptionalSceneCapabilitiesForPayload(normalized);
+  const preparation = await ensureOptionalSceneCapabilitiesForPayload(normalized, options);
   const targetInfo = resolveDeployTarget(target);
+  const runtimeContext = resolveRuntimeContext(targetInfo.root);
+  runtimeContext.registerEmbeddedResources?.(normalized);
+  runtimeContext.registerPreparedBufferReferences?.(preparation.bufferReferences);
   const ctx = buildDeployContext({ ...options, dynamicLifecycleDispatch: true }, targetInfo, normalized);
   let created = null;
   await runRecordDeployWithLifecycle(normalized, ctx.objectLifecycle, async () => {

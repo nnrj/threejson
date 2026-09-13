@@ -29,6 +29,7 @@ async function createSdfTextWithFallback(parent, record, ctx = {}) {
     const { createSdfText } = await loadSdfTextModule();
     return createSdfText(parent, record, ctx);
   } catch (err) {
+    if (err?.name === "AbortError") throw err;
     log.warn(
       "[ThreeJSON] text mode=sdf unavailable, falling back to texture:",
       err?.message || err
@@ -47,6 +48,7 @@ async function createMeshTextWithFallback(parent, record) {
   try {
     meshResult = await createMeshText(parent, record);
   } catch (err) {
+    if (err?.name === "AbortError") throw err;
     log.warn(
       "[ThreeJSON] text mode=mesh failed:",
       err?.message || err

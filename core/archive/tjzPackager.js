@@ -1,6 +1,7 @@
 import * as fflate from "fflate";
 import { normalizeArchivePath } from "../util/archiveCommon.js";
 import { normalizeTjzManifest } from "./tjzManifest.js";
+import { extractArchiveResourceFiles } from "./tjzResourceDocument.js";
 
 const { strToU8, zipSync } = fflate;
 
@@ -36,19 +37,17 @@ async function normalizeAssetInputToBytes(input) {
  * }} [options]
  */
 async function packTjzArchive(payloadOrText, options = {}) {
-  const payloadText =
-    typeof payloadOrText === "string"
-      ? payloadOrText
-      : JSON.stringify(payloadOrText ?? {}, null, 2);
+  const extracted = extractArchiveResourceFiles(typeof payloadOrText === "string" ? JSON.parse(payloadOrText) : payloadOrText ?? {});
+  const payloadText = JSON.stringify(extracted.payload, null, 2);
 
   const zipEntries = {};
-  zipEntries["scene.json"] = strToU8(payloadText);
-
   const manifest = normalizeTjzManifest(options.manifest || {});
   if (!manifest.entry) {
     manifest.entry = "scene.json";
   }
+  zipEntries[normalizeArchivePath(manifest.entry)] = strToU8(payloadText);
   zipEntries["manifest.json"] = strToU8(JSON.stringify(manifest, null, 2));
+  for (const [path, bytes] of extracted.assets) zipEntries[normalizeArchivePath(path)] = bytes;
 
   const assets = options.assets && typeof options.assets === "object" ? options.assets : {};
   for (const [rawPath, rawData] of Object.entries(assets)) {
@@ -56,7 +55,9 @@ async function packTjzArchive(payloadOrText, options = {}) {
     if (!path) {
       continue;
     }
-    zipEntries[path] = await normalizeAssetInputToBytes(rawData);
+    const bytes = await normalizeAssetInputToBytes(rawData);
+    if (zipEntries[path] && (zipEntries[path].length !== bytes.length || zipEntries[path].some((byte, index) => byte !== bytes[index]))) throw new Error(`[archive] conflicting or reserved asset path: ${path}`);
+    zipEntries[path] = bytes;
   }
 
   const zipped = zipSync(zipEntries, { level: 6 });

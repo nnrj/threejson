@@ -6,6 +6,8 @@ import { log } from "../../util/logger.js";
 import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
 import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js";
 import { resolvePublicAssetUrl } from "../../util/assetsBase.js";
+import { resolveRuntimeResourceUrl } from "../../resource/runtimeResourceUrl.js";
+import { resolveRuntimeContext } from "../../runtime/runtimeContext.js";
 
 import { loadingManager } from "../../cache/loading.js";
 import { trackDisposableResource } from "../../handler/trackedResourceRegistry.js";
@@ -53,8 +55,11 @@ export async function createMeshText(parent, record) {
 
   let font;
   try {
-    font = await loadFont(fontJsonUrl);
+    const context = resolveRuntimeContext(parent);
+    font = await loadFont(resolveRuntimeResourceUrl(fontJsonUrl, parent));
+    context.signal?.throwIfAborted(); context.loadSignal?.throwIfAborted();
   } catch (error) {
+    if (error?.name === "AbortError") throw error;
     log.warn("[createMeshText] FontLoader failed:", fontJsonUrl, error);
     return null;
   }
@@ -101,6 +106,6 @@ export async function createMeshText(parent, record) {
   attachBillboardBehavior(mesh, resolved.billboard);
 
   parent.add(mesh);
-  registerObject(mesh, outRecord);
+  registerObject(mesh, outRecord, {}, parent);
   return mesh;
 }

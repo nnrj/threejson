@@ -2,6 +2,7 @@
  * objType:text mode=sdf — troika-three-text。
  */
 import * as THREE from "three";
+import { resolveRuntimeResourceUrl } from "../../resource/runtimeResourceUrl.js";
 import * as TroikaText from "troika-three-text";
 
 import { trackDisposableResource } from "../../handler/trackedResourceRegistry.js";
@@ -88,7 +89,7 @@ export function createSdfText(parent, record, ctx = {}) {
     text.lineHeight = resolved.lineHeight;
   }
   if (fontConfig.fontUrl) {
-    text.font = fontConfig.fontUrl;
+    text.font = resolveRuntimeResourceUrl(fontConfig.fontUrl, parent);
   }
 
   if (hasValue(sdfBlock.outlineWidth)) {
@@ -125,7 +126,7 @@ export function createSdfText(parent, record, ctx = {}) {
   text.sync();
 
   parent.add(sceneRoot);
-  registerObject(sceneRoot, outRecord);
+  registerObject(sceneRoot, outRecord, {}, parent);
   return text;
 }
 

@@ -3,7 +3,6 @@ import {
   configureLogger,
   createJsonScene,
   createJsonSceneFromArchive,
-  deployJsonSceneFromArchive,
   ensureDefaultSceneLightsInScene,
   ensureThreeJsonIdsOnScenePayload,
   fitPerspectiveCameraToContentBoundsTHREE,
@@ -24,6 +23,7 @@ import {
   trackDisposableResource,
   bindProgressElement
 } from "threejson";
+import { parseTjzArchiveForScene } from "../../../../core/archive/tjzArchive.js";
 import {
   createJsonSceneFromObjectRecord,
   deployObjectRecordIntoRuntime,
@@ -1655,21 +1655,15 @@ export async function bootstrapSceneHostEditor() {
           return;
         }
         const objectFlags = resolveEditorRuntimeFlagsSync(editorSettings, "objectRecord", archivePreviewPayload, pick);
-        const historyBefore = editorHistory?.captureSceneSnapshot?.();
         await ui.runWithLoadingMask("正在导入 .tjz 包...", async () => {
-          const loadedRuntime = await deployJsonSceneFromArchive(sceneRuntime || scene, bytes, {
-            objectEntryMode: pick.mode === "append" ? "append" : "replace",
+          const archive = await parseTjzArchiveForScene(bytes, {
             missingAssetPolicy: "warn",
-            onWarning: (msg) => console.warn("[tjz-import]", msg),
-            ...objectFlags
+            onWarning: (msg) => console.warn("[tjz-import]", msg)
           });
-          if (objectFlags.autoFillLights !== false) {
-            ensureDefaultSceneLights(loadedRuntime?.scene, true);
-          }
-          await finishObjectImport({ loadedRuntime, fileName: file.name, fitView: pick.fitView });
-          if (historyBefore) {
-            editorHistory?.pushCapturedSceneSnapshot?.(historyBefore, file.name || "导入对象");
-          }
+          try {
+            await authoringSession.importRecord(archive.payload, { replace: pick.mode !== "append", runtimeFlags: objectFlags, label: file.name || "导入对象" });
+            await finishObjectImport({ fileName: file.name, fitView: pick.fitView });
+          } finally { archive.dispose(); }
         });
         ui.showMessage(`已导入 ${file.name}`, "success");
       } catch (err) {

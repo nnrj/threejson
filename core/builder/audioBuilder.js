@@ -9,6 +9,7 @@ import { registerObject } from "../handler/objectRegistry.js";
 import { setUserDataObjJson } from "../handler/objectDescriptorAttach.js";
 import { hasValue } from "../util/util.js";
 import { resolvePublicAssetUrl } from "../util/assetsBase.js";
+import { resolveRuntimeResourceUrl } from "../resource/runtimeResourceUrl.js";
 import { resolveRuntimeContext } from "../runtime/runtimeContext.js";
 
 const LISTENER_USERDATA_KEY = "threeJsonAudioListener";
@@ -449,7 +450,8 @@ export function deploySceneAudio(record, scene, ctx) {
     log.warn("[deploySceneAudio] missing camera, skipped", record?.name || "");
     return;
   }
-  const url = resolveAudioUrl(record);
+  const sourceUrl = resolveAudioUrl(record);
+  const url = sourceUrl ? resolveRuntimeResourceUrl(sourceUrl, scene) : "";
   if (!url) {
     log.warn("[deploySceneAudio] missing audioUrl / url, skipped", record?.name || "");
     return;

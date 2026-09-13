@@ -1,3 +1,5 @@
+import { createSceneResourcePolicy } from "../resource/sceneResourcePolicy.js";
+
 const ADVANCED_WEBGL_PASS_TYPES = new Set(["unrealbloom", "fxaa", "smaa", "shader", "shaderpreset"]);
 const RASTER_PARTICLE_SOURCES = new Set(["textmask", "imagemask"]);
 const EXTRA_CONTROLS_TYPES = new Set(["map", "mapcontrols", "trackball", "trackballcontrols", "arcball", "arcballcontrols"]);
@@ -53,31 +55,31 @@ function collectBufferReferenceUrls(record) {
   return refs;
 }
 
-async function resolveBufferMeshReferences(payload) {
+async function resolveBufferMeshReferences(payload, options = {}) {
   const records = collectBufferMeshRecords(payload);
   const fetched = new Map();
+  const policy = createSceneResourcePolicy(options.resourcePayload || payload, options);
   for (const record of records) {
     const geometry = record.geometry;
     const refs = collectBufferReferenceUrls(record);
     if (refs.length === 0) continue;
-    const resolved = new Map();
     for (const { key, url } of refs) {
-      let buffer = fetched.get(url);
+      let buffer = fetched.get(url) ?? options.resolveBufferReference?.(key || url, geometry);
+      if (buffer) fetched.set(url, buffer);
       if (!buffer) {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`bufferMesh binary reference fetch failed (${response.status}): ${url}`);
-        buffer = await response.arrayBuffer();
-        fetched.set(url, buffer);
+        options.signal?.throwIfAborted();
+        const resolved = await policy.resolveAssetUrl(policy.resolveAssetCandidates(url)[0] || url, { kind: "binary" });
+        try {
+          const response = await (options.fetch || globalThis.fetch)(typeof resolved === "string" ? resolved : resolved.url, { signal: options.signal });
+          if (!response.ok) throw new Error(`bufferMesh binary reference fetch failed (${response.status}): ${url}`);
+          buffer = await response.arrayBuffer();
+          options.signal?.throwIfAborted();
+          fetched.set(url, buffer);
+        } finally { resolved?.release?.(); }
       }
-      resolved.set(url, buffer);
-      if (key) resolved.set(key, buffer);
     }
-    Object.defineProperty(geometry, "__threeJsonResolvedBuffers", {
-      configurable: true,
-      enumerable: false,
-      value: resolved
-    });
   }
+  return fetched;
 }
 
 function containsAdvancedPass(value, seen = new WeakSet()) {
@@ -125,8 +127,8 @@ function containsComplexMesh(value, seen = new WeakSet()) {
 }
 
 /** Load optional Three.js modules only when the descriptor actually references them. */
-export async function ensureOptionalSceneCapabilitiesForPayload(payload) {
-  await resolveBufferMeshReferences(payload);
+export async function ensureOptionalSceneCapabilitiesForPayload(payload, options = {}) {
+  const bufferReferences = await resolveBufferMeshReferences(payload, options);
   if (containsAdvancedPass(payload)) {
     const module = await import("../builder/postprocess/webglAdvancedPasses.js");
     module.ensureWebglAdvancedPassesRegistered();
@@ -143,6 +145,7 @@ export async function ensureOptionalSceneCapabilitiesForPayload(payload) {
     const module = await import("../builder/complexMeshCapability.js");
     module.ensureComplexMeshCapabilityRegistered();
   }
+  return { bufferReferences };
 }
 
 export function sceneUsesAdvancedWebglPass(payload) {
