@@ -1503,7 +1503,7 @@ function normalizeScenePayloadWithRuntimeDefaults(payload, options = {}) {
     normalizeOpts.subSceneNormalizePolicy = options.subSceneNormalizePolicy;
   }
   const normalized = normalizeScenePayload(payload, normalizeOpts);
-  applyAssetGatewayToPayload(normalized, options.assetGateway ?? options.resourceProxy, { deferTextures: true });
+  applyAssetGatewayToPayload(normalized, options.assetGateway ?? options.resourceProxy, { deferTextures: true, deferModels: true });
   applySceneRuntimeDefaults(normalized, runtimeOptions);
   normalized.runtimeLoadOptions = runtimeOptions;
   return normalized;

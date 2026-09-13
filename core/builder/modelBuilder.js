@@ -18,10 +18,7 @@ import {LineMaterial} from 'three/examples/jsm/lines/LineMaterial.js'; // Line m
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js'; // GLTF model loader
 import {OBJLoader} from 'three/examples/jsm/loaders/OBJLoader.js';
 import {MTLLoader} from 'three/examples/jsm/loaders/MTLLoader.js';
-import {
-    isThreeNativeJsonFileType,
-    loadThreeNativeObjectJsonFromUrl
-} from './nativeObjectLoader.js';
+import { isThreeNativeJsonFileType } from './nativeObjectLoader.js';
 import {
     isBufferExternalMeshType,
     parseMeshArrayBufferToObject3D,
@@ -50,9 +47,11 @@ import {
     HEATMAP_LEGACY_COLOR_STOPS,
     HEATMAP_LEGACY_COLOR_STOPS_VOLUME
 } from './heatmap/heatmapTexture.js';
-import { attachGifCanvasTextureFromMaterialJson, createGifCanvasTextureFromMaterialJson } from "../util/gifAnimatedTexture.js";
 import { resolveBoxDefaultTextureUrl } from "../util/boxTextureUrl.js";
-import { resolvePublicAssetUrl } from "../util/assetsBase.js";
+import { resolvePublicAssetUrl, resolvePublicAssetUrlCandidates } from "../util/assetsBase.js";
+import { resolveRuntimeContext } from "../runtime/runtimeContext.js";
+import { withModelLoadScope, discardUndecodedModelTextures } from "../resource/modelLoadScope.js";
+import { whenTextureReady } from "../resource/textureRequest.js";
 import { cloneJson } from "../util/cloneJson.js";
 import {
     loadTextureFromMaterialJson,
@@ -367,73 +366,6 @@ function normalizeMaterialTextureKind(material) {
     return "image";
 }
 
-/**
- * Pause and release associated `HTMLVideoElement` on `THREE.Texture.dispose`.
- * @param {THREE.Texture} texture
- * @param {HTMLVideoElement} video
- */
-function wrapVideoElementTextureDispose(texture, video) {
-    if (!texture || !video || typeof texture.dispose !== "function") {
-        return;
-    }
-    const innerDispose = texture.dispose.bind(texture);
-    texture.dispose = function disposeVideoBackedTexture() {
-        try {
-            video.pause();
-            video.removeAttribute("src");
-            video.load();
-        } catch (_) {
-            /* ignore */
-        }
-        innerDispose();
-    };
-}
-
-/**
- * Create `VideoTexture` from material JSON and assign to `material.map` (same repeat semantics as `ensureMaterialTextureFromJson`).
- * @param {object} material Material JSON (`map` will be written)
- * @param {string} url Video URL (mp4/webm/ogg, etc.; depends on browser decode support)
- * @param {{ wrapRepeat?: boolean, defaultRepeatX?: number, defaultRepeatY?: number }} [opts]
- */
-function attachVideoTextureFromMaterialJson(material, url, opts = {}) {
-    const video = document.createElement("video");
-    video.setAttribute("playsinline", "");
-    video.playsInline = true;
-    video.muted = material.videoMuted !== false;
-    video.loop = material.videoLoop !== false;
-    const cors = material.videoCrossOrigin ?? material.crossOrigin;
-    if (cors === "anonymous" || cors === "use-credentials") {
-        video.crossOrigin = cors;
-    } else if (/^https?:\/\//i.test(url) || url.startsWith("//")) {
-        video.crossOrigin = "anonymous";
-    }
-    video.src = url;
-    const texture = new THREE.VideoTexture(video);
-    trackDisposableResource(texture);
-    if (THREE.SRGBColorSpace !== undefined) {
-        texture.colorSpace = THREE.SRGBColorSpace;
-    }
-    const wrapRepeat = opts.wrapRepeat !== false;
-    const defX = hasValue(opts.defaultRepeatX) ? opts.defaultRepeatX : TEXTURE_REPEAT_DEFAULT.x;
-    const defY = hasValue(opts.defaultRepeatY) ? opts.defaultRepeatY : TEXTURE_REPEAT_DEFAULT.y;
-    const tr = material.textureRepeat || {};
-    texture.wrapS = wrapRepeat ? THREE.RepeatWrapping : THREE.ClampToEdgeWrapping;
-    texture.wrapT = wrapRepeat ? THREE.RepeatWrapping : THREE.ClampToEdgeWrapping;
-    texture.repeat.set(
-        wrapRepeat ? valueOr(tr.x, defX) : 1,
-        wrapRepeat ? valueOr(tr.y, defY) : 1
-    );
-    wrapVideoElementTextureDispose(texture, video);
-    material.map = texture;
-    if (material.videoAutoplay !== false) {
-        const playPromise = video.play();
-        if (playPromise && typeof playPromise.catch === "function") {
-            playPromise.catch((err) => {
-                log.warn("[textureKind:video] video.play() failed:", url, err);
-            });
-        }
-    }
-}
 
 function hasText(value) {
     return typeof value === "string" && value.trim().length > 0;
@@ -451,7 +383,7 @@ function resolveAssetUrl(baseUrl, rawUrl) {
     if (/^(data:|blob:|https?:\/\/)/i.test(input) || input.startsWith("//")) {
         return input;
     }
-    const publicResolved = resolvePublicAssetUrl(input);
+    const publicResolved = resolvePublicAssetUrlCandidates(input, resolveRuntimeContext().assetUrlPolicy)[0] || input;
     if (publicResolved !== input) {
         return publicResolved;
     }
@@ -475,18 +407,6 @@ function extractAssetBaseUrl(urlLike) {
         return "";
     }
     return THREE.LoaderUtils.extractUrlBase(resolved);
-}
-
-function readTextAsset(url, onLoad, onError) {
-    const loader = new THREE.FileLoader(modelLoadingManager);
-    loader.setResponseType("text");
-    loader.load(url, onLoad, undefined, onError);
-}
-
-function readArrayBufferAsset(url, onLoad, onError) {
-    const loader = new THREE.FileLoader(modelLoadingManager);
-    loader.setResponseType("arraybuffer");
-    loader.load(url, onLoad, undefined, onError);
 }
 
 function parseObjMaterialLibraries(objText) {
@@ -761,74 +681,35 @@ function applyObjTextureSettings(texture, slotName, plan = {}) {
     }
 }
 
-function loadObjTexturePlan(plan, onLoad, onError) {
+async function loadObjTexturePlan(plan, onLoad, onError, scope) {
     const candidates = Array.isArray(plan?.candidates) ? plan.candidates : [];
-    if (!candidates.length) {
-        onError?.(new Error("texture candidate list is empty"));
-        return;
-    }
-    const tryLoad = (index) => {
-        if (index >= candidates.length) {
-            onError?.(new Error(`OBJ texture load failed: ${plan.slotName}`));
-            return;
-        }
-        const url = candidates[index];
-        if (plan.textureKind === "video") {
-            const proxyMat = {
-                textureUrl: url,
-                textureRepeat: plan.repeat,
-                videoMuted: plan.videoMuted,
-                videoLoop: plan.videoLoop,
-                videoAutoplay: plan.videoAutoplay,
-                videoCrossOrigin: plan.videoCrossOrigin ?? plan.crossOrigin,
-                crossOrigin: plan.crossOrigin
-            };
-            attachVideoTextureFromMaterialJson(proxyMat, url, {
-                wrapRepeat: plan.wrapRepeat !== false,
-                defaultRepeatX: valueOr(plan.repeat?.x, 1),
-                defaultRepeatY: valueOr(plan.repeat?.y, 1)
-            });
-            const loaded = proxyMat.map;
-            applyObjTextureSettings(loaded, plan.slotName, plan);
-            trackDisposableResource(loaded);
-            onLoad?.(loaded, url);
-            return;
-        }
-        if (plan.textureKind === "gif") {
-            const proxyMat = {
-                textureUrl: url,
-                textureRepeat: plan.repeat,
-                gifAutoplay: plan.gifAutoplay,
-                gifPlaybackRate: plan.gifPlaybackRate,
-                gifMaxFps: plan.gifMaxFps
-            };
-            attachGifCanvasTextureFromMaterialJson(proxyMat, url, {
-                wrapRepeat: plan.wrapRepeat !== false,
-                defaultRepeatX: valueOr(plan.repeat?.x, 1),
-                defaultRepeatY: valueOr(plan.repeat?.y, 1)
-            });
-            const loaded = proxyMat.map;
-            applyObjTextureSettings(loaded, plan.slotName, plan);
-            trackDisposableResource(loaded);
-            onLoad?.(loaded, url);
-            return;
-        }
-        const imageLoader = candidates.length > 1 ? objTextureProbeLoader : textureLoader;
-        const texture = imageLoader.load(
-            url,
-            function(loaded) {
-                applyObjTextureSettings(loaded, plan.slotName, plan);
-                trackDisposableResource(loaded);
-                onLoad?.(loaded, url);
-            },
-            undefined,
-            function() {
-                tryLoad(index + 1);
+    let failure = new Error(`OBJ texture load failed: ${plan.slotName}`);
+    for (const url of candidates) {
+        if (scope?.signal.aborted) return;
+        let texture;
+        try {
+            if (plan.textureKind === "video" || plan.textureKind === "gif") {
+                texture = loadTextureFromMaterialJson({
+                    ...plan, textureUrl: url, textureRepeat: plan.repeat,
+                    textureKind: plan.textureKind
+                }, { runtimeScope: scope?.context, signal: scope?.signal, wrapRepeat: plan.wrapRepeat !== false });
+                await whenTextureReady(texture);
+            } else {
+                const loader = scope ? new THREE.TextureLoader(scope.manager) : candidates.length > 1 ? objTextureProbeLoader : textureLoader;
+                texture = await new Promise((resolve, reject) => {
+                    const pending = loader.load(url, resolve, undefined, (error) => { pending?.dispose(); reject(error); });
+                });
             }
-        );
-        applyObjTextureSettings(texture, plan.slotName, plan);
-    };
-    tryLoad(0);
+            if (scope?.signal.aborted) { texture?.dispose(); return; }
+            applyObjTextureSettings(texture, plan.slotName, plan);
+            trackDisposableResource(texture);
+            if (scope) scope.run(() => onLoad?.(texture, url));
+            else onLoad?.(texture, url);
+            return texture;
+        } catch (error) { texture?.dispose(); failure = error; }
+    }
+    onError?.(failure);
+    return null;
 }
 
 function objTexturePlansRequireStandardMaterial(slotPlans, materialJson) {
@@ -2284,83 +2165,12 @@ function createHeatmapVolume(heatObj, scene) {
  * @param {{ camera?: THREE.PerspectiveCamera|null }} [loadOptions]
  */
 function loadGltf(glbObj, scene, loadOptions = {}) {
-    if(!glbObj || !glbObj.modelPath){
-        return;
-    }
-    // Initialize GLTF model loader
-    const gltfLoader = new GLTFLoader(modelLoadingManager);
-    trackDisposableResource(gltfLoader)
-    const resolvedPath = resolveAssetUrl("", glbObj.modelPath);
-    if (!resolvedPath) {
-        log.warn("[loadGltf] cannot resolve modelPath:", glbObj.modelPath);
-        return;
-    }
-    configureGltfLoader(gltfLoader, glbObj, { ...loadOptions, loadingManager: modelLoadingManager })
-      .then(({ resources }) => {
-        trackDisposableResource(resources);
-        gltfLoader.load(resolvedPath, (gltf) => {
-            // Track loaded GLTF model for memory cleanup
-            let model = gltf.scene;
-            trackDisposableResource(model)
-            try {
-                const bindingSummary = applyModelMaterialBindings(model, glbObj);
-                if (bindingSummary.unmatchedBindings.length > 0) {
-                    log.warn("[loadGltf] material bindings matched no slots:", bindingSummary.unmatchedBindings);
-                }
-            } catch (error) {
-                log.error("[loadGltf] material binding failed:", error);
-                return;
-            }
-            const attachTo = normalizeAttachTo(glbObj);
-            let placedOnCamera = false;
-            if (attachTo === "camera" && loadOptions.camera && loadOptions.scene?.isScene) {
-                const placed = placeLoadedModelByAttachTarget(glbObj, model, loadOptions.scene, loadOptions);
-                placedOnCamera = placed === "camera";
-                if (placed === "unsupported") {
-                    log.warn(
-                        `[loadGltf] unsupported attachTo="${glbObj.attachTo}":`,
-                        glbObj?.name || glbObj?.refName || resolvedPath
-                    );
-                }
-            } else if (attachTo === "camera") {
-                log.warn(
-                    "[loadGltf] attachTo=camera but missing camera or scene, adding as normal model:",
-                    glbObj?.name || glbObj?.refName || ""
-                );
-            } else if (attachTo) {
-                log.warn(
-                    `[loadGltf] unsupported attachTo="${glbObj.attachTo}", adding as normal model:`,
-                    glbObj?.name || glbObj?.refName || resolvedPath
-                );
-            }
-            if (!placedOnCamera) {
-                if (shouldApplyRecordTransform(glbObj)) {
-                    applyObjectTransform(model, glbObj);
-                }
-                scene.add(model);
-            }
-            registerObject(model, glbObj);
-            applyMorphInfluencesFromDescriptor(model, glbObj);
-            tryRegisterGltfAnimationMixers(model, gltf, glbObj);
-        },
-        () => {},
-        (error) => {
-            log.error("[loadGltf] load failed:", resolvedPath, error)
-        });
-      })
-      .catch((error) => log.error("[loadGltf] decoder configuration failed:", error));
+    loadGltfAsync(glbObj, scene, loadOptions).catch((error) => {
+        if (error?.name !== "AbortError") log.error("[loadGltf] load failed:", glbObj?.modelPath, error);
+    });
 }
-
-function inferExternalModelTypeFromPath(modelPath){
-    if(typeof modelPath !== "string"){
-        return "";
-    }
-    const normalized = modelPath.trim().split(/[?#]/)[0];
-    const dotIndex = normalized.lastIndexOf(".");
-    if(dotIndex < 0 || dotIndex >= normalized.length - 1){
-        return "";
-    }
-    return normalized.slice(dotIndex + 1).trim().toLowerCase();
+function inferExternalModelTypeFromPath(modelPath) {
+    return typeof modelPath === "string" ? modelPath.trim().split(/[?#]/)[0].split(".").slice(1).pop()?.toLowerCase() || "" : "";
 }
 
 /**
@@ -2483,6 +2293,7 @@ function finalizeObjObject(object, objInfo, scene, loadCtx = {}){
     applyObjectTransform(object, objInfo);
     const materialJson = getObjMaterialJson(objInfo);
     const texturePlanState = buildObjTexturePlans(objInfo, loadCtx);
+    const textureTasks = [];
     const forceStandardMaterial = objTexturePlansRequireStandardMaterial(texturePlanState.slotPlans, materialJson);
     object.traverse(function(child){
         if(!child.isMesh){
@@ -2500,7 +2311,7 @@ function finalizeObjObject(object, objInfo, scene, loadCtx = {}){
         const slotNames = Object.keys(texturePlanState.slotPlans);
         for(let i = 0; i < slotNames.length; i++){
             const slotName = slotNames[i];
-            loadObjTexturePlan(
+            textureTasks.push(loadObjTexturePlan(
                 texturePlanState.slotPlans[slotName],
                 function(tex){
                     applyTextureToObjObject(object, slotName, tex);
@@ -2509,13 +2320,14 @@ function finalizeObjObject(object, objInfo, scene, loadCtx = {}){
                     if(texturePlanState.source === "json" || texturePlanState.source === "legacy"){
                         log.error(`OBJ ${slotName} texture load failed:`, texturePlanState.slotPlans[slotName].candidates, err);
                     }
-                }
-            );
+                }, loadCtx.scope
+            ));
         }
     }
     scene.add(object);
     registerObject(object, objInfo);
     applyMorphInfluencesFromDescriptor(object, objInfo);
+    return textureTasks;
 }
 
 /**
@@ -2523,56 +2335,10 @@ function finalizeObjObject(object, objInfo, scene, loadCtx = {}){
  * @param {object} objInfo
  * @param {THREE.Scene} scene
  */
-function loadObjWithOptionalMtl(objInfo, scene){
-    if(!objInfo || !objInfo.modelPath){
-        return;
-    }
-    const modelPath = resolveAssetUrl("", objInfo.modelPath);
-    const explicitMtlPath = objInfo.mtlPath || objInfo.materialPath || objInfo.mtlModelPath;
-    readTextAsset(
-        modelPath,
-        function(objText){
-            const objLibs = parseObjMaterialLibraries(objText);
-            const modelBase = extractAssetBaseUrl(modelPath);
-            const inferredMtlPath = hasText(explicitMtlPath)
-                ? resolveAssetUrl(modelBase, explicitMtlPath)
-                : (objLibs.length ? resolveAssetUrl(modelBase, objLibs[0]) : "");
-            const parseObjWithLoader = (loader, effectiveMtlPath = "") => {
-                try{
-                    const obj = loader.parse(objText);
-                    finalizeObjObject(obj, objInfo, scene, { effectiveMtlPath });
-                }catch(error){
-                    log.error("OBJ model parse failed:", objInfo.modelPath, error);
-                }
-            };
-            if(!inferredMtlPath){
-                parseObjWithLoader(new OBJLoader(modelLoadingManager), "");
-                return;
-            }
-            const mtlLoader = new MTLLoader(modelLoadingManager);
-            const resourceBase = extractAssetBaseUrl(inferredMtlPath);
-            if(resourceBase){
-                mtlLoader.setResourcePath(resourceBase);
-            }
-            mtlLoader.load(
-                inferredMtlPath,
-                function(materials){
-                    materials.preload();
-                    const objLoader = new OBJLoader(modelLoadingManager);
-                    objLoader.setMaterials(materials);
-                    parseObjWithLoader(objLoader, inferredMtlPath);
-                },
-                undefined,
-                function(error){
-                    log.error("MTL material load failed, continuing OBJ load without MTL:", inferredMtlPath, error);
-                    parseObjWithLoader(new OBJLoader(modelLoadingManager), inferredMtlPath);
-                }
-            );
-        },
-        function(error){
-            log.error("OBJ model load failed:", objInfo.modelPath, error);
-        }
-    );
+function loadObjWithOptionalMtl(objInfo, scene, loadOptions = {}) {
+    loadObjWithOptionalMtlAsync(objInfo, scene, loadOptions).catch((error) => {
+        if (error?.name !== "AbortError") log.error("[loadObj] load failed:", objInfo?.modelPath, error);
+    });
 }
 
 /**
@@ -2582,59 +2348,24 @@ function loadObjWithOptionalMtl(objInfo, scene){
  * @returns {Promise<import("three").Object3D|null>}
  */
 async function loadGltfAsync(glbObj, scene, loadOptions = {}) {
-  if (!glbObj || !glbObj.modelPath) {
-    return null;
-  }
-  const gltfLoader = new GLTFLoader(modelLoadingManager);
-  trackDisposableResource(gltfLoader);
-  const { resources } = await configureGltfLoader(gltfLoader, glbObj, {
-    ...loadOptions,
-    loadingManager: modelLoadingManager
-  });
-  trackDisposableResource(resources);
-  return new Promise((resolve, reject) => {
-    const resolvedPath = resolveAssetUrl("", glbObj.modelPath);
-    if (!resolvedPath) {
-      reject(new Error(`[loadGltf] cannot resolve modelPath: ${glbObj.modelPath}`));
-      return;
-    }
-    gltfLoader.load(
-      resolvedPath,
-      (gltf) => {
-        const model = gltf.scene;
-        trackDisposableResource(model);
-        try {
-          const bindingSummary = applyModelMaterialBindings(model, glbObj);
-          if (bindingSummary.unmatchedBindings.length > 0) {
-            log.warn("[loadGltf] material bindings matched no slots:", bindingSummary.unmatchedBindings);
-          }
-        } catch (error) {
-          reject(error instanceof Error ? error : new Error(String(error)));
-          return;
-        }
-        const attachTo = normalizeAttachTo(glbObj);
-        let placedOnCamera = false;
-        if (attachTo === "camera" && loadOptions.camera && loadOptions.scene?.isScene) {
-          const placed = placeLoadedModelByAttachTarget(glbObj, model, loadOptions.scene, loadOptions);
-          placedOnCamera = placed === "camera";
-        }
-        if (!placedOnCamera) {
-          if (shouldApplyRecordTransform(glbObj)) {
-            applyObjectTransform(model, glbObj);
-          }
-          scene.add(model);
-        }
-        registerObject(model, glbObj);
-        applyMorphInfluencesFromDescriptor(model, glbObj);
-        tryRegisterGltfAnimationMixers(model, gltf, glbObj);
-        resolve(model);
-      },
-      undefined,
-      (error) => {
-        log.error("[loadGltf] load failed:", resolvedPath, error);
-        reject(error instanceof Error ? error : new Error(String(error)));
-      }
-    );
+  if (!glbObj?.modelPath) return null;
+  return withModelLoadScope(scene, loadOptions, modelLoadingManager, async (scope) => {
+    const resolvedPath = scope.resolvePath(glbObj.modelPath);
+    const loader = new GLTFLoader(scope.manager);
+    const { resources } = await configureGltfLoader(loader, glbObj, { ...loadOptions, loadingManager: scope.manager });
+    resources.forEach((resource) => scope.temporary(resource));
+    scope.check();
+    const gltf = await loader.loadAsync(resolvedPath);
+    const model = scope.own(gltf.scene);
+    await scope.settled();
+    scope.run(() => {
+      discardUndecodedModelTextures(model);
+      const bindingSummary = applyModelMaterialBindings(model, glbObj);
+      if (bindingSummary.unmatchedBindings.length) log.warn("[loadGltf] unmatched material bindings:", bindingSummary.unmatchedBindings);
+      finalizeExternalMeshObject(model, glbObj, scene, loadOptions);
+      tryRegisterGltfAnimationMixers(model, gltf, glbObj);
+    });
+    return scope.release(model);
   });
 }
 
@@ -2643,60 +2374,38 @@ async function loadGltfAsync(glbObj, scene, loadOptions = {}) {
  * @param {THREE.Scene} scene
  * @returns {Promise<import("three").Object3D|null>}
  */
-function loadObjWithOptionalMtlAsync(objInfo, scene) {
-  return new Promise((resolve, reject) => {
-    if (!objInfo || !objInfo.modelPath) {
-      resolve(null);
-      return;
-    }
-    const modelPath = resolveAssetUrl("", objInfo.modelPath);
+async function loadObjWithOptionalMtlAsync(objInfo, scene, loadOptions = {}) {
+  if (!objInfo?.modelPath) return null;
+  return withModelLoadScope(scene, loadOptions, modelLoadingManager, async (scope) => {
+    const modelPath = scope.resolvePath(objInfo.modelPath);
+    const objText = await new THREE.FileLoader(scope.manager).setResponseType("text").loadAsync(modelPath);
+    scope.check();
+    const modelBase = THREE.LoaderUtils.extractUrlBase(modelPath);
     const explicitMtlPath = objInfo.mtlPath || objInfo.materialPath || objInfo.mtlModelPath;
-    readTextAsset(
-      modelPath,
-      (objText) => {
-        const objLibs = parseObjMaterialLibraries(objText);
-        const modelBase = extractAssetBaseUrl(modelPath);
-        const inferredMtlPath = hasText(explicitMtlPath)
-          ? resolveAssetUrl(modelBase, explicitMtlPath)
-          : objLibs.length
-            ? resolveAssetUrl(modelBase, objLibs[0])
-            : "";
-        const parseObjWithLoader = (loader, effectiveMtlPath = "") => {
-          try {
-            const obj = loader.parse(objText);
-            finalizeObjObject(obj, objInfo, scene, { effectiveMtlPath });
-            resolve(obj);
-          } catch (error) {
-            reject(error instanceof Error ? error : new Error(String(error)));
-          }
-        };
-        if (!inferredMtlPath) {
-          parseObjWithLoader(new OBJLoader(modelLoadingManager), "");
-          return;
-        }
-        const mtlLoader = new MTLLoader(modelLoadingManager);
-        const resourceBase = extractAssetBaseUrl(inferredMtlPath);
-        if (resourceBase) {
-          mtlLoader.setResourcePath(resourceBase);
-        }
-        mtlLoader.load(
-          inferredMtlPath,
-          (materials) => {
-            materials.preload();
-            const objLoader = new OBJLoader(modelLoadingManager);
-            objLoader.setMaterials(materials);
-            parseObjWithLoader(objLoader, inferredMtlPath);
-          },
-          undefined,
-          () => {
-            parseObjWithLoader(new OBJLoader(modelLoadingManager), inferredMtlPath);
-          }
-        );
-      },
-      (error) => {
-        reject(error instanceof Error ? error : new Error(String(error)));
+    const mtl = explicitMtlPath || parseObjMaterialLibraries(objText)[0];
+    const mtlPath = mtl ? scope.resolvePath(mtl, modelBase) : "";
+    const loader = new OBJLoader(scope.manager);
+    if (mtlPath) {
+      const mtlLoader = new MTLLoader(scope.manager);
+      mtlLoader.setResourcePath(THREE.LoaderUtils.extractUrlBase(mtlPath));
+      try {
+        const materials = await mtlLoader.loadAsync(mtlPath);
+        scope.check();
+        materials.preload();
+        loader.setMaterials(materials);
+      } catch (error) {
+        scope.check();
+        log.warn("[loadObj] MTL unavailable; retaining base material:", mtlPath, error);
       }
-    );
+    }
+    const object = scope.own(loader.parse(objText));
+    await scope.settled();
+    scope.run(() => discardUndecodedModelTextures(object));
+    const textures = scope.run(() => finalizeObjObject(object, objInfo, scene, { effectiveMtlPath: mtlPath, scope }));
+    await Promise.all(textures);
+    await scope.settled();
+    scope.check();
+    return scope.release(object);
   });
 }
 
@@ -2706,41 +2415,23 @@ function loadObjWithOptionalMtlAsync(objInfo, scene) {
  * @param {{ loadingManager?: import("three").LoadingManager }} [deps]
  * @returns {Promise<import("three").Object3D|null>}
  */
-function loadThreeNativeObjectJsonFromUrlAsync(modelInfo, scene, deps = {}) {
-  return new Promise((resolve, reject) => {
-    if (!modelInfo?.modelPath || !scene) {
-      resolve(null);
-      return;
+async function loadThreeNativeObjectJsonFromUrlAsync(modelInfo, scene, deps = {}) {
+  if (!modelInfo?.modelPath || !scene) return null;
+  return withModelLoadScope(scene, deps, modelLoadingManager, async (scope) => {
+    const loader = new THREE.ObjectLoader(scope.manager);
+    if (modelInfo.path) loader.setPath(scope.resolvePath(modelInfo.path));
+    if (modelInfo.resourcePath) {
+      const path = scope.resolvePath(modelInfo.resourcePath);
+      loader.setResourcePath(path.endsWith("/") ? path : path + "/");
     }
-    const manager = deps.loadingManager ?? modelLoadingManager;
-    const LoaderCtor = THREE.ObjectLoader;
-    const loader = manager ? new LoaderCtor(manager) : new LoaderCtor();
-    if (typeof modelInfo.path === "string" && modelInfo.path !== "") {
-      loader.setPath(modelInfo.path);
-    }
-    const rp = typeof modelInfo.resourcePath === "string" ? modelInfo.resourcePath.trim() : "";
-    if (rp !== "") {
-      loader.setResourcePath(rp.endsWith("/") ? rp : `${rp}/`);
-    }
-    if (typeof modelInfo.crossOrigin === "string") {
-      loader.setCrossOrigin(modelInfo.crossOrigin);
-    }
-    loader.load(
-      modelInfo.modelPath,
-      (object) => {
-        trackDisposableResource(object);
-        applyObjectTransform(object, modelInfo);
-        object.visible = modelInfo.visible !== false;
-        scene.add(object);
-        registerObject(object, modelInfo);
-        applyMorphInfluencesFromDescriptor(object, modelInfo);
-        resolve(object);
-      },
-      undefined,
-      (err) => {
-        reject(err instanceof Error ? err : new Error(String(err)));
-      }
-    );
+    if (modelInfo.crossOrigin) loader.setCrossOrigin(modelInfo.crossOrigin);
+    const object = scope.own(await loader.loadAsync(scope.resolvePath(modelInfo.modelPath)));
+    await scope.settled();
+    scope.run(() => {
+      discardUndecodedModelTextures(object);
+      finalizeExternalMeshObject(object, modelInfo, scene, deps);
+    });
+    return scope.release(object);
   });
 }
 
@@ -2750,35 +2441,9 @@ function loadThreeNativeObjectJsonFromUrlAsync(modelInfo, scene, deps = {}) {
  * @param {{ camera?: THREE.PerspectiveCamera|null, scene?: THREE.Scene }} [loadOptions]
  */
 function loadBufferExternalModel(modelInfo, scene, loadOptions = {}) {
-    if (!modelInfo || !modelInfo.modelPath) {
-        return;
-    }
-    const externalType = resolveExternalModelType(modelInfo);
-    const modelPath = resolveAssetUrl("", modelInfo.modelPath);
-    if (!modelPath) {
-        log.error("[loadBufferExternalModel] cannot resolve modelPath:", modelInfo.modelPath);
-        return;
-    }
-    const resourceBase = extractAssetBaseUrl(modelPath);
-    readArrayBufferAsset(
-        modelPath,
-        function(buffer) {
-            parseMeshArrayBufferToObject3D(externalType, buffer, {
-                resourcePath: resourceBase,
-                fileName: modelInfo.modelPath,
-                loadingManager: modelLoadingManager
-            })
-                .then(function(object) {
-                    finalizeExternalMeshObject(object, modelInfo, scene, loadOptions);
-                })
-                .catch(function(error) {
-                    log.error("External model parse failed:", modelInfo.modelPath, error);
-                });
-        },
-        function(error) {
-            log.error("External model load failed:", modelInfo.modelPath, error);
-        }
-    );
+    loadBufferExternalModelAsync(modelInfo, scene, loadOptions).catch((error) => {
+        if (error?.name !== "AbortError") log.error("[loadExternalModel] load failed:", modelInfo?.modelPath, error);
+    });
 }
 
 /**
@@ -2788,29 +2453,25 @@ function loadBufferExternalModel(modelInfo, scene, loadOptions = {}) {
  * @returns {Promise<import("three").Object3D|null>}
  */
 async function loadBufferExternalModelAsync(modelInfo, scene, loadOptions = {}) {
-    if (!modelInfo || !modelInfo.modelPath) {
-        return null;
-    }
-    const externalType = resolveExternalModelType(modelInfo);
-    const modelPath = resolveAssetUrl("", modelInfo.modelPath);
-    if (!modelPath) {
-        throw new Error(`[loadBufferExternalModel] cannot resolve modelPath: ${modelInfo.modelPath}`);
-    }
-    const resourceBase = extractAssetBaseUrl(modelPath);
-    const buffer = await readMeshArrayBufferFromUrl(modelPath, modelLoadingManager);
-    const object = await parseMeshArrayBufferToObject3D(externalType, buffer, {
-        resourcePath: resourceBase,
-        fileName: modelInfo.modelPath,
-        loadingManager: modelLoadingManager
+  if (!modelInfo?.modelPath) return null;
+  return withModelLoadScope(scene, loadOptions, modelLoadingManager, async (scope) => {
+    const modelPath = scope.resolvePath(modelInfo.modelPath);
+    const resourceBase = THREE.LoaderUtils.extractUrlBase(modelPath);
+    const buffer = await readMeshArrayBufferFromUrl(modelPath, scope.manager);
+    scope.check();
+    const object = scope.own(await parseMeshArrayBufferToObject3D(resolveExternalModelType(modelInfo), buffer, {
+      resourcePath: resourceBase, fileName: modelPath, loadingManager: scope.manager
+    }));
+    await scope.settled();
+    scope.run(() => {
+      discardUndecodedModelTextures(object);
+      finalizeExternalMeshObject(object, modelInfo, scene, loadOptions);
     });
-    finalizeExternalMeshObject(object, modelInfo, scene, loadOptions);
-    return object;
+    return scope.release(object);
+  });
 }
-
 function createExternalModelUnsupportedError(externalType) {
-    const error = new Error(
-        `E_EXTERNAL_MODEL_UNSUPPORTED: unsupported external model type "${externalType}"`
-    );
+    const error = new Error(`E_EXTERNAL_MODEL_UNSUPPORTED: unsupported external model type "${externalType}"`);
     error.code = "E_EXTERNAL_MODEL_UNSUPPORTED";
     return error;
 }
@@ -2838,12 +2499,10 @@ export function loadExternalModelAsync(modelInfo, scene, loadOptions = {}) {
     return loadGltfAsync(modelInfo, scene, opts);
   }
   if (isThreeNativeJsonFileType(externalType)) {
-    return loadThreeNativeObjectJsonFromUrlAsync(modelInfo, scene, {
-      loadingManager: modelLoadingManager
-    });
+    return loadThreeNativeObjectJsonFromUrlAsync(modelInfo, scene, opts);
   }
   if (externalType === "obj") {
-    return loadObjWithOptionalMtlAsync(modelInfo, scene);
+    return loadObjWithOptionalMtlAsync(modelInfo, scene, opts);
   }
   if (isBufferExternalMeshType(externalType)) {
     return loadBufferExternalModelAsync(modelInfo, scene, opts);
@@ -2870,10 +2529,12 @@ function loadExternalModel(modelInfo, scene, loadOptions = {}){
         loadGltf(modelInfo, scene, loadOptions);
     }
     else if(isThreeNativeJsonFileType(externalType)){
-        loadThreeNativeObjectJsonFromUrl(modelInfo, scene, { loadingManager: modelLoadingManager });
+        loadThreeNativeObjectJsonFromUrlAsync(modelInfo, scene, loadOptions).catch((error) => {
+            if (error?.name !== "AbortError") log.error("[loadExternalModel] load failed:", error);
+        });
     }
     else if(externalType === "obj"){
-        loadObjWithOptionalMtl(modelInfo, scene);
+        loadObjWithOptionalMtl(modelInfo, scene, loadOptions);
     }
     else if(isBufferExternalMeshType(externalType)){
         loadBufferExternalModel(modelInfo, scene, loadOptions);

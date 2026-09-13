@@ -204,3 +204,15 @@ test("extractPromptTokens is generic without domain keyword lists", () => {
   assert.ok(tokens.includes("pump"));
   assert.equal(tokens.includes("机器人"), false);
 });
+
+test("spatial context includes all objects unless the host explicitly requests a reported page", () => {
+  const scene = { objectList: Array.from({ length: 110 }, (_, i) => ({ objType: "box", threeJsonId: `box-${i}`, name: `target-${String(i).padStart(3, "0")}` })) };
+  const all = buildObjectSpatialCardsFromSceneJson(scene);
+  assert.equal(all.cards.length, 110); assert.equal(all.truncated, false);
+  assert.equal(pickReferenceObjects("target", all.cards, all.descriptorById).length, 110);
+  const page = buildObjectSpatialCardsFromSceneJson(scene, { offset: 100, limit: 4 });
+  assert.equal(page.cards.length, 4); assert.equal(page.nextOffset, 104); assert.equal(page.totalCount, 110); assert.equal(page.truncated, true);
+  assert.equal(page.cards[0].threeJsonId, "box-100");
+  const selected = buildObjectSpatialCardsFromSceneJson(scene, { ids: ["box-105"] });
+  assert.equal(selected.cards.length, 1); assert.equal(selected.cards[0].threeJsonId, "box-105");
+});

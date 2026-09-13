@@ -14,6 +14,37 @@ export function getTextureLoadState(texture) {
 
 export function isManagedTexture(texture) { return requests.has(texture); }
 
+/** Register media/host-created textures without treating a placeholder as decoded.
+ * Cloned material views retain the underlying video/canvas until the last view retires. */
+export function registerTextureReadiness(texture, ready, options = {}) {
+  let references = 0, destroyed = false;
+  const completion = Promise.resolve(ready).then(() => texture);
+  completion.catch(() => {});
+  function retain() {
+    if (destroyed) throw new Error("Texture resource has been disposed.");
+    references++;
+    let released = false, rejectReleased;
+    const promise = Promise.race([completion, new Promise((_, reject) => { rejectReleased = reject; })]);
+    promise.catch(() => {});
+    return { promise, retain, release() {
+      if (released) return;
+      released = true;
+      rejectReleased(new DOMException("Texture view released.", "AbortError"));
+      if (--references === 0) { destroyed = true; options.dispose?.(); }
+    } };
+  }
+  const lease = retain();
+  const state = { state: "loading", lease, promise: null };
+  state.promise = lease.promise.then(() => { state.state = "ready"; return texture; }).catch((error) => {
+    state.state = error?.name === "AbortError" ? "cancelled" : "error";
+    throw error;
+  });
+  state.promise.catch(() => {});
+  requests.set(texture, state);
+  texture.addEventListener("dispose", () => lease.release());
+  return texture;
+}
+
 /** A synchronous texture handle, with explicit asynchronous readiness and lease ownership. */
 export function requestTexture(source, options = {}) {
   const scope = resolveRuntimeContext(options.runtimeScope);

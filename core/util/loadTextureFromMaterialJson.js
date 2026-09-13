@@ -8,7 +8,8 @@ import { createGifCanvasTextureFromMaterialJson } from "./gifAnimatedTexture.js"
 import { resolveTextureSource } from "./resolveTextureSource.js";
 import { resolvePublicAssetUrlCandidates } from "./assetsBase.js";
 import { applyTexturePropsFromRecord } from "./textureSampling.js";
-import { requestTexture, bindTextureWhenReady, whenTextureReady } from "../resource/textureRequest.js";
+import { requestTexture, bindTextureWhenReady, whenTextureReady, registerTextureReadiness } from "../resource/textureRequest.js";
+import { createMediaResource } from "../resource/mediaResource.js";
 import { resolveRuntimeContext } from "../runtime/runtimeContext.js";
 import { MATERIAL_TEXTURE_SLOTS } from "../texture/textureSlots.js";
 
@@ -88,27 +89,6 @@ function tagTextureResolvedUrl(texture, url) {
   texture.userData.threeJsonResolvedUrl = trimmed;
 }
 
-/**
- * Pause and release the associated `HTMLVideoElement` when `THREE.Texture.dispose` runs.
- * @param {THREE.Texture} texture
- * @param {HTMLVideoElement} video
- */
-function wrapVideoElementTextureDispose(texture, video) {
-  if (!texture || !video || typeof texture.dispose !== "function") {
-    return;
-  }
-  const innerDispose = texture.dispose.bind(texture);
-  texture.dispose = function disposeVideoBackedTexture() {
-    try {
-      video.pause();
-      video.removeAttribute("src");
-      video.load();
-    } catch (_) {
-      /* ignore */
-    }
-    innerDispose();
-  };
-}
 
 /**
  * @param {object} materialJson
@@ -128,22 +108,37 @@ function createVideoTextureFromMaterialJson(materialJson, url, opts = {}) {
   } else if (/^https?:\/\//i.test(url) || url.startsWith("//")) {
     video.crossOrigin = "anonymous";
   }
-  video.src = url;
+  const resource = createMediaResource(url, "video", opts);
   const texture = new THREE.VideoTexture(video);
   trackDisposableResource(texture);
   applyTextureRepeatToMap(texture, materialJson, opts);
   applyTexturePropsFromRecord(texture, "imageMap", materialJson);
   tagTextureResolvedUrl(texture, url);
-  wrapVideoElementTextureDispose(texture, video);
-  if (materialJson.videoAutoplay !== false) {
-    const playPromise = video.play();
-    if (playPromise && typeof playPromise.catch === "function") {
-      playPromise.catch((err) => {
-        log.warn("[textureKind:video] video.play() failed:", url, err);
-      });
-    }
-  }
-  return texture;
+  const ready = resource.ready.then((resolved) => new Promise((resolve, reject) => {
+    const cleanup = () => {
+      video.removeEventListener("loadeddata", loaded);
+      video.removeEventListener("error", failed);
+      resource.signal.removeEventListener("abort", aborted);
+    };
+    const loaded = () => {
+      if (video.readyState < 2 || !video.videoWidth || !video.videoHeight) return;
+      cleanup(); texture.needsUpdate = true; resolve(texture);
+    };
+    const failed = () => { cleanup(); reject(new Error(`Video could not decode a first frame: ${url}`)); };
+    const aborted = () => { cleanup(); reject(resource.signal.reason); };
+    video.addEventListener("loadeddata", loaded);
+    video.addEventListener("error", failed);
+    resource.signal.addEventListener("abort", aborted, { once: true });
+    if (resource.signal.aborted) { aborted(); return; }
+    video.preload = "auto"; video.src = resolved; video.load(); loaded();
+    if (materialJson.videoAutoplay !== false) video.play()?.catch((error) => {
+      // Autoplay denial is not a decode failure: a paused first frame is usable.
+      log.warn("[textureKind:video] autoplay unavailable:", url, error);
+    });
+  }));
+  return registerTextureReadiness(texture, ready, { dispose() {
+    resource.dispose(); video.pause(); video.removeAttribute("src"); video.load();
+  } });
 }
 
 /**
@@ -165,7 +160,7 @@ function loadTextureFromMaterialJson(materialJson, opts = {}) {
   if (!rawUrl) {
     return null;
   }
-  const urls = resolvePublicAssetUrlCandidates(rawUrl);
+  const urls = runtimeScope.resolveAssetCandidates?.(rawUrl) || resolvePublicAssetUrlCandidates(rawUrl);
   const url = urls[0];
   if (!url) {
     return null;
@@ -177,6 +172,7 @@ function loadTextureFromMaterialJson(materialJson, opts = {}) {
 
   if (kind === "video") {
     return createVideoTextureFromMaterialJson(materialJson, url, {
+      ...opts, runtimeScope,
       wrapRepeat,
       defaultRepeatX: defX,
       defaultRepeatY: defY
@@ -184,6 +180,7 @@ function loadTextureFromMaterialJson(materialJson, opts = {}) {
   }
   if (kind === "gif") {
     const texture = createGifCanvasTextureFromMaterialJson(materialJson, url, {
+      ...opts, runtimeScope,
       wrapRepeat,
       defaultRepeatX: defX,
       defaultRepeatY: defY

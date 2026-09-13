@@ -1,10 +1,10 @@
 /**
  * Structural scene JSON validation (no tools/common/editor-single dependency).
  */
-import { analyzeSceneUsage } from "../ai/sceneCapability.js";
+import { analyzeSceneUsage } from "../capabilities/sceneUsage.js";
 import { sanitizeAiJsonText } from "../util/sceneJsonSanitize.js";
 import { DEFAULT_FRIENDLY_SCENE_LIST_ORDER } from "./sceneFriendlyMap.js";
-import { isLoadableScenePayload } from "./sceneFriendlyNormalizer.js";
+import { isLoadableScenePayload, normalizeScenePayload } from "./sceneFriendlyNormalizer.js";
 
 /**
  * @param {string} sceneJsonString
@@ -45,12 +45,12 @@ export function validateSceneJson(sceneJsonString) {
     if (!isLoadableScenePayload(parsed)) {
       return { ok: false, error: "missing worldInfo or standard objectList/sceneConfig" };
     }
-    const objectCount = Array.isArray(parsed.objectList) ? parsed.objectList.length : 0;
+    const normalized = normalizeScenePayload(parsed);
+    // Count authored records, not synthetic scene/camera records injected by normalization.
+    const objectCount = Array.isArray(parsed.objectList) ? parsed.objectList.length
+      : normalized.objectList.filter((record) => !["scene", "camera", "light"].includes(record.objType)).length;
     const wi = parsed.worldInfo;
     const hasFriendly = wi && typeof wi === "object";
-    if (hasFriendly && !Array.isArray(wi.boxModelList)) {
-      return { ok: false, error: "missing boxModelList" };
-    }
     const friendlyCount = hasFriendly ? countFriendlyListItems(wi) : 0;
     const boxCount = hasFriendly && Array.isArray(wi.boxModelList) ? wi.boxModelList.length : 0;
     const usage = analyzeSceneUsage(parsed);

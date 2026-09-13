@@ -8,8 +8,6 @@ import { resolvePosition, resolveRotation, resolveScale } from "../util/vectorVa
  * Compact spatial context for AI scene update (position, geometry summary, scale profile).
  */
 
-const MAX_SPATIAL_OBJECTS = 40;
-const MAX_REFERENCE_OBJECTS = 5;
 const MIN_PROMPT_TOKEN_LENGTH = 2;
 
 const RELATIVE_POSITION_WORDS = [
@@ -517,7 +515,7 @@ export function buildSceneScaleProfile(cards, meta = {}) {
  * @param {import("../command/types.js").CommandContext} ctx
  * @returns {{ cards: object[], descriptorById: Map<string, object> }}
  */
-export function buildObjectSpatialCardsFromScene(ctx) {
+export function buildObjectSpatialCardsFromScene(ctx, options = {}) {
   const cards = [];
   const descriptorById = new Map();
   const seen = new Set();
@@ -540,16 +538,7 @@ export function buildObjectSpatialCardsFromScene(ctx) {
     cards.push(buildObjectSpatialCard(descriptor, { parentThreeJsonId, object3D: node }));
   });
   cards.sort((a, b) => String(a.name).localeCompare(String(b.name)));
-  const totalCount = cards.length;
-  if (cards.length > MAX_SPATIAL_OBJECTS) {
-    return {
-      cards: cards.slice(0, MAX_SPATIAL_OBJECTS),
-      descriptorById,
-      truncated: true,
-      totalCount
-    };
-  }
-  return { cards, descriptorById, totalCount };
+  return paginateSpatialCards(cards, descriptorById, options);
 }
 
 /**
@@ -560,7 +549,7 @@ export function buildObjectSpatialCardsFromScene(ctx) {
  * @param {object} sceneJsonPayload
  * @returns {{ cards: object[], descriptorById: Map<string, object>, truncated?: boolean, totalCount?: number }}
  */
-export function buildObjectSpatialCardsFromSceneJson(sceneJsonPayload) {
+export function buildObjectSpatialCardsFromSceneJson(sceneJsonPayload, options = {}) {
   const cards = [];
   const descriptorById = new Map();
   const seen = new Set();
@@ -592,21 +581,14 @@ export function buildObjectSpatialCardsFromSceneJson(sceneJsonPayload) {
       if (Array.isArray(descriptor.subScene) && descriptor.subScene.length > 0) {
         walk(descriptor.subScene, id || parentThreeJsonId, worldMatrix);
       }
+      for (const level of descriptor.levels || []) if (level.object) walk([level.object], id || parentThreeJsonId, worldMatrix);
     }
   }
   walk(objectList, "", new THREE.Matrix4());
+  walk(normalized?.sceneConfig?.lights || [], "", new THREE.Matrix4());
 
   cards.sort((a, b) => String(a.name).localeCompare(String(b.name)));
-  const totalCount = cards.length;
-  if (cards.length > MAX_SPATIAL_OBJECTS) {
-    return {
-      cards: cards.slice(0, MAX_SPATIAL_OBJECTS),
-      descriptorById,
-      truncated: true,
-      totalCount
-    };
-  }
-  return { cards, descriptorById, totalCount };
+  return paginateSpatialCards(cards, descriptorById, options);
 }
 
 /**
@@ -772,7 +754,7 @@ export function pickReferenceObjects(prompt, cards, descriptorById, options = {}
       footprint: card.footprint,
       ...(card.boundsSource ? { boundsSource: card.boundsSource } : {})
     } : card);
-    if (matched.length >= MAX_REFERENCE_OBJECTS) {
+    if (options.maxReferences != null && matched.length >= options.maxReferences) {
       break;
     }
   }
@@ -838,4 +820,15 @@ export function buildPlacementHints(prompt, referenceObjects, scaleProfile = nul
   }
 
   return "";
+}
+/** Unbounded by default. Hosts may explicitly request a page; omission is always reported. */
+function paginateSpatialCards(cards, descriptorById, options) {
+  const offset = options.offset ?? 0, limit = options.limit ?? Infinity;
+  if (!Number.isSafeInteger(offset) || offset < 0 || (limit !== Infinity && (!Number.isSafeInteger(limit) || limit < 1))) throw new TypeError("Spatial page offset/limit must be non-negative/positive integers.");
+  const ids = options.ids ? new Set(options.ids.map(String)) : null;
+  const matching = ids ? cards.filter((card) => ids.has(card.threeJsonId)) : cards;
+  const page = matching.slice(offset, limit === Infinity ? undefined : offset + limit);
+  const nextOffset = offset + page.length < matching.length ? offset + page.length : null;
+  return { cards: page, descriptorById, totalCount: cards.length, matchingCount: matching.length,
+    offset, nextOffset, truncated: offset > 0 || nextOffset !== null || matching.length !== cards.length };
 }

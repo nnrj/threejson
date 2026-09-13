@@ -6,6 +6,7 @@ import {
   normalizeEditableMeshTopology,
   validateEditableMeshTopology
 } from "../builder/editableMesh/editableMeshTopology.js";
+import { bevelTopologyEdges } from "../builder/editableMesh/topologyBevel.js";
 import { mirrorEditableTopology } from "../builder/editableMesh/editableMeshModifiers.js";
 
 function cloneJson(value) {
@@ -444,107 +445,8 @@ function loopCut(topology, operation) {
 }
 
 function bevelEdges(topology, operation) {
-  const edges = Array.isArray(operation.edges) ? operation.edges : [];
-  if (edges.length > 0) {
-    const amount = THREE.MathUtils.clamp(Number(operation.factor ?? operation.amount) || 0.08, 0.000001, 0.499999);
-    for (const rawEdge of edges) {
-      const requested = Array.isArray(rawEdge) ? rawEdge.slice(0, 2).map(String) : [];
-      if (requested.length !== 2 || requested[0] === requested[1]) {
-        throw new Error("bevelEdges.edges must contain pairs of distinct vertex IDs.");
-      }
-      const indexes = buildTopologyIndexes(topology);
-      const key = canonicalEdgeKey(...requested);
-      const adjacent = indexes.edgeFaces.get(key) || [];
-      if (adjacent.length !== 2) {
-        throw new Error(`bevelEdges currently requires a two-sided manifold edge; "${requested.join(" / ")}" has ${adjacent.length} adjacent face(s).`);
-      }
-      const sides = [];
-      for (const faceId of adjacent) {
-        const face = indexes.faceById.get(faceId)?.face;
-        const edgeIndex = edgeIndexInFace(face, requested[0], requested[1]);
-        if (!face || edgeIndex < 0) throw new Error(`bevelEdges could not resolve edge on face "${faceId}".`);
-        const startId = face.vertices[edgeIndex];
-        const endId = face.vertices[(edgeIndex + 1) % face.vertices.length];
-        const center = new THREE.Vector3();
-        for (const id of face.vertices) center.add(new THREE.Vector3(...indexes.vertexById.get(id).vertex.position));
-        center.multiplyScalar(1 / face.vertices.length);
-        const start = indexes.vertexById.get(startId).vertex;
-        const end = indexes.vertexById.get(endId).vertex;
-        const startInsetId = uniqueId(`${startId}-${face.id}-bevel`, "v-bevel", topology.vertices);
-        topology.vertices.push({
-          ...cloneJson(start),
-          id: startInsetId,
-          position: new THREE.Vector3(...start.position).lerp(center, amount).toArray()
-        });
-        const endInsetId = uniqueId(`${endId}-${face.id}-bevel`, "v-bevel", topology.vertices);
-        topology.vertices.push({
-          ...cloneJson(end),
-          id: endInsetId,
-          position: new THREE.Vector3(...end.position).lerp(center, amount).toArray()
-        });
-        const vertices = [];
-        for (let index = 0; index < face.vertices.length; index += 1) {
-          vertices.push(face.vertices[index]);
-          if (index === edgeIndex) vertices.push(startInsetId, endInsetId);
-        }
-        face.vertices = vertices;
-        sides.push({ face, startId, endId, startInsetId, endInsetId });
-      }
-      const first = sides[0];
-      const second = sides[1];
-      const secondStartAtFirstEnd = second.startId === first.endId;
-      const secondEndInsetId = secondStartAtFirstEnd ? second.startInsetId : second.endInsetId;
-      const secondStartInsetId = secondStartAtFirstEnd ? second.endInsetId : second.startInsetId;
-      const materialIndex = Math.max(0, Math.round(Number(operation.materialIndex ?? first.face.materialIndex) || 0));
-      const part = String(operation.part ?? first.face.part ?? "");
-      topology.faces.push(
-        {
-          id: uniqueId("f-bevel-strip", "f-bevel-strip", topology.faces),
-          vertices: [first.startInsetId, first.endInsetId, secondEndInsetId, secondStartInsetId],
-          part,
-          materialIndex,
-          smooth: operation.smooth !== false
-        },
-        {
-          id: uniqueId("f-bevel-cap", "f-bevel-cap", topology.faces),
-          vertices: [first.startId, secondStartInsetId, first.startInsetId],
-          part,
-          materialIndex,
-          smooth: operation.smoothCaps === true
-        },
-        {
-          id: uniqueId("f-bevel-cap", "f-bevel-cap", topology.faces),
-          vertices: [first.endId, first.endInsetId, secondEndInsetId],
-          part,
-          materialIndex,
-          smooth: operation.smoothCaps === true
-        }
-      );
-      topology.edges = topology.edges.filter((edge) => canonicalEdgeKey(...edge.vertices) !== key);
-      if (operation.crease != null) {
-        const crease = THREE.MathUtils.clamp(Number(operation.crease) || 0, 0, 1);
-        topology.edges.push(
-          { vertices: [first.startInsetId, first.endInsetId], crease },
-          { vertices: [secondStartInsetId, secondEndInsetId], crease }
-        );
-      }
-    }
-    return;
-  }
-
-  const indexes = buildTopologyIndexes(topology);
-  const faceIds = new Set(
-    Array.isArray(operation.faceIds) ? operation.faceIds.map(String) : []
-  );
-  if (faceIds.size === 0) {
-    throw new Error("bevelEdges requires faceIds or edges:[[vertexA,vertexB],...].");
-  }
-  for (const faceId of faceIds) {
-    if (!indexes.faceById.has(faceId)) throw new Error(`bevelEdges references unknown face "${faceId}".`);
-  }
-  insetFaces(topology, { faceIds: [...faceIds], factor: operation.factor ?? operation.amount ?? 0.08, ringPart: operation.part });
-  const distance = Number(operation.distance);
-  if (Number.isFinite(distance) && Math.abs(distance) > 0) extrudeFaces(topology, { faceIds: [...faceIds], distance, sidePart: operation.part });
+  const result = bevelTopologyEdges(topology, operation);
+  topology.vertices = result.vertices; topology.faces = result.faces; topology.edges = result.edges;
 }
 
 function setModifier(record, operation) {

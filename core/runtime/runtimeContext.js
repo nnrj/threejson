@@ -133,10 +133,16 @@ const DISPOSE_ORDER = [
  * @returns {RuntimeContext}
  */
 function createRuntimeContext() {
+  const lifetime = new AbortController();
   /** @type {RuntimeContext} */
   const ctx = {
     __isThreeJsonRuntimeContext: true,
+    signal: lifetime.signal,
+    disposed: false,
     dispose() {
+      if (ctx.disposed) return;
+      ctx.disposed = true;
+      lifetime.abort(new DOMException("Runtime disposed.", "AbortError"));
       for (let i = 0; i < DISPOSE_ORDER.length; i++) {
         const key = DISPOSE_ORDER[i];
         const store = ctx[key];

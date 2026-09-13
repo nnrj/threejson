@@ -71,7 +71,7 @@ async function validateSceneJsonWithNormalizer(sceneJsonString) {
       }
     };
   } catch (err) {
-    return validateSceneJson(sceneJsonString);
+    return { ok: false, engineAligned: true, error: String(err?.message || err), code: err?.code || "SCENE_NORMALIZATION_FAILED" };
   }
 }
 
@@ -85,10 +85,10 @@ function evaluateSceneCapabilityFit(prompt, sceneObj) {
 }
 
 /**
- * @param {number} [maxChars=4200]
+ * @param {number} [maxChars=Infinity] Optional host-requested excerpt; full schema by default.
  * @returns {string}
  */
-function summarizeSchema(maxChars = 4200) {
+function summarizeSchema(maxChars = Infinity) {
   const text = [
     buildSceneCapabilityCatalog().trim(),
     THREE_JSON_CORE_CAPABILITIES.trim(),

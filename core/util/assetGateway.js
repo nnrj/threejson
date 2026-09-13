@@ -2,6 +2,7 @@
 import { MATERIAL_TEXTURE_SLOTS } from "../texture/textureSlots.js";
 
 const TEXTURE_KEYS = new Set(["map", ...Object.values(MATERIAL_TEXTURE_SLOTS).map((slot) => slot.descriptorField)]);
+const MODEL_KEYS = new Set(["modelPath", "mtlPath", "materialPath", "mtlModelPath", "resourcePath"]);
 
 const URL_KEYS = new Set([
   "textureUrl",
@@ -83,7 +84,9 @@ export function applyAssetGatewayToPayload(payload, config, options = {}) {
     }
     if (!isPlainObject(value)) return;
     for (const [childKey, childValue] of Object.entries(value)) {
-      if (childKey === "textureResources" || (options.deferTextures && TEXTURE_KEYS.has(childKey))) continue;
+      if (["textureResources", "metadata", "userData", "events", "tsl"].includes(childKey)
+        || (options.deferTextures && TEXTURE_KEYS.has(childKey))
+        || (options.deferModels && MODEL_KEYS.has(childKey))) continue;
       if (URL_KEYS.has(childKey) && isProxyableUrl(childValue)) {
         value[childKey] = resolveAssetUrl(childValue, config, {
           kind: inferAssetKind(childKey, value),

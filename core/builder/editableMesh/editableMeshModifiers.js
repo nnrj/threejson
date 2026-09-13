@@ -3,8 +3,11 @@ import {
   buildTopologyIndexes,
   canonicalEdgeKey,
   cloneEditableMeshTopology,
-  normalizeEditableMeshTopology
+  normalizeEditableMeshTopology,
+  triangulateEditableFace
 } from "./editableMeshTopology.js";
+import { reduceEditableTopology, splitEditableSmoothingFans } from "./topologyReduction.js";
+import { bevelTopologyEdges } from "./topologyBevel.js";
 
 function nextId(prefix, used) {
   let index = used.size + 1;
@@ -99,14 +102,15 @@ export function smoothEditableTopology(input, modifier = {}) {
 export function triangulateEditableTopology(input) {
   const topology = cloneEditableMeshTopology(input);
   const faceIds = new Set(topology.faces.map((item) => item.id));
+  const { vertexById } = buildTopologyIndexes(topology);
   const faces = [];
   for (const face of topology.faces) {
     if (face.vertices.length === 3) {
       faces.push(face);
       continue;
     }
-    for (let i = 1; i < face.vertices.length - 1; i += 1) {
-      faces.push({ ...face, id: nextId(`${face.id}-tri`, faceIds), vertices: [face.vertices[0], face.vertices[i], face.vertices[i + 1]] });
+    for (const triangle of triangulateEditableFace(face, vertexById)) {
+      faces.push({ ...face, id: nextId(`${face.id}-tri`, faceIds), vertices: triangle.map((index) => face.vertices[index]) });
     }
   }
   topology.faces = faces;
@@ -379,110 +383,17 @@ export function solidifyEditableTopology(input, modifier = {}) {
   return topology;
 }
 
-/** Deterministic face-bevel approximation for a control cage: inset selected faces and optionally
- * offset the new face along its normal. It keeps stable source IDs and gives generated ring
- * vertices/faces deterministic IDs, making it suitable for repeated AI edits. */
-export function bevelEditableTopology(input, modifier = {}) {
-  const topology = cloneEditableMeshTopology(input);
-  const selectedIds = new Set(Array.isArray(modifier.faceIds) ? modifier.faceIds.map(String) : []);
-  const selectedParts = new Set(Array.isArray(modifier.parts) ? modifier.parts.map(String) : []);
-  const amount = THREE.MathUtils.clamp(Number(modifier.amount ?? modifier.factor) || 0.08, 0.000001, 0.499999);
-  const offset = Number(modifier.offset ?? modifier.distance) || 0;
-  const { vertexById } = buildTopologyIndexes(topology);
-  const vertexIds = new Set(topology.vertices.map((item) => item.id));
-  const faceIds = new Set(topology.faces.map((item) => item.id));
-  const sourceFaces = [...topology.faces];
-  for (const face of sourceFaces) {
-    if (selectedIds.size && !selectedIds.has(face.id)) continue;
-    if (selectedParts.size && !selectedParts.has(face.part)) continue;
-    const center = new THREE.Vector3();
-    for (const id of face.vertices) center.add(vector(vertexById.get(id).vertex.position));
-    center.multiplyScalar(1 / face.vertices.length);
-    const normal = face.vertices.length >= 3
-      ? vector(vertexById.get(face.vertices[1]).vertex.position)
-          .sub(vector(vertexById.get(face.vertices[0]).vertex.position))
-          .cross(
-            vector(vertexById.get(face.vertices[2]).vertex.position)
-              .sub(vector(vertexById.get(face.vertices[0]).vertex.position))
-          )
-          .normalize()
-      : new THREE.Vector3(0, 1, 0);
-    const inner = [];
-    for (const id of face.vertices) {
-      const source = vertexById.get(id).vertex;
-      const innerId = nextId(`${id}-bevel`, vertexIds);
-      const position = vector(source.position).lerp(center, amount).addScaledVector(normal, offset);
-      topology.vertices.push({ ...source, id: innerId, position: array(position) });
-      inner.push(innerId);
-    }
-    const outer = face.vertices.slice();
-    face.vertices = inner;
-    for (let i = 0; i < outer.length; i += 1) {
-      topology.faces.push({
-        ...face,
-        id: nextId(`${face.id}-bevel-ring`, faceIds),
-        vertices: [outer[i], outer[(i + 1) % outer.length], inner[(i + 1) % inner.length], inner[i]],
-        part: modifier.ringPart ?? face.part
-      });
-    }
-  }
-  return topology;
-}
+/** True edge chamfers. Inset remains a separate modeling operation. */
+export function bevelEditableTopology(input, modifier = {}) { return bevelTopologyEdges(input, modifier); }
 
-/** Split vertices at explicitly creased/boundary edges so ordinary BufferGeometry normal
- * calculation produces a hard edge. This is the control-topology equivalent of EdgeSplit. */
-export function edgeSplitEditableTopology(input, modifier = {}) {
-  const topology = cloneEditableMeshTopology(input);
-  const threshold = THREE.MathUtils.clamp(Number(modifier.creaseThreshold) || 0.5, 0, 1);
-  const includeBoundary = modifier.includeBoundary === true;
-  const indexes = buildTopologyIndexes(topology);
-  const sharpFaces = new Set();
-  for (const [key, faces] of indexes.edgeFaces) {
-    const crease = indexes.creaseByEdge.get(key) || 0;
-    if (crease >= threshold || (includeBoundary && faces.length === 1)) {
-      for (const faceId of faces) sharpFaces.add(faceId);
-    }
-  }
-  if (!sharpFaces.size) return topology;
-  const vertexIds = new Set(topology.vertices.map((item) => item.id));
-  for (const face of topology.faces) {
-    if (!sharpFaces.has(face.id)) continue;
-    face.vertices = face.vertices.map((id) => {
-      const source = indexes.vertexById.get(id).vertex;
-      const splitId = nextId(`${id}-split-${face.id}`, vertexIds);
-      topology.vertices.push({ ...source, id: splitId, position: source.position.slice() });
-      return splitId;
-    });
-  }
-  topology.edges = topology.edges.filter((edge) => !(
-    (indexes.creaseByEdge.get(canonicalEdgeKey(...edge.vertices)) || 0) >= threshold
-  ));
-  return topology;
-}
+export function edgeSplitEditableTopology(input, modifier = {}) { return splitEditableSmoothingFans(input, modifier); }
 
-/** Optional, explicitly requested simplification. Core never invokes this automatically. */
-export function simplifyEditableTopology(input, modifier = {}) {
-  const topology = cloneEditableMeshTopology(input);
-  const requestedCount = Number(modifier.targetFaceCount);
-  const ratio = THREE.MathUtils.clamp(Number(modifier.ratio) || 0.5, 0.000001, 1);
-  const target = Number.isFinite(requestedCount) && requestedCount >= 1
-    ? Math.min(topology.faces.length, Math.round(requestedCount))
-    : Math.max(1, Math.round(topology.faces.length * ratio));
-  if (target >= topology.faces.length) return topology;
-  const keep = [];
-  for (let i = 0; i < target; i += 1) {
-    keep.push(topology.faces[Math.floor((i * topology.faces.length) / target)]);
-  }
-  topology.faces = keep;
-  const used = new Set(keep.flatMap((face) => face.vertices));
-  topology.vertices = topology.vertices.filter((vertex) => used.has(vertex.id));
-  topology.edges = topology.edges.filter((edge) => edge.vertices.every((id) => used.has(id)));
-  return topology;
-}
+export function simplifyEditableTopology(input, modifier = {}) { return reduceEditableTopology(input, modifier); }
 
 export function applyEditableMeshModifiers(input, modifiers = []) {
   let topology = cloneEditableMeshTopology(input);
   const applied = [];
+  const diagnostics = [];
   for (const descriptor of Array.isArray(modifiers) ? modifiers : []) {
     if (!descriptor || descriptor.enabled === false) continue;
     const type = String(descriptor.type || descriptor.kind || "").trim().toLowerCase().replace(/[-_\s]/g, "");
@@ -495,12 +406,15 @@ export function applyEditableMeshModifiers(input, modifiers = []) {
     else if (type === "solidify") topology = solidifyEditableTopology(topology, descriptor);
     else if (type === "bevel") topology = bevelEditableTopology(topology, descriptor);
     else if (type === "edgesplit" || type === "creasenormal") topology = edgeSplitEditableTopology(topology, descriptor);
-    else if (type === "simplify") topology = simplifyEditableTopology(topology, descriptor);
+    else if (type === "simplify") {
+      topology = simplifyEditableTopology(topology, descriptor);
+      if (topology.reduction) diagnostics.push({ modifier: descriptor.id || "simplify", ...topology.reduction });
+    }
     else if (["recalculatenormals", "recomputenormals", "recalculatetangents", "recomputetangents", "uvplanar", "uvbox", "uvcylindrical", "uvspherical", "uvtriplanar"].includes(type)) {
       // Evaluated by editableMeshBuilder after topology conversion.
     }
-    else continue;
+    else throw Object.assign(new Error(`Unsupported editable mesh modifier: ${descriptor.type || descriptor.kind || "(missing type)"}`), { code: "E_MESH_MODIFIER_UNSUPPORTED" });
     applied.push(descriptor.id || descriptor.type || descriptor.kind);
   }
-  return { topology, applied };
+  return { topology, applied, diagnostics };
 }

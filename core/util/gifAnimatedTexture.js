@@ -4,7 +4,8 @@
  */
 import * as THREE from "three";
 import { log } from "./logger.js";
-import { resolvePublicAssetUrl } from "./assetsBase.js";
+import { createMediaResource } from "../resource/mediaResource.js";
+import { registerTextureReadiness, bindTextureWhenReady } from "../resource/textureRequest.js";
 import { trackDisposableResource } from "../handler/trackedResourceRegistry.js";
 import { applyUiTextureSampling } from "./textureSampling.js";
 
@@ -103,20 +104,17 @@ export function createGifCanvasTextureFromMaterialJson(materialJson, url, opts =
         }
     };
 
-    const innerDispose = texture.dispose.bind(texture);
-    texture.dispose = function disposeGifBackedTexture() {
-        stop();
-        innerDispose();
-    };
-
-    (async () => {
+    const resource = createMediaResource(url, "image", opts);
+    const ready = (async () => {
         try {
             const { parseGIF, decompressFrames } = await import("gifuct-js");
-            const res = await fetch(resolvePublicAssetUrl(url), { mode: "cors", credentials: "omit" });
+            const resolved = await resource.ready;
+            const res = await fetch(resolved, { mode: "cors", credentials: "omit", signal: resource.signal });
             if (!res.ok) {
                 throw new Error(`HTTP ${res.status}`);
             }
             const buffer = await res.arrayBuffer();
+            resource.signal.throwIfAborted();
             const gif = parseGIF(buffer);
             const frames = decompressFrames(gif, true);
             if (!frames.length) {
@@ -160,14 +158,15 @@ export function createGifCanvasTextureFromMaterialJson(materialJson, url, opts =
             };
             rafId = requestAnimationFrame(tick);
         } catch (err) {
-            log.error("[textureKind:gif] decode/load failed:", resolvePublicAssetUrl(url), err);
+            if (err?.name !== "AbortError") log.error("[textureKind:gif] decode/load failed:", url, err);
+            throw err;
         }
     })();
-    return texture;
+    return registerTextureReadiness(texture, ready, { dispose() { stop(); resource.dispose(); } });
 }
 
 /** @deprecated Use {@link createGifCanvasTextureFromMaterialJson} and bind to THREE.Material.map */
 export function attachGifCanvasTextureFromMaterialJson(material, url, opts = {}) {
     const texture = createGifCanvasTextureFromMaterialJson(material, url, opts);
-    material.map = texture;
+    bindTextureWhenReady(material, "map", texture);
 }

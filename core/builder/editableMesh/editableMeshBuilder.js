@@ -183,6 +183,7 @@ export function buildEditableMeshGeometry(record = {}, options = {}) {
       sourceVertexCount: sourceTopology.vertices.length,
       sourceFaceCount: sourceTopology.faces.length,
       appliedModifiers: result.applied,
+      modifierDiagnostics: result.diagnostics,
       parts: [...new Set(sourceTopology.faces.map((face) => face.part).filter(Boolean))]
     };
     trackDisposableResource(geometry);

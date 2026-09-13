@@ -123,3 +123,30 @@ must remain distinguishable from loader, material, authorization and GPU failure
   `node tools/dev/syncHostSessionModules.mjs`; parity is enforced by a test.
 - Local checkpoint: 1,355 tests passed, 1 existing skip; React ThreeBox production
   build passed. Cloud package validation and browser visual QA remain outstanding.
+
+## Implementation evidence: geometry, AI validation and imported resources
+
+- Simplify now contracts manifold edges using accumulated plane quadrics; it no
+  longer discards a sample of faces and leaves holes. Boundary/part/material seams
+  are preserved by default. If the target cannot be reached without damaging the
+  surface, the actual count and reason are reported. This is not a core size cap.
+- Bevel uses the same real edge-chamfer operation for modifiers and commands;
+  EdgeSplit separates connected smoothing fans. Concave n-gons use triangulation,
+  not a triangle fan that can cross the polygon boundary. Unsupported modifiers
+  fail explicitly. Reference: [quadric error metrics](https://www.cs.cmu.edu/~garland/Papers/quadrics.pdf).
+- Structural validation no longer falls back to a weaker validator after a
+  normalizer error. The pure capability inventory was moved out of AI so runtime
+  validation has no dependency on AI. Spatial summaries have explicit pagination
+  and no hidden 40-object cutoff; dense geometry remains excluded from summaries.
+- External model loaders now capture per-scene URL policies and use independent
+  loading managers. GLTF/OBJ child buffers and textures resolve relative to the
+  authoritative model URL before gateway resolution. Cancellation rejects promptly
+  and disposes late non-abortable results. Duplicate callback/Promise loaders were
+  consolidated, retaining the synchronous deployment API.
+- Imported empty image maps are removed after loading settles, retaining base
+  material values. Video and GIF maps now wait for the first decoded frame;
+  cancellation, failed decode and cloned views have explicit resource ownership.
+- Behavioral coverage includes real concurrent GLTF requests, relative .bin paths,
+  cross-scene registries, delayed cancellation, video first-frame readiness,
+  material fallback and closed/wound simplified and beveled meshes. Browser and
+  server-proxy integration checks are still tracked separately below.
