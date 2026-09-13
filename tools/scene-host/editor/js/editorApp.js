@@ -61,6 +61,7 @@ import { ensureEditorBuiltinApiKey } from "./editorBuiltinAiProvider.js";
 import { createEditorInteraction } from "./editorInteraction.js";
 import { createEditorHistory } from "./editorHistory.js";
 import { createEditorAuthoringSession } from "./editorAuthoringSession.js";
+import { sceneHostGeometryCompiler } from "../../shared/js/sceneGeometryCompiler.js";
 import { createRightDockPanel } from "./rightDockPanel.js";
 import { createSceneManagePanel } from "./sceneManagePanel.js";
 import { createEventEditorPanel } from "./eventEditorPanel.js";
@@ -800,6 +801,7 @@ export async function bootstrapSceneHostEditor() {
       overrideSceneRenderLoop: editorSettings?.render?.overrideSceneRenderLoop === true
     };
     const opts = {
+      geometryCompiler: sceneHostGeometryCompiler,
       canvas: canvasContainer,
       assetsBase: sceneHostAssetUrl("assets/"),
       assetGateway: editorSettings?.general?.assetGatewayUrl ? { baseUrl: editorSettings.general.assetGatewayUrl } : undefined,

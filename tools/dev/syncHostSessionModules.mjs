@@ -1,7 +1,7 @@
 // The static baseline must work without packages/. Publish exact copies for npm hosts.
 // Keep new shared session modules canonical under scene-host/shared, and check for drift in CI.
 import { readFile, writeFile } from "node:fs/promises";
-export const HOST_SESSION_MODULES = ["sceneCardSession.js", "sceneViewportPool.js", "sceneCapabilities.js", "viewportGizmoOverlay.js"];
+export const HOST_SESSION_MODULES = ["sceneCardSession.js", "sceneViewportPool.js", "sceneCapabilities.js", "viewportGizmoOverlay.js", "sceneGeometryCompiler.js"];
 export async function syncHostSessionModules({ check = false } = {}) {
   for (const name of HOST_SESSION_MODULES) {
     const source = new URL(`../scene-host/shared/js/${name}`, import.meta.url);

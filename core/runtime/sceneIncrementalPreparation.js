@@ -106,7 +106,10 @@ async function prepareMaterials(object, before, after, options) {
 export async function prepareDocumentMeshGeometry(record, options = {}) {
   const type = String(record.objType).toLowerCase();
   let built;
-  if (type === "editablemesh") {
+  const compiler = options.geometryCompiler ?? resolveRuntimeContext(options.runtimeScope, { fallback: false })?.geometryCompiler;
+  if (compiler?.supports(record)) {
+    built = await compiler.compile(record, options);
+  } else if (type === "editablemesh") {
     const { buildEditableMeshGeometry } = await import("../builder/editableMesh/editableMeshBuilder.js");
     built = buildEditableMeshGeometry(record, options);
   } else if (type === "buffermesh") {

@@ -31,6 +31,7 @@ export function createSceneResourcePolicy(payload, options = {}) {
     return undefined;
   };
   context.loadSignal = options.signal;
+  context.geometryCompiler = options.geometryCompiler;
   // Loader bases must remain authoritative. Resolve each GLTF/OBJ child resource
   // only at the request boundary, after the loader has resolved its relative path.
   context.resolveModelResourceUrl = (source) => {

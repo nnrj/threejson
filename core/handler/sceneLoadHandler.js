@@ -1579,6 +1579,10 @@ async function createJsonScene(payload, options = {}) {
     await bus.emit(LOAD_PHASE.beforeNormalize, baseCtx);
 
     const normalized = normalizeScenePayloadWithRuntimeDefaults(payload, loadOptions);
+    if (options.geometryCompiler) {
+      const { prepareSceneGeometry } = await import("../geometry/preparedGeometry.js");
+      runtimeCtx.capabilityResources.add("compiled-geometry", await prepareSceneGeometry(normalized.payload, options));
+    }
     Object.assign(baseCtx, { normalized, payload });
     await bus.emit(LOAD_PHASE.afterNormalize, { ...baseCtx, phase: LOAD_PHASE.afterNormalize });
 
@@ -1713,6 +1717,10 @@ async function deployObjectRecordIntoRuntime(target, record, options = {}) {
   const optionalResources = await runSceneCapabilityPreparers(record, { ...options, runtimeScope: target });
   resolveRuntimeContext(target).capabilityResources.adopt(optionalResources);
   await ensureRectAreaLightSupport([record], targetBackend);
+  if (options.geometryCompiler) {
+    const { prepareSceneGeometry } = await import("../geometry/preparedGeometry.js");
+    resolveRuntimeContext(target).capabilityResources.add("compiled-geometry", await prepareSceneGeometry(record, options));
+  }
   await ensureCsgBrushOpsForPayload(record);
   const { deployJsonObjectAsync } = await getObjectLoadHandler();
   if (resolveArchiveObjectEntryMode(options) === "replace") {
@@ -1861,6 +1869,10 @@ async function deployJsonScene(target, payload, options = {}) {
   // own in-flight scheduled deploy, never a sibling canvas's.
   cancelActiveDeployScheduler(target);
   const normalized = normalizeScenePayloadWithRuntimeDefaults(payload, options);
+  if (options.geometryCompiler) {
+    const { prepareSceneGeometry } = await import("../geometry/preparedGeometry.js");
+    resolveRuntimeContext(target).capabilityResources.add("compiled-geometry", await prepareSceneGeometry(normalized.payload, options));
+  }
   await ensureRectAreaLightSupport(normalized.lightsConfig, targetBackend);
   const deployed = await deployIntoTarget(target, normalized, options);
   bindLightRelationships(deployed.scene || deployed);

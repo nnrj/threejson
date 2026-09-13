@@ -283,3 +283,17 @@ must remain distinguishable from loader, material, authorization and GPU failure
   geometry/materials are disposed. Runtime textures no longer enter panel JSON.
 - Visibility changes no longer rewrite shared material visibility. 56 focused
   model/panel/visibility regression tests passed at this checkpoint.
+
+## Implementation evidence: off-thread geometry
+
+- Extracted pure control-mesh and procedural evaluators from runtime builders.
+  A lazy optional Worker transfers evaluated buffers into prepared scene/session
+  commits. Synchronous engine APIs remain intact; ordinary cubes load no worker.
+- Native/React cards, Shower and Editor inject the shared host policy. Cancellation
+  terminates running computation without losing queued work. Missing Worker/CSP
+  support has an explicit host fallback, not a geometry simplification or hidden cap.
+- Five real-Worker/queue tests verify deterministic geometry, cancellation, errors,
+  transfer metadata and ownership. The full suite passed 1,423 tests with one
+  existing skip. Browser loading of the editable lounge chair remains correct.
+- See [compiler contract](./geometry-compilation.md) for generated bundle/release
+  handling, CDN constraints and the boundaries of the worker-backed capabilities.

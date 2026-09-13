@@ -1,6 +1,7 @@
 import { compileAuthoring } from "threejson/document";
 import { createRuntimeSceneSession, captureSceneSession, executeSceneSessionCommands, diffSceneDocuments, applySceneSessionTextureAssignment } from "threejson/session";
 import { captureSceneCardPreview } from "./sceneViewportPool.js";
+import { sceneHostGeometryCompiler } from "./sceneGeometryCompiler.js";
 
 /** Framework-independent document ownership and serialized, cancellable card operations. */
 export function createSceneCardSession(options = {}) {
@@ -31,6 +32,7 @@ export function createSceneCardSession(options = {}) {
     publishState(); return session?.runtime || null;
   };
   const driverOptions = {
+    geometryCompiler: sceneHostGeometryCompiler,
     ...options,
     createRuntime: async (document, runtimeOptions) => {
       const configuration = options.getRuntimeOptions?.(renderOptions) || {};
