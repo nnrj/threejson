@@ -2,14 +2,17 @@
  * Thin wrapper around the `three-viewport-gizmo` widget (click a face/axis to snap the camera
  * to that view). Shared by the editor and the shower so both draw/dispose it the same way.
  */
-import { Vector4 } from "three";
+import { Vector4, WebGLRenderer } from "three";
 import { ViewportGizmo } from "three-viewport-gizmo";
 
 let gizmo = null;
+let isolatedRenderer = null, isolatedRoot = null;
 
 export function disposeViewportGizmoOverlay() {
   gizmo?.dispose?.();
   gizmo = null;
+  isolatedRenderer?.dispose(); isolatedRenderer?.forceContextLoss(); isolatedRenderer = null;
+  isolatedRoot?.remove(); isolatedRoot = null;
 }
 
 /**
@@ -25,12 +28,38 @@ export function createViewportGizmoOverlay(runtime, container, options = {}) {
   if (!runtime?.camera || !runtime?.renderer || !container) {
     return null;
   }
-  gizmo = new ViewportGizmo(runtime.camera, runtime.renderer, {
+  let renderer = runtime.renderer;
+  const configuration = {
     container,
     size: 90,
     placement: "top-right",
     ...options
-  });
+  };
+  if (renderer.isWebGPURenderer) {
+    // This third-party widget uses WebGL LineMaterial. A small, independent overlay
+    // preserves the widget without sending GLSL materials through the WebGPU renderer.
+    isolatedRoot = document.createElement("div");
+    isolatedRoot.className = "threeJsonGizmoOverlayCanvas";
+    const [vertical, horizontal] = configuration.placement.split("-");
+    const style = { position: "absolute", width: `${configuration.size}px`, height: `${configuration.size}px`, zIndex: "20" };
+    style[vertical === "center" ? "top" : vertical] = vertical === "center" ? "50%" : `${options.offset?.[vertical] ?? 10}px`;
+    style[horizontal === "center" ? "left" : horizontal] = horizontal === "center" ? "50%" : `${options.offset?.[horizontal] ?? 10}px`;
+    style.transform = `translate(${horizontal === "center" ? "-50%" : "0"}, ${vertical === "center" ? "-50%" : "0"})`;
+    Object.assign(isolatedRoot.style, style); container.appendChild(isolatedRoot);
+    try {
+      isolatedRenderer = new WebGLRenderer({ alpha: true, antialias: true });
+      isolatedRenderer.setPixelRatio(window.devicePixelRatio || 1);
+      isolatedRenderer.setSize(configuration.size, configuration.size);
+      isolatedRenderer.setClearColor(0, 0);
+      isolatedRenderer.domElement.style.pointerEvents = "none";
+      isolatedRoot.appendChild(isolatedRenderer.domElement);
+      renderer = isolatedRenderer;
+      configuration.container = isolatedRoot; configuration.placement = "top-left";
+      configuration.offset = { top: 0, bottom: 0, left: 0, right: 0 };
+    } catch (error) { disposeViewportGizmoOverlay(); throw error; }
+  }
+  try { gizmo = new ViewportGizmo(runtime.camera, renderer, configuration); }
+  catch (error) { disposeViewportGizmoOverlay(); throw error; }
   if (runtime.controls) {
     gizmo.attachControls(runtime.controls);
   }
@@ -54,6 +83,7 @@ export function renderViewportGizmoOverlay() {
   // paints into the off-screen buffer instead of what actually reaches the display.
   renderer?.setRenderTarget?.(null);
   try {
+    isolatedRenderer?.clear();
     gizmo.render();
   } finally {
     // ViewportGizmo shares the scene renderer. Never let its small viewport/scissor

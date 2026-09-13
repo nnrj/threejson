@@ -52,11 +52,15 @@ export function createShowerHelperOverlay(scene, payload, visibility = {}) {
   const { size, divisions } = computeHelperExtent(payload);
   gridHelper = new THREE.GridHelper(size, divisions, 0x444444, 0x888888);
   gridHelper.name = "__shower_grid_helper__";
+  gridHelper.userData.__threeJsonRuntimeOnly = true;
+  gridHelper.userData.__threeJsonShowerHelper = true;
   gridHelper.visible = visibility.showGrid !== false;
   scene.add(gridHelper);
 
   axesHelper = new THREE.AxesHelper(Math.max(size / 3, CELL_SIZE * 4));
   axesHelper.name = "__shower_axes_helper__";
+  axesHelper.userData.__threeJsonRuntimeOnly = true;
+  axesHelper.userData.__threeJsonShowerHelper = true;
   axesHelper.visible = visibility.showAxes !== false;
   scene.add(axesHelper);
 }

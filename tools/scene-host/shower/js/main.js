@@ -11,8 +11,7 @@ import {
 import {
   getThreeJsonSceneAudioRoots,
   pauseAllThreeJsonSceneAudio,
-  resumeAllThreeJsonSceneAudio,
-  teardownThreeJsonSceneAudioFromRuntime
+  resumeAllThreeJsonSceneAudio
 } from "../../../../core/builder/audioBuilder.js";
 import {
   buildAdaptiveContentBoundingBoxTHREE,
@@ -31,6 +30,8 @@ import {
   updateViewportGizmoOverlay
 } from "../../shared/js/viewportGizmoOverlay.js";
 import { shouldApplyThemeSceneBackground } from "./showerSceneBackground.js";
+import { ensureSceneHostSceneCapabilitiesForPayload } from "../../shared/js/sceneCapabilities.js";
+import { createSceneCardSession, createSceneCardViewport } from "../../shared/js/sceneCardSession.js";
 
 const STORAGE = {
   autoRun: "threejson.shower.autoRun",
@@ -82,6 +83,8 @@ const labels = {
     ready: "Ready",
     noObjects: "暂无对象",
     parseFailed: "JSON 解析失败：",
+    renderFailed: "场景加载失败：",
+    previousSceneRetained: "（已保留上一场景）",
     exportFailed: "导出失败：",
     modelExportTitle: "导出三方模型",
     modelExportFormat: "格式",
@@ -139,6 +142,8 @@ const labels = {
     ready: "Ready",
     noObjects: "No objects",
     parseFailed: "JSON parse failed: ",
+    renderFailed: "Scene load failed: ",
+    previousSceneRetained: " (previous scene retained)",
     exportFailed: "Export failed: ",
     modelExportTitle: "Export Model",
     modelExportFormat: "Format",
@@ -230,6 +235,23 @@ let hoverMenu = null;
 let demoManifest = [];
 let currentJsonUrl = "";
 let runtimeUsesThemeBackground = false;
+let sceneRunVersion = 0;
+let sceneRequestController = null;
+const sceneSession = createSceneCardSession({
+  createRuntime: createJsonScene,
+  ensureCapabilities: ensureSceneHostSceneCapabilitiesForPayload,
+  getRuntimeOptions: (settings) => settings.runtimeOptions || {},
+  createViewport: () => createSceneCardViewport(els.canvasWrap, {
+    onCanvasChanged(canvas) {
+      if (!canvas || canvas === els.canvas) return;
+      els.canvas?.removeAttribute("id");
+      // Only the initial placeholder has no scene lifetime owner.
+      if (!runtime) els.canvas?.remove();
+      els.canvas = canvas; canvas.id = "canvasContainer";
+    }
+  }),
+  onRuntimeChanged(next) { runtime = next; }
+});
 
 // Default fit direction (isometric). The former per-axis "three views" cycling was removed — that
 // role now belongs to the viewport navigation gizmo (three-viewport-gizmo).
@@ -404,13 +426,15 @@ function wireControls() {
     if (document.fullscreenElement) document.exitFullscreen();
     else els.canvasWrap.requestFullscreen?.();
   });
-  els.canvas.addEventListener("click", (event) => {
+  els.canvasWrap.addEventListener("click", (event) => {
+    if (event.target !== els.canvas) return;
     if (event.detail <= 1) {
       clearHighlight();
       setActiveTreeNode("");
     }
   });
-  els.canvas.addEventListener("dblclick", (event) => {
+  els.canvasWrap.addEventListener("dblclick", (event) => {
+    if (event.target !== els.canvas) return;
     const picked = pickObject(event);
     const id = picked ? getSceneObjectId(picked) : "";
     if (!id) {
@@ -475,26 +499,30 @@ async function loadDemoManifest() {
 }
 
 async function loadExampleJson(raw, { beforeRender = Promise.resolve() } = {}) {
+  sceneRequestController?.abort();
+  const controller = new AbortController(); sceneRequestController = controller;
   const url = resolveSceneHostUrl(raw);
   showLoading(true);
   try {
-    const sceneResponsePromise = fetch(url);
+    const sceneResponsePromise = fetch(url, { signal: controller.signal });
     const [res] = await Promise.all([sceneResponsePromise, beforeRender]);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    fullJson = await res.json();
+    const parsed = await res.json(); controller.signal.throwIfAborted();
+    fullJson = parsed;
     currentJsonUrl = raw;
     currentJsonFormat = detectCurrentJsonFormat(fullJson);
     applyCachedJsonFormatToFullJson();
     syncJsonFormatUi();
     els.title.textContent = fullJson.name || fullJson.threeJsonId || "ThreeJSON Shower";
     setTab(getCachedTab(), { persist: false });
-    await runScene(fullJson);
+    await runScene(fullJson, { signal: controller.signal });
+    controller.signal.throwIfAborted();
     renderCatalog();
     updateContextPanels();
   } catch (error) {
-    els.status.textContent = String(error.message || error);
+    if (!controller.signal.aborted) reportSceneFailure(error);
   } finally {
-    showLoading(false);
+    if (sceneRequestController === controller) showLoading(false);
   }
 }
 
@@ -672,12 +700,20 @@ async function convertEditorJson(format) {
 }
 
 async function runFromEditor() {
+  sceneRequestController?.abort(); sceneRequestController = null;
   try {
     await runScene(readCurrentScene());
   } catch (error) {
-    els.status.textContent = t("parseFailed") + error.message;
+    reportSceneFailure(error);
     showLoading(false);
   }
+}
+
+function reportSceneFailure(error) {
+  const details = error?.diagnostics?.map((entry) => `${entry.pointer || entry.id || ""}: ${entry.reason || entry.message || ""}`).join("; ");
+  const text = `${t(error instanceof SyntaxError ? "parseFailed" : "renderFailed")}${error?.message || error}${details ? ` — ${details}` : ""}${runtime ? t("previousSceneRetained") : ""}`;
+  els.status.textContent = text;
+  els.status.title = text;
 }
 
 function findManifestContextForJson(rawPath) {
@@ -761,24 +797,15 @@ async function runExampleBootstrap(kind, ctx) {
   }
 }
 
-async function runScene(sceneJson) {
+async function runScene(sceneJson, settings = {}) {
+  const version = ++sceneRunVersion;
   showLoading(true);
   clearHighlight();
-  teardownThreeJsonSceneAudioFromRuntime(runtime);
-  runtime?.dispose?.();
-  runtime = null;
-  runtimeUsesThemeBackground = false;
-  disposeViewportGizmoOverlay();
-  audioMuted = false;
-  fullJson = structuredClone(sceneJson);
-  currentJsonFormat = detectCurrentJsonFormat(fullJson);
-  localStorage.setItem(STORAGE.jsonFormat, currentJsonFormat);
-  syncJsonFormatUi();
-  fullJson.canvasWidth = Math.max(1, els.canvasWrap.clientWidth);
-  fullJson.canvasHeight = Math.max(1, els.canvasWrap.clientHeight);
+  const nextJson = structuredClone(sceneJson);
+  nextJson.canvasWidth = Math.max(1, els.canvasWrap.clientWidth);
+  nextJson.canvasHeight = Math.max(1, els.canvasWrap.clientHeight);
   const bootstrapKind = findManifestContextForJson(currentJsonUrl)?.item?.bootstrap;
   const createOptions = {
-    canvas: els.canvas,
     assetsBase: sceneHostAssetUrl("assets/"),
     resetScene: true,
     afterRender: renderViewportGizmoOverlay
@@ -791,7 +818,14 @@ async function runScene(sceneJson) {
     }
   }
   try {
-    runtime = await createJsonScene(fullJson, createOptions);
+    await sceneSession.render(nextJson, { runtimeOptions: createOptions, signal: settings.signal });
+    if (version !== sceneRunVersion) return;
+    fullJson = nextJson;
+    runtimeUsesThemeBackground = false;
+    audioMuted = false;
+    currentJsonFormat = detectCurrentJsonFormat(fullJson);
+    localStorage.setItem(STORAGE.jsonFormat, currentJsonFormat);
+    syncJsonFormatUi();
     runtime.start?.();
     createShowerHelperOverlay(runtime.scene, fullJson, {
       showGrid: els.showGridCheckbox?.checked !== false,
@@ -803,8 +837,13 @@ async function runScene(sceneJson) {
     renderTree();
     syncAudioMuteUi();
     els.status.textContent = t("ready");
+    els.status.title = "";
+  } catch (error) {
+    if (version !== sceneRunVersion || error?.name === "AbortError") return;
+    console.error("[shower] Scene preparation failed; retaining the previous scene.", error);
+    throw error;
   } finally {
-    showLoading(false);
+    if (version === sceneRunVersion) showLoading(false);
   }
 }
 

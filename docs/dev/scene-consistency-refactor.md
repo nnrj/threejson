@@ -251,3 +251,19 @@ must remain distinguishable from loader, material, authorization and GPU failure
   map semantics. For exact-byte execution/integrity (including dependencies), a
   host `moduleLoader` must execute the supplied verified bytes; fetching a hash and
   then importing a mutable remote URL is not an atomic integrity guarantee.
+
+## Browser checkpoint: Shower and legacy Domain hosts
+
+- Browser testing found Shower never activated its advertised WebGPU/TSL examples.
+  It now uses the shared optional-capability loader and document/viewport controller,
+  with all required static import mappings. Ordinary scenes retain the WebGL path.
+- Running a deliberately invalid graph keeps the previous animated scene visible.
+  Superseded catalog fetches cannot replace a later choice. Errors explicitly say
+  when the previous scene was retained; compilation failures are not called JSON
+  syntax failures. Viewer-only helpers do not enter exported models.
+- The third-party view gizmo uses WebGL LineMaterial. WebGPU hosts now give only
+  this small widget a separate WebGL canvas; a default WebGL scene still shares
+  its renderer. The widget no longer produces incompatible-material errors or
+  garbled geometry on the TSL preview.
+- `room-show.html` visibly retains textured flooring/walls/cabinets and lighting;
+  its main door open/close interaction works. Further scenario checks remain below.

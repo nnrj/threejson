@@ -63,3 +63,14 @@ test("shower default scene exists and legacy template export has a browser-resol
   assert.match(html, /"threejson\/assets"\s*:\s*"\.\.\/\.\.\/\.\.\/core\/assets\.js"/);
   assert.match(editorHtml, /"threejson\/assets"\s*:\s*"\.\.\/\.\.\/\.\.\/core\/assets\.js"/);
 });
+
+test("shower activates optional capabilities and prepares scene changes before retiring the old viewport", () => {
+  const main = read("tools/scene-host/shower/js/main.js"), html = read("tools/scene-host/shower/index.html");
+  assert.match(main, /ensureCapabilities:\s*ensureSceneHostSceneCapabilitiesForPayload/);
+  assert.match(main, /createViewport:\s*\(\) => createSceneCardViewport/);
+  assert.match(main, /await sceneSession\.render\(nextJson/);
+  assert.doesNotMatch(main, /runtime\?\.dispose\?\.\(\)/);
+  for (const entry of ["threejson/document", "threejson/session", "threejson/webgpu", "threejson/tsl-code", "three/webgpu", "three/tsl"]) assert.ok(html.includes(`"${entry}":`));
+  assert.match(main, /fetch\(url, \{ signal: controller\.signal \}\)/);
+  assert.match(main, /if \(event\.target !== els\.canvas\) return/);
+});
