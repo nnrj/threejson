@@ -1,10 +1,14 @@
 import { normalizeScenePayload, buildStandardScenePayloadFromCanonical, buildFriendlyScenePayloadFromCanonical, detectScenePayloadViewFormat } from "../handler/sceneFriendlyNormalizer.js";
-import { cloneDocumentData, createSceneDocument, isSceneDocument, indexSceneDocument, SCENE_DOCUMENT_VERSION } from "./sceneDocument.js";
+import { cloneDocumentData, createSceneDocument, isSceneDocument, retainSceneDocument, indexSceneDocument, SCENE_DOCUMENT_VERSION } from "./sceneDocument.js";
 import { evaluateSceneDesign } from "./sceneDesign.js";
 
 /** Compile supported authoring forms without consulting or capturing a live scene. */
 export function compileAuthoring(payload, options = {}) {
-  if (isSceneDocument(payload)) return payload;
+  if (isSceneDocument(payload)) {
+    const document = retainSceneDocument(payload);
+    if (document.root.design) evaluateSceneDesign(document);
+    return document;
+  }
   const source = cloneDocumentData(payload);
   // Validate the envelope before an adapter can normalize away an unsupported version.
   createSceneDocument(source);

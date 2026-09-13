@@ -1,4 +1,4 @@
-import { applyDocumentOperations, cloneDocumentData, documentError, isSceneDocument } from "./sceneDocument.js";
+import { applyDocumentOperations, cloneDocumentData, documentError, retainSceneDocument } from "./sceneDocument.js";
 
 /**
  * One authoring timeline; any number of independent views/playback consumers.
@@ -10,7 +10,7 @@ export class SceneSession {
   #historyLimit; #checkpointInterval; #onError;
 
   constructor(document, options = {}) {
-    if (!isSceneDocument(document)) throw documentError("INVALID_SCENE_DOCUMENT", "SceneSession requires a compiled authoring document.");
+    document = retainSceneDocument(document);
     this.#document = document;
     this.#driver = options.driver || {};
     this.#historyLimit = options.historyLimit ?? 50;

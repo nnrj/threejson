@@ -11,6 +11,20 @@ const scene = () => ({ name: "Authored", sceneConfig: { lights: [] }, objectList
   { objType: "box", threeJsonId: "b", position: { x: 4, y: 2, z: 3 }, material: { color: "blue" } }
 ] });
 
+test("deserialized and shallow-frozen envelopes cannot mutate owned authoring snapshots", () => {
+  const raw = JSON.parse(JSON.stringify(compileAuthoring(scene())));
+  Object.freeze(raw);
+  const document = compileAuthoring(raw), session = createSceneSession(raw);
+  const noChange = applyDocumentOperations(raw, []).document;
+  raw.root.objectList[0].material.color = "black";
+  for (const snapshot of [document, session.document, noChange]) {
+    assert.equal(snapshot.root.objectList[0].material.color, "red");
+    assert.ok(Object.isFrozen(snapshot.root.objectList[0].material));
+  }
+  assert.equal(compileAuthoring(document), document);
+  session.dispose();
+});
+
 test("document edits are immutable, copy-on-write, reversible and revision checked", () => {
   const document = createSceneDocument(scene());
   const changed = applyDocumentOperations(document, [{ op: "object.patch", id: "a", patch: { position: { x: 9 } } }], { baseRevision: 0 });

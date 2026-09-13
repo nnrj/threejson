@@ -1,5 +1,7 @@
 /** Immutable authoring data and copy-on-write operations. No renderer or host imports. */
 export const SCENE_DOCUMENT_VERSION = 2;
+const ownedDocuments = new WeakSet();
+function ownDocument(value) { freezeDocumentData(value); ownedDocuments.add(value); return value; }
 
 export function documentError(code, message, details = {}) {
   return Object.assign(new Error(message), { code, ...details });
@@ -40,11 +42,19 @@ export function createSceneDocument(root, options = {}) {
   }
   const revision = options.revision ?? 0;
   if (!Number.isSafeInteger(revision) || revision < 0) throw documentError("INVALID_REVISION", "Document revision must be a non-negative safe integer.");
-  return freezeDocumentData({ kind: "SceneDocument", schemaVersion: SCENE_DOCUMENT_VERSION, revision,
+  return ownDocument({ kind: "SceneDocument", schemaVersion: SCENE_DOCUMENT_VERSION, revision,
     sourceFormat: options.sourceFormat || "standard", root: cloneDocumentData(root) });
 }
 
 export const isSceneDocument = (value) => value?.kind === "SceneDocument" && value.schemaVersion === SCENE_DOCUMENT_VERSION && Boolean(value.root);
+/** JSON-deserialized or foreign envelopes must not masquerade as immutable snapshots. */
+export function retainSceneDocument(value) {
+  if (!isSceneDocument(value)) throw documentError("INVALID_SCENE_DOCUMENT", "Expected a SceneDocument.");
+  if (ownedDocuments.has(value)) return value;
+  const document = createSceneDocument(value.root, { revision: value.revision, sourceFormat: value.sourceFormat });
+  indexSceneDocument(document);
+  return document;
+}
 export const escapePointer = (value) => String(value).replace(/~/g, "~0").replace(/\//g, "~1");
 
 function equalData(a, b) {
@@ -140,7 +150,7 @@ function flattenPatch(root, path, patch) {
 
 /** Apply a whole batch privately; the input and unmodified subtrees retain identity. */
 export function applyDocumentOperations(document, operations, options = {}) {
-  if (!isSceneDocument(document)) throw documentError("INVALID_SCENE_DOCUMENT", "Expected a SceneDocument.");
+  document = retainSceneDocument(document);
   if (!Array.isArray(operations)) throw documentError("INVALID_OPERATION", "operations must be an array.");
   if (options.baseRevision !== undefined && options.baseRevision !== document.revision) throw documentError("STALE_SCENE_REVISION", "The scene changed after this operation was planned.", { expected: document.revision, actual: options.baseRevision });
   let root = document.root;
@@ -203,6 +213,6 @@ export function applyDocumentOperations(document, operations, options = {}) {
   const changed = applied.length > 0;
   if (changed && !Number.isSafeInteger(document.revision + 1)) throw documentError("REVISION_EXHAUSTED", "Revision exceeds the exact integer range; start a new document lineage.");
   if (root.schemaVersion !== undefined && (!Number.isInteger(root.schemaVersion) || root.schemaVersion < 1 || root.schemaVersion > SCENE_DOCUMENT_VERSION)) throw documentError("UNSUPPORTED_SCHEMA_VERSION", "A transaction cannot set an unsupported schema version.");
-  return { document: changed ? freezeDocumentData({ ...document, revision: document.revision + 1, root }) : document,
+  return { document: changed ? ownDocument({ ...document, revision: document.revision + 1, root }) : document,
     operations: freezeDocumentData(applied), inverse: freezeDocumentData(inverse), changed };
 }

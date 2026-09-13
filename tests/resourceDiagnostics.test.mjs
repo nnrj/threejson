@@ -4,7 +4,8 @@ import * as THREE from "three";
 import { createRuntimeContext } from "../core/runtime/runtimeContext.js";
 import { requestTexture, whenTextureReady } from "../core/resource/textureRequest.js";
 import { createSceneCardSession } from "@threejson/host-kit/js/sceneCardSession.js";
-import { createJsonScene } from "../core/handler/sceneLoadHandler.js";
+import { createJsonScene, deployJsonScene } from "../core/handler/sceneLoadHandler.js";
+import { registerSceneCapabilityPreparer, unregisterSceneCapabilityPreparer } from "../core/capabilities/scenePreparationRegistry.js";
 import { describeSceneDiagnostic, sceneDiagnosticTitle, subscribeSceneDiagnosticLanguage } from "../tools/scene-host/shared/js/sceneResourceDiagnostics.js";
 
 test("diagnostic language changes use one shared observer and dispose subscriptions", () => {
@@ -67,4 +68,18 @@ test("scene cards follow only the current runtime's resource diagnostics", async
     previous.diagnostics.report({ code: "TEXTURE_RESOURCE_FAILED", source: "late" });
     assert.equal(changes.at(-1).length, 0);
   } finally { card.dispose(); }
+});
+
+test("imperative preparation failure releases optional resources before changing the target", async () => {
+  const runtime = await createJsonScene({ objectList: [{ objType: "box", threeJsonId: "retained" }] });
+  const children = runtime.scene.children.slice();
+  let released = 0;
+  registerSceneCapabilityPreparer("qa-preparation-release", async () => ({ dispose() { released++; } }));
+  try {
+    await assert.rejects(deployJsonScene(runtime, { objectList: [{ objType: "editableMesh", threeJsonId: "new",
+      topology: { vertices: [{ id: "a", position: [0, 0, 0] }, { id: "b", position: [1, 0, 0] }, { id: "c", position: [0, 1, 0] }], faces: [{ id: "f", vertices: ["a", "b", "c"] }] }
+    }] }, { geometryCompiler: { supports: () => true, compile: async () => { throw new Error("injected compilation failure"); } } }), /injected compilation failure/);
+    assert.equal(released, 1); assert.deepEqual(runtime.scene.children, children);
+    assert.equal(runtime.runtimeContext.capabilityResources.find("qa-preparation-release"), undefined);
+  } finally { unregisterSceneCapabilityPreparer("qa-preparation-release"); runtime.dispose(); }
 });

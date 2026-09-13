@@ -1715,14 +1715,17 @@ async function deployObjectRecordIntoRuntime(target, record, options = {}) {
   resolveRuntimeContext(target).registerPreparedBufferReferences?.(preparation.bufferReferences);
   assertPayloadCapabilitiesBeforePreparation(record, targetBackend, { forceBackend: true });
   const optionalResources = await runSceneCapabilityPreparers(record, { ...options, runtimeScope: target });
+  let deployJsonObjectAsync;
+  try {
+    await ensureRectAreaLightSupport([record], targetBackend);
+    if (options.geometryCompiler) {
+      const { prepareSceneGeometry } = await import("../geometry/preparedGeometry.js");
+      optionalResources.add("compiled-geometry", await prepareSceneGeometry(record, { ...options, runtimeScope: target }));
+    }
+    await ensureCsgBrushOpsForPayload(record);
+    ({ deployJsonObjectAsync } = await getObjectLoadHandler());
+  } catch (error) { optionalResources.dispose(); throw error; }
   resolveRuntimeContext(target).capabilityResources.adopt(optionalResources);
-  await ensureRectAreaLightSupport([record], targetBackend);
-  if (options.geometryCompiler) {
-    const { prepareSceneGeometry } = await import("../geometry/preparedGeometry.js");
-    resolveRuntimeContext(target).capabilityResources.add("compiled-geometry", await prepareSceneGeometry(record, options));
-  }
-  await ensureCsgBrushOpsForPayload(record);
-  const { deployJsonObjectAsync } = await getObjectLoadHandler();
   if (resolveArchiveObjectEntryMode(options) === "replace") {
     clearTargetForObjectArchiveEntry(target);
   }
@@ -1852,6 +1855,9 @@ function createJsonSceneSimple(payload, options = {}) {
 
 /**
  * Deploy full JSON onto an existing Scene / runtime.
+ * This is the legacy imperative deployment API: once deployment starts, failures
+ * may leave partial changes. Interactive replacement/undo must use threejson/session
+ * with a host staging viewport, which prepares and commits atomically.
  * @param {THREE.Scene|{scene: THREE.Scene, camera?: THREE.Camera, renderer?: THREE.WebGLRenderer, controls?: *, renderLoop?: *}} target
  * @param {object} payload
  * @param {{ resetScene?: boolean, context?: object }} [options]
@@ -1861,19 +1867,21 @@ async function deployJsonScene(target, payload, options = {}) {
   const preparation = await ensureOptionalSceneCapabilitiesForPayload(payload, options);
   resolveRuntimeContext(target).registerPreparedBufferReferences?.(preparation.bufferReferences);
   assertPayloadCapabilitiesBeforePreparation(payload, targetBackend, { forceBackend: true });
+  const normalized = normalizeScenePayloadWithRuntimeDefaults(payload, options);
   const optionalResources = await runSceneCapabilityPreparers(payload, { ...options, runtimeScope: target });
+  try {
+    await ensureCsgBrushOpsForPayload(payload);
+    if (options.geometryCompiler) {
+      const { prepareSceneGeometry } = await import("../geometry/preparedGeometry.js");
+      optionalResources.add("compiled-geometry", await prepareSceneGeometry(normalized.payload, { ...options, runtimeScope: target }));
+    }
+    await ensureRectAreaLightSupport(normalized.lightsConfig, targetBackend);
+  } catch (error) { optionalResources.dispose(); throw error; }
   resolveRuntimeContext(target).capabilityResources.adopt(optionalResources);
-  await ensureCsgBrushOpsForPayload(payload);
   resolveRuntimeContext(target).registerEmbeddedResources?.(payload);
   // Deploying into an existing target (no new Scene): only cancel *this* target's
   // own in-flight scheduled deploy, never a sibling canvas's.
   cancelActiveDeployScheduler(target);
-  const normalized = normalizeScenePayloadWithRuntimeDefaults(payload, options);
-  if (options.geometryCompiler) {
-    const { prepareSceneGeometry } = await import("../geometry/preparedGeometry.js");
-    resolveRuntimeContext(target).capabilityResources.add("compiled-geometry", await prepareSceneGeometry(normalized.payload, options));
-  }
-  await ensureRectAreaLightSupport(normalized.lightsConfig, targetBackend);
   const deployed = await deployIntoTarget(target, normalized, options);
   bindLightRelationships(deployed.scene || deployed);
   const runtime = extractDeploymentTarget(deployed);
