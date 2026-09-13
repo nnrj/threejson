@@ -1,7 +1,6 @@
 /**
  * Visibility API based on objectRegistry / bucket indexes (exact name match; does not parse businessInfo).
  */
-import * as THREE from "three";
 import {
   getObjectByThreeJsonId,
   getObjectsByName
@@ -56,23 +55,9 @@ function applyVisibilityToOne(model, modelVisible) {
   if (!model) {
     return;
   }
-  if (model instanceof THREE.Group) {
-    model.visible = modelVisible;
-    return;
-  }
+  // Materials may be shared by unrelated objects. Object visibility must not
+  // rewrite material visibility, including an intentionally hidden material.
   model.visible = modelVisible;
-  if (!model.material) {
-    return;
-  }
-  if (Array.isArray(model.material)) {
-    for (let mi = 0; mi < model.material.length; mi++) {
-      if (model.material[mi]) {
-        model.material[mi].visible = modelVisible;
-      }
-    }
-  } else {
-    model.material.visible = modelVisible;
-  }
 }
 
 /**
@@ -80,8 +65,8 @@ function applyVisibilityToOne(model, modelVisible) {
  * @param {boolean} visible
  * @returns {boolean}
  */
-export function setObjectVisibleByThreeJsonId(threeJsonId, visible) {
-  const obj = getObjectByThreeJsonId(threeJsonId);
+export function setObjectVisibleByThreeJsonId(threeJsonId, visible, runtimeScope) {
+  const obj = getObjectByThreeJsonId(threeJsonId, runtimeScope);
   if (!obj) {
     return false;
   }
@@ -96,7 +81,7 @@ export function setObjectVisibleByThreeJsonId(threeJsonId, visible) {
  * @returns {number}
  */
 export function setObjectsVisibleByName(name, visible, options = {}) {
-  const list = getObjectsByName(name);
+  const list = getObjectsByName(name, options.runtimeScope);
   const applyToSubtree = options.applyToSubtree !== false;
   for (let i = 0; i < list.length; i++) {
     applyObjectVisibility(list[i], visible, { applyToSubtree });
@@ -126,8 +111,8 @@ export function setObjectsVisibleByNames(names, visible, options = {}) {
  * @param {boolean} visible
  * @returns {number}
  */
-export function setObjectsVisibleByCustomBucket(bucket, visible) {
-  const list = getObjectsInCustomBucket(bucket);
+export function setObjectsVisibleByCustomBucket(bucket, visible, runtimeScope) {
+  const list = getObjectsInCustomBucket(bucket, runtimeScope);
   for (let i = 0; i < list.length; i++) {
     applyObjectVisibility(list[i], visible, { applyToSubtree: false });
   }
@@ -139,13 +124,13 @@ export function setObjectsVisibleByCustomBucket(bucket, visible) {
  * @param {boolean} visible
  * @returns {number}
  */
-export function setObjectsVisibleByCustomBuckets(buckets, visible) {
+export function setObjectsVisibleByCustomBuckets(buckets, visible, runtimeScope) {
   if (!Array.isArray(buckets) || buckets.length === 0) {
     return 0;
   }
   let count = 0;
   for (let i = 0; i < buckets.length; i++) {
-    count += setObjectsVisibleByCustomBucket(buckets[i], visible);
+    count += setObjectsVisibleByCustomBucket(buckets[i], visible, runtimeScope);
   }
   return count;
 }

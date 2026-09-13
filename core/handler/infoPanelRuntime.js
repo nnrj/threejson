@@ -26,6 +26,8 @@ import {
 } from "../runtime/eventMechanism/bindEventRuntime.js";
 import { wireInfoPanelDismissTriggerForObject } from "../runtime/eventMechanism/wireInfoPanelDismissTriggers.js";
 
+const pendingUpdates = new WeakMap();
+
 const CONTENT_PARTIAL_KEYS = new Set([
 	"type",
 	"text",
@@ -173,8 +175,8 @@ export function filterInfoPanelContentPartial(partial) {
  * @param {boolean} visible
  * @returns {boolean}
  */
-export function setInfoPanelVisibleByThreeJsonId(threeJsonId, visible) {
-	return setObjectVisibleByThreeJsonId(threeJsonId, visible);
+export function setInfoPanelVisibleByThreeJsonId(threeJsonId, visible, runtimeScope) {
+	return setObjectVisibleByThreeJsonId(threeJsonId, visible, runtimeScope);
 }
 
 /**
@@ -196,10 +198,14 @@ function applyInfoPanelVisibilityFromDescriptor(object3D, descriptor) {
  * @returns {Promise<import("three").Object3D|null>}
  */
 export async function updateInfoPanel(threeJsonId, partial, options = {}) {
-	const existing = getObjectByThreeJsonId(threeJsonId);
+	const existing = getObjectByThreeJsonId(threeJsonId, options.runtimeScope ?? options.scene);
 	if (!existing || !options.scene) {
 		return null;
 	}
+	const ticket = {};
+	pendingUpdates.set(existing, ticket);
+	const isCurrent = () => pendingUpdates.get(existing) === ticket
+		&& getObjectByThreeJsonId(threeJsonId, options.runtimeScope ?? options.scene) === existing;
 	const base = existing.userData?.objJson && typeof existing.userData.objJson === "object"
 		? existing.userData.objJson
 		: {};
@@ -214,10 +220,10 @@ export async function updateInfoPanel(threeJsonId, partial, options = {}) {
 			options.scene,
 			threeJsonId,
 			merged,
-			{ deployOptions: options.deployOptions }
+			{ deployOptions: options.deployOptions, isCurrent }
 		);
 		applyInfoPanelVisibilityFromDescriptor(redeployed, merged);
-		syncInfoPanelDismissBinding(merged);
+		syncInfoPanelDismissBinding(merged, redeployed);
 		return redeployed;
 	}
 
@@ -226,7 +232,8 @@ export async function updateInfoPanel(threeJsonId, partial, options = {}) {
 	let updated = existing;
 
 	if (touchesContent) {
-		const texture = await resolveInfoPanelTexture(merged);
+		const texture = await resolveInfoPanelTexture(merged, { runtimeScope: existing, signal: options.signal });
+		if (!isCurrent()) { texture.dispose?.(); throw new DOMException("Info panel update was superseded.", "AbortError"); }
 		updated = applyInfoPanelMutation(existing, merged, texture);
 	} else if (touchesLayout) {
 		if (partialTouchesGeometry(partial)) {
@@ -245,7 +252,7 @@ export async function updateInfoPanel(threeJsonId, partial, options = {}) {
 
 	applyInfoPanelVisibilityFromDescriptor(updated, merged);
 	if (partialTouchesDismissBehavior(partial)) {
-		syncInfoPanelDismissBinding(merged);
+		syncInfoPanelDismissBinding(merged, updated);
 	}
 	return updated;
 }
@@ -285,18 +292,19 @@ function partialTouchesDismissBehavior(partial) {
 /**
  * @param {object|null|undefined} descriptor
  */
-function syncInfoPanelDismissBinding(descriptor) {
-	const manager = getActiveEventListenerManager();
+function syncInfoPanelDismissBinding(descriptor, runtimeScope) {
+	const manager = getActiveEventListenerManager(runtimeScope);
 	if (!manager || !descriptor?.threeJsonId) {
 		return;
 	}
-	const object3D = getObjectByThreeJsonId(descriptor.threeJsonId);
+	const object3D = getObjectByThreeJsonId(descriptor.threeJsonId, runtimeScope);
 	if (!object3D) {
 		return;
 	}
 	wireInfoPanelDismissTriggerForObject(object3D, {
 		manager,
-		sceneToken: getActiveEventSceneToken() ?? ""
+		sceneToken: getActiveEventSceneToken(runtimeScope) ?? "",
+		runtimeScope
 	});
 }
 
@@ -310,7 +318,7 @@ export async function applyInfoPanelList(scene, infoPanelList, options = {}) {
 		const descriptor = normalizeInfoPanelDescriptor(infoPanelList[i]);
 		ensureThreeJsonIdOnRecord(descriptor);
 		const existing = descriptor.threeJsonId
-			? getObjectByThreeJsonId(descriptor.threeJsonId)
+			? getObjectByThreeJsonId(descriptor.threeJsonId, scene)
 			: null;
 		if (existing) {
 			await updateInfoPanel(descriptor.threeJsonId, descriptor, { scene });
@@ -319,7 +327,7 @@ export async function applyInfoPanelList(scene, infoPanelList, options = {}) {
 			await deployInfoPanel(scene, descriptor, options.deployOptions);
 			deployed += 1;
 		}
-		syncInfoPanelDismissBinding(descriptor);
+		syncInfoPanelDismissBinding(descriptor, scene);
 	}
 	return { updated, deployed };
 }
@@ -329,13 +337,13 @@ export async function applyInfoPanelList(scene, infoPanelList, options = {}) {
  * @param {boolean} visible
  * @returns {number}
  */
-export function hideInfoPanelsByNames(names, visible) {
+export function hideInfoPanelsByNames(names, visible, runtimeScope) {
 	if (!Array.isArray(names) || names.length === 0) {
 		return 0;
 	}
 	let count = 0;
 	for (let i = 0; i < names.length; i++) {
-		count += setObjectsVisibleByName(names[i], visible);
+		count += setObjectsVisibleByName(names[i], visible, { runtimeScope });
 	}
 	return count;
 }

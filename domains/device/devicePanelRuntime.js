@@ -113,7 +113,7 @@ export async function ensureDevicePanelDeployed(scene, deviceRoot) {
 		return null;
 	}
 	objJson.devicePanelRef = binding.devicePanelRef;
-	if (getObjectByThreeJsonId(binding.devicePanelRef)) {
+	if (getObjectByThreeJsonId(binding.devicePanelRef, scene)) {
 		return binding.devicePanelRef;
 	}
 	if (binding.mode === "externalRef" || !binding.panelDescriptor) {
@@ -129,13 +129,13 @@ export async function ensureDevicePanelDeployed(scene, deviceRoot) {
  * @param {string|import("three").Object3D} deviceIdOrRoot
  * @returns {string|null}
  */
-export function resolveDevicePanelRefFromRoot(deviceIdOrRoot) {
+export function resolveDevicePanelRefFromRoot(deviceIdOrRoot, runtimeScope) {
 	const deviceRoot = typeof deviceIdOrRoot === "string"
-		? getObjectByThreeJsonId(deviceIdOrRoot)
+		? getObjectByThreeJsonId(deviceIdOrRoot, runtimeScope)
 		: deviceIdOrRoot;
 	const objJson = deviceRoot?.userData?.objJson;
 	const panelId = resolveDevicePanelRef(objJson);
-	if (panelId && getObjectByThreeJsonId(panelId)) {
+	if (panelId && getObjectByThreeJsonId(panelId, runtimeScope ?? deviceRoot)) {
 		return panelId;
 	}
 	const panelObject = findDevicePanelUnderRoot(deviceRoot);
@@ -147,14 +147,15 @@ export function resolveDevicePanelRefFromRoot(deviceIdOrRoot) {
  * @param {boolean} [visible=true]
  * @returns {boolean}
  */
-export function showDevicePanel(deviceIdOrRoot, visible = true) {
-	const panelId = resolveDevicePanelRefFromRoot(deviceIdOrRoot);
+export function showDevicePanel(deviceIdOrRoot, visible = true, runtimeScope) {
+	const scope = runtimeScope ?? (typeof deviceIdOrRoot === "object" ? deviceIdOrRoot : undefined);
+	const panelId = resolveDevicePanelRefFromRoot(deviceIdOrRoot, scope);
 	if (!panelId) {
 		return false;
 	}
-	const ok = setInfoPanelVisibleByThreeJsonId(panelId, visible);
+	const ok = setInfoPanelVisibleByThreeJsonId(panelId, visible, scope);
 	if (ok) {
-		const panel = getObjectByThreeJsonId(panelId);
+		const panel = getObjectByThreeJsonId(panelId, scope);
 		if (panel?.userData?.objJson && typeof panel.userData.objJson === "object") {
 			panel.userData.objJson.visible = visible;
 		}
@@ -166,8 +167,8 @@ export function showDevicePanel(deviceIdOrRoot, visible = true) {
  * @param {string|import("three").Object3D} deviceIdOrRoot
  * @returns {boolean}
  */
-export function hideDevicePanel(deviceIdOrRoot) {
-	return showDevicePanel(deviceIdOrRoot, false);
+export function hideDevicePanel(deviceIdOrRoot, runtimeScope) {
+	return showDevicePanel(deviceIdOrRoot, false, runtimeScope);
 }
 
 /**
@@ -178,7 +179,7 @@ export function hideDevicePanel(deviceIdOrRoot) {
 export async function toggleDevicePanel(scene, deviceRoot) {
 	await ensureDevicePanelDeployed(scene, deviceRoot);
 	const panelId = resolveDevicePanelRefFromRoot(deviceRoot);
-	const panel = panelId ? getObjectByThreeJsonId(panelId) : null;
+	const panel = panelId ? getObjectByThreeJsonId(panelId, scene) : null;
 	if (panel?.visible) {
 		return hideDevicePanel(deviceRoot);
 	}
@@ -192,7 +193,7 @@ export async function toggleDevicePanel(scene, deviceRoot) {
  * @returns {Promise<import("three").Object3D|null>}
  */
 export async function updateDevicePanelContent(deviceIdOrRoot, partial, options = {}) {
-	const panelId = resolveDevicePanelRefFromRoot(deviceIdOrRoot);
+	const panelId = resolveDevicePanelRefFromRoot(deviceIdOrRoot, options.runtimeScope ?? options.scene);
 	if (!panelId || !options.scene) {
 		return null;
 	}
@@ -245,7 +246,7 @@ export function bindDevicePanelTriggers(scene, deviceRoot, options = {}) {
 
 	const getPanel = () => {
 		const panelId = resolveDevicePanelRefFromRoot(deviceRoot);
-		return panelId ? getObjectByThreeJsonId(panelId) : null;
+		return panelId ? getObjectByThreeJsonId(panelId, scene) : null;
 	};
 
 	const scheduleHide = () => {

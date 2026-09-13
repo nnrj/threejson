@@ -2,9 +2,7 @@
  * Device panel JSON resolution: method 1 (devicePanelRef) > 3 (info) > 2 (infoPanel).
  */
 import { createInfoPanelDescriptor, normalizeInfoPanelDescriptor } from "../../core/builder/infoPanelBuilder.js";
-import { getObjectByThreeJsonId } from "../../core/handler/objectRegistry.js";
 import { cloneJson } from "../../core/util/cloneJson.js";
-import { log } from "../../core/util/logger.js";
 import { ensureThreeJsonIdOnRecord } from "../../core/util/util.js";
 
 export const DEVICE_PANEL_NAME = "devicePanel";
@@ -153,9 +151,8 @@ export function resolveDevicePanelBinding(deviceRecord) {
 	const ref = deviceRecord.devicePanelRef;
 	if (typeof ref === "string" && ref.trim()) {
 		const refId = ref.trim();
-		if (!getObjectByThreeJsonId(refId)) {
-			log.warn(`[device] devicePanelRef not found: ${refId}`);
-		}
+		// Pure authoring resolution also runs before deployment. A runtime lookup here
+		// reports legitimate forward references as missing and can consult another canvas.
 		return {
 			devicePanelRef: refId,
 			mode: "externalRef"

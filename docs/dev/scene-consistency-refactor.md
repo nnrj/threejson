@@ -267,3 +267,19 @@ must remain distinguishable from loader, material, authorization and GPU failure
   garbled geometry on the TSL preview.
 - `room-show.html` visibly retains textured flooring/walls/cabinets and lighting;
   its main door open/close interaction works. Further scenario checks remain below.
+
+## Browser checkpoint: model paths and Domain panel isolation
+
+- The real port benchmark exposed an explicit OBJ/MTL asset alias being resolved
+  twice relative to the model directory. Page-relative `/assets/` aliases now use
+  the page base; ordinary `mtllib` references remain model-relative. Browser reload
+  confirms the ship materials load, alongside the textured quay and panel images.
+- Device panels, their event bindings, visibility and replacement now use their
+  owning scene's registry and resource policy. Same IDs in another history canvas
+  cannot redirect a panel update. A pure Domain resolver no longer warns about
+  legitimate forward references before the scene has deployed its panels.
+- Panel images use decoded resource leases. Carrier replacement waits for the
+  image, failed/superseded updates retain the old carrier, and retired panel
+  geometry/materials are disposed. Runtime textures no longer enter panel JSON.
+- Visibility changes no longer rewrite shared material visibility. 56 focused
+  model/panel/visibility regression tests passed at this checkpoint.

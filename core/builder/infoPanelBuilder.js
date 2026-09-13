@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 
 import { applyOpacityToColor, applyOpacityToImageTexture, createStrTextureMultiline } from '../util/textureUtils.js';
-import { resolvePublicAssetUrl } from '../util/assetsBase.js';
+import { requestTexture, whenTextureReady } from '../resource/textureRequest.js';
 import {
 	injectOpacityIntoHtmlBackgrounds,
 	resolveHtmlOpacity,
@@ -24,7 +24,7 @@ import {
 	getActiveEventSceneToken
 } from '../runtime/eventMechanism/bindEventRuntime.js';
 import { wireInfoPanelDismissTriggerForObject } from '../runtime/eventMechanism/wireInfoPanelDismissTriggers.js';
-import { resolveRuntimeContext } from '../runtime/runtimeContext.js';
+import { resolveRuntimeContext, runWithRuntimeContextScope } from '../runtime/runtimeContext.js';
 import { resolvePosition, resolveRotation, resolveScale } from '../util/vectorValue.js';
 
 const DEFAULT_INFO_PANEL_NAME = 'infoPanel';
@@ -189,8 +189,6 @@ const DEFAULT_TEXT_STYLE = {
 	maxFontPx: 72
 };
 
-const textureLoader = new THREE.TextureLoader();
-trackDisposableResource(textureLoader);
 
 /** @param {*} value @returns {boolean} */
 function hasValue(value) {
@@ -483,17 +481,13 @@ function createTextTexture(infoPanel) {
 	return trackDisposableResource(texture);
 }
 
-/** Assign texture to panel.material.map. */
+/** Runtime images never enter the JSON descriptor; the material receives them separately. */
 function setInfoPanelTexture(infoPanel, texture) {
-	if (infoPanel.panel && infoPanel.panel.material) {
-		infoPanel.panel.material.map = texture
-			? applyUiTextureSampling(texture, infoPanel)
-			: '';
-	}
+	if (texture) applyUiTextureSampling(texture, infoPanel);
 }
 
 /** Render HTML in `infoPanel.text` to texture via html2canvas. */
-function renderHtmlTexture(infoPanel) {
+function renderHtmlTexture(infoPanel, runtimeScope) {
 	const canvasSize = getTextCanvasSize(infoPanel);
 	const borderRadius = resolveBorderRadius(infoPanel);
 	const panelOpacity = resolvePanelOpacity(infoPanel);
@@ -549,22 +543,11 @@ function renderHtmlTexture(infoPanel) {
 		applyContentScaleToPanel(infoPanel);
 		setInfoPanelTexture(infoPanel, texture);
 		return texture;
-	}).finally(() => {
+	}, runtimeScope).finally(() => {
 		loadingManager.itemEnd(loadId);
 		if (parentDiv.parentNode) {
 			parentDiv.parentNode.removeChild(parentDiv);
 		}
-	});
-}
-
-function loadImageTexture(url) {
-	return new Promise((resolve, reject) => {
-		textureLoader.load(
-			resolvePublicAssetUrl(url),
-			(texture) => resolve(texture),
-			undefined,
-			(err) => reject(err instanceof Error ? err : new Error(String(err)))
-		);
 	});
 }
 
@@ -573,14 +556,20 @@ function loadImageTexture(url) {
  * @param {object} infoPanel Normalized descriptor
  * @returns {Promise<THREE.Texture>}
  */
-async function resolveInfoPanelTexture(infoPanel) {
+async function resolveInfoPanelTexture(infoPanel, options = {}) {
+	const scope = resolveRuntimeContext(options.runtimeScope);
+	const signal = options.signal ?? scope.loadSignal;
+	signal?.throwIfAborted();
 	const type = infoPanel.type || 'text';
 
 	if (type === 'img') {
-		let texture = trackDisposableResource(await loadImageTexture(infoPanel.text));
+		let texture = trackDisposableResource(requestTexture(infoPanel.text, { runtimeScope: scope, signal }));
+		try { await whenTextureReady(texture); } catch (error) { texture.dispose(); throw error; }
 		const panelOpacity = resolvePanelOpacity(infoPanel);
 		if (panelOpacity < 1 && !resolveOpacityByPanel(infoPanel)) {
-			texture = trackDisposableResource(applyOpacityToImageTexture(texture, panelOpacity));
+			const source = texture;
+			try { texture = trackDisposableResource(applyOpacityToImageTexture(source, panelOpacity)); }
+			finally { if (texture !== source) source.dispose(); }
 		}
 		applyContentScaleToPanel(infoPanel);
 		setInfoPanelTexture(infoPanel, texture);
@@ -588,7 +577,9 @@ async function resolveInfoPanelTexture(infoPanel) {
 	}
 
 	if (type === 'html') {
-		return renderHtmlTexture(infoPanel);
+		const texture = await renderHtmlTexture(infoPanel, scope);
+		if (signal?.aborted) { texture.dispose(); signal.throwIfAborted(); }
+		return texture;
 	}
 
 	const texture = createTextTexture(infoPanel);
@@ -810,17 +801,21 @@ function buildInfoPanelObject(infoPanel, texture) {
  * @returns {Promise<THREE.Mesh|THREE.Sprite>}
  */
 async function deployInfoPanel(scene, infoPanel, options = {}) {
+	const scope = resolveRuntimeContext(options.runtimeScope ?? scene);
 	const descriptor = normalizeInfoPanelDescriptor(infoPanel);
 	ensureThreeJsonIdOnRecord(descriptor);
-	const texture = await resolveInfoPanelTexture(descriptor);
-	const object3D = buildInfoPanelObject(descriptor, texture);
+	const texture = await resolveInfoPanelTexture(descriptor, { ...options, runtimeScope: scope });
+	let object3D;
+	try { object3D = runWithRuntimeContextScope(scope, () => buildInfoPanelObject(descriptor, texture)); }
+	catch (error) { texture.dispose?.(); throw error; }
 	applyInfoPanelVisibility(object3D, descriptor);
 	const addToScene = options.addToScene !== false;
 	const parent = options.parent || scene;
 	if (addToScene && parent && typeof parent.add === 'function') {
 		parent.add(object3D);
 	}
-	registerObject(object3D, descriptor, { recursive: false });
+	if (options.deferRegistration === true) return object3D;
+	registerObject(object3D, descriptor, { recursive: false }, scope);
 	const manager = getActiveEventListenerManager(scene);
 	if (manager) {
 		wireInfoPanelDismissTriggerForObject(object3D, {

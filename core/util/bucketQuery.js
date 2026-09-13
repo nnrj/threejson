@@ -16,11 +16,11 @@ function normalizeObjType(value) {
  * @param {string} bucketKey
  * @returns {import("three").Object3D[]}
  */
-export function getObjectsInSystemBucket(bucketKey) {
-  const ids = getThreeJsonIdsInSystemBucket(bucketKey);
+export function getObjectsInSystemBucket(bucketKey, runtimeScope) {
+  const ids = getThreeJsonIdsInSystemBucket(bucketKey, runtimeScope);
   const out = [];
   for (let i = 0; i < ids.length; i++) {
-    const obj = getObjectByThreeJsonId(ids[i]);
+    const obj = getObjectByThreeJsonId(ids[i], runtimeScope);
     if (obj) {
       out.push(obj);
     }
@@ -32,11 +32,11 @@ export function getObjectsInSystemBucket(bucketKey) {
  * @param {string} customBucketName
  * @returns {import("three").Object3D[]}
  */
-export function getObjectsInCustomBucket(customBucketName) {
-  const ids = getThreeJsonIdsInCustomBucket(customBucketName);
+export function getObjectsInCustomBucket(customBucketName, runtimeScope) {
+  const ids = getThreeJsonIdsInCustomBucket(customBucketName, runtimeScope);
   const out = [];
   for (let i = 0; i < ids.length; i++) {
-    const obj = getObjectByThreeJsonId(ids[i]);
+    const obj = getObjectByThreeJsonId(ids[i], runtimeScope);
     if (obj) {
       out.push(obj);
     }
@@ -49,12 +49,12 @@ export function getObjectsInCustomBucket(customBucketName) {
  * @param {string} tag
  * @returns {boolean}
  */
-export function hasSystemBucketTag(threeJsonId, tag) {
+export function hasSystemBucketTag(threeJsonId, tag, runtimeScope) {
   const normalized = normalizeSystemBucketTag(tag);
   if (!normalized) {
     return false;
   }
-  const ids = getThreeJsonIdsInSystemBucket(normalized);
+  const ids = getThreeJsonIdsInSystemBucket(normalized, runtimeScope);
   return ids.includes(threeJsonId);
 }
 

@@ -57,7 +57,11 @@ export function createModelLoadScope(scene, options = {}, fallbackManager) {
     context, manager, signal: controller.signal, run, check,
     resolvePath(source, base = "") {
       const resolved = resolvePublicAssetUrlCandidates(source, policy)[0] || source;
-      try { return new URL(resolved, base || globalThis.location?.href).href; }
+      // /assets is a scene-library alias, not a path relative to the OBJ/GLTF.
+      // Its configured base may itself be page-relative (e.g. the legacy demos' "assets").
+      const pageBase = options.resourceBaseUrl || globalThis.location?.href;
+      const parent = String(source).trim().startsWith("/assets/") ? pageBase : base || pageBase;
+      try { return new URL(resolved, parent).href; }
       catch { return resolved; }
     },
     own(object) {

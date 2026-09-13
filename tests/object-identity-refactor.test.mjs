@@ -81,7 +81,7 @@ test("setObjectsVisibleByName defaults applyToSubtree to hide group child meshes
   setObjectsVisibleByName("room-ceiling", false);
   assert.equal(group.visible, false);
   assert.equal(tray.visible, false);
-  assert.equal(tray.material.visible, false);
+  assert.equal(tray.material.visible, true, "object hiding must not alter shared materials");
 
   setObjectsVisibleByName("room-ceiling", true);
   assert.equal(group.visible, true);

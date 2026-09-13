@@ -85,3 +85,21 @@ test("failed imported image maps are removed without changing base color or deco
   assert.equal(material.color.getHexString(), "d83222");
   object.geometry.dispose(); material.dispose(); good.dispose();
 });
+
+test("page-relative asset aliases do not repeat the model directory for an explicit MTL", async (t) => {
+  const savedFetch = globalThis.fetch, savedProgress = globalThis.ProgressEvent, requested = [];
+  globalThis.ProgressEvent ||= class { constructor(type, data) { this.type = type; Object.assign(this, data); } };
+  globalThis.fetch = async (request) => {
+    const url = new URL(request.url || request).href; requested.push(url);
+    if (url === "https://site.test/assets/ship/model.obj") return new Response("mtllib model.mtl\nusemtl red\nv 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3\n");
+    if (url === "https://site.test/assets/ship/model.mtl") return new Response("newmtl red\nKd 1 0 0\n");
+    return new Response("not found", { status: 404 });
+  };
+  const scene = new THREE.Scene(), context = createRuntimeContext(); attachRuntimeContext(scene, context);
+  configureSceneResourcePolicy(context, {}, { assetsBase: "assets", assetsBaseMode: "base-only" });
+  t.after(() => { globalThis.fetch = savedFetch; globalThis.ProgressEvent = savedProgress; context.dispose(); });
+  const loaded = await loadExternalModelAsync({ objType: "externalModel", threeJsonId: "ship", modelFileType: "obj", modelPath: "/assets/ship/model.obj", mtlPath: "/assets/ship/model.mtl" }, scene, { resourceBaseUrl: "https://site.test/index.html" });
+  assert.deepEqual(requested, ["https://site.test/assets/ship/model.obj", "https://site.test/assets/ship/model.mtl"]);
+  let red = false; loaded.traverse((node) => { if (node.material?.color?.getHexString() === "ff0000") red = true; });
+  assert.equal(red, true, "the MTL material must actually reach the rendered mesh");
+});

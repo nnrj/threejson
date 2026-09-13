@@ -15,7 +15,7 @@ import {
 } from "../builder/infoPanelBuilder.js";
 import { trackDisposableResource } from "./trackedResourceRegistry.js";
 import { setUserDataObjJson } from "./objectDescriptorAttach.js";
-import { getObjectByThreeJsonId, unregisterObject } from "./objectRegistry.js";
+import { getObjectByThreeJsonId, registerObject, unregisterObject } from "./objectRegistry.js";
 import { detachObjectTree, disposeObjectTree } from "./disposeObjectTree.js";
 import { ensureThreeJsonIdOnRecord } from "../util/util.js";
 
@@ -133,14 +133,32 @@ function mutateInfoSpriteMesh(infoPanel, texture, sprite) {
  * @returns {import("three").Object3D}
  */
 export function applyInfoPanelMutation(object3D, descriptor, texture) {
+	const previousGeometry = object3D.geometry;
+	const previousMaterials = Array.isArray(object3D.material) ? object3D.material : [object3D.material];
+	const previousTextures = new Set(previousMaterials.flatMap((m) => Object.values(m || {}).filter((v) => v?.isTexture)));
 	const carrier = descriptor.panelBoxType || "box";
+	let updated;
 	if (carrier === "sprite") {
-		return mutateInfoSpriteMesh(descriptor, texture, /** @type {THREE.Sprite} */ (object3D));
+		updated = mutateInfoSpriteMesh(descriptor, texture, /** @type {THREE.Sprite} */ (object3D));
+	} else if (carrier === "plane") {
+		updated = mutateInfoPlaneMesh(descriptor, texture, /** @type {THREE.Mesh} */ (object3D));
+	} else {
+		updated = mutateInfoBoxMesh(descriptor, texture, /** @type {THREE.Mesh} */ (object3D));
 	}
-	if (carrier === "plane") {
-		return mutateInfoPlaneMesh(descriptor, texture, /** @type {THREE.Mesh} */ (object3D));
+	let root = object3D;
+	while (root.parent) root = root.parent;
+	const used = new Set();
+	root.traverse((object) => {
+		used.add(object.geometry);
+		for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
+			used.add(material);
+			for (const value of Object.values(material || {})) if (value?.isTexture) used.add(value);
+		}
+	});
+	for (const resource of new Set([previousGeometry, ...previousMaterials, ...previousTextures])) {
+		if (resource && !used.has(resource)) resource.dispose?.();
 	}
-	return mutateInfoBoxMesh(descriptor, texture, /** @type {THREE.Mesh} */ (object3D));
+	return updated;
 }
 
 /**
@@ -170,16 +188,27 @@ export function applyInfoPanelLayoutToObject(object3D, descriptor) {
  * @returns {Promise<import("three").Object3D>}
  */
 export async function redeployInfoPanelByThreeJsonId(scene, threeJsonId, descriptor, options = {}) {
-	const existing = getObjectByThreeJsonId(threeJsonId);
-	if (existing) {
-		detachObjectTree(existing);
-		unregisterObject(existing, { recursive: false, keepDescriptor: false });
-		disposeObjectTree(existing);
-	}
+	const existing = getObjectByThreeJsonId(threeJsonId, scene);
 	const merged = {
 		...descriptor,
 		threeJsonId: descriptor.threeJsonId || threeJsonId
 	};
 	ensureThreeJsonIdOnRecord(merged);
-	return deployInfoPanel(scene, merged, options.deployOptions || {});
+	// Do not remove the last valid carrier until its replacement image is ready.
+	const replacement = await deployInfoPanel(scene, merged, {
+		...options.deployOptions, addToScene: false, deferRegistration: true
+	});
+	if (options.isCurrent?.() === false || getObjectByThreeJsonId(threeJsonId, scene) !== existing) {
+		disposeObjectTree(replacement);
+		throw new DOMException("Info panel update was superseded.", "AbortError");
+	}
+	const parent = existing?.parent || scene;
+	if (existing) {
+		detachObjectTree(existing);
+		unregisterObject(existing, { recursive: false, keepDescriptor: false }, scene);
+	}
+	parent.add(replacement);
+	registerObject(replacement, replacement.userData.objJson, { recursive: false }, scene);
+	if (existing) disposeObjectTree(existing);
+	return replacement;
 }

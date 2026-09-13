@@ -47,7 +47,7 @@ function normalizeSceneToken(ctx) {
 }
 
 function wirePanelDismissIfNeeded(panelId, ctx) {
-  const panel = panelId ? getObjectByThreeJsonId(panelId) : null;
+  const panel = panelId ? getObjectByThreeJsonId(panelId, getScene(ctx) ?? ctx.object3D) : null;
   if (!panel) {
     return;
   }
@@ -107,10 +107,10 @@ function maybeBindPanelSelfHideTrigger(deviceRoot, ctx = {}) {
     return null;
   }
   const panelId = resolveDevicePanelRefFromRoot(deviceRoot);
-  if (!panelId || !getObjectByThreeJsonId(panelId)) {
+  if (!panelId || !getObjectByThreeJsonId(panelId, deviceRoot)) {
     return null;
   }
-  if (getBindings(panelId, panelEvent).length > 0) {
+  if (getBindings(panelId, panelEvent, deviceRoot).length > 0) {
     return null;
   }
   return bindPanelSelfAction(deviceRoot, panelEvent, "device.hidePanel", ctx);
@@ -166,7 +166,7 @@ function bindCoreActionToObject(object3D, eventName, action, ctx = {}) {
       }
     },
     sceneToken: ctx.sceneToken
-  });
+  }, object3D);
   if (!entry) {
     return null;
   }
@@ -224,7 +224,7 @@ function bindPanelAction(deviceRoot, eventName, actionType, ctx = {}, actionOpti
 
 function bindPanelSelfAction(root, eventName, actionType, ctx = {}) {
   const panelId = resolveDevicePanelRefFromRoot(root);
-  const panel = panelId ? getObjectByThreeJsonId(panelId) : null;
+  const panel = panelId ? getObjectByThreeJsonId(panelId, root) : null;
   if (!panel) {
     return null;
   }
@@ -251,6 +251,7 @@ export function bindDevicePanelActionTriggers(scene, ctx = {}) {
   if (!scene || typeof scene.traverse !== "function") {
     return [];
   }
+  ctx = { ...ctx, scene };
   const bindingIds = [];
   scene.traverse((root) => {
     const record = root?.userData?.objJson;
@@ -306,7 +307,7 @@ export function bindDevicePanelActionTriggers(scene, ctx = {}) {
       return;
     }
     const panelId = resolveDevicePanelRefFromRoot(root);
-    if (panelId && getObjectByThreeJsonId(panelId)) {
+    if (panelId && getObjectByThreeJsonId(panelId, scene)) {
       wirePanelDismissIfNeeded(panelId, ctx);
     }
   });
