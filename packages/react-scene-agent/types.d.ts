@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 export interface SceneCardRuntime {
-  render(scene: Record<string, unknown>, options?: Record<string, unknown>): Promise<unknown>;
+  render(scene: Record<string, unknown> | string, options?: Record<string, unknown>): Promise<unknown>;
   setLabel(label?: string): string;
   applyCommands(commands: unknown[], options?: Record<string, unknown>): Promise<unknown>;
   applyCommandsWithResult(commands: unknown[], options?: Record<string, unknown>): Promise<any>;
@@ -18,7 +18,8 @@ export interface SceneCardRuntime {
 }
 
 export interface SceneAgentSceneCardProps {
-  sceneJson: Record<string, unknown> | null;
+  /** Serialized history is decoded on demand when defer is true. */
+  sceneJson: Record<string, unknown> | string | null;
   label?: string;
   options?: Record<string, unknown>;
   showToast?: (message: string, kind?: string) => void;

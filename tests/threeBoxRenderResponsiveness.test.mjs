@@ -34,7 +34,8 @@ test("ThreeBox replaces the live output buffer when Agent authoring stages chang
 
 test("ThreeBox JSON viewer opens as plain text and upgrades in idle chunks", async () => {
   const source = await readWorkspaceFile("tools/scene-host/threebox/js/threeBoxChatPanel.js");
-  assert.match(source, /plainBlock = buildPlainJsonCodeBlock\(currentText\)/);
+  assert.match(source, /plainBlock = buildPlainJsonCodeBlock\(resolvedText\)/);
+  assert.match(source, /typeof currentText === "function" \? currentText\(\)/);
   assert.match(source, /requestIdleCallback\(callback, \{ timeout: 500 \}\)/);
   assert.match(source, /chunkCount < 240/);
   assert.match(source, /plainBlock\.replaceWith\(richBlock\)/);

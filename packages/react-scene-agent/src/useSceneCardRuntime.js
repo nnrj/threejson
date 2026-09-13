@@ -370,6 +370,8 @@ export function useSceneCardRuntime(options = {}) {
   useEffect(() => () => dispose(), [dispose]);
 
   const requireSceneJson = useCallback(() => {
+    try { currentSceneJsonRef.current = sessionRef.current?.export() || null; }
+    catch (error) { toast(String(error?.message || error), "error"); return null; }
     if (!currentSceneJsonRef.current) {
       toast(translate(optionsRef.current, "sceneAgent.sceneCard.notReady", "场景尚未生成完成。"), "warning");
       return null;

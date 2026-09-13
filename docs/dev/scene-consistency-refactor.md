@@ -308,3 +308,17 @@ must remain distinguishable from loader, material, authorization and GPU failure
   strings instead of displaying raw provider errors. Browser failure injection
   retained a blue base material under both dark and light Shower themes.
 - Four diagnostic regressions and the shared-host parity test passed.
+
+## Implementation evidence: on-demand history
+
+- Dormant history retains immutable serialized snapshots without parsing, adapting,
+  constructing sessions or creating renderers. Activation/edit/export materializes
+  the document on demand; a dormant download still works without a GPU context.
+- JSON display projection is also deferred until expansion/copy. History replay
+  yields between records and guards against rapid conversation changes. Diff turns
+  reuse the already loaded conversation instead of rereading IndexedDB each time.
+- Two new behavioral tests exercise deferred invalid JSON, replacement, independent
+  object capture, export and editing without activation. React ThreeBox builds.
+- The local browser fixture verifies same-ID snapshots, a real local Earth map,
+  deliberate texture failure and exactly one live canvas. See
+  `tests/fixtures/scene-history-browser.html`; it uses no LLM or production account.

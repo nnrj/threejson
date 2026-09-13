@@ -1779,7 +1779,7 @@ async function main() {
         // Diff-cached ("commands"-only) turns have no sceneJson of their own — reconstruct it by
         // replaying commands from the nearest earlier full-JSON turn (see
         // threeBoxOrchestrator.js's resolveTurnSceneJsonString).
-        sceneJsonString = await resolveSceneJsonStringForTurn(turn, conversationId);
+        sceneJsonString = turn.sceneJson || await resolveTurnSceneJsonString(turns, turn.id);
         if (replayVersion !== historyReplayVersion) return;
       } catch (error) {
         console.error("[threebox] failed to reconstruct turn scene JSON:", turn.id, error);
@@ -1794,12 +1794,11 @@ async function main() {
       } else if (turn.patch) {
         chatPanel.appendToBody(textEl, chatPanel.buildDiffCollapse("patch", JSON.stringify(turn.patch, null, 2)));
       }
-      const outputSceneJsonString = projectSceneForUser(sceneJsonString);
-      chatPanel.appendToBody(textEl, chatPanel.buildJsonCollapse(outputSceneJsonString));
+      chatPanel.appendToBody(textEl, chatPanel.buildJsonCollapse(() => projectSceneForUser(sceneJsonString)));
       const sceneCard = createConfiguredSceneCard();
       chatPanel.appendToBody(textEl, sceneCard.el);
       sceneCardsByTurnId.set(turn.id, sceneCard);
-      try { await sceneCard.render(JSON.parse(outputSceneJsonString), { label: turn.sceneTitle || turn.userPrompt, defer: true }); }
+      try { await sceneCard.render(sceneJsonString, { label: turn.sceneTitle || turn.userPrompt, defer: true }); }
       catch (error) {
         if (replayVersion !== historyReplayVersion) return;
         chatPanel.updateAssistantMessage(textEl, t("threebox.app.replayFailed", "该轮场景重放失败：{error}", { error: error?.message || error }));

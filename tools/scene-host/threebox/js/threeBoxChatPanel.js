@@ -436,7 +436,7 @@ export function createThreeBoxChatPanel(host = {}) {
    * highlighting in idle chunks. Generated scenes can contain thousands of lines; eagerly
    * building several DOM nodes per line used to block insertion and rendering of the canvas. */
   function attachLazyJsonCodeBlock(details, text) {
-    let currentText = String(text || "");
+    let currentText = text;
     let plainBlock = null;
     let richBlock = null;
     let preparing = false;
@@ -451,8 +451,9 @@ export function createThreeBoxChatPanel(host = {}) {
         }
         return;
       }
+      const resolvedText = typeof currentText === "function" ? currentText() : String(currentText || "");
       if (!plainBlock) {
-        plainBlock = buildPlainJsonCodeBlock(currentText);
+        plainBlock = buildPlainJsonCodeBlock(resolvedText);
         details.appendChild(plainBlock);
       }
       if (preparing) {
@@ -465,7 +466,7 @@ export function createThreeBoxChatPanel(host = {}) {
       }
       preparing = true;
       const buildRevision = revision;
-      buildJsonCodeBlockIncrementally(currentText, viewerOptions, (nextBlock) => {
+      buildJsonCodeBlockIncrementally(resolvedText, viewerOptions, (nextBlock) => {
         if (buildRevision !== revision) return;
         richBlock = nextBlock;
         if (plainBlock?.parentNode) {
@@ -480,7 +481,7 @@ export function createThreeBoxChatPanel(host = {}) {
     };
     details.addEventListener("toggle", renderOpen);
     return (nextText) => {
-      currentText = String(nextText || "");
+      currentText = nextText;
       revision += 1;
       plainBlock?.remove();
       if (richBlock !== plainBlock) richBlock?.remove();
@@ -495,7 +496,11 @@ export function createThreeBoxChatPanel(host = {}) {
    * markdown-rendered recap text since it can be very long), with a copy button in its header. */
   function buildJsonCollapse(jsonString, options = {}) {
     const details = document.createElement("details");
-    details.__threeBoxJsonText = String(jsonString || "");
+    let source = jsonString;
+    Object.defineProperty(details, "__threeBoxJsonText", {
+      get() { if (typeof source === "function") source = source(); return String(source || ""); },
+      set(value) { source = value; }
+    });
     details.className = options.failed === true ? "jsonCollapse failedJsonCollapse" : "jsonCollapse";
     details.appendChild(
       buildCollapseSummary(
@@ -506,10 +511,10 @@ export function createThreeBoxChatPanel(host = {}) {
         () => details.__threeBoxJsonText
       )
     );
-    const updateCodeBlock = attachLazyJsonCodeBlock(details, details.__threeBoxJsonText);
+    const updateCodeBlock = attachLazyJsonCodeBlock(details, () => details.__threeBoxJsonText);
     details.updateJson = (nextJsonString) => {
       details.__threeBoxJsonText = String(nextJsonString || "");
-      updateCodeBlock(details.__threeBoxJsonText);
+      updateCodeBlock(() => details.__threeBoxJsonText);
     };
     return details;
   }

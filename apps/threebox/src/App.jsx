@@ -446,6 +446,7 @@ export function App() {
   }, [toast]);
 
   const abortRef = useRef(null);
+  const historyReplayVersionRef = useRef(0);
   const activeOutputStreamIdRef = useRef("");
   const rawOutputRef = useRef("");
   const messagesEndRef = useRef(null);
@@ -866,6 +867,7 @@ export function App() {
 
   const openConversation = useCallback(
     async (id) => {
+      const replayVersion = ++historyReplayVersionRef.current;
       abortAllTextureJobs();
       abortRef.current?.abort();
       history.setActiveId(id);
@@ -874,9 +876,13 @@ export function App() {
       setModeOverride(null);
       setActiveAssistantId(null);
       setStream("");
+      setMessages([]); setShownSceneJson(null); setShownTurnId(null); shownTurnIdRef.current = null;
       const turns = await history.loadTurns(id);
+      if (replayVersion !== historyReplayVersionRef.current) return;
       const replayed = [];
       for (const turn of turns) {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        if (replayVersion !== historyReplayVersionRef.current) return;
         replayed.push({ id: `${turn.id}-u`, role: "user", text: turn.userPrompt || "" });
         if (isUnsuccessfulTurn(turn) || turn.stage === "error") {
           const stopped = turn.status === "stopped";
@@ -905,15 +911,15 @@ export function App() {
             }
           });
         } else {
-          // Parse the stored snapshot once here so each card gets a stable object reference (a fresh
-          // parse on every React render would re-render the live canvas every frame).
+          // Keep immutable snapshots serialized; the shared card parses on activation.
           let sceneObj = null;
           let replaySceneJson = turn.sceneJson || null;
           try {
             if (!replaySceneJson && Array.isArray(turn.commands) && turn.commands.length) {
               replaySceneJson = await reconstructSceneAgentTurn(turns, turn.id);
+              if (replayVersion !== historyReplayVersionRef.current) return;
             }
-            sceneObj = replaySceneJson ? JSON.parse(replaySceneJson) : null;
+            sceneObj = replaySceneJson || null;
           } catch {
             sceneObj = null;
             replaySceneJson = null;
@@ -942,24 +948,23 @@ export function App() {
       setMessages(replayed);
 
       // The scene an adjust targets is the conversation's latest stored snapshot.
-      const latest = [...turns].reverse().find((turn) => turn.sceneJson || (Array.isArray(turn.commands) && turn.commands.length));
-      if (latest) {
-        const latestSceneJson = latest.sceneJson || await reconstructSceneAgentTurn(turns, latest.id);
-        setShownSceneJson(latestSceneJson);
-        setShownTurnId(latest.id);
-        shownTurnIdRef.current = latest.id;
+      if (latestCardMessage) {
+        setShownSceneJson(latestCardMessage.sceneJson);
+        setShownTurnId(latestCardMessage.turnId);
+        shownTurnIdRef.current = latestCardMessage.turnId;
       } else {
         setShownSceneJson(null);
         setShownTurnId(null);
         shownTurnIdRef.current = null;
       }
-      window.setTimeout(() => scrollToBottom("auto"), 0);
+      window.setTimeout(() => { if (replayVersion === historyReplayVersionRef.current) scrollToBottom("auto"); }, 0);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [history, abortAllTextureJobs, closeLeftDock, attachedContext, scrollToBottom, zh]
   );
 
   const resetConversationView = useCallback(() => {
+    historyReplayVersionRef.current++;
     abortAllTextureJobs();
     abortRef.current?.abort();
     history.setActiveId(null);

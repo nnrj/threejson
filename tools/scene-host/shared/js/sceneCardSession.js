@@ -1,4 +1,4 @@
-import { compileAuthoring } from "threejson/document";
+import { compileAuthoring, formatAuthoring, isSceneDocument, createSceneDocument } from "threejson/document";
 import { createRuntimeSceneSession, captureSceneSession, executeSceneSessionCommands, diffSceneDocuments, applySceneSessionTextureAssignment } from "threejson/session";
 import { captureSceneCardPreview } from "./sceneViewportPool.js";
 import { sceneHostGeometryCompiler } from "./sceneGeometryCompiler.js";
@@ -8,6 +8,9 @@ export function createSceneCardSession(options = {}) {
   let session = null, queue = Promise.resolve(), active = null, disposed = false;
   let renderOptions = {}, loadController = null, preview = null, playback = null;
   let unsubscribeDiagnostics = null;
+  let deferredInput, deferredDocument = null;
+  const compileInput = (value) => compileAuthoring(typeof value === "string" ? JSON.parse(value) : value);
+  const getDocument = () => session?.document || (deferredInput === undefined ? null : (deferredDocument ||= compileInput(deferredInput)));
   const pool = options.viewportPool, poolKey = {};
   const assertOpen = () => { if (disposed) throw new DOMException("Scene card disposed.", "AbortError"); };
   const notifyDocument = () => options.onDocumentChanged?.(captureSceneSession(session));
@@ -29,6 +32,7 @@ export function createSceneCardSession(options = {}) {
     ? pool.run(poolKey, () => enqueue(callback), options.getViewportLimit?.() ?? options.maxActiveViewports)
     : enqueue(callback);
   const activate = async (settings = {}) => {
+    await initializeDeferredSession(settings);
     if (session && !session.runtime) { await options.beforePrepare?.(settings); await session.prepare({ signal: settings.signal }); }
     publishState(); return session?.runtime || null;
   };
@@ -61,12 +65,24 @@ export function createSceneCardSession(options = {}) {
       options.onViewportStateChanged?.({ dormant: !next, preview });
     }
   };
+  async function initializeDeferredSession(settings = {}) {
+    if (session || deferredInput === undefined) return;
+    settings.signal?.throwIfAborted();
+    const next = await createRuntimeSceneSession(getDocument(), { ...driverOptions, deferInitial: true });
+    if (disposed || settings.signal?.aborted) { next.dispose(); assertOpen(); settings.signal.throwIfAborted(); }
+    session = next; deferredInput = undefined; deferredDocument = null;
+    session.subscribe(notifyDocument); notifyDocument();
+  }
   return {
     get runtime() { return session?.runtime || null; },
     get session() { return session; },
-    get document() { return session?.document || null; },
+    get document() { return getDocument(); },
     render(input, settings = {}) {
-      const document = compileAuthoring(input); // capture now; caller mutation cannot change queued work
+      // Immutable history strings need no parse/normalization until activation, editing
+      // or explicit export. Capture object inputs now so queued work remains independent.
+      const captured = settings.defer === true
+        ? (typeof input === "string" ? input : isSceneDocument(input)
+          ? createSceneDocument(input.root, { revision: input.revision, sourceFormat: input.sourceFormat }) : structuredClone(input)) : compileInput(input);
       loadController?.abort(new DOMException("Replaced by a newer card render.", "AbortError"));
       const controller = new AbortController(); loadController = controller;
       return (settings.defer === true ? enqueue : runLive)(async () => {
@@ -76,8 +92,13 @@ export function createSceneCardSession(options = {}) {
         try {
           if (settings.defer !== true) await options.beforePrepare?.(settings);
           controller.signal.throwIfAborted(); assertOpen();
+          if (!session && settings.defer === true) {
+            deferredInput = captured; deferredDocument = null; publishState(); return null;
+          }
+          const document = compileInput(captured);
           if (!session) {
             session = await createRuntimeSceneSession(document, { ...driverOptions, signal: controller.signal, deferInitial: settings.defer === true });
+            deferredInput = undefined; deferredDocument = null;
             session.subscribe(notifyDocument); notifyDocument();
           } else {
             const operations = diffSceneDocuments(session.document, document);
@@ -102,8 +123,9 @@ export function createSceneCardSession(options = {}) {
       });
     },
     update(input, settings = {}) {
-      const document = compileAuthoring(input);
+      const document = compileInput(input);
       return enqueue(async () => {
+        await initializeDeferredSession(settings);
         if (!session) throw new Error("Scene preview runtime is not ready.");
         await session.dispatch({ operations: diffSceneDocuments(session.document, document), baseRevision: settings.baseRevision ?? session.revision, signal: settings.signal, label: settings.label || "Update scene document" });
         return captureSceneSession(session);
@@ -116,7 +138,7 @@ export function createSceneCardSession(options = {}) {
         return applySceneSessionTextureAssignment(session, assignment, settings);
       });
     },
-    export() { return session ? captureSceneSession(session) : null; },
+    export() { const document = getDocument(); return document ? formatAuthoring(document) : null; },
     suspend() { return pool ? pool.suspend(poolKey) : suspend(); },
     resume(settings = {}) { return runLive(() => activate(settings)); },
     withRuntime(callback, settings = {}) { return runLive(async () => { const runtime = await activate(settings); if (!runtime) throw new Error("Scene preview runtime is not ready."); return callback(runtime); }); },
@@ -128,7 +150,7 @@ export function createSceneCardSession(options = {}) {
       loadController?.abort(new DOMException("Scene card disposed.", "AbortError"));
       unregister?.();
       unsubscribeDiagnostics?.(); unsubscribeDiagnostics = null;
-      session?.dispose(); session = null;
+      session?.dispose(); session = null; deferredInput = undefined; deferredDocument = null;
     }
   };
 }

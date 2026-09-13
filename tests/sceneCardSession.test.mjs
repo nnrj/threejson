@@ -7,6 +7,32 @@ import * as THREE from "three";
 
 const scene = (name = "box") => ({ name, objectList: [{ objType: "box", threeJsonId: "one", position: { x: 0 }, material: { color: "#336699" } }] });
 
+test("dormant serialized history stays unparsed until used and exports without a renderer", async () => {
+  let loads = 0, published = 0;
+  const card = createSceneCardSession({ createRuntime: (...args) => { loads++; return createJsonScene(...args); }, onDocumentChanged: () => published++ });
+  try {
+    await card.render("invalid history JSON", { defer: true });
+    assert.equal(card.session, null); assert.equal(loads, 0); assert.equal(published, 0);
+    await assert.rejects(card.resume(), SyntaxError);
+    assert.equal(card.session, null);
+    const input = scene("saved");
+    const pending = card.render(input, { defer: true }); input.name = "mutated"; await pending;
+    assert.equal(card.export().name, "saved"); assert.equal(loads, 0);
+    await card.update(scene("edited without activation")); assert.equal(loads, 0);
+    await card.resume(); assert.equal(loads, 1); assert.equal(card.export().name, "edited without activation");
+  } finally { card.dispose(); }
+});
+
+test("queued deferred history is superseded and never replaces a later snapshot", async () => {
+  const card = createSceneCardSession({ createRuntime: createJsonScene });
+  try {
+    const first = card.render(JSON.stringify(scene("old")), { defer: true });
+    const firstFailure = assert.rejects(first, { name: "AbortError" });
+    await card.render(JSON.stringify(scene("new")), { defer: true }); await firstFailure;
+    await card.resume(); assert.equal(card.export().name, "new");
+  } finally { card.dispose(); }
+});
+
 test("progressive texture assignment commits once only after decoding and rejects stale plans", async () => {
   let fail = false, commitCount = 0;
   const card = createSceneCardSession({ createRuntime: createJsonScene, loader: { load(_url, ready, _progress, error) {

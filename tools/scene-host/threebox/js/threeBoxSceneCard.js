@@ -424,6 +424,8 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
   }
 
   function requireSceneJson() {
+    try { currentSceneJson = cardSession.export(); }
+    catch (error) { showToast(String(error?.message || error), "error"); return null; }
     if (!currentSceneJson) {
       showToast(t("threebox.sceneCard.notReady", "场景尚未生成完成。"), "warning");
       return null;

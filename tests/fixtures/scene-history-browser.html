@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Local scene history regression fixture</title>
+<body>
+<h1>Local scene history regression fixture</h1>
+<p>Creates one separate QA conversation on this localhost origin. It does not call an AI service or modify existing conversations.</p>
+<button id="seed">Create QA history</button><pre id="status"></pre>
+<a href="../../tools/scene-host/threebox/index.html">Open native ThreeBox</a>
+<script type="module">
+import { putConversation, putTurn } from "../../tools/scene-host/threebox/js/threeBoxSessionStore.js";
+document.querySelector("#seed").addEventListener("click", async () => {
+  const status = document.querySelector("#status");
+  const conversationId = `qa-document-${crypto.randomUUID()}`;
+  const settings = {
+    scene: { background: "#17233a" },
+    camera: { position: { x: 4, y: 3, z: 5 } },
+    lights: [{ type: "ambient", intensity: 2 }, { type: "directional", intensity: 3, position: { x: 5, y: 8, z: 6 } }]
+  };
+  const base = { objType: "box", threeJsonId: "same-model", width: 2, height: 2, depth: 2, material: { type: "standard", color: "#3377ee" } };
+  const records = [
+    ["Blue original", base],
+    ["Red revision", { ...base, material: { ...base.material, color: "#ee3344" } }],
+    ["Local Earth texture", { objType: "sphere", threeJsonId: "same-model", radius: 1.3, material: { type: "standard", color: "#ffffff", textureUrl: "/assets/textures/environment/nature/planet/earth.png" } }],
+    ["Failed texture retains blue", { ...base, material: { ...base.material, textureUrl: "/qa-intentionally-missing.png" } }]
+  ];
+  try {
+    for (let seq = 0; seq < records.length; seq++) {
+      const [name, object] = records[seq];
+      await putTurn({ id: `${conversationId}-${seq}`, conversationId, seq, userPrompt: name, sceneTitle: name,
+        mode: seq ? "adjust" : "generate", stage: "json-full", createdAt: Date.now() + seq,
+        sceneJson: JSON.stringify({ name, sceneConfig: settings, objectList: [object] }) });
+    }
+    await putConversation({ id: conversationId, title: "QA · independent history + resources", updatedAt: Date.now(), pinned: false, archived: false, projectId: null });
+    status.textContent = "Created four independent snapshots. Reload ThreeBox and open the QA conversation. Check each card, then reload and check colors, texture and warnings again.";
+  } catch (error) { status.textContent = String(error.stack || error); }
+});
+</script></body></html>

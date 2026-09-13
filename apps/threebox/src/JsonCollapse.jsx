@@ -145,6 +145,7 @@ export function JsonCollapse({ text, label, copyTitle, diff = false, failed = fa
   const [mounted, setMounted] = useState(false);
   const [copied, setCopied] = useState(false);
   const revertTimer = useRef(null);
+  const resolvedText = useMemo(() => mounted ? (typeof text === "function" ? text() : text) : "", [mounted, text]);
 
   const onToggle = useCallback((event) => {
     if (event.currentTarget.open) {
@@ -158,7 +159,7 @@ export function JsonCollapse({ text, label, copyTitle, diff = false, failed = fa
       event.preventDefault();
       event.stopPropagation();
       try {
-        await navigator.clipboard.writeText(text);
+        await navigator.clipboard.writeText(typeof text === "function" ? text() : text);
       } catch {
         showToast?.(t("threebox.chat.copyFailed", "复制失败，请手动选择文本复制。"), "warning");
         return;
@@ -183,7 +184,7 @@ export function JsonCollapse({ text, label, copyTitle, diff = false, failed = fa
           {copied ? CHECK_ICON : COPY_ICON}
         </button>
       </summary>
-      {mounted && <IncrementalJsonCodeView text={text} lineNumbers={lineNumbers} highlight={highlight} />}
+      {mounted && <IncrementalJsonCodeView text={resolvedText} lineNumbers={lineNumbers} highlight={highlight} />}
     </details>
   );
 }
@@ -195,15 +196,17 @@ export function JsonCollapse({ text, label, copyTitle, diff = false, failed = fa
  */
 export function SceneJsonCollapse({ rawJsonString, format = "standard", lineNumbers = true, highlight = true, showToast }) {
   const text = useMemo(() => {
-    try {
-      return projectSceneJsonString(rawJsonString, format === "friendly" ? "friendly" : "standard");
-    } catch {
+    let cached;
+    return () => {
+      if (cached !== undefined) return cached;
       try {
-        return JSON.stringify(JSON.parse(rawJsonString), null, 2);
+        cached = projectSceneJsonString(rawJsonString, format === "friendly" ? "friendly" : "standard");
       } catch {
-        return String(rawJsonString ?? "");
+        try { cached = JSON.stringify(JSON.parse(rawJsonString), null, 2); }
+        catch { cached = String(rawJsonString ?? ""); }
       }
-    }
+      return cached;
+    };
   }, [rawJsonString, format]);
 
   return (
