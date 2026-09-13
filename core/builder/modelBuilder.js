@@ -4,6 +4,7 @@
  */
 import * as THREE from 'three';
 import { resolvePosition, resolveRotation, resolveScale } from '../util/vectorValue.js';
+import { applyObjectTransform } from '../util/objectTransform.js';
 import { log } from "../util/logger.js";
 import TWEEN, { createTween } from '../compat/adapters/tween.js';
 import { deployByObjTypeExtension } from '../handler/sceneExtensionRegistry.js';
@@ -934,17 +935,6 @@ function normalizeScale(scale = {}){
  * @param {THREE.Object3D} object3D
  * @param {object} [source={}] May include position, rotation, scale
  */
-function applyObjectTransform(object3D, source = {}){
-    const position = normalizePosition(source.position);
-    const rotation = normalizeRotation(source.rotation);
-    const scale = normalizeScale(source.scale);
-
-    object3D.position.set(position.x, position.y, position.z);
-    object3D.rotation.set(rotation.x, rotation.y, rotation.z);
-    object3D.scale.set(scale.x, scale.y, scale.z);
-    applyVisibilityFromDescriptor(object3D, source);
-}
-
 function normalizePrimitiveShapeType(rawType){
     if (typeof rawType !== "string") {
         return "";
@@ -1185,9 +1175,9 @@ function snapshotBoxModelTransformFromObject3D(object3D) {
             z: Number(object3D.rotation.z) || 0
         },
         scale: {
-            x: Number(object3D.scale.x) || 1,
-            y: Number(object3D.scale.y) || 1,
-            z: Number(object3D.scale.z) || 1
+            x: object3D.scale.x,
+            y: object3D.scale.y,
+            z: object3D.scale.z
         }
     };
 }
@@ -1413,21 +1403,10 @@ function createInstanceBox(boxObj, options = {}) {
  * @returns {THREE.Matrix4}
  */
 function colTransMatrix(transform){
-    const matrix4 = new THREE.Matrix4();
-    if(!transform || (!transform.scale && !transform.position && !transform.rotation)){
-        log.error("Failed to compute transform matrix: invalid data!")
-        return matrix4;
-    }
-    trackDisposableResource(matrix4);
-    const scale = normalizeScale(transform.scale);
-    const rotation = normalizeRotation(transform.rotation);
-    const position = normalizePosition(transform.position);
-    const positionV = new THREE.Vector3(position.x, position.y, position.z);
-    const scaleV = new THREE.Vector3(scale.x, scale.y, scale.z);
-    const euler = new THREE.Euler(rotation.x, rotation.y, rotation.z, 'XYZ');
-    const quaternion = new THREE.Quaternion().setFromEuler(euler);
-    matrix4.compose(positionV, quaternion, scaleV);
-    return matrix4;
+    const pose = new THREE.Object3D();
+    applyObjectTransform(pose, transform || {});
+    pose.updateMatrix();
+    return pose.matrix;
 }
 
 /**

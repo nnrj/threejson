@@ -113,6 +113,14 @@ export function createCommandLayer(host) {
           : typeof input === "string"
             ? parseCommandScript(input)
             : [normalizeCommand(input)];
+        const authoring = host.getAuthoringSession?.();
+        if (authoring?.session && commands.every((command) => !command.op.startsWith("editor."))) {
+          await host.ensureCanvasSyncedBeforeExport?.();
+          return authoring.execute(commands, { ...options, renderMeshViews: buildContext().options.renderMeshViews });
+        }
+        if (authoring?.session && commands.some((command) => !command.op.startsWith("editor."))) {
+          return { ok: false, results: [], error: "Run Editor UI commands separately from an atomic scene command batch." };
+        }
         const results = [];
         let ok = true;
         for (const cmd of commands) {

@@ -8,6 +8,7 @@ import {
   snapshotDomainChildTransforms
 } from "../lib/domainEditSession.js";
 import { setDomainEditState } from "../../../../core/handler/domainDeployDescriptor.js";
+import { indexSceneDocument, cloneDocumentData } from "threejson/document";
 
 function formatDomainEditStateLabel(state) {
   const map = {
@@ -24,6 +25,7 @@ function formatDomainEditStateLabel(state) {
 export function createEditorDomainDrillIn(host) {
   let drillInRoot = null;
   let childEditBaseline = null;
+  let documentBaseline = null;
   let resolutionTarget = null;
 
   const modal = document.getElementById("domainEditResolutionModal");
@@ -36,6 +38,7 @@ export function createEditorDomainDrillIn(host) {
   function clearDrillInSession() {
     drillInRoot = null;
     childEditBaseline = null;
+    documentBaseline = null;
   }
 
   function enterDrillIn(root) {
@@ -43,7 +46,16 @@ export function createEditorDomainDrillIn(host) {
       return;
     }
     drillInRoot = root;
-    childEditBaseline = snapshotDomainChildTransforms(root);
+    childEditBaseline = snapshotDomainChildTransforms(root, { state: "authoring", includeDescriptor: true });
+    documentBaseline = null;
+    const session = host.getAuthoringSession?.()?.session;
+    if (session) {
+      const index = indexSceneDocument(session.document);
+      for (let object = root; object; object = object.parent) {
+        const id = object.userData?.objJson?.threeJsonId, entry = index.get(id);
+        if (entry) { documentBaseline = { id, descriptor: cloneDocumentData(entry.record) }; break; }
+      }
+    }
     host.setEventNotice?.("Domain 子编辑：可编辑子对象；右键退出并确认处理方式。");
   }
 
@@ -91,13 +103,26 @@ export function createEditorDomainDrillIn(host) {
     };
   }
 
-  function applySilentResolution(root) {
+  async function applyResolution(action, root) {
+    const authoring = host.getAuthoringSession?.();
+    try {
+      if (action === "undo" && authoring?.session && documentBaseline) {
+        // Rebuild the complete record, including materials and topology.
+        await authoring.replaceObject(documentBaseline.id, documentBaseline.descriptor, { label: "撤销 Domain 子编辑", discardPreview: true });
+        return { ok: true };
+      }
+      const result = applyDomainChildEditResolution(action, root, {
+        captureState: "authoring", childBaseline: childEditBaseline,
+        binding: readBindingFromUi(root), exportOptions: { shouldSkipObject, state: "authoring" }
+      });
+      if (result.ok && authoring?.session) await authoring.recordRuntimeEdit(action === "degrade" ? "转换 Domain 为 group" : "保留 Domain 部件修改");
+      return result;
+    } catch (error) { return { ok: false, error: error.message }; }
+  }
+
+  async function applySilentResolution(root) {
     const settings = resolveDomainEditSettings(host.getEditorSettings());
-    const result = applyDomainChildEditResolution(settings.silentDefaultAction, root, {
-      childBaseline: childEditBaseline,
-      binding: readBindingFromUi(root),
-      exportOptions: { shouldSkipObject }
-    });
+    const result = await applyResolution(settings.silentDefaultAction, root);
     if (result.error && result.degraded) {
       host.showMessage(`绑定失败，已退化为 group：${result.error}`, "warning");
     } else if (!result.ok && result.error) {
@@ -124,21 +149,22 @@ export function createEditorDomainDrillIn(host) {
     const root = drillInRoot;
     const baseline = childEditBaseline;
     drillInRoot = null;
-    const changed = domainChildTransformsChanged(baseline, snapshotDomainChildTransforms(root));
+    const changed = domainChildTransformsChanged(baseline, snapshotDomainChildTransforms(root, { state: "authoring", includeDescriptor: true }));
     if (!changed) {
       childEditBaseline = null;
+      documentBaseline = null;
       return;
     }
     setDomainEditState(root, DOMAIN_EDIT_STATES.PENDING_RESOLUTION);
     const settings = resolveDomainEditSettings(host.getEditorSettings());
     if (!settings.promptOnChildChange) {
-      applySilentResolution(root);
+      void applySilentResolution(root);
       return;
     }
     openResolutionModal(root);
   }
 
-  function commitResolution(action) {
+  async function commitResolution(action) {
     const root = resolutionTarget;
     if (!root) {
       closeResolutionModal();
@@ -156,11 +182,7 @@ export function createEditorDomainDrillIn(host) {
         host.persistSettings?.();
       }
     }
-    const result = applyDomainChildEditResolution(action, root, {
-      childBaseline: childEditBaseline,
-      binding: readBindingFromUi(root),
-      exportOptions: { shouldSkipObject }
-    });
+    const result = await applyResolution(action, root);
     if (result.error && result.degraded) {
       host.showMessage(`绑定失败，已退化为 group：${result.error}`, "warning");
     } else if (!result.ok && result.error) {
@@ -169,6 +191,7 @@ export function createEditorDomainDrillIn(host) {
     }
     closeResolutionModal();
     childEditBaseline = null;
+    documentBaseline = null;
     host.getSceneReserialize?.()?.markSceneNeedsReserialize?.();
     host.getRightSidebarCache?.()?.invalidateRightSidebarSceneJsonTextCache?.();
     host.getEditorInteraction()?.refreshMeshList?.();

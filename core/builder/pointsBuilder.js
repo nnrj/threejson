@@ -3,6 +3,7 @@
  */
 import * as THREE from "three";
 import { resolvePosition, resolveRotation, resolveScale } from "../util/vectorValue.js";
+import { applyObjectTransform } from "../util/objectTransform.js";
 import { log } from "../util/logger.js";
 import { resolvePublicAssetUrl } from "../util/assetsBase.js";
 import { loadingManager } from "../cache/loading.js";
@@ -38,16 +39,6 @@ function normalizeRotation(rotation = {}) {
 
 function normalizeScale(scale = {}) {
   return resolveScale(scale);
-}
-
-function applyObjectTransform(object3D, source = {}) {
-  const position = normalizePosition(source.position);
-  const rotation = normalizeRotation(source.rotation);
-  const scale = normalizeScale(source.scale);
-  object3D.position.set(position.x, position.y, position.z);
-  object3D.rotation.set(rotation.x, rotation.y, rotation.z);
-  object3D.scale.set(scale.x, scale.y, scale.z);
-  applyVisibilityFromDescriptor(object3D, source);
 }
 
 function materialMapStringResolvableAsUrl(mapStr) {

@@ -1727,68 +1727,10 @@ async function createJsonSceneFromObjectRecord(record, options = {}) {
   if (!isObjectRecordEntry(record)) {
     throw new Error("createJsonSceneFromObjectRecord: expected object record with objType");
   }
-  await ensureOptionalSceneCapabilitiesForPayload(record);
-  assertPayloadCapabilitiesBeforePreparation(record, "webgl");
-  await runSceneCapabilityPreparers(record, options);
-  await ensureRectAreaLightSupport([record], "webgl");
-  await ensureCsgBrushOpsForPayload(record);
-  const restoreAssetsBase = applyAssetsBaseForLoad({}, options);
-  try {
-  const { bus } = resolveLifecycleHooks(options);
-  bindPluginHostToLifecycleBus(options, bus);
-  const runtimeCtx = configureSceneResourcePolicy(createRuntimeContext(), record, options);
-  const loadOptions = { ...options, _lifecycleBus: bus, _runtimeContext: runtimeCtx };
-  loadOptions._objectLifecycle = resolveSceneLoadObjectLifecycle(options, record);
-  const normalized = normalizeScenePayloadWithRuntimeDefaults(
-    { worldInfo: { boxModelList: [] } },
-    loadOptions
-  );
-  const baseCtx = createSceneLifecycleContext(LOAD_PHASE.afterNormalize, {
-    options: loadOptions,
-    normalized,
-    payload: { worldInfo: { boxModelList: [] } }
-  });
-  emitSyncLoadPhase(bus, LOAD_PHASE.afterNormalize, baseCtx);
-  const runtime = createSceneRuntimeFromNormalized(normalized, loadOptions, bus);
-  if (runtime.scene) {
-    attachRuntimeContext(runtime.scene, runtimeCtx);
-  }
-  Object.assign(baseCtx, buildRuntimeReadyFields(runtime, normalized, loadOptions), { runtime });
-  if (bus.has(LOAD_PHASE.onRuntimeReady)) {
-    await bus.emit(LOAD_PHASE.onRuntimeReady, { ...baseCtx, phase: LOAD_PHASE.onRuntimeReady });
-  }
-  const deployed = await deployObjectRecordIntoRuntime(runtime, record, loadOptions);
-  const runtimeOptions = resolveRuntimeLoadOptions(normalized, loadOptions);
-  ensureDefaultSceneLightsInScene(runtime.scene, runtimeOptions);
-  applyAutoFitCameraToRuntime(
-    runtime.camera,
-    runtime.controls,
-    normalized,
-    runtimeOptions
-  );
-  const result = {
-    ...runtime,
-    ...deployed,
-    scene: runtime.scene,
-    camera: runtime.camera,
-    renderer: runtime.renderer,
-    controls: runtime.controls,
-    renderLoop: runtime.renderLoop
-  };
-  if (bus.has(LOAD_PHASE.onSceneReady)) {
-    await bus.emit(LOAD_PHASE.onSceneReady, createSceneLifecycleContext(LOAD_PHASE.onSceneReady, {
-      ...baseCtx,
-      ...buildSceneReadyFields(result, normalized, loadOptions),
-      deployed: result,
-      runtime: result
-    }));
-  }
-  result.runtimeContext = runtimeCtx;
-  attachLifecycleBusToRuntime(result, bus, runtimeCtx);
-  return result;
-  } finally {
-    restoreAssetsBase();
-  }
+  // One creation path owns capability preparation, resource scopes, lifecycle,
+  // normalized authoring payload and cleanup on failure.
+  const runtime = await createJsonScene({ objectList: [record] }, options);
+  return { ...runtime, importedRecord: record };
 }
 
 async function createJsonSceneFromArchive(input, options = {}) {

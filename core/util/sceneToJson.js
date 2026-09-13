@@ -43,8 +43,8 @@ import { applySubSceneLayout } from "../handler/subSceneHierarchy.js";
  * @param {import("three").Object3D} object3D
  * @returns {object|null}
  */
-function cloneDescriptorFromDeployRoot(object3D) {
-  const domainExport = exportDeployRootDescriptor(object3D);
+function cloneDescriptorFromDeployRoot(object3D, options = {}) {
+  const domainExport = exportDeployRootDescriptor(object3D, options);
   if (domainExport) {
     return sanitizeObjectRecordForExport(domainExport);
   }
@@ -52,6 +52,7 @@ function cloneDescriptorFromDeployRoot(object3D) {
   if (!liveJson || typeof liveJson !== "object" || Array.isArray(liveJson)) {
     return null;
   }
+  if (options.state === "authoring") return sanitizeObjectRecordForExport(sanitizePlainData(liveJson));
   if (isDomainDeployRootObjJson(liveJson)) {
     return sanitizeObjectRecordForExport(syncDomainDeployItemFromObject3D(liveJson, object3D));
   }
@@ -243,7 +244,7 @@ function collectSubSceneFromObject3D(object3D, options = {}) {
     if (!child || shouldSkip(child)) {
       continue;
     }
-    const raw = cloneDescriptorFromDeployRoot(child);
+    const raw = cloneDescriptorFromDeployRoot(child, options);
     if (!raw) {
       continue;
     }
@@ -251,7 +252,7 @@ function collectSubSceneFromObject3D(object3D, options = {}) {
     if (!normalized) {
       continue;
     }
-    const nested = collectSubSceneFromObject3D(child, options);
+    const nested = shouldCollectSubSceneForDeployRoot(child, raw) ? collectSubSceneFromObject3D(child, options) : [];
     if (nested.length > 0) {
       normalized.subScene = nested.map((item) => ensureJsonOrigin(item, JSON_ORIGIN_LIST));
     }
@@ -318,7 +319,7 @@ function collectCameraAttachedSceneAudio(options = {}) {
     if (!child || shouldSkip(child) || !isTaggedThreeJsonSceneAudioNode(child)) {
       continue;
     }
-    const raw = cloneDescriptorFromDeployRoot(child);
+    const raw = cloneDescriptorFromDeployRoot(child, options);
     const normalized = normalizeCollectedRecord(child, raw);
     if (normalized) {
       out.push(ensureJsonOrigin(normalized, JSON_ORIGIN_LIST));
@@ -366,7 +367,7 @@ export function collectObjectListFromScene(scene, options = {}) {
   const roots = enumerateScanRoots(scene, options);
   const out = [];
   for (let i = 0; i < roots.length; i += 1) {
-    const raw = cloneDescriptorFromDeployRoot(roots[i]);
+    const raw = cloneDescriptorFromDeployRoot(roots[i], options);
     const normalized = normalizeCollectedRecord(roots[i], raw);
     if (normalized) {
       if (shouldCollectSubSceneForDeployRoot(roots[i], raw)) {
@@ -409,13 +410,17 @@ function buildStandardPayloadFromScene(scene, basePayload, options = {}) {
   const merge = options.merge !== false;
   const freshList = collectObjectListFromScene(scene, options);
   const objectList = resolveMergedObjectList(basePayload, freshList, merge);
-  const metadata = extractRootMetadataFromBase(basePayload);
+  const metadata = options.state === "authoring" ? (sanitizePlainData(basePayload) || {}) : extractRootMetadataFromBase(basePayload);
+  if (options.state === "authoring") { delete metadata.objectList; delete metadata.worldInfo; }
   const payload = {
     ...metadata,
     objectList
   };
   const runtimeTarget = options.runtimeTarget || options.target || { scene };
-  if (options.includeRuntimeRecords !== false) {
+  if (options.state === "authoring") {
+    // Descriptor reconciliation must not capture an animation frame, helper lights,
+    // a temporarily resized render target, or the user's orbit-camera pose.
+  } else if (options.includeRuntimeRecords !== false) {
     applyRuntimeSceneConfigToPayload(payload, runtimeTarget, scene);
   } else {
     stripRuntimeSceneConfigFromPayload(payload);
@@ -433,7 +438,7 @@ function buildStandardPayloadFromScene(scene, basePayload, options = {}) {
     payload.worldInfo.nativeSceneList = [{ jsonData: jsonString }];
   }
   const prevMeta = payload.saveMeta && typeof payload.saveMeta === "object" ? payload.saveMeta : {};
-  payload.saveMeta = {
+  if (options.state !== "authoring") payload.saveMeta = {
     ...prevMeta,
     exportMode: "standard_primary",
     exportedAt: new Date().toISOString()

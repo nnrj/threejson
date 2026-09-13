@@ -11,6 +11,7 @@ export function compileAuthoring(payload, options = {}) {
   const root = buildStandardScenePayloadFromCanonical(normalized.sourcePayload, normalized.payload);
   // Empty scenes are meaningful (including explicit deletion of the last object).
   root.objectList ||= [];
+  root.schemaVersion = SCENE_DOCUMENT_VERSION;
   const document = createSceneDocument(root, { ...options, sourceFormat: detectScenePayloadViewFormat(source) });
   indexSceneDocument(document);
   return document;

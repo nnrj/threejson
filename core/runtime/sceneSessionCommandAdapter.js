@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { indexSceneDocument, cloneDocumentData, documentError } from "../document/sceneDocument.js";
 import { getObjectByThreeJsonId } from "../handler/objectRegistry.js";
 import { listMorphTargets, applyMorphInfluencesFromDescriptor } from "../handler/morphTargetRuntime.js";
-import { applyObjectTransform } from "../builder/heatmap/heatmapTexture.js";
+import { applyObjectTransform } from "../util/objectTransform.js";
 
 /** Read the projected authoring state, not a partially mutated visible scene. */
 export function createSessionCommandAdapter(session, options = {}) {

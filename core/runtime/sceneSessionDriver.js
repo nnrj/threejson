@@ -37,6 +37,20 @@ export function createSceneSessionRuntimeDriver(options = {}) {
         next = await create(formatAuthoring(document, { format: "standard" }), {
           ...options, ...context.prepareOptions, ...viewport?.options, canvas: viewport?.canvas || options.canvas, signal: context.signal
         });
+        if (context.prepareOptions?.requiredTextureBindings?.length) {
+          const { getObjectByThreeJsonId } = await import("../handler/objectRegistry.js");
+          const { getMaterialTextureRequest, whenTextureReady } = await import("../resource/textureRequest.js");
+          for (const binding of context.prepareOptions.requiredTextureBindings) {
+            const object = getObjectByThreeJsonId(binding.id, next.scene);
+            const index = /\/(?:materials|materialArr)\/(\d+)$/.exec(binding.relativeMaterialPointer)?.[1];
+            const materials = Array.isArray(object?.material) ? (index == null ? object.material : [object.material[Number(index)]]) : [object?.material];
+            for (const field of binding.fields) {
+              const textures = materials.filter(Boolean).map((material) => getMaterialTextureRequest(material, field));
+              if (!textures.length || textures.some((texture) => !texture)) throw documentError("TEXTURE_BINDING_NOT_COMPILED", `Texture binding not compiled: ${binding.id}/${field}.`);
+              await Promise.all(textures.map(whenTextureReady));
+            }
+          }
+        }
         context.signal?.throwIfAborted();
       } catch (error) { next?.dispose?.(); viewport?.dispose?.(); throw error; }
       let committed = false, cleaned = false;
@@ -64,7 +78,7 @@ export function createSceneSessionRuntimeDriver(options = {}) {
           discard();
         },
         dispose: discard,
-        finalize() { if (committed) { previous?.dispose?.(); previousViewport?.dispose?.(); } }
+        finalize() { if (committed) { previous?.dispose?.(); previousViewport?.dispose?.(); viewport?.finalize?.(); } }
       };
     },
     capturePlayback() {

@@ -1,7 +1,7 @@
 /**
  * Runtime imperative API: write transforms on `Object3D`, etc.; use `objectRegistry` exports to find objects.
  */
-import { applyObjectTransform } from "../builder/heatmap/heatmapTexture.js";
+import { applyObjectTransform } from "../util/objectTransform.js";
 
 /**
  * @param {import("three").Object3D|null|undefined} object
@@ -17,7 +17,7 @@ function applyTransform(object, patch) {
   if (!object || !patch || typeof patch !== "object") {
     return false;
   }
-  applyObjectTransform(object, patch);
+  applyObjectTransform(object, patch, { partial: true });
   return true;
 }
 

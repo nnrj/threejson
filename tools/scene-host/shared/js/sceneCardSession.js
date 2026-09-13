@@ -1,5 +1,5 @@
-import { compileAuthoring, indexSceneDocument, readDocumentPointer, cloneDocumentData } from "threejson/document";
-import { createRuntimeSceneSession, captureSceneSession, executeSceneSessionCommands, diffSceneDocuments } from "threejson/session";
+import { compileAuthoring } from "threejson/document";
+import { createRuntimeSceneSession, captureSceneSession, executeSceneSessionCommands, diffSceneDocuments, applySceneSessionTextureAssignment } from "threejson/session";
 import { captureSceneCardPreview } from "./sceneViewportPool.js";
 
 /** Framework-independent document ownership and serialized, cancellable card operations. */
@@ -104,30 +104,7 @@ export function createSceneCardSession(options = {}) {
       return runLive(async () => {
         await activate(settings);
         if (!session?.runtime) throw new Error("Scene preview runtime is not ready.");
-        settings.signal?.throwIfAborted();
-        if (settings.isCurrent?.(settings.sceneRevision ?? assignment.revision) === false) throw Object.assign(new Error("Texture assignment is stale."), { code: "STALE_TEXTURE_ASSIGNMENT" });
-        const entry = indexSceneDocument(session.document).get(assignment.threeJsonId);
-        if (!entry) throw new Error(`Texture object is no longer present: ${assignment.threeJsonId}.`);
-        const path = entry.path + (assignment.relativeMaterialPointer || "/material");
-        const current = readDocumentPointer(session.document.root, path);
-        const expected = Object.values(assignment.slotRecords || {}).find((slot) => slot.material)?.material;
-        if (expected && diffSceneDocuments({ root: expected }, { root: current }).length) throw Object.assign(new Error("Material changed after texture planning."), { code: "STALE_TEXTURE_ASSIGNMENT" });
-        const { createTextureAssignmentMaterial } = await import("threejson/texture");
-        const material = createTextureAssignmentMaterial(current, assignment);
-        const prepareOptions = settings.resolveRuntimeUrl ? {
-          resolveRuntimeUrl: async (url) => {
-            const slot = Object.entries(assignment.maps).find(([, source]) => source === url)?.[0];
-            if (!slot) return url;
-            const resolved = await settings.resolveRuntimeUrl(url, assignment, slot);
-            return typeof resolved === "string" && resolved.startsWith("blob:") && !url.startsWith("blob:")
-              ? { url: resolved, release: () => URL.revokeObjectURL(resolved) } : resolved;
-          }
-        } : {};
-        await session.dispatch({ operations: [{ op: "test", path, value: cloneDocumentData(current) }, { op: "replace", path, value: material }],
-          baseRevision: session.revision, signal: settings.signal, label: "Apply texture assignment", prepareOptions });
-        // The pipeline's working copy is updated only after the authoring/runtime transaction.
-        settings.commitSceneAssignment?.(assignment);
-        return { ok: true, assignment, materialDescriptor: material };
+        return applySceneSessionTextureAssignment(session, assignment, settings);
       });
     },
     export() { return session ? captureSceneSession(session) : null; },

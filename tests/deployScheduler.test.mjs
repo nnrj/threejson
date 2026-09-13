@@ -203,6 +203,14 @@ test("runDeployJobs waits for async externalmodel jobs", async () => {
   assert.equal(done, true);
 });
 
+test("failed deployments reject instead of publishing a partially missing scene", async () => {
+  const error = new Error("builder failed");
+  const jobs = [{ id: "bad", phase: 2, priority: 0, kind: "sync", run() { throw error; } }];
+  assert.throws(() => runDeployJobsImmediate(jobs), (caught) => caught === error);
+  await assert.rejects(runDeployJobs(jobs), (caught) => caught === error);
+  for (const policy of ["frameBudget", "timeslot"]) await assert.rejects(runDeployJobsScheduled(jobs, { ...scheduledFrameBudget, policy }), (caught) => caught === error);
+});
+
 test("runDeployJobsScheduled retries async job on failure", async () => {
   let attempts = 0;
   const sceneConfig = { deployScheduler: { enabled: true } };

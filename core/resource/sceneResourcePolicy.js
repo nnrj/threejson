@@ -18,7 +18,9 @@ export function configureSceneResourcePolicy(context, payload, options = {}) {
   context.resolveAssetUrl = (source, request = {}) => {
     const kind = request.kind === "texture" ? "image" : request.kind;
     const runtimeUrl = resolveAssetUrl(source, gateway, { ...request, kind });
-    return typeof options.resolveResourceUrl === "function"
+    return typeof options.resolveRuntimeUrl === "function" && kind === "image"
+      ? options.resolveRuntimeUrl(source, { ...request, kind, runtimeUrl })
+      : typeof options.resolveResourceUrl === "function"
       ? options.resolveResourceUrl(source, { ...request, kind, runtimeUrl })
       : runtimeUrl;
   };

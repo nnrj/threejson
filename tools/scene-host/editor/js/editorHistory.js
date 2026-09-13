@@ -11,6 +11,7 @@ import {
 import { boxUsesIntentionalMaterialsArray } from "./sceneTreeMaterialHelpers.js";
 import { syncEditorMeshVisualFromObjJson } from "./editorMeshVisualSync.js";
 import { t } from "../../shared/i18n/index.js";
+import { createEditorDocumentHistory } from "./editorDocumentHistory.js";
 
 function cloneJsonDeep(value) {
   if (value == null) {
@@ -35,6 +36,7 @@ function buildTransformPartialFromSnapshot(snapshot) {
 }
 
 export function createEditorHistory(host) {
+  if (host.getAuthoringSession) return createEditorDocumentHistory(host);
   const state = {
     past: [],
     future: [],

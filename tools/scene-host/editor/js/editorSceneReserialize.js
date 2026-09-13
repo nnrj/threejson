@@ -29,16 +29,10 @@ export function createEditorSceneReserialize(host) {
   }
 
   function syncAllTransformsFromSceneToLinkedObjJson() {
-    const scene = host.getScene();
-    if (!scene || typeof scene.traverse !== "function") {
-      return;
-    }
-    scene.traverse((obj) => {
-      if (obj === scene || isRuntimeOnlyObject(obj)) {
-        return;
-      }
-      syncBoxModelTransformFromObject3D(obj);
-    });
+    // Direct manipulation owns only the selected object. Walking the entire scene
+    // here used to freeze animated objects and Domain doors into saved snapshots.
+    const selected = host.getSelectedObject?.();
+    if (selected && !isRuntimeOnlyObject(selected)) syncBoxModelTransformFromObject3D(selected);
   }
 
   async function ensureCanvasSyncedBeforeExport() {
@@ -48,7 +42,7 @@ export function createEditorSceneReserialize(host) {
     if (!sceneNeedsReserialize) {
       return;
     }
-    syncAllTransformsFromSceneToLinkedObjJson();
+    if (host.getAuthoringSession?.()?.session) await host.getAuthoringSession().recordRuntimeEdit("编辑场景");
     markSceneDocumentSynced();
   }
 

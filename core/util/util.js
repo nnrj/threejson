@@ -1174,7 +1174,7 @@ function cloneSceneGraphForNativeExport(scene, tempDetachDirectChildrenFromScene
 }
 
 /**
- * Sync root-level `visible` from a JSON descriptor onto Object3D and single/multi-material Mesh.
+ * Object visibility is independent of material visibility (materials can be shared).
  * @param {import('three').Object3D} object3D
  * @param {{ visible?: boolean }} descriptor
  */
@@ -1182,16 +1182,7 @@ function applyVisibilityFromDescriptor(object3D, descriptor) {
   if (!object3D || !descriptor || typeof descriptor.visible !== 'boolean') {
     return;
   }
-  const v = descriptor.visible;
-  object3D.visible = v;
-  if (object3D.isMesh && object3D.material) {
-    const mats = Array.isArray(object3D.material) ? object3D.material : [object3D.material];
-    for (let i = 0; i < mats.length; i++) {
-      if (mats[i]) {
-        mats[i].visible = v;
-      }
-    }
-  }
+  object3D.visible = descriptor.visible;
 }
 
 export {

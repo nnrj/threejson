@@ -5,9 +5,10 @@ import { createMaterialFromDescriptor, applyMaterialDescriptorProperties, inferM
 import { applyMaterialTextureSetFromJson, applyTextureRepeatToMap, whenTextureReady } from "../util/loadTextureFromMaterialJson.js";
 import { cloneTextureResource, isManagedTexture, getMaterialTextureRequest, getTextureLoadState } from "../resource/textureRequest.js";
 import { MATERIAL_TEXTURE_SLOTS } from "../texture/textureSlots.js";
-import { applyObjectTransform } from "../builder/heatmap/heatmapTexture.js";
+import { applyObjectTransform } from "../util/objectTransform.js";
 
-const POSE = new Set(["position", "rotation", "scale", "visible", "name"]);
+const POSE = new Set(["position", "rotation", "quaternion", "scale", "visible", "name", "castShadow", "receiveShadow", "renderOrder", "frustumCulled"]);
+const DATA = new Set(["label", "metadata", "businessInfo", "jsonOrigin"]);
 const MATERIAL = new Set(["material", "materials", "materialArr"]);
 const GEOMETRY = new Set(["geometry", "topology", "modifiers", "meshRevision", "positions", "indices", "normals", "uvs", "objType"]);
 const primitiveTypes = new Set(["box", "sphere", "cylinder", "cone", "ring", "torus", "capsule", "plane", "circle"]);
@@ -137,11 +138,13 @@ function geometryRanges(before, after) {
 }
 
 function pose(object) {
-  return { position: object.position.clone(), quaternion: object.quaternion.clone(), scale: object.scale.clone(), visible: object.visible, name: object.name };
+  return { position: object.position.clone(), quaternion: object.quaternion.clone(), scale: object.scale.clone(), visible: object.visible, name: object.name,
+    castShadow: object.castShadow, receiveShadow: object.receiveShadow, renderOrder: object.renderOrder, frustumCulled: object.frustumCulled };
 }
 function setPose(object, state) {
   object.position.copy(state.position); object.quaternion.copy(state.quaternion); object.scale.copy(state.scale);
   object.visible = state.visible; object.name = state.name; object.updateMatrix(); object.updateMatrixWorld(true);
+  for (const key of ["castShadow", "receiveShadow", "renderOrder", "frustumCulled"]) object[key] = state[key];
 }
 
 /** Prepare all supported object edits without publishing any intermediate mutation. */
@@ -153,10 +156,10 @@ export async function prepareIncrementalSceneChanges(runtime, document, context,
     if (!["add", "replace", "remove", "array.splice"].includes(operation.op)) return null;
     const entry = byPath.find((item) => operation.path.startsWith(`${item.path}/`));
     const field = entry && operation.path.slice(entry.path.length + 1).split("/")[0];
-    if (!field || (!POSE.has(field) && !MATERIAL.has(field) && !GEOMETRY.has(field))) return null;
+    if (!field || (!POSE.has(field) && !DATA.has(field) && !MATERIAL.has(field) && !GEOMETRY.has(field))) return null;
     const before = oldIndex.get(entry.id)?.record, object = getObjectByThreeJsonId(entry.id, runtime.scene);
     if (!before || !object) return null;
-    if (!POSE.has(field) && (!object.isMesh || runtime.renderer?.isWebGPURenderer)) return null;
+    if (!POSE.has(field) && !DATA.has(field) && (!object.isMesh || runtime.renderer?.isWebGPURenderer)) return null;
     if (GEOMETRY.has(field) && (!isPlainMeshRecord(before) || !isPlainMeshRecord(entry.record) || object.isSkinnedMesh || object.isInstancedMesh)) return null;
     if (MATERIAL.has(field) && materialList(object.material).some((material) => material.isShaderMaterial || material.isNodeMaterial)) return null;
     let change = changes.get(entry.id);
@@ -185,9 +188,12 @@ export async function prepareIncrementalSceneChanges(runtime, document, context,
         applyObjectTransform(probe, entry.record);
         item.newPose = { ...item.oldPose };
         for (const field of ["position", "scale"]) if (fields.has(field)) item.newPose[field] = probe[field].clone();
-        if (fields.has("rotation")) item.newPose.quaternion = probe.quaternion.clone();
+        if (fields.has("rotation") || fields.has("quaternion")) item.newPose.quaternion = probe.quaternion.clone();
         if (fields.has("visible")) item.newPose.visible = entry.record.visible !== false;
         if (fields.has("name")) item.newPose.name = entry.record.name || "";
+        for (const key of ["castShadow", "receiveShadow"]) if (fields.has(key)) item.newPose[key] = entry.record[key] === true;
+        if (fields.has("frustumCulled")) item.newPose.frustumCulled = entry.record.frustumCulled !== false;
+        if (fields.has("renderOrder")) item.newPose.renderOrder = entry.record.renderOrder ?? 0;
         if ([...item.newPose.position.toArray(), ...item.newPose.quaternion.toArray(), ...item.newPose.scale.toArray()].some((value) => !Number.isFinite(value))) throw documentError("INVALID_TRANSFORM", `Non-finite transform for ${entry.id}.`);
       }
       if ([...fields].some((field) => MATERIAL.has(field))) item.material = await prepareMaterials(object, before, entry.record, { ...options, runtimeScope: runtime.scene, signal: context.signal });

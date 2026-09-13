@@ -53,7 +53,7 @@ export class SceneSession {
   async #commit(command, mode = "edit", historyEntry = null) {
     const before = this.#document;
     const result = applyDocumentOperations(before, command.operations, { baseRevision: command.baseRevision });
-    if (!result.changed) return { ...result, revision: this.revision };
+    if (!result.changed && mode !== "refresh") return { ...result, revision: this.revision };
     const controller = new AbortController();
     this.#active = controller;
     const abort = () => controller.abort(command.signal.reason);
@@ -63,7 +63,7 @@ export class SceneSession {
     try {
       controller.signal.throwIfAborted();
       prepared = await this.#driver.prepare?.(result.document, {
-        previousDocument: before, operations: result.operations, signal: controller.signal, mode, prepareOptions: command.prepareOptions
+        previousDocument: mode === "refresh" ? undefined : before, operations: result.operations, signal: controller.signal, mode, prepareOptions: command.prepareOptions
       });
       controller.signal.throwIfAborted();
       this.#assertOpen();
@@ -79,9 +79,20 @@ export class SceneSession {
       if (this.#active === controller) this.#active = null;
     }
 
-    if (mode === "edit") {
-      this.#undo.push({ operations: result.operations, inverse: result.inverse, label: command.label || "" });
+    if (mode === "refresh") {
+      try { prepared?.finalize?.(); } catch (error) { this.#report(error); }
+      return { ...result, revision: this.revision, refreshed: true };
+    }
+    if (mode === "edit" && command.recordHistory !== false) {
+      const previous = this.#undo[this.#undo.length - 1];
+      if (command.historyGroup && previous?.historyGroup === command.historyGroup) {
+        previous.operations = previous.operations.concat(result.operations);
+        previous.inverse = result.inverse.concat(previous.inverse);
+      } else this.#undo.push({ operations: result.operations, inverse: result.inverse, label: command.label || "", historyGroup: command.historyGroup });
       if (this.#undo.length > this.#historyLimit) this.#undo.shift();
+      this.#redo.length = 0;
+    } else if (mode === "edit") {
+      // A non-recorded edit still invalidates redo against the previous document.
       this.#redo.length = 0;
     } else if (mode === "undo" && historyEntry) {
       this.#undo.pop(); this.#redo.push(historyEntry);
@@ -103,6 +114,21 @@ export class SceneSession {
     // Capture caller-owned commands before asynchronous queuing. Signals are intentionally not cloned.
     const captured = { ...command, operations: cloneDocumentData(command.operations) };
     return this.#enqueue(() => this.#commit(captured));
+  }
+
+  configureHistory(options = {}) {
+    const limit = options.limit ?? this.#historyLimit;
+    if (limit !== Infinity && (!Number.isSafeInteger(limit) || limit < 1)) throw new TypeError("History limit must be positive or Infinity.");
+    this.#historyLimit = limit;
+    if (this.#undo.length > limit) this.#undo.splice(0, this.#undo.length - limit);
+    if (this.#redo.length > limit) this.#redo.splice(0, this.#redo.length - limit);
+  }
+
+  clearHistory() { this.#undo.length = 0; this.#redo.length = 0; }
+
+  /** Discard uncommitted playback/preview state without inventing an authoring revision. */
+  refreshRuntime(options = {}) {
+    return this.#enqueue(() => this.#commit({ ...options, operations: [] }, "refresh"));
   }
 
   undo(options = {}) {

@@ -8,6 +8,7 @@ import {
 import { syncEditorMeshVisualFromObjJson } from "./editorMeshVisualSync.js";
 import { getByPointer } from "../../../../core/util/jsonPointer.js";
 import { t } from "../../shared/i18n/index.js";
+import { getObjectByThreeJsonId } from "threejson";
 
 const FILTER_OPTIONS = [
   "",
@@ -90,7 +91,7 @@ export function createTextureSamplingAdvancedModal(host) {
     if (!modal) {
       return;
     }
-    session = { pointer, profileName, slotLabel, rootData, mesh, onCommitted };
+    session = { pointer, profileName, slotLabel, rootData: structuredClone(rootData), mesh, onCommitted };
     if (titleEl) {
       titleEl.textContent = `${t("editor.material.textureSampling", "Texture Sampling")} · ${slotLabel || pointer}`;
     }
@@ -118,7 +119,7 @@ export function createTextureSamplingAdvancedModal(host) {
     }
   });
 
-  btnApply?.addEventListener("click", () => {
+  btnApply?.addEventListener("click", async () => {
     if (!session) {
       return;
     }
@@ -127,20 +128,45 @@ export function createTextureSamplingAdvancedModal(host) {
       closeModal();
       return;
     }
-    applyExplicitSamplingToMaterial(mat, {
+    const currentSession = session;
+    const values = {
       optOut: optOutEl?.checked === true,
       generateMipmaps: mipEl?.indeterminate ? undefined : mipEl?.checked === true,
       minFilter: minEl?.value || undefined,
       magFilter: magEl?.value || undefined,
       anisotropy: anisoEl?.value,
       colorSpace: csEl?.value || undefined
-    }, session.profileName);
-    host.markSceneDirty?.();
-    if (session.mesh) {
-      syncEditorMeshVisualFromObjJson(session.mesh, session.rootData);
+    };
+    const authoring = host.getAuthoringSession?.();
+    const id = currentSession.rootData.threeJsonId;
+    btnApply.disabled = true;
+    try {
+      if (authoring?.canEditObject?.(id)) {
+        await authoring.mutateObject(id, (data) => {
+          const material = getByPointer(data, currentSession.pointer);
+          if (!material) throw new Error("Material slot no longer exists.");
+          clearExplicitSamplingFromMaterial(material);
+          applyExplicitSamplingToMaterial(material, values, currentSession.profileName);
+        }, { label: "纹理采样" });
+        if (host.getSelectedObject()?.userData?.objJson?.threeJsonId === id) {
+          host.setSelectedObject(getObjectByThreeJsonId(id, host.getScene()));
+        }
+      } else {
+        const live = getByPointer(currentSession.mesh?.userData?.objJson, currentSession.pointer);
+        if (!live) throw new Error("Material slot no longer exists.");
+        clearExplicitSamplingFromMaterial(live);
+        applyExplicitSamplingToMaterial(live, values, currentSession.profileName);
+        syncEditorMeshVisualFromObjJson(currentSession.mesh, currentSession.mesh.userData.objJson);
+        await authoring?.recordRuntimeEdit?.("纹理采样");
+        host.markSceneDirty?.();
+      }
+      currentSession.onCommitted?.();
+      if (session === currentSession) closeModal();
+    } catch (error) {
+      host.showMessage?.(`纹理采样未应用：${error.message}`, "error");
+    } finally {
+      btnApply.disabled = false;
     }
-    session.onCommitted?.();
-    closeModal();
   });
 
   return { openModal, closeModal };

@@ -4,7 +4,6 @@ import {
   createJsonScene,
   createJsonSceneFromArchive,
   deployJsonSceneFromArchive,
-  disposeTrackedResources,
   ensureDefaultSceneLightsInScene,
   ensureThreeJsonIdsOnScenePayload,
   fitPerspectiveCameraToContentBoundsTHREE,
@@ -61,6 +60,7 @@ import { createLeftDockPanel } from "./leftDockPanel.js";
 import { ensureEditorBuiltinApiKey } from "./editorBuiltinAiProvider.js";
 import { createEditorInteraction } from "./editorInteraction.js";
 import { createEditorHistory } from "./editorHistory.js";
+import { createEditorAuthoringSession } from "./editorAuthoringSession.js";
 import { createRightDockPanel } from "./rightDockPanel.js";
 import { createSceneManagePanel } from "./sceneManagePanel.js";
 import { createEventEditorPanel } from "./eventEditorPanel.js";
@@ -175,7 +175,7 @@ function formatWebGLInitError(err) {
 export async function bootstrapSceneHostEditor() {
   const rootContainer = document.getElementById("rootContainer");
 
-  const canvasContainer = document.getElementById("canvasContainer");
+  let canvasContainer = document.getElementById("canvasContainer");
   const canvasWrap = document.getElementById("canvasWrap");
   const stageShell = document.getElementById("stageShell");
   const topBarSceneTitle = document.getElementById("topBarSceneTitle");
@@ -238,6 +238,7 @@ export async function bootstrapSceneHostEditor() {
   let editorSettings = null;
   let sysConfig = createEditorSysConfig();
   let sceneRuntime = null;
+  let authoringSession = null;
   let scene = null;
   let camera = null;
   let renderer = null;
@@ -284,6 +285,7 @@ export async function bootstrapSceneHostEditor() {
   let scenePayloadFormat = null;
   let rightSidebarCache = null;
   let sceneLoadGeneration = 0;
+  let activeSceneLoad = null;
   let editorChromeUi = null;
   let builtinPrivacyController = null;
   let sceneTreeContextMenu = null;
@@ -298,6 +300,8 @@ export async function bootstrapSceneHostEditor() {
     getControls: () => controls,
     getRenderLoop: () => renderLoop,
     getSceneRuntime: () => sceneRuntime,
+    getAuthoringSession: () => authoringSession,
+    buildAuthoringRuntimeOptions,
     hasRuntimeReady,
     getSysConfig: () => sysConfig,
     getSelectedObject: () => selectedObj,
@@ -572,6 +576,7 @@ export async function bootstrapSceneHostEditor() {
     const format = extra.format ?? committedFormat;
     return {
       shouldSkipObject: (obj) => sceneTree?.isRuntimeOnlyObject?.(obj) ?? false,
+      state: "authoring",
       merge: extra.merge !== false,
       ...(format ? { format } : {}),
       ...extra,
@@ -671,6 +676,8 @@ export async function bootstrapSceneHostEditor() {
   }
 
   function teardownGraphics() {
+    activeSceneLoad?.abort(); activeSceneLoad = null;
+    authoringSession?.dispose();
     renderLoop?.stop?.();
     editorInteraction?.dispose();
     gridHelper?.dispose?.();
@@ -680,11 +687,8 @@ export async function bootstrapSceneHostEditor() {
     } catch {
       /* ignore */
     }
-    try {
-      disposeTrackedResources();
-    } catch (error) {
-      console.warn("[scene-editor] dispose", error);
-    }
+    // Only this runtime is owned here. The global tracking registry also contains
+    // preview/player resources which must survive an Editor scene switch.
     try {
       sceneRuntime?.dispose?.();
     } catch {
@@ -836,11 +840,89 @@ export async function bootstrapSceneHostEditor() {
     return opts;
   }
 
-  async function initSceneRuntime() {
-    await waitCanvasLayout();
-    if (sceneRuntime) {
-      teardownGraphics();
+  function createEditorStagingViewport() {
+    const previous = canvasContainer;
+    const canvas = previous.cloneNode(false);
+    canvas.removeAttribute("id");
+    Object.assign(canvas.style, { position: "absolute", inset: "0", width: "100%", height: "100%", visibility: "hidden", pointerEvents: "none" });
+    previous.parentNode.insertBefore(canvas, previous.nextSibling);
+    let committed = false;
+    return {
+      canvas,
+      options: {
+        onRuntimeReady() {},
+        afterRender: () => { if (committed) renderViewportGizmoOverlay(); }
+      },
+      commit() {
+        previous.removeAttribute("id"); previous.style.display = "none";
+        canvas.id = "canvasContainer"; canvas.style.visibility = ""; canvas.style.pointerEvents = "";
+        canvasContainer = canvas; committed = true;
+      },
+      rollback() {
+        canvas.removeAttribute("id"); canvas.style.visibility = "hidden";
+        previous.id = "canvasContainer"; previous.style.display = "";
+        canvasContainer = previous; committed = false;
+      },
+      finalize() { if (committed) previous.remove(); },
+      dispose() { canvas.remove(); }
+    };
+  }
+
+  function replaceEditorRuntime(next, previous, preserveView = true) {
+    const view = preserveView && previous?.camera && next?.camera?.type === previous.camera.type ? {
+      position: previous.camera.position.clone(), quaternion: previous.camera.quaternion.clone(), zoom: previous.camera.zoom,
+      target: previous.controls?.target?.clone?.()
+    } : null;
+    editorInteraction?.dispose(); gridHelper?.dispose?.(); disposeViewportGizmoOverlay();
+    assignRuntime(next); resetInitFlags();
+    if (view) {
+      camera.position.copy(view.position); camera.quaternion.copy(view.quaternion); camera.zoom = view.zoom; camera.updateProjectionMatrix();
+      if (view.target && controls?.target) controls.target.copy(view.target);
     }
+    selectedObj = null;
+    editorInteraction?.initAfterSceneLoad?.(); syncViewportGizmoFromSettings();
+    windowResize(); ensureRenderLoopStarted();
+  }
+
+  function buildAuthoringRuntimeOptions() {
+    return {
+      ...buildCreateJsonSceneOptions({}), onRuntimeReady() {},
+      createViewport: createEditorStagingViewport,
+      onRuntimeChanged: (next, previous) => { if (next) replaceEditorRuntime(next, previous); }
+    };
+  }
+
+  async function prepareFullEditorRuntime(create, flags, generation = sceneLoadGeneration) {
+    activeSceneLoad?.abort();
+    const load = new AbortController(); activeSceneLoad = load;
+    await waitCanvasLayout();
+    load.signal.throwIfAborted();
+    const previous = sceneRuntime;
+    const viewport = createEditorStagingViewport();
+    let next, committed = false;
+    try {
+      next = await create(buildCreateJsonSceneOptions(flags, { ...viewport.options, canvas: viewport.canvas, signal: load.signal }));
+      load.signal.throwIfAborted();
+      if (generation !== sceneLoadGeneration) throw new DOMException("Scene changed during loading.", "AbortError");
+      viewport.commit(); committed = true;
+      replaceEditorRuntime(next, previous, false);
+    } catch (err) {
+      if (committed) {
+        viewport.rollback();
+        if (previous) replaceEditorRuntime(previous, next, false);
+      }
+      next?.dispose?.(); viewport.dispose();
+      if (activeSceneLoad === load) {
+        const saved = authoringSession?.export({ assertExportable: false });
+        if (saved) sysConfig.jsonData = saved;
+      }
+      throw err;
+    } finally { if (activeSceneLoad === load) activeSceneLoad = null; }
+    previous?.dispose?.(); viewport.finalize();
+    return next;
+  }
+
+  async function initSceneRuntime(generation = sceneLoadGeneration) {
     const payload = buildEditorScenePayload(sysConfig, editorSettings);
     let flags = pendingCreateJsonSceneFlags;
     if (!flags) {
@@ -850,13 +932,8 @@ export async function bootstrapSceneHostEditor() {
       }
     }
     pendingCreateJsonSceneFlags = null;
-    try {
-      sceneRuntime = await createJsonScene(payload, buildCreateJsonSceneOptions(flags));
-    } catch (err) {
-      throw new Error(formatWebGLInitError(err));
-    }
-    assignRuntime(sceneRuntime);
-    resetInitFlags();
+    const next = await prepareFullEditorRuntime((options) => createJsonScene(payload, options), flags, generation);
+    authoringSession?.attach(payload, next);
     trackDisposableResource(scene);
     editorInteraction?.refreshBoxEdgeColor?.();
     gridHelper?.syncEditorGridHelperFromSettings?.();
@@ -864,10 +941,9 @@ export async function bootstrapSceneHostEditor() {
     windowResize();
   }
 
-  async function subInit() {
+  async function subInit(generation = sceneLoadGeneration) {
     ui.setLoadingMessage(t("editor.message.loadingSceneJson", "Loading scene JSON..."));
-    await initSceneRuntime();
-    editorInteraction?.initAfterSceneLoad?.();
+    await initSceneRuntime(generation);
     ensureRenderLoopStarted();
     finishEditorSceneLoad();
   }
@@ -954,6 +1030,7 @@ export async function bootstrapSceneHostEditor() {
           return false;
         }
       }
+      if (loadGeneration !== sceneLoadGeneration) return false;
       pendingCreateJsonSceneFlags = runtimeFlags || {};
       if (ingestOptions.historyReplay !== true) {
         void editorSessionRecovery?.clearAutoSnapshotOnNewIngest?.();
@@ -967,13 +1044,13 @@ export async function bootstrapSceneHostEditor() {
       ) {
         viewPreserve.captureEditorViewToSession();
       }
-      teardownGraphics();
       ensureThreeJsonIdsOnScenePayload(payload);
       sysConfig.jsonData = payload;
       try {
-        await subInit();
+        await subInit(loadGeneration);
         return await completeIngestAfterRuntime(hintLabel, ingestOptions, loadGeneration);
       } catch (error) {
+        if (error?.name === "AbortError") return false;
         ui.setLoading(false);
         openOrCloseProgressManager(false);
         ui.showMessage(String(error.message || error), "error");
@@ -984,40 +1061,32 @@ export async function bootstrapSceneHostEditor() {
   }
 
   async function loadSceneFromUrl(url, hintLabel = "") {
+    const generation = ++sceneLoadGeneration;
+    activeSceneLoad?.abort();
+    const load = new AbortController(); activeSceneLoad = load;
     try {
       toggleStartupEmptyState(false);
       ui.setLoadingMessage("正在读取场景配置...");
-      const response = await fetch(resolveSceneHostUrl(url));
+      const response = await fetch(resolveSceneHostUrl(url), { signal: load.signal });
       if (!response.ok) {
         throw new Error(`加载场景失败：${response.status}`);
       }
       const sceneJson = await response.json();
-      scenePayloadFormat?.recordEditorScenePayloadViewFormat?.(sceneJson, hintLabel || url);
-      ensureThreeJsonIdsOnScenePayload(sceneJson);
-      sysConfig.jsonData = sceneJson;
-      rightSidebarCache?.invalidateRightSidebarSceneJsonTextCache?.();
-      await subInit();
-      updateSceneTitle(hintLabel || url);
-      const bootSnap =
-        (await editorHistory?.captureSceneSnapshotAsync?.()) ||
-        editorHistory?.captureSceneSnapshot?.();
-      editorHistory?.resetForFullSceneLoad?.(bootSnap);
+      load.signal.throwIfAborted();
+      if (generation !== sceneLoadGeneration) return false;
+      if (!await ingestScenePayload(sceneJson, hintLabel || url)) return false;
       editorDocumentState?.markSaved?.();
       editorSessionRecovery?.onSaved?.();
       editorDocumentState?.syncDocumentTitle?.();
-      const snapshotCaptureOptions = buildCaptureOptionsForContext(host, "fullReplace");
-      await editorSessionRecovery?.writeInitialAutoSnapshot?.(snapshotCaptureOptions);
-      await recentScenes?.saveCurrentScene?.(hintLabel || url, snapshotCaptureOptions);
-      toggleStartupEmptyState(false);
-      editorHistory?.syncMenuState?.();
       return true;
     } catch (error) {
+      if (error?.name === "AbortError" || generation !== sceneLoadGeneration) return false;
       ui.setLoading(false);
       openOrCloseProgressManager(false);
       ui.showMessage(`加载场景失败：${error.message}`, "error");
       console.error(error);
       return false;
-    }
+    } finally { if (activeSceneLoad === load) activeSceneLoad = null; }
   }
 
   function ensureDefaultSceneLights(rootScene, autoFillLights = true) {
@@ -1025,19 +1094,21 @@ export async function bootstrapSceneHostEditor() {
   }
 
   async function applyLoadedRuntime(loadedRuntime, fileName, successMessage) {
-    assignRuntime(loadedRuntime);
-    resetInitFlags();
+    if (sceneRuntime !== loadedRuntime) {
+      const previous = sceneRuntime;
+      replaceEditorRuntime(loadedRuntime, previous, false);
+      previous?.dispose?.();
+    }
     if (loadedRuntime?.normalizedPayload) {
       sysConfig.jsonData = loadedRuntime.normalizedPayload;
     } else {
       sysConfig.jsonData = sysConfig.jsonData || {};
     }
+    authoringSession?.attach(sysConfig.jsonData, loadedRuntime);
     rightSidebarCache?.invalidateRightSidebarSceneJsonTextCache?.();
     assetLibraryPanel?.render?.();
     trackDisposableResource(scene);
     windowResize();
-    editorInteraction?.ensureTransformControls?.();
-    editorInteraction?.initAfterSceneLoad?.();
     ensureRenderLoopStarted();
     finishEditorSceneLoad();
     editorInteraction?.refreshMeshList?.();
@@ -1417,13 +1488,11 @@ export async function bootstrapSceneHostEditor() {
     if (!hasScene) {
       const objectFlags = resolveEditorRuntimeFlagsSync(editorSettings, "objectRecord", parsed, null);
       await ui.runWithLoadingMask("正在导入对象 JSON...", async () => {
-        const loadedRuntime = await createJsonSceneFromObjectRecord(
-          parsed,
-          buildCreateJsonSceneOptions(objectFlags, {
+        const loadedRuntime = await prepareFullEditorRuntime((options) => createJsonSceneFromObjectRecord(
+          parsed, { ...options,
             missingAssetPolicy: "warn",
             onWarning: (msg) => console.warn("[object-json-import]", msg)
-          })
-        );
+          }), objectFlags);
         if (objectFlags.autoFillLights !== false) {
           ensureDefaultSceneLights(loadedRuntime?.scene, true);
         }
@@ -1441,12 +1510,8 @@ export async function bootstrapSceneHostEditor() {
     const objectFlags = resolveEditorRuntimeFlagsSync(editorSettings, "objectRecord", parsed, pick);
     const historyBefore = editorHistory?.captureSceneSnapshot?.();
     await ui.runWithLoadingMask("正在导入对象 JSON...", async () => {
-      const loadedRuntime = await deployObjectRecordIntoRuntime(sceneRuntime || scene, parsed, {
-        objectEntryMode: pick.mode === "append" ? "append" : "replace",
-        missingAssetPolicy: "warn",
-        onWarning: (msg) => console.warn("[object-json-import]", msg),
-        ...objectFlags
-      });
+      await authoringSession.importRecord(parsed, { replace: pick.mode !== "append", runtimeFlags: objectFlags, label: fileName || "导入对象" });
+      const loadedRuntime = sceneRuntime;
       if (objectFlags.autoFillLights !== false) {
         ensureDefaultSceneLights(loadedRuntime?.scene, true);
       }
@@ -1471,13 +1536,11 @@ export async function bootstrapSceneHostEditor() {
     if (!hasScene) {
       const objectFlags = resolveEditorRuntimeFlagsSync(editorSettings, "objectRecord", record, null);
       await ui.runWithLoadingMask("正在导入 3D 模型...", async () => {
-        const loadedRuntime = await createJsonSceneFromObjectRecord(
-          record,
-          buildCreateJsonSceneOptions(objectFlags, {
+        const loadedRuntime = await prepareFullEditorRuntime((options) => createJsonSceneFromObjectRecord(
+          record, { ...options,
             missingAssetPolicy: "warn",
             onWarning: (msg) => console.warn("[mesh-import]", msg)
-          })
-        );
+          }), objectFlags);
         if (objectFlags.autoFillLights !== false) {
           ensureDefaultSceneLights(loadedRuntime?.scene, true);
         }
@@ -1495,12 +1558,8 @@ export async function bootstrapSceneHostEditor() {
     const objectFlags = resolveEditorRuntimeFlagsSync(editorSettings, "objectRecord", record, pick);
     const historyBefore = editorHistory?.captureSceneSnapshot?.();
     await ui.runWithLoadingMask("正在导入 3D 模型...", async () => {
-      const loadedRuntime = await deployObjectRecordIntoRuntime(sceneRuntime || scene, record, {
-        objectEntryMode: pick.mode === "append" ? "append" : "replace",
-        missingAssetPolicy: "warn",
-        onWarning: (msg) => console.warn("[mesh-import]", msg),
-        ...objectFlags
-      });
+      await authoringSession.importRecord(record, { replace: pick.mode !== "append", runtimeFlags: objectFlags, label: file.name || "导入 3D 模型" });
+      const loadedRuntime = sceneRuntime;
       if (objectFlags.autoFillLights !== false) {
         ensureDefaultSceneLights(loadedRuntime?.scene, true);
       }
@@ -1545,10 +1604,10 @@ export async function bootstrapSceneHostEditor() {
           return;
         }
         await ui.runWithLoadingMask("正在导入 .tjz 包...", async () => {
-          const loadedRuntime = await createJsonSceneFromArchive(bytes, buildCreateJsonSceneOptions(flags, {
+          const loadedRuntime = await prepareFullEditorRuntime((options) => createJsonSceneFromArchive(bytes, { ...options,
             missingAssetPolicy: "warn",
             onWarning: (msg) => console.warn("[tjz-import]", msg)
-          }));
+          }), flags);
           if (entryKind === "object" && flags.autoFillLights !== false) {
             ensureDefaultSceneLights(loadedRuntime?.scene, true);
           }
@@ -1573,15 +1632,11 @@ export async function bootstrapSceneHostEditor() {
             if (viewPreserve?.isEditorViewPreserveEnabled?.() && camera && controls) {
               viewPreserve.captureEditorViewToSession();
             }
-            teardownGraphics();
-            resetInitFlags();
-            const loadedRuntime = await createJsonSceneFromArchive(
-              bytes,
-              buildCreateJsonSceneOptions(flags, {
+            const loadedRuntime = await prepareFullEditorRuntime((options) => createJsonSceneFromArchive(
+              bytes, { ...options,
                 missingAssetPolicy: "warn",
                 onWarning: (msg) => console.warn("[tjz-import]", msg)
-              })
-            );
+              }), flags);
             await applyLoadedRuntime(loadedRuntime, file.name);
             viewPreserve?.bindEditorViewPreserveListeners?.();
             if (viewPreserve?.isEditorViewPreserveEnabled?.()) {
@@ -2093,6 +2148,7 @@ export async function bootstrapSceneHostEditor() {
   openOrCloseProgressManager(sysConfig.progressFlag);
   editorDocumentState = createEditorDocumentState(host);
   sceneTree = createSceneTreePanel(host);
+  authoringSession = createEditorAuthoringSession(host);
   commandLayer = createCommandLayer(host);
   commandLayer.ensure();
   aiGeneratePanel = createEditorAiGeneratePanel(host);

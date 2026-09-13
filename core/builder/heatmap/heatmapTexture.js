@@ -16,37 +16,10 @@ import {
 } from './rasterizeHeatmap.js';
 import { createHeatmapVolumeMaterial, updateHeatmapVolumeUniforms } from './heatmapVolumeMaterial.js';
 import { applyVisibilityFromDescriptor } from '../../util/util.js';
-import { resolvePosition, resolveRotation, resolveScale } from '../../util/vectorValue.js';
+import { applyObjectTransform } from '../../util/objectTransform.js';
 
 function hasValue(value) {
     return value !== undefined && value !== null;
-}
-
-function normalizePosition(position = {}) {
-    return resolvePosition(position);
-}
-
-function normalizeRotation(rotation = {}) {
-    return resolveRotation(rotation);
-}
-
-function normalizeScale(scale = {}) {
-    return resolveScale(scale);
-}
-
-/**
- * Apply position / rotation / scale to Object3D.
- * @param {import('three').Object3D} object3D
- * @param {object} [source={}] May include position, rotation, scale sub-objects
- */
-function applyObjectTransform(object3D, source = {}) {
-    const position = normalizePosition(source.position);
-    const rotation = normalizeRotation(source.rotation);
-    const scale = normalizeScale(source.scale);
-
-    object3D.position.set(position.x, position.y, position.z);
-    object3D.rotation.set(rotation.x, rotation.y, rotation.z);
-    object3D.scale.set(scale.x, scale.y, scale.z);
 }
 
 /**

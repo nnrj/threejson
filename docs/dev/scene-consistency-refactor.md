@@ -150,3 +150,29 @@ must remain distinguishable from loader, material, authorization and GPU failure
   cross-scene registries, delayed cancellation, video first-frame readiness,
   material fallback and closed/wound simplified and beveled meshes. Browser and
   server-proxy integration checks are still tracked separately below.
+
+## Implementation evidence: Editor authoring timeline
+
+- The baseline Editor now owns a SceneSession: commands, object imports, property
+  and material edits, undo/redo, save and recovery share its authored document.
+  History stores inverse deltas (50 steps by default); one progressive texture
+  enrichment is one undo group. Failed imports preserve the visible scene.
+- Saving no longer copies unrelated animated poses or the inspection camera into
+  authoring data. Nested Domain edits retain stable part overrides without copying
+  generated children. Cancelling drill-in can rebuild the unchanged authoring
+  revision to discard even topology/material previews.
+- Object visibility is separate from shared material visibility. Array, prefixed
+  vector and quaternion transforms now use a neutral shared mapper, including
+  baked/instanced geometry. Ordinary property edits retain Object3D and renderer.
+- Loader scheduling propagates failures instead of reporting a missing-object
+  scene as successfully loaded. Full Editor loads stage off-screen and reject stale
+  results. A tutorial regression registers its legitimate `floor` Domain instead
+  of silently skipping it; the scene description itself was not replaced.
+- Browser checks verified startup, recovery with lighting/color, adding/moving a
+  cube, undo and selection. They also reproduced and fixed tree double-clicks
+  bubbling into canvas picking and selecting TransformControls internals.
+- Material sampling dialogs edit a private draft, so Cancel cannot change the
+  document. Material-library labels are escaped and display no longer mutates the
+  document. Hidden legacy fields cannot overwrite per-face material edits.
+- Local suite checkpoint: 1,377 passed, 1 existing skip. Archive ownership,
+  comprehensive scenario browser checks and other checklist entries remain open.

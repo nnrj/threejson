@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
+import "../builtins/register.js";
 
 import { createJsonSceneSimple } from "../core/handler/sceneLoadHandler.js";
 import { clearObjectRegistry } from "../core/handler/objectRegistry.js";
@@ -43,5 +44,7 @@ test("tutorial group-line-panel loads group subScene children", () => {
   assert.ok(demoGroup.children.length >= 2, "demo-group should have subScene children");
   assert.ok(findByName(runtime.scene, "group-box-a"));
   assert.ok(findByName(runtime.scene, "group-box-b"));
+  assert.ok(findByName(runtime.scene, "demo-floor"), "the registered floor domain must also deploy, not be silently skipped");
   assert.ok(countMeshes(runtime.scene) >= 2, "at least two group box meshes");
+  runtime.dispose();
 });

@@ -8,6 +8,7 @@
 import * as THREE from "three";
 
 import { cloneJson } from "../util/cloneJson.js";
+import { resolvePosition, resolveRotation, resolveScale } from "../util/vectorValue.js";
 import { snapshotBoxModelTransformFromObject3D } from "../builder/modelBuilder.js";
 import { getDomain } from "./businessDomainRegistry.js";
 import { setUserDataObjJson } from "./objectDescriptorAttach.js";
@@ -168,7 +169,7 @@ export function setPersistSource(object, record) {
  * @param {import("three").Object3D} root
  * @returns {Record<string, object>}
  */
-export function snapshotDomainChildTransforms(root) {
+export function snapshotDomainChildTransforms(root, options = {}) {
   const out = {};
   if (!root?.traverse) {
     return out;
@@ -178,9 +179,10 @@ export function snapshotDomainChildTransforms(root) {
       return;
     }
     const id = obj.userData?.objJson?.domainPartId || obj.userData?.objJson?.threeJsonId || obj.uuid;
-    const t = snapshotBoxModelTransformFromObject3D(obj);
+    const source = resolveDomainItemDescriptor(obj.userData?.objJson);
+    const t = options.state === "authoring" && source ? authoredTransform(source) : snapshotBoxModelTransformFromObject3D(obj);
     if (id && t) {
-      out[id] = cloneJson(t);
+      out[id] = cloneJson(options.includeDescriptor ? { ...t, descriptor: obj.userData?.objJson || null } : t);
     }
   });
   return out;
@@ -337,7 +339,17 @@ export function syncTransformOntoPersistSource(persistSource, object3D) {
  * @param {import("three").Object3D|null|undefined} object3D
  * @returns {object|null}
  */
-export function exportDeployRootDescriptor(object3D) {
+function authoredTransform(source) {
+  // Use the same position/rotation/scale aliases as ordinary descriptor deployment.
+  const p = resolvePosition(source?.position), r = resolveRotation(source?.rotation), s = resolveScale(source?.scale);
+  if (Array.isArray(source?.quaternion)) {
+    const euler = new THREE.Euler().setFromQuaternion(new THREE.Quaternion().fromArray(source.quaternion).normalize());
+    r.x = euler.x; r.y = euler.y; r.z = euler.z;
+  }
+  return { position: { x: p.x, y: p.y, z: p.z }, rotation: { x: r.x, y: r.y, z: r.z }, scale: { x: s.x, y: s.y, z: s.z } };
+}
+
+export function exportDeployRootDescriptor(object3D, options = {}) {
   if (!object3D) {
     return null;
   }
@@ -347,22 +359,26 @@ export function exportDeployRootDescriptor(object3D) {
     return null;
   }
   const persistSource = getPersistSource(object3D);
+  const syncRoot = (source) => options.state === "authoring"
+    ? applyTransformOntoDomainRecord(source, { visible: resolveDomainItemDescriptor(liveJson)?.visible }, authoredTransform(resolveDomainItemDescriptor(liveJson)))
+    : syncTransformOntoPersistSource(source, object3D);
   if (persistSource && PRISTINE_EXPORT_STATES.has(state)) {
-    return syncTransformOntoPersistSource(persistSource, object3D);
+    return syncRoot(persistSource);
   }
-  if (state === DOMAIN_EDIT_STATES.BOUND && persistSource) {
+  if ((state === DOMAIN_EDIT_STATES.BOUND || (options.state === "authoring" && BLOCKING_EXPORT_STATES.has(state))) && persistSource) {
     const overrides = captureDomainPartOverrides(object3D, {
+      state: options.state,
       childBaseline: getDomainChildTransformBaseline(object3D),
-      currentTransforms: snapshotDomainChildTransforms(object3D)
+      currentTransforms: snapshotDomainChildTransforms(object3D, options)
     });
-    const result = syncTransformOntoPersistSource(persistSource, object3D);
+    const result = syncRoot(persistSource);
     const target = result.items?.[0] || result.payload || result;
     if (overrides.parts.length) target.domainOverrides = overrides;
     else delete target.domainOverrides;
     return result;
   }
   if (liveJson && typeof liveJson === "object" && !Array.isArray(liveJson)) {
-    return syncDomainDeployItemFromObject3D(liveJson, object3D);
+    return options.state === "authoring" ? cloneJson(liveJson) : syncDomainDeployItemFromObject3D(liveJson, object3D);
   }
   return null;
 }

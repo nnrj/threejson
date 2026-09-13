@@ -8,7 +8,7 @@ import { log } from "../util/logger.js";
 import { resolvePublicAssetUrl } from "../util/assetsBase.js";
 import { trackDisposableResource } from "../handler/trackedResourceRegistry.js";
 import { registerObject } from "../handler/objectRegistry.js";
-import { applyObjectTransform } from "./heatmap/heatmapTexture.js";
+import { applyObjectTransform } from "../util/objectTransform.js";
 
 /** Common Mesh*Material texture slots (probed per slot; unsupported materials get undefined). */
 const MATERIAL_TEXTURE_SLOTS = [

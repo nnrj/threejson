@@ -50,6 +50,11 @@ export async function captureCurrentSessionJsonText(host, captureOptions = {}) {
     return normalizeCodeEditorJsonTextToNestedForPersistence(host, raw);
   }
   await host.ensureCanvasSyncedBeforeExport?.();
+  const authoring = host.getAuthoringSession?.();
+  if (authoring?.session) {
+    await authoring.flush();
+    return JSON.stringify(authoring.export(), null, host.getEditorSettings()?.io?.exportJsonIndent ?? 2);
+  }
   const scene = host.getScene();
   if (!scene?.isScene) {
     return "";

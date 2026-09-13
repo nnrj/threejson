@@ -17,6 +17,7 @@ export function resolveEditorTextureService(settings) {
 }
 
 function exportCurrentScene(host) {
+  if (host.getAuthoringSession?.()?.session) return host.getAuthoringSession().export();
   const scene = host.getScene?.();
   if (!scene?.isScene) return null;
   return sceneToStandardJsonSimple(scene, {
@@ -44,12 +45,17 @@ function formatTextureProgress(event) {
 export async function runEditorSceneTexturePipeline(host, options = {}) {
   const settings = host.getEditorSettings?.();
   if (settings?.ai?.texturePipelineEnabled === false) return { skipped: "disabled", assignments: [] };
+  await host.ensureCanvasSyncedBeforeExport?.();
+  await host.getAuthoringSession?.()?.flush();
   const sceneJson = exportCurrentScene(host);
   const runtime = host.getSceneRuntime?.();
   if (!sceneJson || !runtime) return { skipped: "runtime_not_ready", assignments: [] };
 
   const history = host.getEditorHistory?.();
   const before = (await history?.captureSceneSnapshotAsync?.()) || history?.captureSceneSnapshot?.();
+  const authoring = host.getAuthoringSession?.();
+  const ownerSession = authoring?.session;
+  const textureHistoryGroup = `texture-${globalThis.crypto?.randomUUID?.() || Date.now()}`;
   let result;
   try {
     result = await runHostSceneTexturePipeline({
@@ -68,6 +74,10 @@ export async function runEditorSceneTexturePipeline(host, options = {}) {
         ? findChangedTextureObjectIds(options.previousScene, sceneJson)
         : undefined,
       signal: options.signal,
+      isCurrent: () => !ownerSession || authoring.session === ownerSession,
+      applyAssignment: ownerSession ? (_runtime, assignment, assignmentOptions) => authoring.applyTextureAssignment(assignment, {
+        ...assignmentOptions, historyGroup: textureHistoryGroup, label: "AI 纹理完善"
+      }) : undefined,
       onProgress: (event) => {
         const text = formatTextureProgress(event);
         if (text) options.onProgress?.(text, event);
@@ -83,7 +93,7 @@ export async function runEditorSceneTexturePipeline(host, options = {}) {
     // that optional follow-up must not turn the completed generation/adjustment into a failure.
     result = { scene: sceneJson, assignments: [], taskResults: [], skipped: "aborted" };
   }
-  if (result.assignments?.length && before) {
+  if (result.assignments?.length && before && !ownerSession) {
     history?.pushCapturedSceneSnapshot?.(before, "AI 纹理完善");
     host.markSceneDirty?.();
   }

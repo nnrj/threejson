@@ -242,7 +242,7 @@ export {
 } from "./util/jsonPointer.js";
 
 /** Heatmap APIs implemented in `modelBuilder` are not re-exported; only mesh transform helpers are added here. */
-export { applyObjectTransform } from "./builder/heatmap/heatmapTexture.js";
+export { applyObjectTransform } from "./util/objectTransform.js";
 export {
   buildObjectLoaderGraphFromRecord,
   deployNativeObjectRecord

@@ -1,4 +1,4 @@
-import { applyObjectTransform } from "../../builder/heatmap/heatmapTexture.js";
+import { applyObjectTransform } from "../../util/objectTransform.js";
 import { getObjectByThreeJsonId } from "../../handler/objectRegistry.js";
 import { markDescriptorBindingJsonDirty, redeployObject } from "../../handler/sceneDescriptorBinding.js";
 import { applyVisibilityFromDescriptor } from "../../util/util.js";

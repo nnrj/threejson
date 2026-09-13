@@ -2,6 +2,7 @@ import {
   applyObjectTransform,
   buildEditorSceneTreePlain,
   captureObjectSnapshot,
+  getObjectByThreeJsonId,
   redeployObject,
   refreshRegisteredObject,
   resolveObjectDisplayLabel,
@@ -32,6 +33,7 @@ import {
   resolveDomainDeployRoot
 } from "../lib/domainEditSession.js";
 import { normalizeDismissTrigger } from "../../../../core/runtime/eventMechanism/infoPanelDismissTrigger.js";
+import { listMaterialSlotsForDescriptor } from "../../../../core/util/materialDescriptorWalk.js";
 
 function formatVec3ForPropInput(x, y, z) {
   const fx = Number(x);
@@ -457,13 +459,13 @@ export function createSceneTreePanel(host) {
       const r = data.rotation || {};
       const s = data.scale || {};
       if (prop.position) {
-        prop.position.value = formatVec3ForPropInput(p.x, p.y, p.z);
+        prop.position.value = formatVec3ForPropInput(p.x ?? p[0], p.y ?? p[1], p.z ?? p[2]);
       }
       if (prop.rotation) {
-        prop.rotation.value = formatVec3ForPropInput(r.rotationX ?? r.x, r.rotationY ?? r.y, r.rotationZ ?? r.z);
+        prop.rotation.value = formatVec3ForPropInput(r.rotationX ?? r.x ?? r[0], r.rotationY ?? r.y ?? r[1], r.rotationZ ?? r.z ?? r[2]);
       }
       if (prop.scale) {
-        prop.scale.value = formatVec3ForPropInput(s.scaleX ?? 1, s.scaleY ?? 1, s.scaleZ ?? 1);
+        prop.scale.value = formatVec3ForPropInput(s.scaleX ?? s.x ?? s[0] ?? 1, s.scaleY ?? s.y ?? s[1] ?? 1, s.scaleZ ?? s.z ?? s[2] ?? 1);
       }
       if (prop.visible) {
         prop.visible.checked = model?.visible !== false;
@@ -641,22 +643,25 @@ export function createSceneTreePanel(host) {
       }
       return;
     }
-    const data = selectedObj.userData?.objJson;
-    if (!data || typeof data !== "object") {
+    const liveData = selectedObj.userData?.objJson;
+    if (!liveData || typeof liveData !== "object") {
       if (!silent) {
         host.showMessage("当前选中节点无 objJson，无法写回变换。", "warning");
       }
       return;
     }
+    const authoring = host.getAuthoringSession?.();
+    const transactional = authoring?.canEditObject?.(String(liveData.threeJsonId || ""));
+    const data = transactional ? structuredClone(liveData) : liveData;
     const threeJsonId = String(data.threeJsonId || "").trim();
     const beforeObjJson = recordHistory && threeJsonId ? captureObjectHistorySnapshot(threeJsonId, selectedObj) : null;
     const nm = String(prop.name?.value ?? "").trim();
     const prevName = data.name;
     if (nm) {
       data.name = nm;
-      selectedObj.name = nm;
+      if (!transactional) selectedObj.name = nm;
     }
-    if (nm && nm !== prevName) {
+    if (!transactional && nm && nm !== prevName) {
       refreshRegisteredObject(selectedObj, data);
     }
     const lb = String(prop.label?.value ?? "").trim();
@@ -671,6 +676,9 @@ export function createSceneTreePanel(host) {
     data.position = { x: pos.a, y: pos.b, z: pos.c };
     data.rotation = { rotationX: rot.a, rotationY: rot.b, rotationZ: rot.c };
     data.scale = { scaleX: scl.a, scaleY: scl.b, scaleZ: scl.c };
+    // Hidden legacy inputs must not overwrite independently edited PBR/face slots
+    // when the user only moves, renames or hides the object.
+    if (!listMaterialSlotsForDescriptor(data).length) {
     writeTextureUrlToObjJson(data, prop.textureUrl?.value ?? "");
     writeTextureRepeatToObjJson(data, {
       x: prop.textureRepeatX?.value,
@@ -696,15 +704,16 @@ export function createSceneTreePanel(host) {
     writeMaterialFieldToObjJson(data, "roughness", nextRoughness);
     writeMaterialFieldToObjJson(data, "wireframe", nextWireframe);
     writeMaterialFieldToObjJson(data, "side", nextDoubleSide ? "double" : "front");
-    selectedObj.visible = prop.visible?.checked !== false;
-    data.visible = selectedObj.visible;
+    }
+    data.visible = prop.visible?.checked !== false;
+    if (!transactional) selectedObj.visible = data.visible;
     if (prop.castShadow) {
-      selectedObj.castShadow = prop.castShadow.checked === true;
-      data.castShadow = selectedObj.castShadow;
+      data.castShadow = prop.castShadow.checked === true;
+      if (!transactional) selectedObj.castShadow = data.castShadow;
     }
     if (prop.receiveShadow) {
-      selectedObj.receiveShadow = prop.receiveShadow.checked === true;
-      data.receiveShadow = selectedObj.receiveShadow;
+      data.receiveShadow = prop.receiveShadow.checked === true;
+      if (!transactional) selectedObj.receiveShadow = data.receiveShadow;
     }
     const objType = typeof data.objType === "string" ? data.objType.trim().toLowerCase() : "";
     const dismissTriggerEl = document.getElementById("sceneTreePropDismissTrigger");
@@ -718,7 +727,19 @@ export function createSceneTreePanel(host) {
         data.fix = false;
         data.dismissTrigger = trigger;
       }
-      void host.getSceneRuntime?.()?.eventMechanism?.rebind?.();
+      if (!transactional) void host.getSceneRuntime?.()?.eventMechanism?.rebind?.();
+    }
+    if (transactional) {
+      return authoring.replaceObject(threeJsonId, data, { label: "场景树属性", recordHistory }).then(() => {
+        const current = getObjectByThreeJsonId(threeJsonId, host.getScene());
+        host.setSelectedObject(current); syncPropInputs(current);
+        host.getEditorInteraction()?.refreshMeshList?.(); host.getEditorInteraction()?.refreshBoxEdge?.(current);
+        host.getSceneReserialize?.()?.markSceneDocumentSynced?.(); render();
+        if (!silent) host.showMessage("已应用属性。", "success");
+      }).catch((error) => {
+        syncPropInputs(host.getSelectedObject());
+        host.showMessage(`属性未应用，原场景已保留：${error.message}`, "error");
+      });
     }
     syncEditorMeshVisualFromObjJson(selectedObj, data);
     applyObjectTransform(selectedObj, data);

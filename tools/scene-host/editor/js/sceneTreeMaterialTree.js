@@ -17,6 +17,10 @@ import {
   writeTextureQualityToMaterial
 } from "./sceneTreeTextureSamplingHelpers.js";
 import { t } from "../../shared/i18n/index.js";
+import { getObjectByThreeJsonId } from "threejson";
+
+const LIB_PREFIX = "lib://";
+const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
 
 function applyTextureRepeatFromSlotPointer(mesh, rootData, pointer) {
   if (!mesh?.isMesh) {
@@ -41,17 +45,8 @@ function applyTextureRepeatFromSlotPointer(mesh, rootData, pointer) {
 
 function ensureSceneAssetLibraryArray(host) {
   const data = host.getSysConfig()?.jsonData;
-  if (!data || typeof data !== "object") {
-    return [];
-  }
-  if (Array.isArray(data.assetLibrary)) {
-    return data.assetLibrary;
-  }
-  data.worldInfo = data.worldInfo || {};
-  if (!Array.isArray(data.worldInfo.assetLibrary)) {
-    data.worldInfo.assetLibrary = [];
-  }
-  return data.worldInfo.assetLibrary;
+  // Rendering a selector must not silently mutate the authoring document.
+  return data?.assetLibrary || data?.worldInfo?.assetLibrary || [];
 }
 
 function isTextureAssetKind(kind) {
@@ -81,7 +76,7 @@ function buildAssetLibSelectOptions(host, selectedId) {
     const label = entry.name ? `${id} (${entry.name})` : id;
     const val = `${LIB_PREFIX}${id}`;
     const sel = val === selectedId ? " selected" : "";
-    opts.push(`<option value="${val.replace(/"/g, "&quot;")}"${sel}>${label}</option>`);
+    opts.push(`<option value="${escapeHtml(val)}"${sel}>${escapeHtml(label)}</option>`);
   });
   return opts.join("");
 }
@@ -136,11 +131,25 @@ export function createSceneTreeMaterialTree(host, { isPropSyncing }) {
   function commitMaterialSlotField(pointer, field, value, options = {}) {
     const { recordHistory = true, redeploy = true } = options;
     const selectedObj = host.getSelectedObject();
-    const data = selectedObj?.userData?.objJson;
-    if (!data) {
+    const liveData = selectedObj?.userData?.objJson;
+    if (!liveData) {
       return;
     }
-    const threeJsonId = String(data.threeJsonId || "").trim();
+    const threeJsonId = String(liveData.threeJsonId || "").trim();
+    const authoring = host.getAuthoringSession?.();
+    if (authoring?.canEditObject?.(threeJsonId)) {
+      return authoring.mutateObject(threeJsonId, (data) => {
+        const mat = ensureMaterialObjectAtPointer(data, pointer);
+        if (field === "textureQuality") writeTextureQualityToMaterial(mat, String(value ?? ""));
+        else if (field === "textureRepeat" && isDefaultTextureRepeat(value)) delete mat.textureRepeat;
+        else setByPointer(data, `${pointer}/${field}`, value, { createMissing: true });
+      }, { label: "材质树属性", recordHistory }).then(() => {
+        if (host.getSelectedObject()?.userData?.objJson?.threeJsonId !== threeJsonId) return;
+        const current = getObjectByThreeJsonId(threeJsonId, host.getScene());
+        host.setSelectedObject(current); host.getSceneTree()?.syncPropInputs?.(current);
+      }).catch((error) => host.showMessage?.(`材质未应用，原材质已保留：${error.message}`, "error"));
+    }
+    const data = liveData;
     const beforeObjJson =
       recordHistory && threeJsonId ? captureHistorySnapshot(threeJsonId, selectedObj) : null;
     ensureMaterialObjectAtPointer(data, pointer);
@@ -235,7 +244,7 @@ export function createSceneTreeMaterialTree(host, { isPropSyncing }) {
       const grid = document.createElement("div");
       grid.className = "sceneTreeMaterialSlotGrid";
       grid.innerHTML = `<label>${t("editor.material.texture", "Texture")}</label>
-        <input type="text" class="sceneTreeMatTex" value="${texUrl.replace(/"/g, "&quot;")}" spellcheck="false">
+        <input type="text" class="sceneTreeMatTex" value="${escapeHtml(texUrl)}" spellcheck="false">
         <label>lib</label>
         <select class="sceneTreeMatLib">${libOpts}</select>
         <label>${t("editor.material.repeatX", "Repeat X")}</label>

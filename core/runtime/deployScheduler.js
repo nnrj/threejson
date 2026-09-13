@@ -136,8 +136,10 @@ export function createDeploySchedulerStore() {
           }),
         Promise.resolve()
       )
-      .then(() => {
+      .finally(() => {
         if (activeRun === run) {
+          for (const timer of run.timers) clearTimeout(timer);
+          if (run.rafId != null && typeof cancelAnimationFrame === "function") cancelAnimationFrame(run.rafId);
           activeRun = null;
         }
       });
@@ -338,8 +340,7 @@ async function executeJobWithRetry(job, config, run) {
     } catch (err) {
       attempt += 1;
       if (attempt > maxAttempts) {
-        log.warn("[deployScheduler] job failed:", job.id, err);
-        return;
+        throw err;
       }
       await delayMs(backoffMs * attempt);
     }
@@ -377,7 +378,9 @@ async function runAsyncJobPool(jobs, config, run, notify) {
   for (let w = 0; w < poolSize; w++) {
     workers.push(worker());
   }
-  await Promise.all(workers);
+  const results = await Promise.allSettled(workers);
+  const failed = results.find((result) => result.status === "rejected");
+  if (failed) throw failed.reason;
 }
 
 const RUN_DEPLOY_JOBS_CONFIG = Object.freeze({
@@ -392,15 +395,11 @@ const RUN_DEPLOY_JOBS_CONFIG = Object.freeze({
 export function runDeployJobsImmediate(jobs) {
   const sorted = sortDeployJobs(jobs);
   for (let i = 0; i < sorted.length; i++) {
-    try {
-      const result = sorted[i].run();
-      if (result && typeof result.then === "function") {
-        void result.catch((err) => {
-          log.warn("[deployScheduler] async job failed:", sorted[i].id, err);
-        });
-      }
-    } catch (err) {
-      log.warn("[deployScheduler] job failed:", err);
+    const result = sorted[i].run();
+    if (result && typeof result.then === "function") {
+      void result.catch((err) => {
+        log.warn("[deployScheduler] async job failed (use createJsonScene to await asynchronous resources):", sorted[i].id, err);
+      });
     }
   }
 }
@@ -495,8 +494,9 @@ function sortDeployJobs(jobs) {
  * @returns {Promise<void>}
  */
 function runFrameBudget(jobs, config, run) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     let index = 0;
+    run.onCancel = resolve;
     const pump = async () => {
       if (run.cancelled) {
         resolve();
@@ -515,7 +515,8 @@ function runFrameBudget(jobs, config, run) {
             await result;
           }
         } catch (err) {
-          log.warn("[deployScheduler] job failed:", err);
+          reject(err);
+          return;
         }
         index += 1;
         count += 1;
@@ -543,7 +544,7 @@ function runFrameBudget(jobs, config, run) {
  * @returns {Promise<void>}
  */
 function runTimeslot(jobs, config, run) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     let pending = jobs.length;
     let delayCount = 0;
     const finish = () => {
@@ -574,7 +575,10 @@ function runTimeslot(jobs, config, run) {
               await result;
             }
           } catch (err) {
-            log.warn("[deployScheduler] job failed:", err);
+            for (const timer of run.timers) clearTimeout(timer);
+            run.cancelled = true;
+            reject(err);
+            return;
           }
           done();
         })();

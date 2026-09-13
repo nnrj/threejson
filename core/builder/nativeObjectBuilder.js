@@ -14,7 +14,7 @@ import {
   resolveLibTokenToShaderSource
 } from "../cache/assetRegistry.js";
 import { trackDisposableResource } from "../handler/trackedResourceRegistry.js";
-import { applyObjectTransform } from "./heatmap/heatmapTexture.js";
+import { applyObjectTransform } from "../util/objectTransform.js";
 import { registerObject } from "../handler/objectRegistry.js";
 import { isNativeShapeHeuristicEnabled } from "../handler/nativeParseMode.js";
 import { resolveAssetRefsForRecord } from "../util/resolveAssetRefs.js";

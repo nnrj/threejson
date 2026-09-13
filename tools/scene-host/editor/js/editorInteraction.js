@@ -40,7 +40,7 @@ function isEditableMesh(obj, boxEdge) {
 }
 
 export function createEditorInteraction(host) {
-  const canvasContainer = document.getElementById("canvasContainer");
+  let canvasContainer = document.getElementById("canvasContainer");
   const transModeToggle = document.getElementById("transModeToggle");
 
   let transformControls = null;
@@ -534,7 +534,7 @@ export function createEditorInteraction(host) {
       return;
     }
     listenersBound = true;
-    document.addEventListener("dblclick", onCanvasDoubleClick);
+    canvasContainer?.addEventListener("dblclick", onCanvasDoubleClick);
     canvasContainer?.addEventListener("contextmenu", onCanvasContextMenu);
     canvasContainer?.addEventListener("pointerdown", dismissEditorHighlightOnCanvasPointerDown, true);
   }
@@ -554,7 +554,7 @@ export function createEditorInteraction(host) {
       return;
     }
     listenersBound = false;
-    document.removeEventListener("dblclick", onCanvasDoubleClick);
+    canvasContainer?.removeEventListener("dblclick", onCanvasDoubleClick);
     canvasContainer?.removeEventListener("contextmenu", onCanvasContextMenu);
     canvasContainer?.removeEventListener("pointerdown", dismissEditorHighlightOnCanvasPointerDown, true);
   }
@@ -566,7 +566,9 @@ export function createEditorInteraction(host) {
     }
     const list = [];
     scene.traverse((obj) => {
-      if (obj instanceof THREE.Mesh && obj !== boxEdge?.helper) {
+      if (obj instanceof THREE.Mesh && obj !== boxEdge?.helper
+          && !isHitOnTransformControlsHelper(obj, transformControlsHelper)
+          && !host.getSceneTree()?.isRuntimeOnlyObject(obj)) {
         list.push(obj);
       }
     });
@@ -615,7 +617,7 @@ export function createEditorInteraction(host) {
       }
       const target = event?.object || host.getSelectedObject();
       if (target) {
-        host.getSceneReserialize?.()?.syncAllTransformsFromSceneToLinkedObjJson?.();
+        syncBoxModelTransformFromObject3D(target);
         host.getSceneReserialize?.()?.markSceneDocumentSynced?.();
         host.getRightSidebarCache?.()?.invalidateRightSidebarSceneJsonTextCache?.();
         host.getEditorDomainDrillIn?.()?.syncEditStateAfterTransform?.(target);
@@ -650,6 +652,8 @@ export function createEditorInteraction(host) {
   }
 
   function initAfterSceneLoad() {
+    unbindListeners();
+    canvasContainer = getRenderer()?.domElement || document.getElementById("canvasContainer");
     ensureTransformControls();
     initHighlight();
     refreshMeshList();

@@ -199,7 +199,8 @@ export function executeSceneSessionCommands(session, input, options = {}) {
     const planned = await planSceneCommands(base, commands, executionOptions);
     if (!planned.ok) return planned;
     try {
-      const event = await session.dispatch({ operations: planned.operations, baseRevision: base.revision, signal: options.signal, label: options.label });
+      const event = await session.dispatch({ operations: planned.operations, baseRevision: base.revision, signal: options.signal, label: options.label,
+        prepareOptions: options.prepareOptions, historyGroup: options.historyGroup, recordHistory: options.recordHistory });
       state.drafts = planned.bufferDrafts;
       const warnings = [];
       for (const command of planned.viewCommands) {

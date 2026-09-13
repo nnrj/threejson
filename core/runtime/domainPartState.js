@@ -1,5 +1,7 @@
 import { cloneDocumentData, documentError } from "../document/sceneDocument.js";
 import { DOMAIN_PART_SCHEMA_VERSION, diffDomainPartData, readDomainOverrides } from "../document/domainParts.js";
+import { Euler, Quaternion } from "three";
+import { resolvePosition, resolveRotation, resolveScale } from "../util/vectorValue.js";
 
 const states = new WeakMap();
 const runtimeId = (object) => object.userData?.objJson?.domainPartId || object.userData?.objJson?.threeJsonId || object.uuid;
@@ -11,12 +13,23 @@ function visitParts(root, callback) {
     if (object.userData?.__threeJsonRuntimeOnly || object.userData?.__threeJsonExportExcluded || object.isTransformControls ||
       object.userData?.type === "helperBoxEdge" || ["AxesHelper", "GridHelper", "BoxHelper"].includes(object.type)) continue;
     callback(object);
-    stack.push(...object.children);
+    for (const child of object.children) stack.push(child);
   }
 }
 
 function localState(object) {
   return { position: object.position.toArray(), quaternion: object.quaternion.toArray(), scale: object.scale.toArray() };
+}
+
+function authoredPose(object) {
+  const record = object.userData?.objJson?.items?.[0] || object.userData?.objJson || {};
+  return cloneDocumentData(Object.fromEntries(["position", "rotation", "quaternion", "scale"].filter((key) => record[key] !== undefined).map((key) => [key, record[key]])));
+}
+function poseToLocal(pose) {
+  const p = resolvePosition(pose.position), r = resolveRotation(pose.rotation), s = resolveScale(pose.scale);
+  const q = new Quaternion().setFromEuler(new Euler(r.x, r.y, r.z));
+  if (Array.isArray(pose.quaternion)) q.fromArray(pose.quaternion).normalize();
+  return { position: [p.x, p.y, p.z], quaternion: q.toArray(), scale: [s.x, s.y, s.z] };
 }
 
 function partDescriptor(object) {
@@ -37,7 +50,7 @@ function collectParts(root) {
       (typeof explicitId === "string" && !/^[\da-f]{8}-[\da-f-]{27}$/iu.test(explicitId) ? `id:${explicitId}` : null);
     if (!id) return;
     if (parts.has(id)) throw documentError("DOMAIN_PART_CONFLICT", `Duplicate runtime Domain part: ${id}.`, { partId: id });
-    parts.set(id, { object, parent: object.parent, runtimeId: runtimeId(object), transform: localState(object), visible: object.visible, descriptor: partDescriptor(object) });
+    parts.set(id, { object, parent: object.parent, runtimeId: runtimeId(object), transform: localState(object), authoredPose: authoredPose(object), authoredVisible: record?.visible, visible: object.visible, descriptor: partDescriptor(object) });
   });
   return parts;
 }
@@ -81,7 +94,7 @@ export function initializeDomainPartState(root, source, options = {}) {
   const unaddressed = new Map();
   visitParts(root, (object) => {
     structure.set(object, object.parent);
-    if (!addressed.has(object)) unaddressed.set(object, { transform: localState(object), visible: object.visible, descriptor: partDescriptor(object) });
+    if (!addressed.has(object)) unaddressed.set(object, { transform: localState(object), authoredPose: authoredPose(object), authoredVisible: object.userData?.objJson?.visible, visible: object.visible, descriptor: partDescriptor(object) });
   });
   // Store the factory baseline independently of userData, snapshots and animation.
   states.set(root, { parts, structure, unaddressed, source: cloneDocumentData(overrides || { partSchemaVersion: expected, parts: [] }) });
@@ -104,10 +117,11 @@ export function captureDomainPartOverrides(root, options = {}) {
   }
   for (const [object, before] of baseline.unaddressed) {
     const id = runtimeId(object);
-    const moved = options.childBaseline?.[id]
+    const moved = options.state === "authoring" ? JSON.stringify(before.authoredPose) !== JSON.stringify(authoredPose(object)) : options.childBaseline?.[id]
       ? JSON.stringify(options.childBaseline[id]) !== JSON.stringify(options.currentTransforms?.[id])
       : JSON.stringify(before.transform) !== JSON.stringify(localState(object));
-    if (moved || before.visible !== object.visible || diffDomainPartData(before.descriptor, partDescriptor(object)).length) {
+    const visibleChanged = options.state === "authoring" ? before.authoredVisible !== object.userData?.objJson?.visible : before.visible !== object.visible;
+    if (moved || visibleChanged || diffDomainPartData(before.descriptor, partDescriptor(object)).length) {
       throw documentError("DOMAIN_PART_CONFLICT", "Edited part has no stable factory address; supply a part adapter or explicitly bake it.");
     }
   }
@@ -122,10 +136,11 @@ export function captureDomainPartOverrides(root, options = {}) {
     // A caller can supply the drill-in baseline to avoid counting playback before
     // editing as an authored pose. Explicitly captured transforms remain absolute.
     const observed = options.childBaseline?.[before.runtimeId];
-    const moved = observed ? JSON.stringify(observed) !== JSON.stringify(options.currentTransforms?.[before.runtimeId])
+    const moved = options.state === "authoring" ? JSON.stringify(before.authoredPose) !== JSON.stringify(after.authoredPose) : observed ? JSON.stringify(observed) !== JSON.stringify(options.currentTransforms?.[before.runtimeId])
       : JSON.stringify(before.transform) !== JSON.stringify(after.transform);
-    const transform = moved ? after.transform : prior?.transform;
-    const visible = before.visible !== after.visible ? after.visible : prior?.visible;
+    const transform = moved ? (options.state === "authoring" ? poseToLocal(after.authoredPose) : after.transform) : prior?.transform;
+    const visible = options.state === "authoring" ? (before.authoredVisible !== after.authoredVisible ? after.authoredVisible !== false : prior?.visible)
+      : before.visible !== after.visible ? after.visible : prior?.visible;
     if (operations.length || transform || visible !== undefined) parts.push({ id, ...(operations.length ? { operations } : {}), ...(transform ? { transform } : {}), ...(visible !== undefined ? { visible } : {}) });
   }
   return { partSchemaVersion: baseline.source.partSchemaVersion, parts };

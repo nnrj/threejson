@@ -2,6 +2,7 @@ import { compileAuthoring, formatAuthoring } from "./document/authoringAdapters.
 import { SceneSession } from "./document/sceneSession.js";
 
 export { SceneSession };
+export { applySceneSessionTextureAssignment } from "./document/sceneTextureTransaction.js";
 export { executeSceneSessionCommands, planSceneCommands, diffSceneDocuments } from "./document/sceneCommandPlan.js";
 export function createSceneSession(payload, options = {}) {
   return new SceneSession(compileAuthoring(payload, options), options);

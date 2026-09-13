@@ -574,11 +574,9 @@ export function deployMeshWithDomains(scene, meshRecord, ctx) {
     deployAsDefaultModel(scene, meshRecord, ctx);
     return;
   }
-  log.warn(
-    "[deployMeshWithDomains] unrecognized objType, skipped; use a core official type, domain+handler, or enable sceneConfig.enableComposeBoxModel / enableDefaultModel:",
-    meshRecord?.objType,
-    meshRecord?.name || ""
-  );
+  throw Object.assign(new Error(`No object builder accepted '${meshRecord.objType || "(missing objType)"}' (${meshRecord.threeJsonId || meshRecord.name || "unnamed"}). Register a builder/domain or explicitly enable a fallback.`), {
+    code: "SCENE_OBJECT_UNSUPPORTED", objectId: meshRecord.threeJsonId, objType: meshRecord.objType
+  });
 }
 
 /**

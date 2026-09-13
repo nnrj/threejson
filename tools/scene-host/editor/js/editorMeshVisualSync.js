@@ -3,6 +3,7 @@ import { applyTextureRepeatToMap, loadTextureFromMaterialJson } from "../../../.
 import { getDeployTextureContext, syncTexturePropsToMap, configureTextureDefaultsForDeploy } from "../../../../core/util/textureSampling.js";
 import { resolveTextureSource } from "../../../../core/util/resolveTextureSource.js";
 import { resolveBoxDefaultTextureUrl } from "../../../../core/util/boxTextureUrl.js";
+import { bindTextureWhenReady, isManagedTexture } from "../../../../core/resource/textureRequest.js";
 import {
   boxUsesIntentionalMaterialsArray,
   clamp01,
@@ -151,7 +152,7 @@ function applyTextureUrlToMeshMaterials(mesh, urlRaw, options = {}) {
     for (let i = 0; i < targets.length; i += 1) {
       const mat = targets[i];
       if (mat?.map) {
-        mat.map.dispose?.();
+        if (isManagedTexture(mat.map)) mat.map.dispose?.();
         mat.map = null;
       }
       if (mat) {
@@ -170,19 +171,14 @@ function applyTextureUrlToMeshMaterials(mesh, urlRaw, options = {}) {
       ...resolveMaterialJsonForMeshFace(descriptor, faceIndex, applyAllFaces),
       textureUrl: trimmed
     };
-    const tex = loadTextureFromMaterialJson(materialJson);
+    const tex = loadTextureFromMaterialJson(materialJson, { runtimeScope: mesh });
     const liveMats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
     const mNow = liveMats[faceIndex];
     if (!mNow) {
       tex?.dispose?.();
       continue;
     }
-    const oldMap = mNow.map;
-    mNow.map = tex;
-    mNow.needsUpdate = true;
-    if (oldMap && oldMap !== tex) {
-      oldMap.dispose?.();
-    }
+    if (tex) bindTextureWhenReady(mNow, "map", tex);
   }
   return true;
 }

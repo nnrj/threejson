@@ -188,8 +188,9 @@ export function bindDomainParserOnRoot(root, binding = {}) {
   }
   try {
     captureDomainPartOverrides(root, {
+      state: binding.captureState,
       childBaseline: binding.childBaseline,
-      currentTransforms: snapshotDomainChildTransforms(root)
+      currentTransforms: snapshotDomainChildTransforms(root, { state: binding.captureState })
     });
   } catch (error) {
     return { ok: false, code: error.code, error: error.message };
@@ -232,7 +233,8 @@ export function applyDomainChildEditResolution(action, root, ctx = {}) {
   if (act === "bind") {
     const bindResult = bindDomainParserOnRoot(root, {
       ...(ctx.binding || {}),
-      childBaseline: ctx.childBaseline
+      childBaseline: ctx.childBaseline,
+      captureState: ctx.captureState
     });
     if (!bindResult.ok) {
       return bindResult;
