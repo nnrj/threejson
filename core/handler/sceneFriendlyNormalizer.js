@@ -1270,13 +1270,14 @@ function resolveFriendlyFallbackListName(record) {
   return "modelList";
 }
 
-function createFriendlyWorldInfoBase(sourceWorldInfo = {}) {
+function createFriendlyWorldInfoBase(sourceWorldInfo = {}, sourcePayload = {}) {
   const next = {};
+  const structuralLists = new Set(getFriendlySceneListEntries(sourcePayload).map(({ listName }) => listName));
   for (const key of Object.keys(sourceWorldInfo)) {
     if (key === "friendlyMap") {
       continue;
     }
-    if (Array.isArray(sourceWorldInfo[key]) && /List$/u.test(key)) {
+    if (Array.isArray(sourceWorldInfo[key]) && structuralLists.has(key)) {
       continue;
     }
     next[key] = clonePlainValue(sourceWorldInfo[key]);
@@ -1317,6 +1318,10 @@ function stripSerializationHints(record) {
  */
 function buildStandardScenePayloadFromCanonical(sourcePayload = {}, canonicalPayload = {}) {
   const root = cloneNonStructuralSceneRoot(sourcePayload);
+  // Unknown metadata and native scene embeds are authoring data too. Strip only
+  // lists actually consumed by the adapter, not every property ending in List.
+  const residualWorldInfo = createFriendlyWorldInfoBase(sourcePayload.worldInfo || {}, sourcePayload);
+  if (Object.keys(residualWorldInfo).length) root.worldInfo = residualWorldInfo;
   const sceneConfig = isPlainObject(sourcePayload.sceneConfig)
     ? clonePlainValue(sourcePayload.sceneConfig)
     : {};
@@ -1403,7 +1408,7 @@ function buildFriendlyScenePayloadFromCanonical(sourcePayload = {}, canonicalPay
   const customFriendlyMap = isPlainObject(options.friendlyMap) ? clonePlainValue(options.friendlyMap) : {};
   const resolvedFriendlyMap = resolveFriendlySceneMap({ friendlyMap: customFriendlyMap });
   const customListNames = Object.keys(customFriendlyMap);
-  const worldInfo = createFriendlyWorldInfoBase(sourceWorldInfo);
+  const worldInfo = createFriendlyWorldInfoBase(sourceWorldInfo, sourcePayload);
 
   for (let i = 0; i < splitState.contentList.length; i++) {
     const record = splitState.contentList[i];

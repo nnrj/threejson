@@ -55,3 +55,21 @@ must remain distinguishable from loader, material, authorization and GPU failure
   visibility, layers, shadows, orthographic projection, zoom and orientation.
 - The complete local suite passed after these changes (one pre-existing skipped
   test). Browser visual tests and the remaining checklist are still outstanding.
+
+## Implementation evidence: documents and transaction foundation
+
+- Added `threejson/document` and `threejson/session` opt-in entries: immutable
+  SceneDocument, standard/friendly adapters, explicit migration inspection,
+  revision-checked copy-on-write operations and prepared runtime transactions.
+- Runtime session transform transactions preserve Object3D, geometry, material,
+  camera and renderer identities. Structural preparation failure preserves the
+  last valid runtime. Graphical replacement uses a host-provided staging viewport.
+- Session history stores inverse deltas, with a default depth of 50 and a bounded
+  checkpoint journal. Observers cannot invalidate a committed operation.
+- Adapter tests cover real roomShow/portShow parameters and IDs, native embeds,
+  custom metadata, assetLibrary/lib references and editable mesh descriptions.
+- Fixed legacy Editor history failure behavior while its full session migration
+  remains outstanding: failed undo/redo retains the entry, rejects overlapping
+  operations, and reports rollback separately instead of pretending it succeeded.
+- Full local suite: 1,329 passed, 1 existing skip. The new session is connected to
+  the real engine; existing hosts are not yet fully migrated to document ownership.

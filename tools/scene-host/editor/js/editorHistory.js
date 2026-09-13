@@ -49,10 +49,10 @@ export function createEditorHistory(host) {
 
   function syncMenuState() {
     if (menuUndo()) {
-      menuUndo().disabled = state.past.length === 0;
+      menuUndo().disabled = travelling || state.past.length === 0;
     }
     if (menuRedo()) {
-      menuRedo().disabled = state.future.length === 0;
+      menuRedo().disabled = travelling || state.future.length === 0;
     }
     if (menuReset()) {
       menuReset().disabled = !state.bootstrap;
@@ -66,7 +66,7 @@ export function createEditorHistory(host) {
   }
 
   function pushEntry(entry) {
-    if (!entry || state.capturing) {
+    if (!entry || state.capturing || travelling) {
       return;
     }
     state.past.push(entry);
@@ -102,16 +102,7 @@ export function createEditorHistory(host) {
   }
 
   async function fallbackHistoryObjectReplay(direction) {
-    host.showMessage("对象重建失败，正在降级为整场景回放。", "warning");
-    const fallbackSnapshot = await captureSceneSnapshotAsync();
-    if (!fallbackSnapshot) {
-      return false;
-    }
-    const isUndo = direction === "undo";
-    return replaySceneSnapshot(
-      fallbackSnapshot,
-      `${isUndo ? "撤销" : "重做"}（降级回放）`
-    );
+    throw new Error(`${direction === "undo" ? "撤销" : "重做"}时对象重建失败。`);
   }
 
   function resetForFullSceneLoad(bootstrapSnapshot) {
@@ -323,7 +314,7 @@ export function createEditorHistory(host) {
     if (!partial) {
       return false;
     }
-    const result = applyObjectPartial(entry.threeJsonId, partial);
+    const result = applyObjectPartial(entry.threeJsonId, partial, { runtimeScope: host.getScene() });
     if (!result.ok) {
       host.showMessage(`${isUndo ? "撤销" : "重做"}失败：${result.error || "对象不存在"}`, "warning");
       return false;
@@ -364,7 +355,7 @@ export function createEditorHistory(host) {
       if (!subtreeOk) {
         return fallbackHistoryObjectReplay(direction);
       }
-      const next = res.object3D || getObjectByThreeJsonId(entry.threeJsonId);
+      const next = res.object3D || getObjectByThreeJsonId(entry.threeJsonId, scene);
       if (next) {
         host.setSelectedObject(next);
         host.getSceneTree()?.syncPropInputs(next);
@@ -418,7 +409,7 @@ export function createEditorHistory(host) {
       host.showMessage(`重做失败：${res.error || "无法添加对象"}`, "warning");
       return false;
     }
-    const next = res.object3D || getObjectByThreeJsonId(entry.threeJsonId);
+    const next = res.object3D || getObjectByThreeJsonId(entry.threeJsonId, scene);
     if (next) {
       host.setSelectedObject(next);
       host.getSceneTree()?.syncPropInputs(next);
@@ -433,7 +424,7 @@ export function createEditorHistory(host) {
   async function applyObjJsonSnapshotEntry(entry, direction) {
     const isUndo = direction === "undo";
     const target = isUndo ? entry.beforeObjJson : entry.afterObjJson;
-    const result = await applyObjectSnapshotAsync(entry.threeJsonId, target);
+    const result = await applyObjectSnapshotAsync(entry.threeJsonId, target, { runtimeScope: host.getScene() });
     if (!result.ok) {
       host.showMessage(`${isUndo ? "撤销" : "重做"}失败：${result.error || "对象不存在"}`, "warning");
       return false;
@@ -470,185 +461,66 @@ export function createEditorHistory(host) {
     host.getSceneTree()?.syncPropPanelSelectionFromCache?.();
   }
 
-  async function undo() {
-    if (state.past.length === 0) {
-      return { ok: false, error: "nothing to undo" };
+  let travelling = false;
+
+  async function travelHistory(direction) {
+    if (travelling) return { ok: false, error: "history operation already running" };
+    const isUndo = direction === "undo";
+    const source = isUndo ? state.past : state.future;
+    const destination = isUndo ? state.future : state.past;
+    const entry = source[source.length - 1];
+    if (!entry) return { ok: false, error: `nothing to ${direction}` };
+    const handlers = {
+      objectDelta: entry.deltaType === "transform" ? applyTransformEntry : null,
+      objectObjJsonSnapshot: applyObjJsonSnapshotEntry,
+      objectRemove: applyObjectRemoveEntry,
+      objectAdd: applyObjectAddEntry,
+      meshCommandTransaction: applyMeshCommandEntry
+    };
+    if (entry.kind !== "sceneSnapshot" && !handlers[entry.kind]) {
+      return { ok: false, error: "unsupported history entry" };
     }
-    const entry = state.past.pop();
-    if (entry.kind === "sceneSnapshot") {
-      const current = (await captureSceneSnapshotAsync()) || captureSceneSnapshot();
-      if (current) {
-        state.future.push({
-          kind: "sceneSnapshot",
-          snapshot: current,
-          label: "重做前状态",
-          capturedAt: Date.now()
-        });
-      }
-      const ok = await replaySceneSnapshot(entry.snapshot, `撤销：${entry.label}`);
-      if (ok) {
-        host.showMessage(t("editor.message.undoDone", "Undone."), "info");
-      }
-      syncMenuState();
-      return { ok: Boolean(ok) };
-    }
-    if (entry.kind === "objectDelta" && entry.deltaType === "transform") {
-      const ok = await applyTransformEntry(entry, "undo");
-      if (ok) {
-        state.future.push(entry);
-        afterObjectHistoryApplied();
-        host.showMessage(t("editor.message.undoDone", "Undone."), "info");
-      } else {
-        state.past.push(entry);
-      }
-      syncMenuState();
-      return { ok: Boolean(ok) };
-    }
-    if (entry.kind === "objectObjJsonSnapshot") {
-      const ok = await applyObjJsonSnapshotEntry(entry, "undo");
-      if (ok) {
-        state.future.push(entry);
-        afterObjectHistoryApplied();
-        host.showMessage(t("editor.message.undoDone", "Undone."), "info");
-      } else {
-        state.past.push(entry);
-      }
-      syncMenuState();
-      return { ok: Boolean(ok) };
-    }
-    if (entry.kind === "objectRemove") {
-      const ok = await applyObjectRemoveEntry(entry, "undo");
-      if (ok) {
-        state.future.push(entry);
-        afterObjectHistoryApplied();
-        host.showMessage(t("editor.message.undoDone", "Undone."), "info");
-      } else {
-        state.past.push(entry);
-      }
-      syncMenuState();
-      return { ok: Boolean(ok) };
-    }
-    if (entry.kind === "objectAdd") {
-      const ok = await applyObjectAddEntry(entry, "undo");
-      if (ok) {
-        state.future.push(entry);
-        afterObjectHistoryApplied();
-        host.showMessage(t("editor.message.undoDone", "Undone."), "info");
-      } else {
-        state.past.push(entry);
-      }
-      syncMenuState();
-      return { ok: Boolean(ok) };
-    }
-    if (entry.kind === "meshCommandTransaction") {
-      const ok = await applyMeshCommandEntry(entry, "undo");
-      if (ok) {
-        state.future.push(entry);
-        afterObjectHistoryApplied();
-        host.showMessage(t("editor.message.undoDone", "Undone."), "info");
-      } else {
-        state.past.push(entry);
-      }
-      syncMenuState();
-      return { ok: Boolean(ok) };
-    }
-    state.past.push(entry);
+    travelling = true;
     syncMenuState();
-    return { ok: false, error: "unsupported history entry" };
+    // Transform-only edits are already atomic; structural legacy handlers need a
+    // rollback checkpoint until all their mutations use prepared document transactions.
+    let before = null;
+    try {
+      if (entry.kind !== "objectDelta") {
+        before = await captureSceneSnapshotAsync();
+        if (!before) throw new Error("无法创建回滚检查点，本次操作未执行。");
+      }
+      const ok = entry.kind === "sceneSnapshot"
+        ? await replaySceneSnapshot(entry.snapshot, `${isUndo ? "撤销" : "重做"}：${entry.label}`)
+        : await handlers[entry.kind](entry, direction);
+      if (!ok) throw new Error(`${isUndo ? "撤销" : "重做"}未完成，历史记录已保留。`);
+      source.pop();
+      destination.push(entry.kind === "sceneSnapshot"
+        ? { kind: "sceneSnapshot", snapshot: before, label: entry.label, capturedAt: Date.now() }
+        : entry);
+      trimDepth();
+      afterObjectHistoryApplied();
+      host.showMessage(t(isUndo ? "editor.message.undoDone" : "editor.message.redoDone", isUndo ? "Undone." : "Redone."), "info");
+      return { ok: true };
+    } catch (error) {
+      // Replaying the current checkpoint is ROLLBACK, never a successful undo.
+      // Keep the original history entry even if rollback itself cannot complete.
+      let rollbackFailed = false;
+      if (before) {
+        try { rollbackFailed = !await replaySceneSnapshot(before, "恢复操作前状态"); }
+        catch { rollbackFailed = true; }
+      }
+      const message = String(error?.message || error);
+      host.showMessage(rollbackFailed ? `${message} 自动恢复失败，请勿覆盖保存当前场景。` : message, "warning");
+      return { ok: false, error: message, rollbackFailed };
+    } finally {
+      travelling = false;
+      syncMenuState();
+    }
   }
 
-  async function redo() {
-    if (state.future.length === 0) {
-      return { ok: false, error: "nothing to redo" };
-    }
-    const entry = state.future.pop();
-    if (entry.kind === "sceneSnapshot") {
-      const current = (await captureSceneSnapshotAsync()) || captureSceneSnapshot();
-      if (current) {
-        state.past.push({
-          kind: "sceneSnapshot",
-          snapshot: current,
-          label: "撤销前状态",
-          capturedAt: Date.now()
-        });
-        trimDepth();
-      }
-      const ok = await replaySceneSnapshot(entry.snapshot, `重做：${entry.label}`);
-      if (ok) {
-        host.showMessage(t("editor.message.redoDone", "Redone."), "info");
-      }
-      syncMenuState();
-      return { ok: Boolean(ok) };
-    }
-    if (entry.kind === "objectDelta" && entry.deltaType === "transform") {
-      const ok = await applyTransformEntry(entry, "redo");
-      if (ok) {
-        state.past.push(entry);
-        trimDepth();
-        afterObjectHistoryApplied();
-        host.showMessage(t("editor.message.redoDone", "Redone."), "info");
-      } else {
-        state.future.push(entry);
-      }
-      syncMenuState();
-      return { ok: Boolean(ok) };
-    }
-    if (entry.kind === "objectObjJsonSnapshot") {
-      const ok = await applyObjJsonSnapshotEntry(entry, "redo");
-      if (ok) {
-        state.past.push(entry);
-        trimDepth();
-        afterObjectHistoryApplied();
-        host.showMessage(t("editor.message.redoDone", "Redone."), "info");
-      } else {
-        state.future.push(entry);
-      }
-      syncMenuState();
-      return { ok: Boolean(ok) };
-    }
-    if (entry.kind === "objectRemove") {
-      const ok = await applyObjectRemoveEntry(entry, "redo");
-      if (ok) {
-        state.past.push(entry);
-        trimDepth();
-        afterObjectHistoryApplied();
-        host.showMessage(t("editor.message.redoDone", "Redone."), "info");
-      } else {
-        state.future.push(entry);
-      }
-      syncMenuState();
-      return { ok: Boolean(ok) };
-    }
-    if (entry.kind === "objectAdd") {
-      const ok = await applyObjectAddEntry(entry, "redo");
-      if (ok) {
-        state.past.push(entry);
-        trimDepth();
-        afterObjectHistoryApplied();
-        host.showMessage(t("editor.message.redoDone", "Redone."), "info");
-      } else {
-        state.future.push(entry);
-      }
-      syncMenuState();
-      return { ok: Boolean(ok) };
-    }
-    if (entry.kind === "meshCommandTransaction") {
-      const ok = await applyMeshCommandEntry(entry, "redo");
-      if (ok) {
-        state.past.push(entry);
-        trimDepth();
-        afterObjectHistoryApplied();
-        host.showMessage(t("editor.message.redoDone", "Redone."), "info");
-      } else {
-        state.future.push(entry);
-      }
-      syncMenuState();
-      return { ok: Boolean(ok) };
-    }
-    state.future.push(entry);
-    syncMenuState();
-    return { ok: false, error: "unsupported history entry" };
-  }
+  const undo = () => travelHistory("undo");
+  const redo = () => travelHistory("redo");
 
   function hasUndo() {
     return state.past.length > 0;
@@ -671,11 +543,11 @@ export function createEditorHistory(host) {
       return { ok: false, cancelled: true };
     }
     const bootstrap = cloneJsonDeep(state.bootstrap);
-    state.past = [];
-    state.future = [];
-    syncMenuState();
     const loaded = await replaySceneSnapshot(bootstrap, "重置");
     if (loaded) {
+      state.past = [];
+      state.future = [];
+      syncMenuState();
       host.showMessage("已重置为打开时的场景状态。", "success");
       host.closeAllDropdowns?.();
     } else {

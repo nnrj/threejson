@@ -38,6 +38,8 @@
     "./runtime-config": "./core/runtimeConfig.js",
     "./scene-export": "./core/sceneExport.js",
     "./scene-payload": "./core/scenePayload.js",
+    "./document": "./core/document.js",
+    "./session": "./core/session.js",
     "./visual-defaults": "./core/theme/runtimeVisualDefaults.js",
     "./archive": "./core/archive/index.js",
     "./csg": "./core/handler/csgBrushOps.js",
