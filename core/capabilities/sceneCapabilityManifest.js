@@ -16,6 +16,10 @@ export const SCENE_CAPABILITY_STATUS = Object.freeze({
 const VALID_STATUSES = new Set(Object.values(SCENE_CAPABILITY_STATUS));
 
 const BUILTIN_CAPABILITIES = Object.freeze({
+  authoring: Object.freeze({
+    sceneDesign: Object.freeze({ status: "stable", version: 1, units: ["m", "cm", "mm", "km", "in", "ft", "deg", "rad", "s", "ms"],
+      relations: ["attach", "lookAt"], evaluation: "static-dependency-graph", entry: "threejson/document" })
+  }),
   rendererBackends: Object.freeze({
     webgl: Object.freeze({ status: "stable", async: false, entry: "threejson/core" }),
     webgpu: Object.freeze({

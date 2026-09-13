@@ -4,7 +4,8 @@
 import { analyzeSceneUsage } from "../capabilities/sceneUsage.js";
 import { sanitizeAiJsonText } from "../util/sceneJsonSanitize.js";
 import { DEFAULT_FRIENDLY_SCENE_LIST_ORDER } from "./sceneFriendlyMap.js";
-import { isLoadableScenePayload, normalizeScenePayload } from "./sceneFriendlyNormalizer.js";
+import { isLoadableScenePayload, normalizeScenePayload, buildStandardScenePayloadFromCanonical } from "./sceneFriendlyNormalizer.js";
+import { evaluateSceneDesign } from "../document/sceneDesign.js";
 
 /**
  * @param {string} sceneJsonString
@@ -46,6 +47,7 @@ export function validateSceneJson(sceneJsonString) {
       return { ok: false, error: "missing worldInfo or standard objectList/sceneConfig" };
     }
     const normalized = normalizeScenePayload(parsed);
+    if (parsed.design) evaluateSceneDesign(buildStandardScenePayloadFromCanonical(normalized.sourcePayload, normalized.payload));
     // Count authored records, not synthetic scene/camera records injected by normalization.
     const objectCount = Array.isArray(parsed.objectList) ? parsed.objectList.length
       : normalized.objectList.filter((record) => !["scene", "camera", "light"].includes(record.objType)).length;

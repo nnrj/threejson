@@ -1,5 +1,6 @@
 import { normalizeScenePayload, buildStandardScenePayloadFromCanonical, buildFriendlyScenePayloadFromCanonical, detectScenePayloadViewFormat } from "../handler/sceneFriendlyNormalizer.js";
 import { cloneDocumentData, createSceneDocument, isSceneDocument, indexSceneDocument, SCENE_DOCUMENT_VERSION } from "./sceneDocument.js";
+import { evaluateSceneDesign } from "./sceneDesign.js";
 
 /** Compile supported authoring forms without consulting or capturing a live scene. */
 export function compileAuthoring(payload, options = {}) {
@@ -14,6 +15,7 @@ export function compileAuthoring(payload, options = {}) {
   root.schemaVersion = SCENE_DOCUMENT_VERSION;
   const document = createSceneDocument(root, { ...options, sourceFormat: detectScenePayloadViewFormat(source) });
   indexSceneDocument(document);
+  if (root.design) evaluateSceneDesign(document);
   return document;
 }
 

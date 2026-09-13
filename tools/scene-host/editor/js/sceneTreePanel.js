@@ -1,3 +1,4 @@
+import { Euler, Quaternion } from "three";
 import {
   applyObjectTransform,
   buildEditorSceneTreePlain,
@@ -28,6 +29,7 @@ import {
 import { syncEditorMeshVisualFromObjJson } from "./editorMeshVisualSync.js";
 import { createSceneTreeMaterialTree } from "./sceneTreeMaterialTree.js";
 import { createSceneTreeEditableMeshPanel } from "./sceneTreeEditableMeshPanel.js";
+import { createSceneTreeDesignPanel } from "./sceneTreeDesignPanel.js";
 import {
   getDomainEditState,
   resolveDomainDeployRoot
@@ -100,6 +102,7 @@ export function createSceneTreePanel(host) {
     isPropSyncing: () => propSyncing
   });
   const editableMeshPanel = createSceneTreeEditableMeshPanel(host);
+  const designPanel = createSceneTreeDesignPanel(host);
 
   function isBlurRedeployEnabled() {
     return host.getEditorSettings()?.editing?.blurRedeployOnPropertyChange !== false;
@@ -412,6 +415,7 @@ export function createSceneTreePanel(host) {
       rootEl.innerHTML = "";
     }
     editableMeshPanel.sync(null);
+    designPanel.sync(null);
     syncPropInputs(null);
   }
 
@@ -432,6 +436,7 @@ export function createSceneTreePanel(host) {
 
   function syncPropInputs(model) {
     editableMeshPanel.sync(model);
+    designPanel.sync(model);
     if (!prop.name) {
       return;
     }
@@ -456,7 +461,7 @@ export function createSceneTreePanel(host) {
       prop.name.value = data.name || model?.name || "";
       if (prop.label) prop.label.value = data.label || "";
       const p = data.position || {};
-      const r = data.rotation || {};
+      const r = Array.isArray(data.quaternion) ? new Euler().setFromQuaternion(new Quaternion().fromArray(data.quaternion), data.rotation?.order || "XYZ") : data.rotation || {};
       const s = data.scale || {};
       if (prop.position) {
         prop.position.value = formatVec3ForPropInput(p.x ?? p[0], p.y ?? p[1], p.z ?? p[2]);
@@ -673,9 +678,13 @@ export function createSceneTreePanel(host) {
     const pos = parseVec3PropInput(prop.position?.value, [0, 0, 0]);
     const rot = parseVec3PropInput(prop.rotation?.value, [0, 0, 0]);
     const scl = parseVec3PropInput(prop.scale?.value, [1, 1, 1]);
-    data.position = { x: pos.a, y: pos.b, z: pos.c };
-    data.rotation = { rotationX: rot.a, rotationY: rot.b, rotationZ: rot.c };
-    data.scale = { scaleX: scl.a, scaleY: scl.b, scaleZ: scl.c };
+    if (!prop.position?.readOnly) data.position = { x: pos.a, y: pos.b, z: pos.c };
+    if (!prop.rotation?.readOnly) {
+      const order = data.rotation?.order || "XYZ";
+      if (Array.isArray(data.quaternion)) data.quaternion = new Quaternion().setFromEuler(new Euler(rot.a, rot.b, rot.c, order)).toArray();
+      else data.rotation = { rotationX: rot.a, rotationY: rot.b, rotationZ: rot.c, ...(order !== "XYZ" ? { order } : {}) };
+    }
+    if (!prop.scale?.readOnly) data.scale = { scaleX: scl.a, scaleY: scl.b, scaleZ: scl.c };
     // Hidden legacy inputs must not overwrite independently edited PBR/face slots
     // when the user only moves, renames or hides the object.
     if (!listMaterialSlotsForDescriptor(data).length) {

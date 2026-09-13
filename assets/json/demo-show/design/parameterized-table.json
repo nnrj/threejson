@@ -1,0 +1,31 @@
+{
+  "name": "parameterized-table",
+  "label": "参数化桌面与锚点放置",
+  "sceneConfig": {
+    "scene": {"background": "#edf2f5"},
+    "camera": {"fov":46,"position":{"x":3,"y":2.4,"z":3}},
+    "controls": {"target":{"x":0,"y":0.6,"z":0}},
+    "lights": [{"type":"ambient","intensity":1.2},{"type":"directional","position":{"x":3,"y":6,"z":4},"intensity":2}]
+  },
+  "objectList": [
+    {"objType":"box","threeJsonId":"top","name":"共享宽度的桌面","position":[0,0.75,0],"geometry":{"width":1.8,"height":0.08,"depth":0.8},"material":{"type":"standard","color":"#99633e","roughness":0.65}},
+    {"objType":"box","threeJsonId":"left-leg","position":[-0.7,0.35,0],"geometry":{"width":0.08,"height":0.7,"depth":0.65},"material":{"color":"#384753"}},
+    {"objType":"box","threeJsonId":"right-leg","position":[0.7,0.35,0],"geometry":{"width":0.08,"height":0.7,"depth":0.65},"material":{"color":"#384753"}},
+    {"objType":"sphere","threeJsonId":"ornament","name":"保持放置关系的装饰球","geometry":{"radius":0.15,"widthSegments":32,"heightSegments":24},"material":{"type":"standard","color":"#227aa4","roughness":0.2}},
+    {"objType":"box","threeJsonId":"ground","position":[0,-0.06,0],"geometry":{"width":4,"height":0.08,"depth":3},"material":{"color":"#d0d8de"}}
+  ],
+  "design": {
+    "version":1,"units":{"length":"m"},
+    "parameters": {
+      "width":{"value":180,"unit":"cm"},
+      "halfWidth":{"op":"div","args":[{"param":"width"},2]},
+      "legX":{"op":"sub","args":[{"param":"halfWidth"},{"value":20,"unit":"cm"}]}
+    },
+    "bindings": [
+      {"object":"top","path":"/geometry/width","value":{"param":"width"}},
+      {"object":"left-leg","path":"/position","value":[{"op":"neg","args":[{"param":"legX"}]},0.35,0]},
+      {"object":"right-leg","path":"/position","value":[{"param":"legX"},0.35,0]}
+    ],
+    "relations": [{"type":"attach","object":"ornament","anchor":"bottom","target":"top","targetAnchor":"top","offset":[0.3,0,0]}]
+  }
+}

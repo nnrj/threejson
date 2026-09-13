@@ -8,6 +8,12 @@ import { analyzeSceneUsage } from "../capabilities/sceneUsage.js";
 
 const INTENT_SIGNALS = [
   {
+    id: "sceneDesign",
+    patterns: [/parameter[- ]driven|shared parameters?|constraint|anchor|参数驱动|共享参数|参数联动|锚点|联动尺寸|约束关系/i],
+    selectionIds: ["sceneDesign"],
+    note: "For shared dimensions or persistent attachment/aim relationships, use optional root design.parameters/bindings/relations and stable object IDs. Plain scene coordinates remain valid; do not invent a physics or collision solver."
+  },
+  {
     id: "sphere",
     patterns: [/sphere|planet|ball|globe|dome|orb|太阳|月亮|星球|球体|球形/i],
     lists: ["sphereModelList"],

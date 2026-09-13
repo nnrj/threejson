@@ -451,11 +451,17 @@
                   placeholder="0, 0, 0" title="position.x, position.y, position.z">
                 <label for="sceneTreePropRotation">旋转 (x,y,z)</label>
                 <input id="sceneTreePropRotation" class="sceneTreePropVecInput" type="text" autocomplete="off" spellcheck="false"
-                  placeholder="0, 0, 0" title="rotationX, rotationY, rotationZ（度）">
+                  placeholder="0, 0, 0" title="rotationX, rotationY, rotationZ（弧度；π≈3.14159）">
                 <label for="sceneTreePropScale">缩放 (x,y,z)</label>
                 <input id="sceneTreePropScale" class="sceneTreePropVecInput" type="text" autocomplete="off" spellcheck="false"
                   placeholder="1, 1, 1" title="scaleX, scaleY, scaleZ">
               </div>
+            </div>
+            <div class="sceneTreePropSection" id="sceneTreeDesignSection" hidden>
+              <div class="sceneTreePropSectionTitle">参数与关系</div>
+              <p id="sceneTreeDesignSummary" class="hint"></p>
+              <div id="sceneTreeDesignParameters" class="sceneTreePropGrid"></div>
+              <button type="button" class="miniBtn" id="sceneTreeDesignDetach" hidden>解除所选对象绑定（保持外观）</button>
             </div>
             <div class="sceneTreePropSection" id="sceneTreePropDomainSection" hidden>
               <div class="sceneTreePropSectionTitle">Domain</div>

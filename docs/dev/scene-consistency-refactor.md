@@ -206,3 +206,26 @@ must remain distinguishable from loader, material, authorization and GPU failure
 - Dashboard explains remote delivery versus archival and the full-download timeout.
 - Local server suite: 81 passed; server typecheck and Dashboard production build
   passed. These changes have not been deployed.
+
+## Implementation evidence: optional design expressions and relationships
+
+- Standard/friendly authoring can now retain explicit units, shared numeric
+  parameters, bindings, local anchors and static attach/lookAt relationships.
+  Parameter/relationship dependencies are ordered before deployment; cycles,
+  missing parts, invalid arithmetic and binding conflicts are structured failures.
+- Binding-driven primitive changes update geometry in-place; unrelated material
+  changes in constrained scenes retain the runtime. Changes affecting anchor
+  geometry use full off-screen preparation before exposure. There is no per-frame
+  constraint solver or silent conversion of every legacy coordinate into units.
+- Editor numeric parameters, explicit detach-with-appearance and undo use the same
+  document timeline. Derived fields cannot leak into authoring snapshots or leave
+  an uncommitted drag pose. Rotation input now accurately labels radians and handles
+  existing quaternion descriptors instead of ignoring their orientation.
+- AI gets the detailed `sceneDesign` grammar only when the capability is selected.
+  The example catalog includes a parameterized table with an anchored ornament.
+- Browser checks verified loading, width changes from 200 to 350 cm, undo to 200,
+  and retained blue material after clearing selection highlight. The full suite
+  identified a missing mirrored Editor shell update; that source/template mismatch
+  is fixed, including document/session import mappings in the generator template.
+- See [design contract and limits](./scene-design.md). Remaining end-to-end scenario
+  checks and optional resource/compute integration are still tracked above.

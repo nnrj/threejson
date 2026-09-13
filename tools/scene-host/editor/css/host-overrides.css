@@ -114,3 +114,14 @@
   color: #6db8ff;
 }
 
+#sceneTreeDesignSummary {
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 6px 0 10px;
+  opacity: 0.8;
+  overflow-wrap: anywhere;
+}
+
+#sceneTreeDesignParameters input { min-width: 0; width: 100%; box-sizing: border-box; }
+#sceneTreeDesignDetach { margin-top: 8px; white-space: normal; line-height: 1.4; }
+

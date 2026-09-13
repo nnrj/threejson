@@ -1,4 +1,4 @@
-import { compileAuthoring, formatAuthoring, indexSceneDocument } from "threejson/document";
+import { compileAuthoring, formatAuthoring, indexSceneDocument, restoreSceneDesignAuthoring } from "threejson/document";
 import { SceneSession, diffSceneDocuments, executeSceneSessionCommands, applySceneSessionTextureAssignment } from "threejson/session";
 import { createSceneSessionRuntimeDriver } from "../../../../core/runtime/sceneSessionDriver.js";
 import { sceneToStandardJsonSimple, getObjectByThreeJsonId } from "threejson";
@@ -63,9 +63,17 @@ export function createEditorAuthoringSession(host) {
       });
       next = compileAuthoring(payload);
     } catch (error) { return enqueue(() => { throw error; }); }
-    return enqueue((owner) => owner.dispatch({ label, operations: diffSceneDocuments(owner.document, next),
-      baseRevision: owner.revision, historyGroup: options.historyGroup,
-      prepareOptions: { adoptRuntimeChanges: true }, recordHistory: options.recordHistory }));
+    return enqueue(async (owner) => {
+      const design = owner.document.root.design;
+      const operations = diffSceneDocuments(owner.document, next);
+      const result = await owner.dispatch({ label, operations,
+        baseRevision: owner.revision, historyGroup: options.historyGroup,
+        prepareOptions: { adoptRuntimeChanges: !design }, recordHistory: options.recordHistory });
+      // A direct manipulation of a derived field must not leave a live pose that
+      // contradicts its unchanged parameter/relation. Recompile that preview.
+      if (design && !operations.length) await owner.refreshRuntime();
+      return result;
+    });
   }
   async function execute(commands, options = {}) {
     return enqueue(async (owner) => {
@@ -93,6 +101,28 @@ export function createEditorAuthoringSession(host) {
       });
     },
     canEditObject(id) { return Boolean(session && indexSceneDocument(session.document).has(id)); },
+    setDesignParameter(id, value) {
+      return enqueue((owner) => {
+        if (!Number.isFinite(value)) throw new TypeError("参数必须是有限数字。");
+        const root = structuredClone(owner.document.root), prior = root.design?.parameters?.[id];
+        if (typeof prior === "number") root.design.parameters[id] = value;
+        else if (prior && typeof prior.value === "number" && !prior.expr && !prior.op) prior.value = value;
+        else throw new Error("派生参数请在 JSON 的 design.parameters 中编辑表达式。");
+        return owner.dispatch({ operations: diffSceneDocuments(owner.document, compileAuthoring(root)), label: `参数：${id}` });
+      });
+    },
+    detachDesignObject(id) {
+      return enqueue((owner) => {
+        const root = structuredClone(owner.document.root), entry = indexSceneDocument(root).get(id), object = getObjectByThreeJsonId(id, owner.runtime.scene);
+        if (!entry || !object || !root.design) throw new Error("所选对象没有可解除的设计绑定。");
+        Object.assign(entry.record, structuredClone(object.userData.objJson));
+        entry.record.position = object.position.toArray(); entry.record.quaternion = object.quaternion.toArray();
+        entry.record.scale = object.scale.toArray(); delete entry.record.rotation;
+        root.design.bindings = (root.design.bindings || []).filter((binding) => binding.object !== id);
+        root.design.relations = (root.design.relations || []).filter((relation) => relation.object !== id);
+        return owner.dispatch({ operations: diffSceneDocuments(owner.document, compileAuthoring(root)), label: "解除设计绑定（保持外观）" });
+      });
+    },
     mutateObject(id, mutate, options = {}) {
       return enqueue(async (owner) => {
         const entry = indexSceneDocument(owner.document).get(id);
@@ -108,7 +138,8 @@ export function createEditorAuthoringSession(host) {
       return enqueue(async (owner) => {
         const entry = indexSceneDocument(owner.document).get(id);
         if (!entry) throw new Error(`Object not found: ${id}`);
-        const operations = diffSceneDocuments({ root: entry.record }, { root: descriptor }).map((operation) => ({ ...operation, path: entry.path + operation.path }));
+        const restored = restoreSceneDesignAuthoring({ objectList: [structuredClone(descriptor)] }, owner.document.root).objectList[0];
+        const operations = diffSceneDocuments({ root: entry.record }, { root: restored }).map((operation) => ({ ...operation, path: entry.path + operation.path }));
         if (!operations.length && options.discardPreview) return owner.refreshRuntime();
         return owner.dispatch({ operations, baseRevision: owner.revision,
           label: options.label || "对象属性", recordHistory: options.recordHistory });

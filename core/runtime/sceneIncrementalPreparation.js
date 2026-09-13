@@ -1,4 +1,6 @@
 import { indexSceneDocument, cloneDocumentData, documentError } from "../document/sceneDocument.js";
+import { evaluateSceneDesign } from "../document/sceneDesign.js";
+import { diffSceneDocuments } from "../document/sceneDocumentDiff.js";
 import { getObjectByThreeJsonId, refreshRegisteredObject } from "../handler/objectRegistry.js";
 import { createGeometryFromDescriptor } from "../builder/geometry/geometryFactory.js";
 import { createMaterialFromDescriptor, applyMaterialDescriptorProperties, inferMaterialType } from "../builder/material/materialFactory.js";
@@ -156,6 +158,19 @@ function setPose(object, state) {
 /** Prepare all supported object edits without publishing any intermediate mutation. */
 export async function prepareIncrementalSceneChanges(runtime, document, context, options = {}) {
   if (!runtime?.scene || !context.previousDocument || !context.operations?.length) return null;
+  const authoringRoot = document.root;
+  let designEvaluation;
+  if (document.root.design || context.previousDocument.root.design) {
+    const prior = evaluateSceneDesign(context.previousDocument);
+    designEvaluation = evaluateSceneDesign(document);
+    if (!equal(prior.relations, designEvaluation.relations)) return null;
+    const oldRoot = { ...prior.payload }, nextRoot = { ...designEvaluation.payload };
+    delete oldRoot.design; delete nextRoot.design;
+    const previousDocument = { ...context.previousDocument, root: oldRoot };
+    document = { ...document, root: nextRoot };
+    // Diff calculated descriptors, not only the parameter the caller edited.
+    context = { ...context, previousDocument, operations: diffSceneDocuments(previousDocument, document) };
+  }
   const oldIndex = indexSceneDocument(context.previousDocument), index = indexSceneDocument(document);
   const byPath = [...index.values()].sort((a, b) => b.path.length - a.path.length), changes = new Map();
   for (const operation of context.operations) {
@@ -163,6 +178,9 @@ export async function prepareIncrementalSceneChanges(runtime, document, context,
     const entry = byPath.find((item) => operation.path.startsWith(`${item.path}/`));
     const field = entry && operation.path.slice(entry.path.length + 1).split("/")[0];
     if (!field || (!POSE.has(field) && !DATA.has(field) && !MATERIAL.has(field) && !GEOMETRY.has(field))) return null;
+    // Geometry/pose changes can invalidate geometric anchors. These use the full
+    // staged relationship compiler; independent material/data edits stay in-place.
+    if (designEvaluation?.relations.length && (POSE.has(field) || GEOMETRY.has(field))) return null;
     const before = oldIndex.get(entry.id)?.record, object = getObjectByThreeJsonId(entry.id, runtime.scene);
     if (!before || !object) return null;
     if (!POSE.has(field) && !DATA.has(field) && (!object.isMesh || runtime.renderer?.isWebGPURenderer)) return null;
@@ -211,6 +229,7 @@ export async function prepareIncrementalSceneChanges(runtime, document, context,
     }
   } catch (error) { disposePrepared(); throw error; }
   let committed = false, cleaned = false;
+  const priorAuthoring = runtime.normalizedPayload, priorCompiled = runtime.compiledPayload, priorDesignState = runtime.designState;
   return {
     strategy: "incremental-objects",
     commit() {
@@ -230,6 +249,11 @@ export async function prepareIncrementalSceneChanges(runtime, document, context,
         object.userData.objJson = item.descriptor;
         refreshRegisteredObject(object, item.descriptor, { recursive: false }, runtime.scene);
       }
+      runtime.normalizedPayload = authoringRoot;
+      if (designEvaluation) {
+        runtime.compiledPayload = designEvaluation.payload;
+        runtime.designState = { ...(priorDesignState || { relations: [] }), parameters: designEvaluation.parameters };
+      }
       runtime.invalidate?.();
     },
     rollback() {
@@ -242,6 +266,7 @@ export async function prepareIncrementalSceneChanges(runtime, document, context,
         item.object.morphTargetInfluences = item.oldMorphInfluences; item.object.morphTargetDictionary = item.oldMorphDictionary;
         refreshRegisteredObject(item.object, item.oldDescriptor, { recursive: false }, runtime.scene);
       }
+      runtime.normalizedPayload = priorAuthoring; runtime.compiledPayload = priorCompiled; runtime.designState = priorDesignState;
       committed = false; runtime.invalidate?.();
     },
     dispose() { if (!cleaned && !committed) { cleaned = true; disposePrepared(); } },

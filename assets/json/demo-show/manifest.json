@@ -231,6 +231,14 @@
     "sectionTitleEn": "Composition",
     "items": [
       {
+        "id": "parameterized-table",
+        "title": "参数化桌面与锚点放置",
+        "titleEn": "Parameterized Table and Anchors",
+        "desc": "共享宽度、厘米单位和静态锚点关系。可在编辑器中修改参数、撤销或解除绑定。",
+        "descEn": "Shared dimensions, explicit centimeters and static anchor placement. Edit parameters, undo or detach bindings in the Editor.",
+        "json": "assets/json/demo-show/design/parameterized-table.json"
+      },
+      {
         "id": "group-assembly",
         "title": "分组组合：迷你机器人",
         "titleEn": "Grouped Composite: Mini Robot",

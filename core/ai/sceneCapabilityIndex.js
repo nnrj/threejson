@@ -77,6 +77,7 @@ const THREE_JSON_AGENT_NEGOTIATION_INDEX_BASE = `
 ThreeJSON capability-selection index (selection only; do not author scene JSON in this stage):
 
 - Basic primitives, ordinary materials, camera, lighting, grouping, and common scene layout need no special capability id.
+- sceneDesign — reusable numeric parameters, explicit units, stable object anchors, persistent static attach/lookAt relationships. Select for linked dimensions or durable placement rules, not every move request.
 - sceneText — visible words/titles/labels; infoPanel — text or media on a visible board/card; css3dPanel — interactive DOM/iframe UI in 3D.
 - group — multipart assemblies; instanced — many repeated objects; native — explicitly requested native Three.js geometry/ObjectLoader data.
 - complexMesh — genuinely free-form/organic/detailed mesh authoring; editableMesh — stable-ID control topology; rawBufferMesh — explicit complete coordinates; subdivisionSurface — Catmull-Clark/Loop; parametricSurface — parametric/NURBS/Bezier/lathe/loft/sweep; implicitSurface — SDF/scalar-field surface; meshModeling — topology operations; meshMorph — morph targets.
@@ -147,6 +148,7 @@ function buildAgentCapabilityIndex(options = {}) {
       ? `- available renderer backends: ${list("rendererBackends")}`
       : `- renderer backend: ${requestedRendererBackend}`,
     `- materials: ${list("materials")}`,
+    `- optional authoring: ${list("authoring")}`,
     `- objects: ${list("objects")}`,
     `- light types: ${list("lightTypes")}`,
     `- post-processing passes: ${list("passes")}`,
@@ -226,11 +228,22 @@ Native complex-model authoring (selected capability ids include a complex-mesh f
 - Morphs: bufferMesh geometry.morphAttributes.position/normal arrays plus morphTargetsRelative and record.morphInfluences. Existing loaded morphs use morph.list/morph.set.
 - For a complex-model draft, create a recognizable low-density silhouette with complete main parts and a subdivision modifier, render it immediately, then refine concrete semantic parts. End with # done only when the selected quality target is met; use # continue: <specific remaining part> only when more work is genuinely needed.
 ` : "";
+  const designAuthoring = !negotiationOnly && options.selectedCapabilityIds?.includes("sceneDesign") ? `
+Optional parameter/relationship authoring (root design, version:1):
+- Keep standard objectList and friendly JSON. Bare old dimensions/positions retain their meaning. design.units.length sets the length unit used by explicit expressions (default m); angles compile to radians and times to seconds.
+- Parameters: design.parameters:{width:{value:180,unit:"cm"},half:{op:"div",args:[{param:"width"},2]}}. Operators: add/sub/mul/div/min/max/clamp/abs/neg/sin/cos/pow/sqrt. Dimensions must agree for add/sub/min/max/clamp; sin/cos accept angles. References form an acyclic graph. No JavaScript expression strings.
+- Bind computed numeric fields with design.bindings:[{object:"stable-id",path:"/geometry/width",value:{param:"width"}}]. value may be an array of expressions. JSON Pointers are relative to one authored record. Bindings cannot change identity/hierarchy and may not overlap. Ordinary unused fields remain ordinary JSON.
+- Per-record anchors:{mount:{position:[0,1,0]}} use model-local coordinates; built-ins origin/center/top/bottom/left/right/front/back derive from model-local bounds (+Z front). Native/Domain assemblies may be targets; use targetPart for a stable Domain part ID when known, never fabricate it.
+- Static relations: design.relations:[{type:"attach",object:"lamp",anchor:"bottom",target:"table",targetAnchor:"top",offset:[0,0.1,0],offsetSpace:"world"}]. offsetSpace defaults to target-local. orientation:"target" inherits target rotation; otherwise keep source rotation. type:"lookAt" aims the source at a target anchor. One transform relation per source; a parent group can compose independent relationships.
+- These are deterministic authoring constraints, NOT continuous physics/collisions or animation. Do not create cyclic references or attach a descendant to a parent bounding face that includes that descendant; use an explicit parent anchor instead.
+- To adjust a bound field, patch its parameter or relation in root design; rewriting its calculated coordinates will not override the binding. Use JSON Patch for root design changes. Only detach/bake when the user intends independent coordinates; preserve all unrelated geometry/materials.
+` : "";
   return [
     (negotiationOnly
       ? THREE_JSON_AGENT_NEGOTIATION_INDEX_BASE
       : THREE_JSON_AGENT_CAPABILITY_INDEX_BASE).trim(),
     runtimeSnapshot,
+    designAuthoring.trim(),
     complexMeshAuthoring.trim(),
     particleAuthoring.trim(),
     tslAuthoring.trim(),

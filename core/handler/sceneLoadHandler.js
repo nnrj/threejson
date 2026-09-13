@@ -9,6 +9,8 @@ import {
 import { applyControlsConfig } from "../builder/controlsBuilder.js";
 import { attachCameraToPlayerRig } from "./controls/playerRigAttach.js";
 import { createSceneRuntime, createSceneRuntimeAsync } from "./sceneRuntimeHandler.js";
+import { evaluateSceneDesign } from "../document/sceneDesign.js";
+import { applySceneDesignRelations } from "../runtime/sceneDesignRuntime.js";
 import { assertSceneCapabilities } from "../capabilities/sceneCapabilityValidation.js";
 import {
   detectRendererBackend,
@@ -1124,6 +1126,7 @@ async function deployIntoTarget(target, normalized, options = {}) {
   };
   await preloadSceneTextFonts(normalized.sceneConfig, normalized.objectList);
   await runCanonicalObjectDeploy(scene, normalized, options, deployHints);
+  const designState = normalized.designEvaluation ? applySceneDesignRelations(scene, normalized.designEvaluation.payload, normalized.designEvaluation.relations) : null;
 
   deployBoundBoxHelpersFromPayload(scene, normalized);
   deployPostProcessPassesForScene(normalized, deployHints, options);
@@ -1139,7 +1142,8 @@ async function deployIntoTarget(target, normalized, options = {}) {
 
   return {
     ...runtime,
-    normalizedPayload: buildStandardScenePayloadFromCanonical(normalized.sourcePayload, normalized.payload)
+    normalizedPayload: normalized.authoringPayload || buildStandardScenePayloadFromCanonical(normalized.sourcePayload, normalized.payload),
+    ...(designState ? { designState: { ...designState, parameters: normalized.designEvaluation.parameters }, compiledPayload: buildStandardScenePayloadFromCanonical(normalized.sourcePayload, normalized.payload) } : {})
   };
 }
 
@@ -1214,6 +1218,7 @@ function deployIntoTargetSimple(target, normalized, options = {}) {
   };
   void preloadSceneTextFonts(normalized.sceneConfig, normalized.objectList);
   deployCanonicalObjectList(scene, normalized, options, deployHints);
+  const designState = normalized.designEvaluation ? applySceneDesignRelations(scene, normalized.designEvaluation.payload, normalized.designEvaluation.relations) : null;
 
   deployBoundBoxHelpersFromPayload(scene, normalized);
   deployPostProcessPassesForScene(normalized, deployHints, options);
@@ -1229,7 +1234,8 @@ function deployIntoTargetSimple(target, normalized, options = {}) {
 
   return {
     ...runtime,
-    normalizedPayload: buildStandardScenePayloadFromCanonical(normalized.sourcePayload, normalized.payload)
+    normalizedPayload: normalized.authoringPayload || buildStandardScenePayloadFromCanonical(normalized.sourcePayload, normalized.payload),
+    ...(designState ? { designState: { ...designState, parameters: normalized.designEvaluation.parameters }, compiledPayload: buildStandardScenePayloadFromCanonical(normalized.sourcePayload, normalized.payload) } : {})
   };
 }
 
@@ -1506,7 +1512,14 @@ function normalizeScenePayloadWithRuntimeDefaults(payload, options = {}) {
   if (options.subSceneNormalizePolicy === "strict" || options.subSceneNormalizePolicy === "warn") {
     normalizeOpts.subSceneNormalizePolicy = options.subSceneNormalizePolicy;
   }
-  const normalized = normalizeScenePayload(payload, normalizeOpts);
+  let normalized = normalizeScenePayload(payload, normalizeOpts);
+  if (payload.design) {
+    const authoringPayload = buildStandardScenePayloadFromCanonical(normalized.sourcePayload, normalized.payload);
+    const designEvaluation = evaluateSceneDesign(authoringPayload);
+    normalized = normalizeScenePayload(designEvaluation.payload, normalizeOpts);
+    normalized.authoringPayload = authoringPayload;
+    normalized.designEvaluation = designEvaluation;
+  }
   applyAssetGatewayToPayload(normalized, options.assetGateway ?? options.resourceProxy, { deferTextures: true, deferModels: true });
   applySceneRuntimeDefaults(normalized, runtimeOptions);
   normalized.runtimeLoadOptions = runtimeOptions;

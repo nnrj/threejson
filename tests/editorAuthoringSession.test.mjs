@@ -39,6 +39,38 @@ async function createHost(t, payload = source()) {
   return { host, controller, history, config, messages };
 }
 
+test("Editor parameters, derived field preservation and explicit detach share the undo timeline", async (t) => {
+  const payload = source();
+  payload.design = { parameters: { offset: { value: 150, unit: "cm" } },
+    bindings: [{ object: "moving", path: "/position/x", value: { param: "offset" } }] };
+  const { host, controller, history } = await createHost(t, payload);
+  const read = () => getObjectByThreeJsonId("moving", host.getScene());
+  assert.equal(read().position.x, 1.5);
+  const descriptor = structuredClone(read().userData.objJson); descriptor.label = "Preserve source";
+  await controller.replaceObject("moving", descriptor);
+  assert.equal(controller.export().objectList.find((r) => r.threeJsonId === "moving").position.x, 0);
+  await controller.setDesignParameter("offset", 250);
+  assert.equal(read().position.x, 2.5);
+  await controller.detachDesignObject("moving");
+  assert.equal(read().position.x, 2.5); assert.equal(controller.export().design.bindings.length, 0);
+  await controller.mutateObject("moving", (record) => { record.position = [4,0,0]; });
+  assert.equal(read().position.x, 4);
+  await history.undo(); await history.undo();
+  assert.equal(controller.export().design.bindings.length, 1); assert.equal(read().position.x, 2.5);
+  await history.undo(); assert.equal(read().position.x, 1.5);
+});
+
+test("a drag cannot leave an uncommitted runtime pose on a relation-controlled object", async (t) => {
+  const payload = source(); payload.design = { relations: [{ type: "attach", object: "moving", target: "animated", offset: [0,3,0] }] };
+  const { host, controller } = await createHost(t, payload);
+  const moved = getObjectByThreeJsonId("moving", host.getScene());
+  assert.equal(moved.position.y, 3);
+  moved.position.y = 99; syncBoxModelTransformFromObject3D(moved);
+  await controller.recordRuntimeEdit("drag preview");
+  assert.equal(getObjectByThreeJsonId("moving", host.getScene()).position.y, 3);
+  assert.equal(controller.export().objectList.find((r) => r.threeJsonId === "moving").position.y, 0);
+});
+
 test("Editor save/undo uses authored poses, never unrelated animation frames or camera motion", async (t) => {
   const { host, controller, history } = await createHost(t);
   const scene = host.getScene(), moving = getObjectByThreeJsonId("moving", scene), animated = getObjectByThreeJsonId("animated", scene);

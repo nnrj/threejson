@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { restoreSceneDesignAuthoring } from "../document/sceneDesign.js";
 
 import { isTaggedThreeJsonSceneAudioNode } from "../builder/audioBuilder.js";
 import { snapshotBoxModelTransformFromObject3D } from "../builder/modelBuilder.js";
@@ -427,6 +428,7 @@ function buildStandardPayloadFromScene(scene, basePayload, options = {}) {
   }
   preserveDeclarativeAudioFromBase(payload, options.basePayload || basePayload);
   preserveNativeSceneEmbedFromBase(payload, options.basePayload || basePayload);
+  if (options.state === "authoring") restoreSceneDesignAuthoring(payload, basePayload);
   if (options.embedNative === true) {
     const nativeOpts = {
       shouldSkipObject: options.shouldSkipObject,
