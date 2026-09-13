@@ -95,10 +95,12 @@ export function requestTexture(source, options = {}) {
     target.userData.threeJsonResolvedUrl = lease.resolvedSource;
     target.needsUpdate = true;
     state.state = "ready";
+    scope.diagnostics?.resolve({ code: "TEXTURE_RESOURCE_FAILED", source });
     return target;
   }).catch((error) => {
     state.state = error?.name === "AbortError" ? "cancelled" : "error";
     lease.release();
+    if (error?.name !== "AbortError") scope.diagnostics?.report({ code: "TEXTURE_RESOURCE_FAILED", source, message: String(error?.message || error) });
     throw error;
   });
   state.promise.catch(() => {});

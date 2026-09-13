@@ -297,3 +297,14 @@ must remain distinguishable from loader, material, authorization and GPU failure
   existing skip. Browser loading of the editable lounge chair remains correct.
 - See [compiler contract](./geometry-compilation.md) for generated bundle/release
   handling, CDN constraints and the boundaries of the worker-backed capabilities.
+
+## Implementation evidence: visible resource diagnostics
+
+- Per-runtime diagnostics distinguish texture, backdrop and model failures from
+  optional Worker fallback. Successful retries clear the corresponding warning;
+  retired scene events cannot change the current card's notices.
+- Native/React cards, Shower and Editor expose a compact, expandable notice list.
+  It follows language changes, uses theme colors and hides URL credentials/query
+  strings instead of displaying raw provider errors. Browser failure injection
+  retained a blue base material under both dark and light Shower themes.
+- Four diagnostic regressions and the shared-host parity test passed.

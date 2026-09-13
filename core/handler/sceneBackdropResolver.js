@@ -395,9 +395,10 @@ export async function applySceneBackdropFromHints(scene, sceneHints = {}, render
         prepared.set(field, { value, dispose: result?.disposeFn || (() => disposeIfOwned(value)) });
       } catch (error) {
         if (error?.name === "AbortError" || (deps.failurePolicy ?? context.backdropFailurePolicy) === "error") throw error;
-        const diagnostic = { code: "BACKDROP_RESOURCE_FAILED", field, source: sceneHints[field], message: String(error?.message || error) };
+        const hint = sceneHints[field];
+        const diagnostic = { code: "BACKDROP_RESOURCE_FAILED", field, source: typeof hint === "string" ? hint : hint?.url, message: String(error?.message || error) };
         diagnostics.push(diagnostic);
-        (context.resourceDiagnostics ||= []).push(diagnostic);
+        context.diagnostics?.report(diagnostic);
         try { deps.onDiagnostic?.(diagnostic); } catch { /* observers do not own loading */ }
         log.warn("sceneBackdropResolver: keeping previous backdrop", diagnostic);
       }
@@ -410,6 +411,9 @@ export async function applySceneBackdropFromHints(scene, sceneHints = {}, render
       const old = slots.get(field);
       scene[field] = entry.value; slots.set(field, entry);
       if (old && old.value !== entry.value) releaseBackdrop(old);
+      for (const diagnostic of context.diagnostics?.snapshot() || []) {
+        if (diagnostic.code === "BACKDROP_RESOURCE_FAILED" && diagnostic.field === field) context.diagnostics.resolve(diagnostic);
+      }
     }
     scene.userData.threeJsonBackdropDisposable = { slots, dispose() {
       for (const [field, entry] of slots) {

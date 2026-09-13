@@ -32,6 +32,7 @@ import {
 import { shouldApplyThemeSceneBackground } from "./showerSceneBackground.js";
 import { ensureSceneHostSceneCapabilitiesForPayload } from "../../shared/js/sceneCapabilities.js";
 import { createSceneCardSession, createSceneCardViewport } from "../../shared/js/sceneCardSession.js";
+import { createSceneResourceDiagnosticsOverlay } from "../../shared/js/sceneResourceDiagnostics.js";
 
 const STORAGE = {
   autoRun: "threejson.shower.autoRun",
@@ -237,7 +238,9 @@ let currentJsonUrl = "";
 let runtimeUsesThemeBackground = false;
 let sceneRunVersion = 0;
 let sceneRequestController = null;
+const diagnosticsView = createSceneResourceDiagnosticsOverlay(els.canvasWrap);
 const sceneSession = createSceneCardSession({
+  onDiagnosticsChanged: diagnosticsView.update,
   createRuntime: createJsonScene,
   ensureCapabilities: ensureSceneHostSceneCapabilitiesForPayload,
   getRuntimeOptions: (settings) => settings.runtimeOptions || {},

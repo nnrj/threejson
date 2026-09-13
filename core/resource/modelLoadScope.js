@@ -52,7 +52,10 @@ export function createModelLoadScope(scene, options = {}, fallbackManager) {
       waiters.clear();
     });
   };
-  manager.itemError = (url) => { error(url); report("itemError", url); };
+  manager.itemError = (url) => {
+    error(url); report("itemError", url);
+    if (!controller.signal.aborted) context.diagnostics?.report({ code: "MODEL_RESOURCE_FAILED", source: url, message: "An imported model resource could not be loaded." });
+  };
   return {
     context, manager, signal: controller.signal, run, check,
     resolvePath(source, base = "") {

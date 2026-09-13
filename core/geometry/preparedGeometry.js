@@ -24,7 +24,8 @@ export async function prepareSceneGeometry(payload, options = {}) {
     for (const record of collectGeometryRecords(payload)) {
       if (!compiler.supports(record)) continue;
       options.signal?.throwIfAborted();
-      const built = await compiler.compile(record, { signal: options.signal, meshBudget: options.meshBudget });
+      const built = await compiler.compile(record, { signal: options.signal, meshBudget: options.meshBudget,
+        onDiagnostic: (diagnostic) => resolveRuntimeContext(options.runtimeScope, { fallback: false })?.diagnostics?.report(diagnostic) });
       if (!built?.geometry) throw Object.assign(new Error(built?.error || "Geometry compilation failed."), { code: built?.code || "GEOMETRY_BUILD_FAILED" });
       if (options.signal?.aborted) { built.geometry.dispose(); options.signal.throwIfAborted(); }
       trackDisposableResource(built.geometry);

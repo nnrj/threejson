@@ -1581,7 +1581,7 @@ async function createJsonScene(payload, options = {}) {
     const normalized = normalizeScenePayloadWithRuntimeDefaults(payload, loadOptions);
     if (options.geometryCompiler) {
       const { prepareSceneGeometry } = await import("../geometry/preparedGeometry.js");
-      runtimeCtx.capabilityResources.add("compiled-geometry", await prepareSceneGeometry(normalized.payload, options));
+      runtimeCtx.capabilityResources.add("compiled-geometry", await prepareSceneGeometry(normalized.payload, { ...options, runtimeScope: runtimeCtx }));
     }
     Object.assign(baseCtx, { normalized, payload });
     await bus.emit(LOAD_PHASE.afterNormalize, { ...baseCtx, phase: LOAD_PHASE.afterNormalize });

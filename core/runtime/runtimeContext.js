@@ -25,6 +25,7 @@ import { createAnimationMixerStore } from "../handler/animationMixerRegistry.js"
 import { createAnimationStateMachineStore } from "../handler/animationStateMachine.js";
 import { createScenePassRegistryStore } from "../util/scenePassRuntime.js";
 import { createPreparedCapabilityStore } from "../capabilities/scenePreparationRegistry.js";
+import { createResourceDiagnosticsStore } from "../resource/resourceDiagnostics.js";
 
 /**
  * THREE-revision/sceneConfig compat context for the in-progress deploy (see
@@ -136,16 +137,20 @@ const DISPOSE_ORDER = [
  */
 function createRuntimeContext() {
   const lifetime = new AbortController();
+  const diagnostics = createResourceDiagnosticsStore();
   /** @type {RuntimeContext} */
   const ctx = {
     __isThreeJsonRuntimeContext: true,
     signal: lifetime.signal,
     disposed: false,
     capabilityResources: createPreparedCapabilityStore(),
+    diagnostics,
+    get resourceDiagnostics() { return diagnostics.snapshot(); },
     dispose() {
       if (ctx.disposed) return;
       ctx.disposed = true;
       lifetime.abort(new DOMException("Runtime disposed.", "AbortError"));
+      diagnostics.dispose();
       for (let i = 0; i < DISPOSE_ORDER.length; i++) {
         const key = DISPOSE_ORDER[i];
         const store = ctx[key];

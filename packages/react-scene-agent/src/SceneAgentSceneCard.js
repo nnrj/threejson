@@ -1,6 +1,7 @@
 /** Unbranded inline live ThreeJSON scene card for conversational authoring hosts. */
-import { createElement as h, useEffect } from "react";
+import { createElement as h, useEffect, useState } from "react";
 import { useSceneCardRuntime } from "./useSceneCardRuntime.js";
+import { describeSceneDiagnostic, sceneDiagnosticTitle, subscribeSceneDiagnosticLanguage } from "@threejson/host-kit/js/sceneResourceDiagnostics.js";
 
 function text(options, key, fallback) {
   return options?.translate?.(key, fallback) || fallback;
@@ -17,6 +18,8 @@ function ActionBtn({ title, glyph, onClick, disabled }) {
 export function SceneAgentSceneCard({ sceneJson, label, showToast, options, onReady, managed = false, defer = false }) {
   const mergedOptions = { showToast, ...options };
   const card = useSceneCardRuntime(mergedOptions);
+  const [, refreshLanguage] = useState(0);
+  useEffect(() => subscribeSceneDiagnosticLanguage(() => refreshLanguage((value) => value + 1)), []);
 
   useEffect(() => {
     onReady?.(card);
@@ -79,6 +82,9 @@ export function SceneAgentSceneCard({ sceneJson, label, showToast, options, onRe
         : null,
       action(text(mergedOptions, "sceneAgent.sceneCard.refresh", "刷新画布"), "&#8635;", () => void card.handleRefresh(), card.exporting === "refresh"),
       action(text(mergedOptions, "sceneAgent.sceneCard.fullscreen", "全屏"), "&#10021;", card.handleFullscreen)
-    )
+    ),
+    card.resourceDiagnostics.length ? h("details", { className: "sceneResourceDiagnostics", style: { padding: "6px 10px", fontSize: "12px", lineHeight: 1.5, maxHeight: "180px", overflow: "auto", overflowWrap: "anywhere" } },
+      h("summary", { style: { cursor: "pointer" } }, text(mergedOptions, "sceneAgent.sceneCard.notices", sceneDiagnosticTitle()) + ` · ${card.resourceDiagnostics.length}`),
+      h("ul", null, card.resourceDiagnostics.map((item, index) => h("li", { key: index }, describeSceneDiagnostic(item))))) : null
   );
 }

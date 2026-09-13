@@ -110,6 +110,7 @@ export function useSceneCardRuntime(options = {}) {
   const [draft, setDraft] = useState(false);
   const [textureProgress, setTextureProgressState] = useState(null);
   const [viewportState, setViewportState] = useState({ dormant: false, preview: null });
+  const [resourceDiagnostics, setResourceDiagnostics] = useState([]);
 
   const toast = useCallback((msg, kind) => optionsRef.current.showToast?.(msg, kind), []);
 
@@ -182,6 +183,7 @@ export function useSceneCardRuntime(options = {}) {
 
   const getCardSession = useCallback(() => {
     if (!sessionRef.current) sessionRef.current = createSceneCardSession({
+      onDiagnosticsChanged: setResourceDiagnostics,
       viewportPool: sharedSceneViewportPool,
       getViewportLimit: () => optionsRef.current.getViewportLimit?.() ?? optionsRef.current.maxActiveViewports ?? 1,
       onViewportStateChanged: setViewportState,
@@ -522,6 +524,7 @@ export function useSceneCardRuntime(options = {}) {
     draft,
     textureProgress,
     viewportState,
+    resourceDiagnostics,
     activate,
     setViewportLimit: (value) => getCardSession().setViewportLimit(value),
     render,

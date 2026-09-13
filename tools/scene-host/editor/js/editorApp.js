@@ -62,6 +62,7 @@ import { createEditorInteraction } from "./editorInteraction.js";
 import { createEditorHistory } from "./editorHistory.js";
 import { createEditorAuthoringSession } from "./editorAuthoringSession.js";
 import { sceneHostGeometryCompiler } from "../../shared/js/sceneGeometryCompiler.js";
+import { createSceneResourceDiagnosticsOverlay } from "../../shared/js/sceneResourceDiagnostics.js";
 import { createRightDockPanel } from "./rightDockPanel.js";
 import { createSceneManagePanel } from "./sceneManagePanel.js";
 import { createEventEditorPanel } from "./eventEditorPanel.js";
@@ -178,6 +179,8 @@ export async function bootstrapSceneHostEditor() {
 
   let canvasContainer = document.getElementById("canvasContainer");
   const canvasWrap = document.getElementById("canvasWrap");
+  const diagnosticsView = createSceneResourceDiagnosticsOverlay(canvasWrap);
+  let unsubscribeDiagnostics = null;
   const stageShell = document.getElementById("stageShell");
   const topBarSceneTitle = document.getElementById("topBarSceneTitle");
   const editorStartupEmptyState = document.getElementById("editorStartupEmptyState");
@@ -592,6 +595,9 @@ export async function bootstrapSceneHostEditor() {
   }
 
   function assignRuntime(runtime) {
+    unsubscribeDiagnostics?.(); unsubscribeDiagnostics = null;
+    if (runtime?.runtimeContext?.diagnostics) unsubscribeDiagnostics = runtime.runtimeContext.diagnostics.subscribe(diagnosticsView.update);
+    else diagnosticsView.update([]);
     if (!runtime) {
       return;
     }

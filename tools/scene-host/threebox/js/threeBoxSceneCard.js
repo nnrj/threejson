@@ -16,6 +16,7 @@ import { ensureThreeBoxSceneCapabilitiesForPayload } from "./threeBoxAiCapabilit
 import { captureMeshReviewViews } from "../../shared/js/meshViewCapture.js";
 import { createCanvasRenderActivity } from "../../shared/js/canvasRenderActivity.js";
 import { createSceneCardSession, createSceneCardViewport } from "../../shared/js/sceneCardSession.js";
+import { createSceneResourceDiagnosticsView } from "../../shared/js/sceneResourceDiagnostics.js";
 import { sharedSceneViewportPool } from "../../shared/js/sceneViewportPool.js";
 
 const EDITOR_OPEN_SCENE_BRIDGE_PREFIX = "threejson.editor.openScene.";
@@ -181,6 +182,8 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
     actionBtnHtml(t("threebox.sceneCard.fullscreen", "全屏"), "&#10021;")
   ].join("");
   el.appendChild(actionBar);
+  const diagnosticsView = createSceneResourceDiagnosticsView();
+  el.appendChild(diagnosticsView.element);
   const [downloadBtn, exportBtn, exportMeshBtn, openEditorBtn, openPlayerBtn, refreshBtn, fullscreenBtn] =
     actionBar.querySelectorAll(".sceneCardActionBtn");
 
@@ -299,6 +302,7 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
   }
 
   const cardSession = createSceneCardSession({
+    onDiagnosticsChanged: diagnosticsView.update,
     viewportPool: sharedSceneViewportPool,
     getViewportLimit: cardOptions.getViewportLimit,
     onViewportStateChanged: ({ dormant, preview }) => {
@@ -416,7 +420,7 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
     renderSeq++;
     clearTimeout(textureBadgeTimer); textureBadgeTimer = null;
     liveResizeObserver?.disconnect(); liveResizeObserver = null;
-    renderActivity.dispose(); cardSession.dispose(); runtime = null; canvas = null;
+    renderActivity.dispose(); cardSession.dispose(); diagnosticsView.dispose(); runtime = null; canvas = null;
   }
 
   function requireSceneJson() {

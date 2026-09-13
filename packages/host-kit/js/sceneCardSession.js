@@ -7,6 +7,7 @@ import { sceneHostGeometryCompiler } from "./sceneGeometryCompiler.js";
 export function createSceneCardSession(options = {}) {
   let session = null, queue = Promise.resolve(), active = null, disposed = false;
   let renderOptions = {}, loadController = null, preview = null, playback = null;
+  let unsubscribeDiagnostics = null;
   const pool = options.viewportPool, poolKey = {};
   const assertOpen = () => { if (disposed) throw new DOMException("Scene card disposed.", "AbortError"); };
   const notifyDocument = () => options.onDocumentChanged?.(captureSceneSession(session));
@@ -42,6 +43,12 @@ export function createSceneCardSession(options = {}) {
       return create(document, { ...runtimeOptions, ...configuration, canvas: runtimeOptions.canvas, signal: runtimeOptions.signal });
     },
     onRuntimeChanged: (next, previous) => {
+      unsubscribeDiagnostics?.(); unsubscribeDiagnostics = null;
+      if (next) {
+        const store = next.runtimeContext?.diagnostics;
+        if (store) unsubscribeDiagnostics = store.subscribe((items) => options.onDiagnosticsChanged?.(items));
+        else options.onDiagnosticsChanged?.([]);
+      }
       if (next && playback?.camera) {
         next.camera?.position.fromArray(playback.camera.position);
         next.camera?.quaternion.fromArray(playback.camera.quaternion);
@@ -120,6 +127,7 @@ export function createSceneCardSession(options = {}) {
       active?.abort(new DOMException("Scene card disposed.", "AbortError"));
       loadController?.abort(new DOMException("Scene card disposed.", "AbortError"));
       unregister?.();
+      unsubscribeDiagnostics?.(); unsubscribeDiagnostics = null;
       session?.dispose(); session = null;
     }
   };
