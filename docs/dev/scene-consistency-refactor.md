@@ -73,3 +73,20 @@ must remain distinguishable from loader, material, authorization and GPU failure
   operations, and reports rollback separately instead of pretending it succeeded.
 - Full local suite: 1,329 passed, 1 existing skip. The new session is connected to
   the real engine; existing hosts are not yet fully migrated to document ownership.
+
+## Implementation evidence: Domain parts
+
+- Port, cabinet, nested doors and standalone device factories now publish stable
+  part addresses and replay local transform/material descriptor overrides.
+- Bound export retains factory parameters plus modifications, rather than
+  silently reverting moved children. Missing parts, structural edits and schema
+  conflicts are explicit. Editor binding failure no longer silently bakes.
+- Domain drill-in respects the active assembly for nested factories. Moving a
+  bound root no longer clears its child-edit state.
+- Tests cover material/pose save-reload, stable IDs after dimension changes,
+  nested door routing, parent-and-child atomic patches, conflict behavior and
+  existing door picking/hinge animation.
+- Found and corrected generated port/stat descriptors that used business labels
+  as unsupported geometry types; main crane parts must now all actually deploy.
+- See [Domain part contract](./domain-part-overrides.md). Full host document
+  integration and browser validation remain on the delivery checklist.

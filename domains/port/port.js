@@ -87,7 +87,8 @@ function portStainlessMaterial(overrides = {}) {
 function steelPanelTemplate() {
   return {
     name: "steel",
-    objType: "dockCranePart",
+    objType: "box",
+    semanticType: "dockCranePart",
     geometry: {
       width: 1,
       height: 1,
@@ -111,7 +112,7 @@ function steelPanelTemplate() {
 /** Warning color block template (crane trolley/spreader accent) */
 function accentPanelTemplate() {
   const box = steelPanelTemplate();
-  box.objType = "dockCraneAccent";
+  box.semanticType = "dockCraneAccent";
   box.material = {
     type: "lambert",
     color: "#ffffff",
@@ -124,7 +125,7 @@ function accentPanelTemplate() {
 /** Ship hull primary color block */
 function hullPanelTemplate() {
   const box = steelPanelTemplate();
-  box.objType = "berthShipHull";
+  box.semanticType = "berthShipHull";
   box.material = {
     type: "lambert",
     color: "#ffffff",
@@ -137,7 +138,7 @@ function hullPanelTemplate() {
 /** RTG portal leg */
 function rtgLegTemplate() {
   const box = steelPanelTemplate();
-  box.objType = "rtgLeg";
+  box.semanticType = "rtgLeg";
   box.material = {
     type: "lambert",
     color: "#ffffff",
@@ -149,7 +150,7 @@ function rtgLegTemplate() {
 /** Beacon/lamp post (brushed stainless pole) */
 function lampShaftTemplate() {
   const box = steelPanelTemplate();
-  box.objType = "portLampShaft";
+  box.semanticType = "portLampShaft";
   box.material = portStainlessMaterial({
     textureRepeat: { x: 2.5, y: 8 },
     roughness: 0.4
@@ -160,7 +161,7 @@ function lampShaftTemplate() {
 /** Lamp head housing */
 function lampHeadTemplate() {
   const box = steelPanelTemplate();
-  box.objType = "portLampHead";
+  box.semanticType = "portLampHead";
   box.material = portStainlessMaterial({
     textureRepeat: { x: 2, y: 2 },
     metalness: 0.88
@@ -171,7 +172,7 @@ function lampHeadTemplate() {
 /** Checkpoint concrete block */
 function gateBarrierTemplate() {
   const box = steelPanelTemplate();
-  box.objType = "gateBarrier";
+  box.semanticType = "gateBarrier";
   box.material = {
     type: "lambert",
     color: "#ffffff",

@@ -88,7 +88,7 @@ test("device.cabinet stat bar footprint matches cabinet geometry", () => {
   businessDomains.device.cabinet.showCapacityStats(cabinetRoot, scene, { animate: true });
   let statMesh = null;
   cabinetRoot.traverse((node) => {
-    if (node?.isMesh && node.userData?.objJson?.objType === "statBar") {
+    if (node?.isMesh && node.userData?.objJson?.semanticType === "statBar") {
       statMesh = node;
     }
   });

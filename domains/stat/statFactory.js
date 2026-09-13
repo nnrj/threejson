@@ -47,7 +47,8 @@ export function buildStatBarGroupJson(item = {}, options = {}) {
   };
   return {
     name: groupName,
-    objType: options.groupObjType || "statBarGroup",
+    objType: "group",
+    semanticType: options.groupObjType || "statBarGroup",
     position: clonePlainObject(item.position || { x: 0, y: 0, z: 0 }),
     rotation: clonePlainObject(
       item.rotation || { rotationX: 0, rotationY: 0, rotationZ: 0 }
@@ -56,7 +57,8 @@ export function buildStatBarGroupJson(item = {}, options = {}) {
     boxModelList: [
       {
         name: `${groupName}-mesh`,
-        objType: "statBar",
+        objType: "box",
+        semanticType: "statBar",
         geometry: geom,
         position: { x: 0, y: geom.height / 2, z: 0 },
         material
@@ -136,7 +138,7 @@ export function animateUtilizationBarGroup(root, value, max, options = {}) {
   }
   let mesh = null;
   root.traverse((child) => {
-    if (!mesh && child?.isMesh && child.userData?.objJson?.objType === "statBar") {
+    if (!mesh && child?.isMesh && child.userData?.objJson?.semanticType === "statBar") {
       mesh = child;
     }
   });

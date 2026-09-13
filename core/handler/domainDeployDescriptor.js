@@ -11,6 +11,7 @@ import { cloneJson } from "../util/cloneJson.js";
 import { snapshotBoxModelTransformFromObject3D } from "../builder/modelBuilder.js";
 import { getDomain } from "./businessDomainRegistry.js";
 import { setUserDataObjJson } from "./objectDescriptorAttach.js";
+import { initializeDomainPartState, captureDomainPartOverrides } from "../runtime/domainPartState.js";
 
 /** @typedef {"pristine"|"shellDirty"|"childrenDirty"|"pendingResolution"|"bound"|"degraded"} DomainEditState */
 
@@ -63,7 +64,7 @@ export function matchesObjTypeForSceneQuery(objJson, type) {
   if (!want) {
     return false;
   }
-  return String(objJson.objType || "").trim() === want;
+  return String(objJson.objType || "").trim() === want || String(objJson.semanticType || "").trim() === want;
 }
 
 /**
@@ -176,7 +177,7 @@ export function snapshotDomainChildTransforms(root) {
     if (obj === root || !(obj instanceof THREE.Object3D)) {
       return;
     }
-    const id = obj.userData?.objJson?.threeJsonId || obj.uuid;
+    const id = obj.userData?.objJson?.domainPartId || obj.userData?.objJson?.threeJsonId || obj.uuid;
     const t = snapshotBoxModelTransformFromObject3D(obj);
     if (id && t) {
       out[id] = cloneJson(t);
@@ -245,30 +246,6 @@ export function boundDomainHasChildTransformDrift(object3D) {
 }
 
 /**
- * @param {object} shell
- * @param {object} fresh
- * @param {string|null|undefined} domainId
- * @returns {object}
- */
-function mergeBoundCaptureOntoPersistShell(shell, fresh, domainId) {
-  const domain = domainId ? getDomain(domainId) : null;
-  const mergeHook = domain?.api?.mergePersistDescriptor;
-  if (typeof mergeHook === "function") {
-    return mergeHook(shell, fresh);
-  }
-  const out = cloneJson(shell);
-  if (fresh && typeof fresh === "object") {
-    for (const key of Object.keys(fresh)) {
-      if (key === "objType" || key === "domain" || key === "handler" || key === "threeJsonId") {
-        continue;
-      }
-      out[key] = cloneJson(fresh[key]);
-    }
-  }
-  return out;
-}
-
-/**
  * After deploy, attach the original load record and edit state (does not rewrite JSON shape).
  * @param {import("three").Object3D|null|undefined} object
  * @param {object} options
@@ -284,7 +261,7 @@ export function finalizeDomainDeployRoot(object, options = {}) {
   if (!object || !domainId) {
     return object;
   }
-  const source = prepareDomainDeployPersistRecord(loadRecord ?? itemDescriptor, {
+  const source = prepareDomainDeployPersistRecord(loadRecord && typeof loadRecord === "object" ? loadRecord : itemDescriptor, {
     domainId,
     handler,
     extras
@@ -295,6 +272,7 @@ export function finalizeDomainDeployRoot(object, options = {}) {
   setUserDataObjJson(object, source);
   setPersistSource(object, source);
   setDomainEditState(object, DOMAIN_EDIT_STATES.PRISTINE);
+  initializeDomainPartState(object, source, options);
   return object;
 }
 
@@ -373,19 +351,15 @@ export function exportDeployRootDescriptor(object3D) {
     return syncTransformOntoPersistSource(persistSource, object3D);
   }
   if (state === DOMAIN_EDIT_STATES.BOUND && persistSource) {
-    if (!boundDomainHasChildTransformDrift(object3D)) {
-      return syncTransformOntoPersistSource(persistSource, object3D);
-    }
-    const domainId = String(persistSource.domain || liveJson?.domain || "").trim();
-    const capture = domainId ? getDomain(domainId)?.api?.capturePersistDescriptor : null;
-    if (typeof capture === "function") {
-      const fresh = capture(object3D);
-      if (fresh && typeof fresh === "object") {
-        const merged = mergeBoundCaptureOntoPersistShell(persistSource, fresh, domainId);
-        return syncTransformOntoPersistSource(merged, object3D);
-      }
-    }
-    return syncTransformOntoPersistSource(persistSource, object3D);
+    const overrides = captureDomainPartOverrides(object3D, {
+      childBaseline: getDomainChildTransformBaseline(object3D),
+      currentTransforms: snapshotDomainChildTransforms(object3D)
+    });
+    const result = syncTransformOntoPersistSource(persistSource, object3D);
+    const target = result.items?.[0] || result.payload || result;
+    if (overrides.parts.length) target.domainOverrides = overrides;
+    else delete target.domainOverrides;
+    return result;
   }
   if (liveJson && typeof liveJson === "object" && !Array.isArray(liveJson)) {
     return syncDomainDeployItemFromObject3D(liveJson, object3D);
@@ -430,8 +404,7 @@ export function isDomainDeployRootObject(object3D) {
  * @returns {{ ok: boolean, blocking: object[] }}
  */
 /**
- * When bound and child parts drift from the drill-in baseline: snapshots usually only hold persistSource/domain capture;
- * child transforms may be lost after reload. For host non-blocking post-save warnings (does not block full scene export).
+ * Unrepresentable bound changes are conflicts, never a successful save that loses edits.
  *
  * @param {import("three").Scene} scene
  * @param {object} [options]
@@ -454,14 +427,14 @@ export function collectDomainExportCaveats(scene, options = {}) {
     if (getDomainEditState(root) !== DOMAIN_EDIT_STATES.BOUND) {
       continue;
     }
-    if (!boundDomainHasChildTransformDrift(root)) {
-      continue;
-    }
+    let conflict;
+    try { exportDeployRootDescriptor(root); continue; }
+    catch (error) { conflict = error; }
     const persistSource = getPersistSource(root);
     const domainId = String(persistSource?.domain || root.userData?.objJson?.domain || "").trim();
     const hasCapture = typeof getDomain(domainId)?.api?.capturePersistDescriptor === "function";
     const name = root.name || root.userData?.objJson?.name || root.uuid;
-    caveats.push({ object3D: root, name, domainId, hasCapture });
+    caveats.push({ object3D: root, name, domainId, hasCapture, code: conflict.code, message: conflict.message });
   }
   return caveats;
 }
@@ -485,6 +458,10 @@ export function assertSceneExportable(scene, options = {}) {
     if (BLOCKING_EXPORT_STATES.has(state)) {
       blocking.push({ object3D: root, reason: "domain_edit_pending", state, name });
       continue;
+    }
+    if (state === DOMAIN_EDIT_STATES.BOUND) {
+      try { exportDeployRootDescriptor(root); }
+      catch (error) { blocking.push({ object3D: root, reason: error.code || "domain_part_conflict", message: error.message, state, name }); }
     }
     const liveJson = root.userData?.objJson;
     if (isPseudoDomainObjJson(liveJson)) {

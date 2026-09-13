@@ -72,7 +72,7 @@ test("bindDomainParserOnRoot rejects unknown handler", () => {
   assert.match(result.error || "", /handler/i);
 });
 
-test("bound port with child drift and no capture still exports persistSource", () => {
+test("bound port preserves factory parameters and records child drift explicitly", () => {
   const scene = new THREE.Scene();
   const group = new THREE.Group();
   const child = new THREE.Group();
@@ -96,6 +96,8 @@ test("bound port with child drift and no capture still exports persistSource", (
   assert.ok(exported);
   assert.equal(exported.handler, "dockCrane");
   assert.equal(exported.position.x, 5);
+  assert.deepEqual(exported.domainOverrides.parts[0].transform.position, [12, 0, 0]);
+  assert.equal(exported.domainOverrides.parts[0].id, "id:child-part-1");
 });
 
 test("bound port without child drift exports persistSource", () => {
@@ -118,7 +120,7 @@ test("bound port without child drift exports persistSource", () => {
   assert.equal(exported[0].position.x, 42);
 });
 
-test("collectDomainExportCaveats lists bound roots with child drift", () => {
+test("representable child drift no longer reports potential data loss", () => {
   const scene = new THREE.Scene();
   const group = new THREE.Group();
   group.name = SAMPLE_PORT.name;
@@ -136,10 +138,12 @@ test("collectDomainExportCaveats lists bound roots with child drift", () => {
   setDomainChildTransformBaseline(group, baseline);
   setDomainEditState(group, DOMAIN_EDIT_STATES.BOUND);
   const caveats = collectDomainExportCaveats(scene, {});
-  assert.equal(caveats.length, 1);
-  assert.equal(caveats[0].name, "dock-crane");
-  assert.equal(caveats[0].domainId, "port");
-  assert.equal(caveats[0].hasCapture, false);
+  assert.equal(caveats.length, 0);
+  group.add(new THREE.Group());
+  const conflicts = collectDomainExportCaveats(scene);
+  assert.equal(conflicts.length, 1);
+  assert.equal(conflicts[0].code, "DOMAIN_PART_CONFLICT");
+  assert.equal(assertSceneExportable(scene).ok, false);
 });
 
 test("bound port without child drift skips caveat list", () => {

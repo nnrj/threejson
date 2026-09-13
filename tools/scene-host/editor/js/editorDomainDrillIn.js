@@ -72,7 +72,7 @@ export function createEditorDomainDrillIn(host) {
     resolutionTarget = root;
     if (bodyEl) {
       const name = root?.name || root?.userData?.objJson?.name || "未命名";
-      bodyEl.textContent = `域对象「${name}」的子结构已修改，原解析器无法自动保证语义。请选择处理方式：`;
+      bodyEl.textContent = `域对象「${name}」已有部件修改。可保留工厂参数和部件修改；不兼容的结构变更需要显式转换为普通 group。`;
     }
     if (modal) {
       modal.hidden = false;
@@ -96,13 +96,14 @@ export function createEditorDomainDrillIn(host) {
     const result = applyDomainChildEditResolution(settings.silentDefaultAction, root, {
       childBaseline: childEditBaseline,
       binding: readBindingFromUi(root),
-      exportOptions: { shouldSkipObject },
-      fallbackDegradeOnBindFail: true
+      exportOptions: { shouldSkipObject }
     });
     if (result.error && result.degraded) {
       host.showMessage(`绑定失败，已退化为 group：${result.error}`, "warning");
     } else if (!result.ok && result.error) {
       host.showMessage(result.error, "warning");
+      openResolutionModal(root);
+      return;
     }
     setDomainEditState(root, getDomainEditState(root));
     host.getSceneReserialize?.()?.markSceneNeedsReserialize?.();
@@ -158,17 +159,16 @@ export function createEditorDomainDrillIn(host) {
     const result = applyDomainChildEditResolution(action, root, {
       childBaseline: childEditBaseline,
       binding: readBindingFromUi(root),
-      exportOptions: { shouldSkipObject },
-      fallbackDegradeOnBindFail: true
+      exportOptions: { shouldSkipObject }
     });
-    closeResolutionModal();
-    childEditBaseline = null;
     if (result.error && result.degraded) {
       host.showMessage(`绑定失败，已退化为 group：${result.error}`, "warning");
     } else if (!result.ok && result.error) {
       host.showMessage(result.error, "error");
       return;
     }
+    closeResolutionModal();
+    childEditBaseline = null;
     host.getSceneReserialize?.()?.markSceneNeedsReserialize?.();
     host.getRightSidebarCache?.()?.invalidateRightSidebarSceneJsonTextCache?.();
     host.getEditorInteraction()?.refreshMeshList?.();
@@ -179,7 +179,7 @@ export function createEditorDomainDrillIn(host) {
       void host.getCodeEditor()?.refreshFromScene?.();
     }
     host.showMessage(
-      action === "degrade" ? "已退化为普通 group。" : action === "undo" ? "已撤销子对象编辑。" : "已绑定 domain 解析器。",
+      action === "degrade" ? "已转换为普通 group。" : action === "undo" ? "已撤销子对象编辑。" : "已保留 Domain 参数和部件修改。",
       "success"
     );
   }
@@ -189,14 +189,20 @@ export function createEditorDomainDrillIn(host) {
     if (!target || !scene) {
       return;
     }
-    const root = resolveDomainDeployRoot(target, scene);
+    let root = resolveDomainDeployRoot(target, scene);
+    // A nested factory (e.g. a door hinge) is still part of the active assembly
+    // edit. Mark that assembly, not just the nearest nested factory.
+    for (let parent = target; parent; parent = parent.parent) {
+      if (parent === drillInRoot) { root = drillInRoot; break; }
+    }
     if (!root) {
       return;
     }
     if (drillInRoot === root && target !== root) {
       setDomainEditState(root, DOMAIN_EDIT_STATES.CHILDREN_DIRTY);
     } else if (target === root) {
-      setDomainEditState(root, DOMAIN_EDIT_STATES.SHELL_DIRTY);
+      // Moving the shell must not discard previously bound child modifications.
+      if (getDomainEditState(root) !== DOMAIN_EDIT_STATES.BOUND) setDomainEditState(root, DOMAIN_EDIT_STATES.SHELL_DIRTY);
     }
   }
 

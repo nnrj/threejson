@@ -58,7 +58,8 @@ test("threejson/edit exposes the editor-internal symbols editor-kit needs", asyn
     "batchResultsHaveSceneMutation", "commandListHasMutatingOp", "formatObjectGetFeedbackFromBatch",
     "requestUpdatedSceneJsonString", "cloneJson", "exportWysiwygDeployRootFromObject3D",
     "getDomain", "isKnownDomainHandler", "setUserDataObjJson",
-    "snapshotBoxModelTransformFromObject3D"
+    "snapshotBoxModelTransformFromObject3D", "captureDomainPartOverrides",
+    "assignDomainPartIds", "applyDomainPartDescriptorOverrides"
   ];
   for (const sym of expected) {
     assert.ok(sym in es, `threejson/edit is missing ${sym}`);

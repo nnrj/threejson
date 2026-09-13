@@ -40,8 +40,10 @@ test("createStatBarJson scales height by utilization", () => {
     max: 100,
     geometry: { height: 100, width: 36, depth: 28 }
   });
-  assert.equal(desc.objType, "statBarGroup");
-  assert.equal(desc.boxModelList[0].objType, "statBar");
+  assert.equal(desc.objType, "group");
+  assert.equal(desc.semanticType, "statBarGroup");
+  assert.equal(desc.boxModelList[0].objType, "box");
+  assert.equal(desc.boxModelList[0].semanticType, "statBar");
   assert.equal(desc.boxModelList[0].geometry.height, 50);
   assert.ok(desc.boxModelList[0].businessInfo.statLabel);
 });

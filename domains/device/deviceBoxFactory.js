@@ -3,6 +3,8 @@
  */
 import { assetUrl } from "../../core/util/assetsBase.js";
 import { finalizeDomainDeployRoot } from "../../core/handler/domainDeployDescriptor.js";
+import { assignDomainPartIds, applyDomainPartDescriptorOverrides } from "../../core/document/domainParts.js";
+import { migrateGroupDescriptorToSubScene } from "../../core/handler/subSceneHierarchy.js";
 import {
   createGroupFromDescriptor,
   deployGroupDescriptor
@@ -299,10 +301,13 @@ export function deployDeviceDomainGroup(scene, groupJson, meta = {}) {
   if (itemDescriptor) {
     itemDescriptor = ensureBusinessDeviceId(cloneJson(itemDescriptor));
   }
-  const group = deployGroupDescriptor(scene, groupJson);
+  const generated = assignDomainPartIds(migrateGroupDescriptorToSubScene(groupJson), { namespace: "device" });
+  applyDomainPartDescriptorOverrides(generated, meta.loadRecord || itemDescriptor);
+  const group = deployGroupDescriptor(scene, generated);
   if (group && itemDescriptor) {
     finalizeDomainDeployRoot(group, {
       domainId: meta.domainId,
+      descriptorOverridesApplied: true,
       handler: meta.handler,
       itemDescriptor,
       loadRecord: meta.loadRecord ?? itemDescriptor,

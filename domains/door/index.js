@@ -8,6 +8,7 @@ import {
   finalizeDomainDeployRoot
 } from "../../core/handler/domainDeployDescriptor.js";
 import { setUserDataObjJson } from "../../core/handler/objectDescriptorAttach.js";
+import { applyDomainPartDescriptorOverrides } from "../../core/document/domainParts.js";
 import { registerObject } from "../../core/handler/objectRegistry.js";
 
 import {
@@ -77,14 +78,19 @@ export {
 export function createDoor(doorDesc) {
   const descriptor = createDoorJson(doorDesc);
   const hingeFromCenter = computeHingeOffsetFromCenter(descriptor);
-  const meshRecord = {
+  let meshRecord = {
     ...descriptor,
     objType: "box",
     boxType: "box",
+    domainPartId: `${descriptor.domainPartId || "door"}/leaf`,
     position: { x: 0, y: 0, z: 0 },
     rotation: { rotationX: 0, rotationY: 0, rotationZ: 0 }
   };
   delete meshRecord.type;
+  delete meshRecord.domainOverrides;
+  // The leaf has a stable address independent of the hinge group's generated UUID.
+  delete meshRecord.threeJsonId;
+  meshRecord = applyDomainPartDescriptorOverrides({ subScene: [meshRecord] }, descriptor).subScene[0];
   const boxMesh = createMesh(meshRecord);
   if (!boxMesh) {
     return undefined;
@@ -103,16 +109,19 @@ export function createDoor(doorDesc) {
   );
   doorGroup.rotation.copy(euler);
   boxMesh.position.set(-hingeFromCenter.x, -hingeFromCenter.y, -hingeFromCenter.z);
-  setUserDataObjJson(boxMesh, descriptor);
+  // Keep the existing interaction identity; persistence addresses the leaf with
+  // domainPartId while door.toggle and picking resolve the authored door ID.
+  setUserDataObjJson(boxMesh, { ...meshRecord, objType: "door", threeJsonId: descriptor.threeJsonId });
+  doorGroup.name = descriptor.name || "door";
+  doorGroup.add(boxMesh);
   finalizeDomainDeployRoot(doorGroup, {
     domainId: "door",
+    descriptorOverridesApplied: true,
     handler: "addToScene",
     itemDescriptor: descriptor,
     loadRecord: descriptor,
     extras: { threeJsonId: descriptor.threeJsonId }
   });
-  doorGroup.name = descriptor.name || "door";
-  doorGroup.add(boxMesh);
   return doorGroup;
 }
 

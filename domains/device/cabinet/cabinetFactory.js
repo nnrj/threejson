@@ -5,6 +5,7 @@ import { log } from "../../../core/util/logger.js";
 
 import { assetUrl } from "../../../core/util/assetsBase.js";
 import { finalizeDomainDeployRoot } from "../../../core/handler/domainDeployDescriptor.js";
+import { assignDomainPartIds, applyDomainPartDescriptorOverrides } from "../../../core/document/domainParts.js";
 import { coalesceBoxModelList } from "../../../core/handler/boxModelListCoalescer.js";
 import {
   createGroupFromDescriptor,
@@ -391,7 +392,8 @@ export function buildCabinetGroupJson(cabinetObj) {
     groupObj.businessInfo = cloneModelConfig(cabinetObj.businessInfo);
   }
   groupObj = optimizeCabinet(groupObj);
-  return migrateGroupDescriptorToSubScene(groupObj);
+  const generated = assignDomainPartIds(migrateGroupDescriptorToSubScene(groupObj), { namespace: "cabinet" });
+  return applyDomainPartDescriptorOverrides(generated, cabinetObj, { isNestedFactory: (part) => part.objType === "door" });
 }
 
 /**
@@ -433,6 +435,7 @@ export function deployCabinet(cabinetObj, scene) {
   if (group) {
     finalizeDomainDeployRoot(group, {
       domainId: "device.cabinet",
+      descriptorOverridesApplied: true,
       handler: "deployCabinet",
       itemDescriptor: merged,
       loadRecord: cabinetObj,

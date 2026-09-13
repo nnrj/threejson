@@ -3,6 +3,7 @@
  */
 
 import { finalizeDomainDeployRoot } from '../../core/handler/domainDeployDescriptor.js';
+import { assignDomainPartIds, applyDomainPartDescriptorOverrides } from '../../core/document/domainParts.js';
 import { createGroupFromDescriptor, deployGroupDescriptor } from '../../core/handler/objectLoadHandler.js';
 import { migrateGroupDescriptorToSubScene } from '../../core/handler/subSceneHierarchy.js';
 import {
@@ -212,7 +213,7 @@ function createBerthShipComposite(src) {
 
   const deck = cloneCfg(steelPanelTemplate());
   deck.name = '甲板';
-  deck.objType = 'berthShipDeck';
+  deck.semanticType = 'berthShipDeck';
   deck.geometry = {
     width: width * 0.92,
     height: Math.max(2, height * 0.04),
@@ -227,7 +228,7 @@ function createBerthShipComposite(src) {
 
   const superstructure = cloneCfg(hullPanelTemplate());
   superstructure.name = '上层建筑';
-  superstructure.objType = 'berthShipSuper';
+  superstructure.semanticType = 'berthShipSuper';
   superstructure.geometry = {
     width: width * 0.28,
     height: height * 0.48,
@@ -242,7 +243,7 @@ function createBerthShipComposite(src) {
 
   const bow = cloneCfg(hullPanelTemplate());
   bow.name = '艏部';
-  bow.objType = 'berthShipBow';
+  bow.semanticType = 'berthShipBow';
   bow.geometry = {
     width: width * 0.55,
     height: height * 0.35,
@@ -294,7 +295,7 @@ function createRtgComposite(src) {
 
   const topBeam = cloneCfg(steelPanelTemplate());
   topBeam.name = 'RTG大梁';
-  topBeam.objType = 'rtgBeam';
+  topBeam.semanticType = 'rtgBeam';
   topBeam.geometry = {
     width: width * 1.1,
     height: Math.max(4, height * 0.05),
@@ -313,7 +314,7 @@ function createRtgComposite(src) {
 
   const hoist = cloneCfg(accentPanelTemplate());
   hoist.name = '吊具小车';
-  hoist.objType = 'rtgHoist';
+  hoist.semanticType = 'rtgHoist';
   hoist.geometry = {
     width: width * 0.22,
     height: Math.max(5, height * 0.04),
@@ -414,7 +415,9 @@ function createPortJson(boxModel) {
     return null;
   }
   const composite = fn(boxModel);
-  return composite ? migrateGroupDescriptorToSubScene(composite) : null;
+  return composite ? applyDomainPartDescriptorOverrides(
+    assignDomainPartIds(migrateGroupDescriptorToSubScene(composite), { namespace: `port:${compositeKey}` }), boxModel
+  ) : null;
 }
 
 /**
@@ -445,6 +448,7 @@ function deployPort(boxModel, scene) {
     const handler = String(boxModel?.handler || resolvePortCompositeKey(boxModel) || "").trim();
     finalizeDomainDeployRoot(group, {
       domainId: "port",
+      descriptorOverridesApplied: true,
       handler,
       loadRecord: boxModel,
       extras: {

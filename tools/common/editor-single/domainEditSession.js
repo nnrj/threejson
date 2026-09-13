@@ -1,10 +1,11 @@
 /**
  * Domain 编辑会话：drill-in、子编辑检测、退化/撤销/绑定与设置读取。
  *
- * - `bound`：用户已绑定 domain/handler；快照优先 capture 合并，否则 persistSource + 根变换（不阻断整场景导出）。
+ * - `bound`：保留工厂参数与可重放部件修改；无法对应的结构修改明确报告冲突。
  * - `undo`：仅恢复 `persistSource` 与 drill-in 基线变换，不 redeploy 工厂拓扑（见 Phase D）。
  */
 import * as THREE from "three";
+import { captureDomainPartOverrides } from "../../../core/runtime/domainPartState.js";
 
 import { getDomain, isKnownDomainHandler } from "../../../core/handler/businessDomainRegistry.js";
 import {
@@ -27,8 +28,8 @@ import { cloneJson } from "../../../core/util/cloneJson.js";
 
 const DEFAULT_DOMAIN_EDIT_SETTINGS = Object.freeze({
   promptOnChildChange: true,
-  silentDefaultAction: "degrade",
-  enableChildMutationOverlay: false
+  silentDefaultAction: "bind",
+  enableChildMutationOverlay: true
 });
 
 /**
@@ -40,8 +41,8 @@ export function resolveDomainEditSettings(editorSettings) {
   const allowed = new Set(["degrade", "bind", "undo"]);
   return {
     promptOnChildChange: raw?.promptOnChildChange !== false,
-    silentDefaultAction: allowed.has(silent) ? silent : "degrade",
-    enableChildMutationOverlay: raw?.enableChildMutationOverlay === true
+    silentDefaultAction: allowed.has(silent) ? silent : "bind",
+    enableChildMutationOverlay: raw?.enableChildMutationOverlay !== false
   };
 }
 
@@ -91,7 +92,7 @@ export function restoreDomainChildTransforms(root, baseline) {
     if (obj === root) {
       return;
     }
-    const id = obj.userData?.objJson?.threeJsonId || obj.uuid;
+    const id = obj.userData?.objJson?.domainPartId || obj.userData?.objJson?.threeJsonId || obj.uuid;
     const snap = baseline[id];
     if (!snap) {
       return;
@@ -181,13 +182,24 @@ export function bindDomainParserOnRoot(root, binding = {}) {
   if (!isKnownDomainHandler(domain, handler)) {
     return { ok: false, error: `未注册的 handler：${domainId}/${handler}` };
   }
+  const persist = getPersistSource(root);
+  if (persist && (persist.domain !== domainId || persist.handler !== handler)) {
+    return { ok: false, error: "不同工厂之间需要显式转换，不能仅更换解析器标签。" };
+  }
+  try {
+    captureDomainPartOverrides(root, {
+      childBaseline: binding.childBaseline,
+      currentTransforms: snapshotDomainChildTransforms(root)
+    });
+  } catch (error) {
+    return { ok: false, code: error.code, error: error.message };
+  }
   if (shell && typeof shell === "object") {
     shell.domain = domainId;
     shell.handler = handler;
     shell.objType = "domain";
     setUserDataObjJson(root, shell);
   }
-  const persist = getPersistSource(root);
   if (persist) {
     persist.domain = domainId;
     persist.handler = handler;
@@ -223,10 +235,6 @@ export function applyDomainChildEditResolution(action, root, ctx = {}) {
       childBaseline: ctx.childBaseline
     });
     if (!bindResult.ok) {
-      if (ctx.fallbackDegradeOnBindFail !== false) {
-        degradeDomainRootToGroup(root, ctx.exportOptions);
-        return { ok: true, degraded: true, error: bindResult.error };
-      }
       return bindResult;
     }
     return { ok: true };
