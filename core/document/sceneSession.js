@@ -50,7 +50,7 @@ export class SceneSession {
     return task;
   }
 
-  async #commit(command, mode = "edit") {
+  async #commit(command, mode = "edit", historyEntry = null) {
     const before = this.#document;
     const result = applyDocumentOperations(before, command.operations, { baseRevision: command.baseRevision });
     if (!result.changed) return { ...result, revision: this.revision };
@@ -83,6 +83,10 @@ export class SceneSession {
       this.#undo.push({ operations: result.operations, inverse: result.inverse, label: command.label || "" });
       if (this.#undo.length > this.#historyLimit) this.#undo.shift();
       this.#redo.length = 0;
+    } else if (mode === "undo" && historyEntry) {
+      this.#undo.pop(); this.#redo.push(historyEntry);
+    } else if (mode === "redo" && historyEntry) {
+      this.#redo.pop(); this.#undo.push(historyEntry);
     }
     this.#journal.push({ revision: this.revision, baseRevision: before.revision, operations: result.operations, label: command.label || "" });
     if (this.#journal.length > this.#checkpointInterval) this.#journal = [{ revision: this.revision, checkpoint: this.#document }];
@@ -105,8 +109,7 @@ export class SceneSession {
     return this.#enqueue(async () => {
       const entry = this.#undo[this.#undo.length - 1];
       if (!entry) return { changed: false, revision: this.revision };
-      const result = await this.#commit({ ...options, label: entry.label, operations: entry.inverse, baseRevision: this.revision }, "undo");
-      this.#undo.pop(); this.#redo.push(entry);
+      const result = await this.#commit({ ...options, label: entry.label, operations: entry.inverse, baseRevision: this.revision }, "undo", entry);
       return result;
     });
   }
@@ -115,8 +118,7 @@ export class SceneSession {
     return this.#enqueue(async () => {
       const entry = this.#redo[this.#redo.length - 1];
       if (!entry) return { changed: false, revision: this.revision };
-      const result = await this.#commit({ ...options, label: entry.label, operations: entry.operations, baseRevision: this.revision }, "redo");
-      this.#redo.pop(); this.#undo.push(entry);
+      const result = await this.#commit({ ...options, label: entry.label, operations: entry.operations, baseRevision: this.revision }, "redo", entry);
       return result;
     });
   }
@@ -145,7 +147,9 @@ export class SceneSession {
         prepared?.finalize?.();
         return prepared;
       } catch (error) {
-        await prepared?.rollback?.(); prepared?.dispose?.(); throw error;
+        try { await prepared?.rollback?.(); } catch (rollbackError) { this.#report(rollbackError); }
+        try { prepared?.dispose?.(); } catch (disposeError) { this.#report(disposeError); }
+        throw error;
       } finally {
         options.signal?.removeEventListener("abort", abort);
         if (this.#active === controller) this.#active = null;

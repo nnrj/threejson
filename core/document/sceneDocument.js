@@ -147,6 +147,31 @@ export function applyDocumentOperations(document, operations, options = {}) {
   const inverse = [], applied = [];
   const apply = (raw) => {
     if (!raw || typeof raw !== "object") throw documentError("INVALID_OPERATION", "Invalid document operation.");
+    if (raw.op === "copy" || raw.op === "move") {
+      const from = pointerParts(raw.from), to = pointerParts(raw.path);
+      if (raw.op === "move" && to.length > from.length && from.every((part, i) => to[i] === part)) throw documentError("INVALID_OPERATION", "Cannot move a value into its own descendant.");
+      const value = readDocumentPointer(root, raw.from);
+      if (raw.op === "move" && raw.from === raw.path) return;
+      if (raw.op === "move") apply({ op: "remove", path: raw.from });
+      apply({ op: "add", path: raw.path, value });
+      return;
+    }
+    if (raw.op === "array.splice") {
+      const parts = pointerParts(raw.path);
+      const source = readDocumentPointer(root, raw.path);
+      if (!Array.isArray(source) || !Number.isSafeInteger(raw.index) || raw.index < 0 || raw.index > source.length ||
+        !Number.isSafeInteger(raw.deleteCount) || raw.deleteCount < 0 || raw.index + raw.deleteCount > source.length || !Array.isArray(raw.values)) {
+        throw documentError("INVALID_OPERATION", "array.splice requires a valid array, index, deleteCount and values.");
+      }
+      const values = freezeDocumentData(cloneDocumentData(raw.values));
+      const removed = source.slice(raw.index, raw.index + raw.deleteCount);
+      if (equalData(removed, values)) return;
+      const next = source.slice(0, raw.index).concat(values, source.slice(raw.index + raw.deleteCount));
+      root = changeAt(root, parts, { op: "replace", path: raw.path, value: next });
+      applied.push({ op: "array.splice", path: raw.path, index: raw.index, deleteCount: raw.deleteCount, values });
+      inverse.unshift({ op: "array.splice", path: raw.path, index: raw.index, deleteCount: values.length, values: removed });
+      return;
+    }
     if (raw.op === "object.patch" || raw.op === "object.remove") {
       const entry = indexSceneDocument(root).get(raw.id);
       if (!entry) throw documentError("OBJECT_NOT_FOUND", `Object not found: ${raw.id}.`);

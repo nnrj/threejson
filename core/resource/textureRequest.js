@@ -12,6 +12,8 @@ export function getTextureLoadState(texture) {
   return requests.get(texture)?.state || "ready";
 }
 
+export function isManagedTexture(texture) { return requests.has(texture); }
+
 /** A synchronous texture handle, with explicit asynchronous readiness and lease ownership. */
 export function requestTexture(source, options = {}) {
   const scope = resolveRuntimeContext(options.runtimeScope);
@@ -73,20 +75,31 @@ export function requestTexture(source, options = {}) {
 
 export function cloneTextureResource(texture) {
   const copy = texture.clone();
-  const lease = requests.get(texture)?.lease?.retain();
+  const original = requests.get(texture);
+  const lease = original?.lease?.retain();
   if (lease) {
-    copy.addEventListener("dispose", () => lease.release());
-    requests.set(copy, { state: "ready", lease, promise: Promise.resolve(copy) });
+    let released = false;
+    const state = { state: original.state, lease, promise: null };
+    copy.addEventListener("dispose", () => { released = true; lease.release(); });
+    state.promise = lease.promise.then((loaded) => {
+      if (released) throw new DOMException("Texture view released.", "AbortError");
+      copy.source = loaded.source; copy.needsUpdate = true; state.state = "ready"; return copy;
+    }).catch((error) => { state.state = error?.name === "AbortError" ? "cancelled" : "error"; lease.release(); throw error; });
+    state.promise.catch(() => {});
+    requests.set(copy, state);
   }
   return copy;
 }
 
 /** Commit only a decoded texture, and only if this request still owns the binding. */
 const materialRequests = new WeakMap();
+export function getMaterialTextureRequest(material, field) {
+  return materialRequests.get(material)?.get(field)?.texture || material?.[field] || null;
+}
 export function bindTextureWhenReady(material, field, texture, options = {}) {
   let slots = materialRequests.get(material);
   if (!slots) { slots = new Map(); materialRequests.set(material, slots); }
-  const ticket = {};
+  const ticket = { texture };
   const previous = material[field];
   slots.set(field, ticket);
   let disposed = false;

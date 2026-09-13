@@ -1,68 +1,18 @@
-import { indexSceneDocument, cloneDocumentData, documentError } from "../document/sceneDocument.js";
+import { documentError } from "../document/sceneDocument.js";
 import { formatAuthoring } from "../document/authoringAdapters.js";
-import { getObjectByThreeJsonId } from "../handler/objectRegistry.js";
-import { applyObjectTransform } from "../builder/heatmap/heatmapTexture.js";
-
-const TRANSFORM_FIELDS = new Set(["position", "rotation", "scale", "visible", "name"]);
-
-function capturePose(object) {
-  return { position: object.position.clone(), quaternion: object.quaternion.clone(), scale: object.scale.clone(),
-    visible: object.visible, name: object.name, descriptor: object.userData?.objJson };
-}
-
-function restorePose(object, state) {
-  object.position.copy(state.position); object.quaternion.copy(state.quaternion); object.scale.copy(state.scale);
-  object.visible = state.visible; object.name = state.name; object.userData.objJson = state.descriptor;
-  object.updateMatrix(); object.updateMatrixWorld(true);
-}
-
-function prepareTransformChanges(runtime, document, operations) {
-  if (!runtime?.scene || !operations.length) return null;
-  const index = indexSceneDocument(document);
-  const byPath = [...index.values()].sort((a, b) => b.path.length - a.path.length);
-  const changed = new Map();
-  for (const operation of operations) {
-    if (!["add", "replace", "remove"].includes(operation.op)) return null;
-    const entry = byPath.find((item) => operation.path.startsWith(`${item.path}/`));
-    if (!entry || !TRANSFORM_FIELDS.has(operation.path.slice(entry.path.length + 1).split("/")[0])) return null;
-    changed.set(entry.id, entry);
-  }
-  const staged = [];
-  for (const entry of changed.values()) {
-    const object = getObjectByThreeJsonId(entry.id, runtime.scene);
-    if (!object) return null;
-    const before = capturePose(object);
-    // A lightweight pose container lets the same transform conversion run during
-    // preparation without touching geometry, materials, descendants or animation state.
-    const probe = { position: before.position.clone(), quaternion: before.quaternion.clone(),
-      scale: before.scale.clone(), rotation: object.rotation.clone() };
-    probe.rotation._onChange(() => probe.quaternion.setFromEuler(probe.rotation));
-    applyObjectTransform(probe, entry.record);
-    const values = [...probe.position.toArray(), ...probe.quaternion.toArray(), ...probe.scale.toArray()];
-    if (values.some((value) => !Number.isFinite(value))) throw documentError("INVALID_TRANSFORM", `Non-finite transform for ${entry.id}.`);
-    staged.push({ object, before, after: { ...probe, visible: entry.record.visible !== false,
-      name: typeof entry.record.name === "string" ? entry.record.name : object.name, descriptor: cloneDocumentData(entry.record) } });
-  }
-  return {
-    commit() {
-      for (const { object, after } of staged) restorePose(object, after);
-      runtime.invalidate?.();
-    },
-    rollback() { for (const { object, before } of staged) restorePose(object, before); runtime.invalidate?.(); }
-  };
-}
+import { prepareIncrementalSceneChanges } from "./sceneIncrementalPreparation.js";
 
 /** Runtime adapter for SceneSession. Heavy compilation is prepared separately from the visible runtime. */
 export function createSceneSessionRuntimeDriver(options = {}) {
-  let runtime = null;
-  let activeViewport = null;
+  let runtime = options.initialRuntime || null;
+  let activeViewport = options.initialViewport || null;
   let disposed = false;
   return {
     get runtime() { return runtime; },
     async prepare(document, context = {}) {
       if (disposed) throw documentError("SESSION_DISPOSED", "Runtime driver is disposed.");
-      if (context.previousDocument && runtime && options.incrementalTransforms !== false) {
-        const changes = prepareTransformChanges(runtime, document, context.operations);
+      if (context.previousDocument && runtime && options.incremental !== false) {
+        const changes = await prepareIncrementalSceneChanges(runtime, document, context, options);
         if (changes) return changes;
       }
       const previous = runtime;

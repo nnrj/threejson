@@ -1,12 +1,8 @@
-import { applySceneJsonPatch } from "../../ai/scenePatch.js";
+import { createSceneDocument, applyDocumentOperations, cloneDocumentData } from "../../document/sceneDocument.js";
 import { buildCommandResult } from "../types.js";
 
 function isObjectRecord(value) {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
-}
-
-function cloneJson(value) {
-  return JSON.parse(JSON.stringify(value ?? null));
 }
 
 /**
@@ -34,15 +30,17 @@ export function handleSceneApplyPatch(ctx, args = {}) {
       error: "scene.applyPatch requires args.json or ctx.document."
     });
   }
-  const applied = applySceneJsonPatch(base, patch);
-  if (!applied.ok) {
+  let document;
+  try {
+    document = applyDocumentOperations(createSceneDocument(base), patch).document;
+  } catch (error) {
     return buildCommandResult("scene.applyPatch", {
       ok: false,
       mode: "document",
-      error: applied.error || "patch failed"
+      error: error.message || "patch failed"
     });
   }
-  ctx.document = cloneJson(applied.scene);
+  ctx.document = cloneDocumentData(document.root);
   return buildCommandResult("scene.applyPatch", {
     ok: true,
     mode: "document",

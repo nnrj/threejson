@@ -68,12 +68,14 @@ export function setMorphTargetInfluence(root, target, value, options = {}) {
 
 export function applyMorphInfluencesFromDescriptor(root, descriptor = root?.userData?.objJson) {
   const values = descriptor?.morphInfluences ?? descriptor?.morphTargets;
-  if (!values) return [];
   const changed = [];
   if (Array.isArray(values)) {
     values.forEach((value, index) => changed.push(...setMorphTargetInfluence(root, index, value, { syncDescriptor: false })));
-  } else if (typeof values === "object") {
+  } else if (values && typeof values === "object") {
     Object.entries(values).forEach(([target, value]) => changed.push(...setMorphTargetInfluence(root, target, value, { syncDescriptor: false })));
+  }
+  for (const binding of descriptor?.morphBindings || []) {
+    changed.push(...setMorphTargetInfluence(root, binding.target, binding.value, { mesh: binding.mesh, clamp: false, syncDescriptor: false }));
   }
   return changed;
 }

@@ -90,3 +90,18 @@ must remain distinguishable from loader, material, authorization and GPU failure
   as unsupported geometry types; main crane parts must now all actually deploy.
 - See [Domain part contract](./domain-part-overrides.md). Full host document
   integration and browser validation remain on the delivery checklist.
+
+## Implementation evidence: atomic commands
+
+- Added a document-first command planner. Each batch prepares privately and commits
+  one scene revision or none; failed geometry/image preparation retains the old
+  object, image, document, pending buffer draft and undo entry.
+- Material and geometry transactions retain runtime/camera/Object3D identity.
+  Same-layout BufferAttributes receive changed ranges; structural geometry is
+  prepared before swapping. Playback poses are not reset by unrelated edits.
+- Buffer append avoids argument spreading for large arrays. Journal array-splice
+  deltas retain only changed portions, and editable topology edits log inverse deltas.
+- Read-only commands use the authoring document, with projected geometry queries
+  for commands earlier in the same batch. Runtime capture remains explicit.
+- Full local suite at this checkpoint: 1,344 passed, 1 existing skip. Native/React
+  cards will consume this API in the host-integration step; browser QA remains due.

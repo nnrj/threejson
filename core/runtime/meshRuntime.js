@@ -1,4 +1,6 @@
 import * as THREE from "three";
+import { prepareBufferMeshDraft } from "../document/bufferMeshDraft.js";
+import { describeBufferGeometry } from "../document/geometryDescriptor.js";
 import { getObjectByThreeJsonId, registerObject } from "../handler/objectRegistry.js";
 import { setUserDataObjJson } from "../handler/objectDescriptorAttach.js";
 import { buildBufferMeshGeometry } from "../builder/bufferMeshBuilder.js";
@@ -27,7 +29,7 @@ function normalizeObjType(value) {
 function resolveMesh(ctx, id) {
   const threeJsonId = String(id || "").trim();
   if (!threeJsonId) throw new Error("mesh command requires args.id.");
-  const object3D = getObjectByThreeJsonId(threeJsonId, ctx?.scene);
+  const object3D = ctx?.options?.getObjectById ? ctx.options.getObjectById(threeJsonId) : getObjectByThreeJsonId(threeJsonId, ctx?.scene);
   if (!object3D?.isMesh || !object3D.geometry?.isBufferGeometry) throw new Error(`Mesh \"${threeJsonId}\" was not found.`);
   const descriptor = object3D.userData?.objJson;
   if (!descriptor || typeof descriptor !== "object") throw new Error(`Mesh \"${threeJsonId}\" has no ThreeJSON descriptor.`);
@@ -71,7 +73,10 @@ function swapGeometry(target, nextGeometry) {
 
 function recordTransaction(ctx, transaction) {
   const sink = ctx?.options?.recordMeshTransaction || ctx?.runtime?.recordMeshTransaction;
-  if (typeof sink === "function") sink(transaction);
+  if (typeof sink === "function") {
+    try { sink(transaction); }
+    catch (error) { ctx?.options?.onObserverError?.(error); }
+  }
 }
 
 export function inspectRuntimeMesh(ctx, args = {}) {
@@ -235,131 +240,24 @@ export function editRuntimeMesh(ctx, args = {}) {
   };
 }
 
-function flattenNumbers(value, out = []) {
-  if (ArrayBuffer.isView(value)) {
-    for (const one of value) out.push(Number(one));
-  } else if (Array.isArray(value)) {
-    for (const one of value) Array.isArray(one) || ArrayBuffer.isView(one) ? flattenNumbers(one, out) : out.push(Number(one));
-  }
-  if (!out.every(Number.isFinite)) throw new Error("Mesh buffer edit contains a non-finite number.");
-  return out;
-}
-
-function attributeShorthand(name) {
-  return { position: "positions", normal: "normals", tangent: "tangents", color: "colors", uv: "uvs" }[name] || null;
-}
-
-function ensureBufferDraft(resolved, baseRevision) {
-  const currentRevision = Math.max(0, Math.round(Number(resolved.descriptor.meshRevision) || 0));
-  if (baseRevision != null && Number(baseRevision) !== currentRevision) {
-    const error = new Error(`Mesh revision conflict: expected ${baseRevision}, current ${currentRevision}.`);
-    error.code = "E_MESH_REVISION_CONFLICT";
-    throw error;
-  }
-  let draft = bufferDrafts.get(resolved.object3D);
-  if (!draft || draft.baseRevision !== currentRevision) {
-    draft = { baseRevision: currentRevision, descriptor: cloneJson(resolved.descriptor), changed: new Set() };
-    bufferDrafts.set(resolved.object3D, draft);
-  }
-  if (!draft.descriptor.geometry || typeof draft.descriptor.geometry !== "object") draft.descriptor.geometry = {};
-  if (!draft.descriptor.geometry.attributes || typeof draft.descriptor.geometry.attributes !== "object") draft.descriptor.geometry.attributes = {};
-  return draft;
-}
-
-function ensureDraftAttribute(draft, name, itemSize) {
-  const geometry = draft.descriptor.geometry;
-  let descriptor = geometry.attributes[name];
-  if (!descriptor) {
-    const shorthand = attributeShorthand(name);
-    descriptor = { array: shorthand && geometry[shorthand] != null ? flattenNumbers(geometry[shorthand]) : [], itemSize: Math.max(1, Math.round(Number(itemSize) || (name === "uv" ? 2 : 3))), type: "Float32Array" };
-    geometry.attributes[name] = descriptor;
-    if (shorthand) delete geometry[shorthand];
-  } else if (Array.isArray(descriptor) || ArrayBuffer.isView(descriptor)) {
-    descriptor = { array: flattenNumbers(descriptor), itemSize: Math.max(1, Math.round(Number(itemSize) || 3)), type: "Float32Array" };
-    geometry.attributes[name] = descriptor;
-  } else {
-    descriptor.array = flattenNumbers(descriptor.array || []);
-    if (itemSize != null) descriptor.itemSize = Math.max(1, Math.round(Number(itemSize)));
-  }
-  return descriptor;
-}
-
-export function appendRuntimeMeshAttribute(ctx, args = {}) {
+function prepareRuntimeBufferEdit(ctx, args, operation) {
   const resolved = resolveMesh(ctx, args.id);
-  if (normalizeObjType(resolved.descriptor.objType) !== "buffermesh") throw new Error("mesh.buffer.* requires objType bufferMesh.");
-  const draft = ensureBufferDraft(resolved, args.baseRevision);
-  const name = requiredName(args.name, "attribute name");
-  const descriptor = ensureDraftAttribute(draft, name, args.itemSize);
-  descriptor.array.push(...flattenNumbers(args.values ?? args.array));
-  draft.changed.add(name);
-  return { threeJsonId: resolved.threeJsonId, baseRevision: draft.baseRevision, pending: true, attribute: name, valueCount: descriptor.array.length };
+  const prepared = prepareBufferMeshDraft(resolved.descriptor, bufferDrafts.get(resolved.object3D), operation, args);
+  if (prepared.draft) bufferDrafts.set(resolved.object3D, prepared.draft);
+  else bufferDrafts.delete(resolved.object3D);
+  return prepared.data;
 }
 
-function requiredName(value, field) {
-  const name = String(value || "").trim();
-  if (!name) throw new Error(`${field} is required.`);
-  return name;
-}
-
-export function setRuntimeMeshAttributeRange(ctx, args = {}) {
-  const resolved = resolveMesh(ctx, args.id);
-  if (normalizeObjType(resolved.descriptor.objType) !== "buffermesh") throw new Error("mesh.buffer.* requires objType bufferMesh.");
-  const draft = ensureBufferDraft(resolved, args.baseRevision);
-  const name = requiredName(args.name, "attribute name");
-  const descriptor = ensureDraftAttribute(draft, name, args.itemSize);
-  const values = flattenNumbers(args.values ?? args.array);
-  const offset = Math.max(0, Math.round(Number(args.offset) || 0));
-  if (offset + values.length > descriptor.array.length && args.expand !== true) throw new Error("Attribute range exceeds the current array; set expand:true to grow it.");
-  while (descriptor.array.length < offset + values.length) descriptor.array.push(0);
-  descriptor.array.splice(offset, values.length, ...values);
-  draft.changed.add(name);
-  return { threeJsonId: resolved.threeJsonId, baseRevision: draft.baseRevision, pending: true, attribute: name, offset, count: values.length };
-}
-
-function ensureDraftIndex(draft) {
-  const geometry = draft.descriptor.geometry;
-  let descriptor = geometry.index ?? geometry.indices;
-  if (!descriptor || Array.isArray(descriptor) || ArrayBuffer.isView(descriptor)) descriptor = { array: flattenNumbers(descriptor || []), type: "Uint32Array" };
-  else descriptor = { ...descriptor, array: flattenNumbers(descriptor.array || descriptor.data || []) };
-  geometry.index = descriptor;
-  delete geometry.indices;
-  return descriptor;
-}
-
-export function appendRuntimeMeshIndices(ctx, args = {}) {
-  const resolved = resolveMesh(ctx, args.id);
-  if (normalizeObjType(resolved.descriptor.objType) !== "buffermesh") throw new Error("mesh.buffer.* requires objType bufferMesh.");
-  const draft = ensureBufferDraft(resolved, args.baseRevision);
-  const descriptor = ensureDraftIndex(draft);
-  const values = flattenNumbers(args.values ?? args.indices);
-  if (!values.every((value) => Number.isSafeInteger(value) && value >= 0)) throw new Error("Indices must be non-negative integers.");
-  descriptor.array.push(...values);
-  draft.changed.add("index");
-  return { threeJsonId: resolved.threeJsonId, baseRevision: draft.baseRevision, pending: true, indexCount: descriptor.array.length };
-}
-
-export function setRuntimeMeshIndexRange(ctx, args = {}) {
-  const resolved = resolveMesh(ctx, args.id);
-  if (normalizeObjType(resolved.descriptor.objType) !== "buffermesh") throw new Error("mesh.buffer.* requires objType bufferMesh.");
-  const draft = ensureBufferDraft(resolved, args.baseRevision);
-  const descriptor = ensureDraftIndex(draft);
-  const values = flattenNumbers(args.values ?? args.indices);
-  if (!values.every((value) => Number.isSafeInteger(value) && value >= 0)) throw new Error("Indices must be non-negative integers.");
-  const offset = Math.max(0, Math.round(Number(args.offset) || 0));
-  if (offset + values.length > descriptor.array.length && args.expand !== true) throw new Error("Index range exceeds the current array; set expand:true to grow it.");
-  while (descriptor.array.length < offset + values.length) descriptor.array.push(0);
-  descriptor.array.splice(offset, values.length, ...values);
-  draft.changed.add("index");
-  return { threeJsonId: resolved.threeJsonId, baseRevision: draft.baseRevision, pending: true, offset, count: values.length };
-}
+export const appendRuntimeMeshAttribute = (ctx, args = {}) => prepareRuntimeBufferEdit(ctx, args, "appendAttribute");
+export const setRuntimeMeshAttributeRange = (ctx, args = {}) => prepareRuntimeBufferEdit(ctx, args, "setAttributeRange");
+export const appendRuntimeMeshIndices = (ctx, args = {}) => prepareRuntimeBufferEdit(ctx, args, "appendIndices");
+export const setRuntimeMeshIndexRange = (ctx, args = {}) => prepareRuntimeBufferEdit(ctx, args, "setIndexRange");
+export const cancelRuntimeMeshBuffer = (ctx, args = {}) => prepareRuntimeBufferEdit(ctx, args, "cancel");
 
 export function commitRuntimeMeshBuffer(ctx, args = {}) {
   const resolved = resolveMesh(ctx, args.id);
-  const draft = bufferDrafts.get(resolved.object3D);
-  if (!draft) throw new Error("No pending mesh.buffer transaction exists for this mesh.");
-  if (args.baseRevision != null && Number(args.baseRevision) !== draft.baseRevision) throw new Error(`Mesh revision conflict: expected ${args.baseRevision}, draft is based on ${draft.baseRevision}.`);
-  const descriptor = cloneJson(draft.descriptor);
-  descriptor.meshRevision = draft.baseRevision + 1;
+  const previous = bufferDrafts.get(resolved.object3D);
+  const { descriptor, data } = prepareBufferMeshDraft(resolved.descriptor, previous, "commit", args);
   const built = buildBufferMeshGeometry(descriptor, { meshBudget: ctx?.options?.meshBudget, resolveBufferReference: ctx?.options?.resolveBufferReference });
   if (!built.geometry) {
     const error = new Error(built.error || "Buffer transaction failed validation.");
@@ -370,42 +268,18 @@ export function commitRuntimeMeshBuffer(ctx, args = {}) {
   attachCommittedDescriptor(resolved.object3D, descriptor, ctx.scene);
   resolved.object3D.userData.threeJsonMeshStats = built.stats;
   bufferDrafts.delete(resolved.object3D);
-  recordTransaction(ctx, { kind: "mesh.buffer.commit", threeJsonId: resolved.threeJsonId, fromRevision: draft.baseRevision, toRevision: descriptor.meshRevision, changed: [...draft.changed] });
-  return { threeJsonId: resolved.threeJsonId, revision: descriptor.meshRevision, changed: [...draft.changed], statistics: built.stats };
-}
-
-export function cancelRuntimeMeshBuffer(ctx, args = {}) {
-  const resolved = resolveMesh(ctx, args.id);
-  const removed = bufferDrafts.delete(resolved.object3D);
-  return { threeJsonId: resolved.threeJsonId, cancelled: removed };
-}
-
-function serializeAttribute(attribute) {
-  return {
-    array: Array.from(attribute.array),
-    itemSize: attribute.itemSize,
-    type: attribute.array.constructor.name,
-    normalized: attribute.normalized === true
-  };
+  recordTransaction(ctx, { kind: "mesh.buffer.commit", threeJsonId: resolved.threeJsonId, fromRevision: previous.baseRevision, toRevision: descriptor.meshRevision, changed: data.changed });
+  return { ...data, statistics: built.stats };
 }
 
 export function bakeRuntimeEditableMesh(ctx, args = {}) {
   const resolved = resolveMesh(ctx, args.id);
   if (normalizeObjType(resolved.descriptor.objType) !== "editablemesh") throw new Error("mesh.bake requires objType editableMesh.");
   const geometry = resolved.object3D.geometry;
-  const attributes = Object.fromEntries(Object.entries(geometry.attributes).map(([name, attribute]) => [name, serializeAttribute(attribute)]));
-  const morphAttributes = Object.fromEntries(Object.entries(geometry.morphAttributes).map(([name, targets]) => [name, targets.map(serializeAttribute)]));
   const descriptor = {
     ...cloneJson(resolved.descriptor),
     objType: "bufferMesh",
-    geometry: {
-      attributes,
-      index: geometry.index ? serializeAttribute(geometry.index) : undefined,
-      groups: geometry.groups.map((group) => ({ ...group })),
-      drawRange: { ...geometry.drawRange },
-      morphAttributes,
-      morphTargetsRelative: geometry.morphTargetsRelative === true
-    },
+    geometry: describeBufferGeometry(geometry),
     meshRevision: Math.max(0, Math.round(Number(resolved.descriptor.topology?.revision) || 0)) + 1
   };
   delete descriptor.topology;
