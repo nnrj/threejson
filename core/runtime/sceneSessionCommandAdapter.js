@@ -1,7 +1,8 @@
 import * as THREE from "three";
 import { indexSceneDocument, cloneDocumentData, documentError } from "../document/sceneDocument.js";
 import { getObjectByThreeJsonId } from "../handler/objectRegistry.js";
-import { listMorphTargets } from "../handler/morphTargetRuntime.js";
+import { listMorphTargets, applyMorphInfluencesFromDescriptor } from "../handler/morphTargetRuntime.js";
+import { applyObjectTransform } from "../builder/heatmap/heatmapTexture.js";
 
 /** Read the projected authoring state, not a partially mutated visible scene. */
 export function createSessionCommandAdapter(session, options = {}) {
@@ -23,8 +24,10 @@ export function createSessionCommandAdapter(session, options = {}) {
         const { prepareDocumentMeshGeometry } = await import("./sceneIncrementalPreparation.js");
         geometry = (await prepareDocumentMeshGeometry(record, runtimeOptions())).geometry;
         object = new THREE.Mesh(geometry, original?.material || []);
-        if (original) { object.position.copy(original.position); object.quaternion.copy(original.quaternion); object.scale.copy(original.scale); }
+        applyObjectTransform(object, record);
+        object.updateMatrixWorld(true);
         object.userData.objJson = cloneDocumentData(record);
+        applyMorphInfluencesFromDescriptor(object, record);
         object.name = record.name || "";
       }
       if (!object) throw documentError("OBJECT_NOT_COMPILED", `Object is not compiled: ${args.id}.`);

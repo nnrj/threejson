@@ -68,6 +68,7 @@ export async function runHostSceneTexturePipeline(options = {}) {
       isCurrent: options.isCurrent,
       onProgress: options.onProgress,
       onAssignment: options.onAssignment,
+      applyAssignment: options.applyAssignment,
       resolveRuntimeUrl: (authoritativeUrl, assignment, slot) => resolveTextureRuntimeUrl(
         authoritativeUrl,
         assignment?.candidate?.runtimeMaps?.[slot] || authoritativeUrl,

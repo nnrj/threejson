@@ -23,10 +23,11 @@ test("ThreeBox negotiates generate versus adjust from conversation context", asy
   assert.match(sceneCardSource, /options\.authoritative !== true/);
   assert.match(sceneCardSource, /applyCommandsWithResult/);
   assert.match(source, /const runtimeSceneJsonString = await sceneCard\.exportSceneJsonString/);
-  assert.match(sceneCardSource, /syncAuxiliaryLights\(readyRuntime, \{ force: true \}\)/);
+  assert.match(sceneCardSource, /onRuntimeChanged:[\s\S]*syncThreeBoxPreviewAuxiliaryLights\(runtime.scene/);
+  assert.match(sceneCardSource, /cardSession.export\(\)/);
 });
 
-test("React ThreeBox preserves negotiated complex-model policy and persists its visible runtime", async () => {
+test("React ThreeBox preserves negotiated complex-model policy and persists its authoritative document", async () => {
   const [source, runtimeSource] = await Promise.all([
     read("apps/threebox/src/App.jsx"),
     read("packages/react-scene-agent/src/useSceneCardRuntime.js")
@@ -34,7 +35,8 @@ test("React ThreeBox preserves negotiated complex-model policy and persists its 
   assert.match(source, /complexModelStrategy:\s*settings\.ai\.complexModelStrategy \|\| "auto"/);
   assert.match(source, /complexModelStrategy:\s*negotiation\.complexModelStrategy \|\| settings\.ai\.complexModelStrategy/);
   assert.match(source, /const runtimeSnapshot = await finalSceneCard\?\.exportSceneJsonString/);
-  assert.match(runtimeSource, /syncAuxiliaryLights\(readyRuntime, \{ force: true \}\)/);
+  assert.match(runtimeSource, /onRuntimeChanged:[\s\S]*syncSceneAgentPreviewLights\(next.scene/);
+  assert.match(runtimeSource, /sessionRef.current\?\.export\(\)/);
 });
 
 test("Editor keeps intent explicit while generation still negotiates execution and capabilities", async () => {

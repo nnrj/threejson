@@ -63,7 +63,7 @@ export class SceneSession {
     try {
       controller.signal.throwIfAborted();
       prepared = await this.#driver.prepare?.(result.document, {
-        previousDocument: before, operations: result.operations, signal: controller.signal, mode
+        previousDocument: before, operations: result.operations, signal: controller.signal, mode, prepareOptions: command.prepareOptions
       });
       controller.signal.throwIfAborted();
       this.#assertOpen();

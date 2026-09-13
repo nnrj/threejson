@@ -85,3 +85,18 @@ export async function resolveTextureRuntimeUrl(authoritativeUrl, runtimeUrl, opt
     return fetchUrl;
   }
 }
+
+/** Return leased blob URLs to the engine, releasing them with the final texture reference. */
+export function createTextureResourceResolver(options = {}) {
+  return async (source, request = {}) => {
+    if (!["texture", "image"].includes(request.kind)) return request.runtimeUrl || source;
+    const authoritative = request.source || source;
+    const enabled = typeof options.enabled === "function" ? options.enabled() !== false : options.enabled !== false;
+    const resolved = await resolveTextureRuntimeUrl(authoritative, request.runtimeUrl || source, { ...options, enabled, signal: request.signal });
+    if (resolved.startsWith("blob:") && !authoritative.startsWith("blob:")) {
+      let released = false;
+      return { url: resolved, release() { if (!released) { released = true; URL.revokeObjectURL(resolved); } } };
+    }
+    return resolved;
+  };
+}

@@ -29,7 +29,8 @@ export function requestTexture(source, options = {}) {
     resolve: async (request, context) => {
       const candidates = [...new Set([...(request.replicas || []), ...sourceCandidates])];
       const resolve = options.resolveRuntimeUrl || scope.resolveAssetUrl;
-      return resolve ? Promise.all(candidates.map((url) => resolve(url, { ...context, kind: "texture", source }))) : candidates;
+      // Cache/proxy resolution can perform IO. Do not fetch unused fallback candidates.
+      return resolve ? candidates.map((url) => () => resolve(url, { ...context, kind: "texture", source })) : candidates;
     },
     load: (url, { signal }) => new Promise((resolve, reject) => {
       let finished = false;

@@ -1,12 +1,12 @@
 import { getByPointer, setByPointer } from "../util/jsonPointer.js";
 import {
   MATERIAL_TEXTURE_SLOT_NAMES,
-  applyTextureMaterialSemantics,
   groupMaterialTextureSlots,
   listMaterialTextureSlots
 } from "./textureSlots.js";
 import { asTextureAcquisitionProvider } from "./textureProvider.js";
 import { applyTextureAssignmentAsync } from "./runtimeTextureAssignment.js";
+import { createTextureAssignmentMaterial } from "./textureAssignmentData.js";
 
 const GENERATION_KINDS = new Set(["image", "seamless", "spherical", "pbr-set", "pbr-derive"]);
 const SOURCE_PREFERENCES = new Set(["auto", "manifest", "search", "pbr-library", "generate"]);
@@ -277,13 +277,7 @@ function setAssignmentOnScene(scene, assignment) {
   if (!currentMaterial || typeof currentMaterial !== "object") {
     throw new Error(`Texture material not found at ${assignment.materialPointer || "unknown"}.`);
   }
-  const material = cloneJson(currentMaterial);
-  setMaterialProperties(material, assignment);
-  for (const [slot, source] of Object.entries(assignment.maps || {})) {
-    const slotInfo = assignment.slotRecords?.[slot];
-    if (!slotInfo || typeof source !== "string" || !source.trim()) continue;
-    material[slotInfo.descriptorField] = source.trim();
-  }
+  const material = createTextureAssignmentMaterial(currentMaterial, assignment);
   // Replace the fully prepared material in one pointer write. No partially updated authoritative
   // descriptor can escape if validation or field preparation above fails.
   setByPointer(scene, assignment.materialPointer, material);
@@ -294,25 +288,6 @@ function setAssignmentOnScene(scene, assignment) {
     slotInfo.material = material;
   }
   return material;
-}
-
-function setMaterialProperties(material, assignment) {
-  applyTextureMaterialSemantics(material, assignment.maps);
-  const candidate = assignment.candidate;
-  if (candidate) {
-    const resources = { ...(material.textureResources || {}) };
-    for (const [slot, source] of Object.entries(assignment.maps || {})) {
-      // Persist source/provenance and durable archive replicas, never proxy URLs with keys.
-      const replica = candidate.archived ? candidate.runtimeMaps?.[slot] : null;
-      resources[slot] = {
-        source,
-        ...(candidate.license ? { license: cloneJson(candidate.license) } : {}),
-        ...(candidate.attribution ? { attribution: candidate.attribution } : {}),
-        ...(replica && /^https?:\/\//i.test(replica) && !/[?&](?:key|token)=/i.test(replica) ? { replicas: [replica] } : {})
-      };
-    }
-    material.textureResources = resources;
-  }
 }
 
 async function runWithConcurrency(items, limit, worker) {

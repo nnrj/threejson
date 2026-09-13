@@ -144,6 +144,20 @@ test("resolved resource leases release failed, unused and successful URLs exactl
   assert.deepEqual(released, ["bad", "unused", "good"]);
 });
 
+test("fallback resource candidates are resolved lazily; an unused mirror performs no cache/proxy IO", async () => {
+  const resolved = [], released = [];
+  const resolver = createAssetResolver();
+  const lease = resolver.acquire({ source: "origin" }, {
+    resolve: () => ["bad", "good", "unused"].map((url) => async () => {
+      resolved.push(url); return { url, release: () => released.push(url) };
+    }),
+    load: async (url) => { if (url === "bad") throw new Error("offline"); return url; }
+  });
+  assert.equal(await lease.promise, "good");
+  assert.deepEqual(resolved, ["bad", "good"]); assert.deepEqual(released, ["bad"]);
+  lease.release(); assert.deepEqual(released, ["bad", "good"]); resolver.dispose();
+});
+
 test("parallel PBR preload failure disposes textures that finish after the rejection", async () => {
   const scene = new THREE.Scene();
   attachRuntimeContext(scene, createRuntimeContext());

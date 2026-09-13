@@ -51,7 +51,7 @@ import {
 import { formatAgentProgressLabel } from "@threejson/host-kit/js/aiAgentProgressLabels.js";
 import { findChangedTextureObjectIds, runHostSceneTexturePipeline } from "@threejson/host-kit/js/sceneTextureOrchestrator.js";
 import { createTextureProxyUrl } from "@threejson/host-kit/js/textureProviderClient.js";
-import { getCachedTextureBlob, putCachedTextureBlob } from "@threejson/host-kit/js/browserTextureCache.js";
+import { getCachedTextureBlob, putCachedTextureBlob, createTextureResourceResolver } from "@threejson/host-kit/js/browserTextureCache.js";
 import { renderMarkdownToSafeHtml } from "./lib/markdown.js";
 import { useAiProvider } from "./useAiProvider.js";
 import { useResources } from "./useResources.js";
@@ -723,6 +723,8 @@ export function App() {
   // dialog, and the export-JSON indent.
   const sceneCardOptions = useMemo(
     () => ({
+      getViewportLimit: () => { const general = getThreeBoxSettings()?.general; return general?.multipleActiveViewports ? general.maxActiveViewports : 1; },
+      resolveResourceUrl: createTextureResourceResolver({ enabled: () => getThreeBoxSettings()?.ai?.textureLocalCache !== false, dbName: "threejson-threebox-textures" }),
       previewAuxiliaryLights: settings.general.previewAuxiliaryLights,
       showMeshExportWarnings: settings.io.showMeshExportWarnings,
       exportJsonIndent: settings.io.exportJsonIndent,
@@ -776,7 +778,9 @@ export function App() {
     for (const card of sceneCardsByMessageIdRef.current.values()) {
       card.setPreviewAuxiliaryLightsEnabled?.(settings.general.previewAuxiliaryLights !== false);
     }
-  }, [settings.general.previewAuxiliaryLights]);
+    const card = sceneCardsByMessageIdRef.current.values().next().value;
+    void card?.setViewportLimit?.(settings.general.multipleActiveViewports ? settings.general.maxActiveViewports : 1);
+  }, [settings.general.previewAuxiliaryLights, settings.general.multipleActiveViewports, settings.general.maxActiveViewports]);
 
   const updateStoredTurn = useCallback((turnId, updater) => {
     const queues = turnMutationQueuesRef.current;
@@ -823,6 +827,7 @@ export function App() {
     void runHostSceneTexturePipeline({
       scene,
       runtime: sceneCard.getRuntime(),
+      applyAssignment: (_runtime, assignment, options) => sceneCard.applyTextureAssignment(assignment, options),
       prompt: texturePrompt,
       aiProviderOptions,
       textureService: resolveTextureServiceSettings(bundle),
@@ -841,7 +846,7 @@ export function App() {
       onAssignment: async (_assignment, updatedScene) => {
         if (textureJobsByTurnIdRef.current.get(turnId) !== controller) return;
         const updatedJson = JSON.stringify(updatedScene, null, 2);
-        sceneCard.updateSceneJson(updatedScene);
+        await sceneCard.updateSceneJson(updatedScene);
         updateMessage(messageId, { sceneJson: updatedJson });
         if (shownTurnIdRef.current === turnId) setShownSceneJson(updatedJson);
         await updateStoredTurn(turnId, (turn) => (
@@ -931,6 +936,9 @@ export function App() {
           });
         }
       }
+      for (const message of replayed) if (message.sceneObj) message.deferSceneCard = true;
+      const latestCardMessage = [...replayed].reverse().find((message) => message.sceneObj);
+      if (latestCardMessage) latestCardMessage.deferSceneCard = false;
       setMessages(replayed);
 
       // The scene an adjust targets is the conversation's latest stored snapshot.
@@ -1558,7 +1566,7 @@ export function App() {
             settings.io.sceneJsonFormat === "friendly" ? "friendly" : "standard"
           );
           sceneJson = JSON.parse(snapshot);
-          finalSceneCard.updateSceneJson(sceneJson);
+          await finalSceneCard.updateSceneJson(sceneJson);
         }
         const verifiedAdjustSummary = adjusting && settings.ai.includeTurnSummary
           ? L(`已通过 ${stage} 调整了场景。`, `Adjusted the scene via ${stage}.`)
@@ -2188,6 +2196,7 @@ export function App() {
                       showToast={showToast}
                       options={sceneCardOptions}
                       managed={m.managedSceneCard === true}
+                      defer={m.deferSceneCard === true}
                       onReady={(card) => registerSceneCard(m.id ?? `message-${i}`, card)}
                     />
                   )}

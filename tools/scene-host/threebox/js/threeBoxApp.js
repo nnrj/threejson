@@ -55,7 +55,7 @@ import {
   runHostSceneTexturePipeline
 } from "../../shared/js/sceneTextureOrchestrator.js";
 import { createTextureProxyUrl } from "../../shared/js/textureProviderClient.js";
-import { getCachedTextureBlob, putCachedTextureBlob } from "../../shared/js/browserTextureCache.js";
+import { getCachedTextureBlob, putCachedTextureBlob, createTextureResourceResolver } from "../../shared/js/browserTextureCache.js";
 import {
   activateThreeBoxAiCapabilities,
   projectSceneToRendererBackend,
@@ -285,6 +285,8 @@ async function main() {
   const sceneCardsByTurnId = new Map();
 
   const createConfiguredSceneCard = () => createThreeBoxSceneCard({
+    getViewportLimit: () => { const general = settingsModal.getSettings()?.general; return general?.multipleActiveViewports ? general.maxActiveViewports : 1; },
+    resolveResourceUrl: createTextureResourceResolver({ enabled: () => settingsModal.getSettings()?.ai?.textureLocalCache !== false }),
     shouldShowMeshExportWarnings: () =>
       settingsModal.getSettings()?.io?.showMeshExportWarnings !== false,
     shouldUsePreviewAuxiliaryLights: () =>
@@ -390,6 +392,7 @@ async function main() {
     void runHostSceneTexturePipeline({
       scene,
       runtime: sceneCard.getRuntime(),
+      applyAssignment: (_runtime, assignment, options) => sceneCard.applyTextureAssignment(assignment, options),
       prompt,
       aiProviderOptions: providerOptions,
       textureService: resolveTextureServiceSettings(settings),
@@ -407,7 +410,7 @@ async function main() {
       onAssignment: async (_assignment, updatedScene) => {
         if (textureJobsByTurnId.get(turnId) !== controller) return;
         const sceneJson = JSON.stringify(updatedScene, null, 2);
-        sceneCard.updateSceneJson(updatedScene);
+        await sceneCard.updateSceneJson(updatedScene);
         onSceneUpdated?.(updatedScene);
         await updateStoredTurn(turnId, (turn) => {
           if (textureJobsByTurnId.get(turnId) !== controller) return null;
@@ -427,6 +430,8 @@ async function main() {
     for (const sceneCard of sceneCardsByTurnId.values()) {
       sceneCard?.setPreviewAuxiliaryLightsEnabled?.(enabled);
     }
+    const card = sceneCardsByTurnId.values().next().value;
+    void card?.setViewportLimit?.(settings?.general?.multipleActiveViewports ? settings.general.maxActiveViewports : 1);
   }
 
   // Set for the duration of whatever generate/adjust turn is currently in flight (there is only
@@ -924,7 +929,7 @@ async function main() {
       if (runtimeSceneJsonString) {
         outputSceneJsonString = projectSceneForUser(runtimeSceneJsonString, settings);
         outputSceneJson = JSON.parse(outputSceneJsonString);
-        sceneCard.updateSceneJson(outputSceneJson);
+        await sceneCard.updateSceneJson(outputSceneJson);
         jsonCollapse.updateJson?.(outputSceneJsonString);
       }
       sceneCardsByTurnId.set(turnId, sceneCard);
@@ -1005,7 +1010,7 @@ async function main() {
           if (!sceneCard.getRuntime()) {
             await sceneCard.render(pausedOutputJson, { label: text, draft: true });
           } else {
-            sceneCard.updateSceneJson(pausedOutputJson);
+            await sceneCard.updateSceneJson(pausedOutputJson);
           }
           sceneCard.setLabel(text);
           sceneCard.setDraftStatus?.("paused");
@@ -1329,7 +1334,7 @@ async function main() {
       if (runtimeSceneJsonString) {
         outputSceneJsonString = projectSceneForUser(runtimeSceneJsonString, settings);
         outputSceneJson = JSON.parse(outputSceneJsonString);
-        sceneCard.updateSceneJson(outputSceneJson);
+        await sceneCard.updateSceneJson(outputSceneJson);
         jsonCollapse.updateJson?.(outputSceneJsonString);
       }
       sceneCardsByTurnId.set(turnId, sceneCard);
@@ -1416,7 +1421,7 @@ async function main() {
         try {
           const pausedOutputJsonString = projectSceneForUser(pausedCanonicalJsonString, settings);
           const pausedOutputJson = JSON.parse(pausedOutputJsonString);
-          sceneCard.updateSceneJson(pausedOutputJson);
+          await sceneCard.updateSceneJson(pausedOutputJson);
           const sceneTitle = targetTurn.sceneTitle || targetTurn.userPrompt || text;
           sceneCard.setLabel(sceneTitle);
           sceneCard.setDraftStatus?.("paused");
@@ -1706,7 +1711,9 @@ async function main() {
   /** Disposes every currently-tracked scene card's WebGL context before dropping the map —
    * plain `Map.clear()` alone leaks a live renderer per turn (browsers cap concurrent WebGL
    * contexts, so repeated "新聊天" without this would eventually start silently losing contexts). */
+  let historyReplayVersion = 0;
   function disposeAllSceneCards() {
+    historyReplayVersion++;
     for (const controller of textureJobsByTurnId.values()) controller.abort();
     textureJobsByTurnId.clear();
     for (const card of sceneCardsByTurnId.values()) {
@@ -1720,14 +1727,20 @@ async function main() {
    * data instead of a fresh orchestrator result). */
   async function switchToConversation(conversationId) {
     disposeAllSceneCards();
+    const replayVersion = historyReplayVersion;
     attachedContext.clear();
     chatPanel.clear();
     const turns = await getTurnsForConversation(conversationId).catch(() => []);
-    if (!turns.length) {
+    if (replayVersion !== historyReplayVersion || !turns.length) {
       return;
     }
     chatPanel.showMessagesView();
+    let latestCard = null;
     for (const turn of turns) {
+      if (replayVersion !== historyReplayVersion) return;
+      // Yield between records so long history cannot starve input, Settings or navigation.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      if (replayVersion !== historyReplayVersion) return;
       chatPanel.appendMessage("user", turn.userPrompt);
       const textEl = chatPanel.appendMessage("assistant", "");
       if (isUnsuccessfulTurn(turn)) {
@@ -1767,6 +1780,7 @@ async function main() {
         // replaying commands from the nearest earlier full-JSON turn (see
         // threeBoxOrchestrator.js's resolveTurnSceneJsonString).
         sceneJsonString = await resolveSceneJsonStringForTurn(turn, conversationId);
+        if (replayVersion !== historyReplayVersion) return;
       } catch (error) {
         console.error("[threebox] failed to reconstruct turn scene JSON:", turn.id, error);
         chatPanel.updateAssistantMessage(
@@ -1784,7 +1798,14 @@ async function main() {
       chatPanel.appendToBody(textEl, chatPanel.buildJsonCollapse(outputSceneJsonString));
       const sceneCard = createConfiguredSceneCard();
       chatPanel.appendToBody(textEl, sceneCard.el);
-      await sceneCard.render(JSON.parse(outputSceneJsonString), { label: turn.sceneTitle || turn.userPrompt });
+      sceneCardsByTurnId.set(turn.id, sceneCard);
+      try { await sceneCard.render(JSON.parse(outputSceneJsonString), { label: turn.sceneTitle || turn.userPrompt, defer: true }); }
+      catch (error) {
+        if (replayVersion !== historyReplayVersion) return;
+        chatPanel.updateAssistantMessage(textEl, t("threebox.app.replayFailed", "该轮场景重放失败：{error}", { error: error?.message || error }));
+        continue;
+      }
+      latestCard = sceneCard;
       if (turn.refinementIncomplete === true) {
         sceneCard.setDraftStatus?.("paused");
       }
@@ -1801,6 +1822,9 @@ async function main() {
     // LAST historical turn (mostly blank below it) instead of landing on the true end of the
     // conversation, which is what opening a past conversation should do.
     chatPanel.finishTurnScroll();
+    if (replayVersion === historyReplayVersion) void latestCard?.activate().catch((error) => {
+      if (error?.name !== "AbortError") showToast(String(error?.message || error), "error");
+    });
   }
 
   sidebar = createThreeBoxSidebar({

@@ -7,12 +7,19 @@ export function createSceneSessionRuntimeDriver(options = {}) {
   let runtime = options.initialRuntime || null;
   let activeViewport = options.initialViewport || null;
   let disposed = false;
+  let deferred = options.deferInitial === true;
   return {
     get runtime() { return runtime; },
     async prepare(document, context = {}) {
       if (disposed) throw documentError("SESSION_DISPOSED", "Runtime driver is disposed.");
+      if (deferred && !runtime && context.mode) return {};
+      if (context.previousDocument && runtime) {
+        const operations = context.operations.filter((operation) => !/^\/(?:schemaVersion|name|label|metadata)(?:\/|$)/.test(operation.path || ""));
+        if (!operations.length) return {};
+        context = { ...context, operations };
+      }
       if (context.previousDocument && runtime && options.incremental !== false) {
-        const changes = await prepareIncrementalSceneChanges(runtime, document, context, options);
+        const changes = await prepareIncrementalSceneChanges(runtime, document, context, { ...options, ...context.prepareOptions });
         if (changes) return changes;
       }
       const previous = runtime;
@@ -28,7 +35,7 @@ export function createSceneSessionRuntimeDriver(options = {}) {
       try {
         context.signal?.throwIfAborted();
         next = await create(formatAuthoring(document, { format: "standard" }), {
-          ...options, ...viewport?.options, canvas: viewport?.canvas || options.canvas, signal: context.signal
+          ...options, ...context.prepareOptions, ...viewport?.options, canvas: viewport?.canvas || options.canvas, signal: context.signal
         });
         context.signal?.throwIfAborted();
       } catch (error) { next?.dispose?.(); viewport?.dispose?.(); throw error; }
@@ -42,6 +49,7 @@ export function createSceneSessionRuntimeDriver(options = {}) {
         commit() {
           if (disposed) throw documentError("SESSION_DISPOSED", "Runtime driver is disposed.");
           runtime = next;
+          deferred = false;
           activeViewport = viewport || null;
           committed = true;
           viewport?.commit?.(next, previous);
@@ -63,6 +71,11 @@ export function createSceneSessionRuntimeDriver(options = {}) {
       if (!runtime) return null;
       return { camera: runtime.camera ? { position: runtime.camera.position.toArray(), quaternion: runtime.camera.quaternion.toArray(), zoom: runtime.camera.zoom } : null,
         target: runtime.controls?.target?.toArray?.() || null };
+    },
+    suspend() {
+      const previous = runtime; runtime = null; deferred = true;
+      previous?.dispose?.(); activeViewport?.dispose?.(); activeViewport = null;
+      options.onRuntimeChanged?.(null, previous);
     },
     dispose() { if (disposed) return; disposed = true; runtime?.dispose?.(); activeViewport?.dispose?.(); activeViewport = null; runtime = null; }
   };

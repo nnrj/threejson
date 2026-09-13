@@ -14,7 +14,7 @@ function ActionBtn({ title, glyph, onClick, disabled }) {
   );
 }
 
-export function SceneAgentSceneCard({ sceneJson, label, showToast, options, onReady, managed = false }) {
+export function SceneAgentSceneCard({ sceneJson, label, showToast, options, onReady, managed = false, defer = false }) {
   const mergedOptions = { showToast, ...options };
   const card = useSceneCardRuntime(mergedOptions);
 
@@ -27,7 +27,9 @@ export function SceneAgentSceneCard({ sceneJson, label, showToast, options, onRe
   }, []);
 
   useEffect(() => {
-    if (!managed && sceneJson) void card.render(sceneJson, { label });
+    if (!managed && sceneJson) void card.render(sceneJson, { label, defer }).catch((error) => {
+      if (error?.name !== "AbortError") mergedOptions.showToast?.(String(error?.message || error), "error");
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sceneJson, managed]);
 
@@ -38,7 +40,13 @@ export function SceneAgentSceneCard({ sceneJson, label, showToast, options, onRe
     h(
       "div",
       { className: "sceneCardCanvasWrap", ref: card.canvasWrapRef },
-      h("canvas", { className: "sceneCardCanvas", ref: card.canvasRef }),
+      h("div", { className: "sceneCardViewportMount", ref: card.canvasMountRef, style: { position: "absolute", inset: 0 } }),
+      card.viewportState.dormant ? h("button", {
+        type: "button", className: "sceneCardActivate",
+        style: { position: "absolute", inset: 0, width: "100%", height: "100%", border: 0, padding: 0, background: "var(--panel-bg, #282b33)", color: "inherit", cursor: "pointer" },
+        onClick: () => void card.activate().catch((error) => mergedOptions.showToast?.(String(error?.message || error), "error"))
+      }, card.viewportState.preview ? h("img", { src: card.viewportState.preview, alt: "", style: { width: "100%", height: "100%", objectFit: "contain" } }) : null,
+      h("span", { style: { position: "absolute", bottom: "16px", left: "50%", transform: "translateX(-50%)", padding: "7px 12px", borderRadius: "8px", color: "#fff", background: "#222c", whiteSpace: "nowrap" } }, text(mergedOptions, "sceneAgent.sceneCard.activate", "点击查看并交互"))) : null,
       card.loadingText
         ? h("div", { className: `sceneCardLoadingMask${card.loadingCompact ? " sceneCardLoadingMaskCompact" : ""}` }, card.loadingText)
         : null,

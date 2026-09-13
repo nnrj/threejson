@@ -1,5 +1,5 @@
 import { indexSceneDocument, cloneDocumentData, documentError } from "../document/sceneDocument.js";
-import { getObjectByThreeJsonId } from "../handler/objectRegistry.js";
+import { getObjectByThreeJsonId, refreshRegisteredObject } from "../handler/objectRegistry.js";
 import { createGeometryFromDescriptor } from "../builder/geometry/geometryFactory.js";
 import { createMaterialFromDescriptor, applyMaterialDescriptorProperties, inferMaterialType } from "../builder/material/materialFactory.js";
 import { applyMaterialTextureSetFromJson, applyTextureRepeatToMap, whenTextureReady } from "../util/loadTextureFromMaterialJson.js";
@@ -156,8 +156,9 @@ export async function prepareIncrementalSceneChanges(runtime, document, context,
     if (!field || (!POSE.has(field) && !MATERIAL.has(field) && !GEOMETRY.has(field))) return null;
     const before = oldIndex.get(entry.id)?.record, object = getObjectByThreeJsonId(entry.id, runtime.scene);
     if (!before || !object) return null;
-    if (!POSE.has(field) && (!object.isMesh || !isPlainMeshRecord(before) || !isPlainMeshRecord(entry.record)
-      || object.isSkinnedMesh || object.isInstancedMesh || runtime.renderer?.isWebGPURenderer)) return null;
+    if (!POSE.has(field) && (!object.isMesh || runtime.renderer?.isWebGPURenderer)) return null;
+    if (GEOMETRY.has(field) && (!isPlainMeshRecord(before) || !isPlainMeshRecord(entry.record) || object.isSkinnedMesh || object.isInstancedMesh)) return null;
+    if (MATERIAL.has(field) && materialList(object.material).some((material) => material.isShaderMaterial || material.isNodeMaterial)) return null;
     let change = changes.get(entry.id);
     if (!change) changes.set(entry.id, change = { entry, before, object, fields: new Set() });
     change.fields.add(field);
@@ -174,7 +175,8 @@ export async function prepareIncrementalSceneChanges(runtime, document, context,
     for (const change of changes.values()) {
       const { object, entry, before, fields } = change;
       const item = { ...change, oldPose: pose(object), oldDescriptor: object.userData.objJson,
-        oldGeometry: object.geometry, oldMaterial: object.material, oldStats: object.userData.threeJsonMeshStats };
+        oldGeometry: object.geometry, oldMaterial: object.material, oldStats: object.userData.threeJsonMeshStats,
+        oldMorphInfluences: object.morphTargetInfluences, oldMorphDictionary: object.morphTargetDictionary };
       staged.push(item);
       item.descriptor = cloneDocumentData(entry.record);
       if ([...fields].some((field) => POSE.has(field))) {
@@ -214,6 +216,7 @@ export async function prepareIncrementalSceneChanges(runtime, document, context,
           for (const material of materialList(object.material)) material.needsUpdate = true;
         }
         object.userData.objJson = item.descriptor;
+        refreshRegisteredObject(object, item.descriptor, { recursive: false }, runtime.scene);
       }
       runtime.invalidate?.();
     },
@@ -224,6 +227,8 @@ export async function prepareIncrementalSceneChanges(runtime, document, context,
         if (item.ranges) for (const range of item.ranges) { range.attribute.array.set(range.before, range.start); range.attribute.addUpdateRange(range.start, range.before.length); range.attribute.needsUpdate = true; }
         if (item.geometry) { item.oldGeometry.computeBoundingBox(); item.oldGeometry.computeBoundingSphere(); }
         item.object.userData.objJson = item.oldDescriptor; item.object.userData.threeJsonMeshStats = item.oldStats;
+        item.object.morphTargetInfluences = item.oldMorphInfluences; item.object.morphTargetDictionary = item.oldMorphDictionary;
+        refreshRegisteredObject(item.object, item.oldDescriptor, { recursive: false }, runtime.scene);
       }
       committed = false; runtime.invalidate?.();
     },

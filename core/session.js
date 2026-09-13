@@ -2,7 +2,7 @@ import { compileAuthoring, formatAuthoring } from "./document/authoringAdapters.
 import { SceneSession } from "./document/sceneSession.js";
 
 export { SceneSession };
-export { executeSceneSessionCommands, planSceneCommands } from "./document/sceneCommandPlan.js";
+export { executeSceneSessionCommands, planSceneCommands, diffSceneDocuments } from "./document/sceneCommandPlan.js";
 export function createSceneSession(payload, options = {}) {
   return new SceneSession(compileAuthoring(payload, options), options);
 }
@@ -17,7 +17,8 @@ export async function createRuntimeSceneSession(payload, options = {}) {
   const session = createSceneSession(payload, { ...options, driver });
   Object.defineProperty(session, "runtime", { get: () => driver.runtime });
   Object.defineProperty(session, "commandOptions", { value: options.commandOptions || {} });
-  try { if (!options.initialRuntime) await session.prepare({ signal: options.signal }); }
+  Object.defineProperty(session, "suspendRuntime", { value: () => driver.suspend() });
+  try { if (!options.initialRuntime && !options.deferInitial) await session.prepare({ signal: options.signal }); }
   catch (error) { session.dispose(); throw error; }
   return session;
 }

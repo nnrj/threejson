@@ -1,63 +1,50 @@
 /**
- * Disposable resource tracking bucket (zero handler/builder deps to avoid resourceReclaimer cycles).
- * builder / util import track only from here; dispose orchestration is in resourceReclaimer.js.
- *
- * Deliberately kept as a single process-wide bucket (not per-RuntimeContext): most call
- * sites only have a bare resource (geometry/material/loader) at module-eval time with no
- * scene reference available to scope by, and several call `trackDisposableResource` at
- * module top level (e.g. shared TextureLoader singletons), which would race against
- * core/runtime/runtimeContext.js's own circular-import initialization if wired in here.
- * The actual multi-canvas hazard this bucket posed — disposing a whole shared bucket
- * when tearing down one scene, which could destroy a concurrently-mounted sibling
- * scene's still-in-use resources — is fixed at the call site instead: see
- * `disposeTrackedSceneResources` in resourceReclaimer.js, which now disposes only the
- * target scene's own Object3D subtree rather than clearing this shared bucket.
+ * Non-owning diagnostic/emergency-disposal index. Scene/resource leases own lifetimes.
+ * A process-wide strong Set retained every retired geometry and decoded image forever.
+ * Tracking must neither keep discarded resources alive nor dispose sibling scenes.
  */
+const entries = new Set();
+let byResource = new WeakMap();
+const finalized = typeof FinalizationRegistry === "function"
+  ? new FinalizationRegistry((entry) => entries.delete(entry)) : null;
 
-let trackedResourceBucket = null;
-
-function getTrackedResourceBucket() {
-  if (!trackedResourceBucket) {
-    trackedResourceBucket = new Set();
-  }
-  return trackedResourceBucket;
-}
-
-/**
- * @param {*} resource
- * @returns {*}
- */
 export function trackDisposableResource(resource) {
-  if (!resource) {
-    return resource;
-  }
-  if (Array.isArray(resource)) {
-    for (let i = 0; i < resource.length; i += 1) {
-      trackDisposableResource(resource[i]);
-    }
-    return resource;
-  }
-  getTrackedResourceBucket().add(resource);
+  if (Array.isArray(resource)) { for (const item of resource) trackDisposableResource(item); return resource; }
+  if (!resource || !["object", "function"].includes(typeof resource) || byResource.has(resource)) return resource;
+  // On older hosts, only explicit scene ownership participates in disposal.
+  if (typeof WeakRef !== "function") return resource;
+  const entry = { reference: new WeakRef(resource), onDispose: null };
+  entry.onDispose = () => untrackDisposableResource(resource);
+  resource.addEventListener?.("dispose", entry.onDispose);
+  // Do not store the listener in the global index: its closure would retain the resource.
+  const onDispose = entry.onDispose; delete entry.onDispose;
+  byResource.set(resource, { entry, onDispose }); entries.add(entry);
+  finalized?.register(resource, entry, entry);
   return resource;
 }
 
-/**
- * @param {*} resource
- */
 export function untrackDisposableResource(resource) {
-  if (!resource) {
-    return;
-  }
-  if (Array.isArray(resource)) {
-    for (let i = 0; i < resource.length; i += 1) {
-      untrackDisposableResource(resource[i]);
-    }
-    return;
-  }
-  getTrackedResourceBucket().delete(resource);
+  if (Array.isArray(resource)) { for (const item of resource) untrackDisposableResource(item); return; }
+  const record = resource && byResource.get(resource);
+  if (!record) return;
+  resource.removeEventListener?.("dispose", record.onDispose);
+  entries.delete(record.entry); finalized?.unregister(record.entry); byResource.delete(resource);
 }
 
-/** @returns {Set<*>} */
-export function getTrackedResourceBucketForDispose() {
-  return getTrackedResourceBucket();
-}
+const bucket = {
+  *[Symbol.iterator]() {
+    for (const entry of entries) {
+      const resource = entry.reference.deref();
+      if (resource) yield resource; else entries.delete(entry);
+    }
+  },
+  get size() { let count = 0; for (const _ of this) count++; return count; },
+  has(resource) { return byResource.has(resource); },
+  clear() {
+    for (const resource of this) untrackDisposableResource(resource);
+    entries.clear(); byResource = new WeakMap();
+  }
+};
+
+/** Iterable live resources; this index does not own their lifetime. */
+export function getTrackedResourceBucketForDispose() { return bucket; }

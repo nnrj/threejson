@@ -58,10 +58,13 @@ export function setMorphTargetInfluence(root, target, value, options = {}) {
   }
   if (changed.length > 0 && options.syncDescriptor !== false && root?.userData?.objJson) {
     const descriptor = root.userData.objJson;
-    descriptor.morphInfluences = descriptor.morphInfluences && typeof descriptor.morphInfluences === "object"
-      ? descriptor.morphInfluences
-      : {};
-    descriptor.morphInfluences[String(target)] = next;
+    if (options.mesh) {
+      descriptor.morphBindings = (descriptor.morphBindings || []).filter((binding) => binding.mesh !== options.mesh || String(binding.target) !== String(target));
+      descriptor.morphBindings.push({ mesh: options.mesh, target, value: next });
+    } else {
+      descriptor.morphInfluences = descriptor.morphInfluences && typeof descriptor.morphInfluences === "object" ? descriptor.morphInfluences : {};
+      descriptor.morphInfluences[String(target)] = next;
+    }
   }
   return changed;
 }

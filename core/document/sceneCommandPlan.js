@@ -50,6 +50,12 @@ function diffData(before, after, path, output) {
   } else if (JSON.stringify(before) !== JSON.stringify(after)) output.push({ op: "replace", path, value: after });
 }
 
+export function diffSceneDocuments(before, after) {
+  const operations = [];
+  diffData(before.root, after.root, "", operations);
+  return operations;
+}
+
 /** Prepare the whole authoring command batch without changing a live runtime. */
 export async function planSceneCommands(document, input, options = {}) {
   const commands = Array.isArray(input) ? input.map(parseCommandLine)

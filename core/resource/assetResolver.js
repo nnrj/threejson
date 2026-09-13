@@ -28,16 +28,22 @@ export function createAssetResolver(options = {}) {
         signal.throwIfAborted();
         const resolved = await (hooks.resolve || options.resolve || ((item) => item.replicas?.length ? [...item.replicas, item.source] : [item.source]))(current.request, { signal });
         const candidates = (Array.isArray(resolved) ? resolved : [resolved]).filter(Boolean).map((value) => {
-          let released = false;
-          return { url: typeof value === "string" ? value : value.url, release() {
-            if (!released) { released = true; value?.release?.(); }
+          let released = false, resource = typeof value === "function" ? null : value;
+          return { async resolve() {
+            if (typeof value === "function") resource = await value({ signal, request: current.request });
+            const url = typeof resource === "string" ? resource : resource?.url;
+            if (typeof url !== "string" || !url) throw new TypeError("Resolved resource URL must be a non-empty string.");
+            return url;
+          }, release() {
+            if (!released) { released = true; resource?.release?.(); }
           } };
         });
         let failure;
         try { for (const candidate of candidates) {
-          const source = candidate.url;
           signal.throwIfAborted();
           try {
+            const source = await candidate.resolve();
+            signal.throwIfAborted();
             const load = hooks.load || options.load || (async (url, context) => {
               const response = await (options.fetch || globalThis.fetch)(url, { signal: context.signal });
               if (!response.ok) throw Object.assign(new Error(`Resource returned HTTP ${response.status}`), { status: response.status });

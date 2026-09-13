@@ -105,3 +105,21 @@ must remain distinguishable from loader, material, authorization and GPU failure
   for commands earlier in the same batch. Runtime capture remains explicit.
 - Full local suite at this checkpoint: 1,344 passed, 1 existing skip. Native/React
   cards will consume this API in the host-integration step; browser QA remains due.
+
+## Implementation evidence: shared scene cards and resource lifetime
+
+- Native and React cards now use the same document/session controller. Failed
+  preparation keeps the old viewport; saves capture authoring data, not playback.
+- History cards defer renderer creation. The host defaults to one active viewport,
+  preserves a screenshot and its independent document when suspending, and supports
+  a user-configured comparison budget. Clicking a dormant card reactivates it.
+- Progressive textures are decoded before their material/document transaction.
+  Stale plans and decode failures cannot overwrite current material state. Initial
+  and historical loads now use the browser cache; fallback resolution is lazy.
+- Resource tracking no longer strongly retains retired geometries and textures.
+  Repeated mutation tests check that the live diagnostic index does not grow.
+- WebGPU/TSL activation is shared with React and remains optional. Static hosts
+  remain deployable without packages/. Shared session modules are synchronized by
+  `node tools/dev/syncHostSessionModules.mjs`; parity is enforced by a test.
+- Local checkpoint: 1,355 tests passed, 1 existing skip; React ThreeBox production
+  build passed. Cloud package validation and browser visual QA remain outstanding.

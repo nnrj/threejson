@@ -15,6 +15,8 @@ import { syncThreeBoxPreviewAuxiliaryLights } from "./threeBoxPreviewLights.js";
 import { ensureThreeBoxSceneCapabilitiesForPayload } from "./threeBoxAiCapabilities.js";
 import { captureMeshReviewViews } from "../../shared/js/meshViewCapture.js";
 import { createCanvasRenderActivity } from "../../shared/js/canvasRenderActivity.js";
+import { createSceneCardSession, createSceneCardViewport } from "../../shared/js/sceneCardSession.js";
+import { sharedSceneViewportPool } from "../../shared/js/sceneViewportPool.js";
 
 const EDITOR_OPEN_SCENE_BRIDGE_PREFIX = "threejson.editor.openScene.";
 
@@ -46,9 +48,22 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
   const canvasWrap = document.createElement("div");
   canvasWrap.className = "sceneCardCanvasWrap";
   el.appendChild(canvasWrap);
-  const canvas = document.createElement("canvas");
-  canvas.className = "sceneCardCanvas";
-  canvasWrap.appendChild(canvas);
+  const viewportMount = document.createElement("div");
+  Object.assign(viewportMount.style, { position: "absolute", inset: "0" });
+  canvasWrap.appendChild(viewportMount);
+  const activateButton = document.createElement("button");
+  activateButton.type = "button";
+  activateButton.hidden = true;
+  activateButton.className = "sceneCardActivate";
+  Object.assign(activateButton.style, { position: "absolute", inset: "0", width: "100%", height: "100%", border: "0", padding: "0", color: "inherit", background: "var(--panel-bg, #282b33)", cursor: "pointer" });
+  const previewImage = document.createElement("img");
+  previewImage.alt = ""; previewImage.hidden = true;
+  Object.assign(previewImage.style, { width: "100%", height: "100%", objectFit: "contain" });
+  const activateLabel = document.createElement("span");
+  activateLabel.textContent = t("threebox.sceneCard.activate", "点击查看并交互");
+  Object.assign(activateLabel.style, { position: "absolute", bottom: "16px", left: "50%", transform: "translateX(-50%)", padding: "7px 12px", borderRadius: "8px", color: "#fff", background: "#222c", whiteSpace: "nowrap" });
+  activateButton.append(previewImage, activateLabel); canvasWrap.appendChild(activateButton);
+  let canvas = null;
   const loadingMask = document.createElement("div");
   loadingMask.className = "sceneCardLoadingMask";
   loadingMask.textContent = t("threebox.sceneCard.waitingForDraft", "等待场景草稿…");
@@ -170,7 +185,6 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
     actionBar.querySelectorAll(".sceneCardActionBtn");
 
   let runtime = null;
-  let commandContext = null;
   let liveResizeObserver = null;
   let currentSceneJson = null;
   let renderSeq = 0;
@@ -261,12 +275,15 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
    * rAF guarantees the first frame (with the mask) had a chance to reach the screen. */
   function waitForLoadingMaskPaint() {
     return new Promise((resolve) => {
-      requestAnimationFrame(resolve);
+      let done = false;
+      const finish = () => { if (!done) { done = true; resolve(); } };
+      requestAnimationFrame(finish);
+      setTimeout(finish, 80);
     });
   }
 
   function showCompactLoadingProgress(deploy = null) {
-    loadingMask.classList.add("sceneCardLoadingMaskCompact");
+    loadingMask.classList.toggle("sceneCardLoadingMaskCompact", Boolean(runtime));
     const done = Number(deploy?.done);
     const total = Number(deploy?.total);
     loadingMask.textContent = Number.isFinite(done) && Number.isFinite(total) && total > 0
@@ -281,283 +298,125 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
         );
   }
 
+  const cardSession = createSceneCardSession({
+    viewportPool: sharedSceneViewportPool,
+    getViewportLimit: cardOptions.getViewportLimit,
+    onViewportStateChanged: ({ dormant, preview }) => {
+      activateButton.hidden = !dormant;
+      previewImage.hidden = !preview;
+      if (preview) previewImage.src = preview;
+    },
+    ensureCapabilities: ensureThreeBoxSceneCapabilitiesForPayload,
+    beforePrepare: waitForLoadingMaskPaint,
+    createViewport: async () => {
+      await waitForStableSize(canvasWrap);
+      return createSceneCardViewport(viewportMount, { onCanvasChanged: (next) => { canvas = next; } });
+    },
+    getRuntimeOptions: (options) => ({
+      resetScene: true,
+      assetsBase: sceneHostAssetUrl("assets/"),
+      assetGateway: typeof cardOptions.assetGateway === "function" ? cardOptions.assetGateway() : cardOptions.assetGateway,
+      resolveResourceUrl: cardOptions.resolveResourceUrl,
+      autoFillLights: options.authoritative !== true,
+      autoFillCamera: options.authoritative !== true,
+      autoFitCamera: options.authoritative !== true,
+      onDeployProgress: ({ deploy }) => showCompactLoadingProgress(deploy)
+    }),
+    createRuntime: async (source, options) => {
+      const { createJsonScene } = await import("threejson");
+      const size = options.viewportSize || { width: 320, height: 180 };
+      const payload = { ...source, canvasWidth: size.width, canvasHeight: size.height,
+        sceneConfig: { ...source.sceneConfig, renderLoop: { ...source.sceneConfig?.renderLoop, autoResize: false, firstAutoResize: false } } };
+      return enqueueThreeBoxSceneLoad(() => createJsonScene(payload, options));
+    },
+    commandOptions: {
+      renderMeshViews: (request) => {
+        const enabled = typeof cardOptions.shouldProvideMeshVisionFeedback === "function"
+          ? cardOptions.shouldProvideMeshVisionFeedback() === true : cardOptions.meshVisionFeedback === true;
+        if (!enabled) throw new Error("mesh.renderViews is unavailable for the selected AI provider.");
+        return captureMeshReviewViews({ ...request, renderer: runtime.renderer });
+      }
+    },
+    onRuntimeChanged: (next) => {
+      runtime = next;
+      if (runtime) {
+        syncThreeBoxPreviewAuxiliaryLights(runtime.scene, typeof cardOptions.shouldUsePreviewAuxiliaryLights === "function"
+          ? cardOptions.shouldUsePreviewAuxiliaryLights() !== false : cardOptions.previewAuxiliaryLights !== false);
+        watchLiveResize();
+      } else { liveResizeObserver?.disconnect(); liveResizeObserver = null; }
+      renderActivity.sync({ forceFrame: true });
+    },
+    onDocumentChanged: (document) => { currentSceneJson = document; }
+  });
+
+  async function activate() {
+    const seq = ++renderSeq;
+    loadingMask.textContent = t("threebox.sceneCard.rendering", "场景渲染中（不消耗 Token）…");
+    loadingMask.classList.remove("sceneCardLoadingMaskCompact"); loadingMask.hidden = false;
+    try { return await cardSession.resume(); }
+    finally { if (seq === renderSeq) loadingMask.hidden = true; }
+  }
+  activateButton.addEventListener("click", () => void activate().catch((error) => showToast(String(error?.message || error), "error")));
+
   async function render(sceneJsonPayload, options = {}) {
     const seq = ++renderSeq;
-    liveResizeObserver?.disconnect();
-    liveResizeObserver = null;
-    runtime?.dispose?.();
-    runtime = null;
-    renderActivity.sync();
-    commandContext = null;
-    currentSceneJson = sceneJsonPayload;
     setDraftState(options.draft === true);
-    setLabel(
-      options.label || sceneJsonPayload?.label || sceneJsonPayload?.name || t("threebox.sceneCard.defaultLabel", "ThreeBox 场景")
-    );
+    setLabel(options.label || sceneJsonPayload?.label || sceneJsonPayload?.name);
     loadingMask.textContent = t("threebox.sceneCard.rendering", "场景渲染中（不消耗 Token）…");
-    loadingMask.classList.remove("sceneCardLoadingMaskCompact");
+    loadingMask.classList.toggle("sceneCardLoadingMaskCompact", Boolean(runtime));
     loadingMask.hidden = false;
-    // Saved/history/template scenes may be the first thing rendered after page load. Activate
-    // their explicit optional backend from the descriptor rather than relying on a prior AI turn.
-    await ensureThreeBoxSceneCapabilitiesForPayload(sceneJsonPayload);
-    const { createJsonScene } = await import("threejson");
-    const { width, height } = await waitForStableSize(canvasWrap);
-    // Pin the canvas's own CSS box explicitly: core's render loop resizes against
-    // canvas.clientWidth/clientHeight on its first frame regardless of payload.canvasWidth/Height
-    // (see core/handler/frameLoopHandler.js), so a canvas that merely inherits width:100% from an
-    // as-yet-unsettled ancestor can catch a stale full-viewport size on that first frame.
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
-    canvas.width = width;
-    canvas.height = height;
-    await waitForLoadingMaskPaint();
-    const payload = structuredClone(sceneJsonPayload || {});
-    payload.canvasWidth = width;
-    payload.canvasHeight = height;
-    // Source scenes (e.g. full-page templates like roomShow.json) often set
-    // sceneConfig.renderLoop.autoResize for a full-window host; an inline embedded card must not
-    // follow window resizes, so this is force-disabled regardless of what the scene JSON says.
-    payload.sceneConfig = {
-      ...payload.sceneConfig,
-      renderLoop: { ...payload.sceneConfig?.renderLoop, autoResize: false, firstAutoResize: false }
-    };
-    let auxiliaryLightsSynced = false;
-    const syncAuxiliaryLights = (nextRuntime, { force = false } = {}) => {
-      if ((!force && auxiliaryLightsSynced) || seq !== renderSeq || !nextRuntime?.scene) {
-        return;
-      }
-      const auxiliaryLightsEnabled = typeof cardOptions.shouldUsePreviewAuxiliaryLights === "function"
-        ? cardOptions.shouldUsePreviewAuxiliaryLights() !== false
-        : cardOptions.previewAuxiliaryLights !== false;
-      syncThreeBoxPreviewAuxiliaryLights(nextRuntime.scene, auxiliaryLightsEnabled);
-      auxiliaryLightsSynced = true;
-      // A deploy can replace/reset scene children after the first progress callback. Re-sync on
-      // the final scene-ready callback and paint another frame so a restored card never displays
-      // the last pre-light frame while its off-screen render loop is paused.
-      if (runtime === nextRuntime) {
-        renderActivity.sync({ forceFrame: true });
-      }
-    };
-    const activateRuntime = (nextRuntime) => {
-      if (!nextRuntime || seq !== renderSeq) {
-        return false;
-      }
-      if (runtime !== nextRuntime) {
-        runtime = nextRuntime;
-        watchLiveResize();
-      }
-      runtime.resize?.({ width, height });
-      renderActivity.sync({ forceFrame: true });
-      showCompactLoadingProgress();
-      return true;
-    };
-    try {
-      const nextRuntime = await enqueueThreeBoxSceneLoad(() =>
-        createJsonScene(payload, {
-          canvas,
-          resetScene: true,
-          assetsBase: sceneHostAssetUrl("assets/"),
-          assetGateway: typeof cardOptions.assetGateway === "function" ? cardOptions.assetGateway() : cardOptions.assetGateway,
-          // An adjustment card can be the authoritative command runtime. In that mode, preview
-          // conveniences must not silently alter the scene that will later be exported as the
-          // adjustment result. Host-only auxiliary lights below still keep the preview readable.
-          autoFillLights: options.authoritative !== true,
-          autoFillCamera: options.authoritative !== true,
-          autoFitCamera: options.authoritative !== true,
-          onRuntimeReady: ({ runtime: readyRuntime }) => {
-            activateRuntime(readyRuntime);
-          },
-          onDeployProgress: ({ runtime: deployingRuntime, deploy }) => {
-            if (seq !== renderSeq) {
-              return;
-            }
-            syncAuxiliaryLights(deployingRuntime);
-            showCompactLoadingProgress(deploy);
-          },
-          onSceneReady: ({ runtime: readyRuntime }) => {
-            syncAuxiliaryLights(readyRuntime, { force: true });
-          }
-        })
-      );
-      if (seq !== renderSeq) {
-        nextRuntime?.dispose?.();
-        return null;
-      }
-      activateRuntime(nextRuntime);
-      syncAuxiliaryLights(nextRuntime, { force: true });
-    } finally {
-      if (seq === renderSeq) {
-        loadingMask.hidden = true;
-      }
-    }
-    return runtime;
+    try { return await cardSession.render(sceneJsonPayload, options); }
+    finally { if (seq === renderSeq) loadingMask.hidden = true; }
   }
 
-  function updateSceneJson(sceneJson) {
-    if (sceneJson && typeof sceneJson === "object") {
-      currentSceneJson = sceneJson;
-      if (commandContext) {
-        commandContext.document = sceneJson;
-      }
-    }
+  async function updateSceneJson(sceneJson) {
+    if (sceneJson && typeof sceneJson === "object") return cardSession.update(sceneJson);
+    return currentSceneJson;
   }
 
   async function executeCommandBatch(commands, options = {}) {
-    if (!runtime || !Array.isArray(commands) || commands.length === 0) {
+    if (!Array.isArray(commands) || !commands.length) {
       return { ok: false, sceneMutated: false, results: [], error: "Scene preview runtime is not ready." };
     }
-    const [{ createCommandContext, executeCommands }, {
-      formatObjectGetFeedbackFromBatch,
-      extractVisualFeedbackFromBatch
-    }] = await Promise.all([
-      import("threejson"),
-      import("threejson/ai")
-    ]);
-    if (!commandContext || commandContext.scene !== runtime.scene) {
-      commandContext = createCommandContext({
-        scene: runtime.scene,
-        camera: runtime.camera,
-        renderer: runtime.renderer,
-        controls: runtime.controls,
-        runtime,
-        // Keep the declarative document beside the live runtime. Document-level commands and a
-        // later runtime snapshot can then preserve sceneConfig (notably authored lights) instead
-        // of reconstructing it from preview-only objects.
-        document: currentSceneJson,
-        options: {
-          renderMeshViews: (request) => {
-            const enabled = typeof cardOptions.shouldProvideMeshVisionFeedback === "function"
-              ? cardOptions.shouldProvideMeshVisionFeedback() === true
-              : cardOptions.meshVisionFeedback === true;
-            if (!enabled) {
-              throw new Error("mesh.renderViews is unavailable for the selected AI provider.");
-            }
-            return captureMeshReviewViews({ ...request, renderer: runtime.renderer });
-          }
-        }
-      });
-    }
-    const execResult = await executeCommands(commandContext, commands);
-    if (commandContext.runtime && commandContext.runtime !== runtime) {
-      runtime = commandContext.runtime;
-      watchLiveResize();
-      renderActivity.sync({ forceFrame: true });
-      syncThreeBoxPreviewAuxiliaryLights(
-        runtime.scene,
-        typeof cardOptions.shouldUsePreviewAuxiliaryLights === "function"
-          ? cardOptions.shouldUsePreviewAuxiliaryLights() !== false
-          : cardOptions.previewAuxiliaryLights !== false
-      );
-    }
-    const results = Array.isArray(execResult?.results) ? execResult.results : [];
-    const failed = results.find((entry) => entry?.ok === false);
-    const ok = !failed && execResult?.ok !== false;
-    if (!ok) {
-      return {
-        ok: false,
-        sceneMutated: false,
-        execResult,
-        results,
-        error: failed?.error || "Scene preview command application failed."
-      };
-    }
-    if (options.sceneJson && typeof options.sceneJson === "object") {
-      currentSceneJson = options.sceneJson;
-      if (commandContext) {
-        commandContext.document = options.sceneJson;
-      }
-    }
-    setLabel(options.label);
-    setDraftState(options.draft === true);
-    syncThreeBoxPreviewAuxiliaryLights(
-      runtime.scene,
-      typeof cardOptions.shouldUsePreviewAuxiliaryLights === "function"
-        ? cardOptions.shouldUsePreviewAuxiliaryLights() !== false
-        : cardOptions.previewAuxiliaryLights !== false
-    );
-    const objectGetFeedback = formatObjectGetFeedbackFromBatch(results);
-    const visualFeedback = extractVisualFeedbackFromBatch(results);
-    return {
-      ok: true,
-      sceneMutated: options.readOnly === true ? false : results.some((entry) => entry?.ok !== false),
-      execResult,
-      results,
-      objectGetFeedback,
-      visualFeedback,
-      runtime
-    };
+    const { formatObjectGetFeedbackFromBatch, extractVisualFeedbackFromBatch } = await import("threejson/ai");
+    const execResult = await cardSession.execute(commands, options);
+    const results = execResult.results || [];
+    if (!execResult.ok) return { ...execResult, execResult, error: execResult.error?.message || execResult.error || results.find((entry) => !entry.ok)?.error || "Scene command transaction failed." };
+    setLabel(options.label); setDraftState(options.draft === true);
+    renderActivity.sync({ forceFrame: true });
+    return { ok: true, sceneMutated: execResult.sceneMutated, execResult, results,
+      objectGetFeedback: formatObjectGetFeedbackFromBatch(results), visualFeedback: extractVisualFeedbackFromBatch(results), runtime };
   }
 
-  /** Applies an AI command refinement to the already-visible runtime. This preserves the camera,
-   * WebGL context and in-flight/loaded textures instead of destroying and rebuilding the whole
-   * card for every incremental step. The caller supplies the authoritative post-command JSON so
-   * downloads/history stay aligned with the runtime without another export pass. */
   async function applyCommands(commands, options = {}) {
     const result = await executeCommandBatch(commands, options);
     if (!result.ok) {
-      if (result.error === "Scene preview runtime is not ready.") {
-        return null;
-      }
+      if (result.error === "Scene preview runtime is not ready.") return null;
       throw new Error(result.error);
     }
     return result.runtime;
   }
 
-  /** Applies a command batch and returns executor metadata for the shared AI adjustment loop. */
-  async function applyCommandsWithResult(commands, options = {}) {
-    return executeCommandBatch(commands, options);
-  }
+  async function applyCommandsWithResult(commands, options = {}) { return executeCommandBatch(commands, options); }
 
-  /** Exports the already-visible authoritative runtime without constructing a second hidden
-   * ThreeJSON scene. Updating currentSceneJson keeps finalize/download/history aligned. */
+  // Save the authoring snapshot, never animation poses, helper lights or transient proxy URLs.
   async function exportSceneJsonString(options = {}) {
-    if (!runtime?.scene?.isScene) {
-      return "";
-    }
-    const { sceneToStandardJsonSimple } = await import("threejson");
-    const basePayload = commandContext?.document && typeof commandContext.document === "object"
-      ? commandContext.document
-      : currentSceneJson;
-    const sceneJson = sceneToStandardJsonSimple(runtime.scene, {
-      merge: false,
-      runtimeTarget: runtime,
-      basePayload
-    });
-    currentSceneJson = sceneJson;
-    if (commandContext) {
-      commandContext.document = sceneJson;
-    }
-    setLabel(options.label);
-    if (Object.prototype.hasOwnProperty.call(options, "draft")) {
-      setDraftState(options.draft === true);
-    }
-    return JSON.stringify(sceneJson, null, 2);
+    const document = cardSession.export();
+    if (!document) return "";
+    currentSceneJson = document; setLabel(options.label);
+    if (Object.prototype.hasOwnProperty.call(options, "draft")) setDraftState(options.draft === true);
+    return JSON.stringify(document, null, 2);
   }
 
-  /** Clears draft chrome without reloading an identical scene. */
   async function finalize(sceneJsonPayload, options = {}) {
-    const sameScene = runtime && currentSceneJson &&
-      JSON.stringify(currentSceneJson) === JSON.stringify(sceneJsonPayload);
-    if (!sameScene) {
-      return render(sceneJsonPayload, { ...options, draft: false });
-    }
-    currentSceneJson = sceneJsonPayload;
-    setLabel(options.label);
-    setDraftState(false);
-    loadingMask.hidden = true;
-    return runtime;
+    return render(sceneJsonPayload, { ...options, draft: false });
   }
 
   function dispose() {
-    renderSeq += 1;
-    clearTimeout(textureBadgeTimer);
-    textureBadgeTimer = null;
-    liveResizeObserver?.disconnect();
-    liveResizeObserver = null;
-    renderActivity.dispose();
-    runtime?.dispose?.();
-    runtime = null;
-    commandContext = null;
+    renderSeq++;
+    clearTimeout(textureBadgeTimer); textureBadgeTimer = null;
+    liveResizeObserver?.disconnect(); liveResizeObserver = null;
+    renderActivity.dispose(); cardSession.dispose(); runtime = null; canvas = null;
   }
 
   function requireSceneJson() {
@@ -606,22 +465,18 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
     if (!format) {
       return;
     }
-    if (!runtime?.scene?.isScene) {
-      showToast(t("threebox.sceneCard.modelNotReady", "画布场景尚未渲染完成。"), "warning");
-      return;
-    }
     exportMeshBtn.disabled = true;
     const formatLabel = format.toUpperCase();
     showToast(t("threebox.sceneCard.exportMeshStarted", "正在导出 {format}…", { format: formatLabel }), "info");
     try {
       const { exportMesh } = await import("threejson");
-      const result = await exportMesh(runtime.scene, {
+      const result = await cardSession.withRuntime((runtime) => exportMesh(runtime.scene, {
         format,
         scope: "scene",
         externalModelPolicy: "include",
         renderer: runtime.renderer,
         fileNameStem: currentLabel
-      });
+      }));
       const payload = result.data instanceof ArrayBuffer ? result.data : String(result.data || "");
       const blob = new Blob([payload], { type: result.mimeType || "application/octet-stream" });
       downloadBlob(blob, result.fileNameHint || `${currentLabel}.${result.extension || format}`);
@@ -740,7 +595,7 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
     }
     refreshBtn.disabled = true;
     try {
-      await render(sceneJson, { label: currentLabel });
+      await render(sceneJson, { label: currentLabel, force: true });
     } finally {
       refreshBtn.disabled = false;
     }
@@ -758,7 +613,7 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
 
   return {
     el,
-    canvas,
+    get canvas() { return canvas; },
     render,
     applyCommands,
     applyCommandsWithResult,
@@ -769,6 +624,9 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
     setDraftStatus,
     setLabel,
     updateSceneJson,
+    activate,
+    setViewportLimit: (value) => cardSession.setViewportLimit(value),
+    applyTextureAssignment: (assignment, options) => cardSession.applyTextureAssignment(assignment, options),
     setPreviewAuxiliaryLightsEnabled: (enabled) =>
       syncThreeBoxPreviewAuxiliaryLights(runtime?.scene, enabled !== false),
     getRuntime: () => runtime

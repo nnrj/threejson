@@ -18,6 +18,8 @@ export const THREEBOX_SETTINGS_DEFAULTS = {
     theme: "dark",
     templateThumbnailsEnabled: true,
     previewAuxiliaryLights: true,
+    multipleActiveViewports: false,
+    maxActiveViewports: 2,
     assetGatewayUrl: "",
     builtinNotificationsEnabled: false,
     builtinNotificationsDecisionMade: false
@@ -108,6 +110,8 @@ export const THREEBOX_SETTINGS_FIELDS = [
   { section: "general", path: "general.theme", type: "select", label: "主题", options: [["dark", "深色"], ["light", "浅色"]] },
   { section: "general", path: "general.templateThumbnailsEnabled", type: "checkbox", label: "自动生成并缓存模板库缩略图" },
   { section: "general", path: "general.previewAuxiliaryLights", type: "checkbox", label: "ThreeBox 画布启用辅助光源" },
+  { section: "general", path: "general.multipleActiveViewports", type: "checkbox", label: "允许多个画布同时交互（增加显存占用）" },
+  { section: "general", path: "general.maxActiveViewports", type: "number", label: "最多同时活动的画布数", min: 1, step: 1 },
 
   { section: "ai", path: "ai.rememberKeys", type: "checkbox", label: "记住 API Key 到本地" },
   {
