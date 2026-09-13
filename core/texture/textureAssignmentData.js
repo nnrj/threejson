@@ -8,7 +8,7 @@ function setMaterialProperties(material, assignment) {
     const resources = { ...(material.textureResources || {}) };
     for (const [slot, source] of Object.entries(assignment.maps || {})) {
       // Persist source/provenance and durable archive replicas, never proxy URLs with keys.
-      const replica = candidate.archived ? candidate.runtimeMaps?.[slot] : null;
+      const replica = candidate.archiveMaps?.[slot] ?? (candidate.archived && !candidate.archiveMaps ? candidate.runtimeMaps?.[slot] : null);
       resources[slot] = {
         source,
         ...(candidate.license ? { license: cloneJson(candidate.license) } : {}),

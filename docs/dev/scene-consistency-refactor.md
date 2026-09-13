@@ -194,3 +194,15 @@ must remain distinguishable from loader, material, authorization and GPU failure
 - See [archive ownership](./archive-resource-ownership.md) for storage overhead,
   policy choices and limitations of previously persisted blob-only records.
 - Local checkpoint: 1,385 tests passed, 1 existing skip.
+
+## Implementation evidence: optional service delivery
+
+- Server asset and texture downloads share streaming size checks, full-body
+  timeout, cancellation and private-address checks. Text model formats are
+  supported. HEAD/Range metadata and compressed lengths have explicit handling.
+- Optional R2 archival preserves successful slots and reports each failed slot.
+  Durable archiveMaps are separate from runtime proxy addresses and source maps.
+  No new R2 requirement or database migration was introduced.
+- Dashboard explains remote delivery versus archival and the full-download timeout.
+- Local server suite: 81 passed; server typecheck and Dashboard production build
+  passed. These changes have not been deployed.
