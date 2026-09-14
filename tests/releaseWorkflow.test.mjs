@@ -80,11 +80,15 @@ test("resume integrity checks reject an already-published version with different
   );
 });
 
-test("threejson tarball gate requires the runtime and AI package entries", () => {
+test("threejson tarball gate requires runtime, document/session and optional compiled worker entries", () => {
   const valid = {
     files: [
       { path: "core/runtime.js" },
       { path: "core/ai/index.js" },
+      { path: "core/document.js" },
+      { path: "core/session.js" },
+      { path: "core/geometry/geometryCompiler.js" },
+      { path: "core/geometry/geometry.worker.bundle.js" },
       { path: "package.json" }
     ]
   };

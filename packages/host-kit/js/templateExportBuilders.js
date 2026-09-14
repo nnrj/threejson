@@ -10,7 +10,7 @@ const ASSETS_CDN = `${DEFAULT_CDN_ASSETS_BASE}/`;
 // Keep this in sync with the root package version. The release version command updates it in both
 // the scene-host source and the published @threejson/host-kit copy. Pinning avoids a downloaded
 // template changing behavior later merely because npm's `latest` dist-tag moved.
-export const TEMPLATE_THREEJSON_VERSION = "0.1.0-alpha.10";
+export const TEMPLATE_THREEJSON_VERSION = "0.1.0-alpha.11";
 const THREEJSON_CDN = `https://cdn.jsdelivr.net/npm/threejson@${TEMPLATE_THREEJSON_VERSION}`;
 
 const OPTIONAL_TEMPLATE_DEPENDENCIES = Object.freeze({

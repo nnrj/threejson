@@ -1,5 +1,6 @@
 export interface SceneAgentSettings {
   ai: Record<string, unknown> & {
+    thinkingPreference: "disabled" | "high" | "max" | "inherit";
     sceneGenerationMode: "auto" | "direct" | "draft_refine";
     complexModelStrategy: "auto" | "full-coordinates" | "progressive";
     modelQuality: "draft" | "balanced" | "high" | "custom";
@@ -8,10 +9,34 @@ export interface SceneAgentSettings {
     maxAutoRefineRounds: number;
     maxSceneSegments: number;
     sceneMaxOutputTokens: number;
+    includeSpatialSummary: boolean;
+    includeFullJson: boolean;
+    globalPromptPrefix: string;
+    includeTurnSummary: boolean;
+    autoGenerateSceneTitle: boolean;
+    sceneTitleLanguage: string;
+    attachReferenceLinks: boolean;
+    capabilityLookupEnabled: boolean;
+    animationCapabilityMode: "auto" | "on" | "off";
+    texturePipelineEnabled: boolean;
+    textureStrategy: "semantic-hybrid" | "manifest" | "search" | "generate";
+    textureServiceUrl: string;
+    textureServiceApiKey: string;
+    textureLocalCache: boolean;
+    textureAllowUnknownLicense: boolean;
+    texturePersistenceMode: "remote" | "archive-selected" | "archive-all";
+    texturePbr: boolean;
+    agentPolicyVersion: number;
   };
   io: Record<string, unknown> & {
     turnCacheMode: "full" | "diff";
     turnDiffCheckpointInterval: number;
+    exportJsonIndent: number;
+    sceneJsonFormat: "standard" | "friendly";
+    tjzAssetPolicy: "preserve" | "tryPack";
+    showMeshExportWarnings: boolean;
+    jsonViewerLineNumbers: boolean;
+    jsonViewerHighlight: boolean;
   };
 }
 

@@ -31,6 +31,10 @@ const VERSION_PATTERN = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?(?
 const REQUIRED_THREEJSON_PACKAGE_FILES = Object.freeze([
   "core/runtime.js",
   "core/ai/index.js",
+  "core/document.js",
+  "core/session.js",
+  "core/geometry/geometryCompiler.js",
+  "core/geometry/geometry.worker.bundle.js",
   "package.json"
 ]);
 const DEFAULT_CDN_TIMEOUT_SECONDS = 180;

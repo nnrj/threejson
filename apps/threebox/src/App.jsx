@@ -1163,6 +1163,7 @@ export function App() {
       if (!userPrompt || busy) {
         return;
       }
+      historyReplayVersionRef.current++;
 
       const retrying = Boolean(retryOptions?.turnId);
       const userMessageId = crypto?.randomUUID?.() ?? `u-${Date.now()}-${Math.random().toString(36).slice(2)}`;

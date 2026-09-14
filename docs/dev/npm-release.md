@@ -3,6 +3,10 @@
 本文面向 ThreeJSON 仓库维护者，统一说明版本号升级、测试、打包、npm 发布、固定 CDN
 验证、Git tag 和 Shower 部署顺序。
 
+场景文档/运行时重构的接口变化、可选 Worker 和宿主接入说明见
+[场景文档与运行时接入](./scene-authoring-runtime.md)。该文档也记录了本次已准备但尚未发布的
+版本；版本已升级时，不要重复执行 `release:version`。
+
 ## 发布对象与顺序
 
 发布工具管理以下 npm 包：
@@ -157,6 +161,8 @@ npm run release:pack
 
 - `core/runtime.js`；
 - `core/ai/index.js`；
+- `core/document.js` 与 `core/session.js`；
+- `core/geometry/geometryCompiler.js` 与生成的 `geometry.worker.bundle.js`；
 - `package.json`。
 
 tarball 写入被 Git 忽略的 `dist/release/<timestamp>/`，不会覆盖之前的打包结果。

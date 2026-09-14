@@ -1,7 +1,8 @@
 # Scene consistency refactor
 
 Implementation record for the September 2026 authoring/runtime refactor. This is a
-delivery checklist, not a claim that unchecked capabilities have shipped.
+delivery checklist. The checkpoint sections below record progress at the time;
+the final verification section supersedes their then-outstanding items.
 
 ## Decisions
 
@@ -18,14 +19,14 @@ delivery checklist, not a claim that unchecked capabilities have shipped.
 
 ## Delivery checklist
 
-- [ ] Resource readiness, cancellation, cache isolation, PBR material preservation.
-- [ ] Complete light capture and reload; no helper lights in authored data.
-- [ ] Versioned authoring document, adapters, transactions and runtime session.
-- [ ] Domain stable parts, overrides, conflict diagnostics and explicit bake.
-- [ ] History viewport lifecycle and editor transaction/undo integration.
-- [ ] Correct modeling operations, dependency/relationship evaluation and AI queries.
-- [ ] Shared native/React/Cloud integration, archive/proxy metadata, diagnostics.
-- [ ] End-to-end regressions, package boundary checks, migration and release guidance.
+- [x] Resource readiness, cancellation, cache isolation, PBR material preservation.
+- [x] Complete light capture and reload; no helper lights in authored data.
+- [x] Versioned authoring document, adapters, transactions and runtime session.
+- [x] Domain stable parts, overrides, conflict diagnostics and explicit bake.
+- [x] History viewport lifecycle and editor transaction/undo integration.
+- [x] Correct modeling operations, dependency/relationship evaluation and AI queries.
+- [x] Shared native/React/Cloud integration, archive/proxy metadata, diagnostics.
+- [x] End-to-end regressions, package boundary checks, migration and release guidance.
 
 ## Initial evidence
 
@@ -322,3 +323,42 @@ must remain distinguishable from loader, material, authorization and GPU failure
 - The local browser fixture verifies same-ID snapshots, a real local Earth map,
   deliberate texture failure and exactly one live canvas. See
   `tests/fixtures/scene-history-browser.html`; it uses no LLM or production account.
+
+## Final verification and delivery boundaries
+
+- Deserialized document envelopes now reacquire immutable ownership; external
+  nested mutations cannot change a session or a no-op transaction's history.
+  Preparation failure releases optional resources without adopting them into the
+  old runtime. New user messages invalidate unfinished history replay.
+- Final engine/host suite: **1,432 passed, 1 pre-existing skip, 0 failures**;
+  AI static suite: **8 passed**. Release version checks passed. The suites include
+  package/dependency boundaries, archive round trips, model/texture failure
+  injection, atomic transactions, geometry/Worker parity and independent snapshots.
+- Local server suite: **81 passed**, with typecheck. Dashboard and React ThreeBox
+  production builds passed. Cloud passed TypeScript + production build using real
+  local npm tarballs, plus its architecture and notification contract checks.
+- Browser checks covered room doors/statistics, textured port ships/quay/panels,
+  Editor edits/undo/recovery and design-parameter changes; native history preserved
+  distinct same-ID colors and Earth texture/lighting after page reload. Dormant
+  snapshots used one live canvas. A missing image retained the base blue material.
+- Browser checks also covered the plain HTML animated cube, Particle V2 shell/
+  curve sources, and explicit WebGPU TSL preset/graph/bloom rendering. Shower
+  retained its previous scene on invalid graph compilation and displayed the
+  control-mesh chair correctly. Cloud's production bundle rendered an imported
+  local scene through the shared card and exposed the viewport-budget controls.
+- Cloud account bootstrap could not reach the configured backend from the local
+  preview origin; its guest UI, input, settings and local import still worked.
+  No live AI, registration, payment, remote migration, publish or deployment was
+  performed. Browser checks are not a claim of all-device GPU coverage.
+- Standard/friendly JSON remain supported. Optional design relationships are
+  static, not a full CAD/physics solver. Worker offload covers prepared editable
+  and procedural meshes, not every Domain-generated mesh/CSG task. Arbitrary
+  JavaScript side effects and legacy imperative deployment are not transactional.
+- A dead remote source with neither cache nor archive remains unrecoverable;
+  missing R2 alone is not an error. Existing blob-only historical records cannot
+  be repaired without the original bytes.
+
+See [integration and migration guidance](./scene-authoring-runtime.md) and
+[release instructions](./npm-release.md). Prepared npm versions must be published
+before deploying the Cloud/HTML templates that reference them. All changes and
+commits are local; nothing has been pushed.

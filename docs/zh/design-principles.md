@@ -8,9 +8,9 @@
 
 ## 规范真源与运行叠加层（「JSON 为王」的精确含义）
 
-「JSON 为王」指 **规范真源（canonical descriptor）**：持久化、再加载、与声明式 core API（如 `descriptorSync`、L3 Patch）交互时，以 `userData.objJson` 及 `worldInfo` 中对应描述为准。这与 **运行叠加层（runtime overlay）** 不矛盾：游戏循环、物理、Mixer、脚本可直接改 `THREE.Object3D`，二者在时间上**不必逐帧相等**。
+「JSON 为王」指 **创作真源（authoring document）**，不是每一帧的渲染对象。文档会话以不可变 `SceneDocument` 保存参数、材质来源、拓扑与历史；`userData.objJson` 及 `worldInfo` 是运行时编译/描述符视图，不得反过来覆盖会话真源。未接入会话的低层命令式 API 仍支持原有描述符同步约定。游戏循环、物理、Mixer、脚本可直接改 `THREE.Object3D`，二者**不必逐帧相等**。接入与迁移见 [场景文档与运行时](../dev/scene-authoring-runtime.md)。
 
-- **游戏 / 高频路径**：允许长期只维护运行态；在需要再次进入「以描述符为准」的 core 流程之前，宿主应调用 `reconcileTransformToDescriptor`（或等价批量提交），否则依赖 `objJson` 的路径可能读到陈旧值。详见 [`docs/scope.md`](./scope.md) 中的契约表。
+- **游戏 / 高频路径**：允许长期只维护运行态；显式捕获姿态时，低层 API 可调用 `reconcileTransformToDescriptor`，会话宿主则把需要保留的变化提交为文档事务。不能为了普通保存，自动把动画帧、辅助对象与资源临时状态写入历史。详见 [scope.md](./scope.md)。
 - **声明式动画**：仍以 JSON `animations` 为配置真源；glTF 资产动画由 `AnimationMixer` 管线承担，由 `animationMode` 协调是否与声明式并存。
 
 ## 可选、非侵入
@@ -126,7 +126,7 @@ ThreeJSON 旨在消化「用 JSON 描述 Three.js 场景」的重复劳动；不
 3. **禁止 core 承载某一应用的交互细节**（弹窗文案、drill-in 手势、编辑器设置项）；这些留在宿主，core 只暴露中性 API（如 `assertSceneExportable`、`exportDeployRootDescriptor`）。
 4. **调度契约**：core 调度只认 JSON 的 `domain` + `handler` 与 registry；业务差异在 `domains/*/index.js` 的 `api` 钩子中扩展。
 5. **持久化形态**：authoritative 加载记录为 **instance-only** `persistSource`（每个 deploy 根一份）；core 不统一改写为 `items[]` bundle。
-6. **编辑器与快照**：运行时真源是 Scene + `userData`；持久化出口是 `sceneToJson`；core 不必认识「编辑器」这一宿主概念。
+6. **编辑器与快照**：创作保存通过文档会话，`sceneToJson` 保留显式运行时捕获用途；播放状态、资源与视口独立拥有生命周期。core 提供通用事务，不必认识「编辑器」这一具体宿主。
 7. **视觉常量**（颜色、透明度等）：**core** 仅在 [`core/theme/runtimeVisualDefaults.js`](../../core/theme/runtimeVisualDefaults.js) 集中定义 core 源码内实际使用的缺省值；**domains** 各自维护本域 palette（机柜壳体、门扇等域内专属色）；**宿主** 可 import core 与 domain 的导出常量，但不得将宿主或 domain 专属常量写入 core。当某一 domain **基于另一 domain 实现**（如 cabinet 委托 stat 绘制容量方柱、port 复用 stat 方柱样式）时，在创建或配置该依赖域对象时**应刻意 import 并应用被依赖域 palette 中的常量**，以保持视觉一致；业务上也可显式传入自定义颜色覆盖缺省。禁止的是无 compose 关系的 palette 交叉引用，以及 `core → domains` 反向依赖。
 
 业务域扩展与 JSON 形态详见 [`docs/domains.md`](./domains.md)。

@@ -18,9 +18,9 @@ This document describes **core** capability boundaries and how **canonical JSON*
 
 ## Canonical source vs runtime overlay
 
-- **Canonical**: persistence, reload, and interaction with `descriptorSync` / Patch treat `userData.objJson` (and matching `worldInfo` entries) as authoritative.
+- **Authoring**: document sessions own immutable `SceneDocument` persistence, reload and undo. `userData.objJson` / `worldInfo` are compiled descriptor views; non-session imperative APIs retain their existing descriptor-sync contract.
 - **Runtime overlay**: game loop, physics, scripts may modify `Object3D` directly; **need not** match JSON every frame.
-- **Before re-entering JSON-side flows**: call `reconcileTransformToDescriptor` (or equivalent batch commit), or descriptor-dependent APIs may read stale values.
+- **Explicit runtime capture**: imperative callers can use `reconcileTransformToDescriptor`; session hosts commit selected poses as transactions instead of letting animation overwrite authoring history. See the [migration guide](../dev/scene-authoring-runtime.md).
 
 For an **ideal, non-mandatory** split of `core/builder`, `core/handler`, and `core/runtime`, see [Design principles · core source layout](./design-principles.md#core-source-layout-builder--handler--runtime-ideal-reference-not-mandatory) and the long-term memo [lab/core-layering-memo.md](../../lab/core-layering-memo.md).
 

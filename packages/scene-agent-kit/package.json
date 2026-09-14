@@ -1,6 +1,6 @@
 {
   "name": "@threejson/scene-agent-kit",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.3",
   "description": "Framework-neutral conversational ThreeJSON scene authoring: routing, generation and adjustment orchestration, settings, progress contracts, and persistence adapters.",
   "author": "nnrj <tianhehechu2017@gmail.com>",
   "repository": {
@@ -49,8 +49,8 @@
     "README.md"
   ],
   "peerDependencies": {
-    "@threejson/host-kit": "^0.1.0-alpha.2",
-    "threejson": "^0.1.0-alpha.10"
+    "@threejson/host-kit": "^0.1.0-alpha.3",
+    "threejson": "^0.1.0-alpha.11"
   },
   "devDependencies": {
     "@threejson/host-kit": "file:../host-kit",

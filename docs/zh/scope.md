@@ -16,9 +16,9 @@
 
 ## 规范真源（Canonical）与运行时叠加层（Runtime）
 
-- **规范真源**：持久化、再加载、以及与 `descriptorSync` / Patch 交互时，以 `userData.objJson`（及 `worldInfo` 中对应条目）为准。
+- **创作真源**：文档会话以不可变 `SceneDocument` 负责持久化、再加载和撤销；`userData.objJson` / `worldInfo` 是编译描述符视图。未接入会话的命令式接口仍按原描述符同步约定工作。
 - **运行时叠加层**：游戏循环、物理、脚本直接修改 `Object3D` 的状态；**不必**每帧与 JSON 一致。
-- **再进入 JSON 侧流程前**：应调用 `reconcileTransformToDescriptor`（或等价批量提交），否则依赖描述符的接口可能读到陈旧值。
+- **显式捕获运行态**：低层接口可调用 `reconcileTransformToDescriptor`；会话宿主把需要保存的姿态作为事务提交，而非让动画状态自动覆盖创作历史。见 [接入说明](../dev/scene-authoring-runtime.md)。
 
 `core/` 源码目录（`builder` / `handler` / `runtime`）的理想职责划分见 [设计原则 · core 源码目录](./design-principles.md#core-源码目录builder--handler--runtime理想参照非强制)（**倾向性说明，非强制搬迁**）；远期备忘见 [lab/core-layering-memo.md](../../lab/core-layering-memo.md)。
 

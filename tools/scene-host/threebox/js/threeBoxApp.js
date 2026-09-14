@@ -1538,6 +1538,7 @@ async function main() {
   }
 
   async function handleUserMessage(text, api) {
+    historyReplayVersion++; // Background replay must not append old rows after a new request.
     try {
       await handleUserMessageUnsafe(text, api);
     } catch (error) {

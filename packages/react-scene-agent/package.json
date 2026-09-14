@@ -1,6 +1,6 @@
 {
   "name": "@threejson/react-scene-agent",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.3",
   "description": "React hooks and UI primitives for an embeddable conversational ThreeJSON scene workbench.",
   "author": "nnrj <tianhehechu2017@gmail.com>",
   "repository": {
@@ -54,11 +54,11 @@
     "README.md"
   ],
   "peerDependencies": {
-    "@threejson/host-kit": "^0.1.0-alpha.2",
-    "@threejson/scene-agent-kit": "^0.1.0-alpha.2",
+    "@threejson/host-kit": "^0.1.0-alpha.3",
+    "@threejson/scene-agent-kit": "^0.1.0-alpha.3",
     "react": ">=18",
     "three": ">=0.179.0",
-    "threejson": "^0.1.0-alpha.10"
+    "threejson": "^0.1.0-alpha.11"
   },
   "devDependencies": {
     "@threejson/host-kit": "file:../host-kit",
