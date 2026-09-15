@@ -15,6 +15,7 @@ import { resolveRuntimeContext } from "../runtime/runtimeContext.js";
 const LISTENER_USERDATA_KEY = "threeJsonAudioListener";
 const SCENE_AUDIO_TAG_KEY = "threeJsonSceneAudio";
 const WAS_PLAYING_USERDATA_KEY = "threeJsonWasPlaying";
+const audioUnlockBindings = new WeakMap();
 
 /**
  * Scene audio session generation + pause/volume policy, per RuntimeContext (see
@@ -145,7 +146,7 @@ export function resumeThreeJsonAudioContext(listener) {
   if (!ctx) {
     return Promise.resolve();
   }
-  if (ctx.state === "suspended" && typeof ctx.resume === "function") {
+  if ((ctx.state === "suspended" || ctx.state === "interrupted") && typeof ctx.resume === "function") {
     return Promise.resolve(ctx.resume()).then(() => {});
   }
   return Promise.resolve();
@@ -344,30 +345,62 @@ export function setThreeJsonSceneAudioPaused(runtime, paused) {
  * Resume AudioContext after user gesture and retry scene audio with autoplay (common on first page open).
  * @param {EventTarget|null|undefined} target
  * @param {() => ({ camera?: import("three").Camera|null, scene?: import("three").Scene|null }|null|undefined)} getRuntime
+ * @returns {() => void} Remove the gesture listeners when the host is disposed.
  */
 export function bindThreeJsonSceneAudioUnlock(target, getRuntime) {
-  if (!target || target.__threeJsonSceneAudioUnlockBound === true) {
-    return;
+  if (!target?.addEventListener) {
+    return () => {};
   }
-  target.__threeJsonSceneAudioUnlockBound = true;
+  const existing = audioUnlockBindings.get(target);
+  if (existing) {
+    existing.getRuntime = getRuntime;
+    return existing.dispose;
+  }
+  const binding = { getRuntime, active: true, dispose: null };
   const onUnlock = () => {
-    const runtime = typeof getRuntime === "function" ? getRuntime() : null;
+    const runtime = binding.getRuntime?.();
     const { camera, scene } = getThreeJsonSceneAudioRoots(runtime);
-    void resumeThreeJsonAudioContextFromCamera(camera).then(() => {
+    const listener = camera?.userData?.[LISTENER_USERDATA_KEY];
+    if (!binding.active || !listener?.context || getThreeJsonSceneAudioPlaybackPolicy(scene).paused) return;
+    const sessionId = getThreeJsonSceneAudioSessionId(scene);
+    const retryPlayback = () => {
+      const current = getThreeJsonSceneAudioRoots(binding.getRuntime?.());
+      // A delayed resume must never restart a disposed or replaced scene.
+      if (!binding.active || current.camera !== camera || current.scene !== scene
+        || camera.userData?.[LISTENER_USERDATA_KEY] !== listener
+        || getThreeJsonSceneAudioSessionId(scene) !== sessionId
+        || listener.context.state !== "running") return;
       const { paused } = getThreeJsonSceneAudioPlaybackPolicy(scene);
       forEachThreeJsonSceneAudioNode(camera, scene, (node) => {
         const rec = node.userData?.objJson;
         if (rec?.autoplay === true && node.isPlaying !== true && !paused) {
-          const playPromise = node.play?.();
-          if (playPromise && typeof playPromise.catch === "function") {
-            playPromise.catch(() => {});
+          try {
+            Promise.resolve(node.play?.()).catch(() => {});
+          } catch (_error) {
+            // One unavailable source must not stop other scene audio.
           }
         }
       });
-    });
+    };
+    try {
+      // Invoke resume synchronously inside the trusted gesture, not in a later timer.
+      void resumeThreeJsonAudioContext(listener).then(retryPlayback).catch(() => {});
+    } catch (_error) {
+      // Keep listening: an early gesture or rejected resume is not a successful unlock.
+    }
   };
-  target.addEventListener("pointerdown", onUnlock, { once: true, capture: true });
-  target.addEventListener("keydown", onUnlock, { once: true, capture: true });
+  binding.dispose = () => {
+    if (!binding.active) return;
+    binding.active = false;
+    target.removeEventListener("pointerdown", onUnlock, true);
+    target.removeEventListener("keydown", onUnlock, true);
+    audioUnlockBindings.delete(target);
+  };
+  audioUnlockBindings.set(target, binding);
+  // Repeated gestures also recover a later browser interruption or a new scene.
+  target.addEventListener("pointerdown", onUnlock, { capture: true });
+  target.addEventListener("keydown", onUnlock, { capture: true });
+  return binding.dispose;
 }
 
 /**

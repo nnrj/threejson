@@ -30,6 +30,8 @@ import {
   updateViewportGizmoOverlay
 } from "../../shared/js/viewportGizmoOverlay.js";
 import { shouldApplyThemeSceneBackground } from "./showerSceneBackground.js";
+import { toShowerStandardScene } from "./showerSceneFormat.js";
+import { createShowerFirstPersonUi } from "./showerFirstPersonUi.js";
 import { ensureSceneHostSceneCapabilitiesForPayload } from "../../shared/js/sceneCapabilities.js";
 import { createSceneCardSession, createSceneCardViewport } from "../../shared/js/sceneCardSession.js";
 import { createSceneResourceDiagnosticsOverlay } from "../../shared/js/sceneResourceDiagnostics.js";
@@ -82,6 +84,17 @@ const labels = {
     loading: "加载中...",
     editorLoading: "正在加载 JSON 编辑器...",
     ready: "Ready",
+    walkReady: "第一人称漫游",
+    walkPaused: "漫游已暂停",
+    walkEnter: "开始漫游",
+    walkResume: "继续漫游",
+    walkEntering: "正在进入…",
+    walkInstructions: "点击进入后，WASD 移动、鼠标转向。按 Esc 释放鼠标，即可操作代码和工具栏。",
+    walkFocusInstructions: "画布聚焦后使用 WASD 移动。按 Esc 或点击画布外暂停输入。",
+    walkActiveHint: "WASD 移动 · 鼠标转向 · Esc 释放鼠标",
+    walkFocusHint: "WASD 移动 · Esc 暂停漫游",
+    walkUnsupported: "此浏览器不支持鼠标锁定，请使用支持 Pointer Lock 的桌面浏览器。",
+    walkFailed: "未能锁定鼠标。请点击重试；若浏览器限制了此功能，请检查站点权限或退出后重新进入。",
     noObjects: "暂无对象",
     parseFailed: "JSON 解析失败：",
     renderFailed: "场景加载失败：",
@@ -141,6 +154,17 @@ const labels = {
     loading: "Loading...",
     editorLoading: "Loading JSON editor...",
     ready: "Ready",
+    walkReady: "First-person walk",
+    walkPaused: "Walking paused",
+    walkEnter: "Start walking",
+    walkResume: "Continue walking",
+    walkEntering: "Entering…",
+    walkInstructions: "Click to enter. Use WASD to move and the mouse to look. Press Esc to release the pointer and use the editor or toolbar.",
+    walkFocusInstructions: "Focus the canvas and use WASD to move. Press Esc or click outside the canvas to pause input.",
+    walkActiveHint: "WASD to move · Mouse to look · Esc to release pointer",
+    walkFocusHint: "WASD to move · Esc to pause walking",
+    walkUnsupported: "This browser does not support pointer lock. Please use a desktop browser with Pointer Lock support.",
+    walkFailed: "Could not lock the pointer. Click to retry; if your browser restricted this feature, check site permissions or leave and re-enter.",
     noObjects: "No objects",
     parseFailed: "JSON parse failed: ",
     renderFailed: "Scene load failed: ",
@@ -239,6 +263,7 @@ let runtimeUsesThemeBackground = false;
 let sceneRunVersion = 0;
 let sceneRequestController = null;
 const diagnosticsView = createSceneResourceDiagnosticsOverlay(els.canvasWrap);
+const firstPersonUi = createShowerFirstPersonUi(els.canvasWrap, t);
 const sceneSession = createSceneCardSession({
   onDiagnosticsChanged: diagnosticsView.update,
   createRuntime: createJsonScene,
@@ -253,7 +278,11 @@ const sceneSession = createSceneCardSession({
       els.canvas = canvas; canvas.id = "canvasContainer";
     }
   }),
-  onRuntimeChanged(next) { runtime = next; }
+  onRuntimeChanged(next) { runtime = next; firstPersonUi.setRuntime(next); }
+});
+window.addEventListener("pagehide", (event) => {
+  firstPersonUi.pause();
+  if (!event.persisted) firstPersonUi.dispose();
 });
 
 // Default fit direction (isometric). The former per-axis "three views" cycling was removed — that
@@ -308,6 +337,7 @@ async function init() {
     renderCatalog();
     updateContextPanels();
     syncAudioMuteUi();
+    firstPersonUi.refresh();
   });
   els.themeSelect.addEventListener("change", () => {
     theme = els.themeSelect.value;
@@ -774,11 +804,14 @@ function syncViewportGizmoFromCheckbox() {
 
 async function runExampleBootstrap(kind, ctx) {
   try {
-    if (kind === "fps-walk") {
+    if (kind === "fps-walk" || kind === "fps-rapier") {
       const { bootstrapFirstPersonExtensionsFromScene } = await import(
         "../../../../extensions/fps-walk/bootstrapFirstPersonExtensions.js"
       );
-      await bootstrapFirstPersonExtensionsFromScene(ctx);
+      const RAPIER = kind === "fps-rapier"
+        ? (await import("@dimforge/rapier3d-compat")).default
+        : undefined;
+      await bootstrapFirstPersonExtensionsFromScene({ ...ctx, RAPIER });
       return;
     }
     if (kind === "stat-echarts") {
@@ -802,25 +835,26 @@ async function runExampleBootstrap(kind, ctx) {
 
 async function runScene(sceneJson, settings = {}) {
   const version = ++sceneRunVersion;
+  firstPersonUi.setLoading(true);
   showLoading(true);
-  clearHighlight();
-  const nextJson = structuredClone(sceneJson);
-  nextJson.canvasWidth = Math.max(1, els.canvasWrap.clientWidth);
-  nextJson.canvasHeight = Math.max(1, els.canvasWrap.clientHeight);
-  const bootstrapKind = findManifestContextForJson(currentJsonUrl)?.item?.bootstrap;
-  const createOptions = {
-    assetsBase: sceneHostAssetUrl("assets/"),
-    resetScene: true,
-    afterRender: renderViewportGizmoOverlay
-  };
-  if (bootstrapKind) {
-    createOptions.onSceneReady = (ctx) => runExampleBootstrap(bootstrapKind, ctx);
-    if (bootstrapKind === "physics-rapier") {
-      const { createPluginHost } = await import("../../../../core/plugin/pluginHost.js");
-      createOptions.pluginHost = createPluginHost();
-    }
-  }
   try {
+    clearHighlight();
+    const nextJson = structuredClone(sceneJson);
+    nextJson.canvasWidth = Math.max(1, els.canvasWrap.clientWidth);
+    nextJson.canvasHeight = Math.max(1, els.canvasWrap.clientHeight);
+    const bootstrapKind = findManifestContextForJson(currentJsonUrl)?.item?.bootstrap;
+    const createOptions = {
+      assetsBase: sceneHostAssetUrl("assets/"),
+      resetScene: true,
+      afterRender: renderViewportGizmoOverlay
+    };
+    if (bootstrapKind) {
+      createOptions.onSceneReady = (ctx) => runExampleBootstrap(bootstrapKind, ctx);
+      if (bootstrapKind === "physics-rapier" || bootstrapKind === "fps-rapier") {
+        const { createPluginHost } = await import("../../../../core/plugin/pluginHost.js");
+        createOptions.pluginHost = createPluginHost();
+      }
+    }
     await sceneSession.render(nextJson, { runtimeOptions: createOptions, signal: settings.signal });
     if (version !== sceneRunVersion) return;
     fullJson = nextJson;
@@ -846,7 +880,10 @@ async function runScene(sceneJson, settings = {}) {
     console.error("[shower] Scene preparation failed; retaining the previous scene.", error);
     throw error;
   } finally {
-    if (version === sceneRunVersion) showLoading(false);
+    if (version === sceneRunVersion) {
+      firstPersonUi.setLoading(false);
+      showLoading(false);
+    }
   }
 }
 
@@ -910,6 +947,7 @@ function toCore(sceneJson) {
 }
 
 function shouldExposeSceneConfigInCore(sceneJson) {
+  if (sceneJson?.sceneConfig?.intro?.enabled !== false && sceneJson?.sceneConfig?.intro) return true;
   const key = String(`${sceneJson?.name || ""} ${sceneJson?.threeJsonId || ""}`).toLowerCase();
   return /light|camera|scene|renderer|control|view|background/.test(key);
 }
@@ -929,7 +967,7 @@ function mergeCoreIntoFull(core) {
 }
 
 function toStandard(json) {
-  return normalizeScenePayload(structuredClone(json || {})).payload;
+  return toShowerStandardScene(json);
 }
 
 function toFriendly(json) {

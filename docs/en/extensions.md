@@ -158,6 +158,38 @@ Tutorial index: [tutorial.md · Track 4](./tutorial.md).
 
 **Moved into core (not extensions)**: interactive `css3dPanel` ([json-format](./json-format.md)), `sceneConfig.extensions.assetLibrary` texture cache, `sceneConfig.extensions.nativeGeometries`, etc.—handled in the load pipeline.
 
+### First-person input and host interaction policy
+
+Movement, look and collision for `controls.type: "firstPerson"` belong to core; entry/pause UI and application shortcuts belong to the host. The `controls` descriptor accepts:
+
+| Field | Default | Meaning |
+|-------|---------|---------|
+| `pointerLock` | `true` | Request pointer lock on canvas clicks; `false` disables automatic locking |
+| `inputMode` | `"locked"`, or `"focused"` with `pointerLock:false` | `locked`: accept input only while this canvas owns the pointer; `focused`: accept input while the canvas is focused or locked; `manual`: explicit host activation |
+| `inputActive` | `false` | Initial activation in `manual` mode |
+| `lockOnClick` | `true` | Allow canvas clicks to request lock; set to `false` to use a host button calling `lock()` |
+| `releaseOnBlur` | `true` | Release this canvas's lock when the page loses focus or becomes hidden; `false` clears/suspends input without requesting release |
+
+`runtime.controls` exposes `lock(): Promise<boolean>`, `unlock()`, `focusInput()`, `clearInput()`, `setInputMode(mode)`, `setInputActive(active)` and `getInputState()`. Call `lock()` directly from a user gesture. A browser rejection resolves to `false` and emits `lockerror`; it never causes automatic relocking. The `inputstatechange` event contains `state`, including `inputActive`, `isLocked` and `lockPending`; `lock`/`unlock` events are also available.
+
+Form/text editors, unfocused/hidden pages and another canvas's pointer ownership suppress walking input. Unlock, blur and disposal clear held keys and pending look smoothing to prevent movement or camera drift. Disposal only releases the controller's own pointer lock. Suspending walking input does not stop rendering, scene animation, background audio or the application's main loop.
+
+**Core does not bind Escape or force applications to exit/pause.** Shower implements “click to start → Esc to release and pause walking → click to continue.” Its UI also reacts when the browser only sends `pointerlockchange`, with no Escape key event. This host policy is transient and does not rewrite scene JSON. Other hosts may assign Escape to menus or custom actions, or keep unlocked keyboard movement through `manual` mode.
+
+```js
+// Descriptor: { type: "firstPerson", inputMode: "manual", lockOnClick: false }
+startButton.addEventListener("click", () => {
+  runtime.controls.setInputActive(true);
+  void runtime.controls.lock();
+});
+pauseButton.addEventListener("click", () => {
+  runtime.controls.setInputActive(false);
+  runtime.controls.unlock();
+});
+```
+
+Browsers may still reserve Escape/long-press Escape or other exit gestures. A webpage cannot promise to disable them. Hosts that need fullscreen Keyboard Lock can integrate it separately where supported; ThreeJSON neither requests Keyboard Lock nor changes browser permission policies automatically.
+
 ## Writing a custom extension
 
 Create modules in **your application repo** (do not edit `node_modules/threejson`):

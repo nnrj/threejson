@@ -223,6 +223,8 @@
       box-shadow: 0 0 0 1px rgba(64, 158, 255, 0.35), 0 4px 14px rgba(0, 0, 0, 0.35);
     }
 
+    #sceneMusicBtn { white-space: pre-line; }
+
     #gameToastStack {
       position: absolute;
       right: 16px;
@@ -357,6 +359,7 @@
   <div class="gameHud" aria-label="场景快捷操作">
     <button type="button" id="resetViewBtn" title="重置相机到默认视角">重置<br>视角</button>
     <button type="button" id="pauseAlarmBtn" title="清除当前告警高亮，刷新页面前不再显示">暂停<br>告警</button>
+    <button type="button" id="sceneMusicBtn" hidden aria-label="开启背景音乐" aria-pressed="false">开启<br>音乐</button>
   </div>
 
   <div id="gameToastStack" aria-live="polite" aria-label="告警与运维消息"></div>
@@ -368,6 +371,7 @@
 
   import {
     bindProgressElement,
+    bindThreeJsonSceneAudioUnlock,
     buildFloatingInfoPanel,
     checkComplete,
     sceneHighlight,
@@ -379,6 +383,10 @@
     setObjectsVisibleByNames,
     applyInfoPanelList,
     ensureThreeJsonIdsOnScenePayload,
+    forEachThreeJsonSceneAudioNode,
+    getThreeJsonSceneAudioPlaybackPolicy,
+    resumeThreeJsonAudioContextFromCamera,
+    setThreeJsonSceneAudioPaused,
     listOr,
     openOrCloseProgressManager,
     door,
@@ -405,6 +413,7 @@
   let portShowPresentationFinalized = false;
   /** @type {(() => void)|null} */
   let detachHostedContainerDoorDblclick = null;
+  let disposeSceneMusic = null;
 
   function findPortContainerRoot(node) {
     let current = node;
@@ -770,8 +779,76 @@
     renderer = sceneRuntime.renderer;
     controls = sceneRuntime.controls;
     renderLoop = sceneRuntime.renderLoop;
+    initSceneMusic();
     trackDisposableResource(scene);
     windowResize();
+  }
+
+  function initSceneMusic() {
+    disposeSceneMusic?.();
+    const runtime = sceneRuntime;
+    const context = runtime.camera?.userData?.threeJsonAudioListener?.context;
+    const button = document.getElementById("sceneMusicBtn");
+    let active = true;
+    const getTracks = () => {
+      const tracks = new Set();
+      forEachThreeJsonSceneAudioNode(runtime.camera, runtime.scene, (node) => {
+        if (node.userData?.objJson?.autoplay === true) tracks.add(node);
+      });
+      return [...tracks];
+    };
+    const isPlaying = () => context?.state === "running"
+      && !getThreeJsonSceneAudioPlaybackPolicy(runtime.scene).paused
+      && getTracks().some((track) => track.isPlaying);
+    const refresh = () => {
+      if (!active) return;
+      const available = Boolean(context && getTracks().length);
+      const playing = isPlaying();
+      button.hidden = false;
+      button.disabled = !available;
+      button.textContent = !available ? "音乐\n不可用" : playing ? "暂停\n音乐" : "开启\n音乐";
+      button.setAttribute("aria-label", !available ? "背景音乐加载失败" : playing ? "暂停背景音乐" : "开启背景音乐");
+      button.setAttribute("aria-pressed", String(playing));
+      button.classList.toggle("is-active", playing);
+      button.title = !available ? "背景音乐资源加载失败，请检查网络后刷新页面"
+        : playing ? "暂停背景音乐"
+        : "浏览器可能阻止有声自动播放；点击此按钮或画布开启音乐";
+    };
+    const play = () => {
+      try {
+        // Do not await this during scene loading: browsers may wait for a user gesture.
+        void resumeThreeJsonAudioContextFromCamera(runtime.camera).then(() => {
+          if (!active || getThreeJsonSceneAudioPlaybackPolicy(runtime.scene).paused) return;
+          if (context?.state === "running") {
+            for (const track of getTracks()) {
+              if (!track.isPlaying) track.play();
+            }
+          }
+          refresh();
+        }).catch(refresh);
+      } catch (_error) {
+        refresh();
+      }
+    };
+    const toggle = () => {
+      const pause = isPlaying();
+      setThreeJsonSceneAudioPaused(runtime, pause);
+      if (!pause) play();
+      refresh();
+    };
+    // Canvas gestures recover blocked/interrupted autoplay; the button is separate so
+    // its pointerdown cannot start audio immediately before its click toggles it off.
+    const unbindUnlock = bindThreeJsonSceneAudioUnlock(canvasContainer, () => runtime);
+    context?.addEventListener("statechange", refresh);
+    button.addEventListener("click", toggle);
+    disposeSceneMusic = () => {
+      active = false;
+      unbindUnlock();
+      context?.removeEventListener("statechange", refresh);
+      button.removeEventListener("click", toggle);
+    };
+    refresh();
+    play();
   }
 
   function superAnimate() {
@@ -1133,6 +1210,8 @@
   }
 
   function wasteCleaner() {
+    disposeSceneMusic?.();
+    disposeSceneMusic = null;
     renderLoop?.stop();
     window.removeEventListener("resize", windowResize);
     detachHostedContainerDoorDblclick?.();

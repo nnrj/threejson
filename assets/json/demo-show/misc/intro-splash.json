@@ -13,20 +13,24 @@
     "renderLoop": { "autoResize": true, "firstAutoResize": true },
     "intro": {
       "enabled": true,
-      "backgroundColor": "transparent",
+      "backgroundColor": "#101820",
       "postLoad": {
         "slides": [
           {
+            "type": "image",
+            "url": "/assets/img/threejson_desc.png",
+            "durationMs": 2500
+          },
+          {
             "type": "text",
-            "content": "demo-show · misc · intro splash",
-            "durationMs": 2200,
-            "textStyle": { "fontSizePx": 20, "color": "#e8eaed" }
+            "content": "ThreeJSON · 场景片头 / Scene intro\n点击跳过 · Click to skip",
+            "durationMs": 3000,
+            "textStyle": { "fontSizePx": 24, "color": "#e8eaed" }
           }
         ],
         "fadeInMs": 300,
         "fadeOutMs": 400,
-        "skipOnClick": true,
-        "excludeFromLoadWait": true
+        "skipOnClick": true
       }
     }
   },

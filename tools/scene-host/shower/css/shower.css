@@ -175,6 +175,19 @@ button { font: inherit; }
 .menu.hoverOpen .menuPanel, .menu:focus-within .menuPanel { display: grid; gap: 6px; }
 
 #canvasWrap { position: relative; min-width: 0; min-height: 0; overflow: hidden; background: var(--canvas-bg); }
+
+.showerWalkOverlay { position: absolute; inset: 0; z-index: 8; display: grid; grid-template-rows: minmax(0, 1fr); place-items: center; padding: 16px; pointer-events: none; }
+.showerWalkOverlay[hidden], .showerWalkOverlay [hidden] { display: none !important; }
+.showerWalkPanel { width: min(390px, 100%); max-height: 100%; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--scrollbar-thumb) var(--panel); padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--text); box-shadow: 0 8px 28px #0003; text-align: center; pointer-events: auto; }
+.showerWalkPanel strong { font-size: 16px; }
+.showerWalkPanel p { margin: 12px 0; color: var(--muted); font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+.showerWalkPanel button { min-height: 40px; max-width: 100%; padding: 8px 18px; border: 1px solid var(--brand); border-radius: 6px; background: var(--brand); color: white; cursor: pointer; }
+.showerWalkPanel button:disabled { opacity: 0.65; cursor: default; }
+.showerWalkPanel button:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+.showerWalkPanel .showerWalkError { color: var(--text); }
+.showerWalkHint { position: absolute; bottom: 12px; left: 12px; right: 12px; width: fit-content; max-width: calc(100% - 24px); padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--text); font-size: 12px; line-height: 1.5; }
+#canvasWrap:has(.threejson-scene-intro-overlay) .showerWalkOverlay { visibility: hidden; }
+@media (max-width: 640px) { .showerWalkOverlay { padding: 10px; } .showerWalkPanel { padding: 12px; } }
 #canvasContainer { display: block; width: 100%; height: 100%; max-width: 100%; max-height: 100%; background: var(--canvas-bg); }
 #loadingMask {
   position: absolute;

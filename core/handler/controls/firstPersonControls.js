@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
+import { createFirstPersonInputController } from "./firstPersonInputController.js";
 import {
   blendLook,
   clampLookDelta,
@@ -53,7 +54,6 @@ export function createFirstPersonControls(camera, domElement, config = {}, ctx =
   const lookSmoothTime = resolveLookSmoothTime(config);
   const maxLookDelta = resolveMaxLookDelta(config);
   const lookLimits = resolveFirstPersonLookLimits(config);
-  const pointerLockEnabled = config.pointerLock !== false;
   const floorSnap = config.floorSnap !== false;
   const keys = {
     forward: normalizeKeyCode(config.keys?.forward, DEFAULT_KEYS.forward),
@@ -100,7 +100,7 @@ export function createFirstPersonControls(camera, domElement, config = {}, ctx =
   }
 
   function onSmoothMouseMove(event) {
-    if (!enabled || !smoothLookEnabled || !pointerLock.isLocked) {
+    if (!inputController.inputActive || !smoothLookEnabled || !inputController.isLocked) {
       return;
     }
     const { movementX, movementY } = clampLookDelta(event.movementX, event.movementY, maxLookDelta);
@@ -109,54 +109,27 @@ export function createFirstPersonControls(camera, domElement, config = {}, ctx =
     targetPitch = clampPitch(targetPitch, lookLimits.pitchLimit);
   }
 
-  function onPointerLock() {
-    if (smoothLookEnabled) {
-      syncLookFromCamera();
-    }
-  }
-
-  const keyState = new Set();
   const forward = new THREE.Vector3();
   const right = new THREE.Vector3();
   const moveDelta = new THREE.Vector3();
   const raycaster = new THREE.Raycaster();
   const down = new THREE.Vector3(0, -1, 0);
-  let enabled = config.enabled !== false;
   let lastFrameMs = 0;
   let collisionProvider = null;
-
-  const useWindowKeys = typeof window !== "undefined";
-  const keyTarget = useWindowKeys ? window : domElement;
   const mouseDoc = domElement?.ownerDocument ?? (typeof document !== "undefined" ? document : null);
-
-  function onKeyDown(event) {
-    if (!enabled) {
-      return;
-    }
-    keyState.add(event.code);
+  let inputController;
+  try {
+    inputController = createFirstPersonInputController(domElement, pointerLock, config, () => {
+      lastFrameMs = 0;
+      syncLookFromCamera();
+    });
+  } catch (error) {
+    pointerLock.dispose();
+    throw error;
   }
-
-  function onKeyUp(event) {
-    keyState.delete(event.code);
-  }
-
-  function onClick() {
-    if (!enabled || !pointerLockEnabled) {
-      return;
-    }
-    if (typeof domElement?.requestPointerLock === "function" && document.pointerLockElement !== domElement) {
-      domElement.requestPointerLock();
-    }
-  }
-
-  keyTarget.addEventListener("keydown", onKeyDown);
-  keyTarget.addEventListener("keyup", onKeyUp);
-  if (pointerLockEnabled && domElement) {
-    domElement.addEventListener("click", onClick);
-  }
+  const disposeInput = inputController.dispose.bind(inputController);
   if (smoothLookEnabled && mouseDoc) {
     mouseDoc.addEventListener("mousemove", onSmoothMouseMove);
-    pointerLock.addEventListener("lock", onPointerLock);
   }
 
   function applyFloorSnap() {
@@ -196,7 +169,7 @@ export function createFirstPersonControls(camera, domElement, config = {}, ctx =
   }
 
   function updateMovement(delta) {
-    if (!enabled || delta <= 0) {
+    if (!inputController.inputActive || delta <= 0) {
       return;
     }
 
@@ -210,16 +183,16 @@ export function createFirstPersonControls(camera, domElement, config = {}, ctx =
     right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
 
     moveDelta.set(0, 0, 0);
-    if (keyState.has(keys.forward)) {
+    if (inputController.isKeyPressed(keys.forward)) {
       moveDelta.add(forward);
     }
-    if (keyState.has(keys.back)) {
+    if (inputController.isKeyPressed(keys.back)) {
       moveDelta.sub(forward);
     }
-    if (keyState.has(keys.left)) {
+    if (inputController.isKeyPressed(keys.left)) {
       moveDelta.sub(right);
     }
-    if (keyState.has(keys.right)) {
+    if (inputController.isKeyPressed(keys.right)) {
       moveDelta.add(right);
     }
     if (moveDelta.lengthSq() < 1e-10) {
@@ -263,7 +236,7 @@ export function createFirstPersonControls(camera, domElement, config = {}, ctx =
     }
   }
 
-  const adapter = {
+  const adapter = Object.assign(inputController, {
     threeJsonControlsKind: "firstPerson",
     pointerLock,
     movementRoot,
@@ -277,24 +250,17 @@ export function createFirstPersonControls(camera, domElement, config = {}, ctx =
     },
 
     update() {
-      if (!enabled) {
+      if (!inputController.inputActive) {
+        lastFrameMs = 0;
         return;
       }
       const now = typeof performance !== "undefined" ? performance.now() : Date.now();
       const delta = lastFrameMs > 0 ? Math.min((now - lastFrameMs) / 1000, 0.1) : 0;
       lastFrameMs = now;
-      if (smoothLookEnabled) {
+      if (smoothLookEnabled && inputController.isLocked) {
         applySmoothedLook(delta);
       }
       updateMovement(delta);
-    },
-
-    lock() {
-      domElement?.requestPointerLock?.();
-    },
-
-    unlock() {
-      document.exitPointerLock?.();
     },
 
     setMovementRoot(root) {
@@ -311,32 +277,12 @@ export function createFirstPersonControls(camera, domElement, config = {}, ctx =
     applyLookConfig,
 
     dispose() {
-      keyTarget.removeEventListener("keydown", onKeyDown);
-      keyTarget.removeEventListener("keyup", onKeyUp);
-      if (domElement) {
-        domElement.removeEventListener("click", onClick);
-      }
+      disposeInput();
       if (smoothLookEnabled && mouseDoc) {
         mouseDoc.removeEventListener("mousemove", onSmoothMouseMove);
-        pointerLock.removeEventListener("lock", onPointerLock);
-      }
-      if (typeof pointerLock.disconnect === "function") {
-        pointerLock.disconnect();
       }
       pointerLock.dispose?.();
     }
-  };
-
-  Object.defineProperty(adapter, "enabled", {
-    get() {
-      return enabled;
-    },
-    set(value) {
-      enabled = value !== false;
-    },
-    enumerable: true
   });
-
-  adapter.enabled = enabled;
   return adapter;
 }

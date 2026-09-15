@@ -142,6 +142,7 @@ export function applyControlsConfig(controls, config = {}) {
   }
 
   if (kind === "firstPerson") {
+    controls.applyInputConfig?.(config);
     if (Number.isFinite(config.moveSpeed)) {
       controls.moveSpeed = config.moveSpeed;
     }

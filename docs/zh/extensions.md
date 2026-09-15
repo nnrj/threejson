@@ -158,6 +158,38 @@ registerParticleSimulationBackend("acme-compute", (record, scene, ctx) => {
 
 **已迁入 core、不属于 extension 的**：可交互 `css3dPanel`（[`json-format`](./json-format.md)）、`sceneConfig.extensions.assetLibrary` 贴图缓存、`sceneConfig.extensions.nativeGeometries` 等由 core 在加载链处理。
 
+### 第一人称输入与宿主交互策略
+
+`controls.type: "firstPerson"` 的移动、视角和碰撞能力在 core；进入/暂停界面和快捷键属于宿主，不写入引擎。`controls` 描述符可以设置：
+
+| 字段 | 默认值 | 含义 |
+|------|--------|------|
+| `pointerLock` | `true` | 点击画布时是否请求鼠标锁定；`false` 不自动锁定 |
+| `inputMode` | `"locked"`；`pointerLock:false` 时为 `"focused"` | `locked` 仅本画布拥有鼠标锁时接收输入；`focused` 在画布聚焦或锁定时接收输入；`manual` 由宿主显式激活 |
+| `inputActive` | `false` | `manual` 模式的初始激活状态 |
+| `lockOnClick` | `true` | 是否允许画布点击直接请求锁定；设为 `false` 后可由宿主按钮调用 `lock()` |
+| `releaseOnBlur` | `true` | 页面失焦/隐藏时主动释放本画布的锁；`false` 只关闭输入并清除残留按键，不主动释放 |
+
+运行时 `runtime.controls` 提供 `lock(): Promise<boolean>`、`unlock()`、`focusInput()`、`clearInput()`、`setInputMode(mode)`、`setInputActive(active)` 和 `getInputState()`。`lock()` 必须直接从用户点击等手势中调用；浏览器拒绝时返回 `false` 并触发 `lockerror`，不会自动反复抢回鼠标。`inputstatechange` 事件携带 `state`（包括 `inputActive`、`isLocked`、`lockPending` 等）；也可监听 `lock`/`unlock`。
+
+输入框、文本编辑区域、失焦/隐藏页面以及被其他画布占有输入时不处理漫游按键。解锁、失焦和销毁会清空按键与视角平滑的剩余位移，避免继续移动或镜头漂移；销毁只释放自身拥有的鼠标锁。这里暂停的是漫游输入，不是渲染、场景动画、背景音乐或应用主循环。
+
+**core 不绑定 Esc，也不强制 Esc 退出场景或暂停游戏。** Shower 自行实现“点击开始 → Esc 释放鼠标并暂停漫游 → 点击继续”；浏览器仅发送 `pointerlockchange`、没有发送 Esc 键盘事件时，界面也会更新。Shower 的策略只作用于本次运行时，不改写场景 JSON。其他宿主可将 Esc 用于菜单、自定义快捷键，或通过 `manual` 模式继续处理不依赖鼠标锁的键盘移动。
+
+```js
+// 描述符：{ type: "firstPerson", inputMode: "manual", lockOnClick: false }
+startButton.addEventListener("click", () => {
+  runtime.controls.setInputActive(true);
+  void runtime.controls.lock();
+});
+pauseButton.addEventListener("click", () => {
+  runtime.controls.setInputActive(false);
+  runtime.controls.unlock();
+});
+```
+
+浏览器仍可能保留 Esc/长按 Esc 等释放手势，网页不能承诺绝对禁用它们。需要全屏 Keyboard Lock 的应用应由宿主按浏览器能力单独接入；ThreeJSON 不自动申请 Keyboard Lock、不改变浏览器权限策略。
+
 ## 编写自定义 extension
 
 在**应用仓库**内新建模块即可（不必修改 `node_modules/threejson`）：

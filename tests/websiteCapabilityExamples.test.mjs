@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import * as THREE from "three";
 import { deployJsonScene } from "../core/runtime.js";
+import { toShowerStandardScene } from "../tools/scene-host/shower/js/showerSceneFormat.js";
 import {
   buildFriendlyScenePayloadFromCanonical,
   normalizeScenePayload
@@ -20,6 +21,54 @@ function readManifest() {
 function localPathFromReference(reference) {
   return String(reference || "").split(/[?#]/, 1)[0];
 }
+
+test("website FPS examples preserve the html-demo scenes and collision/viewmodel bootstrap", () => {
+  const examples = readManifest().flatMap((section) => section.items);
+  for (const [id, fixture, bootstrap] of [
+    ["fps-walk", "04-03-fps-walk", "fps-walk"],
+    ["fps-player-rig", "04-04-fps-player-rig", "fps-walk"],
+    ["fps-rapier-collision", "04-05-fps-rapier-collision", "fps-rapier"]
+  ]) {
+    const item = examples.find((example) => example.id === id);
+    assert.ok(item, id);
+    assert.equal(item.bootstrap, bootstrap);
+    assert.equal(item.external, undefined, "FPS examples must run inside Shower");
+    const scene = JSON.parse(fs.readFileSync(path.join(repoRoot, item.json), "utf8"));
+    const tutorial = JSON.parse(fs.readFileSync(path.join(repoRoot, `assets/json/tutorial/track-04/${fixture}.json`), "utf8"));
+    assert.deepEqual(scene, tutorial, "legacy website URL must not drift into a placeholder scene");
+    assert.equal(scene.objectList.find((record) => record.objType === "controls").type, "firstPerson");
+    assert.ok(scene.objectList.filter((record) => record.objType === "box").length >= 3);
+    if (bootstrap === "fps-rapier") {
+      assert.equal(scene.objectList.find((record) => record.objType === "controls").collision.provider, "rapier");
+      const model = scene.objectList.find((record) => record.viewModelFit);
+      assert.equal(model.attachTo, "camera");
+      assert.match(model.remark, /CC-BY-4\.0/);
+      assert.ok(fs.existsSync(path.join(repoRoot, model.modelPath)));
+    }
+  }
+});
+
+test("website and html-demo intros retain visible image/text slides through JSON normalization", () => {
+  for (const reference of ["assets/json/demo-show/misc/intro-splash.json", "assets/json/tutorial/track-00/00-08-scene-intro.json"]) {
+    const source = JSON.parse(fs.readFileSync(path.join(repoRoot, reference), "utf8"));
+    // Opening a new example when the persisted format is "standard" takes this path.
+    const standard = toShowerStandardScene(source);
+    assert.deepEqual(standard.sceneConfig.intro, source.sceneConfig.intro);
+    const normalized = normalizeScenePayload(standard);
+    const friendly = buildFriendlyScenePayloadFromCanonical(standard, normalized.payload);
+    const roundTrip = toShowerStandardScene(friendly);
+    const intro = normalizeScenePayload(roundTrip).sceneConfig.intro;
+    assert.equal(intro.enabled, true);
+    assert.notEqual(intro.backgroundColor, "transparent");
+    assert.equal(intro.postLoad.excludeFromLoadWait, false);
+    assert.equal(intro.postLoad.blockInteraction, true);
+    assert.equal(intro.postLoad.skipOnClick, true);
+    assert.deepEqual(intro.postLoad.slides.map((slide) => slide.type), ["image", "text"]);
+    assert.ok(intro.postLoad.slides.every((slide) => slide.durationMs >= 1800));
+    const imagePath = intro.postLoad.slides[0].url;
+    assert.ok(fs.existsSync(path.join(repoRoot, imagePath)), imagePath);
+  }
+});
 
 test("website examples expose the complete Particle V2 fixture set", () => {
   const section = readManifest().find((entry) => entry.section === "particles");

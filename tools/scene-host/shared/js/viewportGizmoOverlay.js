@@ -28,6 +28,15 @@ export function createViewportGizmoOverlay(runtime, container, options = {}) {
   if (!runtime?.camera || !runtime?.renderer || !container) {
     return null;
   }
+  const controls = runtime.controls;
+  // This widget snaps an orbit camera around controls.target. Walking/flying controls
+  // do not implement that contract and must not be attached or repositioned by it.
+  if (controls && (controls.threeJsonControlsKind === "firstPerson"
+    || !controls.target?.isVector3
+    || typeof controls.addEventListener !== "function"
+    || typeof controls.removeEventListener !== "function")) {
+    return null;
+  }
   let renderer = runtime.renderer;
   const configuration = {
     container,

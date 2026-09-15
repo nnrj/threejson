@@ -892,10 +892,29 @@
         "id": "fps-walk",
         "title": "fps-walk 第一人称漫游",
         "titleEn": "fps-walk first-person walk",
-        "desc": "sceneConfig.controls.type: firstPerson + extensions.fps-walk。",
-        "descEn": "sceneConfig.controls.type: firstPerson combined with extensions.fps-walk.",
+        "desc": "复用 html-demo 的地面、围墙与立柱漫游场景。点击画布后使用 WASD 移动、鼠标转向；fps-walk 负责贴地。",
+        "descEn": "The html-demo walking scene with a floor, walls and pillars. Click the canvas, use WASD to move and the mouse to look; fps-walk provides floor snapping.",
         "json": "assets/json/demo-show/extensions/fps-walk.json",
         "bootstrap": "fps-walk"
+      },
+      {
+        "id": "fps-player-rig",
+        "title": "第一人称玩家 Rig",
+        "titleEn": "First-person player rig",
+        "desc": "与 html-demo 共用场景：相机挂载到 player 组，由玩家 Rig 驱动漫游与视角。点击画布后使用 WASD 移动。",
+        "descEn": "Shared with html-demo: a camera attached to the player group, with a walking player rig. Click the canvas and use WASD to move.",
+        "json": "assets/json/tutorial/track-04/04-04-fps-player-rig.json",
+        "bootstrap": "fps-walk"
+      },
+      {
+        "id": "fps-rapier-collision",
+        "title": "第一人称 FPS：碰撞与手持模型",
+        "titleEn": "First-person FPS: collisions and viewmodel",
+        "desc": "复用 html-demo 的完整 FPS 场景：Rapier 角色胶囊体、围墙碰撞、立柱与动画手持模型。保留模型作者及 CC-BY-4.0 署名。",
+        "descEn": "The complete html-demo FPS scene: a Rapier character capsule, collidable walls and pillars, and an animated first-person viewmodel with its CC-BY-4.0 attribution.",
+        "json": "assets/json/tutorial/track-04/04-05-fps-rapier-collision.json",
+        "bootstrap": "fps-rapier",
+        "thumbnail": false
       },
       {
         "id": "physics-rapier",
@@ -964,8 +983,8 @@
         "id": "intro-splash",
         "title": "片头",
         "titleEn": "Intro Splash",
-        "desc": "sceneConfig.intro.postLoad 在部署完成后展示片头文字，点击可跳过。",
-        "descEn": "sceneConfig.intro.postLoad shows a splash after deploy completes; click to skip.",
+        "desc": "sceneConfig.intro.postLoad 展示 Logo 与文字片头，使用独立深色背景。点击跳过，点击“运行”可重播。",
+        "descEn": "sceneConfig.intro.postLoad presents a logo and text on a dark backdrop. Click to skip; press Run to replay.",
         "json": "assets/json/demo-show/misc/intro-splash.json"
       }
     ],
