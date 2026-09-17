@@ -68,6 +68,10 @@ const result = await runSceneTexturePipeline(scene, {
 
 完整生成默认返回一个可直接渲染的场景；真正复杂或供应商明确截断的场景才进入增量构建。场景调整优先使用命令，其次 JSON Patch，完整 JSON 重写仅作为兜底。模型输出 `# done` 或没有剩余工作时立即结束。
 
+调整响应接受 micro DSL、JSONL、格式化命令对象和命令数组；JSON 参数内部换行不拆成多条命令。`# done` 仅表示本批结束，不丢弃同一响应里的命令、Patch 或完整场景。查询阶段会把 `scene.list` 及 `object.get` 的属性值回传给模型。
+
+JSON/Patch 调整收到未闭合的短响应时，即使供应商缺少 `finish_reason` 或返回 `stop`，也会进入分段恢复，而不是仅对长输出恢复。不通过补括号编造场景；连续重复片段、用户取消或显式预算耗尽时停止，原场景不受影响。默认不新增 Token 或质量轮数上限。
+
 ## 入口与依赖
 
 - 引擎：`threejson` 或 `threejson/core`

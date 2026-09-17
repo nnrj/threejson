@@ -23,6 +23,7 @@ import {
   trackDisposableResource,
   bindProgressElement
 } from "threejson";
+import { compileAuthoring } from "threejson/document";
 import { parseTjzArchiveForScene } from "../../../../core/archive/tjzArchive.js";
 import {
   createJsonSceneFromObjectRecord,
@@ -75,6 +76,7 @@ import { createPresetScenePanel } from "./presetScenePanel.js";
 import { createSceneDocumentOps } from "./sceneDocumentOps.js";
 import { createEditorSceneNameModals } from "./editorSceneNameModals.js";
 import { createEditorConfirmModal } from "./editorConfirmModal.js";
+import { formatEditorSceneImportError, prepareEditorSceneImport, runEditorSceneImport } from "./editorSceneImport.js";
 import { createEditorSessionRecovery } from "./editorSessionRecovery.js";
 import { createEditorCacheClear } from "./editorCacheClear.js";
 import { createEditorDomainExport } from "./editorDomainExport.js";
@@ -932,6 +934,8 @@ export async function bootstrapSceneHostEditor() {
 
   async function initSceneRuntime(generation = sceneLoadGeneration) {
     const payload = buildEditorScenePayload(sysConfig, editorSettings);
+    // Reject document/version/index errors before swapping the visible runtime or its history.
+    const document = compileAuthoring(payload);
     let flags = pendingCreateJsonSceneFlags;
     if (!flags) {
       flags = await resolveEditorRuntimeFlags(editorSettings, "fullScene", payload, null, modalUi);
@@ -941,7 +945,7 @@ export async function bootstrapSceneHostEditor() {
     }
     pendingCreateJsonSceneFlags = null;
     const next = await prepareFullEditorRuntime((options) => createJsonScene(payload, options), flags, generation);
-    authoringSession?.attach(payload, next);
+    authoringSession?.attach(document, next);
     trackDisposableResource(scene);
     editorInteraction?.refreshBoxEdgeColor?.();
     gridHelper?.syncEditorGridHelperFromSettings?.();
@@ -1018,54 +1022,73 @@ export async function bootstrapSceneHostEditor() {
 
   async function ingestScenePayload(sceneJsonObject, hintLabel = "", ingestOptions = {}) {
     return suppressCanvasDirty.runAsync(async () => {
-      toggleStartupEmptyState(false);
-      const payload = resolveScenePayloadForLoad(sceneJsonObject, { label: hintLabel });
-      if (!isLoadableScenePayload(payload)) {
-        throw new Error(
-          hintLabel
-            ? `${hintLabel}: JSON 格式无效（需要 worldInfo 或非空 objectList）`
-            : "JSON 格式无效（需要 worldInfo 或非空 objectList）"
-        );
-      }
-      if (ingestOptions.historyReplay !== true) {
-        scenePayloadFormat?.recordEditorScenePayloadViewFormat?.(payload, hintLabel);
-      }
       const loadGeneration = ++sceneLoadGeneration;
-      let runtimeFlags = ingestOptions.runtimeFlags;
-      if (!runtimeFlags && ingestOptions.skipRuntimeResolve !== true) {
-        runtimeFlags = await resolveEditorRuntimeFlags(editorSettings, "fullScene", payload, null, modalUi);
-        if (!runtimeFlags) {
-          return false;
+      const result = await runEditorSceneImport(async () => {
+        let payload = resolveScenePayloadForLoad(sceneJsonObject, { label: hintLabel });
+        if (!isLoadableScenePayload(payload)) {
+          throw new Error(
+            hintLabel
+              ? `${hintLabel}: JSON 格式无效（需要 worldInfo 或 objectList / sceneConfig）`
+              : "JSON 格式无效（需要 worldInfo 或 objectList / sceneConfig）"
+          );
         }
-      }
-      if (loadGeneration !== sceneLoadGeneration) return false;
-      pendingCreateJsonSceneFlags = runtimeFlags || {};
-      if (ingestOptions.historyReplay !== true) {
-        void editorSessionRecovery?.clearAutoSnapshotOnNewIngest?.();
-        rightSidebarCache?.invalidateRightSidebarSceneJsonTextCache?.();
-      }
-      if (
-        ingestOptions.historyReplay !== true &&
-        viewPreserve?.isEditorViewPreserveEnabled?.() &&
-        camera &&
-        controls
-      ) {
-        viewPreserve.captureEditorViewToSession();
-      }
-      ensureThreeJsonIdsOnScenePayload(payload);
-      sysConfig.jsonData = payload;
-      try {
-        await subInit(loadGeneration);
-        return await completeIngestAfterRuntime(hintLabel, ingestOptions, loadGeneration);
-      } catch (error) {
-        if (error?.name === "AbortError") return false;
-        ui.setLoading(false);
-        openOrCloseProgressManager(false);
-        ui.showMessage(String(error.message || error), "error");
-        console.error(error);
-        return false;
-      }
+        const prepared = await prepareEditorSceneImport(payload, confirmSceneMigration);
+        if (loadGeneration !== sceneLoadGeneration) return { status: "superseded" };
+        if (prepared.status === "cancelled") return prepared;
+        payload = prepared.payload;
+        let runtimeFlags = ingestOptions.runtimeFlags;
+        if (!runtimeFlags && ingestOptions.skipRuntimeResolve !== true) {
+          runtimeFlags = await resolveEditorRuntimeFlags(editorSettings, "fullScene", payload, null, modalUi);
+          if (!runtimeFlags) {
+            return { status: "cancelled" };
+          }
+        }
+        if (loadGeneration !== sceneLoadGeneration) return { status: "superseded" };
+        pendingCreateJsonSceneFlags = runtimeFlags || {};
+        if (
+          ingestOptions.historyReplay !== true &&
+          viewPreserve?.isEditorViewPreserveEnabled?.() &&
+          camera &&
+          controls
+        ) {
+          viewPreserve.captureEditorViewToSession();
+        }
+        ensureThreeJsonIdsOnScenePayload(payload);
+        const previousPayload = authoringSession?.export({ assertExportable: false }) ?? sysConfig.jsonData;
+        sysConfig.jsonData = payload;
+        try {
+          await subInit(loadGeneration);
+        } catch (error) {
+          if (loadGeneration === sceneLoadGeneration) sysConfig.jsonData = previousPayload;
+          throw error;
+        }
+        if (loadGeneration !== sceneLoadGeneration) return { status: "superseded" };
+        if (ingestOptions.historyReplay !== true) {
+          scenePayloadFormat?.recordEditorScenePayloadViewFormat?.(payload, hintLabel);
+          await editorSessionRecovery?.clearAutoSnapshotOnNewIngest?.();
+          rightSidebarCache?.invalidateRightSidebarSceneJsonTextCache?.();
+        }
+        const completed = await completeIngestAfterRuntime(hintLabel, ingestOptions, loadGeneration);
+        return { status: completed ? "loaded" : "superseded" };
+      }, {
+        ...sceneImportFeedback(),
+        isCurrent: () => loadGeneration === sceneLoadGeneration
+      });
+      return result.status === "loaded";
     });
+  }
+
+  function sceneImportFeedback() {
+    return {
+      stopLoading() { ui.setLoading(false); openOrCloseProgressManager(false); },
+      showMessage: (...args) => ui.showMessage(...args),
+      onError: (error) => console.error(error)
+    };
+  }
+
+  function confirmSceneMigration(message, options) {
+    sceneImportFeedback().stopLoading();
+    return editorConfirmModal.openConfirmModalAndWait(message, options);
   }
 
   async function loadSceneFromUrl(url, hintLabel = "") {
@@ -1464,14 +1487,12 @@ export async function bootstrapSceneHostEditor() {
         probe = null;
       }
       if (probe && isSingleObjectJsonImport(probe)) {
-        await importSingleObjectRecordJson(probe, file.name);
-        ui.showMessage(`已导入对象 ${file.name}`, "success");
+        if (await importSingleObjectRecordJson(probe, file.name)) ui.showMessage(`已导入对象 ${file.name}`, "success");
         return;
       }
       if (probe && isThreeJsObjectExportJson(probe)) {
         const loaded = await ingestScenePayload(probe, file.name);
         if (!loaded) {
-          ui.showMessage("已取消导入。", "info");
           return;
         }
         ui.showMessage(`已识别为 Three.js 原生 JSON 并导入 ${file.name}`, "success");
@@ -1480,54 +1501,64 @@ export async function bootstrapSceneHostEditor() {
       const parsed = parseSceneJsonString(text);
       const loaded = await ingestScenePayload(parsed, file.name);
       if (!loaded) {
-        ui.showMessage("已取消导入。", "info");
         return;
       }
       ui.showMessage(`已导入 ${file.name}`, "success");
     } catch (error) {
+      ui.setLoading(false);
       openOrCloseProgressManager(false);
-      ui.showMessage(String(error?.message || error), "error");
+      ui.showMessage(formatEditorSceneImportError(error), "error");
       console.error(error);
     }
   }
 
   async function importSingleObjectRecordJson(parsed, fileName) {
-    const hasScene = hasRuntimeReady();
-    if (!hasScene) {
-      const objectFlags = resolveEditorRuntimeFlagsSync(editorSettings, "objectRecord", parsed, null);
+    const loadGeneration = ++sceneLoadGeneration;
+    const result = await runEditorSceneImport(async () => {
+      const prepared = await prepareEditorSceneImport(parsed, confirmSceneMigration);
+      if (loadGeneration !== sceneLoadGeneration) return { status: "superseded" };
+      if (prepared.status === "cancelled") return prepared;
+      parsed = prepared.payload;
+      const hasScene = hasRuntimeReady();
+      if (!hasScene) {
+        const objectFlags = resolveEditorRuntimeFlagsSync(editorSettings, "objectRecord", parsed, null);
+        await ui.runWithLoadingMask("正在导入对象 JSON...", async () => {
+          const loadedRuntime = await prepareFullEditorRuntime((options) => createJsonSceneFromObjectRecord(
+            parsed, { ...options,
+              missingAssetPolicy: "warn",
+              onWarning: (msg) => console.warn("[object-json-import]", msg)
+            }), objectFlags, loadGeneration);
+          if (objectFlags.autoFillLights !== false) {
+            ensureDefaultSceneLights(loadedRuntime?.scene, true);
+          }
+          sysConfig.jsonData = sysConfig.jsonData || {};
+          await applyLoadedRuntime(loadedRuntime, fileName);
+          await finishObjectImport({ fileName, fitView: true });
+        });
+        return { status: "loaded" };
+      }
+      const pick = await modalUi.openObjectImportModeModal();
+      if (loadGeneration !== sceneLoadGeneration) return { status: "superseded" };
+      if (!pick?.mode) {
+        return { status: "cancelled" };
+      }
+      const objectFlags = resolveEditorRuntimeFlagsSync(editorSettings, "objectRecord", parsed, pick);
+      const historyBefore = editorHistory?.captureSceneSnapshot?.();
       await ui.runWithLoadingMask("正在导入对象 JSON...", async () => {
-        const loadedRuntime = await prepareFullEditorRuntime((options) => createJsonSceneFromObjectRecord(
-          parsed, { ...options,
-            missingAssetPolicy: "warn",
-            onWarning: (msg) => console.warn("[object-json-import]", msg)
-          }), objectFlags);
+        if (loadGeneration !== sceneLoadGeneration) throw new DOMException("Scene changed during loading.", "AbortError");
+        await authoringSession.importRecord(parsed, { replace: pick.mode !== "append", runtimeFlags: objectFlags, label: fileName || "导入对象" });
+        const loadedRuntime = sceneRuntime;
         if (objectFlags.autoFillLights !== false) {
           ensureDefaultSceneLights(loadedRuntime?.scene, true);
         }
-        sysConfig.jsonData = sysConfig.jsonData || {};
-        await applyLoadedRuntime(loadedRuntime, fileName);
-        await finishObjectImport({ fileName, fitView: true });
+        await finishObjectImport({ loadedRuntime, fileName, fitView: pick.fitView });
+        if (historyBefore) {
+          editorHistory?.pushCapturedSceneSnapshot?.(historyBefore, fileName || "导入对象");
+        }
       });
-      return;
-    }
-    const pick = await modalUi.openObjectImportModeModal();
-    if (!pick?.mode) {
-      ui.showMessage("已取消导入。", "info");
-      return;
-    }
-    const objectFlags = resolveEditorRuntimeFlagsSync(editorSettings, "objectRecord", parsed, pick);
-    const historyBefore = editorHistory?.captureSceneSnapshot?.();
-    await ui.runWithLoadingMask("正在导入对象 JSON...", async () => {
-      await authoringSession.importRecord(parsed, { replace: pick.mode !== "append", runtimeFlags: objectFlags, label: fileName || "导入对象" });
-      const loadedRuntime = sceneRuntime;
-      if (objectFlags.autoFillLights !== false) {
-        ensureDefaultSceneLights(loadedRuntime?.scene, true);
-      }
-      await finishObjectImport({ loadedRuntime, fileName, fitView: pick.fitView });
-      if (historyBefore) {
-        editorHistory?.pushCapturedSceneSnapshot?.(historyBefore, fileName || "导入对象");
-      }
-    });
+      return { status: "loaded" };
+    }, { ...sceneImportFeedback(), isCurrent: () => loadGeneration === sceneLoadGeneration });
+    return result.status === "loaded";
   }
 
   async function handleLocalMeshModelFile(file) {
@@ -1606,8 +1637,7 @@ export async function bootstrapSceneHostEditor() {
         const flags =
           entryKind === "object"
             ? resolveEditorRuntimeFlagsSync(editorSettings, "objectRecord", archivePreviewPayload, null)
-            : (await resolveEditorRuntimeFlags(editorSettings, "fullScene", archivePreviewPayload || {}, null, modalUi)) ||
-              resolveEditorRuntimeFlagsSync(editorSettings, "fullScene", {});
+            : await resolveEditorRuntimeFlags(editorSettings, "fullScene", archivePreviewPayload || {}, null, modalUi);
         if (!flags) {
           return;
         }
@@ -1631,8 +1661,7 @@ export async function bootstrapSceneHostEditor() {
             scenePayloadFormat?.recordEditorScenePayloadViewFormat?.(archivePreviewPayload, file.name);
           }
           const flags =
-            (await resolveEditorRuntimeFlags(editorSettings, "fullScene", archivePreviewPayload || {}, null, modalUi)) ||
-            resolveEditorRuntimeFlagsSync(editorSettings, "fullScene", {});
+            await resolveEditorRuntimeFlags(editorSettings, "fullScene", archivePreviewPayload || {}, null, modalUi);
           if (!flags) {
             return;
           }
@@ -1677,7 +1706,7 @@ export async function bootstrapSceneHostEditor() {
       } catch (err) {
         ui.setLoading(false);
         openOrCloseProgressManager(false);
-        ui.showMessage(String(err?.message || err), "error");
+        ui.showMessage(formatEditorSceneImportError(err), "error");
         console.error(err);
       }
     });
@@ -1712,30 +1741,7 @@ export async function bootstrapSceneHostEditor() {
       await handleLocalTjzArchiveFile(file, importOptions);
       return;
     }
-    const text = new TextDecoder("utf-8").decode(bytes);
-    let probe = null;
-    try {
-      probe = JSON.parse(text);
-    } catch {
-      probe = parseSceneJsonString(text);
-    }
-    if (isSingleObjectJsonImport(probe)) {
-      await importSingleObjectRecordJson(probe, file.name);
-      ui.showMessage(`已导入对象 ${file.name}`, "success");
-      return;
-    }
-    const wasNative = isThreeJsObjectExportJson(probe);
-    const parsed = wasNative ? probe : parseSceneJsonString(text);
-    const loaded = await ingestScenePayload(parsed, file.name);
-    if (!loaded) {
-      ui.showMessage("已取消导入。", "info");
-      return;
-    }
-    if (wasNative) {
-      ui.showMessage(`已识别为 Three.js 原生 JSON 并导入 ${file.name}`, "success");
-    } else {
-      ui.showMessage(`已导入 ${file.name}`, "success");
-    }
+    await handleLocalSceneJsonFile(file, importOptions);
   }
 
   function wireFileInput(input, handler) {
@@ -1743,7 +1749,11 @@ export async function bootstrapSceneHostEditor() {
       const file = event.target.files?.[0];
       event.target.value = "";
       if (file) {
-        void handler(file);
+        void Promise.resolve().then(() => handler(file)).catch((error) => {
+          sceneImportFeedback().stopLoading();
+          ui.showMessage(formatEditorSceneImportError(error), "error");
+          console.error(error);
+        });
       }
     });
   }
@@ -2126,14 +2136,13 @@ export async function bootstrapSceneHostEditor() {
       const parsed = JSON.parse(text);
       const loaded = await ingestScenePayload(parsed, file.name);
       if (!loaded) {
-        ui.showMessage("已取消导入。", "info");
         return;
       }
       ui.showMessage(`已按原生 JSON 导入 ${file.name}`, "success");
     } catch (error) {
       ui.setLoading(false);
       openOrCloseProgressManager(false);
-      ui.showMessage(String(error?.message || error), "error");
+      ui.showMessage(formatEditorSceneImportError(error), "error");
       console.error(error);
     }
   });

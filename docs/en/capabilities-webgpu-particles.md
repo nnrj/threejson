@@ -67,6 +67,16 @@ Both paths enable `source.type: "textMask"` (`text`, `font`, `width`, `height`, 
 
 Optional compute implementations register `simulation.backend` through `registerParticleSimulationBackend()` and lifecycle callbacks through `registerParticleSimulationLifecycle()`.
 
+### Importing legacy particle JSON in the Editor
+
+Standard and friendly JSON remain supported. `version: "next"` or an absent `schemaVersion` is not itself an incompatibility; retired Particle V1 fields are a separate issue.
+
+The baseline Editor offers a reviewed, explicit **convert a copy and import** step for unambiguous CPU backend, `material → render`, `count → emission.count`, explicit-position, box, and sphere mappings. It modifies an in-memory copy only, never overwrites the source file, and uses no AI or network service. The result can be saved as a new JSON file.
+
+The confirmation lists changes and missing count/distribution defaults (for example 1000 particles in a 100 × 100 × 100 box). Runtime defaults and sampling algorithms may differ, so visual identity is not guaranteed. Legacy motion, third-party providers, unsupported distributions, and conflicting old/new fields require manual migration; they are never silently discarded. This is an Editor import aid, not a core V1 runtime or a promise to convert every historical format or `.tjz` archive.
+
+Import failures report the actual reason and field path. Only explicit user cancellation shows a cancellation message; superseded loads do not overwrite newer feedback. Failure/cancellation does not clear the previous recovery snapshot.
+
 ## Explicit WebGPU/TSL preview
 
 WebGPU is opt-in. Three.js r184 is the continuously tested adapter baseline, but the test matrix is not treated as a capability ban: other revisions run in `best-effort` mode with a warning by default, while a host that requires a certified combination can select `strict`:

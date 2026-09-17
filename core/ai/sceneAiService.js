@@ -1027,6 +1027,21 @@ function addSegmentedProtocolToMessages(messages, estimatedSegments) {
   return withProtocol;
 }
 
+// Compatible gateways sometimes omit finish_reason or incorrectly report "stop" at EOF.
+// A JSON response ending inside a string/container is incomplete regardless of its length.
+// Do not confuse a syntax error in the middle of a document with truncation.
+function isIncompleteJsonDocument(content) {
+  const text = stripMarkdownCodeFence(content).trim();
+  if (!/^[{\[]/.test(text) || !isLikelyTruncatedJsonText(text)) return false;
+  try { JSON.parse(text); return false; }
+  catch (error) {
+    const message = String(error?.message || error);
+    const position = /position (\d+)/i.exec(message);
+    return /unexpected end|end of data|unterminated string/i.test(message) ||
+      (position !== null && Number(position[1]) >= text.length - 1);
+  }
+}
+
 /** Runs a JSON-producing completion without an engine-owned ceiling. If an explicit provider or
  * gateway ceiling still cuts the JSON, restart under the exact-fragment continuation protocol.
  * Used by image generation and full/Patch adjustment paths; command output has its own adaptive
@@ -1046,17 +1061,17 @@ async function requestJsonCompletionWithSegmentedRecovery(messages, options = {}
       }
     }
   });
-  if (!isSceneOutputCutoff(content, completionMetadata, options)) {
+  if (!isSceneOutputCutoff(content, completionMetadata, options) && !isIncompleteJsonDocument(content)) {
     return content;
   }
   if (options.compactRetryOnTruncation === false) {
     throw createSceneOutputLimitError(
-      "JSON output reached the provider limit before the document was complete."
+      "The provider returned incomplete JSON before the document was complete."
     );
   }
   await emitSceneGenerationPhase(options, {
     phase: "segmented-recovery",
-    reason: "provider-output-limit"
+    reason: isLengthFinishReason(completionMetadata.finishReason) ? "provider-output-limit" : "incomplete-json"
   });
   const estimatedSegments = Math.max(2, normalizeAdvisorySegmentEstimate(options.estimatedSegments, 2));
   return requestSegmentedSceneJsonContent(
@@ -1693,15 +1708,12 @@ async function requestUpdatedSceneEditCommands(prompt, context = {}, options = {
     ]
   });
 
-  // Iterative callers need to observe the model's explicit completion signal. Previously this
-  // comment-only response fell into command parsing, was rejected as "no commands", and the outer
-  // loop retried until its entire budget was exhausted even though the model had already finished.
+  // Iterative callers need the explicit completion signal, but it must not discard a payload.
   if ((agentRound || iterativeApply) && commandScriptIndicatesDone(content)) {
     const doneScript = extractCommandScriptText(content);
-    const doneCommands = isLikelyCommandScriptText(doneScript)
-      ? filterCoreUpdateCommands(parseCommandScript(doneScript))
-      : [];
-    if (doneCommands.length === 0) {
+    // # done is a completion-only reply only when no payload precedes it. A Patch,
+    // scene JSON or malformed command followed by # done must still be processed.
+    if (doneScript.split(/\r?\n/).every((line) => !line.trim() || line.trim().startsWith("#"))) {
       return {
         outputMode: "commands",
         commandScript: doneScript,

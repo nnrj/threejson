@@ -4,24 +4,13 @@
  * Native browser dialogs are kept ONLY for beforeunload (editorSessionRecovery.js) — that one is
  * enforced by the browser itself and can't be replaced. */
 
-function bindEditorModalActionButton(button, handler) {
-  if (!button || typeof handler !== "function") {
-    return;
-  }
-  const onAction = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    handler();
-  };
-  button.addEventListener("pointerdown", onAction, { once: true });
-}
-
 export function createEditorConfirmModal() {
   const modal = document.getElementById("editorConfirmModal");
   const titleEl = document.getElementById("editorConfirmModalTitle");
   const messageEl = document.getElementById("editorConfirmModalMessage");
   const cancelBtn = document.getElementById("editorConfirmModalCancelBtn");
   const confirmBtn = document.getElementById("editorConfirmModalConfirmBtn");
+  let dismissActive = null;
 
   /**
    * @param {string} message
@@ -29,6 +18,9 @@ export function createEditorConfirmModal() {
    * @returns {Promise<boolean>} true if confirmed, false if cancelled/dismissed
    */
   function openConfirmModalAndWait(message, options = {}) {
+    dismissActive?.();
+    if (!modal || !confirmBtn || !cancelBtn) return Promise.resolve(false);
+    const previousFocus = document.activeElement;
     const title = String(options.title || "确认").trim() || "确认";
     const confirmLabel = String(options.confirmLabel || "确定").trim() || "确定";
     const cancelLabel = String(options.cancelLabel || "取消").trim() || "取消";
@@ -52,6 +44,11 @@ export function createEditorConfirmModal() {
       const cleanup = () => {
         modal?.classList.remove("visible");
         document.removeEventListener("keydown", onKeydown);
+        cancelBtn.removeEventListener("click", onCancel);
+        confirmBtn.removeEventListener("click", onConfirm);
+        modal.removeEventListener("click", onMask);
+        dismissActive = null;
+        previousFocus?.focus?.({ preventScroll: true });
       };
       const finish = (value) => {
         if (settled) {
@@ -70,20 +67,25 @@ export function createEditorConfirmModal() {
         if (event.key === "Escape") {
           event.preventDefault();
           finish(false);
-        } else if (event.key === "Enter") {
+        } else if (event.key === "Tab") {
           event.preventDefault();
-          finish(true);
+          (document.activeElement === confirmBtn ? cancelBtn : confirmBtn).focus();
         }
       };
-      const dialogPanel = modal?.querySelector(".tjzExportDialog");
-      const stopDialogBubble = (event) => {
+      const onCancel = (event) => {
+        event.preventDefault();
         event.stopPropagation();
+        finish(false);
       };
-      const once = { once: true };
-      bindEditorModalActionButton(cancelBtn, () => finish(false));
-      bindEditorModalActionButton(confirmBtn, () => finish(true));
-      dialogPanel?.addEventListener("pointerdown", stopDialogBubble, once);
-      modal?.addEventListener("click", onMask, once);
+      const onConfirm = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        finish(true);
+      };
+      dismissActive = () => finish(false);
+      cancelBtn.addEventListener("click", onCancel);
+      confirmBtn.addEventListener("click", onConfirm);
+      modal.addEventListener("click", onMask);
       document.addEventListener("keydown", onKeydown);
     });
   }

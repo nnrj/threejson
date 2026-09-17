@@ -68,6 +68,10 @@ Product-owned gateways inject `providerAdapter` hooks for endpoint selection, re
 
 Direct generation returns a complete usable scene. Incremental construction is reserved for genuinely complex scenes or explicit provider truncation. Updates prefer commands, then JSON Patch, with full JSON rewrite as a final fallback. `# done` and no-op/repeated output stop immediately.
 
+Updates accept micro DSL, JSONL, formatted command objects and command arrays. Newlines inside JSON arguments do not split commands. `# done` ends a response without discarding its commands, Patch or full scene. Query rounds return `scene.list` and scalar `object.get` property values to the model.
+
+Incomplete short JSON/Patch updates also use segmented recovery when a provider omits `finish_reason` or reports `stop`. Recovery never fabricates a scene by appending closing brackets; repeated fragments, cancellation or explicit caller budgets stop it without replacing the original scene. No default token or quality-round ceiling is added.
+
 ## Entry and dependency boundaries
 
 - Engine: `threejson` or `threejson/core`

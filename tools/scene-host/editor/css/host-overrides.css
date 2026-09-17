@@ -125,3 +125,20 @@
 #sceneTreeDesignParameters input { min-width: 0; width: 100%; box-sizing: border-box; }
 #sceneTreeDesignDetach { margin-top: 8px; white-space: normal; line-height: 1.4; }
 
+#editorConfirmModal .tjzExportDialog {
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh;
+  max-height: 85dvh;
+}
+
+#editorConfirmModal .tjzExportBody {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
+
+#editorConfirmModal .tjzExportFooter {
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}

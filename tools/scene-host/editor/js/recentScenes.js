@@ -335,6 +335,7 @@ export function createRecentScenesController(host) {
       return false;
     }
     const loaded = await host.ingestScenePayload(parsed, openLabel);
+    if (!loaded) return false;
     host.toggleStartupEmptyState?.(false);
     return true;
   }

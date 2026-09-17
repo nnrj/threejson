@@ -67,6 +67,16 @@ import "threejson/particles-raster";
 
 第三方计算实现通过 `registerParticleSimulationBackend()` 注册 `simulation.backend`，并通过 `registerParticleSimulationLifecycle()` 管理更新和释放。
 
+### 编辑器导入旧粒子文件
+
+标准 JSON 和友好 JSON 都继续有效，不能仅凭 `version: "next"` 或缺少 `schemaVersion` 判为旧文件不可用。Particle V1 的局部字段变化与整场景格式是两回事。
+
+基线 Editor 在 JSON 导入时检查旧粒子字段，列出转换清单并要求确认“转换副本并导入”。支持明确的 `simulation: "cpu"`、`material → render`、`count → emission.count`，以及不冲突的显式坐标、盒状和球体分布。转换仅修改内存副本，不覆盖源文件、不调用 AI 或下载资源；可导入后另存为新版 JSON。
+
+缺失数量或分布会在确认框中说明采用的新版默认值（例如 1000 个粒子、100 × 100 × 100 盒状分布），不能保证与旧版外观完全一致。旧运动、第三方 Provider、未知分布和新旧字段冲突要求手动迁移，不会静默删除。此转换属于 Editor 宿主，不是 core 的 V1 运行时兼容层，也不代表所有历史格式或 `.tjz` 都能自动转换。
+
+加载失败显示具体错误与字段位置；只有用户主动取消才显示“已取消导入”。被后续加载取代的旧请求不覆盖新请求的提示；失败或取消不清空当前场景的恢复快照。
+
 ## 显式启用的 WebGPU/TSL 预览
 
 WebGPU 必须显式导入。适配层以 Three.js r184 为持续测试基线，但不会把测试矩阵误作能力封锁：其他 revision 默认以 `best-effort` 运行并发出警告；需要认证组合的宿主可显式选择 `strict`：

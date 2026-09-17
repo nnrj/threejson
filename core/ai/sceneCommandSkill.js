@@ -4,8 +4,7 @@
 import {
   createCommandRegistry,
   getCommandHelp,
-  looksLikeMicroDslLine,
-  splitCommandScript
+  parseCommandScript
 } from "../command/index.js";
 import { getObjectByThreeJsonId } from "../handler/objectRegistry.js";
 import { isLoadableScenePayload } from "../handler/sceneFriendlyNormalizer.js";
@@ -430,7 +429,7 @@ export function formatObjectGetFeedbackFromBatch(results) {
   const blocks = [];
   for (let i = 0; i < results.length; i += 1) {
     const item = results[i];
-    if (!item?.ok || !(item.op === "object.get" || item.op === "mesh.inspect" || item.op === "mesh.getTopology" || item.op === "mesh.validate" || item.op === "mesh.renderViews")) {
+    if (!item?.ok || !READ_ONLY_COMMAND_OPS.has(item.op)) {
       continue;
     }
     if (item.op !== "object.get") {
@@ -452,6 +451,10 @@ export function formatObjectGetFeedbackFromBatch(results) {
       continue;
     }
     const id = item.data?.threeJsonId || item.data?.id || "";
+    if (item.data?.path != null && Object.hasOwn(item.data, "value")) {
+      blocks.push(JSON.stringify({ op: item.op, threeJsonId: id, path: item.data.path, value: item.data.value }, null, 2));
+      continue;
+    }
     const descriptor = item.data?.value ?? item.data?.descriptor ?? null;
     if (!descriptor || typeof descriptor !== "object") {
       continue;
@@ -738,43 +741,11 @@ export function extractCommandScriptText(rawText) {
  */
 export function isLikelyCommandScriptText(rawText) {
   const body = extractCommandScriptText(rawText);
-  if (!body) {
-    return false;
-  }
-  if (body.startsWith("{") || body.startsWith("[")) {
-    try {
-      const parsed = JSON.parse(body);
-      if (parsed && typeof parsed.op === "string") {
-        return (
-          UPDATE_COMMAND_OPS.has(parsed.op) ||
-          parsed.op.startsWith("scene.") ||
-          parsed.op.startsWith("object.") ||
-          parsed.op.startsWith("camera.")
-        );
-      }
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.every(
-          (item) =>
-            item &&
-            typeof item.op === "string" &&
-            (UPDATE_COMMAND_OPS.has(item.op) ||
-              item.op.startsWith("scene.") ||
-              item.op.startsWith("object.") ||
-              item.op.startsWith("camera."))
-        );
-      }
-      if (parsed && typeof parsed === "object") {
-        return false;
-      }
-    } catch (_err) {
-      /* not single JSON command doc */
-    }
-  }
-  const lines = splitCommandScript(body);
-  if (lines.length === 0) {
-    return false;
-  }
-  return lines.every((line) => line.startsWith("{") || looksLikeMicroDslLine(line));
+  try {
+    const commands = parseCommandScript(body);
+    return commands.length > 0 && commands.every(({ op }) =>
+      UPDATE_COMMAND_OPS.has(op) || op.startsWith("scene.") || op.startsWith("object.") || op.startsWith("camera."));
+  } catch { return false; }
 }
 
 /**

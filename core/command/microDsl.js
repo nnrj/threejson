@@ -63,7 +63,7 @@ function findJsonContainerEnd(text, start, open, close) {
  */
 function parseArgValue(text, start) {
   let i = start;
-  while (i < text.length && text[i] === " ") {
+  while (i < text.length && /\s/.test(text[i])) {
     i += 1;
   }
   if (i >= text.length) {
@@ -135,21 +135,21 @@ function parseKeyValueArgs(rest) {
   let i = 0;
   const text = String(rest ?? "");
   while (i < text.length) {
-    while (i < text.length && text[i] === " ") {
+    while (i < text.length && /\s/.test(text[i])) {
       i += 1;
     }
     if (i >= text.length) {
       break;
     }
     const keyStart = i;
-    while (i < text.length && text[i] !== "=" && text[i] !== " ") {
+    while (i < text.length && text[i] !== "=" && !/\s/.test(text[i])) {
       i += 1;
     }
     const key = text.slice(keyStart, i).trim();
     if (!key) {
       throw new Error("invalid micro DSL argument key.");
     }
-    while (i < text.length && text[i] === " ") {
+    while (i < text.length && /\s/.test(text[i])) {
       i += 1;
     }
     if (text[i] !== "=") {
@@ -173,7 +173,7 @@ export function parseMicroDslLine(line) {
   if (!text) {
     throw new Error("empty micro DSL line.");
   }
-  const spaceIdx = text.indexOf(" ");
+  const spaceIdx = text.search(/\s/);
   const op = (spaceIdx === -1 ? text : text.slice(0, spaceIdx)).trim();
   if (!op || !op.includes(".")) {
     throw new Error(`micro DSL requires dotted op (e.g. object.add), got "${op}".`);
