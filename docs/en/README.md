@@ -8,6 +8,8 @@ This handbook is written for library callers. It focuses on the scene pipeline u
 
 ## Contents
 
+- [Scene operations and AI tools](./scene-operations.md): shared contracts, queries, spatial operations, preflight, undo, CLI/MCP and Editor pairing.
+
 - [Quick Start](./quick-start.md): create a minimal runnable scene with `createSceneRuntime()`.
 - [JSON Format Guide](./json-format.md): runtime config plus the JSON formats for boxes, spheres, groups, lines, info panels, scene text (`objType: text`), heatmaps, animated planes, and external models.
 - [Info panels guide](./info-panels.md): infoPanel / css3dPanel selection, per-type examples, and demo index.

@@ -20,7 +20,9 @@ const RESOURCE_DIRS = [
   "tools/scene-host/scripts",
   "tools/scene-host/README.md",
   "tools/scene-host/PHASE5-retirement.md",
-  "tools/threejson-agent/bridge"
+  "packages/scene-tools/js",
+  "package.json",
+  "index.js"
 ];
 
 function copyResource(relPath) {

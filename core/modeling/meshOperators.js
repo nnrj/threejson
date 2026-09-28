@@ -154,6 +154,10 @@ export async function evaluateMeshOperator(id, { params: p, inputs, nodeId, cont
   }
   if (id === "instances.realize") return mergeMeshes(inputs.instances.transforms.map((m) => transformMesh(inputs.instances.mesh, new THREE.Matrix4().fromArray(m))), nodeId);
   if (id === "points.explicit") return { points: { type: "points", positions: p.positions, provenance: { source: nodeId } } };
+  if (id === "points.sampleCurve" || id === "points.scatterMesh") {
+    const { sampleModelingPoints } = await import("./samplingOperators.js");
+    return sampleModelingPoints(id, { params: p, inputs, nodeId, context, signal });
+  }
   if (id === "curve.polyline") return { curve: { type: "curve", points: p.points, closed: p.closed, provenance: { source: nodeId } } };
   if (id === "curve.bezier") {
     const curve = new THREE.CubicBezierCurve3(...p.points.map((v) => new THREE.Vector3(...v)));

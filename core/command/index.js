@@ -20,3 +20,5 @@ export { createCommandRegistry, getCommandHelp, getCommandSpec } from "./registr
 export { executeCommand, executeCommands } from "./executor.js";
 
 export { CORE_COMMAND_SPECS, getCoreCommandSpecs } from "./specs.js";
+export { assertCommandContract, validateCommandSchema } from "./contracts.js";
+export { createSceneOperationRegistry } from "./operationRegistry.js";

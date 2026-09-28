@@ -18,7 +18,8 @@ export function normalizeCommand(value) {
   if (!op) {
     throw new Error('command requires non-empty "op".');
   }
-  const args = isObjectRecord(value.args) ? value.args : {};
+  if (value.args !== undefined && !isObjectRecord(value.args)) throw Object.assign(new TypeError("Command args must be an object."), { code: "INVALID_COMMAND_ARGUMENTS" });
+  const args = value.args || {};
   const v = Number.isFinite(value.v) ? value.v : COMMAND_API_VERSION;
   return { v, op, args };
 }

@@ -1,0 +1,8 @@
+{
+  "name": "Agent-editable layout",
+  "sceneConfig": { "background": "#192633" },
+  "objectList": [
+    { "objType": "box", "threeJsonId": "table", "name": "Table", "geometry": { "width": 2, "height": 0.1, "depth": 1 }, "position": [0, 0.75, 0], "material": { "type": "basic", "color": "#bd9167" }, "semantic": { "category": "furniture", "tags": ["table"], "aliases": ["桌子"] } },
+    { "objType": "box", "threeJsonId": "seat", "name": "Seat blockout", "geometry": { "width": 0.5, "height": 0.45, "depth": 0.5 }, "position": [0, 0.225, 1], "material": { "type": "basic", "color": "#708faa" }, "semantic": { "category": "furniture", "tags": ["seat"], "aliases": ["座位"] } }
+  ]
+}

@@ -1,0 +1,5 @@
+[
+  { "op": "object.clone", "args": { "id": "seat", "newId": "seat-2" } },
+  { "op": "scene.layout", "args": { "ids": ["seat", "seat-2"], "layout": "row", "origin": [-0.6, 0.225, 1], "step": [1.2, 0, 0] } },
+  { "op": "scene.check", "args": { "assertions": [{ "type": "position", "id": "seat-2", "value": [0.6, 0.225, 1] }] } }
+]

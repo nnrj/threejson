@@ -18,12 +18,8 @@ import {
   isLikelyCommandScriptText,
   resolveOutputKind
 } from "./sceneCommandSkill.js";
-import {
-  createCommandContext,
-  createCommandRegistry,
-  executeCommands,
-  parseCommandScript
-} from "../command/index.js";
+import { parseCommandScript } from "../command/index.js";
+import { createSceneSession, createSceneOperationService } from "../session.js";
 import { extractPatchOperations, applySceneJsonPatch } from "./scenePatch.js";
 import {
   buildIntentHints,
@@ -552,6 +548,9 @@ async function requestChatCompletion({
   providerAdapter,
   requestContext,
   userId,
+  tools,
+  toolChoice,
+  returnMessage = false,
   thinkingPreference = "disabled",
   taskKind = ""
 }) {
@@ -630,7 +629,8 @@ async function requestChatCompletion({
         ? { max_tokens: normalizedMaxTokens }
         : {}),
       messages,
-      stream: stream === true,
+      stream: stream === true && !returnMessage,
+      ...(Array.isArray(tools) && tools.length ? { tools, tool_choice: toolChoice || "auto" } : {}),
       ...thinkingOptions,
       ...(normalizedProvider === "deepseek" && normalizedUserId ? { user_id: normalizedUserId } : {})
     };
@@ -697,7 +697,7 @@ async function requestChatCompletion({
       throw error;
     }
 
-    if (stream === true && response.body) {
+    if (stream === true && !returnMessage && response.body) {
       const content = await readSseChatCompletionStream(response.body, onDelta, onCompletionMetadata);
       return content;
     }
@@ -707,7 +707,7 @@ async function requestChatCompletion({
       throw createChatCompletionPayloadError(data, "AI request failed");
     }
     const content = extractChatCompletionChoiceContent(data?.choices?.[0]);
-    if (!content.trim()) {
+    if (!content.trim() && !(returnMessage && data?.choices?.[0]?.message?.tool_calls?.length)) {
       const choice = data?.choices?.[0];
       const reasoningChars = completionContentToText(choice?.message?.reasoning_content).length;
       const rawReasoningTokens = data?.usage?.completion_tokens_details?.reasoning_tokens;
@@ -725,7 +725,7 @@ async function requestChatCompletion({
         usage: normalizeCompletionUsage(data?.usage, content.length)
       });
     }
-    return content;
+    return returnMessage ? { message: data.choices[0].message, usage: data.usage || null, finishReason: data.choices[0].finish_reason || null } : content;
   } finally {
     abortScope.cleanup();
   }
@@ -777,13 +777,10 @@ function filterCoreUpdateCommands(commands) {
  */
 async function dryRunUpdateCommands(commands, sceneJsonString) {
   const parsed = parseSceneJsonString(String(sceneJsonString || ""));
-  const ctx = createCommandContext({ document: parsed });
-  const registry = createCommandRegistry();
-  return executeCommands(ctx, commands, {
-    registry,
-    dryRun: true,
-    executeMode: "auto"
-  });
+  if (!commands.length) return { ok: true, status: "noop", results: [], checks: { render: "unchecked" } };
+  const session = createSceneSession(parsed);
+  try { return await createSceneOperationService({ session }).preflight(commands); }
+  finally { session.dispose(); }
 }
 
 const DEFAULT_AUTO_CONTINUE_MIN_CHARS = 8000;

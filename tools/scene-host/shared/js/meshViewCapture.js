@@ -142,12 +142,12 @@ export async function captureMeshReviewViews({
       renderer.clear(true, true, true);
       renderer.render(previewScene, camera);
       renderer.readRenderTargetPixels(target, 0, 0, width, height, pixels);
-      captured.push({ name, width, height, detail: "low", dataUrl: pixelsToDataUrl(pixels, width, height, mimeType, quality) });
+      captured.push({ name, width, height, detail: "low", kind: "diagnostic", diagnosticRelighting: true, camera: { position: camera.position.toArray(), quaternion: camera.quaternion.toArray(), projectionMatrix: camera.projectionMatrix.toArray() }, dataUrl: pixelsToDataUrl(pixels, width, height, mimeType, quality) });
     }
   } finally {
     restoreRendererState(renderer, rendererState);
     target.dispose();
     previewScene.clear();
   }
-  return { views: captured };
+  return { kind: "diagnostic", diagnosticRelighting: true, timestamp: new Date().toISOString(), lighting: "isolated-hemisphere-and-key", views: captured };
 }

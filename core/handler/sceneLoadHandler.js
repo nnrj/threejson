@@ -1322,8 +1322,8 @@ function buildRuntimeCreationOptions(normalized, options, lifecycleBus, runtimeF
     options.renderLoopUserPolicy || {}
   );
   const sizeHint = {
-    width: normalized.canvasWidth || getWindowSizeFallback().width,
-    height: normalized.canvasHeight || getWindowSizeFallback().height
+    width: options.viewportSize?.width || normalized.canvasWidth || options.canvas?.clientWidth || getWindowSizeFallback().width,
+    height: options.viewportSize?.height || normalized.canvasHeight || options.canvas?.clientHeight || getWindowSizeFallback().height
   };
   if (options.canvas) {
     /** @type {object|null} */
@@ -1337,8 +1337,8 @@ function buildRuntimeCreationOptions(normalized, options, lifecycleBus, runtimeF
     const creation = runtimeFactory({
       canvas: options.canvas,
       config: {
-        canvasWidth: normalized.canvasWidth,
-        canvasHeight: normalized.canvasHeight,
+        canvasWidth: sizeHint.width,
+        canvasHeight: sizeHint.height,
         scene: {},
         camera: normalized.cameraConfig,
         renderer: normalized.rendererConfig,

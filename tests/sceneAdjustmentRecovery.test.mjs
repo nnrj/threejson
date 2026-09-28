@@ -211,7 +211,9 @@ test("fallback JSON must compile before success; a pathless tube rolls back to t
       assert.equal(requests.length, 3);
       assert.equal(result.stage, "json-full");
       assert.equal(result.sceneJson.name, "verified-vase");
-      assert.equal(failed.length, 2);
+      // The invalid target is now rejected before reaching the live host. Only the
+      // syntactically valid, non-compilable fallback reaches runtime preparation.
+      assert.equal(failed.length, 1);
       assert.ok(failed.every((state) => state === before));
       assert.match(requests[2].messages[1].content, /Tube requires a valid path/);
     } finally { session.dispose(); }

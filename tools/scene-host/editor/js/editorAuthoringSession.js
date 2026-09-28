@@ -1,5 +1,5 @@
 import { compileAuthoring, formatAuthoring, indexSceneDocument, restoreSceneDesignAuthoring } from "threejson/document";
-import { SceneSession, diffSceneDocuments, executeSceneSessionCommands, applySceneSessionTextureAssignment } from "threejson/session";
+import { SceneSession, createSceneOperationService, diffSceneDocuments, executeSceneSessionCommands, applySceneSessionTextureAssignment } from "threejson/session";
 import { createSceneSessionRuntimeDriver } from "../../../../core/runtime/sceneSessionDriver.js";
 import { sceneToStandardJsonSimple, getObjectByThreeJsonId } from "threejson";
 import { assertSceneExportableOrThrow } from "../../../../core/handler/domainDeployDescriptor.js";
@@ -91,6 +91,18 @@ export function createEditorAuthoringSession(host) {
   }
   return {
     get session() { return session; },
+    discover() { if (!session) throw new Error("No scene is open."); return createSceneOperationService({ session }).discover(); },
+    preflight(commands, options = {}) { return execute(commands, { ...options, preflight: true }); },
+    executeHistory(method, options = {}) {
+      if (!["undo", "redo"].includes(method)) throw new TypeError("Unknown history operation.");
+      return enqueue(async (owner) => {
+        const result = await createSceneOperationService({ session: owner })[method](options);
+        if (result.sceneMutated) {
+          host.setSelectedObject?.(null); host.getEditorInteraction?.()?.refreshMeshList?.(); host.getSceneTree?.()?.render?.();
+        }
+        return result;
+      });
+    },
     attach, recordRuntimeEdit, execute,
     importRecord(record, options = {}) {
       return enqueue(async (owner) => {

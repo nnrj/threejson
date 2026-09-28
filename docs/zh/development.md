@@ -20,11 +20,11 @@ npm test
 
 ## npm 发布（维护者）
 
-版本同步、完整测试、九包打包、npm 发布、固定 CDN 验证、Git tag 以及 Shower 部署顺序，统一见
+版本同步、完整测试、十包打包、npm 发布、固定 CDN 验证、Git tag 以及 Shower 部署顺序，统一见
 [`docs/dev/npm-release.md`](../dev/npm-release.md)。下载模板固定使用精确的 ThreeJSON 版本；必须先
 发布并确认该版本的 `threejson/runtime` 已在 CDN 就绪，再部署新版 Shower。
 
-Python 外置 Agent 套壳（可选）：**Python 3.10+**，依赖见 [`tools/threejson-agent/shell/py/requirements.txt`](../../tools/threejson-agent/shell/py/requirements.txt)。
+CLI/MCP 已统一到 [`@threejson/scene-tools`](../../packages/scene-tools/README.md)，无需 Python/Gradio。
 
 ## 分层
 
@@ -33,21 +33,20 @@ Python 外置 Agent 套壳（可选）：**Python 3.10+**，依赖见 [`tools/th
 | `core/`、`domains/` | 否 | 静态服务或打包后在浏览器运行 |
 | 根目录 `npm test` | 24+ | Node 跑 `tests/*.test.mjs` |
 | `examples/*`（Vite / Electron） | 24+ | 各子目录 `npm install` / `npm run build` |
-| `tools/threejson-agent/bridge/` | 24+ | Python CLI spawn Node 加载 `core/ai` |
-| `tools/mcp-threejson` | 24+ | Cursor MCP |
+| `packages/scene-tools` | 24+ | 无内置 AI 的 CLI/MCP；显式 ai/texture 子入口可加载 `core/ai` |
 | `tools/threejson-agent-desktop` | 24+ | Electron 桌面 |
 
 ## AI 凭据
 
 - 浏览器：[`tools/scene-host/editor/index.html`](../../tools/scene-host/editor/index.html) / html-demo → **localStorage**
-- CLI / GUI：[`tools/threejson-agent/setting.json`](../../tools/threejson-agent/setting.json)（从 `setting.example.json` 复制）
-- MCP：[`tools/mcp-threejson/setting.json`](../../tools/mcp-threejson/setting.json)（独立文件）
+- CLI 显式 AI/纹理：从 [`setting.example.json`](../../packages/scene-tools/setting.example.json) 复制私有配置，通过 `--config` 指定；旧用户配置不删除。
+- 普通 MCP 场景操作不需要模型密钥，外部 Agent 自己选择模型。
 
 ## AI 验证
 
 - 自动化（无需 API Key）：`npm test`、`npm run verify:ai-static`
 - 手动矩阵：[`tests/ai-manual-verification.md`](../../tests/ai-manual-verification.md)
-- 可选 live（需已配置 agent `setting.json`）：`npm run verify:ai-live`
+- 可选 live（需显式设置 `THREEJSON_LIVE_SETTINGS` 指向私有配置，可能计费）：`npm run verify:ai-live`
 
 ## 同步 / 异步 API 命名约定
 

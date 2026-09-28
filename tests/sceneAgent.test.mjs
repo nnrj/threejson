@@ -13,6 +13,7 @@ const MINIMAL_SCENE = {
     boxModelList: [
       {
         name: "floor",
+        threeJsonId: "floor",
         objType: "box",
         geometry: { width: 10, height: 0.2, depth: 10 },
         position: { x: 0, y: 0, z: 0 },
@@ -964,7 +965,7 @@ test("runSceneAgent iterative apply execs commands and skips final exec batch", 
 });
 
 test("runSceneAgent feeds paged mesh readback and host-rendered views into the next refinement request", async () => {
-  const currentScene = JSON.stringify(MINIMAL_SCENE);
+  const currentScene = JSON.stringify({ threeJsonId: MINIMAL_SCENE.threeJsonId, objectList: [...MINIMAL_SCENE.worldInfo.boxModelList, { objType: "editableMesh", threeJsonId: "model-1", topology: { vertices: [{ id: "v1", position: [0, 0, 0] }, { id: "v2", position: [1, 0, 0] }, { id: "v3", position: [0, 1, 0] }], faces: [{ id: "f1", vertices: ["v1", "v2", "v3"], part: "body" }] } }] });
   const changedScene = sceneWithFloorColor("#334455");
   const requestBodies = [];
   let fetchCall = 0;
@@ -1040,7 +1041,7 @@ test("runSceneAgent applies commands before honoring a same-response # done and 
   const currentScene = JSON.stringify(MINIMAL_SCENE);
   const changedScene = sceneWithFloorColor("#112233");
   const replies = [
-    'object.patch id=floor partial={"material":{"color":"#112233"}}\ncamera.fit mode=scene\n# done'
+    'object.patch id=floor partial={"material":{"color":"#112233"}}\ncamera.fit target=scene\n# done'
   ];
   const applied = [];
   const fetchMock = mock.fn(async () => ({

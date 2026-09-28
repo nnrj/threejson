@@ -7,6 +7,8 @@ export {
 
 export {
   registerEventAction,
+  listEventActionSpecs,
+  invokeContractedEventAction,
   unregisterEventAction,
   hasEventAction,
   executeRegisteredEventAction,

@@ -85,7 +85,7 @@ test("camera.fit id target fits to specific object", async () => {
   clearObjectRegistry();
 });
 
-test("executeCommands auto mode skips runtime ops without scene", async () => {
+test("executeCommands auto mode reports unavailable runtime ops instead of claiming success", async () => {
   const ctx = createCommandContext({
     document: { objectList: [{ objType: "box", name: "a" }] }
   });
@@ -97,8 +97,9 @@ test("executeCommands auto mode skips runtime ops without scene", async () => {
     ],
     { executeMode: "auto" }
   );
-  assert.equal(batch.ok, true);
+  assert.equal(batch.ok, false);
   assert.equal(batch.results[0].ok, true);
-  assert.equal(batch.results[1].ok, true);
+  assert.equal(batch.results[1].ok, false);
+  assert.equal(batch.results[1].code, "RUNTIME_REQUIRED");
   assert.equal(batch.results[1].data?.skipped, true);
 });

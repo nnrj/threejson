@@ -105,3 +105,7 @@ temp/
 # Local AI provider test credentials (dev-only, never commit)
 # ==========================================
 apps/*/settings.test.json
+
+# Cooperative scene-tool writer locks and private bridge options
+*.threejson-lock
+*.bridge.local.json

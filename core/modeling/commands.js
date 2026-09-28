@@ -1,4 +1,4 @@
-import { applyDocumentOperations, createSceneDocument, cloneDocumentData, indexSceneDocument } from "../document/sceneDocument.js";
+import { applyDocumentOperations, createSceneDocument, cloneDocumentData, indexSceneDocument, escapePointer } from "../document/sceneDocument.js";
 import { describeBufferGeometry } from "../document/geometryDescriptor.js";
 import { evaluateSceneDesign } from "../document/sceneDesign.js";
 import { evaluateModeledMesh } from "./runtimeCompiler.js";
@@ -26,6 +26,23 @@ export async function prepareModelingCommand(record, op, args = {}, options = {}
     return indexSceneDocument(evaluateSceneDesign(candidate).payload).get(record.threeJsonId).record;
   };
   const evaluate = (modeling) => evaluateModeledMesh(evaluatedRecord(modeling), options);
+  if (op === "model.node.patch" || op === "model.parameter.set") {
+    if (!Number.isSafeInteger(args.baseRevision) || args.baseRevision !== revision) throw modelingError("MODEL_REVISION_CONFLICT", `Expected model baseRevision ${revision}.`);
+    let patch;
+    if (op === "model.node.patch") {
+      const i = record.modeling.nodes.findIndex((node) => node.id === args.nodeId);
+      if (i < 0) throw modelingError("MODEL_NODE_NOT_FOUND", `Unknown modeling node: ${args.nodeId}.`);
+      if (args.partial.id != null && args.partial.id !== args.nodeId) throw modelingError("MODEL_NODE_ID_IMMUTABLE", "Stable node edits cannot rename a node.");
+      const { diffData } = await import("../document/sceneDocumentDiff.js");
+      const merge = (a, b) => Object.fromEntries(Object.entries({ ...a, ...b }).map(([key, value]) => [key, b[key] && typeof b[key] === "object" && !Array.isArray(b[key]) && a[key] && typeof a[key] === "object" && !Array.isArray(a[key]) ? merge(a[key], b[key]) : value]));
+      patch = []; diffData(record.modeling.nodes[i], merge(record.modeling.nodes[i], args.partial), `/nodes/${i}`, patch);
+      if (!patch.length) return { data: { id: record.threeJsonId, revision, unchanged: true } };
+    } else {
+      const exists = Object.hasOwn(record.modeling.parameters || {}, args.name);
+      patch = [...(record.modeling.parameters ? [] : [{ op: "add", path: "/parameters", value: {} }]), { op: exists ? "replace" : "add", path: `/parameters/${escapePointer(args.name)}`, value: args.value }];
+    }
+    return prepareModelingCommand(record, "model.patch", { id: args.id, baseRevision: args.baseRevision, patch }, options);
+  }
   if (op === "model.inspect") {
     const plan = validateModelingGraph(record.modeling, { registry });
     const resolved = evaluatedRecord(record.modeling);

@@ -12,19 +12,22 @@ export function createSessionCommandAdapter(session, options = {}) {
     const { op, args = {} } = command;
     const record = indexSceneDocument(document).get(String(args.id || ""))?.record;
     if (!record) throw documentError("OBJECT_NOT_FOUND", `Object not found: ${args.id}.`);
-    const original = getObjectByThreeJsonId(args.id, session.runtime.scene);
+    const original = session.runtime?.scene ? getObjectByThreeJsonId(args.id, session.runtime.scene) : null;
     const originalRecord = indexSceneDocument(session.document).get(args.id)?.record;
     let object = original, geometry;
     try {
-      if (record !== originalRecord) {
+      if (!object || record !== originalRecord) {
         const type = String(record.objType || "").toLowerCase();
         if (!["modeledmesh", "editablemesh", "buffermesh", "box", "sphere", "cylinder", "cone", "ring", "torus", "capsule", "plane", "circle"].includes(type)) {
           throw documentError("QUERY_REQUIRES_COMMIT", `Commit the changed external/Domain object before requesting ${op}.`);
         }
         const { prepareDocumentMeshGeometry } = await import("./sceneIncrementalPreparation.js");
-        geometry = (await prepareDocumentMeshGeometry(record, { ...runtimeOptions(), runtimeScope: session.runtime.scene, resourcePayload: document.root })).geometry;
+        geometry = (await prepareDocumentMeshGeometry(record, { ...runtimeOptions(), runtimeScope: session.runtime?.scene, resourcePayload: document.root })).geometry;
         object = new THREE.Mesh(geometry, original?.material || []);
         applyObjectTransform(object, record);
+        const { documentWorldMatrices } = await import("../query/sceneQuery.js");
+        object.matrixAutoUpdate = false;
+        object.matrix.copy(documentWorldMatrices(document).get(args.id));
         object.updateMatrixWorld(true);
         object.userData.objJson = cloneDocumentData(record);
         applyMorphInfluencesFromDescriptor(object, record);

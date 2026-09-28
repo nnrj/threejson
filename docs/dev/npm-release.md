@@ -13,19 +13,24 @@
 其 WASM 不随 ThreeJSON 默认打包，需由启用 CAD 的宿主部署。普通场景和官网示例不要求安装 CAD。
 新增能力不表示可以覆盖已有 npm 版本；本次代码发布前仍须按下述流程升级变更包版本。
 
+AI 操作协议新增 `threejson/operations`、`threejson/query` 及 `@threejson/scene-tools`。
+根包的 tarball 检查包含这两个入口；CLI/MCP 与共享 host-kit 应随本次根包一起升级并发布，
+不能让新版工具解析到不含这些入口的旧版 ThreeJSON。本次实现没有自动修改版本号或发布。
+
 ## 发布对象与顺序
 
 发布工具管理以下 npm 包：
 
 1. `@threejson/assets`（仅资源发生变化并升级版本时发布）；
 2. `threejson`；
-3. `@threejson/host-kit`；
-4. `@threejson/editor-kit`；
-5. `@threejson/player-kit`；
-6. `@threejson/scene-agent-kit`；
-7. `@threejson/react`；
-8. `@threejson/react-scene-agent`；
-9. `@threejson/react-ui`。
+3. `@threejson/scene-tools`（Node CLI/MCP，可选 AI/浏览器入口）；
+4. `@threejson/host-kit`；
+5. `@threejson/editor-kit`；
+6. `@threejson/player-kit`；
+7. `@threejson/scene-agent-kit`；
+8. `@threejson/react`；
+9. `@threejson/react-scene-agent`；
+10. `@threejson/react-ui`。
 
 `threejson` 必须先于依赖它的 packages 发布。发布工具会在继续发布 packages 前确认固定版本的
 `threejson/runtime` 已经能从 jsDelivr 访问。只有工具输出“现在可以部署 Shower”后，才应部署
@@ -163,7 +168,7 @@ npm run release:pack
 
 `release:test` 执行发布状态检查、示例目录校验和完整自动化验证。
 
-`release:pack` 按发布顺序对九个包执行 `npm pack`，并额外确认 `threejson` tarball 至少包含：
+`release:pack` 按发布顺序对十个包执行 `npm pack`，并额外确认 `threejson` tarball 至少包含：
 
 - `core/runtime.js`；
 - `core/ai/index.js`；
@@ -238,7 +243,7 @@ npm run release:tag
 
 - Git 工作区干净；
 - `HEAD` 中的根包版本等于当前版本；
-- 九个目标 npm 版本均已存在；
+- 十个目标 npm 版本均已存在；
 - 全部本地 tarball 与 npm integrity/shasum 一致；
 - 固定版本的 jsDelivr runtime 已就绪。
 

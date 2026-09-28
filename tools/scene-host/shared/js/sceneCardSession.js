@@ -1,5 +1,5 @@
 import { compileAuthoring, formatAuthoring, isSceneDocument, createSceneDocument } from "threejson/document";
-import { createRuntimeSceneSession, captureSceneSession, executeSceneSessionCommands, diffSceneDocuments, applySceneSessionTextureAssignment } from "threejson/session";
+import { createRuntimeSceneSession, createSceneOperationService, defaultSceneOperationRegistry, captureSceneSession, executeSceneSessionCommands, diffSceneDocuments, applySceneSessionTextureAssignment } from "threejson/session";
 import { captureSceneCardPreview } from "./sceneViewportPool.js";
 import { sceneHostGeometryCompiler } from "./sceneGeometryCompiler.js";
 
@@ -116,12 +116,24 @@ export function createSceneCardSession(options = {}) {
     },
     execute(commands, settings = {}) {
       const captured = structuredClone(commands);
+      const batch = Array.isArray(captured) ? captured : [captured];
+      const documentOnly = typeof captured !== "string" && batch.every((command) => {
+        const spec = defaultSceneOperationRegistry.getSpec(command.op);
+        return spec?.category === "read" && !spec.requirements.length && command.args?.state !== "runtime" && !(command.args?.state === "evaluated" && getDocument()?.root.design?.relations?.length);
+      });
+      if (documentOnly) return enqueue(async () => {
+        await initializeDeferredSession(settings);
+        if (!session) throw new Error("Scene document is not ready.");
+        return executeSceneSessionCommands(session, captured, settings);
+      });
       return runLive(async () => {
         await activate(settings);
         if (!session?.runtime) return { ok: false, sceneMutated: false, results: [], error: "Scene preview runtime is not ready." };
         return executeSceneSessionCommands(session, captured, settings);
       });
     },
+    discover() { return enqueue(async () => { await initializeDeferredSession({}); if (!session) throw new Error("Scene document is not ready."); return createSceneOperationService({ session }).discover(); }); },
+    preflight(commands, settings = {}) { return enqueue(async () => { await initializeDeferredSession(settings); if (!session) throw new Error("Scene document is not ready."); return executeSceneSessionCommands(session, commands, { ...settings, preflight: true }); }); },
     update(input, settings = {}) {
       const document = compileInput(input);
       return enqueue(async () => {

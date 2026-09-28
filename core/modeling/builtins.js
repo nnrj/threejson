@@ -35,6 +35,8 @@ const entries = [
   ["field.combine", { fields: { type: "field", multiple: true } }, { field: "field" }, schema({ operation: { type: "string", enum: ["union", "intersection", "subtract", "smoothUnion"], default: "union" }, smoothing: positive(0.2) }), "Union/intersection/difference or smooth blending of signed-distance fields."],
   ["field.mesh", { field: "field" }, meshOutput, schema({ bounds: object, resolution: integer(32, 2), isoLevel: number(0) }, ["bounds"]), "Extract a triangle mesh from a field within explicit bounds. Uniform sampling, not an exact CAD solid."],
   ["points.explicit", {}, { points: "points" }, schema({ positions: { type: "array", items: vector() } }, ["positions"]), "Explicit points without implied triangles."],
+  ["points.sampleCurve", { curve: "curve" }, { points: "points" }, schema({ count: integer(32), includeEnd: { type: "boolean", default: true } }), "Equal-arclength samples of a curve artifact's polyline; exact for that polyline, not the original analytic curve."],
+  ["points.scatterMesh", meshInput, { points: "points" }, schema({ count: integer(100), seed: integer(1, 0) }), "Deterministic surface points, weighted by triangle area; includes face normals and face indices."],
   ["points.instance", { points: "points", mesh: "mesh" }, { instances: "instances" }, schema({ scale: vector([1, 1, 1]) }), "Place a mesh at each point without duplicating its source geometry."]
 ];
 

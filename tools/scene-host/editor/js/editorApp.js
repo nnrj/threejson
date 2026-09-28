@@ -1989,6 +1989,12 @@ export async function bootstrapSceneHostEditor() {
       settingsModal.open(editorSettings);
       closeAllDropdowns();
     });
+    document.getElementById("menuExternalSceneTools")?.addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      closeAllDropdowns();
+      const { toggleEditorExternalTools } = await import("./editorExternalTools.js");
+      await toggleEditorExternalTools(host, button);
+    });
     document.getElementById("menuClearViewChromeCache")?.addEventListener("click", async () => {
       clearEditorSettingsCache();
       editorSettingsFileDefaults = await fetchEditorSettingsFileDefaults();

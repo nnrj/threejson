@@ -2,7 +2,6 @@
  * Core command skill for scene AI update — only scene.* / object.* ops (no editor.*).
  */
 import {
-  createCommandRegistry,
   getCommandHelp,
   parseCommandScript
 } from "../command/index.js";
@@ -11,6 +10,7 @@ import { isLoadableScenePayload } from "../handler/sceneFriendlyNormalizer.js";
 import { sanitizeAiJsonText, stripMarkdownCodeFence } from "./sceneJsonSanitize.js";
 import { buildCompactReferenceDescriptor } from "./sceneSpatialContext.js";
 import { buildModelingCapabilityFragment } from "./sceneCapabilityIndex.js";
+import { defaultSceneOperationRegistry } from "../command/operationRegistry.js";
 
 const UPDATE_COMMAND_OPS = new Set([
   "model.operators", "model.inspect", "model.evaluate", "model.patch", "model.bake",
@@ -58,6 +58,13 @@ const MUTATING_COMMAND_OPS = new Set([
   ,"mesh.buffer.cancel"
   ,"mesh.bake"
 ]);
+
+// The neutral operation contracts, rather than prefix guesses, own read/write semantics.
+for (const spec of defaultSceneOperationRegistry.listSpecs()) {
+  if (spec.op !== "scene.load") UPDATE_COMMAND_OPS.add(spec.op);
+  if (spec.category === "read") READ_ONLY_COMMAND_OPS.add(spec.op);
+  if (["authoring", "draft"].includes(spec.category)) MUTATING_COMMAND_OPS.add(spec.op);
+}
 
 /**
  * @param {string} op
@@ -521,18 +528,18 @@ export function isAiSceneUpdateCommandOp(op) {
  * @returns {string}
  */
 export function buildSceneCommandSkillFragment(registry) {
-  const resolved = registry || createCommandRegistry();
+  const resolved = registry || defaultSceneOperationRegistry;
   const allSpecs = resolved.listSpecs();
   const updateSpecs = allSpecs.filter((spec) => UPDATE_COMMAND_OPS.has(spec.op));
-  const tempRegistry = createCommandRegistry(
-    Object.fromEntries(
-      updateSpecs
-        .map((spec) => [spec.op, resolved.getHandler(spec.op)])
-        .filter(([, handler]) => typeof handler === "function")
-    ),
-    updateSpecs
-  );
-  return getCommandHelp(tempRegistry);
+  return getCommandHelp({ listSpecs: () => updateSpecs, listOps: () => updateSpecs.map((spec) => spec.op) }) + "\n\n" + [
+    "Observe -> locate -> preflight -> apply -> verify. Query actual object types before selecting modeling tools.",
+    "For moving/recoloring/arranging dense meshes, use scene.query projections, object.transform and material.patch. Do not request or repeat all vertices.",
+    "model.node.patch addresses stable node IDs. Editable topology commands apply only to editableMesh; modeledMesh uses graph/parameter commands.",
+    "Respect controlling design bindings/relationships. Edit their parameters rather than overwriting derived transforms.",
+    "scene.capture(kind:scene) observes real scene lighting/postprocessing. mesh.renderViews and diagnostic captures add isolated lights; never use them to declare the actual scene lighting correct.",
+    "Use scene.check for explicit postconditions. Unchecked, unavailable, no-op and failed are not proof that the user's requested change happened.",
+    "Do not rewrite a whole scene to repair a local command/type/argument failure. Inspect the structured error and correct the smallest affected operation."
+  ].join("\n");
 }
 
 /**

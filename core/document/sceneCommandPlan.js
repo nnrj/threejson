@@ -5,6 +5,9 @@ import { pathToPointer } from "../util/jsonPointer.js";
 import { parseCommandLine, parseCommandScript } from "../command/parser.js";
 import { buildCommandResult, resolveCommandMode } from "../command/types.js";
 import { diffSceneDocuments, diffData } from "./sceneDocumentDiff.js";
+import { defaultSceneOperationRegistry } from "../command/operationRegistry.js";
+import { assertCommandContract, validateCommandSchema } from "../command/contracts.js";
+import { assertRetainedBindingOwnership } from "./sceneBindingOwnership.js";
 export { diffSceneDocuments };
 
 const READ_OPERATIONS = new Set(["mesh.inspect", "mesh.getTopology", "mesh.validate", "mesh.renderViews", "morph.list"]);
@@ -38,22 +41,94 @@ export async function planSceneCommands(document, input, options = {}) {
   const drafts = new Map(options.bufferDrafts || []);
   const apply = (edits) => {
     const result = applyDocumentOperations(working, edits);
+    assertRetainedBindingOwnership(working, result.document);
     working = result.document;
     for (const operation of result.operations) operations.push(operation);
   };
   const replaceRecord = (entry, record) => { const edits = []; diffData(entry.record, record, entry.path, edits); apply(edits); };
   for (const command of commands) {
     const { op, args = {} } = command;
+    const registry = options.operationRegistry || defaultSceneOperationRegistry;
+    const spec = registry.getSpec(op), mode = spec?.mode || resolveCommandMode(op);
     let data;
     try {
       options.signal?.throwIfAborted();
-      if (op.startsWith("model.")) {
+      assertCommandContract(command, spec);
+      if (spec.targets?.length && args.id) {
+        const entry = requireObject(working, args.id);
+        if (!spec.targets.some((type) => type.toLowerCase() === String(entry.record.objType).toLowerCase())) {
+          const alternative = String(entry.record.objType).toLowerCase() === "modeledmesh" ? " Use model.inspect and model.node.patch/model.patch for its graph, or model.bake explicitly." : " Query scene.query controls and mesh.inspect before choosing an edit operation.";
+          throw documentError("INVALID_COMMAND_TARGET", `${op} requires ${spec.targets.join(" or ")}; ${args.id} is ${entry.record.objType}.${alternative}`, { id: args.id });
+        }
+      }
+      const prepare = registry.getPreparation?.(op);
+      if (prepare) {
+        const prepared = await prepare({ document: working, signal: options.signal }, args);
+        if (prepared.operations?.length && spec.category !== "authoring") throw documentError("COMMAND_CONTRACT_VIOLATION", "A read operation returned authoring edits.");
+        data = prepared.data ?? {};
+        try { validateCommandSchema(data, spec.outputSchema, "result"); }
+        catch (error) { throw documentError("COMMAND_OUTPUT_CONTRACT", error.message); }
+        apply(prepared.operations || []);
+      } else if (op === "action.discover") {
+        const { listEventActionSpecs } = await import("../runtime/eventMechanism/coreActions/actionRegistry.js");
+        data = { actions: listEventActionSpecs(), effects: "runtime-only" };
+      } else if (op === "action.invoke") {
+        if (commands.length !== 1) throw documentError("NON_TRANSACTIONAL_ACTION_BATCH", "Runtime actions must be executed separately; they cannot be rolled back with authoring edits.");
+        const { listEventActionSpecs, invokeContractedEventAction } = await import("../runtime/eventMechanism/coreActions/actionRegistry.js");
+        const actionSpec = listEventActionSpecs().find((item) => item.type === args.type);
+        if (!actionSpec) throw documentError("ACTION_UNAVAILABLE", `No contracted action: ${args.type}.`);
+        validateCommandSchema(args.params || {}, actionSpec.inputSchema);
+        if (actionSpec.targets?.length && !args.id) throw documentError("INVALID_COMMAND_TARGET", `${args.type} requires a target object ID.`);
+        if (args.id) {
+          const entry = requireObject(working, args.id);
+          if (actionSpec.targets?.length && !actionSpec.targets.some((type) => type.toLowerCase() === String(entry.record.objType).toLowerCase())) throw documentError("INVALID_COMMAND_TARGET", `${args.type} does not support ${entry.record.objType}.`);
+        }
+        if (options.preflight || options.dryRun) data = { wouldInvoke: args.type, effects: "runtime-only", verified: "arguments-only" };
+        else {
+          if (!options.runtime) throw documentError("RUNTIME_REQUIRED", "A runtime action needs an active runtime.");
+          const { scopedRuntimeObjects } = await import("../query/sceneQuery.js");
+          const object = args.id ? scopedRuntimeObjects(options.runtime).get(args.id) : null;
+          if (args.id && !object) throw documentError("OBJECT_NOT_COMPILED", `Object is not compiled: ${args.id}.`);
+          const result = await invokeContractedEventAction(args.type, args.params || {}, { runtime: options.runtime, scene: options.runtime.scene, object, signal: options.signal, threeJsonId: args.id });
+          data = { effects: "runtime-only", result: result ?? null };
+        }
+      } else if (op === "scene.capture") {
+        if (options.preflight || options.dryRun) {
+          if (args.id) requireObject(working, args.id);
+          results.push(buildCommandResult(op, { ok: true, mode: "runtime", status: "preflight", data: { wouldCapture: true, checks: { render: "unchecked" } } }));
+          continue;
+        }
+        if (working.root !== document.root) throw documentError("QUERY_REQUIRES_COMMIT", "Commit pending changes before capturing the scene.");
+        if (args.kind === "diagnostic") {
+          if (!args.id || !options.query) throw documentError("CAPTURE_UNAVAILABLE", "Diagnostic capture requires a target ID and a host mesh-view adapter.");
+          const result = await options.query({ op: "mesh.renderViews", args }, working);
+          if (result?.ok === false) throw documentError("CAPTURE_FAILED", result.error);
+          data = { ...(result?.data || result), kind: "diagnostic", diagnosticRelighting: true, revision: document.revision, timestamp: new Date().toISOString() };
+        } else {
+          const { captureSceneFrame } = await import("../runtime/sceneObservation.js");
+          data = await (options.capture || captureSceneFrame)(options.runtime, { ...args, revision: document.revision, signal: options.signal });
+        }
+      } else if (["scene.query", "scene.observe", "scene.check", "spatial.measure", "spatial.raycast"].includes(op)) {
+        const queries = await import("../query/sceneQuery.js");
+        const method = { "scene.query": queries.queryScene, "scene.observe": queries.queryScene, "scene.check": queries.checkScene, "spatial.measure": queries.measureScene, "spatial.raycast": queries.raycastScene }[op];
+        if (working.root !== document.root && (op === "spatial.raycast" || args.state === "runtime" || args.state === "evaluated" && working.root.design?.relations?.length)) throw documentError("QUERY_REQUIRES_COMMIT", "Commit pending changes before observing compiled runtime state.");
+        if (working.root !== document.root && (args.cursor || args.sinceRevision != null)) throw documentError("QUERY_REQUIRES_COMMIT", "Cursors and revision deltas refer to committed documents; commit this batch first.");
+        data = method(working, args, options);
+        // Per-edit candidate revisions are not revisions published by the session.
+        if (working.root !== document.root) data = { ...data, revision: null, baseRevision: document.revision,
+          documentState: "candidate", observedAfterOperationCount: operations.length, nextCursor: null };
+        if (op === "scene.observe") data.runtime = working.root !== document.root ? { available: false, code: "QUERY_REQUIRES_COMMIT" } : (await import("../runtime/sceneObservation.js")).observeSceneRuntime(options.runtime);
+      } else if (["object.transform", "object.clone", "object.reparent", "scene.layout", "object.attach", "design.parameter.set"].includes(op)) {
+        const { prepareScenePlacement } = await import("./scenePlacementOperations.js");
+        const prepared = await prepareScenePlacement(working, op, args, options);
+        apply(prepared.operations); data = prepared.data;
+      } else if (op.startsWith("model.")) {
         const entry = op === "model.operators" ? null : requireObject(working, args.id);
         const { prepareModelingCommand } = await import("../modeling/commands.js");
         const prepared = await prepareModelingCommand(entry?.record, op, args, { ...options, resourcePayload: working.root });
-        if (prepared.record) replaceRecord(entry, prepared.record);
         if (prepared.removeModelingBindings) apply([{ op: "replace", path: "/design/bindings", value: working.root.design.bindings.filter((binding) =>
           binding.object !== entry.id || !(binding.path === "/modeling" || binding.path.startsWith("/modeling/"))) }]);
+        if (prepared.record) replaceRecord(entry, prepared.record);
         data = prepared.data;
       } else if (op === "object.patch" || op === "material.patch") {
         const entry = requireObject(working, args.id);
@@ -113,7 +188,7 @@ export async function planSceneCommands(document, input, options = {}) {
         const { validateSceneJson } = await import("../handler/sceneJsonValidate.js");
         const validation = validateSceneJson(JSON.stringify(args.json || working.root));
         if (!validation.ok) throw documentError("INVALID_SCENE_DOCUMENT", validation.error);
-        data = { ...validation };
+        data = { ...validation, checks: { structure: "passed", geometry: "unchecked", resources: "unchecked", render: "unchecked" } };
       } else if (op === "mesh.edit") {
         const entry = requireObject(working, args.id);
         if (String(entry.record.objType).toLowerCase() !== "editablemesh") throw documentError("INVALID_MESH_TARGET", "mesh.edit requires editableMesh.");
@@ -143,23 +218,28 @@ export async function planSceneCommands(document, input, options = {}) {
         delete next.topology; delete next.modifiers; replaceRecord(entry, next);
         data = { threeJsonId: entry.id, revision: next.meshRevision, ...(args.includeDescriptor === false ? {} : { descriptor: cloneDocumentData(next) }), statistics: built.stats };
       } else if (READ_OPERATIONS.has(op)) {
-        if (!options.query) throw documentError("QUERY_RUNTIME_REQUIRED", `${op} requires a query adapter.`);
-        const result = await options.query(command, working);
+        if (op === "mesh.renderViews" && (options.preflight || options.dryRun)) {
+          requireObject(working, args.id);
+          results.push(buildCommandResult(op, { ok: true, mode: "runtime", status: "preflight", data: { wouldCapture: true, checks: { render: "unchecked" } } }));
+          continue;
+        }
+        const query = options.query || (await import("../runtime/sceneSessionCommandAdapter.js")).createSessionCommandAdapter({ document: working, runtime: options.runtime }, options).query;
+        const result = await query(command, working);
         if (result?.ok === false) throw documentError(result.data?.code || "QUERY_FAILED", result.error);
         data = result?.op ? result.data : result;
       } else if (op === "camera.fit") {
         // A viewport operation, not an implicit rewrite of the authored camera.
         if (args.id) requireObject(working, args.id);
-        if (!options.applyViewportCommand) throw documentError("VIEWPORT_REQUIRED", "camera.fit requires a viewport adapter.");
+        if (!options.applyViewportCommand && !options.preflight && !options.dryRun) throw documentError("VIEWPORT_REQUIRED", "camera.fit requires a viewport adapter.");
         viewCommands.push(command); data = { viewportOnly: true };
       } else if (op === "morph.set" || op === "object.reconcile") {
         if (!options.prepareCommand) throw documentError("COMMAND_PREPARATION_REQUIRED", `${op} requires a runtime preparation adapter.`);
         const prepared = await options.prepareCommand(command, working);
         apply(prepared.operations); data = prepared.data;
       } else throw documentError("UNKNOWN_COMMAND", `Unknown transactional command: ${op}.`);
-      results.push(buildCommandResult(op, { ok: true, mode: resolveCommandMode(op), data }));
+      results.push(buildCommandResult(op, { ok: true, mode, data }));
     } catch (error) {
-      results.push(buildCommandResult(op, { ok: false, mode: resolveCommandMode(op), error: error.message, data: { code: error.code } }));
+      results.push(buildCommandResult(op, { ok: false, mode, error: error.message, data: { code: error.code } }));
       return { ok: false, sceneMutated: false, results, error, operations: [], bufferDrafts: options.bufferDrafts, viewCommands: [] };
     }
   }
@@ -168,7 +248,7 @@ export async function planSceneCommands(document, input, options = {}) {
 
 const execution = new WeakMap();
 /** Commit exactly one revision or none. Concurrent calls serialize before planning. */
-export function executeSceneSessionCommands(session, input, options = {}) {
+export function commitSceneSessionCommands(session, input, options = {}) {
   // Host-injected registries/backends must be the same for validation and runtime preparation.
   // They are capabilities, never serializable document fields or per-command AI parameters.
   options = { ...session.commandOptions, ...options };
@@ -179,25 +259,37 @@ export function executeSceneSessionCommands(session, input, options = {}) {
     const base = session.document;
     if (options.baseRevision != null && options.baseRevision !== base.revision) throw documentError("STALE_SCENE_REVISION", "Scene changed after commands were planned.");
     const adapters = session.runtime ? (await import("../runtime/sceneSessionCommandAdapter.js")).createSessionCommandAdapter(session, options) : {};
-    const executionOptions = { ...adapters, runtimeScope: session.runtime?.scene, ...options, bufferDrafts: state.drafts };
+    const executionOptions = { ...adapters, runtime: session.runtime, runtimeScope: session.runtime?.scene, ...options, bufferDrafts: state.drafts };
     const planned = await planSceneCommands(base, commands, executionOptions);
     if (!planned.ok) return planned;
     try {
+      if (options.dryRun || options.preflight) {
+        const check = await session.preflight({ operations: planned.operations, baseRevision: base.revision, signal: options.signal, prepareOptions: options.prepareOptions });
+        return { ok: true, sceneMutated: false, results: planned.results, revision: base.revision, status: "preflight", runtimePrepared: check.runtimePrepared };
+      }
       const event = await session.dispatch({ operations: planned.operations, baseRevision: base.revision, signal: options.signal, label: options.label,
         prepareOptions: options.prepareOptions, historyGroup: options.historyGroup, recordHistory: options.recordHistory });
       state.drafts = planned.bufferDrafts;
       const warnings = [];
       for (const command of planned.viewCommands) {
+        const item = planned.results.find((result) => result.op === command.op && result.data?.viewportOnly);
         try {
           const result = await executionOptions.applyViewportCommand(command);
-          if (result?.ok === false) warnings.push(result.error);
-        } catch (error) { warnings.push(error.message); }
+          if (result?.ok === false) throw documentError(result.code || "VIEWPORT_OPERATION_FAILED", result.error);
+          if (item) Object.assign(item, { status: "applied", data: result?.data || item.data });
+        } catch (error) { warnings.push(error.message); if (item) Object.assign(item, { ok: false, error: error.message, code: error.code || "VIEWPORT_OPERATION_FAILED", status: "failed" }); }
       }
-      return { ok: true, sceneMutated: event.changed, results: planned.results, revision: session.revision, warnings };
+      return { ok: !warnings.length, ...(warnings.length ? { status: event.changed ? "partial" : "failed", error: warnings.join("; ") } : planned.viewCommands.length && !event.changed ? { status: "applied" } : {}), sceneMutated: event.changed, results: planned.results, revision: session.revision, warnings };
     } catch (error) {
-      return { ok: false, sceneMutated: false, results: [...planned.results, buildCommandResult("transaction.commit", { ok: false, error: error.message, data: { code: error.code } })], error: error.message, revision: session.revision };
+      return { ok: false, ...(error.name === "AbortError" ? { status: "cancelled" } : {}), sceneMutated: false, results: [...planned.results, buildCommandResult("transaction.commit", { ok: false, error: error.message, data: { code: error.code } })], error: error.message, revision: session.revision };
     }
   });
   state.queue = task.catch(() => {});
   return task;
+}
+
+/** All application authoring calls pass through the same receipt and validation boundary. */
+export async function executeSceneSessionCommands(session, input, options = {}) {
+  const { createSceneOperationService } = await import("./sceneOperationService.js");
+  return createSceneOperationService({ session }).execute(input, options);
 }

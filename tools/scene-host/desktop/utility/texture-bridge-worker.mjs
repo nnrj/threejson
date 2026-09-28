@@ -1,4 +1,4 @@
-import { runTextureFill } from "../../../threejson-agent/bridge/texture-fill.mjs";
+import { runTextureFill } from "../../../../packages/scene-tools/js/texture-fill.mjs";
 
 const parentPort = process.parentPort;
 

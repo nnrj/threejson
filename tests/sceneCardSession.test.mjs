@@ -7,6 +7,20 @@ import * as THREE from "three";
 
 const scene = (name = "box") => ({ name, objectList: [{ objType: "box", threeJsonId: "one", position: { x: 0 }, material: { color: "#336699" } }] });
 
+test("Agent discovery and compact queries never wake a dormant historical viewport", async () => {
+  let loads = 0;
+  const card = createSceneCardSession({ createRuntime: (...args) => { loads++; return createJsonScene(...args); } });
+  try {
+    await card.render(JSON.stringify(scene()), { defer: true });
+    const discovery = await card.discover();
+    assert.ok(discovery.commands.some((command) => command.op === "scene.query"));
+    const result = await card.execute([{ op: "scene.query", args: { projection: ["identity", "transform"] } }]);
+    assert.equal(result.ok, true); assert.equal(result.status, "read");
+    assert.equal(result.results[0].data.items[0].id, "one");
+    assert.equal(loads, 0); assert.equal(card.runtime, null); assert.equal(card.document.revision, 0);
+  } finally { card.dispose(); }
+});
+
 test("dormant serialized history stays unparsed until used and exports without a renderer", async () => {
   let loads = 0, published = 0;
   const card = createSceneCardSession({ createRuntime: (...args) => { loads++; return createJsonScene(...args); }, onDocumentChanged: () => published++ });

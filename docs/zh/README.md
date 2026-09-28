@@ -10,6 +10,8 @@ ThreeJSON 是一个基于 Three.js 的 Web3D JSON 运行时。调用者不需要
 
 ## 文档目录
 
+- [场景操作协议与 AI 工具](./scene-operations.md)：统一操作契约、查询与空间命令、预检、撤销、CLI/MCP 和编辑器配对。
+
 - [快速开始](./quick-start.md)：用 `createSceneRuntime()` 从配置创建一个最小可运行场景。
 - [JSON 格式手册](./json-format.md)：运行时配置，以及盒体、球体、组合、线段、信息面板、场景文字（`objType: text`）、热力图、动画平面和外部模型的 JSON 写法。
 - [信息面板专题](./info-panels.md)：infoPanel / css3dPanel 选型、分类型示例和 Demo 索引。

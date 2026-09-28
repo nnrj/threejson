@@ -85,7 +85,8 @@ player/
 
 播放器壳不需要纹理 IPC，故使用精简 preload。
 
-拆分期不修改 `tools/threejson-agent-desktop/`。
+两种桌面壳的纹理入口均已改为 `packages/scene-tools/js/texture-fill.mjs`。
+桌面完整产品和安装包验收仍属二期；本期不宣称验证了 Electron 安装包。
 
 ## 故障排查
 
@@ -93,5 +94,5 @@ player/
 |------|------|
 | 窗口空白 / 404 | 确认 `THREEJSON_ROOT` 指向含 `builtins/full.js` 的仓库根 |
 | AI 纹理无法落盘 | 仅用 `start:editor`；检查 `assets/textures/ai-generated/` 可写 |
-| `runTextureBridge` 失败 | 打包态使用 `utilityProcess`；开发态确认 `tools/threejson-agent/bridge/texture-fill.mjs` 存在 |
+| `runTextureBridge` 失败 | 使用 `utilityProcess`；确认 `packages/scene-tools/js/texture-fill.mjs` 及 ThreeJSON 的 Node 依赖可解析 |
 | 场景 JSON 加载失败 | 静态服务日志：路径须在仓库根下（如 `/assets/json/...`） |

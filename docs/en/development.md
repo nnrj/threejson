@@ -20,12 +20,12 @@ npm test
 
 ## npm releases (maintainers)
 
-See [`docs/dev/npm-release.md`](../dev/npm-release.md) for the version-sync, test, nine-package
+See [`docs/dev/npm-release.md`](../dev/npm-release.md) for the version-sync, test, ten-package
 packing, npm publishing, pinned-CDN verification, Git tag, and Shower deployment workflow. The
 downloaded template pins an exact ThreeJSON version; publish and verify that version's
 `threejson/runtime` on the CDN before deploying a new Shower build.
 
-Optional Python agent shell: **Python 3.10+**; dependencies in [`tools/threejson-agent/shell/py/requirements.txt`](../../tools/threejson-agent/shell/py/requirements.txt).
+CLI/MCP now share [`@threejson/scene-tools`](../../packages/scene-tools/README.md); Python/Gradio are not required.
 
 ## Layers
 
@@ -34,21 +34,20 @@ Optional Python agent shell: **Python 3.10+**; dependencies in [`tools/threejson
 | `core/`, `domains/` | No | Static server or bundler → browser |
 | Root `npm test` | 24+ | Node runs `tests/*.test.mjs` |
 | `examples/*` (Vite / Electron) | 24+ | `npm install` / `npm run build` per subfolder |
-| `tools/threejson-agent/bridge/` | 24+ | Python CLI spawns Node to load `core/ai` |
-| `tools/mcp-threejson` | 24+ | Cursor MCP |
+| `packages/scene-tools` | 24+ | No nested AI for CLI/MCP; explicit ai/texture subpaths may load `core/ai` |
 | `tools/threejson-agent-desktop` | 24+ | Electron desktop shell |
 
 ## AI credentials
 
 - Browser: [`tools/scene-host/editor/index.html`](../../tools/scene-host/editor/index.html) / html-demo → **localStorage**
-- CLI / GUI: [`tools/threejson-agent/setting.json`](../../tools/threejson-agent/setting.json) (copy from `setting.example.json`)
-- MCP: [`tools/mcp-threejson/setting.json`](../../tools/mcp-threejson/setting.json) (separate file)
+- Explicit CLI AI/texture: copy [`setting.example.json`](../../packages/scene-tools/setting.example.json) to a private file and pass `--config`; old user configuration is not deleted.
+- Ordinary MCP scene tools need no model key; the external agent selects its own model.
 
 ## AI verification
 
 - Automated (no API key): `npm test`, `npm run verify:ai-static`
 - Manual matrix: [`tests/ai-manual-verification.md`](../../tests/ai-manual-verification.md)
-- Optional live (agent `setting.json` required): `npm run verify:ai-live`
+- Optional live (explicit `THREEJSON_LIVE_SETTINGS` private configuration, may incur charges): `npm run verify:ai-live`
 
 ## Sync / async API naming convention
 

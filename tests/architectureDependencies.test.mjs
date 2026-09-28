@@ -367,7 +367,7 @@ test("apps/* do not import tools/scene-host (ThreeBox source) via any specifier"
   assert.deepEqual(violations, []);
 });
 
-test("legacy tools/scene-host remains deployable without packages/*", () => {
+test("browser scene-host remains deployable without packages/*", () => {
   // The legacy host is the production baseline. Shared behavior may evolve, but it must not start
   // depending on workspace packages until that migration is explicitly completed.
   const packagesRoot = path.join(REPO_ROOT, "packages") + path.sep;
@@ -375,6 +375,9 @@ test("legacy tools/scene-host remains deployable without packages/*", () => {
   if (!fs.existsSync(sceneHostRoot)) return;
   const violations = [];
   for (const file of walkFiles(sceneHostRoot)) {
+    // Desktop is a separate Node distribution and explicitly consumes scene-tools.
+    // It is never part of the browser hosts' deployable module graph.
+    if (file.startsWith(path.join(sceneHostRoot, "desktop") + path.sep)) continue;
     for (const reference of collectModuleReferences(file)) {
       const resolved = resolveLocalReference(file, reference);
       if (resolved?.startsWith(packagesRoot) || /^@threejson\/(?!assets)/.test(reference)) {

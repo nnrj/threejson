@@ -176,3 +176,4 @@ export {
   generateSceneTitle,
   buildStructuredTurnEnvelope
 };
+export { createSceneAgentTools, runSceneOperationAgent } from "./sceneOperationAgent.js";

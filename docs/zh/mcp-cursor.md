@@ -1,66 +1,50 @@
 [中文](./mcp-cursor.md) | [English](../en/mcp-cursor.md)
 
-# ThreeJSON MCP（Cursor）
+# ThreeJSON MCP（Cursor 等客户端）
 
-通过 MCP 在 Cursor 中调用 ThreeJSON 场景生成、校验与纹理填充。
+MCP 现在是 `@threejson/scene-tools` 的薄适配层，直接操作持久场景会话。
+普通查询、修改、校验、撤销和保存不调用内置 AI，不需要供应商密钥。
 
-## 安装
+## 使用源码
 
-```bash
-cd tools/mcp-threejson
-npm install
-```
-
-在 `tools/mcp-threejson/` 下复制 [`setting.example.json`](../../tools/mcp-threejson/setting.example.json) 为 `setting.json`。`llm.*` 用于场景与纹理语义规划；`texture.baseUrl` / `texture.apiKey` 指向独立的统一纹理服务。与 [`tools/threejson-agent/setting.json`](../../tools/threejson-agent/setting.json) **相互独立**（两套文件、各自目录）。
-
-仓库根目录由 Cursor MCP 配置里的环境变量 `THREEJSON_ROOT` 指定；未设置时 [`server.mjs`](../../tools/mcp-threejson/server.mjs) 按自身路径推断为仓库根。外置 Agent 默认以 **CLI 当前工作目录** 为工作区；仅当 `setting.paths.relativetRoot` 非空且 `paths.redirectRelative` 为 `true` 时才按配置重定向相对路径，二者不要混用。
-
-## 与 threejson-agent 的 setting 对照
-
-重叠块字段语义与 Agent 示例一致，可直接复制 `llm` / `agent` 的取值（密钥仍需分别维护两份 `setting.json`）。
-
-| 配置块 / 字段 | threejson-agent | mcp-threejson | 说明 |
-|---------------|-----------------|---------------|------|
-| `llm.*` | 支持 | 支持 | MCP 经 `chatOptionsFromSetting` 读取；`generate` / `update` / `plan_textures` 使用 |
-| `llm.maxTokens` | 支持（CLI 桥接） | 示例保留，**当前 MCP 未透传** | 见 `server.mjs` 的 `chatOptionsFromSetting`；缺省走 core 默认 |
-| `agent.enabled` | CLI 默认 / `--agent` | 支持 | MCP 以工具参数 `agentEnabled` 为准；`setting.agent` 仅作 `depth` 等默认 |
-| `agent.depth` | 支持 | 支持 | `threejson_generate` 的 `depth` 未传时用 `setting.agent.depth` |
-| `texture.baseUrl` / `apiKey` | 支持 | 支持 | 独立纹理服务；不复用聊天供应商的生图接口 |
-| `texture.strategy` / `pbr` | 支持 | 支持 | 默认语义混合与完整 PBR；实际能力以服务端声明为准 |
-| `texture.allowUnknownLicense` | 支持 | 支持 | 默认 `false`，许可未知候选只返回待确认，不自动应用 |
-| `texture.persistenceMode` | 支持 | 支持 | `remote`、`archive-selected` 或 `archive-all`；无存储时退化为远程代理 |
-| `texture.concurrency` | 支持 | 支持 | 独立纹理任务并发数，默认 `3` |
-| `texture.fillAfterAgent` | 支持 | **忽略** | Agent `run` 流水线开关；MCP 手动调用 `threejson_fill_textures` |
-| `asset.*` | 支持（search/import） | **无** | 无对应 MCP tool |
-| `paths.relativetRoot` + `paths.redirectRelative` | 支持 | **无** | Agent CLI `-i/-o` 默认相对 cwd；MCP 用 `THREEJSON_ROOT` |
-| `paths.redirectRelativeWarn` | 支持 | **无** | `false` 时不输出重定向 stderr 提示 |
-
-## 配置 Cursor
-
-在项目或用户配置中加入（路径按本机修改）：
+仓库根运行 `npm install`，然后在 MCP 客户端配置绝对路径：
 
 ```json
 {
   "mcpServers": {
     "threejson": {
       "command": "node",
-      "args": ["tools/mcp-threejson/server.mjs"],
-      "env": {
-        "THREEJSON_ROOT": "E:/WORKSPACE/00ProjectSpace/ThreeJSJson/ThreeJSON"
-      }
+      "args": ["E:/WORKSPACE/AgentWork/Three/ThreeJSON/packages/scene-tools/bin/threejson-mcp.mjs"]
     }
   }
 }
 ```
 
-## 工具一览
+发布新版本后也可安装 `@threejson/scene-tools`，使用其 `threejson-mcp` 命令。
+不要把源码的新协议与尚未发布的旧 npm 版本混用。无需 Python、Gradio 或旧 setting.json。
 
-| 工具 | 说明 |
-|------|------|
-| `threejson_validate` | 校验场景 JSON |
-| `threejson_generate` | 文本生成场景（可选 `agentEnabled`） |
-| `threejson_update` | 按说明更新场景 |
-| `threejson_plan_textures` | 一次 LLM 调用生成纯语义纹理需求，不生成 URL |
-| `threejson_fill_textures` | 经统一纹理服务搜索/生成/代理，并更新场景中的权威源 URL |
+## 工作流程
 
-更多说明见 [`tools/threejson-agent/shell/py/threejson_agent/skills/mcp.md`](../../tools/threejson-agent/shell/py/threejson_agent/skills/mcp.md)。
+1. `session.open` 用 `json` 或绝对 `file` 路径打开场景，记录 sessionId、revision。
+2. `scene.discover` 查看输入 schema、目标类型、前置条件和运行时可用性。
+3. `op.scene.query` 获取对象标识、精确变换、紧凑摘要及设计绑定。
+4. `scene.preflight` 预构建；逐项读取检查覆盖，未检查不等于通过。
+5. `scene.apply` 提交命令批次，携带 baseRevision 和稳定 requestId。
+6. 用 `op.scene.check` 检查确定性后置条件，必要时 `scene.undo`。
+7. `scene.save` 显式保存；目标文件版本变化时拒绝覆盖。
+
+支持 `job.start/get/cancel`。重复同一 requestId 不会在会话存续期间重复提交；
+进程重启后不保证持久幂等。MCP 标准输入输出只用于协议，不输出调试日志。
+
+## 图像和编辑器
+
+普通 Node 会话没有浏览器画布，截图明确返回不可用。可选 `browser-check` 使用显式安装的
+Playwright 和本机浏览器；不会自动下载浏览器。实际场景图与补光诊断图分别标注。
+
+编辑器通过“设置 → 连接本机场景工具…”与显式启动的 `editor-bridge` 配对。
+MCP `editor.call` 提交请求，`editor.result` 查询结果；连接中断时先核对结果，不盲目重发写操作。
+编辑器只依赖操作协议，不依赖 MCP。参阅 [场景操作协议](./scene-operations.md) 和
+[CLI 用法](../../packages/scene-tools/README.md)。
+
+旧 Python/MCP 外壳源码已退役；用户配置、场景和缓存保留。显式 AI、纹理、资产工具位于新包的
+可选入口，只有主动调用才访问相应服务。

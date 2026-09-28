@@ -1,7 +1,10 @@
 import { COMMAND_API_VERSION } from "./types.js";
+import { withCommandContract } from "./contracts.js";
+import { SCENE_OPERATION_SPECS } from "./sceneOperationSpecs.js";
 
 /** @type {import("./types.js").CommandSpec[]} */
 export const CORE_COMMAND_SPECS = [
+  ...SCENE_OPERATION_SPECS,
   ...[
     ["model.operators", "List registered modeling operators with parameter schemas and actual backends.", { id: "Optional exact operator ID.", category: "Optional category." }],
     ["model.inspect", "Inspect graph, revision and semantic nodes without dumping vertex coordinates.", { id: "Object ID.", nodeId: "Optional node filter.", includeParameters: "Explicit opt-in to returning node parameters." }],
@@ -60,7 +63,7 @@ export const CORE_COMMAND_SPECS = [
     mode: "runtime",
     summary: "Export the current runtime scene to standard JSON.",
     args: {
-      format: 'Export format; currently "standard" only.',
+      format: 'Authoring export format: "standard" or "friendly". Low-level runtime export supports standard.',
       options: "Optional sceneToStandardJson options."
     },
     example: { v: COMMAND_API_VERSION, op: "scene.export", args: { format: "standard" } }
@@ -69,7 +72,7 @@ export const CORE_COMMAND_SPECS = [
     op: "scene.list",
     mode: "runtime",
     summary: "List deployable objects in the current scene (id, name, objType).",
-    args: {},
+    args: { offset: "Zero-based offset.", limit: "Optional page size." },
     example: { v: COMMAND_API_VERSION, op: "scene.list", args: {} },
     microDslExample: "scene.list"
   },
@@ -277,7 +280,7 @@ export const CORE_COMMAND_SPECS = [
     args: { id: "Mesh threeJsonId.", views: "Optional view-name array.", size: "Optional output size." },
     example: { v: COMMAND_API_VERSION, op: "mesh.renderViews", args: { id: "model-1", views: ["front", "right", "top", "perspective"] } }
   }
-];
+].map(withCommandContract);
 
 /**
  * @param {string} [namespace]

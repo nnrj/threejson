@@ -83,10 +83,7 @@ function restoreRendererState(renderer, state) {
   if (renderer.xr && state.xrEnabled !== undefined) renderer.xr.enabled = state.xrEnabled;
 }
 
-/**
- * Capture isolated model views without resizing or repainting the visible host canvas. The host
- * decides whether to expose this callback to core commands; core itself never imports DOM/canvas.
- */
+/** Host-side isolated multi-view capture. Core only receives this as an injected callback. */
 export async function captureMeshReviewViews({
   object3D,
   renderer,
@@ -112,12 +109,10 @@ export async function captureMeshReviewViews({
   const extent = bounds.getSize(new THREE.Vector3());
   const radius = Math.max(0.001, extent.length() * 0.5);
   const distance = radius / Math.tan(THREE.MathUtils.degToRad(35 * 0.5)) * 1.18;
-
   const hemi = new THREE.HemisphereLight(0xffffff, 0x334455, 1.7);
   const key = new THREE.DirectionalLight(0xffffff, 2.2);
   key.position.copy(center).add(new THREE.Vector3(1.8, 2.4, 2.1).multiplyScalar(radius));
   previewScene.add(hemi, key);
-
   const target = new THREE.WebGLRenderTarget(width, height, {
     format: THREE.RGBAFormat,
     type: THREE.UnsignedByteType,
@@ -147,18 +142,12 @@ export async function captureMeshReviewViews({
       renderer.clear(true, true, true);
       renderer.render(previewScene, camera);
       renderer.readRenderTargetPixels(target, 0, 0, width, height, pixels);
-      captured.push({
-        name,
-        width,
-        height,
-        detail: "low",
-        dataUrl: pixelsToDataUrl(pixels, width, height, mimeType, quality)
-      });
+      captured.push({ name, width, height, detail: "low", kind: "diagnostic", diagnosticRelighting: true, camera: { position: camera.position.toArray(), quaternion: camera.quaternion.toArray(), projectionMatrix: camera.projectionMatrix.toArray() }, dataUrl: pixelsToDataUrl(pixels, width, height, mimeType, quality) });
     }
   } finally {
     restoreRendererState(renderer, rendererState);
     target.dispose();
     previewScene.clear();
   }
-  return { views: captured };
+  return { kind: "diagnostic", diagnosticRelighting: true, timestamp: new Date().toISOString(), lighting: "isolated-hemisphere-and-key", views: captured };
 }

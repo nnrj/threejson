@@ -1,6 +1,7 @@
 import { CORE_COMMAND_HANDLERS } from "./commands/index.js";
 import { CORE_COMMAND_SPECS, getCoreCommandSpecs } from "./specs.js";
 import { COMMAND_API_VERSION } from "./types.js";
+import { withCommandContract } from "./contracts.js";
 
 /**
  * @typedef {object} RegisteredCommand
@@ -47,8 +48,9 @@ export function createCommandRegistry(seedHandlers = CORE_COMMAND_HANDLERS, seed
       if (typeof handler !== "function") {
         throw new Error(`register("${key}") requires a handler function.`);
       }
-      commands.set(key, { handler, spec: spec || null });
+      commands.set(key, { handler, spec: spec ? withCommandContract(spec) : null });
     },
+    getSpec(op) { return commands.get(String(op ?? "").trim())?.spec || null; },
     getHandler(op) {
       const entry = commands.get(String(op ?? "").trim());
       return entry?.handler ?? null;
@@ -116,6 +118,6 @@ export function getCommandSpec(registry, namespace) {
   const fallbackSpecs = namespace ? getCoreCommandSpecs(namespace) : getCoreCommandSpecs();
   return {
     v: COMMAND_API_VERSION,
-    commands: commands.length > 0 ? commands : fallbackSpecs
+    commands: registry ? commands : fallbackSpecs
   };
 }

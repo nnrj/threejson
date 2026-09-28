@@ -1,0 +1,5 @@
+{
+  "llm": { "provider": "chatgpt", "model": "", "baseUrl": "", "apiKey": "" },
+  "texture": { "baseUrl": "", "apiKey": "", "strategy": "semantic-hybrid", "allowUnknownLicense": false },
+  "note": "Only the explicit ai/texture commands use these credentials. Prefer environment variables; never commit a populated setting.json. Ordinary MCP tools need no model key."
+}

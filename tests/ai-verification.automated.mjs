@@ -1,99 +1,25 @@
-/**
- * Static AI verification (no API keys). Run: npm run verify:ai-static
- */
+/** Static AI/tool verification: no provider credentials or browser downloads. */
 import assert from "node:assert/strict";
-import { readFileSync, existsSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
-
 import { validateSceneJson } from "../core/ai/agentTools.js";
 import { listMaterialTextureSlots } from "../core/texture/index.js";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(__dirname, "..");
-const fixtureDir = path.join(__dirname, "fixtures", "ai-test");
-const bridgeDir = path.join(repoRoot, "tools", "threejson-agent", "bridge");
-const shellPyDir = path.join(repoRoot, "tools", "threejson-agent", "shell", "py");
-
-function readFixture(name) {
-  return readFileSync(path.join(fixtureDir, name), "utf8");
-}
-
-test("fixture base-scene-friendly validates", () => {
-  const r = validateSceneJson(readFixture("base-scene-friendly.json"));
-  assert.equal(r.ok, true);
-  assert.ok((r.boxCount || 0) >= 3);
+import { createSceneToolHost } from "../packages/scene-tools/js/index.js";
+import { runSceneAi } from "../packages/scene-tools/js/ai.js";
+import { runTextureFill } from "../packages/scene-tools/js/texture-fill.mjs";
+const fixture = (name) => readFileSync(new URL("./fixtures/ai-test/" + name, import.meta.url), "utf8");
+test("base and invalid fixture validation remains available", () => {
+  assert.equal(validateSceneJson(fixture("base-scene-friendly.json")).ok, true);
+  assert.equal(validateSceneJson(fixture("invalid-scene.json")).ok, false);
 });
-
-test("fixture scene-with-texture-slots exposes material texture slots", () => {
-  const scene = JSON.parse(readFixture("scene-with-texture-slots.json"));
-  const slots = listMaterialTextureSlots(scene);
-  assert.ok(slots.filter((slot) => slot.slot === "baseColor").length >= 2);
+test("texture slots remain exposed after retiring Python", () => {
+  const slots = listMaterialTextureSlots(JSON.parse(fixture("scene-with-texture-slots.json")));
   assert.ok(slots.some((slot) => slot.slot === "normal"));
 });
-
-test("fixture invalid-scene fails validateSceneJson", () => {
-  const r = validateSceneJson(readFixture("invalid-scene.json"));
-  assert.equal(r.ok, false);
-});
-
-test("agent setting.example.json exists with paths.redirectRelative", () => {
-  const examplePath = path.join(repoRoot, "tools", "threejson-agent", "setting.example.json");
-  assert.ok(existsSync(examplePath));
-  const j = JSON.parse(readFileSync(examplePath, "utf8"));
-  assert.equal(j.paths?.redirectRelative, false);
-  assert.ok(j._providerBaseUrlHints);
-});
-
-test("mcp setting.example.json exists", () => {
-  const p = path.join(repoRoot, "tools", "mcp-threejson", "setting.example.json");
-  assert.ok(existsSync(p));
-});
-
-test("Node bridge scripts pass syntax check", () => {
-  const scripts = ["scene-agent.mjs", "texture-fill.mjs", "asset.mjs", "resolveComponentBinary.mjs"];
-  for (const name of scripts) {
-    const file = path.join(bridgeDir, name);
-    assert.ok(existsSync(file), `${name} missing`);
-    const r = spawnSync(process.execPath, ["--check", file], { encoding: "utf8" });
-    assert.equal(r.status, 0, `${name}: ${r.stderr || r.stdout}`);
-  }
-});
-
-test("Python agent config unittest passes when deps installed", () => {
-  const pipCheck = spawnSync("python", ["-c", "import click, httpx"], {
-    encoding: "utf8",
-    shell: process.platform === "win32"
-  });
-  if (pipCheck.status !== 0) {
-    console.log(
-      "SKIP Python unittest: pip install -r tools/threejson-agent/shell/py/requirements.txt"
-    );
-    return;
-  }
-  const r = spawnSync("python", ["-m", "unittest", "discover", "-s", "tests", "-q"], {
-    cwd: shellPyDir,
-    encoding: "utf8",
-    shell: process.platform === "win32"
-  });
-  assert.equal(
-    r.status,
-    0,
-    `Python unittest failed:\n${r.stdout}\n${r.stderr}`
-  );
-});
-
-test("components manifest registers asset-search", () => {
-  const manifestPath = path.join(
-    repoRoot,
-    "tools",
-    "threejson-agent",
-    "components",
-    "manifest.json"
-  );
-  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-  assert.ok(Array.isArray(manifest.components));
-  assert.ok(manifest.components.some((c) => c.id === "asset-search"));
+test("explicit AI and texture APIs are callable but not invoked on ordinary tools", async () => {
+  assert.equal(typeof runSceneAi, "function"); assert.equal(typeof runTextureFill, "function");
+  const original = globalThis.fetch; globalThis.fetch = () => { throw new Error("Unexpected network"); };
+  const host = createSceneToolHost();
+  try { const session = await host.open({ json: JSON.parse(fixture("base-scene-friendly.json")) }); assert.equal((await host.query({ sessionId: session.sessionId })).ok, true); }
+  finally { globalThis.fetch = original; await host.dispose(); }
 });

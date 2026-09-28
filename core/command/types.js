@@ -111,6 +111,8 @@ export function buildCommandResult(op, fields = {}) {
     mode: fields.mode,
     data: fields.data,
     error: fields.error ?? null,
+    ...(fields.code ? { code: fields.code } : {}),
+    ...(fields.status ? { status: fields.status } : {}),
     warnings: Array.isArray(fields.warnings) ? fields.warnings : undefined
   };
 }

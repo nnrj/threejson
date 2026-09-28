@@ -80,7 +80,7 @@ ipcMain.handle("threejson:saveTexture", (_e, { relativePath, bytes }) => {
 ipcMain.handle("threejson:runTextureBridge", (_e, payload) => {
   const bridge = path.join(
     projectRoot,
-    "tools/threejson-agent/bridge/texture-fill.mjs"
+    "packages/scene-tools/js/texture-fill.mjs"
   );
   return new Promise((resolve, reject) => {
     const proc = spawn("node", [bridge], {

@@ -1,5 +1,6 @@
 import { parseCommandLine, parseCommandScript } from "./parser.js";
 import { createCommandRegistry } from "./registry.js";
+import { assertCommandContract } from "./contracts.js";
 import {
   buildCommandResult,
   createCommandContext,
@@ -57,10 +58,11 @@ function maybeSkipInAutoExecuteMode(ctx, op, mode, executeMode) {
     return null;
   }
   return buildCommandResult(op, {
-    ok: true,
+    ok: false,
     mode: "runtime",
-    data: { skipped: true, reason: "no runtime context (auto mode)" },
-    warnings: [`skipped ${op}: ctx.scene not available in auto executeMode`]
+    status: "unavailable", code: "RUNTIME_REQUIRED",
+    error: `${op} requires ctx.scene; no operation was performed.`,
+    data: { skipped: true, reason: "no runtime context (auto mode)" }
   });
 }
 
@@ -79,6 +81,8 @@ export async function executeCommand(ctx, command, options = {}) {
   const mode = resolveCommandMode(op);
   const executeMode = options.executeMode || "runtime";
   const handler = registry.getHandler(op);
+  try { const spec = registry.getSpec?.(op); if (spec) assertCommandContract(parsed, spec); }
+  catch (error) { return buildCommandResult(op, { ok: false, mode, error: error.message, code: error.code, data: { code: error.code, path: error.path } }); }
   if (!handler) {
     return buildCommandResult(op, {
       ok: false,
@@ -118,7 +122,7 @@ export async function executeCommand(ctx, command, options = {}) {
     return buildCommandResult(op, {
       ok: false,
       mode,
-      error: String(err?.message || err)
+      error: String(err?.message || err), code: err?.code || "COMMAND_FAILED", data: { code: err?.code || "COMMAND_FAILED" }
     });
   }
 }
@@ -148,6 +152,12 @@ export async function executeCommands(ctx, inputs, options = {}) {
     const mode = resolveCommandMode(op);
     let result;
     if (options.dryRun === true) {
+      try { const spec = registry.getSpec?.(op); if (spec) assertCommandContract(parsed, spec); }
+      catch (error) {
+        results.push(buildCommandResult(op, { ok: false, mode, error: error.message, code: error.code, data: { code: error.code, path: error.path } }));
+        if (options.stopOnError !== false) return { ok: false, dryRun: true, results };
+        continue;
+      }
       const handler = registry.getHandler(op);
       if (!handler) {
         result = buildCommandResult(op, {
@@ -169,7 +179,7 @@ export async function executeCommands(ctx, inputs, options = {}) {
           result = buildCommandResult(op, {
             ok: true,
             mode,
-            data: { dryRun: true, args: parsed.args || {} }
+            status: "preflight", data: { dryRun: true, args: parsed.args || {}, checks: { arguments: registry.getSpec?.(op) ? "passed" : "unchecked", geometry: "unchecked", resources: "unchecked", render: "unchecked" } }
           });
         }
       }

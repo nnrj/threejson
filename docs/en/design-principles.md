@@ -100,6 +100,12 @@ Long-term cleanup ideas and audit notes: [`lab/core-layering-memo.md`](../../lab
 
 **Standard JSON** and **user-friendly JSON** are two **equally valid** external shapes—not a “new replaces old” relationship.
 
+Equal validity means shared document ownership, not mandatory field-for-field expressiveness. Standard form
+can carry dense attributes, stable topology and computable graphs. Friendly form prioritizes readable common
+descriptions; advanced records may use standard form directly. Never restrict engine capability to preserve
+shorthand equivalence or silently discard advanced fields. See [scene operations](./scene-operations.md)
+for neutral tool boundaries and separate verification coverage.
+
 - **Standard JSON**: expresses the whole scene via **`objectList` + a small amount of top-level metadata**, with **`objType`** for unified dispatch; uniform structure, better suited to programmatic processing, pipeline tools, and **AI generation**, etc.
 - **User-friendly JSON**: split, named, and grouped for human habits (e.g. common layouts with `sceneConfig`, `worldInfo`); easier to read, hand-write, and edit locally. **Its fields and organization are not legacy or transitional formats.**
 

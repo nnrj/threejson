@@ -1,0 +1,16 @@
+{
+  "name": "@threejson/scene-tools",
+  "version": "0.1.0-alpha.3",
+  "description": "Shared ThreeJSON scene sessions for Node CLI, MCP and opt-in browser verification.",
+  "type": "module",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/nnrj/threejson.git", "directory": "packages/scene-tools" },
+  "exports": { ".": "./js/index.js", "./mcp": "./js/mcp.js", "./browser": "./js/browser.js", "./texture": "./js/texture-fill.mjs", "./ai": "./js/ai.js", "./assets": "./js/assets.js", "./editor-bridge": "./js/editor-bridge.js", "./package.json": "./package.json" },
+  "bin": { "threejson": "./bin/threejson.mjs", "threejson-mcp": "./bin/threejson-mcp.mjs" },
+  "files": ["bin", "js", "README.md", "LICENSE", "setting.example.json"],
+  "engines": { "node": ">=24.0.0" },
+  "dependencies": { "@modelcontextprotocol/sdk": "^1.30.1" },
+  "peerDependencies": { "threejson": "^0.1.0-alpha.11", "playwright": "^1.63.0" },
+  "peerDependenciesMeta": { "playwright": { "optional": true } },
+  "devDependencies": { "threejson": "file:../.." }
+}

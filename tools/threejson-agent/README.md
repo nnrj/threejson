@@ -1,64 +1,11 @@
-# ThreeJSON Agent (external product)
+# Retired Python/Gradio agent shell
 
-External agent tooling around repository [`core/ai`](../../core/ai/) (canonical scene/texture AI). This directory is the **product root** — not a Python-only tree.
+The alpha CLI and MCP implementation now lives in [@threejson/scene-tools](../../packages/scene-tools/README.md).
+Use `npm run scene-tools -- help` or `npm run mcp` from the repository root.
 
-## Layout
+普通操作不再需要 Python、Gradio 或模型密钥。原纹理流程迁移到新包的显式 `texture` 入口；
+显式 `ai` 入口保留生成、图片生成与场景调整；素材导入/查询使用 Node API。
+旧版默认网页爬取与自动选择平台二进制不再启用：可传入明确 URL 或配置 JSON 搜索服务。
 
-```text
-tools/threejson-agent/
-  setting.json              # CLI + GUI (gitignored); copy from setting.example.json
-  bridge/                   # Node IPC scripts → core/ai (shared by all shells)
-  components/               # Packaged subcomponent binaries (asset-search, …)
-  shell/
-    py/                     # Python shell: threejson_agent, gui/, tests/
-```
-
-| Path | What it is |
-|------|------------|
-| [`core/ai`](../../core/ai/) | **Brain** — `runSceneAgent`, scene generation/update, semantic texture planning |
-| `bridge/` | **Node entry** — thin subprocess wrappers (not a second agent implementation) |
-| [`shell/py/`](shell/py/README.md) | **Python shell** — Click CLI + Gradio GUI |
-| `setting.json` | Product config (LLM keys, texture, asset) |
-
-Parallel apps (not under this folder): [`tools/scene-host/editor/`](../scene-host/editor/) (browser + localStorage), [`tools/mcp-threejson`](../mcp-threejson/) (Node MCP).
-
-## Quick start
-
-```bash
-cd tools/threejson-agent
-cp setting.example.json setting.json
-pip install -r shell/py/requirements.txt
-```
-
-Requires **Node 24+** on PATH for default scene/texture paths (`bridge/*.mjs`). See repo [`.nvmrc`](../../.nvmrc).
-
-### CLI (from repo root)
-
-Ensure `tools/threejson-agent/shell/py` is on `PYTHONPATH`, or:
-
-```bash
-cd tools/threejson-agent/shell/py
-python -m threejson_agent init-config
-python -m threejson_agent scene generate --prompt "智慧园区" -o ./out/scene.json
-```
-
-CLI relative paths use **cwd** by default; see `setting.example.json` for `paths.relativetRoot` / `paths.redirectRelative`. Custom config: `python -m threejson_agent --config /path/to/setting.json scene ...`.
-
-### GUI
-
-```bash
-npm run threejson-agent:gui
-```
-
-## Node bridges
-
-- `bridge/scene-agent.mjs` — `runSceneAgent` from `core/ai`
-- `bridge/texture-fill.mjs` — unified semantic plan + host-injected texture service Provider
-- `bridge/asset.mjs` — asset subcomponent (Python shell must not import `asset_provider` directly in production flow)
-
-## More detail
-
-- Python shell: [`shell/py/README.md`](shell/py/README.md)
-- Shell layer overview: [`shell/README.md`](shell/README.md)
-- Components: [`components/README.md`](components/README.md)
-- AI manual verification matrix: [`../../tests/ai-manual-verification.md`](../../tests/ai-manual-verification.md)
+用户现有的 `setting.json`、场景和下载文件未删除、未自动转换。按新文档显式指定配置；不要提交密钥。
+需要查阅旧实现时，可从 Git 历史恢复。桌面编辑器产品级重构留在二期，本期只更新纹理入口。

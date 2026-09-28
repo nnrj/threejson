@@ -12,6 +12,7 @@ export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url
 export const PACKAGE_PLAN = Object.freeze([
   { key: "assets", name: "@threejson/assets", dir: "assets", versionGroup: "assets" },
   { key: "threejson", name: "threejson", dir: ".", versionGroup: "threejson" },
+  { key: "scene-tools", name: "@threejson/scene-tools", dir: "packages/scene-tools", versionGroup: "packages" },
   { key: "host-kit", name: "@threejson/host-kit", dir: "packages/host-kit", versionGroup: "packages" },
   { key: "editor-kit", name: "@threejson/editor-kit", dir: "packages/editor-kit", versionGroup: "packages" },
   { key: "player-kit", name: "@threejson/player-kit", dir: "packages/player-kit", versionGroup: "packages" },
@@ -33,6 +34,8 @@ const REQUIRED_THREEJSON_PACKAGE_FILES = Object.freeze([
   "core/ai/index.js",
   "core/document.js",
   "core/session.js",
+  "core/operations.js",
+  "core/query.js",
   "core/geometry/geometryCompiler.js",
   "core/geometry/geometry.worker.bundle.js",
   "core/modeling/index.js",

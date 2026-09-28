@@ -116,6 +116,36 @@ export class SceneSession {
     return this.#enqueue(() => this.#commit(captured));
   }
 
+  /** Prepare and release a candidate without publishing it or touching history. */
+  preflight(command) {
+    this.#assertOpen();
+    const captured = { ...command, operations: cloneDocumentData(command.operations) };
+    return this.#enqueue(async () => {
+      captured.signal?.throwIfAborted();
+      const before = this.#document;
+      const candidate = applyDocumentOperations(before, captured.operations, { baseRevision: captured.baseRevision });
+      const controller = new AbortController();
+      const abort = () => controller.abort(captured.signal.reason);
+      captured.signal?.addEventListener("abort", abort, { once: true });
+      this.#active = controller;
+      let prepared;
+      try {
+        if (candidate.changed && this.#driver.prepare) prepared = await this.#driver.prepare(candidate.document, {
+          previousDocument: before, operations: candidate.operations, signal: controller.signal,
+          mode: "preflight", prepareOptions: captured.prepareOptions
+        });
+        controller.signal.throwIfAborted(); this.#assertOpen();
+        return { changed: candidate.changed, revision: before.revision, runtimePrepared: Boolean(prepared?.commit), document: candidate.document };
+      } finally {
+        try { await prepared?.rollback?.(); } finally {
+          captured.signal?.removeEventListener("abort", abort);
+          if (this.#active === controller) this.#active = null;
+          prepared?.dispose?.();
+        }
+      }
+    });
+  }
+
   configureHistory(options = {}) {
     const limit = options.limit ?? this.#historyLimit;
     if (limit !== Infinity && (!Number.isSafeInteger(limit) || limit < 1)) throw new TypeError("History limit must be positive or Infinity.");
