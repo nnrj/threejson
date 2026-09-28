@@ -38,9 +38,10 @@ import { isSceneCapabilityAvailable } from "../capabilities/sceneCapabilityManif
 import { fetchReferenceMaterial } from "./sceneReferenceCatalog.js";
 import { requestSceneOutline } from "./agentTools.js";
 import {
-  isLikelyTruncatedJsonText,
+  sanitizeAiJsonText,
   stripMarkdownCodeFence
 } from "./sceneJsonSanitize.js";
+import { classifyJsonPrefix } from "../util/jsonPrefix.js";
 import {
   buildFriendlyScenePayloadFromCanonical,
   buildStandardScenePayloadFromCanonical,
@@ -349,7 +350,7 @@ function normalizeCompletionUsage(rawUsage, completionChars = 0) {
  * compatibility behaviours: a final event without a trailing newline, and a provider that ignores
  * `stream: true` and returns one ordinary JSON chat completion instead.
  * @param {ReadableStream<Uint8Array>} body
- * @param {(chunk: string) => void} [onDelta]
+ * @param {(chunk: string, metadata?: {reset?: boolean}) => void} [onDelta]
  * @param {(metadata:{finishReason:string|null,reasoningChars?:number,reasoningTokens?:number|null,usage?:object})=>void} [onCompletionMetadata]
  * @returns {Promise<string>}
  */
@@ -867,6 +868,11 @@ function emitSceneSegmentProgress(options, detail) {
 }
 
 async function emitSceneGenerationPhase(options, detail) {
+  // A restart is a replacement, not another continuation. Forward this through every host's
+  // output channel, including adjustment fallbacks which have no generation-phase UI handler.
+  if (detail.phase === "segmented-recovery" || detail.phase === "compact-retry") {
+    options.onDelta?.("", { reset: true });
+  }
   if (typeof options.onGenerationPhase === "function") {
     await options.onGenerationPhase(detail);
   }
@@ -888,7 +894,7 @@ function isLengthFinishReason(value) {
 }
 
 function isSceneOutputCutoff(content, completionMetadata, options) {
-  if (!isLikelyTruncatedJsonText(content)) {
+  if (!isIncompleteJsonDocument(content)) {
     return false;
   }
   if (isLengthFinishReason(completionMetadata?.finishReason)) {
@@ -967,10 +973,43 @@ async function requestSegmentedSceneJsonContent(messages, options, maxTokens) {
     });
     const { fragment, control } = splitSceneSegmentControl(rawContent);
     deltaForwarder.finish(fragment);
-    assembled += fragment;
-
-    const detectedTruncation = isLikelyTruncatedJsonText(assembled);
-    if (!detectedTruncation) {
+    const candidate = assembled + fragment;
+    const state = classifyJsonPrefix(sanitizeAiJsonText(candidate));
+    const normalizedFragment = fragment.trim();
+    // A provider can repeat an opening document indefinitely while accidentally creating a
+    // syntactically valid nesting, e.g. {"objectList":[{"objectList":[... . This is not useful
+    // continuation. Repeated completed array elements (0, / {...},) remain valid and unlimited.
+    const repeatedOpening = normalizedFragment === previousFragment &&
+      /^[{\[]/.test(normalizedFragment) && classifyJsonPrefix(sanitizeAiJsonText(fragment)).status === "incomplete";
+    previousFragment = normalizedFragment;
+    // Repeated quotes, a restarted root, or an invalid number in the middle cannot be fixed
+    // by adding closing braces. Keep the last valid prefix and ask for a replacement fragment.
+    if (state.status === "invalid" || !normalizedFragment || repeatedOpening) {
+      consecutiveNoProgress += 1;
+      if (consecutiveNoProgress >= 2) {
+        const error = repeatedOpening
+          ? createSceneOutputLimitError("Scene JSON continuation stopped because the provider returned repeated or empty fragments without progress.")
+          : new SyntaxError(`Scene JSON continuation returned invalid or empty fragments without progress (position ${state.position ?? candidate.length}).`);
+        if (!error.code) error.code = "SCENE_JSON_SEGMENT_INVALID";
+        error.rawContent = candidate;
+        throw error;
+      }
+      if (maxSegments !== undefined && segment === maxSegments) break;
+      options.onDelta?.(assembled, { reset: true });
+      emitSceneSegmentProgress(options, { status: "retry", segment, estimatedSegments, position: state.position });
+      conversation.push(
+        { role: "assistant", content: rawContent },
+        { role: "user", content: [
+          `The last fragment was rejected: ${repeatedOpening ? "repeated opening fragment without progress" : `invalid JSON at position ${state.position ?? candidate.length}`}. It was NOT appended.`,
+          `Accepted prefix (JSON-encoded string): ${JSON.stringify(assembled)}`,
+          "Replace only the rejected fragment. Continue from the exact next character of the accepted prefix (or start the JSON if empty). Do not repeat any accepted characters. Return only the replacement fragment and the continuation/completion marker."
+        ].join("\n") }
+      );
+      continue;
+    }
+    assembled = candidate;
+    consecutiveNoProgress = 0;
+    if (state.status === "complete") {
       emitSceneSegmentProgress(options, {
         status: "complete",
         segment,
@@ -986,17 +1025,8 @@ async function requestSegmentedSceneJsonContent(messages, options, maxTokens) {
       segment,
       estimatedSegments,
         ...(maxSegments === undefined ? {} : { maxSegments }),
-      implicitTruncation: detectedTruncation && control !== "continue"
+      implicitTruncation: control !== "continue"
     });
-    const normalizedFragment = fragment.trim();
-    if (!normalizedFragment || normalizedFragment === previousFragment) consecutiveNoProgress += 1;
-    else consecutiveNoProgress = 0;
-    previousFragment = normalizedFragment;
-    if (consecutiveNoProgress >= 2) {
-      throw createSceneOutputLimitError(
-        "Scene JSON continuation stopped because the provider returned repeated or empty fragments without progress."
-      );
-    }
     if (maxSegments !== undefined && segment === maxSegments) {
       break;
     }
@@ -1031,15 +1061,8 @@ function addSegmentedProtocolToMessages(messages, estimatedSegments) {
 // A JSON response ending inside a string/container is incomplete regardless of its length.
 // Do not confuse a syntax error in the middle of a document with truncation.
 function isIncompleteJsonDocument(content) {
-  const text = stripMarkdownCodeFence(content).trim();
-  if (!/^[{\[]/.test(text) || !isLikelyTruncatedJsonText(text)) return false;
-  try { JSON.parse(text); return false; }
-  catch (error) {
-    const message = String(error?.message || error);
-    const position = /position (\d+)/i.exec(message);
-    return /unexpected end|end of data|unterminated string/i.test(message) ||
-      (position !== null && Number(position[1]) >= text.length - 1);
-  }
+  const text = sanitizeAiJsonText(content);
+  return /^[{\[]/.test(text) && classifyJsonPrefix(text).status === "incomplete";
 }
 
 /** Runs a JSON-producing completion without an engine-owned ceiling. If an explicit provider or
@@ -1135,6 +1158,10 @@ function resolveAiCapabilityOptions(prompt, options = {}, currentScene = null) {
   const selected = new Set(promptSelectedCapabilityIds || []);
   if (currentScene && typeof currentScene === "object") {
     const usage = analyzeSceneUsage(currentScene).objTypes;
+    const types = new Set([...usage].map((type) => type.toLowerCase()));
+    if (types.has("modeledmesh")) selected.add("modelingGraph");
+    if (types.has("editablemesh")) selected.add("editableMesh");
+    if (types.has("buffermesh")) selected.add("rawBufferMesh");
     if (usage.has("particleEmitter")) selected.add("particles");
     if (usage.has("particleSource:raster")) selected.add("particleRaster");
     if (usage.has("particleBackend:webgpu-compute")) selected.add("webgpuParticles");

@@ -70,7 +70,11 @@ const result = await runSceneTexturePipeline(scene, {
 
 调整响应接受 micro DSL、JSONL、格式化命令对象和命令数组；JSON 参数内部换行不拆成多条命令。`# done` 仅表示本批结束，不丢弃同一响应里的命令、Patch 或完整场景。查询阶段会把 `scene.list` 及 `object.get` 的属性值回传给模型。
 
-JSON/Patch 调整收到未闭合的短响应时，即使供应商缺少 `finish_reason` 或返回 `stop`，也会进入分段恢复，而不是仅对长输出恢复。不通过补括号编造场景；连续重复片段、用户取消或显式预算耗尽时停止，原场景不受影响。默认不新增 Token 或质量轮数上限。
+JSON/Patch 调整收到未闭合的短响应时，即使供应商缺少 `finish_reason` 或返回 `stop`，也会进入分段恢复，而不是仅对长输出恢复。先判断文本是否是合法 JSON 前缀：中途的重复引号、非法数字和未转义换行不能通过续写补救。分段中的错误片段不提交，反馈给模型替换；连续两次无效/空片段停止。反复输出同一个未闭合容器开头也按无进展处理，防止无限嵌套；合法的相同数组元素不是重复错误，有效续写没有默认次数上限。不通过补括号编造场景。
+
+`onDelta(delta, metadata)` 中的 `metadata.reset === true` 表示**替换**当前输出（清空后写入 delta），其余 delta 才追加。重启生成和丢弃错误片段都会发送 reset；同一文档的正常续写不重置。宿主封装必须转发此标志，不能把首轮截断和重新生成的内容拼在一起。最终成功值使用 API 返回的 JSON，失败输出仅为诊断材料。
+
+调整已有对象时自动带入其表示类型对应的能力：`modeledMesh` 使用 `model.inspect/model.patch`，`editableMesh` 才使用 `mesh.getTopology/mesh.edit`。宿主命令执行抛出的非取消错误会反馈给下一轮局部修正。ThreeBox/host-kit 的 Patch/整份 JSON 兜底结果必须通过场景事务的实际准备与应用，不能仅因语法正确就报告成功；失败保留上一个可用场景。
 
 ## 入口与依赖
 

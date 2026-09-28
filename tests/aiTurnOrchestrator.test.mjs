@@ -232,6 +232,7 @@ test("strict JSON Patch and full JSON adjustments expose correctly typed stream 
 });
 
 test("runAiAdjustTurn rejects a false command success and falls back to a verified JSON Patch", async () => {
+  let liveJson = SCENE;
   const replies = [
     'object.patch id=floor partial={"material":{"color":"#ff0000"}}',
     JSON.stringify([{ op: "replace", path: "/objectList/0/material/color", value: "#ff0000" }])
@@ -252,11 +253,16 @@ test("runAiAdjustTurn rejects a false command success and falls back to a verifi
       agentOptions: { maxRefineRounds: 1 },
       updateOutputMode: "commands",
       resolveContextPayload: () => ({ objectList: [{ threeJsonId: "floor", objType: "box" }] }),
-      applyCommands: async () => ({ ok: true, sceneMutated: true }),
+      applyCommands: async (commands) => {
+        // The original command path falsely succeeds, but the fallback scene transaction
+        // actually commits. A claimed success with no changed export is no longer accepted.
+        if (commands[0]?.op === "scene.load") liveJson = JSON.stringify(commands[0].args.json);
+        return { ok: true, sceneMutated: true };
+      },
       // Reproduce the original bug: command execution says ok, but the authoritative export did
       // not change because a different canvas was mutated.
       refreshContext: async () => ({
-        currentSceneJsonString: SCENE,
+        currentSceneJsonString: liveJson,
         objectList: [{ threeJsonId: "floor", objType: "box" }]
       })
     });
@@ -264,7 +270,7 @@ test("runAiAdjustTurn rejects a false command success and falls back to a verifi
     assert.equal(result.stage, "json-incremental");
     assert.equal(result.sceneJson.objectList[0].material.color, "#ff0000");
     assert.equal(result.agentResult.stopReason, "json_patch_fallback");
-    assert.equal(fetchMock.mock.calls.length, 2);
+    assert.equal(fetchMock.mock.calls.filter((call) => call.arguments[0].endsWith("/chat/completions")).length, 2);
   } finally {
     globalThis.fetch = originalFetch;
   }

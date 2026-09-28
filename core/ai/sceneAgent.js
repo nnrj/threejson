@@ -813,11 +813,19 @@ async function runSceneAgentCommandsUpdateIterative(params) {
     }
     const sceneSignatureBeforeApply = normalizedSceneSignature(baseContext.currentSceneJsonString);
     chatOptions?.signal?.throwIfAborted?.();
-    const applied = await applyCommands(commands, {
-      round: refineRound,
-      readOnly,
-      label: `AI Agent round ${refineRound}`
-    });
+    let applied;
+    try {
+      applied = await applyCommands(commands, {
+        round: refineRound,
+        readOnly,
+        label: `AI Agent round ${refineRound}`
+      });
+    } catch (error) {
+      if (chatOptions?.signal?.aborted || error?.name === "AbortError" || error?.code === "AI_TURN_TIMEOUT") throw error;
+      // Runtime preparation can reject asynchronously (invalid curve, wrong mesh type, etc.).
+      // Give the model that diagnostic just like an {ok:false} result, preserving the canvas.
+      applied = { ok: false, error: String(error?.message || error) };
+    }
     if (!applied.ok) {
       lastError = applied.error || "Command apply failed.";
       steps.push({ kind: "refine", round: refineRound, ok: false, error: lastError });
@@ -1376,13 +1384,13 @@ async function runSceneAgent(input = {}, options = {}) {
     let firstDelta = true;
     return {
       ...baseOptions,
-      onDelta: (delta) => {
+      onDelta: (delta, deltaMetadata = {}) => {
         if (baseOnDelta && baseOnDelta !== rawOnDelta) {
-          baseOnDelta(delta);
+          baseOnDelta(delta, deltaMetadata);
         }
         rawOnDelta(delta, {
           ...streamMetadata,
-          reset: firstDelta
+          reset: firstDelta || deltaMetadata.reset === true
         });
         firstDelta = false;
       }
@@ -1640,10 +1648,13 @@ async function runSceneAgent(input = {}, options = {}) {
       // A direct cutoff switches policies immediately instead of repeating another whole final
       // scene. A structural draft is already the incremental policy, so a genuine cutoff restarts
       // under the compact segmented-continuation protocol instead of becoming a visible failure.
-      // A user-forced full-coordinate model must stay a full-coordinate model. A provider
+      // Updates already have a scene to preserve: recover their transport without switching
+      // construction policy. A user-forced full-coordinate model must stay a full-coordinate model. A provider
       // cutoff changes only the transport: restart under exact segmented continuation instead
       // of silently switching representation to a compact control cage or primitive draft.
-      compactRetryOnTruncation: incrementalDraft || complexModelStrategy === "full-coordinates",
+      compactRetryOnTruncation: mode === "update"
+        ? options.compactRetryOnTruncation !== false
+        : incrementalDraft || complexModelStrategy === "full-coordinates",
       incrementalDraft,
       segmentedOutput:
         effectiveExecutionMode === "draft_refine" ? false : chatOptionsGenerate.segmentedOutput

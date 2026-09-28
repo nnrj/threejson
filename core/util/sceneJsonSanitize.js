@@ -325,14 +325,16 @@ function buildSanitizedJsonParseErrorMessage(sanitized, err) {
       parts.push(`Context: ...${sanitized.slice(from, to)}...`);
     }
   }
-  if (isLikelyTruncatedJsonText(sanitized) && (pos < 0 || pos >= sanitized.length - 2)) {
+  if (/bad control character|unterminated string|bad escaped character/i.test(base) && pos >= 0 && pos < sanitized.length - 2) {
+    parts.push("The JSON string is malformed (for example an unescaped line break or concatenated response). Appending closing brackets cannot repair this; regenerate the affected output.");
+  } else if (isLikelyTruncatedJsonText(sanitized) && (pos < 0 || pos >= sanitized.length - 2)) {
     const balance = countJsonBracketsOutsideStrings(sanitized);
     parts.push(
       `JSON appears truncated (missing ${balance.openBrackets - balance.closeBrackets} ']' and ${balance.openBraces - balance.closeBraces} '}'). Use command mode, a stronger model, or higher max output tokens.`
     );
   } else if (/\bMath\./.test(sanitized)) {
     parts.push("Unresolved Math.* identifiers may remain in the text.");
-  } else if (/[\d.)]\s*[-+*/]\s*[\d.(]/.test(sanitized)) {
+  } else if (pos >= 0 && /[\d.)]\s*[-+*/]\s*[\d.(]/.test(sanitized.slice(Math.max(0, pos - 16), pos + 16))) {
     parts.push("An arithmetic expression may not have been folded to a number.");
   } else {
     parts.push(

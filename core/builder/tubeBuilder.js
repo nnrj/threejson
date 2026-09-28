@@ -85,7 +85,7 @@ export function createTube(record, scene) {
   }
   const geometry = buildTubeGeometry(record);
   if (!geometry) {
-    const error = new Error(`Tube requires a valid path: ${record?.name || "(unnamed)"}`);
+    const error = new Error(`Tube requires a valid path: ${record?.name || record?.threeJsonId || "(unnamed)"}. Set record.path={type:"catmullRom",points:[[x,y,z],...]} (at least two points), not geometry.path. A revolved profile uses lathe or curve.revolve, not tube.`);
     error.code = "E_CURVE_DESCRIPTOR_INVALID";
     throw error;
   }

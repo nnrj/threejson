@@ -357,10 +357,10 @@ function buildCommandAdvancedCapabilityFragment(options = {}) {
   if (complexMeshSelected) {
     const visualReviewRule = options.visualReviewAvailable === true
       ? "- The host supports visual review for this turn. Use mesh.renderViews only after a visible mesh exists and only when another view can answer a concrete shape/proportion question; returned images are attached to the next round."
-      : "- Visual review is unavailable for this turn. Do not call mesh.renderViews; use mesh.inspect, mesh.getTopology and mesh.validate instead.";
+      : "- Visual review is unavailable for this turn. Do not call mesh.renderViews; use representation-appropriate inspection (model.inspect for modeledMesh; mesh.inspect and mesh.validate for meshes; mesh.getTopology only for editableMesh).";
     blocks.push([
       "Negotiated complex-mesh editing capability:",
-      "- Inspect only what is needed: mesh.inspect, then mesh.getTopology id=... part=... page=... pageSize=... and mesh.validate.",
+      "- Inspect only what is needed: check objType first. Only editableMesh has control topology readable via mesh.getTopology id=... part=... page=... pageSize=.... A modeledMesh uses model.inspect/model.patch; bufferMesh uses mesh.inspect and mesh.buffer.*. Do not convert representation just to satisfy an inspection command.",
       visualReviewRule,
       "- Change editableMesh with one atomic mesh.edit carrying the current baseRevision. Supported operations include add/set/remove vertex/face, assignPart, setEdgeCrease, extrudeFaces, insetFaces, bevelEdges, bridgeLoops, loopCut, mirror, setModifier, setModifiers and reorderModifier.",
       "- If the control cage already has the correct silhouette and only looks faceted or low resolution, refine locally with deterministic modifiers instead of asking the model to invent more vertices: Catmull-Clark for quad/n-gon cages, Loop for triangle cages, and Smooth only when it improves the intended silhouette. The browser evaluates these modifiers locally while the control topology remains the JSON source.",
@@ -400,6 +400,8 @@ function buildCommandPromptRulesFragment(options = {}) {
     buildScaleMatchingFragment(),
     "",
     buildEditScopeEconomyFragment(),
+    "- Match the existing representation: modeledMesh -> model.inspect, model.operators, model.patch; editableMesh -> mesh.getTopology, mesh.edit; bufferMesh -> mesh.inspect, mesh.buffer.*; procedural objects -> object.get and object.patch. mesh.getTopology cannot inspect an evaluated modeledMesh. Preserve its source graph and stable ID.",
+    '- A tube is a swept circular pipe, not a surface of revolution. Its path must be at record.path (or record.curve), e.g. {"objType":"tube","path":{"type":"catmullRom","points":[[0,0,0],[0,1,0],[0.2,2,0]]},"geometry":{"radius":0.05,"tubularSegments":48,"radialSegments":8}}. Do not put the path inside geometry or use a radius/height profile as a spatial path. For revolved hollow objects, edit the radial profile to include outer wall, rim and inner wall; do not replace the source graph with a pathless tube.',
     "",
     buildGroupRulesFragment(),
     "",

@@ -1,0 +1,705 @@
+{
+  "version": "next",
+  "name": "plum-blossom-vase",
+  "threeJsonId": "plum-blossom-vase",
+  "schemaVersion": 2,
+  "saveMeta": {
+    "exportMode": "standard_primary",
+    "exportedAt": "2026-09-28T15:15:14.947Z"
+  },
+  "sceneConfig": {
+    "scene": {
+      "background": "#1c1f26",
+      "threeJsonId": "a71a6045-1722-4773-b2d0-6b9698487c43"
+    },
+    "camera": {
+      "type": "perspective",
+      "fov": 45,
+      "near": 0.048,
+      "far": 365.27386985217174,
+      "position": {
+        "x": 7.947315377164143,
+        "y": 6.0911626793778,
+        "z": 8.623682643305774
+      },
+      "threeJsonId": "a0a4cd21-6d7b-4b0b-96e7-11a2e055cc4c",
+      "zoom": 1,
+      "up": {
+        "x": 0,
+        "y": 1,
+        "z": 0
+      },
+      "quaternion": [
+        -0.18325508124996703,
+        0.3566519863880109,
+        0.07156369639059258,
+        0.9132883296968538
+      ]
+    },
+    "renderer": {
+      "antialias": true,
+      "threeJsonId": "fcb36348-5900-4156-84e1-2e89e8ec3ec8",
+      "backend": "webgl",
+      "toneMapping": 0,
+      "toneMappingExposure": 1,
+      "outputColorSpace": "srgb",
+      "shadowMap": {
+        "enabled": false,
+        "type": 1
+      }
+    },
+    "controls": {
+      "type": "orbit",
+      "enableDamping": true,
+      "target": {
+        "x": 0,
+        "y": 1.1874999998509883,
+        "z": 0
+      },
+      "threeJsonId": "3d57d5be-e29a-489a-9a65-6bd0bfe1a3ea"
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "color": "#dbeafe",
+        "intensity": 0.5,
+        "threeJsonId": "3115e97d-9a24-4a78-8d77-f6dbe0a5f462",
+        "name": "",
+        "visible": true,
+        "castShadow": false,
+        "layers": 1,
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "position": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "type": "directional",
+        "color": "#ffffff",
+        "intensity": 1,
+        "position": {
+          "x": 5,
+          "y": 9,
+          "z": 6
+        },
+        "threeJsonId": "20a66070-9f35-427c-ab1f-a46ce87fae44",
+        "name": "",
+        "visible": true,
+        "castShadow": true,
+        "layers": 1,
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "shadow": {
+          "bias": 0,
+          "normalBias": 0,
+          "radius": 1,
+          "blurSamples": 8,
+          "mapSize": {
+            "width": 512,
+            "height": 512
+          },
+          "camera": {
+            "near": 0.5,
+            "far": 500,
+            "left": -5,
+            "right": 5,
+            "top": 5,
+            "bottom": -5,
+            "zoom": 1
+          }
+        },
+        "target": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "type": "directional",
+        "color": "#c7d2fe",
+        "intensity": 0.35,
+        "position": {
+          "x": -6,
+          "y": 4,
+          "z": -5
+        },
+        "threeJsonId": "b857f27d-ac9b-4da0-9821-ff8120ba36f5",
+        "name": "",
+        "visible": true,
+        "castShadow": true,
+        "layers": 1,
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "shadow": {
+          "bias": 0,
+          "normalBias": 0,
+          "radius": 1,
+          "blurSamples": 8,
+          "mapSize": {
+            "width": 512,
+            "height": 512
+          },
+          "camera": {
+            "near": 0.5,
+            "far": 500,
+            "left": -5,
+            "right": 5,
+            "top": 5,
+            "bottom": -5,
+            "zoom": 1
+          }
+        },
+        "target": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    ],
+    "renderLoop": {
+      "autoResize": true,
+      "updateAnimations": true,
+      "threeJsonId": "3796268a-8fd4-4d0f-8a57-059f8daec366"
+    }
+  },
+  "objectList": [
+    {
+      "threeJsonId": "vase-title",
+      "name": "vase-title",
+      "objType": "text",
+      "content": "梅花瓶 · 算子建模",
+      "mode": "sdf",
+      "fontSize": 0.4,
+      "color": "#f8fafc",
+      "align": "center",
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "billboard": true,
+      "position": {
+        "x": 0,
+        "y": 3.6,
+        "z": 0
+      },
+      "sdf": {
+        "outlineWidth": 0.02,
+        "outlineColor": "#101820"
+      },
+      "subScene": [],
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "visible": true
+    },
+    {
+      "name": "vase-stand",
+      "label": "new-floor-1790608514933",
+      "objType": "box",
+      "boxType": "box",
+      "businessInfo": {},
+      "geometry": {
+        "width": 6,
+        "height": 0.3,
+        "depth": 6
+      },
+      "material": {
+        "type": "standard",
+        "color": "#3a3f47",
+        "roughness": 0.9,
+        "metalness": 0,
+        "textureResources": {
+          "baseColor": {
+            "source": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/grey_roof_01/grey_roof_01_diff_1k.png",
+            "license": {
+              "status": "known",
+              "id": "CC0-1.0",
+              "url": "https://creativecommons.org/publicdomain/zero/1.0/"
+            },
+            "attribution": "Powered by Poly Haven"
+          },
+          "roughness": {
+            "source": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/grey_roof_01/grey_roof_01_rough_1k.png",
+            "license": {
+              "status": "known",
+              "id": "CC0-1.0",
+              "url": "https://creativecommons.org/publicdomain/zero/1.0/"
+            },
+            "attribution": "Powered by Poly Haven"
+          }
+        },
+        "textureUrl": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/grey_roof_01/grey_roof_01_diff_1k.png",
+        "roughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/grey_roof_01/grey_roof_01_rough_1k.png"
+      },
+      "position": {
+        "x": 0,
+        "y": -0.15,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "threeJsonId": "vase-stand",
+      "subScene": [],
+      "visible": true
+    },
+    {
+      "threeJsonId": "vase-body",
+      "name": "plum-blossom-vase-body",
+      "label": "梅花瓶",
+      "objType": "modeledmesh",
+      "modelRevision": 0,
+      "modeling": {
+        "version": 1,
+        "parameters": {
+          "height": 3,
+          "maxRadius": 0.7
+        },
+        "nodes": [
+          {
+            "id": "profile",
+            "operator": "curve.polyline",
+            "version": 1,
+            "params": {
+              "closed": false,
+              "points": [
+                [
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0.34,
+                  0,
+                  0
+                ],
+                [
+                  0.36,
+                  0.06,
+                  0
+                ],
+                [
+                  0.3,
+                  0.16,
+                  0
+                ],
+                [
+                  0.44,
+                  0.34,
+                  0
+                ],
+                [
+                  0.62,
+                  0.62,
+                  0
+                ],
+                [
+                  0.7,
+                  0.98,
+                  0
+                ],
+                [
+                  0.68,
+                  1.34,
+                  0
+                ],
+                [
+                  0.56,
+                  1.68,
+                  0
+                ],
+                [
+                  0.4,
+                  1.98,
+                  0
+                ],
+                [
+                  0.3,
+                  2.24,
+                  0
+                ],
+                [
+                  0.26,
+                  2.48,
+                  0
+                ],
+                [
+                  0.27,
+                  2.68,
+                  0
+                ],
+                [
+                  0.3,
+                  2.84,
+                  0
+                ],
+                [
+                  0.32,
+                  2.94,
+                  0
+                ],
+                [
+                  0.3,
+                  3,
+                  0
+                ],
+                [
+                  0,
+                  3,
+                  0
+                ]
+              ]
+            }
+          },
+          {
+            "id": "body",
+            "operator": "curve.revolve",
+            "version": 1,
+            "inputs": {
+              "profile": {
+                "node": "profile",
+                "output": "curve"
+              }
+            },
+            "params": {
+              "segments": 96,
+              "phiStart": 0,
+              "phiLength": 6.283185307179586
+            }
+          }
+        ],
+        "output": {
+          "node": "body",
+          "output": "mesh"
+        }
+      },
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "material": {
+        "type": "standard",
+        "color": "#f7f2ea",
+        "roughness": 0.22,
+        "metalness": 0.04,
+        "textureRepeat": {
+          "x": 4,
+          "y": 1
+        },
+        "emissive": "#1a0d12",
+        "emissiveIntensity": 0.06
+      },
+      "subScene": [],
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "visible": true
+    },
+    {
+      "objType": "group",
+      "name": "plum-blossom-decor",
+      "threeJsonId": "plum-blossom-decor-grp",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "subScene": [
+        {
+          "objType": "sphere",
+          "name": "plum-blossom-1",
+          "threeJsonId": "plum-blossom-1",
+          "geometry": {
+            "radius": 0.09,
+            "widthSegments": 16,
+            "heightSegments": 12
+          },
+          "position": {
+            "x": 0.545,
+            "y": 1.05,
+            "z": 0
+          },
+          "material": {
+            "type": "standard",
+            "color": "#d94f70",
+            "roughness": 0.7,
+            "metalness": 0,
+            "emissive": "#7a1f3d",
+            "emissiveIntensity": 0.12,
+            "transparent": true,
+            "opacity": 0.95,
+            "side": "double",
+            "polygonOffset": true,
+            "polygonOffsetFactor": -1,
+            "polygonOffsetUnits": -1
+          },
+          "subScene": [],
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.35,
+            "y": 0.35,
+            "z": 0.35
+          },
+          "visible": true
+        },
+        {
+          "objType": "sphere",
+          "name": "plum-blossom-2",
+          "threeJsonId": "plum-blossom-2",
+          "geometry": {
+            "radius": 0.075,
+            "widthSegments": 16,
+            "heightSegments": 12
+          },
+          "position": {
+            "x": -0.545,
+            "y": 1.35,
+            "z": 0
+          },
+          "material": {
+            "type": "standard",
+            "color": "#e8b4c0",
+            "roughness": 0.7,
+            "metalness": 0,
+            "emissive": "#7a1f3d",
+            "emissiveIntensity": 0.12,
+            "transparent": true,
+            "opacity": 0.95,
+            "side": "double",
+            "polygonOffset": true,
+            "polygonOffsetFactor": -1,
+            "polygonOffsetUnits": -1
+          },
+          "subScene": [],
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.3,
+            "y": 0.3,
+            "z": 0.3
+          },
+          "visible": true
+        },
+        {
+          "objType": "sphere",
+          "name": "plum-blossom-3",
+          "threeJsonId": "plum-blossom-3",
+          "geometry": {
+            "radius": 0.07,
+            "widthSegments": 16,
+            "heightSegments": 12
+          },
+          "position": {
+            "x": 0,
+            "y": 1.72,
+            "z": -0.545
+          },
+          "material": {
+            "type": "standard",
+            "color": "#d94f70",
+            "roughness": 0.7,
+            "metalness": 0,
+            "emissive": "#7a1f3d",
+            "emissiveIntensity": 0.12,
+            "transparent": true,
+            "opacity": 0.95,
+            "side": "double",
+            "polygonOffset": true,
+            "polygonOffsetFactor": -1,
+            "polygonOffsetUnits": -1
+          },
+          "subScene": [],
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.28,
+            "y": 0.28,
+            "z": 0.28
+          },
+          "visible": true
+        },
+        {
+          "objType": "sphere",
+          "name": "plum-blossom-4",
+          "threeJsonId": "plum-blossom-4",
+          "geometry": {
+            "radius": 0.065,
+            "widthSegments": 16,
+            "heightSegments": 12
+          },
+          "position": {
+            "x": -0.545,
+            "y": 2.15,
+            "z": 0
+          },
+          "material": {
+            "type": "standard",
+            "color": "#e8b4c0",
+            "roughness": 0.7,
+            "metalness": 0,
+            "emissive": "#7a1f3d",
+            "emissiveIntensity": 0.12,
+            "transparent": true,
+            "opacity": 0.95,
+            "side": "double",
+            "polygonOffset": true,
+            "polygonOffsetFactor": -1,
+            "polygonOffsetUnits": -1
+          },
+          "subScene": [],
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.26,
+            "y": 0.26,
+            "z": 0.26
+          },
+          "visible": true
+        },
+        {
+          "objType": "sphere",
+          "name": "plum-blossom-5",
+          "threeJsonId": "plum-blossom-5",
+          "geometry": {
+            "radius": 0.06,
+            "widthSegments": 16,
+            "heightSegments": 12
+          },
+          "position": {
+            "x": 0,
+            "y": 2.55,
+            "z": -0.545
+          },
+          "material": {
+            "type": "standard",
+            "color": "#d94f70",
+            "roughness": 0.7,
+            "metalness": 0,
+            "emissive": "#7a1f3d",
+            "emissiveIntensity": 0.12,
+            "transparent": true,
+            "opacity": 0.95,
+            "side": "double",
+            "polygonOffset": true,
+            "polygonOffsetFactor": -1,
+            "polygonOffsetUnits": -1
+          },
+          "subScene": [],
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.24,
+            "y": 0.24,
+            "z": 0.24
+          },
+          "visible": true
+        },
+        {
+          "objType": "sphere",
+          "name": "plum-blossom-6",
+          "threeJsonId": "plum-blossom-6",
+          "geometry": {
+            "radius": 0.055,
+            "widthSegments": 16,
+            "heightSegments": 12
+          },
+          "position": {
+            "x": 0.545,
+            "y": 2.82,
+            "z": 0
+          },
+          "material": {
+            "type": "standard",
+            "color": "#e8b4c0",
+            "roughness": 0.7,
+            "metalness": 0,
+            "emissive": "#7a1f3d",
+            "emissiveIntensity": 0.12,
+            "transparent": true,
+            "opacity": 0.95,
+            "side": "double",
+            "polygonOffset": true,
+            "polygonOffsetFactor": -1,
+            "polygonOffsetUnits": -1
+          },
+          "subScene": [],
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.22,
+            "y": 0.22,
+            "z": 0.22
+          },
+          "visible": true
+        }
+      ],
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "visible": true
+    }
+  ]
+}

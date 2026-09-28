@@ -482,11 +482,11 @@ function createScopedOutputDelta(onDelta, metadata = {}, streamId = "output-1") 
     return undefined;
   }
   let firstDelta = true;
-  return (delta) => {
+  return (delta, deltaMetadata = {}) => {
     onDelta(delta, {
       ...metadata,
       streamId,
-      reset: firstDelta
+      reset: firstDelta || deltaMetadata.reset === true
     });
     firstDelta = false;
   };
@@ -803,6 +803,25 @@ export async function runAiAdjustTurn({
     outputStreamSequence += 1;
     return createScopedOutputDelta(onDelta, metadata, `adjust-turn-${outputStreamSequence}`);
   };
+  const verifyFallbackScene = async (candidate) => {
+    const sceneJson = parseSceneJsonString(candidate);
+    if (typeof applyCommands === "function" && typeof refreshContext === "function") {
+      // The host owns a transactional scene session. Compile before commit; an invalid tube,
+      // graph or material must not be reported as a successful Patch or clear the old canvas.
+      const applied = await applyCommands([{ op: "scene.load", args: { json: sceneJson } }], {
+        readOnly: false, label: userPrompt, stage: "adjust_json_fallback"
+      });
+      if (!applied?.ok) throw new Error(String(applied?.error?.message || applied?.error || "Adjusted scene could not be applied."));
+      const fresh = await refreshContext();
+      if (!fresh?.currentSceneJsonString) throw new Error("Adjusted scene could not be exported after application.");
+      assertAdjustedSceneChanged(fresh.currentSceneJsonString, fallbackBase);
+      return fresh.currentSceneJsonString;
+    }
+    const runtime = await createOffscreenRuntimeFromSceneJsonString(candidate);
+    try { return candidate; }
+    finally { runtime.dispose?.(); }
+  };
+  let fallbackBase = targetSceneJsonString;
   // strictOutputMode forces exactly the requested single stage with no cascade and no round
   // budget — a deliberate one-shot escape hatch, unrelated to the always-iterative behavior
   // below. Used by Editor's AI-edit quick controls: "auto" (strictOutputMode left off) means "let
@@ -941,6 +960,11 @@ export async function runAiAdjustTurn({
     if (isAbortOrTurnTimeout(commandError, signal)) {
       throw commandError;
     }
+    if (typeof refreshContext === "function") {
+      const fresh = await refreshContext();
+      if (fresh?.currentSceneJsonString) fallbackBase = fresh.currentSceneJsonString;
+    }
+    let fallbackPrompt = `${userPrompt}\n\nPrevious command failed: ${String(commandError?.message || commandError)}. Preserve the current representation and repair the requested change; do not repeat the invalid command or geometry.`;
     const commonFallbackOptions = {
       ...providerOptions,
       maxTokens: maxTokens ?? providerOptions?.maxTokens,
@@ -956,8 +980,8 @@ export async function runAiAdjustTurn({
     };
     try {
       const { sceneJsonString, patch } = await requestUpdatedSceneJsonString(
-        userPrompt,
-        targetSceneJsonString,
+        fallbackPrompt,
+        fallbackBase,
         {
           ...commonFallbackOptions,
           updateMode: "incremental",
@@ -965,12 +989,13 @@ export async function runAiAdjustTurn({
           onDelta: scopedOutputDelta({ stage: "adjust_json_patch_fallback", outputMode: "patch" })
         }
       );
-      if (normalizedSceneJsonSignature(sceneJsonString) !== normalizedSceneJsonSignature(targetSceneJsonString)) {
+      if (normalizedSceneJsonSignature(sceneJsonString) !== normalizedSceneJsonSignature(fallbackBase)) {
+        const verifiedJson = await verifyFallbackScene(sceneJsonString);
         return {
           stage: "json-incremental",
           patch,
-          sceneJson: parseSceneJsonString(sceneJsonString),
-          sceneJsonString,
+          sceneJson: parseSceneJsonString(verifiedJson),
+          sceneJsonString: verifiedJson,
           agentResult: {
             agentUsed: true,
             completed: true,
@@ -984,26 +1009,28 @@ export async function runAiAdjustTurn({
       }
     } catch (patchError) {
       if (isAbortOrTurnTimeout(patchError, signal)) throw patchError;
+      fallbackPrompt += `\nThe JSON Patch candidate also failed validation: ${String(patchError?.message || patchError)}. Fix this in the next candidate.`;
     }
 
     const sceneJsonString = await requestUpdatedSceneJsonString(
-      userPrompt,
-      targetSceneJsonString,
+      fallbackPrompt,
+      fallbackBase,
       {
         ...commonFallbackOptions,
         updateMode: "full",
         onDelta: scopedOutputDelta({ stage: "adjust_full_json_fallback", outputMode: "json" })
       }
     );
-    if (normalizedSceneJsonSignature(sceneJsonString) === normalizedSceneJsonSignature(targetSceneJsonString)) {
+    if (normalizedSceneJsonSignature(sceneJsonString) === normalizedSceneJsonSignature(fallbackBase)) {
       const error = new Error("AI adjustment completed without changing the scene.");
       error.code = "AI_ADJUST_NO_CHANGE";
       throw error;
     }
+    const verifiedJson = await verifyFallbackScene(sceneJsonString);
     return {
       stage: "json-full",
-      sceneJson: parseSceneJsonString(sceneJsonString),
-      sceneJsonString,
+      sceneJson: parseSceneJsonString(verifiedJson),
+      sceneJsonString: verifiedJson,
       agentResult: {
         agentUsed: true,
         completed: true,

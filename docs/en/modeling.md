@@ -168,6 +168,10 @@ The `modelingGraph` AI capability loads contracts on demand, supports scoped que
 
 ## Validation, packaging and honest limits
 
+Adjustment automatically includes `modelingGraph` for existing modeled meshes, including the normalized lowercase `modeledmesh` type. `mesh.getTopology` only reads `editableMesh` control topology; inspect an operator graph with `model.inspect` and update it using revision-checked `model.patch`. A hollow revolved form needs an outer/rim/inner radial profile, not a pathless Tube. Runtime errors feed the next local repair attempt; JSON fallback candidates must pass the host's scene transaction before success is reported.
+
+JSON output callbacks accept `onDelta(delta, metadata)`: when `metadata.reset === true`, replace the displayed output with delta; otherwise append. Restarts and rejected continuation fragments send resets, while useful continuation does not. Invalid middle syntax is not truncation, and accepted continuation has no default segment ceiling. Consecutive invalid/empty fragments stop after a protocol-repair attempt, leaving the prior scene intact.
+
 ```sh
 node --test --test-concurrency=1 tests/modelingGraph.test.mjs tests/modelingSession.test.mjs tests/modelingWorker.test.mjs tests/modelingCad.test.mjs
 npm run build:geometry-worker

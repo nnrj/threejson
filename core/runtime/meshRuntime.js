@@ -105,7 +105,12 @@ function vertexInBounds(vertex, bounds) {
 
 export function getRuntimeMeshTopology(ctx, args = {}) {
   const { threeJsonId, descriptor } = resolveMesh(ctx, args.id);
-  if (normalizeObjType(descriptor.objType) !== "editablemesh") throw new Error("mesh.getTopology requires objType editableMesh.");
+  if (normalizeObjType(descriptor.objType) !== "editablemesh") {
+    const hint = normalizeObjType(descriptor.objType) === "modeledmesh"
+      ? "Use model.inspect and model.patch to read/edit its source operator graph."
+      : "Use mesh.inspect or object.get to inspect this representation.";
+    throw new Error(`mesh.getTopology requires objType editableMesh; ${threeJsonId} is ${descriptor.objType}. ${hint}`);
+  }
   const topology = normalizeEditableMeshTopology(descriptor.topology || {});
   const ids = new Set((args.vertexIds || []).map(String));
   let vertices = topology.vertices.filter((vertex) =>
