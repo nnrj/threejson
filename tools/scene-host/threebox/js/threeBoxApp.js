@@ -647,6 +647,8 @@ async function main() {
         "threebox.agent.refineBudgetExhausted",
         "已达到您配置的细化预算；当前场景可用，但 AI 尚未确认已经完善完成。"
       ));
+    } else if (agentResult.completed === false) {
+      lines.unshift(t("threebox.agent.refineStalled", "细化已暂停，已有结果已保留；尚未达到完成条件。您可以继续细化或调整要求。"));
     }
     const more = agentResult.steps.length > lines.length ? `\n... ${agentResult.steps.length - lines.length} more step(s)` : "";
     return [`**Agent process**`, ...lines, more].filter(Boolean).join("\n");

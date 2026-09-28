@@ -651,7 +651,7 @@ export function buildCompactReferenceDescriptor(descriptor) {
   const spatial = buildObjectSpatialCard(descriptor);
   const objType = String(descriptor.objType || "").toLowerCase();
   const geometry = isObjectRecord(descriptor.geometry) ? descriptor.geometry : null;
-  const denseGeometry = objType === "editablemesh"
+  const denseGeometry = objType === "editablemesh" || objType === "modeledmesh"
     || objType === "buffermesh"
     || ["parametricsurface", "nurbssurface", "bezierpatch", "lathemesh", "loftmesh", "sweepmesh", "implicitsurface", "irregulargeometry", "irregularplane"].includes(objType)
     || Boolean(geometry?.attributes?.position || geometry?.positions || geometry?.controlPoints || geometry?.sections || geometry?.path);
@@ -667,7 +667,10 @@ export function buildCompactReferenceDescriptor(descriptor) {
     footprint: spatial.footprint,
     ...(denseGeometry ? {} : { geometry: descriptor.geometry })
   };
-  if (objType === "editablemesh") {
+  if (objType === "modeledmesh") {
+    compact.modelRevision = descriptor.modelRevision || 0;
+    compact.modelingSummary = { graphVersion: descriptor.modeling?.version, nodes: (descriptor.modeling?.nodes || []).map((node) => ({ id: node.id, operator: node.operator, ...(node.part ? { part: node.part } : {}) })), parameters: Object.keys(descriptor.modeling?.parameters || {}) };
+  } else if (objType === "editablemesh") {
     const topology = isObjectRecord(descriptor.topology) ? descriptor.topology : {};
     compact.controlTopology = {
       revision: Math.max(0, Math.round(Number(topology.revision) || 0)),

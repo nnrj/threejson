@@ -1,4 +1,5 @@
 import { handleSceneApplyPatch } from "./document.js";
+import { modelingCommandHandler } from "./model.js";
 import {
   handleSceneExport,
   handleSceneList,
@@ -34,6 +35,7 @@ import {
 
 /** @type {Record<string, CommandHandler>} */
 export const CORE_COMMAND_HANDLERS = {
+  ...Object.fromEntries(["model.operators", "model.inspect", "model.evaluate", "model.patch", "model.bake"].map((op) => [op, modelingCommandHandler(op)])),
   "scene.load": handleSceneLoad,
   "scene.validate": handleSceneValidate,
   "scene.applyPatch": handleSceneApplyPatch,

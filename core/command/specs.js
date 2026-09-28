@@ -2,6 +2,13 @@ import { COMMAND_API_VERSION } from "./types.js";
 
 /** @type {import("./types.js").CommandSpec[]} */
 export const CORE_COMMAND_SPECS = [
+  ...[
+    ["model.operators", "List registered modeling operators with parameter schemas and actual backends.", { id: "Optional exact operator ID.", category: "Optional category." }],
+    ["model.inspect", "Inspect graph, revision and semantic nodes without dumping vertex coordinates.", { id: "Object ID.", nodeId: "Optional node filter.", includeParameters: "Explicit opt-in to returning node parameters." }],
+    ["model.evaluate", "Evaluate a modeling graph and return bounds, statistics and diagnostics.", { id: "Object ID.", includeArtifact: "Defaults false; opt in for full evaluated data." }],
+    ["model.patch", "Atomically patch a modeling graph; only dependent nodes need reevaluation.", { id: "Object ID.", baseRevision: "Required current model revision.", patch: "RFC6902 operations relative to the modeling graph." }],
+    ["model.bake", "Replace modeledMesh with full bufferMesh; the surrounding scene session keeps undo history.", { id: "Object ID.", baseRevision: "Optional model revision check." }]
+  ].map(([op, summary, args]) => ({ op, mode: "document", summary, args })),
   {
     op: "scene.load",
     mode: "runtime",

@@ -89,10 +89,15 @@ test("threejson tarball gate requires runtime, document/session and optional com
       { path: "core/session.js" },
       { path: "core/geometry/geometryCompiler.js" },
       { path: "core/geometry/geometry.worker.bundle.js" },
+      { path: "core/modeling/index.js" },
+      { path: "core/modeling/modeling.worker.bundle.js" },
+      { path: "extensions/modeling-cad/index.js" },
+      { path: "extensions/modeling-webgpu/index.js" },
       { path: "package.json" }
     ]
   };
   assert.equal(assertThreejsonPackMetadata(valid), true);
+  assert.throws(() => assertThreejsonPackMetadata({ files: valid.files.filter((file) => file.path !== "core/modeling/modeling.worker.bundle.js") }), /modeling\.worker\.bundle\.js/);
   assert.throws(
     () => assertThreejsonPackMetadata({ files: [{ path: "package.json" }] }),
     /core\/runtime\.js/

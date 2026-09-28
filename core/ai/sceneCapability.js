@@ -211,6 +211,12 @@ const INTENT_SIGNALS = [
     note: "Use objType native or geometry.type (e.g. TorusKnotGeometry) with parseMode auto|native."
   },
   {
+    id: "modelingGraph",
+    patterns: [/modeledMesh|modeling graph|procedural modeling|operator graph|parameterized model|建模图|算子|参数化建模|程序化建模|参数驱动.*模型/i],
+    lists: ["objectList"], objTypes: ["modeledMesh"], selectionIds: ["modelingGraph"], requiredWhenMatched: true,
+    note: "Use a typed modeling graph with versioned operators and a mesh output. Built-ins and explicitly host-registered custom/CAD operators share a manifest. Keep parameters/source graph, not redundant evaluated vertices. Query model.operators for exact schemas; never invent a CAD/GPU backend."
+  },
+  {
     id: "complexMesh",
     patterns: [/complex (?:3d )?(?:model|mesh|shape)|organic (?:model|mesh|shape)|freeform (?:model|surface)|detailed (?:model|mesh)|smooth (?:character|creature|vehicle body|product shell)|复杂(?:三维|3D)?(?:模型|网格|曲面)|有机(?:模型|造型|曲面)|自由曲面|精细(?:模型|网格)|平滑(?:外壳|角色|动物|人体)/i],
     lists: ["objectList", "editableMeshList", "bufferMeshList"],

@@ -349,6 +349,7 @@ export const THREEBOX_SHELL_LABELS_EN = {
   "threebox.chat.continueRefinement": "Continue refinement",
   "threebox.chat.continueRefinementPrompt": "Continue refining the current complex model. Preserve its existing design and completed work, then finish the details that have not reached the quality target.",
   "threebox.agent.refineBudgetExhausted": "The refinement budget you configured was reached. The current scene is usable, but the AI has not confirmed that refinement is complete.",
+  "threebox.agent.refineStalled": "Refinement paused; existing results are preserved, but completion has not been confirmed. Continue refining or revise the request.",
   "threebox.chat.copyFailed": "Copy failed — please select and copy the text manually.",
   "threebox.chat.viewGeneratedJson": "View Generated JSON",
   "threebox.chat.copyJson": "Copy JSON",

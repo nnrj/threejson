@@ -18,6 +18,7 @@ This handbook is written for library callers. It focuses on the scene pipeline u
 - [Runtime object mutation quickref](./runtime-object-mutation-quickref.md): `applyObjectChange` / partial / snapshot / redeploy.
 - [Dynamic runtime batches](./dynamic-runtime-batches.md): slot-backed GPU buffers, virtual runtime entities, frame-coalesced commits, and opt-in demand rendering.
 - [Complex meshes and progressive modeling](./complex-mesh.md): complete BufferGeometry, stable-ID control cages, modifiers, parametric/NURBS/Bezier/loft/sweep/SDF surfaces, mesh commands, and progressive AI refinement.
+- [Computable modeling and operators](./modeling.md): parameterized graphs, built-in/custom/composite operators, incremental compilation, Workers, optional GPU, exact CAD/STEP and Editor/AI integration.
 - [Capabilities, Particle V2, and WebGPU/TSL](./capabilities-webgpu-particles.md): machine-readable capability truth, Physical materials, particles, optional WebGPU, TSL module policy, external-model material bindings, LOD, curves, and morph targets.
 - [Development](./development.md): Node version, tests, AI verification, sync/async API naming.
 - [Terminology glossary](./glossary.md): key concept pairs and short definitions (complements [language policy](./development.md#language-and-documentation-policy)).

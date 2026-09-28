@@ -61,6 +61,7 @@ const BUILTIN_CAPABILITIES = Object.freeze({
     tube: Object.freeze({ status: "stable" }),
     shapePlane: Object.freeze({ status: "stable" }),
     bufferMesh: Object.freeze({ status: "stable" }),
+    modeledMesh: Object.freeze({ status: "stable", graphVersion: 1, lazy: true, asyncRuntime: true, activation: "descriptor", entry: "threejson/modeling", runtimeCommands: true }),
     editableMesh: Object.freeze({ status: "stable", topology: "stable-id", runtimeCommands: true, lazy: true, asyncRuntime: true, activation: "descriptor", entry: "threejson/complex-mesh" }),
     parametricSurface: Object.freeze({ status: "stable", compactMesh: true, lazy: true, asyncRuntime: true, activation: "descriptor", entry: "threejson/complex-mesh" }),
     subdivisionSurface: Object.freeze({ status: "stable", representedBy: "editableMesh", lazy: true, asyncRuntime: true, activation: "descriptor", entry: "threejson/complex-mesh" }),

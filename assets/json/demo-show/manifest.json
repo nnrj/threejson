@@ -122,6 +122,15 @@
     ]
   },
   {
+    "section": "computable-modeling",
+    "sectionTitle": "参数与算子建模",
+    "sectionTitleEn": "Computable Modeling",
+    "items": [
+      { "id": "twisted-column", "title": "参数化扭转立柱", "titleEn": "Parametric twisted column", "desc": "由尺寸和扭转参数驱动；可在编辑器修改参数，无需重新输出顶点。", "descEn": "Dimensions and twist drive local geometry evaluation; edit parameters without rewriting vertices.", "json": "assets/json/demo-show/computable-modeling/twisted-column.json", "badge": "Operator Graph", "badgeEn": "Operator Graph" },
+      { "id": "procedural-vessel", "title": "Bézier 轮廓驱动花瓶", "titleEn": "Bezier-profile vessel", "desc": "控制曲线与旋转曲面算子组合生成细腻表面，保留紧凑的建模图。", "descEn": "A Bezier profile and revolution operator generate a dense surface from a compact graph.", "json": "assets/json/demo-show/computable-modeling/procedural-vessel.json", "badge": "Curve → Mesh", "badgeEn": "Curve → Mesh" }
+    ]
+  },
+  {
     "section": "complex-modeling",
     "sectionTitle": "复杂模型与曲面",
     "sectionTitleEn": "Complex Models and Surfaces",

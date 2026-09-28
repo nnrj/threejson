@@ -66,7 +66,7 @@ export const RUNTIME_OPS = new Set([
   "mesh.renderViews"
 ]);
 
-export const DOCUMENT_OPS = new Set(["scene.validate", "scene.applyPatch"]);
+export const DOCUMENT_OPS = new Set(["scene.validate", "scene.applyPatch", "model.operators", "model.inspect", "model.evaluate", "model.patch", "model.bake"]);
 
 /**
  * @param {Partial<CommandContext>} [init]

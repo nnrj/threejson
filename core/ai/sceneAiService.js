@@ -1680,6 +1680,7 @@ async function requestUpdatedSceneEditCommands(prompt, context = {}, options = {
         iterativeApply,
         animationCapabilities: options.animationCapabilities,
          selectedCapabilityIds: options.selectedCapabilityIds,
+         modelingRegistry: options.modelingRegistry,
          rendererBackend: options.rendererBackend,
          includePreviewCapabilities: options.includePreviewCapabilities,
          visualReviewAvailable: options.visualReviewAvailable === true
@@ -1687,6 +1688,7 @@ async function requestUpdatedSceneEditCommands(prompt, context = {}, options = {
     : buildSceneCommandUpdateSystemPrompt({
         animationCapabilities: options.animationCapabilities,
          selectedCapabilityIds: options.selectedCapabilityIds,
+         modelingRegistry: options.modelingRegistry,
          rendererBackend: options.rendererBackend,
          includePreviewCapabilities: options.includePreviewCapabilities,
          visualReviewAvailable: options.visualReviewAvailable === true
@@ -1845,6 +1847,7 @@ async function requestSceneRefinementStep(userPrompt, currentSceneJsonString, op
       iterativeApply: true,
       animationCapabilities: options.animationCapabilities,
       selectedCapabilityIds: options.selectedCapabilityIds,
+      modelingRegistry: options.modelingRegistry,
       rendererBackend: options.rendererBackend,
       includePreviewCapabilities: options.includePreviewCapabilities
     }),

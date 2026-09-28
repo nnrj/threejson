@@ -589,6 +589,22 @@
     "hint": "【Track 1 · 正交 + Fly】<code>../../../assets/json/tutorial/track-01/01-08-ortho-fly.json</code><br>\n  正交相机 <code>lookAt</code> 对准场景中心 · <code>type: \"fly\"</code>：按住鼠标环顾，WASD/QE 移动"
   },
   {
+    "id": "t01-09",
+    "track": "01",
+    "order": "09",
+    "path": "./track-01-geometry/01-09-computable-modeling.html",
+    "jsonFiles": [{ "json": "../../assets/json/demo-show/computable-modeling/twisted-column.json" }],
+    "prerequisites": ["t00-03"],
+    "status": "stable",
+    "group": "Track 1 · 场景对象与几何",
+    "title": "参数与算子建模",
+    "summary": "建模图、Worker 计算、参数编辑、原子更新、撤销和烘焙；可选真实 GPU/CPU 变形对照。",
+    "navSummary": "参数 → 算子 → 网格，保留源图。",
+    "highlights": ["源 JSON 保存参数和建模步骤。", "编辑、撤销、烘焙使用同一个场景事务。", "点击后才启用可选 GPU，不影响 WebGL 画布。"],
+    "docLinks": [{ "href": "../../docs/zh/modeling.md", "label": "可计算建模" }],
+    "hint": "【Track 1 · 参数与算子】通过修改扭转参数体验本地计算、撤销和烘焙。GPU 不可用时保留 CPU。"
+  },
+  {
     "id": "t02-01",
     "track": "02",
     "order": "01",

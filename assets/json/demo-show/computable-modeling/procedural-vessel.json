@@ -1,0 +1,15 @@
+{
+  "name": "Procedural vessel from a control profile",
+  "sceneConfig": { "scene": { "background": "#182132" }, "lights": [
+    { "type": "ambient", "intensity": 1.8 }, { "type": "directional", "intensity": 3, "position": { "x": 5, "y": 8, "z": 5 } }
+  ] },
+  "objectList": [
+    { "objType": "modeledMesh", "threeJsonId": "vessel", "name": "轮廓驱动花瓶", "material": { "type": "physical", "color": "#327f94", "roughness": 0.22, "metalness": 0.15, "clearcoat": 1, "side": "DoubleSide" },
+      "modeling": { "version": 1, "parameters": { "segments": 128 }, "nodes": [
+        { "id": "profile", "operator": "curve.bezier", "part": "body-profile", "params": { "points": [[0.6,0,0],[2.7,0.6,0],[0.2,2.4,0],[0.9,3,0]], "segments": 64 } },
+        { "id": "revolution", "operator": "curve.revolve", "inputs": { "profile": { "node": "profile", "output": "curve" } }, "params": { "segments": { "param": "segments" } } }
+      ], "output": { "node": "revolution", "output": "mesh" } }
+    },
+    { "objType": "box", "threeJsonId": "floor", "geometry": { "width": 10, "height": 0.1, "depth": 10 }, "position": { "x": 0, "y": -0.08, "z": 0 }, "material": { "type": "standard", "color": "#46566d", "roughness": 0.65 } }
+  ]
+}

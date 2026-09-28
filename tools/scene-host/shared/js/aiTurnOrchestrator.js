@@ -637,6 +637,7 @@ async function runAiAgentAdjustTurn({
         "scene.list",
         "scene.validate",
         "scene.export",
+        "model.operators", "model.inspect", "model.evaluate",
         "mesh.inspect",
         "mesh.getTopology",
         "mesh.validate",

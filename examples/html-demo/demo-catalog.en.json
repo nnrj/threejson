@@ -589,6 +589,22 @@
     "hint": "【Track 1 · Orthographic + Fly】<code>../../../assets/json/tutorial/track-01/01-08-ortho-fly.json</code><br>\n  Orthographic camera <code>lookAt</code> aimed at the scene center · <code>type: \"fly\"</code>: hold mouse to look around, WASD/QE to move"
   },
   {
+    "id": "t01-09",
+    "track": "01",
+    "order": "09",
+    "path": "./track-01-geometry/01-09-computable-modeling.html",
+    "jsonFiles": [{ "json": "../../assets/json/demo-show/computable-modeling/twisted-column.json" }],
+    "prerequisites": ["t00-03"],
+    "status": "stable",
+    "group": "Track 1 · Scene objects and geometry",
+    "title": "Computable modeling",
+    "summary": "Graphs, Worker evaluation, parameter editing, atomic updates, undo and bake; optional real GPU/CPU deformation comparison.",
+    "navSummary": "Parameters → operators → mesh; retain the source graph.",
+    "highlights": ["Source JSON retains parameters and modeling steps.", "Editing, undo and bake share scene transactions.", "GPU is explicitly activated; the WebGL viewport stays unchanged."],
+    "docLinks": [{ "href": "../../docs/en/modeling.md", "label": "Computable modeling" }],
+    "hint": "【Track 1 · Computable modeling】Edit twist to test local computation, undo and bake. CPU remains available without GPU."
+  },
+  {
     "id": "t02-01",
     "track": "02",
     "order": "01",

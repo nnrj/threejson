@@ -35,6 +35,10 @@ const REQUIRED_THREEJSON_PACKAGE_FILES = Object.freeze([
   "core/session.js",
   "core/geometry/geometryCompiler.js",
   "core/geometry/geometry.worker.bundle.js",
+  "core/modeling/index.js",
+  "core/modeling/modeling.worker.bundle.js",
+  "extensions/modeling-cad/index.js",
+  "extensions/modeling-webgpu/index.js",
   "package.json"
 ]);
 const DEFAULT_CDN_TIMEOUT_SECONDS = 180;

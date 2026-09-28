@@ -1,0 +1,27 @@
+{
+  "name": "Computable twisted architectural column",
+  "sceneConfig": {
+    "scene": { "background": "#111827" },
+    "camera": { "position": { "x": 8, "y": 6, "z": 10 }, "target": { "x": 0, "y": 2, "z": 0 } },
+    "lights": [
+      { "type": "ambient", "color": "#dce8ff", "intensity": 1.5 },
+      { "type": "directional", "color": "#fff4d6", "intensity": 3, "position": { "x": 4, "y": 8, "z": 5 } }
+    ]
+  },
+  "objectList": [
+    {
+      "objType": "modeledMesh", "threeJsonId": "twisted-column", "name": "参数化扭转立柱", "position": { "x": 0, "y": 2.5, "z": 0 },
+      "material": { "type": "physical", "color": "#cb9964", "metalness": 0.6, "roughness": 0.3, "clearcoat": 0.4 },
+      "modeling": {
+        "version": 1, "parameters": { "height": 5, "width": 1.5, "twist": 0.7 },
+        "nodes": [
+          { "id": "blank", "operator": "primitive.box", "part": "column", "params": { "width": { "param": "width" }, "height": { "param": "height" }, "depth": { "param": "width" }, "heightSegments": 96, "widthSegments": 8, "depthSegments": 8 } },
+          { "id": "twist", "operator": "mesh.deform", "part": "column", "inputs": { "mesh": { "node": "blank", "output": "mesh" } }, "params": { "mode": "twist", "amount": { "param": "twist" } } }
+        ],
+        "output": { "node": "twist", "output": "mesh" }
+      }
+    },
+    { "objType": "cylinder", "threeJsonId": "plinth", "geometry": { "radiusTop": 1.7, "radiusBottom": 1.9, "height": 0.3, "radialSegments": 64 }, "position": { "x": 0, "y": -0.15, "z": 0 }, "material": { "type": "standard", "color": "#65758b", "metalness": 0.3, "roughness": 0.5 } },
+    { "objType": "box", "threeJsonId": "floor", "geometry": { "width": 14, "height": 0.1, "depth": 14 }, "position": { "x": 0, "y": -0.35, "z": 0 }, "material": { "type": "standard", "color": "#263247", "roughness": 0.8 } }
+  ]
+}

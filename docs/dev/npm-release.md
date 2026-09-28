@@ -7,6 +7,12 @@
 [场景文档与运行时接入](./scene-authoring-runtime.md)。该文档也记录了本次已准备但尚未发布的
 版本；版本已升级时，不要重复执行 `release:version`。
 
+可计算建模新增 `threejson/modeling`、`threejson/modeling-cad` 和 `threejson/modeling-webgpu`，
+接口与可选依赖见 [可计算建模](../zh/modeling.md)。`prepack` 同时构建几何与建模 Worker；
+发布校验会检查两个 Worker 及上述入口确实进入 tarball。CAD 的 replicad/OCCT 为可选 peer，
+其 WASM 不随 ThreeJSON 默认打包，需由启用 CAD 的宿主部署。普通场景和官网示例不要求安装 CAD。
+新增能力不表示可以覆盖已有 npm 版本；本次代码发布前仍须按下述流程升级变更包版本。
+
 ## 发布对象与顺序
 
 发布工具管理以下 npm 包：

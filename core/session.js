@@ -17,7 +17,11 @@ export async function createRuntimeSceneSession(payload, options = {}) {
   const driver = createSceneSessionRuntimeDriver(options);
   const session = createSceneSession(payload, { ...options, driver });
   Object.defineProperty(session, "runtime", { get: () => driver.runtime });
-  Object.defineProperty(session, "commandOptions", { value: options.commandOptions || {} });
+  Object.defineProperty(session, "commandOptions", { value: {
+    ...(options.modelingRegistry ? { modelingRegistry: options.modelingRegistry } : {}),
+    ...(options.modelingContext ? { modelingContext: options.modelingContext } : {}),
+    ...options.commandOptions
+  } });
   Object.defineProperty(session, "suspendRuntime", { value: () => driver.suspend() });
   try { if (!options.initialRuntime && !options.deferInitial) await session.prepare({ signal: options.signal }); }
   catch (error) { session.dispose(); throw error; }

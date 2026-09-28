@@ -121,7 +121,7 @@ function createAgentProgressUpdater(setStream, onScenePreview) {
 
 /** Ported from threeBoxApp.js's buildAgentProcessSummary — a compact markdown recap of the agent's
  * steps, appended to the assistant message when the agent actually ran. */
-function buildAgentProcessSummary(agentResult, heading, budgetMessage) {
+function buildAgentProcessSummary(agentResult, heading, budgetMessage, incompleteMessage) {
   if (!agentResult?.agentUsed || !Array.isArray(agentResult.steps)) {
     return "";
   }
@@ -143,6 +143,8 @@ function buildAgentProcessSummary(agentResult, heading, budgetMessage) {
   });
   if (agentResult.completed === false && agentResult.stopReason === "budget_exhausted") {
     lines.unshift(budgetMessage);
+  } else if (agentResult.completed === false) {
+    lines.unshift(incompleteMessage);
   }
   const more =
     agentResult.steps.length > lines.length ? `\n... ${agentResult.steps.length - lines.length} more step(s)` : "";
@@ -1596,9 +1598,11 @@ export function App() {
           agentResult,
           L("Agent 过程", "Agent process"),
           L(
-            "已达到自动细化轮数上限；当前场景可用，但 AI 未明确确认已经完善完成。",
-            "The automatic refinement limit was reached. The scene is usable, but the AI did not explicitly confirm completion."
-          )
+            "已达到您配置的细化预算；当前场景可用，但 AI 尚未确认已经完善完成。",
+            "The refinement budget you configured was reached. The scene is usable, but the AI has not confirmed completion."
+          ),
+          L("细化已暂停，已有结果已保留；尚未达到完成条件。您可以继续细化或调整要求。",
+            "Refinement paused; existing results are preserved, but completion has not been confirmed. Continue refining or revise the request.")
         );
         const finalFields = {
           text: agentProcess ? `${baseText}\n\n${agentProcess}` : baseText,

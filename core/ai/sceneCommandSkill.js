@@ -10,8 +10,10 @@ import { getObjectByThreeJsonId } from "../handler/objectRegistry.js";
 import { isLoadableScenePayload } from "../handler/sceneFriendlyNormalizer.js";
 import { sanitizeAiJsonText, stripMarkdownCodeFence } from "./sceneJsonSanitize.js";
 import { buildCompactReferenceDescriptor } from "./sceneSpatialContext.js";
+import { buildModelingCapabilityFragment } from "./sceneCapabilityIndex.js";
 
 const UPDATE_COMMAND_OPS = new Set([
+  "model.operators", "model.inspect", "model.evaluate", "model.patch", "model.bake",
   "scene.list",
   "scene.validate",
   "scene.applyPatch",
@@ -37,9 +39,10 @@ const UPDATE_COMMAND_OPS = new Set([
   "mesh.renderViews"
 ]);
 
-const READ_ONLY_COMMAND_OPS = new Set(["object.get", "scene.list", "scene.validate", "scene.export", "mesh.inspect", "mesh.getTopology", "mesh.validate", "mesh.renderViews"]);
+const READ_ONLY_COMMAND_OPS = new Set(["model.operators", "model.inspect", "model.evaluate", "object.get", "scene.list", "scene.validate", "scene.export", "mesh.inspect", "mesh.getTopology", "mesh.validate", "mesh.renderViews"]);
 
 const MUTATING_COMMAND_OPS = new Set([
+  "model.patch", "model.bake",
   "object.add",
   "object.remove",
   "object.patch",
@@ -326,6 +329,7 @@ function buildCommandAdvancedCapabilityFragment(options = {}) {
   const tslCodeSelected = selected.has("tslCode");
   const complexMeshSelected = ["complexMesh", "editableMesh", "rawBufferMesh", "subdivisionSurface", "parametricSurface", "implicitSurface", "meshModeling", "meshMorph"].some((id) => selected.has(id));
   const blocks = [];
+  if (selected.has("modelingGraph")) blocks.push(buildModelingCapabilityFragment(options));
   if (particleSelected) {
     blocks.push([
       "Negotiated Particle V2 editing capability:",
@@ -558,7 +562,7 @@ export function buildSceneCommandAutoUpdateSystemPrompt(options = {}) {
         "Agent multi-round command workflow:",
         "1. Intermediate rounds MAY output object.get to inspect descriptors (results are fed back to you).",
         "2. The session MUST end with mutating commands or full scene JSON — never end with only object.get / scene.list.",
-        "3. Apply ordinary changes with object.patch/material.patch/object.add/object.remove/scene.applyPatch. For editableMesh topology use mesh.edit with baseRevision; for forced complete coordinates use a mesh.buffer transaction and commit it."
+        "3. Apply ordinary changes with object.patch/material.patch/object.add/object.remove/scene.applyPatch. For editableMesh topology use mesh.edit with baseRevision; for modeledMesh source use model.inspect and model.patch with baseRevision; for forced complete coordinates use a mesh.buffer transaction and commit it."
       ]
     : [
         "Single-round workflow:",

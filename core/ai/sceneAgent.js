@@ -210,7 +210,7 @@ function buildComplexModelAuthoringHint(strategy, quality) {
     return [
       "COMPLEX MODEL STRATEGY (mandatory): full-coordinates.",
       qualityLine,
-      "When the request needs a free-form complex model, author the complete raw bufferMesh attributes and indices requested by the user. Do not replace it with primitive assemblies, an external asset, or editableMesh merely because the coordinate output is long.",
+      "When the request needs a free-form complex model, author the complete raw bufferMesh attributes and indices requested by the user. Do not replace it with primitive assemblies, an external asset, editableMesh, or an unevaluated modeledMesh graph merely because the coordinate output is long.",
       "Use segmented scene output when transport requires continuation; continue until the JSON and mesh transaction are complete. There is no engine-owned vertex, triangle, byte, or continuation-round limit."
     ].join("\n");
   }
@@ -219,6 +219,7 @@ function buildComplexModelAuthoringHint(strategy, quality) {
       "COMPLEX MODEL STRATEGY (mandatory): progressive.",
       qualityLine,
       "Represent free-form models as editableMesh control topology with stable vertex/face IDs, semantic parts, and deterministic modifiers. Produce a useful coarse model first, then refine only the affected parts with mesh.inspect, mesh.getTopology and atomic mesh.edit operations.",
+      "When reusable parameterized operations express the shape better and modelingGraph is available, preserve a modeledMesh graph and refine it with model.inspect/model.patch. Do not convert a valid graph into control topology merely to fit the mesh.edit workflow.",
       "When the coarse silhouette/topology is already correct, prefer locally evaluated Catmull-Clark/Loop and optional Smooth modifiers over generating redundant control vertices. Add topology only where silhouette, features, or deformation require it.",
       "Do not rebuild the entire mesh each step and do not reduce the subject to a pile of boxes, cylinders, or spheres when an editable surface is appropriate. End each refinement response with # continue plus the next concrete stage, or # done when the quality target is met."
     ].join("\n");
@@ -792,7 +793,7 @@ async function runSceneAgentCommandsUpdateIterative(params) {
     const readOnly = !commandListHasMutatingOp(commands);
     const mutatingSignature = readOnly ? "" : JSON.stringify(commands);
     if (mutatingSignature && mutatingSignature === previousMutatingSignature) {
-      steps.push({ kind: "refine_done", round: refineRound, ok: true, appliedRounds, reason: "repeated_output" });
+      steps.push({ kind: "refine_stalled", round: refineRound, ok: false, appliedRounds, reason: "repeated_output" });
       return {
         outputMode: "commands",
         commandScript: commandResult.commandScript,
@@ -804,8 +805,9 @@ async function runSceneAgentCommandsUpdateIterative(params) {
         appliedRounds,
         sceneMutated: anySceneMutated,
         execOk: appliedRounds > 0,
-        completed: true,
+        completed: false,
         stopReason: "repeated_output",
+        partial: anySceneMutated,
         tokenHint: { rounds: getStepIndex(), depth, maxSteps: preset.maxSteps }
       };
     }
@@ -1069,8 +1071,8 @@ async function runAutomaticDraftRefinement(params) {
 
     const outputSignature = rawRefinement.trim() || JSON.stringify(refinement.commands || refinement.patch || []);
     if (outputSignature && outputSignature === previousOutputSignature) {
-      steps.push({ kind: "draft_refinement_done", round, ok: true, reason: "repeated_output" });
-      completed = true;
+      steps.push({ kind: "draft_refinement_stalled", round, ok: false, reason: "repeated_output" });
+      completed = false;
       stopReason = "repeated_output";
       break;
     }
@@ -1118,7 +1120,7 @@ async function runAutomaticDraftRefinement(params) {
       }
       if (!commandListHasMutatingOp(refinement.commands)) {
         if (!appliedFeedback && visualFeedback.length === 0) {
-          feedback = "The read-only mesh inspection returned no usable feedback. Inspect a valid mesh/part or output a mutating mesh.edit batch.";
+          feedback = "The read-only inspection returned no usable feedback. Inspect a valid object/part or registered operator, then issue an appropriate mutation: mesh.edit for editableMesh, model.patch for modeledMesh, or object.patch for object transforms.";
           consecutiveNoProgress += 1;
           if (consecutiveNoProgress >= MAX_CONSECUTIVE_NO_PROGRESS) {
             stopReason = "no_progress";
@@ -1127,7 +1129,7 @@ async function runAutomaticDraftRefinement(params) {
         } else {
           feedback = [
             appliedFeedback,
-            "Use these inspection results to output the next concrete mesh.edit batch, or # done if the selected quality target is already met."
+            "Use these inspection results for the next concrete edit: mesh.edit for editableMesh topology, model.patch for a modeledMesh graph, object.patch for pose/materials; or # done if the selected quality target is already met."
           ].filter(Boolean).join("\n\n");
           consecutiveNoProgress = 0;
         }
@@ -1161,8 +1163,8 @@ async function runAutomaticDraftRefinement(params) {
     }
 
     if (normalizedSceneSignature(candidate) === normalizedSceneSignature(current)) {
-      steps.push({ kind: "draft_refinement_done", round, ok: true, reason: "no_change" });
-      completed = true;
+      steps.push({ kind: "draft_refinement_stalled", round, ok: false, reason: "no_change" });
+      completed = false;
       stopReason = "no_change";
       break;
     }

@@ -20,14 +20,15 @@ export function isComplexMeshObjType(value) {
 }
 
 function collectBufferMeshRecords(value, out = [], seen = new WeakSet()) {
-  if (!value || typeof value !== "object" || seen.has(value)) return out;
+  if (!value || typeof value !== "object" || seen.has(value) || ArrayBuffer.isView(value)) return out;
   seen.add(value);
   if (Array.isArray(value)) {
     for (const entry of value) collectBufferMeshRecords(entry, out, seen);
     return out;
   }
   if (String(value.objType || "").trim().toLowerCase() === "buffermesh") out.push(value);
-  for (const entry of Object.values(value)) collectBufferMeshRecords(entry, out, seen);
+  if (value.operator === "mesh.raw" && value.params?.geometry) out.push({ geometry: value.params.geometry });
+  for (const [key, entry] of Object.entries(value)) if (!["geometry", "topology", "attributes", "buffers"].includes(key)) collectBufferMeshRecords(entry, out, seen);
   return out;
 }
 
@@ -55,7 +56,7 @@ function collectBufferReferenceUrls(record) {
   return refs;
 }
 
-async function resolveBufferMeshReferences(payload, options = {}) {
+export async function resolveBufferMeshReferences(payload, options = {}) {
   const records = collectBufferMeshRecords(payload);
   const fetched = new Map();
   const policy = createSceneResourcePolicy(options.resourcePayload || payload, options);
@@ -64,7 +65,7 @@ async function resolveBufferMeshReferences(payload, options = {}) {
     const refs = collectBufferReferenceUrls(record);
     if (refs.length === 0) continue;
     for (const { key, url } of refs) {
-      let buffer = fetched.get(url) ?? options.resolveBufferReference?.(key || url, geometry);
+      let buffer = fetched.get(url) ?? policy.resolveBufferReference(key || url, geometry);
       if (buffer) fetched.set(url, buffer);
       if (!buffer) {
         options.signal?.throwIfAborted();
@@ -83,7 +84,7 @@ async function resolveBufferMeshReferences(payload, options = {}) {
 }
 
 function containsAdvancedPass(value, seen = new WeakSet()) {
-  if (!value || typeof value !== "object" || seen.has(value)) return false;
+  if (!value || typeof value !== "object" || seen.has(value) || ArrayBuffer.isView(value)) return false;
   seen.add(value);
   if (Array.isArray(value)) return value.some((entry) => containsAdvancedPass(entry, seen));
   const passType = typeof value.passType === "string" ? value.passType.trim().toLowerCase() : "";
@@ -92,7 +93,7 @@ function containsAdvancedPass(value, seen = new WeakSet()) {
 }
 
 function containsRasterParticleSource(value, seen = new WeakSet()) {
-  if (!value || typeof value !== "object" || seen.has(value)) return false;
+  if (!value || typeof value !== "object" || seen.has(value) || ArrayBuffer.isView(value)) return false;
   seen.add(value);
   if (Array.isArray(value)) return value.some((entry) => containsRasterParticleSource(entry, seen));
   const objType = typeof value.objType === "string" ? value.objType.trim().toLowerCase() : "";
@@ -102,7 +103,7 @@ function containsRasterParticleSource(value, seen = new WeakSet()) {
 }
 
 function containsExtraControls(value, seen = new WeakSet()) {
-  if (!value || typeof value !== "object" || seen.has(value)) return false;
+  if (!value || typeof value !== "object" || seen.has(value) || ArrayBuffer.isView(value)) return false;
   seen.add(value);
   if (Array.isArray(value)) return value.some((entry) => containsExtraControls(entry, seen));
   const objType = typeof value.objType === "string" ? value.objType.trim().toLowerCase() : "";
@@ -116,7 +117,7 @@ function containsExtraControls(value, seen = new WeakSet()) {
 }
 
 function containsComplexMesh(value, seen = new WeakSet()) {
-  if (!value || typeof value !== "object" || seen.has(value)) return false;
+  if (!value || typeof value !== "object" || seen.has(value) || ArrayBuffer.isView(value)) return false;
   seen.add(value);
   if (Array.isArray(value)) return value.some((entry) => containsComplexMesh(entry, seen));
   if (isComplexMeshObjType(value.objType)) return true;
@@ -124,6 +125,14 @@ function containsComplexMesh(value, seen = new WeakSet()) {
   // normalization so createJsonScene can load the optional builder prior to deployment.
   if (Array.isArray(value.editableMeshList) && value.editableMeshList.length > 0) return true;
   return Object.values(value).some((entry) => containsComplexMesh(entry, seen));
+}
+
+export function sceneUsesModelingGraph(value, seen = new WeakSet()) {
+  if (!value || typeof value !== "object" || seen.has(value) || ArrayBuffer.isView(value)) return false;
+  seen.add(value);
+  if (String(value.objType || "").toLowerCase() === "modeledmesh") return true;
+  if (Array.isArray(value) && typeof value[0] === "number") return false;
+  return Object.entries(value).some(([key, entry]) => !["modeling", "geometry", "topology", "material", "materials", "assetLibrary"].includes(key) && sceneUsesModelingGraph(entry, seen));
 }
 
 /** Load optional Three.js modules only when the descriptor actually references them. */
@@ -144,6 +153,10 @@ export async function ensureOptionalSceneCapabilitiesForPayload(payload, options
   if (containsComplexMesh(payload)) {
     const module = await import("../builder/complexMeshCapability.js");
     module.ensureComplexMeshCapabilityRegistered();
+  }
+  if (sceneUsesModelingGraph(payload)) {
+    const module = await import("../modeling/sceneCapability.js");
+    module.ensureModelingCapabilityRegistered();
   }
   return { bufferReferences };
 }

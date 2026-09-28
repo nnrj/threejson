@@ -2,6 +2,7 @@
 import * as THREE from "three";
 import { evaluateNumericExpression } from "../util/numericExpression.js";
 import { validateBufferMeshStats } from "../builder/bufferMeshLimits.js";
+import { createGeometryCurve } from "./geometryCurve.js";
 
 function finite(value, fallback = 0) {
   const number = Number(value);
@@ -184,7 +185,10 @@ function buildSweepGeometry(descriptor) {
   const profile = (descriptor.profile || []).map(point2);
   const pathPoints = (descriptor.path?.points || descriptor.path || []).map(point3).map((point) => new THREE.Vector3(...point));
   if (profile.length < 2 || pathPoints.length < 2) throw new Error("sweepMesh requires a 2D profile and a 3D path.");
-  const path = new THREE.CatmullRomCurve3(pathPoints, descriptor.path?.closed === true, descriptor.path?.curveType || "centripetal");
+  const path = descriptor.path?.type
+    ? createGeometryCurve(descriptor.path)
+    : new THREE.CatmullRomCurve3(pathPoints, descriptor.path?.closed === true, descriptor.path?.curveType || "centripetal");
+  if (!path) throw new Error("sweepMesh path could not be evaluated.");
   const segments = Math.max(1, Math.round(finite(descriptor.segments, 48)));
   const frames = path.computeFrenetFrames(segments, descriptor.path?.closed === true);
   const closedProfile = descriptor.closedProfile !== false;

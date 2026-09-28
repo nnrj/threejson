@@ -33,6 +33,9 @@
     "./events": "./core/runtime/eventMechanism/resolveBindSceneEvents.js",
     "./mesh-export": "./core/handler/meshExportHandler.js",
     "./complex-mesh": "./core/builder/complexMeshCapability.js",
+    "./modeling": "./core/modeling/index.js",
+    "./modeling-cad": "./extensions/modeling-cad/index.js",
+    "./modeling-webgpu": "./extensions/modeling-webgpu/index.js",
     "./geometry-worker": "./core/geometry/geometryCompiler.js",
     "./player": "./core/player.js",
     "./resources": "./core/resources.js",
@@ -75,6 +78,7 @@
     "**/core/builder/particle/particlesRaster.js",
     "**/core/builder/controls/extraControls.js",
     "**/core/builder/complexMeshCapability.js",
+    "**/core/modeling/index.js",
     "**/webgpu/index.js",
     "**/webgpu/tslCode.js"
   ],
@@ -85,6 +89,8 @@
     "fflate": "^0.8.3",
     "gifuct-js": "^2.1.2",
     "html2canvas-pro": "^2.0.0",
+    "replicad": "^1.1.0",
+    "replicad-opencascadejs": "^1.1.0",
     "three": ">=0.179.0",
     "three-bvh-csg": "^0.0.18",
     "three-mesh-bvh": "^0.9.10",
@@ -106,6 +112,8 @@
     "html2canvas-pro": {
       "optional": true
     },
+    "replicad": { "optional": true },
+    "replicad-opencascadejs": { "optional": true },
     "three-bvh-csg": {
       "optional": true
     },

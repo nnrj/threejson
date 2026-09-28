@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ThreeJSON · Computable modeling / 参数与算子建模</title>
+  <script type="importmap">
+    {"imports":{
+      "three":"https://esm.sh/three@0.184.0",
+      "three/examples/jsm/":"https://esm.sh/three@0.184.0/examples/jsm/",
+      "@tweenjs/tween.js":"https://esm.sh/@tweenjs/tween.js@25.0.0"
+    }}
+  </script>
+  <style>
+    :root { color-scheme:dark; font:14px/1.6 system-ui,sans-serif; background:#111827; color:#e5e7eb; }
+    * { box-sizing:border-box; } body { margin:0; display:grid; grid-template-columns:minmax(250px,340px) minmax(0,1fr); grid-template-rows:minmax(0,1fr); height:100dvh; overflow:hidden; }
+    aside { padding:20px; overflow:auto; border-right:1px solid #354054; } h1 { font-size:19px; margin:0 0 12px; }
+    label { display:block; margin:14px 0; } input,button { font:inherit; padding:7px 10px; border:1px solid #46516a; background:#1f2937; color:inherit; border-radius:6px; }
+    input { width:100%; } button { cursor:pointer; margin:4px 3px 4px 0; } button:disabled { opacity:.45; cursor:wait; }
+    p { color:#becada; } #status { white-space:pre-wrap; overflow-wrap:anywhere; } main { min-width:0; min-height:0; } canvas { display:block; width:100%; height:100%; }
+    a { color:#93c5fd; } @media(max-width:680px) { body { grid-template-columns:1fr; grid-template-rows:minmax(250px,42dvh) 1fr; } aside { padding:12px; border-bottom:1px solid #354054; } }
+  </style>
+</head>
+<body>
+  <aside>
+    <h1>参数与算子建模<br>Computable modeling</h1>
+    <p>参数 → 建模图 → 本地计算。源 JSON 保留参数和步骤；撤销不依赖重新询问 AI。<br>Parameters and graph remain the source; computed vertices are disposable.</p>
+    <label>扭转 / Twist (radians per unit)<input id="twist" type="number" step="0.1" value="0.7"></label>
+    <button id="apply" disabled>应用 / Apply</button><button id="undo" disabled>撤销 / Undo</button>
+    <button id="bake" disabled>烘焙 / Bake</button><button id="save" disabled>下载 JSON</button>
+    <hr>
+    <button id="gpu" disabled>检查 GPU / CPU 一致性</button>
+    <p>WebGPU 计算独立于 WebGL 渲染器。此按钮才会申请 GPU；不可用时保留 CPU。测试 twist / taper / bend 的全部坐标。<br>No CAD or extra service is loaded.</p>
+    <output id="status" aria-live="polite">加载中 / Loading…</output>
+    <p><a href="../../../docs/zh/modeling.md">文档</a> · <a href="../../../docs/en/modeling.md">Documentation</a></p>
+  </aside>
+  <main><canvas id="canvas"></canvas></main>
+  <script type="module">
+    import { createRuntimeSceneSession, executeSceneSessionCommands, captureSceneSession } from "../../../core/session.js";
+    import { createWorkerGeometryCompiler } from "../../../core/geometry/geometryCompiler.js";
+    import { compileModelingGraph } from "../../../core/modeling/index.js";
+    const status = document.getElementById("status"), buttons = [...document.querySelectorAll("button")];
+    const canvas = document.getElementById("canvas"), area = canvas.parentElement;
+    let session, gpu, sourceGraph, resizeObserver;
+    const geometryCompiler = createWorkerGeometryCompiler();
+    function show(message) { status.textContent = message; }
+    const model = () => session?.document.root.objectList.find((o) => o.threeJsonId === "twisted-column");
+    function ready() { buttons.forEach((b) => b.disabled = !session); document.getElementById("undo").disabled = !session?.canUndo; document.getElementById("apply").disabled = !model()?.modeling; document.getElementById("bake").disabled = !model()?.modeling; }
+    async function run(operation) {
+      buttons.forEach((b) => b.disabled = true);
+      try { await operation(); } catch (error) { show(`${error.code || "Error"}: ${error.message}`); }
+      finally { ready(); }
+    }
+    try {
+      const response = await fetch("../../../assets/json/demo-show/computable-modeling/twisted-column.json");
+      if (!response.ok) throw new Error(`Scene HTTP ${response.status}`);
+      const source = await response.json(); source.canvasWidth = area.clientWidth; source.canvasHeight = area.clientHeight;
+      sourceGraph = structuredClone(source.objectList[0].modeling);
+      session = await createRuntimeSceneSession(source, { canvas, geometryCompiler, onModelingProgress: (event) => show(`${event.nodeId}: ${event.status} (${event.backend})`) });
+      session.runtime.start(); resizeObserver = new ResizeObserver(() => session?.runtime?.resize({ width: area.clientWidth, height: area.clientHeight })); resizeObserver.observe(area);
+      show("Ready · Worker 编译完成。修改参数后点击应用。 / Model ready; edit parameters and apply."); ready();
+    } catch (error) { show(`加载失败 / Failed: ${error.message}`); }
+    document.getElementById("apply").onclick = () => run(async () => {
+      const result = await executeSceneSessionCommands(session, [{ op:"model.patch", args:{ id: model().threeJsonId, baseRevision:model().modelRevision || 0,
+        patch:[{op:"replace",path:"/parameters/twist",value:Number(document.getElementById("twist").value)}] } }]);
+      if (!result.ok) throw new Error(result.results.find((r) => !r.ok)?.error || "Transaction failed");
+      show(`Applied · revision ${model().modelRevision}. Geometry updated; object/material retained.`);
+    });
+    document.getElementById("undo").onclick = () => run(async () => {
+      await session.undo();
+      if (model()?.modeling) document.getElementById("twist").value = model().modeling.parameters.twist;
+      show(`Undo · revision ${model().modelRevision || 0}`);
+    });
+    document.getElementById("bake").onclick = () => run(async () => {
+      const result = await executeSceneSessionCommands(session, [{op:"model.bake",args:{id:model().threeJsonId,baseRevision:model().modelRevision || 0}}]);
+      if (!result.ok) throw new Error(result.results.find((r) => !r.ok)?.error || "Bake failed");
+      show("Baked → bufferMesh. Undo restores the original graph.");
+    });
+    document.getElementById("save").onclick = () => {
+      const blob = new Blob([JSON.stringify(captureSceneSession(session), null, 2)], {type:"application/json"}), url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url; a.download = "computed-model.json"; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    };
+    document.getElementById("gpu").onclick = () => run(async () => {
+      const { createWebgpuModelingBackend } = await import("../../../extensions/modeling-webgpu/index.js");
+      gpu ||= await createWebgpuModelingBackend();
+      if (!gpu) { show("WebGPU unavailable · CPU reference remains active (not a GPU test pass)."); return; }
+      let largest = 0; const reports = [];
+      for (const mode of ["twist", "taper", "bend"]) {
+        const graph = structuredClone(sourceGraph); graph.nodes.at(-1).params.mode = mode;
+        const reference = await compileModelingGraph(graph, {backend:"cpu"});
+        graph.nodes.at(-1).backend = "gpu";
+        const computed = await compileModelingGraph(graph, {context:{gpu}});
+        const a = reference.result.geometry.attributes.position.array, b = computed.result.geometry.attributes.position.array;
+        let error = 0; for (let i = 0; i < a.length; i++) error = Math.max(error, Math.abs(a[i] - b[i]));
+        if (a.length !== b.length || !Number.isFinite(error) || error > 2e-5) throw new Error(`${mode}: GPU mismatch ${error}`);
+        largest = Math.max(largest, error); reports.push(`${mode}: ${a.length / 3} vertices, max error ${error.toExponential(2)}`);
+      }
+      show(`PASS · Real WebGPU / CPU parity\n${reports.join("\n")}\nOverall max error: ${largest.toExponential(2)}`);
+    });
+    addEventListener("pagehide", () => { resizeObserver?.disconnect(); session?.dispose(); geometryCompiler.dispose(); gpu?.dispose(); });
+  </script>
+</body>
+</html>

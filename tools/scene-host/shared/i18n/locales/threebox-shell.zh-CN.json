@@ -331,6 +331,7 @@
   "threebox.chat.continueRefinement": "继续细化",
   "threebox.chat.continueRefinementPrompt": "继续细化当前复杂模型，保留现有设计与已经完成的部分，并完成尚未达到质量目标的细节。",
   "threebox.agent.refineBudgetExhausted": "已达到您配置的细化预算；当前场景可用，但 AI 尚未确认已经完善完成。",
+  "threebox.agent.refineStalled": "细化已暂停，已有结果已保留；尚未达到完成条件。您可以继续细化或调整要求。",
   "threebox.chat.copyFailed": "复制失败，请手动选择文本复制。",
   "threebox.chat.viewGeneratedJson": "查看生成的 JSON",
   "threebox.chat.copyJson": "复制 JSON",

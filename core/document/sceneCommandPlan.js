@@ -47,7 +47,15 @@ export async function planSceneCommands(document, input, options = {}) {
     let data;
     try {
       options.signal?.throwIfAborted();
-      if (op === "object.patch" || op === "material.patch") {
+      if (op.startsWith("model.")) {
+        const entry = op === "model.operators" ? null : requireObject(working, args.id);
+        const { prepareModelingCommand } = await import("../modeling/commands.js");
+        const prepared = await prepareModelingCommand(entry?.record, op, args, { ...options, resourcePayload: working.root });
+        if (prepared.record) replaceRecord(entry, prepared.record);
+        if (prepared.removeModelingBindings) apply([{ op: "replace", path: "/design/bindings", value: working.root.design.bindings.filter((binding) =>
+          binding.object !== entry.id || !(binding.path === "/modeling" || binding.path.startsWith("/modeling/"))) }]);
+        data = prepared.data;
+      } else if (op === "object.patch" || op === "material.patch") {
         const entry = requireObject(working, args.id);
         let patch = op === "material.patch" ? { material: args.partial ?? args.material } : args.partial;
         if (patch && typeof patch === "object" && !Array.isArray(patch)) {
@@ -161,6 +169,9 @@ export async function planSceneCommands(document, input, options = {}) {
 const execution = new WeakMap();
 /** Commit exactly one revision or none. Concurrent calls serialize before planning. */
 export function executeSceneSessionCommands(session, input, options = {}) {
+  // Host-injected registries/backends must be the same for validation and runtime preparation.
+  // They are capabilities, never serializable document fields or per-command AI parameters.
+  options = { ...session.commandOptions, ...options };
   let state = execution.get(session);
   if (!state) { state = { queue: Promise.resolve(), drafts: new Map() }; execution.set(session, state); }
   const commands = typeof input === "string" ? input : cloneDocumentData(input);
@@ -168,7 +179,7 @@ export function executeSceneSessionCommands(session, input, options = {}) {
     const base = session.document;
     if (options.baseRevision != null && options.baseRevision !== base.revision) throw documentError("STALE_SCENE_REVISION", "Scene changed after commands were planned.");
     const adapters = session.runtime ? (await import("../runtime/sceneSessionCommandAdapter.js")).createSessionCommandAdapter(session, options) : {};
-    const executionOptions = { ...adapters, ...options, bufferDrafts: state.drafts };
+    const executionOptions = { ...adapters, runtimeScope: session.runtime?.scene, ...options, bufferDrafts: state.drafts };
     const planned = await planSceneCommands(base, commands, executionOptions);
     if (!planned.ok) return planned;
     try {

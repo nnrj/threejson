@@ -1168,6 +1168,7 @@ test("runSceneAgent stops a repeated command batch before applying it twice", as
       }
     );
     assert.equal(result.stopReason, "repeated_output");
+    assert.equal(result.completed, false, "repeating the last edit is stagnation, not a verified completion");
     assert.equal(applyCount, 1);
     assert.equal(fetchMock.mock.calls.length, 2);
   } finally {

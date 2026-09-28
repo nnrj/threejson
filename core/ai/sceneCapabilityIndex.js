@@ -6,6 +6,8 @@
  */
 import { THREE_JSON_DOMAIN_CAPABILITY_INDEX } from "./sceneDomainCapability.js";
 import { getSceneCapabilityManifest } from "../capabilities/sceneCapabilityManifest.js";
+import { getModelingOperatorManifest } from "../modeling/registry.js";
+import { registerBuiltinModelingOperators } from "../modeling/builtins.js";
 
 const THREE_JSON_AGENT_CAPABILITY_INDEX_BASE = `
 ThreeJSON capability index (choose the most appropriate/specific feature for what's described; this is not a checklist):
@@ -27,6 +29,7 @@ Authoring shapes:
 Geometry and composition:
 - Basic primitives: box/floor/wall/glass/door/cabinet/road, sphere, cylinder, cone, torus, ring, capsule, plane.
 - Complex geometry: full bufferMesh attributes/index/groups/morph targets; stable-ID editableMesh control topology with modifiers; parametricSurface, nurbsSurface, bezierPatch, latheMesh, loftMesh, sweepMesh, implicitSurface; shapePlane/shapeExtrude/irregular geometry and CSG.
+- modelingGraph: modeledMesh stores a parameterized typed operator graph instead of redundant evaluated coordinates. Prefer it for reusable multi-step construction, deformation and linked parameters; an ordinary primitive still stays an ordinary primitive.
 - Native Three.js inference: objType native, geometry.type (TorusKnotGeometry, LatheGeometry, DodecahedronGeometry, etc.), parseMode auto|native, geometryRef/materialRef via assetLibrary.
 - Reuse and scale: groupList/subScene for assemblies, instancedList for repeated props, lineList only for visible paths/boundaries, tubeList for pipes/splines, spriteList for billboards.
 
@@ -78,6 +81,7 @@ ThreeJSON capability-selection index (selection only; do not author scene JSON i
 
 - Basic primitives, ordinary materials, camera, lighting, grouping, and common scene layout need no special capability id.
 - sceneDesign — reusable numeric parameters, explicit units, stable object anchors, persistent static attach/lookAt relationships. Select for linked dimensions or durable placement rules, not every move request.
+- modelingGraph — built-in/custom parameterized operators, reusable subgraphs and local geometry evaluation. Select for procedural construction, linked modeling steps, reusable products or repeated deformation, not ordinary scene placement.
 - sceneText — visible words/titles/labels; infoPanel — text or media on a visible board/card; css3dPanel — interactive DOM/iframe UI in 3D.
 - group — multipart assemblies; instanced — many repeated objects; native — explicitly requested native Three.js geometry/ObjectLoader data.
 - complexMesh — genuinely free-form/organic/detailed mesh authoring; editableMesh — stable-ID control topology; rawBufferMesh — explicit complete coordinates; subdivisionSurface — Catmull-Clark/Loop; parametricSurface — parametric/NURBS/Bezier/lathe/loft/sweep; implicitSurface — SDF/scalar-field surface; meshModeling — topology operations; meshMorph — morph targets.
@@ -238,17 +242,34 @@ Optional parameter/relationship authoring (root design, version:1):
 - These are deterministic authoring constraints, NOT continuous physics/collisions or animation. Do not create cyclic references or attach a descendant to a parent bounding face that includes that descendant; use an explicit parent anchor instead.
 - To adjust a bound field, patch its parameter or relation in root design; rewriting its calculated coordinates will not override the binding. Use JSON Patch for root design changes. Only detach/bake when the user intends independent coordinates; preserve all unrelated geometry/materials.
 ` : "";
+  const modelingAuthoring = buildModelingCapabilityFragment(options);
   return [
     (negotiationOnly
       ? THREE_JSON_AGENT_NEGOTIATION_INDEX_BASE
       : THREE_JSON_AGENT_CAPABILITY_INDEX_BASE).trim(),
     runtimeSnapshot,
     designAuthoring.trim(),
+    modelingAuthoring.trim(),
     complexMeshAuthoring.trim(),
     particleAuthoring.trim(),
     tslAuthoring.trim(),
     negotiationOnly ? "" : THREE_JSON_AGENT_TEXTURE_ACQUISITION_INDEX.trim()
   ].filter(Boolean).join("\n\n");
+}
+
+/** Shared by generation and command editing so both use the same live operator contracts. */
+export function buildModelingCapabilityFragment(options = {}) {
+  if (options.promptPurpose === "negotiation" || !options.selectedCapabilityIds?.includes("modelingGraph")) return "";
+  const modelingRegistry = registerBuiltinModelingOperators(options.modelingRegistry);
+  return `
+Computable modeling (modelingGraph):
+- Record: {objType:"modeledMesh",threeJsonId,modelRevision:0,modeling:{version:1,parameters:{width:2},nodes:[{id:"body",operator:"primitive.box",version:1,params:{width:{param:"width"}}}],output:{node:"body",output:"mesh"}},material:{type:"standard",color:"#8899aa"}}.
+- Typed connections: inputs:{mesh:{node:"body",output:"mesh"}}. A multiple port takes an array of these references. Node IDs are stable; graph dependencies must be acyclic. Parameter references are {param:"name"}; quantities {value:200,unit:"cm"} resolve to meters. Angles are radians.
+- A scene-rendered graph must output mesh: surface needs surface.tessellate; field needs field.mesh; instances need instances.realize; a registered CAD solid needs cad.tessellate. Preserve source, semantic node.part and non-destructive steps. Never invent arbitrary JavaScript or missing operator names.
+- For edits use model.inspect (no vertex dump), model.operators {id} for exact schemas, model.patch {id,baseRevision,patch:[{op:"replace",path:"/parameters/width",value:3}]}. Graph JSON Pointers are relative to modeling, not the scene root. Moving the whole model uses object.patch(position/rotation/scale), never rewrites graph/vertices. model.bake is explicit and undoable. In a single-round workflow use the supplied revision/context; do not emit inspection commands expecting a later round.
+- The following contracts are actually registered; optional CAD or custom operators may be used ONLY when present here. Backend availability is not inferred from a model name. No node/vertex/JSON size cap is imposed by this graph protocol.
+${getModelingOperatorManifest(modelingRegistry).operators.map((op) => JSON.stringify({ id: op.id, version: op.version, inputs: op.inputs, outputs: op.outputs, parameters: op.parameters, description: op.description })).join("\n")}
+`;
 }
 
 const THREE_JSON_AGENT_CAPABILITY_INDEX = buildAgentCapabilityIndex();

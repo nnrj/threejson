@@ -18,7 +18,7 @@ export function createSessionCommandAdapter(session, options = {}) {
     try {
       if (record !== originalRecord) {
         const type = String(record.objType || "").toLowerCase();
-        if (!["editablemesh", "buffermesh", "box", "sphere", "cylinder", "cone", "ring", "torus", "capsule", "plane", "circle"].includes(type)) {
+        if (!["modeledmesh", "editablemesh", "buffermesh", "box", "sphere", "cylinder", "cone", "ring", "torus", "capsule", "plane", "circle"].includes(type)) {
           throw documentError("QUERY_REQUIRES_COMMIT", `Commit the changed external/Domain object before requesting ${op}.`);
         }
         const { prepareDocumentMeshGeometry } = await import("./sceneIncrementalPreparation.js");

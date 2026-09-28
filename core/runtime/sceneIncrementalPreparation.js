@@ -14,7 +14,7 @@ import { resolveRuntimeContext } from "./runtimeContext.js";
 const POSE = new Set(["position", "rotation", "quaternion", "scale", "visible", "name", "castShadow", "receiveShadow", "renderOrder", "frustumCulled"]);
 const DATA = new Set(["label", "metadata", "businessInfo", "jsonOrigin"]);
 const MATERIAL = new Set(["material", "materials", "materialArr"]);
-const GEOMETRY = new Set(["geometry", "topology", "modifiers", "meshRevision", "positions", "indices", "normals", "uvs", "objType"]);
+const GEOMETRY = new Set(["geometry", "topology", "modifiers", "meshRevision", "positions", "indices", "normals", "uvs", "objType", "modeling", "modelQuality", "modelRevision"]);
 const primitiveTypes = new Set(["box", "sphere", "cylinder", "cone", "ring", "torus", "capsule", "plane", "circle"]);
 const materialList = (value) => Array.isArray(value) ? value : value ? [value] : [];
 const textureValues = (value) => Object.values(value || {}).filter((item) => item?.isTexture);
@@ -22,7 +22,7 @@ const equal = (a, b) => a === b || JSON.stringify(a) === JSON.stringify(b);
 
 function isPlainMeshRecord(record) {
   const type = String(record?.objType || "").toLowerCase();
-  return (primitiveTypes.has(type) || type === "editablemesh" || type === "buffermesh")
+  return (primitiveTypes.has(type) || type === "editablemesh" || type === "buffermesh" || type === "modeledmesh")
     && !record.merge && !record.geometryArr && !record.combineArr?.length
     && !record.holes?.length && !record.joins?.length && !record.modelPath;
 }
@@ -107,7 +107,10 @@ export async function prepareDocumentMeshGeometry(record, options = {}) {
   const type = String(record.objType).toLowerCase();
   let built;
   const compiler = options.geometryCompiler ?? resolveRuntimeContext(options.runtimeScope, { fallback: false })?.geometryCompiler;
-  if (compiler?.supports(record)) {
+  if (type === "modeledmesh") {
+    const { compileModeledMesh } = await import("../modeling/sceneCapability.js");
+    built = await compileModeledMesh(record, options);
+  } else if (compiler?.supports(record)) {
     built = await compiler.compile(record, options);
   } else if (type === "editablemesh") {
     const { buildEditableMeshGeometry } = await import("../builder/editableMesh/editableMeshBuilder.js");
@@ -205,7 +208,7 @@ export async function prepareIncrementalSceneChanges(runtime, document, context,
     for (const change of changes.values()) {
       const { object, entry, before, fields } = change;
       const item = { ...change, oldPose: pose(object), oldDescriptor: object.userData.objJson,
-        oldGeometry: object.geometry, oldMaterial: object.material, oldStats: object.userData.threeJsonMeshStats,
+        oldGeometry: object.geometry, oldMaterial: object.material, oldStats: object.userData.threeJsonMeshStats, oldModeling: object.userData.modeling,
         oldMorphInfluences: object.morphTargetInfluences, oldMorphDictionary: object.morphTargetDictionary };
       staged.push(item);
       item.descriptor = cloneDocumentData(entry.record);
@@ -247,6 +250,8 @@ export async function prepareIncrementalSceneChanges(runtime, document, context,
             object.geometry.computeBoundingBox(); object.geometry.computeBoundingSphere();
           } else { object.geometry = item.geometry.geometry; object.updateMorphTargets?.(); }
           object.userData.threeJsonMeshStats = item.geometry.stats;
+          if (item.geometry.modeling) object.userData.modeling = item.geometry.modeling;
+          else delete object.userData.modeling;
           for (const material of materialList(object.material)) material.needsUpdate = true;
         }
         object.userData.objJson = item.descriptor;
@@ -266,6 +271,8 @@ export async function prepareIncrementalSceneChanges(runtime, document, context,
         if (item.ranges) for (const range of item.ranges) { range.attribute.array.set(range.before, range.start); range.attribute.addUpdateRange(range.start, range.before.length); range.attribute.needsUpdate = true; }
         if (item.geometry) { item.oldGeometry.computeBoundingBox(); item.oldGeometry.computeBoundingSphere(); }
         item.object.userData.objJson = item.oldDescriptor; item.object.userData.threeJsonMeshStats = item.oldStats;
+        if (item.oldModeling) item.object.userData.modeling = item.oldModeling;
+        else delete item.object.userData.modeling;
         item.object.morphTargetInfluences = item.oldMorphInfluences; item.object.morphTargetDictionary = item.oldMorphDictionary;
         refreshRegisteredObject(item.object, item.oldDescriptor, { recursive: false }, runtime.scene);
       }
