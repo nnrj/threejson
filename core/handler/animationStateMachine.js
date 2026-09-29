@@ -289,6 +289,14 @@ export function createAnimationStateMachineStore(deps = {}) {
   }
 
   return {
+    resetTime() {
+      for (const machine of machinesByRootUuid.values()) {
+        machine.mixer.stopAllAction(); machine.mixer.time = 0;
+        machine.parameters = buildAnimationParameterDefaults(machine.graph);
+        machine.pendingEvents.clear(); machine.activeActions = []; machine.currentState = "";
+        enterAnimationState(machine, machine.graph.defaultState, 0);
+      }
+    },
     getAnimationStateMachine,
     isAnimationStateMachineRoot,
     registerAnimationStateMachine,

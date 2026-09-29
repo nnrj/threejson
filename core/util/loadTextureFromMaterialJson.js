@@ -10,6 +10,7 @@ import { resolvePublicAssetUrlCandidates } from "./assetsBase.js";
 import { applyTexturePropsFromRecord } from "./textureSampling.js";
 import { requestTexture, bindTextureWhenReady, whenTextureReady, registerTextureReadiness } from "../resource/textureRequest.js";
 import { createMediaResource } from "../resource/mediaResource.js";
+import { registerMediaTextureTimeline } from "../resource/mediaTextureTimeline.js";
 import { resolveRuntimeContext } from "../runtime/runtimeContext.js";
 import { MATERIAL_TEXTURE_SLOTS } from "../texture/textureSlots.js";
 
@@ -136,6 +137,24 @@ function createVideoTextureFromMaterialJson(materialJson, url, opts = {}) {
       log.warn("[textureKind:video] autoplay unavailable:", url, error);
     });
   }));
+  registerMediaTextureTimeline(texture, { async evaluateAt(time) {
+    await ready; video.pause();
+    const duration = video.duration;
+    const requested = time * (Number(materialJson.videoPlaybackRate) || 1);
+    const target = Number.isFinite(duration) && duration > 0
+      ? (video.loop ? requested % duration : Math.min(requested, Math.max(0, duration - 1e-6))) : requested;
+    if (Math.abs(video.currentTime - target) < 1e-7 && !video.seeking) return;
+    await new Promise((resolve, reject) => {
+      const cleanup = () => { video.removeEventListener("seeked", done); video.removeEventListener("error", failed); resource.signal.removeEventListener("abort", aborted); };
+      const done = () => { cleanup(); texture.needsUpdate = true; resolve(); };
+      const failed = () => { cleanup(); reject(new Error(`Video texture seek failed: ${url}`)); };
+      const aborted = () => { cleanup(); reject(resource.signal.reason); };
+      video.addEventListener("seeked", done); video.addEventListener("error", failed);
+      resource.signal.addEventListener("abort", aborted, { once: true });
+      if (resource.signal.aborted) { aborted(); return; }
+      video.currentTime = target;
+    });
+  } });
   return registerTextureReadiness(texture, ready, { dispose() {
     resource.dispose(); video.pause(); video.removeAttribute("src"); video.load();
   } });

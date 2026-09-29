@@ -1,5 +1,14 @@
 # Deployment surface and domain strategy
 
+> **Media update — 2026-09-29.** The explicitly opened media workbench now shares
+> browser modules from `packages/audio-kit/js`, `packages/media-kit/js` and exactly
+> `host-kit/js/mediaStudio.js` / `audioModelPanel.js`. `.assetsignore` includes only
+> those runtime paths; all other packages, Node model storage, package metadata and
+> local secrets stay excluded. Ordinary scene startup still has no media dependency.
+> This supersedes the blanket `packages/` exclusion below, not the deployment strategy.
+> Matching follows [Cloudflare's gitignore-compatible rules](https://developers.cloudflare.com/workers/static-assets/binding/)
+> and is covered by a deployment-surface regression test.
+
 > **Implementation update — 2026-07-29.** The deploy-surface exclusions, per-app Cloudflare
 > deployment skeletons, explicit origin allowlists, and popup `postMessage` handshakes described
 > below are now implemented. The legacy `tools/scene-host` products remain deployed and unchanged

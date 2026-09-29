@@ -18,6 +18,8 @@ test("release plan follows the package dependency topology", () => {
   assert.deepEqual(PACKAGE_PLAN.map((item) => item.name), [
     "@threejson/assets",
     "threejson",
+    "@threejson/audio-kit",
+    "@threejson/media-kit",
     "@threejson/scene-tools",
     "@threejson/host-kit",
     "@threejson/editor-kit",
@@ -85,6 +87,8 @@ test("threejson tarball gate requires runtime, document/session and optional com
   const valid = {
     files: [
       { path: "core/runtime.js" },
+      { path: "core/timeline.js" },
+      { path: "core/timeline.d.ts" },
       { path: "core/ai/index.js" },
       { path: "core/document.js" },
       { path: "core/session.js" },

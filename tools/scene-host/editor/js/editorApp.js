@@ -1959,6 +1959,15 @@ export async function bootstrapSceneHostEditor() {
       void exportStandardThreeJson();
       closeAllDropdowns();
     });
+    document.getElementById("menuExportMedia")?.addEventListener("click", async () => {
+      closeAllDropdowns();
+      try {
+        await sceneReserialize?.ensureCanvasSyncedBeforeExport?.();
+        const payload = await sceneToJson(scene, buildSceneToJsonOptions({ format: "standard", state: "authoring" }));
+        const { openSceneMediaStudio } = await import("../../shared/js/mediaStudio.js");
+        await openSceneMediaStudio(payload);
+      } catch (error) { ui.showMessage(String(error.message || error), "error"); }
+    });
     document.getElementById("menuExportThreeJSONWithSceneInfoList")?.addEventListener("click", () => {
       void exportThreeJsonWithSceneInfoList();
       closeAllDropdowns();

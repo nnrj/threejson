@@ -5,6 +5,7 @@ export function analyzeSceneUsage(sceneObj) {
   const listsUsed = [];
   const objTypes = new Set();
   let totalItems = 0;
+  if (sceneObj?.timeline && typeof sceneObj.timeline === "object") objTypes.add("timeline");
 
   const runtimeRendererRecord = Array.isArray(sceneObj?.objectList)
     ? [...sceneObj.objectList].reverse().find(

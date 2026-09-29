@@ -2,8 +2,7 @@
 import * as THREE from "three";
 import { GPUComputationRenderer } from "three/examples/jsm/misc/GPUComputationRenderer.js";
 import { log } from "../../util/logger.js";
-import { loadingManager } from "../../cache/loading.js";
-import { resolvePublicAssetUrl } from "../../util/assetsBase.js";
+import { bindParticleSpriteResource } from "./particleSpriteResource.js";
 import { trackDisposableResource } from "../../handler/trackedResourceRegistry.js";
 import { registerObject, getObjectByThreeJsonId } from "../../handler/objectRegistry.js";
 import { setUserDataObjJson } from "../../handler/objectDescriptorAttach.js";
@@ -14,7 +13,7 @@ import { resolvePosition, resolveRotation, resolveScale } from "../../util/vecto
 import { resolveParticleTextureSize } from "./particleComputeUtil.js";
 import { buildParticleEmitterWorldMatrix, createSeededRandom, sampleParticleSourcePositions } from "./particleSourceSampler.js";
 import { PARTICLE_ATTRACTOR_LIMIT, assertParticleCountWithinBudget, normalizeParticleEmitterV2, sampleRange } from "./particleV2Descriptor.js";
-import { normalizeParticleLifecycleFrames, PARTICLE_SHADER_KEYFRAME_LIMIT } from "./particleLifecycle.js";
+import { normalizeParticleLifecycleFrames } from "./particleLifecycle.js";
 
 export { resolveParticleTextureSize } from "./particleComputeUtil.js";
 
@@ -104,7 +103,7 @@ const RENDER_VERTEX = /* glsl */`
 uniform sampler2D texturePosition;
 uniform sampler2D textureVelocity;
 uniform int sizeKeyCount;
-uniform vec2 sizeKeys[8];
+uniform vec2 sizeKeys[PARTICLE_KEYFRAMES];
 uniform bool sizeAttenuation;
 uniform vec2 rotationRange;
 uniform vec2 angularVelocityRange;
@@ -114,7 +113,7 @@ varying float vAlive;
 varying float vRotation;
 float sampleSizeCurve(float t){
   float value=sizeKeys[0].y;
-  for(int i=1;i<8;i++){
+  for(int i=1;i<PARTICLE_KEYFRAMES;i++){
     if(i>=sizeKeyCount)break;
     vec2 a=sizeKeys[i-1],b=sizeKeys[i];
     if(t<=b.x)return mix(a.y,b.y,clamp((t-a.x)/max(b.x-a.x,0.00001),0.0,1.0));
@@ -138,9 +137,9 @@ void main(){
 
 const RENDER_FRAGMENT = /* glsl */`
 uniform int colorKeyCount;
-uniform vec4 colorKeys[8];
+uniform vec4 colorKeys[PARTICLE_KEYFRAMES];
 uniform int opacityKeyCount;
-uniform vec2 opacityKeys[8];
+uniform vec2 opacityKeys[PARTICLE_KEYFRAMES];
 uniform sampler2D spriteMap;
 uniform bool useSpriteMap;
 uniform vec2 atlasGrid;
@@ -151,7 +150,7 @@ varying float vAlive;
 varying float vRotation;
 float sampleOpacityCurve(float t){
   float value=opacityKeys[0].y;
-  for(int i=1;i<8;i++){
+  for(int i=1;i<PARTICLE_KEYFRAMES;i++){
     if(i>=opacityKeyCount)break;
     vec2 a=opacityKeys[i-1],b=opacityKeys[i];
     if(t<=b.x)return mix(a.y,b.y,clamp((t-a.x)/max(b.x-a.x,0.00001),0.0,1.0));
@@ -161,7 +160,7 @@ float sampleOpacityCurve(float t){
 }
 vec3 sampleColorCurve(float t){
   vec3 value=colorKeys[0].yzw;
-  for(int i=1;i<8;i++){
+  for(int i=1;i<PARTICLE_KEYFRAMES;i++){
     if(i>=colorKeyCount)break;
     vec4 a=colorKeys[i-1],b=colorKeys[i];
     if(t<=b.x)return mix(a.yzw,b.yzw,clamp((t-a.x)/max(b.x-a.x,0.00001),0.0,1.0));
@@ -187,7 +186,7 @@ const BILLBOARD_RENDER_VERTEX = /* glsl */`
 uniform sampler2D texturePosition;
 uniform sampler2D textureVelocity;
 uniform int sizeKeyCount;
-uniform vec2 sizeKeys[8];
+uniform vec2 sizeKeys[PARTICLE_KEYFRAMES];
 uniform bool sizeAttenuation;
 uniform vec2 rotationRange;
 uniform vec2 angularVelocityRange;
@@ -197,7 +196,7 @@ varying float vLifeProgress;
 varying float vAlive;
 float sampleSizeCurve(float t){
   float value=sizeKeys[0].y;
-  for(int i=1;i<8;i++){
+  for(int i=1;i<PARTICLE_KEYFRAMES;i++){
     if(i>=sizeKeyCount)break;
     vec2 a=sizeKeys[i-1],b=sizeKeys[i];
     if(t<=b.x)return mix(a.y,b.y,clamp((t-a.x)/max(b.x-a.x,0.00001),0.0,1.0));
@@ -225,9 +224,9 @@ void main(){
 
 const BILLBOARD_RENDER_FRAGMENT = /* glsl */`
 uniform int colorKeyCount;
-uniform vec4 colorKeys[8];
+uniform vec4 colorKeys[PARTICLE_KEYFRAMES];
 uniform int opacityKeyCount;
-uniform vec2 opacityKeys[8];
+uniform vec2 opacityKeys[PARTICLE_KEYFRAMES];
 uniform sampler2D spriteMap;
 uniform bool useSpriteMap;
 uniform vec2 atlasGrid;
@@ -238,7 +237,7 @@ varying float vLifeProgress;
 varying float vAlive;
 float sampleOpacityCurve(float t){
   float value=opacityKeys[0].y;
-  for(int i=1;i<8;i++){
+  for(int i=1;i<PARTICLE_KEYFRAMES;i++){
     if(i>=opacityKeyCount)break;
     vec2 a=opacityKeys[i-1],b=opacityKeys[i];
     if(t<=b.x)return mix(a.y,b.y,clamp((t-a.x)/max(b.x-a.x,0.00001),0.0,1.0));
@@ -248,7 +247,7 @@ float sampleOpacityCurve(float t){
 }
 vec3 sampleColorCurve(float t){
   vec3 value=colorKeys[0].yzw;
-  for(int i=1;i<8;i++){
+  for(int i=1;i<PARTICLE_KEYFRAMES;i++){
     if(i>=colorKeyCount)break;
     vec4 a=colorKeys[i-1],b=colorKeys[i];
     if(t<=b.x)return mix(a.yzw,b.yzw,clamp((t-a.x)/max(b.x-a.x,0.00001),0.0,1.0));
@@ -273,7 +272,6 @@ function vector(value, fallback = { x: 0, y: 0, z: 0 }) { return new THREE.Vecto
 function numberKeyUniforms(value, fallback) {
   const frames = normalizeParticleLifecycleFrames(value, fallback);
   const keys = frames.map((frame) => new THREE.Vector2(frame.t, finite(frame.value, finite(fallback, 0))));
-  while (keys.length < PARTICLE_SHADER_KEYFRAME_LIMIT) keys.push(keys.at(-1).clone());
   return { count: frames.length, keys };
 }
 function colorKeyUniforms(value, fallback) {
@@ -282,7 +280,6 @@ function colorKeyUniforms(value, fallback) {
     const valueColor = new THREE.Color(frame.value ?? fallback ?? "#ffffff");
     return new THREE.Vector4(frame.t, valueColor.r, valueColor.g, valueColor.b);
   });
-  while (keys.length < PARTICLE_SHADER_KEYFRAME_LIMIT) keys.push(keys.at(-1).clone());
   return { count: frames.length, keys };
 }
 function velocityRange(value) {
@@ -313,7 +310,19 @@ export function createParticleGpuComputeStore() {
   }
   function registerEmitter(points, state) { states.set(points, state); targets.add(points); }
   function dispose() { for (const points of [...targets]) disposeParticleGpuCompute(points); }
-  return { disposeParticleGpuCompute, updateParticleGpuCompute, registerEmitter, dispose };
+  function resetTime() {
+    for (const points of targets) {
+      const state = states.get(points); state.elapsed = 0;
+      for (const variable of [state.positionVariable, state.velocityVariable]) {
+        for (const target of variable.renderTargets) state.gpuCompute.renderTexture(variable.initialValueTexture, target);
+        variable.material.uniforms.delta.value = 0;
+        if (variable.material.uniforms.elapsed) variable.material.uniforms.elapsed.value = 0;
+      }
+      points.material.uniforms.texturePosition.value = state.gpuCompute.getCurrentRenderTarget(state.positionVariable).texture;
+      points.material.uniforms.textureVelocity.value = state.gpuCompute.getCurrentRenderTarget(state.velocityVariable).texture;
+    }
+  }
+  return { disposeParticleGpuCompute, updateParticleGpuCompute, resetTime, registerEmitter, dispose };
 }
 
 function resolveStore(scope) { return resolveRuntimeContext(scope).particleGpuCompute; }
@@ -353,12 +362,18 @@ function billboardReferenceGeometry(count, width, height) {
   return geometry;
 }
 
-function renderMaterial(descriptor, billboard = false) {
+function renderMaterial(descriptor, billboard = false, renderer) {
   const size=numberKeyUniforms(descriptor.particle.sizeOverLife??descriptor.render.sizeOverLife,descriptor.render.size);
   const opacity=numberKeyUniforms(descriptor.particle.opacityOverLife??descriptor.render.opacityOverLife,descriptor.render.opacity);
   const colorCurve=colorKeyUniforms(descriptor.particle.colorOverLife??descriptor.render.colorOverLife,descriptor.render.color);
   const atlas=atlasInfo(descriptor);
-  const material=new THREE.ShaderMaterial({uniforms:{texturePosition:{value:null},textureVelocity:{value:null},sizeKeyCount:{value:size.count},sizeKeys:{value:size.keys},sizeAttenuation:{value:descriptor.render.sizeAttenuation},rotationRange:{value:new THREE.Vector2(descriptor.particle.rotation.min,descriptor.particle.rotation.max)},angularVelocityRange:{value:new THREE.Vector2(descriptor.particle.angularVelocity.min,descriptor.particle.angularVelocity.max)},colorKeyCount:{value:colorCurve.count},colorKeys:{value:colorCurve.keys},opacityKeyCount:{value:opacity.count},opacityKeys:{value:opacity.keys},spriteMap:{value:null},useSpriteMap:{value:false},atlasGrid:{value:new THREE.Vector2(atlas.columns,atlas.rows)},atlasFrameStart:{value:atlas.start},atlasFrameEnd:{value:atlas.end}},vertexShader:billboard?BILLBOARD_RENDER_VERTEX:RENDER_VERTEX,fragmentShader:billboard?BILLBOARD_RENDER_FRAGMENT:RENDER_FRAGMENT,transparent:descriptor.render.transparent,depthWrite:descriptor.render.depthWrite,depthTest:descriptor.render.depthTest,blending:resolvePointsBlending(descriptor.render.blending)});trackDisposableResource(material);return material;
+  const capacity = Math.max(size.count, opacity.count, colorCurve.count);
+  const caps = renderer?.capabilities;
+  if ((caps?.maxVertexUniforms && capacity + 32 > caps.maxVertexUniforms) || (caps?.maxFragmentUniforms && capacity * 2 + 16 > caps.maxFragmentUniforms)) {
+    throw Object.assign(new Error(`Particle lifecycle curves exceed this GPU\'s uniform capacity (${capacity} keys). Use CPU simulation or a different device.`), { code: "E_PARTICLE_GPU_UNIFORM_LIMIT", keyframeCount: capacity });
+  }
+  for (const curve of [size, opacity, colorCurve]) while (curve.keys.length < capacity) curve.keys.push(curve.keys.at(-1).clone());
+  const material=new THREE.ShaderMaterial({defines:{PARTICLE_KEYFRAMES:capacity},uniforms:{texturePosition:{value:null},textureVelocity:{value:null},sizeKeyCount:{value:size.count},sizeKeys:{value:size.keys},sizeAttenuation:{value:descriptor.render.sizeAttenuation},rotationRange:{value:new THREE.Vector2(descriptor.particle.rotation.min,descriptor.particle.rotation.max)},angularVelocityRange:{value:new THREE.Vector2(descriptor.particle.angularVelocity.min,descriptor.particle.angularVelocity.max)},colorKeyCount:{value:colorCurve.count},colorKeys:{value:colorCurve.keys},opacityKeyCount:{value:opacity.count},opacityKeys:{value:opacity.keys},spriteMap:{value:null},useSpriteMap:{value:false},atlasGrid:{value:new THREE.Vector2(atlas.columns,atlas.rows)},atlasFrameStart:{value:atlas.start},atlasFrameEnd:{value:atlas.end}},vertexShader:billboard?BILLBOARD_RENDER_VERTEX:RENDER_VERTEX,fragmentShader:billboard?BILLBOARD_RENDER_FRAGMENT:RENDER_FRAGMENT,transparent:descriptor.render.transparent,depthWrite:descriptor.render.depthWrite,depthTest:descriptor.render.depthTest,blending:resolvePointsBlending(descriptor.render.blending)});trackDisposableResource(material);return material;
 }
 
 function finishGpuEmitter(descriptor, scene, renderer, positions, random) {
@@ -376,9 +391,11 @@ function finishGpuEmitter(descriptor, scene, renderer, positions, random) {
   const attractorMaxDistances=descriptor.simulation.attractors.slice(0,PARTICLE_ATTRACTOR_LIMIT).map((item)=>{const distance=Number(item.maxDistance);return Number.isFinite(distance)&&distance>0?distance:0;});while(attractorMaxDistances.length<PARTICLE_ATTRACTOR_LIMIT)attractorMaxDistances.push(0);
   Object.assign(velocityVariable.material.uniforms,{delta:{value:0},elapsed:{value:0},textureOrigin:{value:origin},textureInitialVelocity:{value:initialVelocity},acceleration:{value:acceleration},drag:{value:descriptor.simulation.drag},noiseStrength:{value:descriptor.simulation.noise.strength},noiseFrequency:{value:descriptor.simulation.noise.frequency},boundaryPolicy:{value:bounds.policy},boundMin:{value:bounds.min},boundMax:{value:bounds.max},restitution:{value:finite(descriptor.simulation.boundary.restitution,1)},loopParticles:{value:descriptor.emission.loop},attractorCount:{value:Math.min(descriptor.simulation.attractors.length,PARTICLE_ATTRACTOR_LIMIT)},attractors:{value:attractors},attractorMaxDistances:{value:attractorMaxDistances}});
   const initError=gpu.init();if(initError){gpu.dispose?.();const error=new Error(`[particleEmitter] webgl-compute init failed: ${initError}`);error.code="E_PARTICLE_BACKEND_INIT_FAILED";throw error;}
-  const billboard=descriptor.render.type==="billboard";const geometry=billboard?billboardReferenceGeometry(count,width,height):referenceGeometry(count,width,height);const material=renderMaterial(descriptor,billboard);material.uniforms.texturePosition.value=gpu.getCurrentRenderTarget(positionVariable).texture;material.uniforms.textureVelocity.value=gpu.getCurrentRenderTarget(velocityVariable).texture;
+  const billboard=descriptor.render.type==="billboard";const geometry=billboard?billboardReferenceGeometry(count,width,height):referenceGeometry(count,width,height);let material;
+  try { material=renderMaterial(descriptor,billboard,renderer); } catch(error) { geometry.dispose();gpu.dispose();throw error; }
+  material.uniforms.texturePosition.value=gpu.getCurrentRenderTarget(positionVariable).texture;material.uniforms.textureVelocity.value=gpu.getCurrentRenderTarget(velocityVariable).texture;
   const points=billboard?new THREE.Mesh(geometry,material):new THREE.Points(geometry,material);trackDisposableResource(points);points.frustumCulled=false;points.name=descriptor.name||"particle-emitter-gpu";setUserDataObjJson(points,descriptor);applyTransform(points,descriptor);scene.add(points);
-  const spriteUrl=descriptor.render.sprite?.url??descriptor.render.sprite??descriptor.render.map;if(typeof spriteUrl==="string"&&spriteUrl.trim()){new THREE.TextureLoader(loadingManager).load(resolvePublicAssetUrl(spriteUrl),(texture)=>{if(!points.parent){texture.dispose();return;}trackDisposableResource(texture);material.uniforms.spriteMap.value=texture;material.uniforms.useSpriteMap.value=true;});}
+  bindParticleSpriteResource(points,descriptor.render.sprite?.url??descriptor.render.sprite??descriptor.render.map,scene);
   const state={gpuCompute:gpu,positionVariable,velocityVariable,elapsed:0,onRemoved:()=>disposeParticleGpuCompute(points)};points.addEventListener("removed",state.onRemoved);resolveStore(scene).registerEmitter(points,state);return registerObject(points,descriptor);
 }
 

@@ -438,6 +438,14 @@ function wireControls() {
   els.catalogToggle?.addEventListener("click", toggleCatalog);
   els.audioMuteBtn?.addEventListener("click", toggleAudioMute);
   document.getElementById("downloadHtmlBtn").addEventListener("click", openTemplateExportModal);
+  const mediaButton = document.getElementById("exportMediaBtn");
+  mediaButton.textContent = document.documentElement.lang.startsWith("en") ? "Image / Video" : "图片 / 视频";
+  mediaButton.addEventListener("click", async () => {
+    try {
+      const { openSceneMediaStudio } = await import("../../shared/js/mediaStudio.js");
+      await openSceneMediaStudio(readCurrentScene(), { language: lang });
+    } catch (error) { els.status.textContent = error.message; }
+  });
   document.getElementById("exportThreeJsonBtn").addEventListener("click", () => {
     downloadText("threejson-scene.json", JSON.stringify(readCurrentScene(), null, 2));
   });

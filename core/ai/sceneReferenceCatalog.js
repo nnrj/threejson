@@ -36,6 +36,7 @@ const PUBLIC_REFERENCE_LINKS = {
  * threeJsonCoreSkill.js) — well-covered topics (primitives, materials, basic geometry) are
  * intentionally omitted so retrieval only fires where it actually helps. */
 const SIGNAL_TO_SECTIONS = {
+  timeline: ["timeline-media"],
   events: ["event-mechanism", "scripts"],
   lifecycle: ["lifecycle", "event-mechanism"],
   css3dPanel: ["info-panels"],

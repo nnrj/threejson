@@ -92,6 +92,7 @@ export function createAnimationMixerStore() {
 	}
 
 	return {
+		evaluateAt(time) { for (const { root, mixer } of mixersByRootUuid.values()) if (getAnimationMode(root) !== 'basic') mixer.setTime(time); },
 		tryRegisterGltfAnimationMixers,
 		unregisterAnimationMixerForRoot,
 		updateRegisteredAnimationMixers,

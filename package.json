@@ -20,6 +20,7 @@
     ".": "./builtins/full.js",
     "./core": "./core/index.js",
     "./runtime": "./core/runtime.js",
+    "./timeline": "./core/timeline.js",
     "./assets": "./core/assets.js",
     "./ai": "./core/ai/index.js",
     "./texture": "./core/texture/index.js",
@@ -114,8 +115,12 @@
     "html2canvas-pro": {
       "optional": true
     },
-    "replicad": { "optional": true },
-    "replicad-opencascadejs": { "optional": true },
+    "replicad": {
+      "optional": true
+    },
+    "replicad-opencascadejs": {
+      "optional": true
+    },
     "three-bvh-csg": {
       "optional": true
     },
@@ -167,16 +172,19 @@
   ],
   "license": "MIT",
   "devDependencies": {
-    "esbuild": "^0.25.12",
     "@dimforge/rapier3d-compat": "^0.19.3",
     "@threejson/assets": "file:assets",
     "@tweenjs/tween.js": "^25.0.0",
+    "esbuild": "^0.25.12",
+    "@types/three": "^0.184.0",
     "fflate": "^0.8.3",
     "gifuct-js": "^2.1.2",
     "html2canvas-pro": "^2.0.0",
+    "playwright": "^1.63.0",
     "three": "^0.184.0",
     "three-bvh-csg": "^0.0.18",
     "three-mesh-bvh": "^0.9.10",
-    "troika-three-text": "^0.52.4"
+    "troika-three-text": "^0.52.4",
+    "typescript": "^5.9.3"
   }
 }

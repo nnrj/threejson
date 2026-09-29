@@ -7,7 +7,22 @@ node_modules
 **/node_modules/**
 servertmp/
 apps/
-packages/
+# Only the opt-in browser media workbench is served from workspace packages.
+# Keep other package internals, Node tools and package-local files excluded.
+packages/*
+!packages/audio-kit/
+!packages/media-kit/
+!packages/host-kit/
+packages/audio-kit/*
+!packages/audio-kit/js/
+packages/audio-kit/js/nodeModels*
+packages/media-kit/*
+!packages/media-kit/js/
+packages/host-kit/*
+!packages/host-kit/js/
+packages/host-kit/js/*
+!packages/host-kit/js/mediaStudio.js
+!packages/host-kit/js/audioModelPanel.js
 tests/
 **/dist/
 

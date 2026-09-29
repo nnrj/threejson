@@ -8,6 +8,8 @@ This handbook is written for library callers. It focuses on the scene pipeline u
 
 ## Contents
 
+- [Timeline, audio and media export](./timeline-media.md): deterministic playback, dynamic clips, particle morphing, soundtracks and PNG/GIF/MP4/WebM output.
+
 - [Scene operations and AI tools](./scene-operations.md): shared contracts, queries, spatial operations, preflight, undo, CLI/MCP and Editor pairing.
 
 - [Quick Start](./quick-start.md): create a minimal runnable scene with `createSceneRuntime()`.

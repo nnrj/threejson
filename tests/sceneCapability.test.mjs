@@ -6,6 +6,20 @@ import {
   mergeRequiredCapabilityIds,
   shouldAllowParticleEffects
 } from "../core/ai/sceneCapability.js";
+import { buildAgentCapabilityIndex } from "../core/ai/sceneCapabilityIndex.js";
+
+test("media creation exposes real timeline/audio contracts without confusing a video texture", () => {
+  assert.ok(mergeRequiredCapabilityIds("生成一段粒子文字视频", []).includes("timeline"));
+  assert.ok(!matchIntentSignals("给电视添加一个视频贴图").some((signal) => signal.id === "timeline"));
+  assert.ok(!matchIntentSignals("add a video texture to the screen").some((signal) => signal.id === "timeline"));
+  assert.ok(!matchIntentSignals("export a video").some((signal) => signal.id === "portDomain"));
+  assert.ok(matchIntentSignals("build a port").some((signal) => signal.id === "portDomain"));
+  assert.equal(evaluateCapabilityFit("export a video", { objectList: [] }).ok, false);
+  assert.equal(evaluateCapabilityFit("export a video", { objectList: [], timeline: { duration: 2 } }).ok, true);
+  const prompt = buildAgentCapabilityIndex({ selectedCapabilityIds: ["timeline"] });
+  assert.match(prompt, /timeline\.audio/); assert.match(prompt, /kind:"score"/); assert.match(prompt, /not.*composition root/);
+  assert.ok(!buildAgentCapabilityIndex({ selectedCapabilityIds: [] }).includes('kind:"score"'));
+});
 
 test("particles signal does not false-positive on generic 'points' phrasing", () => {
   const prompts = [

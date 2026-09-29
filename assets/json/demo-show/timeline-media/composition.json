@@ -1,0 +1,47 @@
+{
+  "documentType": "composition",
+  "compositionVersion": 1,
+  "name": "ThreeJSON dynamic clips",
+  "output": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30
+  },
+  "timeline": {
+    "version": 1,
+    "duration": 17,
+    "clips": [
+      {
+        "id": "particles",
+        "source": "particle-morph.json",
+        "start": 0,
+        "duration": 6
+      },
+      {
+        "id": "product",
+        "source": "camera-product.json",
+        "start": 5,
+        "duration": 6,
+        "sourceStart": 1,
+        "fadeIn": 1
+      },
+      {
+        "id": "data",
+        "source": "data-film.json",
+        "start": 10,
+        "duration": 7,
+        "fadeIn": 1
+      }
+    ],
+    "captions": [
+      {
+        "id": "credits",
+        "text": "ThreeJSON · one JSON or many clips",
+        "start": 14,
+        "duration": 3,
+        "fontSize": 26,
+        "y": 0.1
+      }
+    ]
+  }
+}

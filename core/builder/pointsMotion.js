@@ -269,7 +269,15 @@ export function createPointsMotionStore() {
     }
   }
 
-  return { setupPointsMotion, disposePointsMotion, updatePointsMotion, dispose };
+  function evaluateAt(time) {
+    for (const points of pointsMotionTargets) {
+      const state = pointsMotionStateMap.get(points);
+      if (state.drift) { state.drift.elapsed = 0; applyDriftStep(state, time); }
+      if (state.twinkle) { state.twinkle.elapsed = 0; applyTwinkleStep(state, time); }
+      if (state.scrollUv) { state.scrollUv.elapsed = 0; applyScrollUvStep(state, time); }
+    }
+  }
+  return { setupPointsMotion, disposePointsMotion, updatePointsMotion, evaluateAt, dispose };
 }
 
 function resolveStore(runtimeScope) {

@@ -10,6 +10,8 @@ ThreeJSON 是一个基于 Three.js 的 Web3D JSON 运行时。调用者不需要
 
 ## 文档目录
 
+- [时间线、音频与媒体导出](./timeline-media.md)：确定性回放、动态片段、粒子变形、配乐及 PNG/GIF/MP4/WebM 输出。
+
 - [场景操作协议与 AI 工具](./scene-operations.md)：统一操作契约、查询与空间命令、预检、撤销、CLI/MCP 和编辑器配对。
 
 - [快速开始](./quick-start.md)：用 `createSceneRuntime()` 从配置创建一个最小可运行场景。

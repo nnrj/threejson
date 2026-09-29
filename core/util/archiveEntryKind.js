@@ -23,13 +23,14 @@ function isScenePayloadEntry(value) {
 
 function normalizeEntryKind(rawKind, fallback = "unknown") {
   const kind = String(rawKind || "").trim().toLowerCase();
-  if (kind === "scene" || kind === "object") {
+  if (kind === "scene" || kind === "object" || kind === "composition") {
     return kind;
   }
   return fallback;
 }
 
 function detectArchiveEntryKindFromPayload(payload) {
+  if (payload?.documentType === "composition") return "composition";
   if (isObjectRecordEntry(payload)) {
     return "object";
   }

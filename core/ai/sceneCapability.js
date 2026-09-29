@@ -8,6 +8,13 @@ import { analyzeSceneUsage } from "../capabilities/sceneUsage.js";
 
 const INTENT_SIGNALS = [
   {
+    id: "timeline", patterns: [/\btimeline\b|kinetic typography|camera choreography|程序化视频|运镜|时间线|片段编排|字幕|配乐/i, /\b(?:generate|make|export|render|produce)\b.{0,60}\b(?:video|movie|gif)\b(?!\s+(?:texture|player))/i, /(?:制作|生成|导出|输出).{0,48}(?:视频|动画短片|GIF)(?!贴图|纹理|播放器)/i],
+    objTypes: ["timeline"],
+    selectionIds: ["timeline"],
+    requiredWhenMatched: true,
+    note: "Use a normal scene plus root timeline with explicit duration, tracks, captions and audio. Use the optional media exporter, not screenshots with timers. Prefer local score recipes or real supplied audio URLs; do not invent an installed TTS model."
+  },
+  {
     id: "sceneDesign",
     patterns: [/parameter[- ]driven|shared parameters?|constraint|anchor|参数驱动|共享参数|参数联动|锚点|联动尺寸|约束关系/i],
     selectionIds: ["sceneDesign"],
@@ -378,7 +385,7 @@ const INTENT_SIGNALS = [
   },
   {
     id: "portDomain",
-    patterns: [/port|harbor|dock crane|container yard|quay crane/i],
+    patterns: [/\b(?:port|harbor|harbour|dock crane|container yard|quay crane)\b/i, /港口|码头|集装箱堆场/],
     lists: ["domainModelList", "objectList"],
     objTypes: ["domain"],
     note: "Use port domain records such as handler dockCrane for port/logistics scenes."

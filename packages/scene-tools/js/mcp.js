@@ -23,6 +23,8 @@ const baseTools = [
 ];
 export function sceneMcpTools(host) {
   return [...baseTools.map(([name, , description, properties, required]) => ({ name, description, inputSchema: { type: "object", properties, required, additionalProperties: false } })),
+    { name: "media.render", description: "Render JSON/.tjz locally to PNG/JPEG/WebP/GIF/MP4/WebM using an installed browser. Writes a new file only; no browser install or AI call.", inputSchema: { type: "object", properties: { file: str, output: str, format: { enum: ["png","jpeg","webp","gif","mp4","webm"] }, executablePath: str, mediaOptions: json }, required: ["file","output","executablePath"], additionalProperties: false } },
+    { name: "media.start", description: "Start a background media export from a file or immutable session snapshot. Poll job.get; cancel with job.cancel. Uses an installed browser only.", inputSchema: { type: "object", properties: { file: str, sessionId: str, output: str, format: { enum: ["png","jpeg","webp","gif","mp4","webm"] }, executablePath: str, mediaOptions: json }, required: ["output","executablePath"], additionalProperties: false } },
     { name: "editor.call", description: "Submit an operation to an explicitly paired local Editor; returns a request ID, not a claim of execution. Use editor.result to reconcile delivery.", inputSchema: { type: "object", properties: { url: str, token: str, method: { enum: ["discover", "execute", "preflight", "undo", "redo", "export"] }, params: json, requestId: str }, required: ["url", "token", "method"], additionalProperties: false } },
     { name: "editor.result", description: "Retrieve a paired Editor operation result without resending the write.", inputSchema: { type: "object", properties: { url: str, token: str, requestId: str }, required: ["url", "token", "requestId"], additionalProperties: false } },
     ...host.discover().commands.map((spec) => ({ name: `op.${spec.op}`, description: spec.summary,
@@ -40,7 +42,9 @@ export function createSceneMcpServer(options = {}) {
       const definition = sceneMcpTools(host).find((tool) => tool.name === name);
       if (definition) validateCommandSchema(args, definition.inputSchema);
       let result;
-      if (name === "editor.call" || name === "editor.result") result = await (await import("./editor-bridge.js")).callEditorBridge({ ...args, signal: extra.signal });
+      if (name === "media.render") result = await (await import("./media.js")).renderSceneMedia({ ...args, signal: extra.signal });
+      else if (name === "media.start") result = host.startMediaJob(args);
+      else if (name === "editor.call" || name === "editor.result") result = await (await import("./editor-bridge.js")).callEditorBridge({ ...args, signal: extra.signal });
       else if (route) result = await host[route[1]]({ ...args, signal: extra.signal });
       else if (name.startsWith("op.") && host.discover().commands.some((spec) => `op.${spec.op}` === name)) {
         const { args: commandArgs, ...envelope } = args;

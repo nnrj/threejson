@@ -542,6 +542,11 @@ export function useSceneCardRuntime(options = {}) {
     dispose,
     getRuntime: () => runtimeRef.current,
     handleDownloadJson,
+    handleMediaExport: async () => {
+      const source = requireSceneJson(); if (!source) return;
+      try { const { openSceneMediaStudio } = await import("@threejson/host-kit/js/mediaStudio.js"); await openSceneMediaStudio(source, { name: currentLabelRef.current }); }
+      catch (error) { toast(String(error.message || error), "error"); }
+    },
     handleExportTjz,
     handleExportMesh,
     handleOpenEditor,

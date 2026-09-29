@@ -8,6 +8,7 @@ import { createMediaResource } from "../resource/mediaResource.js";
 import { registerTextureReadiness, bindTextureWhenReady } from "../resource/textureRequest.js";
 import { trackDisposableResource } from "../handler/trackedResourceRegistry.js";
 import { applyUiTextureSampling } from "./textureSampling.js";
+import { registerMediaTextureTimeline } from "../resource/mediaTextureTimeline.js";
 
 /**
  * @param {number|undefined} delayMs
@@ -56,7 +57,12 @@ function compositeGifFrame(ctx, w, h, frames, frameIndex, restoreRef) {
     if (!patch || !d || !Number.isFinite(d.width) || !Number.isFinite(d.height)) {
         return;
     }
-    ctx.putImageData(new ImageData(patch, d.width, d.height), d.left, d.top);
+    // Transparent pixels in a GIF patch retain the previous canvas; putImageData
+    // directly on the destination would incorrectly erase them.
+    const layer = restoreRef.patchCanvas ??= document.createElement("canvas");
+    layer.width = d.width; layer.height = d.height;
+    layer.getContext("2d").putImageData(new ImageData(patch, d.width, d.height), 0, 0);
+    ctx.drawImage(layer, d.left, d.top);
 }
 
 /**
@@ -107,7 +113,8 @@ export function createGifCanvasTextureFromMaterialJson(materialJson, url, opts =
     const resource = createMediaResource(url, "image", opts);
     const ready = (async () => {
         try {
-            const { parseGIF, decompressFrames } = await import("gifuct-js");
+            const module = await import("gifuct-js");
+            const { parseGIF, decompressFrames } = module.parseGIF ? module : module.default;
             const resolved = await resource.ready;
             const res = await fetch(resolved, { mode: "cors", credentials: "omit", signal: resource.signal });
             if (!res.ok) {
@@ -135,6 +142,17 @@ export function createGifCanvasTextureFromMaterialJson(materialJson, url, opts =
             let frameIndex = 0;
             compositeGifFrame(ctx, w, h, frames, frameIndex, restoreRef);
             texture.needsUpdate = true;
+
+            const delays = frames.map((frame) => effectiveFrameDelayMs(frame.delay, playbackRate, maxFps));
+            const total = delays.reduce((sum, delay) => sum + delay, 0);
+            registerMediaTextureTimeline(texture, { evaluateAt(seconds) {
+                stop();
+                let remaining = (seconds * 1000) % total, index = 0;
+                while (index < frames.length - 1 && remaining >= delays[index]) remaining -= delays[index++];
+                restoreRef.imageData = null;
+                for (let i = 0; i <= index; i++) compositeGifFrame(ctx, w, h, frames, i, restoreRef);
+                texture.needsUpdate = true;
+            } });
 
             if (!autoplay || frames.length < 2) {
                 return;

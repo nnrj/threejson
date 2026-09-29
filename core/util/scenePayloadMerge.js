@@ -12,6 +12,9 @@ const ROOT_METADATA_KEYS = [
   "version",
   "assetLibrary",
   "descriptorBinding",
+  "timeline",
+  "output",
+  "documentType",
   "canvasWidth",
   "canvasHeight"
 ];

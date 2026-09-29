@@ -1,4 +1,5 @@
 [
+  { "id": "t08-media", "track": "08", "order": "01", "path": "./track-08-media/08-01-media-studio.html", "jsonFiles": [{"json":"../../assets/json/demo-show/timeline-media/particle-morph.json"},{"json":"../../assets/json/demo-show/timeline-media/camera-product.json"},{"json":"../../assets/json/demo-show/timeline-media/data-film.json"}], "prerequisites": [], "status": "preview", "group": "Track 8 · Timeline and media", "title": "Deterministic animation and media studio", "summary": "Particle morphs, cameras, synthesized scores, dynamic clips and local PNG/GIF/MP4/WebM export.", "navSummary": "Timeline, audio and export", "highlights": ["No video AI provider required", "A single JSON can describe a complete film", "Optional models never download automatically"], "docLinks": [{"href":"../../docs/en/timeline-media.md","label":"Timeline and media"}] },
   {
     "id": "t00-01-simple",
     "track": "00",

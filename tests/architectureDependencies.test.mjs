@@ -367,7 +367,7 @@ test("apps/* do not import tools/scene-host (ThreeBox source) via any specifier"
   assert.deepEqual(violations, []);
 });
 
-test("browser scene-host remains deployable without packages/*", () => {
+test("ordinary browser scene-host remains deployable without optional media packages", () => {
   // The legacy host is the production baseline. Shared behavior may evolve, but it must not start
   // depending on workspace packages until that migration is explicitly completed.
   const packagesRoot = path.join(REPO_ROOT, "packages") + path.sep;
@@ -379,6 +379,12 @@ test("browser scene-host remains deployable without packages/*", () => {
     // It is never part of the browser hosts' deployable module graph.
     if (file.startsWith(path.join(sceneHostRoot, "desktop") + path.sep)) continue;
     for (const reference of collectModuleReferences(file)) {
+      // The new media workbench is a deliberately optional application module,
+      // loaded only by an explicit menu/card action, not a baseline migration.
+      if (relative(file) === "tools/scene-host/shared/js/mediaStudio.js" && reference === "@threejson/host-kit/js/mediaStudio.js") {
+        assert.match(fs.readFileSync(file, "utf8"), /await import\("@threejson\/host-kit\/js\/mediaStudio\.js"\)/);
+        continue;
+      }
       const resolved = resolveLocalReference(file, reference);
       if (resolved?.startsWith(packagesRoot) || /^@threejson\/(?!assets)/.test(reference)) {
         violations.push(`${relative(file)} -> ${reference}`);

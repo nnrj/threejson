@@ -1,7 +1,5 @@
 import { ParticleDescriptorError } from "./particleV2Descriptor.js";
 
-const DEFAULT_MAX_KEYFRAMES = 8;
-
 function finite(value, fallback) {
   const number = Number(value);
   return Number.isFinite(number) ? number : fallback;
@@ -10,14 +8,14 @@ function finite(value, fallback) {
 /**
  * Normalize a serialized particle lifecycle curve into deterministic, ordered
  * keyframes. Primitive arrays use evenly spaced times; object arrays preserve
- * explicit `t` values. The limit matches the bounded shader representation.
+ * explicit `t` values. Only an explicitly supplied backend/host budget limits it.
  */
 export function normalizeParticleLifecycleFrames(value, fallback, options = {}) {
-  const maxKeyframes = Math.max(2, Math.floor(finite(options.maxKeyframes, DEFAULT_MAX_KEYFRAMES)));
+  const maxKeyframes = options.maxKeyframes === undefined ? Infinity : Math.max(2, Math.floor(options.maxKeyframes));
   const list = Array.isArray(value) ? value : [];
   if (list.length > maxKeyframes) {
     throw new ParticleDescriptorError(
-      `Particle lifecycle curve has ${list.length} keyframes; the shared backend limit is ${maxKeyframes}`,
+      `Particle lifecycle curve has ${list.length} keyframes; the requested budget is ${maxKeyframes}`,
       "E_PARTICLE_LIFECYCLE_KEYFRAME_LIMIT",
       { keyframeCount: list.length, maxKeyframes }
     );
@@ -52,5 +50,3 @@ export function sampleParticleLifecycleSegment(frames, progress) {
   const b = frames[upper];
   return [a, b, (t - a.t) / Math.max(1e-9, b.t - a.t)];
 }
-
-export const PARTICLE_SHADER_KEYFRAME_LIMIT = DEFAULT_MAX_KEYFRAMES;

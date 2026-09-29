@@ -182,6 +182,14 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
     actionBtnHtml(t("threebox.sceneCard.fullscreen", "全屏"), "&#10021;")
   ].join("");
   el.appendChild(actionBar);
+  const mediaBtn = document.createElement("button");
+  mediaBtn.type = "button"; mediaBtn.className = "sceneCardActionBtn"; mediaBtn.textContent = "▣";
+  mediaBtn.title = t("threebox.sceneCard.mediaExport", "时间线 / 图片 / 视频"); mediaBtn.setAttribute("aria-label", mediaBtn.title);
+  mediaBtn.addEventListener("click", async () => {
+    try { const source = cardSession.export(); const { openSceneMediaStudio } = await import("../../shared/js/mediaStudio.js"); await openSceneMediaStudio(source, { name: currentLabel }); }
+    catch (error) { showToast(String(error.message || error), "error"); }
+  });
+  actionBar.appendChild(mediaBtn);
   const diagnosticsView = createSceneResourceDiagnosticsView();
   el.appendChild(diagnosticsView.element);
   const [downloadBtn, exportBtn, exportMeshBtn, openEditorBtn, openPlayerBtn, refreshBtn, fullscreenBtn] =

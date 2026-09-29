@@ -108,7 +108,14 @@ export function createPlaneScrollMotionStore() {
     }
   }
 
-  return { setupPlaneScrollMotion, disposePlaneScrollMotion, updatePlaneScrollMotion, dispose };
+  function evaluateAt(time) {
+    for (const plane of planeScrollTargets) {
+      const state = planeScrollStateMap.get(plane);
+      state.elapsed = time;
+      state.map.offset[state.axis === "v" ? "y" : "x"] = computePlaneScrollOffset(time, state.speedSigned);
+    }
+  }
+  return { setupPlaneScrollMotion, disposePlaneScrollMotion, updatePlaneScrollMotion, evaluateAt, dispose };
 }
 
 function resolveStore(runtimeScope) {

@@ -96,7 +96,17 @@ export function createShaderMotionStore() {
     motionTargets.clear();
   }
 
-  return { trackShaderMaterial, disposeShaderMotion, updateShaderMotion, dispose: reset, reset };
+  function evaluateAt(time, ctx = {}) {
+    globalElapsed = time;
+    for (const material of motionTargets) {
+      const state = motionStateMap.get(material); state.elapsed = time;
+      if (material.uniforms?.time) material.uniforms.time.value = time;
+      if (material.uniforms?.globalTime) material.uniforms.globalTime.value = time;
+      if (material.uniforms?.deltaTime) material.uniforms.deltaTime.value = 0;
+      getShaderPreset(state.presetId)?.updateUniforms?.(material, { ...ctx, deltaSeconds: 0, elapsed: time, globalElapsed: time, mesh: state.mesh, presetId: state.presetId });
+    }
+  }
+  return { trackShaderMaterial, disposeShaderMotion, updateShaderMotion, evaluateAt, dispose: reset, reset };
 }
 
 function resolveStore(runtimeScope) {

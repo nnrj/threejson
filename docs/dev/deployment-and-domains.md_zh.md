@@ -1,5 +1,13 @@
 # 部署范围与域名策略
 
+> **媒体功能更新（2026-09-29）。** 主动打开的媒体工作台复用
+> `packages/audio-kit/js`、`packages/media-kit/js`，以及 host-kit 中的
+> `mediaStudio.js` / `audioModelPanel.js` 两个浏览器模块。`.assetsignore` 仅放行这些
+> 运行文件，其他包、Node 缓存工具、包元数据和本地凭据仍排除。普通场景启动不依赖媒体包。
+> 此更新替代下文的 packages 整目录排除规则，不改变原部署策略。
+> 规则使用 [Cloudflare 规定的 gitignore 语法](https://developers.cloudflare.com/workers/static-assets/binding/)，
+> 已增加部署范围回归测试。
+
 > **实施更新（2026-07-29）。** 下文所述的部署范围排除规则、各应用独立的 Cloudflare
 > 部署骨架、显式来源白名单与弹出窗口 `postMessage` 握手均已实现。本次仍保留旧版
 > `tools/scene-host` 作为稳定的部署验证基线；React 应用尚未在本次改动中替代它。因而，

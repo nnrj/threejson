@@ -108,6 +108,19 @@ export function wirePlayerTopMenu(deps) {
   }
 
   document.getElementById("menuOpenSceneJson")?.addEventListener("click", openSceneJsonPicker);
+  const mediaButton = document.getElementById("menuExportMedia");
+  if (mediaButton) {
+    mediaButton.textContent = document.documentElement.lang.startsWith("en") ? "Timeline / Media export" : "时间线 / 图片与视频导出";
+    mediaButton.addEventListener("click", async () => {
+      closeAllTopMenus();
+      try {
+        const source = getLoadedSceneJsonText?.();
+        if (!source) throw new Error(document.documentElement.lang.startsWith("en") ? "Open a scene first." : "请先打开场景。");
+        const { openSceneMediaStudio } = await import("../../shared/js/mediaStudio.js");
+        await openSceneMediaStudio(JSON.parse(source));
+      } catch (error) { showMessage(String(error.message || error), "error"); }
+    });
+  }
   document.getElementById("menuLoadSceneJson")?.addEventListener("click", () => {
     sceneJsonFileInput?.click();
     closeAllTopMenus();

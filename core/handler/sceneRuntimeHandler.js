@@ -128,6 +128,7 @@ function assembleSceneRuntime(options, prepared){
 	const scene = prepared?.scene ?? createScene(config.scene);
 	const camera = prepared?.camera ?? createCamera(config.camera, width, height);
 	const renderer = prepared?.renderer;
+	let ownsRenderer = options.ownsRenderer !== false;
 	let activeComposer = prepared?.composer ?? options.composer ?? null;
 	const controls = createControls(camera, canvas, config.controls, scene);
 	const runtimeContext = isRuntimeContext(options.runtimeContext) ? options.runtimeContext : null;
@@ -154,7 +155,7 @@ function assembleSceneRuntime(options, prepared){
 		renderLoop.stop();
 		controls?.dispose?.();
 		activeComposer?.dispose?.();
-		renderer?.dispose?.();
+		if (ownsRenderer) renderer?.dispose?.();
 		if(runtimeContext){
 			detachRuntimeContext(scene);
 			if(options.disposeRuntimeContext === true){
@@ -171,6 +172,9 @@ function assembleSceneRuntime(options, prepared){
 		controls,
 		renderLoop,
 		runtimeContext,
+		// Hosts may transfer a successfully prepared renderer into their pool.
+		// Until transfer succeeds, failed construction still owns its cleanup.
+		setRendererOwnership: owned => { ownsRenderer = owned !== false; },
 		setComposer: composer => {
 			activeComposer = composer;
 			runtime.composer = composer;
@@ -212,7 +216,7 @@ function createSceneRuntime(options = {}){
 		height,
 		scene: createScene(config.scene),
 		camera: createCamera(config.camera, width, height),
-		renderer: createRenderer(options.canvas, config.renderer, width, height),
+		renderer: options.renderer ?? createRenderer(options.canvas, config.renderer, width, height),
 		composer: options.composer ?? null
 	});
 }

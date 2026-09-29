@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ThreeJSON · Timeline and media studio</title>
+  <script type="importmap">
+  {"imports":{
+    "threejson":"../../../builtins/full.js",
+    "threejson/runtime":"../../../core/runtime.js",
+    "threejson/timeline":"../../../core/timeline.js",
+    "threejson/archive":"../../../core/archive/index.js",
+    "@threejson/media-kit":"../../../packages/media-kit/js/index.js",
+    "@threejson/audio-kit":"../../../packages/audio-kit/js/index.js",
+    "@threejson/audio-kit/models":"../../../packages/audio-kit/js/models.js",
+    "three":"https://esm.sh/three@0.184.0",
+    "three/examples/jsm/":"https://esm.sh/three@0.184.0/examples/jsm/",
+    "@tweenjs/tween.js":"https://esm.sh/@tweenjs/tween.js@25.0.0",
+    "troika-three-text":"https://esm.sh/troika-three-text@0.52.4?deps=three@0.184.0",
+    "gifuct-js":"https://esm.sh/gifuct-js@2.1.2",
+    "fflate":"https://esm.sh/fflate@0.8.3",
+    "mediabunny":"https://cdn.jsdelivr.net/npm/mediabunny@1.60.0/dist/bundles/mediabunny.mjs",
+    "gifenc":"https://cdn.jsdelivr.net/npm/gifenc@1.0.3/dist/gifenc.esm.js"
+  }}
+  </script>
+  <style>
+    :root{color-scheme:dark;--panel:#20242e;--panel2:#2b3140;--text:#e4e9f2;--line:#64748b66}
+    body{margin:0;min-height:100vh;background:#101621;color:var(--text);font:16px/1.6 system-ui;display:grid;place-items:center}
+    main{width:min(660px,calc(100vw - 40px));padding:24px 0}h1{font-size:28px}button,select,a{font:inherit}button,select{border:1px solid var(--line);border-radius:8px;padding:10px 14px;background:var(--panel2);color:inherit;margin:6px 0;max-width:100%}a{color:#83b4ff}#status{overflow-wrap:anywhere}
+  </style>
+</head>
+<body><main>
+  <h1>ThreeJSON · 时间线与媒体 / Timeline & media</h1>
+  <p>单场景和多场景共用确定性时间。No AI or model download is needed for these examples.</p>
+  <label for="sample">示例 / Example</label><br>
+  <select id="sample"><option value="composition">多片段转场 / Composition</option><option value="particle-morph">粒子文字 / Particle typography</option><option value="camera-product">产品运镜 / Product camera</option><option value="data-film">数据动画 / Animated data</option></select>
+  <button id="open">打开工作台 / Open studio</button>
+  <p>浏览器会检测 MP4/WebM 编码能力。GIF 无声；图片导出当前定位时刻。字幕与配乐在工作台预览。</p>
+  <p>Codec support is browser-dependent. GIF has no sound. Still images capture the selected time.</p>
+  <a href="../../../docs/zh/timeline-media.md">文档 / Documentation</a><p id="status" role="status"></p>
+</main>
+<script type="module">
+  import { openSceneMediaStudio } from "../../../packages/host-kit/js/mediaStudio.js";
+  document.getElementById("open").onclick=async()=>{
+    try { await openSceneMediaStudio(new URL(`../../../assets/json/demo-show/timeline-media/${document.getElementById("sample").value}.json`,location.href).href); }
+    catch(error){document.getElementById("status").textContent=error.message;}
+  };
+</script>
+</body></html>

@@ -6,6 +6,8 @@
  * modules only when an archive API is called.
  */
 export { packTjzArchive } from "./tjzPackager.js";
+// Binary file map for optional media hosts: no Base64 or object URLs allocated.
+export { parseTjzArchive } from "./tjzParser.js";
 export {
   inspectTjzArchiveEntry,
   isTjzLike,

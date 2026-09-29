@@ -1,4 +1,5 @@
 [
+  { "id": "t08-media", "track": "08", "order": "01", "path": "./track-08-media/08-01-media-studio.html", "jsonFiles": [{"json":"../../assets/json/demo-show/timeline-media/particle-morph.json"},{"json":"../../assets/json/demo-show/timeline-media/camera-product.json"},{"json":"../../assets/json/demo-show/timeline-media/data-film.json"}], "prerequisites": [], "status": "preview", "group": "Track 8 · 时间线与媒体", "title": "确定性动画与媒体工作台", "summary": "粒子变形、运镜、电子配乐、动态片段和本机 PNG/GIF/MP4/WebM 导出。", "navSummary": "时间线、声音与导出", "highlights": ["不依赖 AI 视频供应商", "单个 JSON 也可描述完整作品", "可选模型不自动下载"], "docLinks": [{"href":"../../docs/zh/timeline-media.md","label":"时间线与媒体"}] },
   {
     "id": "t00-01-simple",
     "track": "00",

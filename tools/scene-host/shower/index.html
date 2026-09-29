@@ -28,6 +28,15 @@
     {
       "imports": {
         "threejson": "../../../builtins/full.js",
+        "threejson/runtime": "../../../core/runtime.js",
+        "threejson/timeline": "../../../core/timeline.js",
+        "threejson/archive": "../../../core/archive/index.js",
+        "@threejson/media-kit": "../../../packages/media-kit/js/index.js",
+        "@threejson/host-kit/js/mediaStudio.js": "../../../packages/host-kit/js/mediaStudio.js",
+        "@threejson/audio-kit": "../../../packages/audio-kit/js/index.js",
+        "@threejson/audio-kit/models": "../../../packages/audio-kit/js/models.js",
+        "mediabunny": "https://cdn.jsdelivr.net/npm/mediabunny@1.60.0/dist/bundles/mediabunny.mjs",
+        "gifenc": "https://cdn.jsdelivr.net/npm/gifenc@1.0.3/dist/gifenc.esm.js",
         "threejson/core": "../../../core/index.js",
         "threejson/assets": "../../../core/assets.js",
         "threejson/document": "../../../core/document.js",
@@ -139,6 +148,7 @@
           </label>
           <button id="audioMuteBtn" type="button" hidden data-i18n="muteAudio">静音</button>
           <button id="downloadHtmlBtn" type="button" data-i18n="downloadHtml">Download</button>
+          <button id="exportMediaBtn" type="button">图片 / 视频</button>
           <div class="menu">
             <button type="button" data-i18n="export">Export</button>
             <div class="menuPanel">

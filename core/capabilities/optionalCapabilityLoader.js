@@ -99,6 +99,7 @@ function containsRasterParticleSource(value, seen = new WeakSet()) {
   const objType = typeof value.objType === "string" ? value.objType.trim().toLowerCase() : "";
   const sourceType = typeof value.source?.type === "string" ? value.source.type.trim().toLowerCase() : "";
   if (objType === "particleemitter" && RASTER_PARTICLE_SOURCES.has(sourceType)) return true;
+  if (value.operator === "morph" && RASTER_PARTICLE_SOURCES.has(String(value.params?.source?.type || "").toLowerCase())) return true;
   return Object.values(value).some((entry) => containsRasterParticleSource(entry, seen));
 }
 

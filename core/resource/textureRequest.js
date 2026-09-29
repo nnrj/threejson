@@ -130,6 +130,7 @@ const materialRequests = new WeakMap();
 export function getMaterialTextureRequest(material, field) {
   return materialRequests.get(material)?.get(field)?.texture || material?.[field] || null;
 }
+export function getMaterialTextureRequests(material) { return [...(materialRequests.get(material)?.values() || [])].map((ticket) => ticket.texture); }
 export function bindTextureWhenReady(material, field, texture, options = {}) {
   let slots = materialRequests.get(material);
   if (!slots) { slots = new Map(); materialRequests.set(material, slots); }

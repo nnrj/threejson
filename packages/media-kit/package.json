@@ -1,0 +1,15 @@
+{
+  "name": "@threejson/media-kit",
+  "version": "0.1.0-alpha.3",
+  "description": "Optional deterministic ThreeJSON composition, image, GIF and video export.",
+  "type": "module",
+  "types": "./js/index.d.ts",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/nnrj/threejson.git", "directory": "packages/media-kit" },
+  "exports": { ".": "./js/index.js", "./reconstruction": "./js/reconstruction.js", "./package.json": "./package.json" },
+  "files": ["js", "README.md", "LICENSE"],
+  "dependencies": { "mediabunny": "^1.58.1", "gifenc": "^1.0.3" },
+  "peerDependencies": { "threejson": "^0.1.0-alpha.11", "@threejson/audio-kit": "^0.1.0-alpha.3", "three": ">=0.179.0" },
+  "devDependencies": { "threejson": "file:../..", "@threejson/audio-kit": "file:../audio-kit" },
+  "engines": { "node": ">=24.0.0" }
+}

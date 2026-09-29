@@ -1,6 +1,5 @@
 import * as THREE from "three";
-import { loadingManager } from "../../cache/loading.js";
-import { resolvePublicAssetUrl } from "../../util/assetsBase.js";
+import { bindParticleSpriteResource } from "./particleSpriteResource.js";
 import { trackDisposableResource } from "../../handler/trackedResourceRegistry.js";
 import { registerObject, getObjectByThreeJsonId } from "../../handler/objectRegistry.js";
 import { setUserDataObjJson } from "../../handler/objectDescriptorAttach.js";
@@ -238,9 +237,11 @@ function buildRenderable(descriptor, state) {
 
 function updateAttributes(state) {
   const { descriptor, points } = state;
-  const colorFrames = normalizeParticleLifecycleFrames(descriptor.particle.colorOverLife ?? descriptor.render.colorOverLife, descriptor.render.color);
-  const sizeFrames = normalizeParticleLifecycleFrames(descriptor.particle.sizeOverLife ?? descriptor.render.sizeOverLife, descriptor.render.size);
-  const opacityFrames = normalizeParticleLifecycleFrames(descriptor.particle.opacityOverLife ?? descriptor.render.opacityOverLife, descriptor.render.opacity);
+  // Curves are immutable within a registered simulation. Compile once rather
+  // than sorting/allocating them for every particle frame.
+  const colorFrames = state.colorFrames ??= normalizeParticleLifecycleFrames(descriptor.particle.colorOverLife ?? descriptor.render.colorOverLife, descriptor.render.color);
+  const sizeFrames = state.sizeFrames ??= normalizeParticleLifecycleFrames(descriptor.particle.sizeOverLife ?? descriptor.render.sizeOverLife, descriptor.render.size);
+  const opacityFrames = state.opacityFrames ??= normalizeParticleLifecycleFrames(descriptor.particle.opacityOverLife ?? descriptor.render.opacityOverLife, descriptor.render.opacity);
   const colorAttr = points.geometry.getAttribute("color"); const sizeAttr = points.geometry.getAttribute("particleSize"); const opacityAttr = points.geometry.getAttribute("particleOpacity");
   const progressAttr = points.geometry.getAttribute("particleProgress");
   for (let i = 0; i < state.count; i++) {
@@ -301,10 +302,19 @@ function pointsPositionNeedsUpdate(state) { state.points.geometry.getAttribute(s
 export function createParticleCpuSimulationStore() {
   const states = new WeakMap(); const targets = new Set();
   function disposeParticleCpuSimulation(points) { const state = states.get(points); if (!state) return; points.removeEventListener("removed", state.onRemoved); states.delete(points); targets.delete(points); }
-  function register(points, state) { state.points = points; state.onRemoved = () => disposeParticleCpuSimulation(points); points.addEventListener("removed", state.onRemoved); states.set(points, state); targets.add(points); }
+  function register(points, state) { state.points = points; state.initialAges = state.ages.slice(); state.initialAlive = state.alive.slice(); state.onRemoved = () => disposeParticleCpuSimulation(points); points.addEventListener("removed", state.onRemoved); states.set(points, state); targets.add(points); }
   function update(delta) { if (!(delta > 0)) return; for (const points of targets) { const state = states.get(points); if (!points?.parent || !state) { disposeParticleCpuSimulation(points); continue; } simulate(state, delta); } }
   function dispose() { for (const points of [...targets]) disposeParticleCpuSimulation(points); }
-  return { register, update, disposeParticleCpuSimulation, dispose };
+  function resetTime() {
+    for (const points of targets) {
+      const state = states.get(points);
+      state.elapsed = 0;
+      state.positions.set(state.origins); state.velocities.set(state.initialVelocities);
+      state.ages.set(state.initialAges); state.alive.set(state.initialAlive); state.rotations.set(state.initialRotations);
+      pointsPositionNeedsUpdate(state); updateAttributes(state);
+    }
+  }
+  return { register, update, resetTime, disposeParticleCpuSimulation, dispose };
 }
 
 function resolveStore(scope) { return resolveRuntimeContext(scope).particleCpuSimulation; }
@@ -315,14 +325,7 @@ function finishCpuEmitter(descriptor, scene, ctx, positions, random) {
   const state = buildState(descriptor, positions, random); const points = buildRenderable(descriptor, state);
   points.name = descriptor.name || "particle-emitter-cpu"; setUserDataObjJson(points, descriptor); applyTransform(points, descriptor); scene.add(points); state.points = points; updateAttributes(state);
   const spriteUrl = descriptor.render.sprite?.url ?? descriptor.render.sprite ?? descriptor.render.map;
-  if (typeof spriteUrl === "string" && spriteUrl.trim()) {
-    new THREE.TextureLoader(loadingManager).load(resolvePublicAssetUrl(spriteUrl), (texture) => {
-      if (!points.parent) { texture.dispose(); return; }
-      trackDisposableResource(texture);
-      points.material.uniforms.spriteMap.value = texture;
-      points.material.uniforms.useSpriteMap.value = true;
-    });
-  }
+  bindParticleSpriteResource(points, spriteUrl, scene);
   resolveStore(scene).register(points, state); return registerObject(points, descriptor);
 }
 

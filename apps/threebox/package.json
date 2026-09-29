@@ -12,6 +12,8 @@
     "versions:upload": "npm run build && wrangler versions upload"
   },
   "dependencies": {
+    "@threejson/media-kit": "file:../../packages/media-kit",
+    "@threejson/audio-kit": "file:../../packages/audio-kit",
     "@threejson/host-kit": "file:../../packages/host-kit",
     "@threejson/player-kit": "file:../../packages/player-kit",
     "@threejson/react": "file:../../packages/react",

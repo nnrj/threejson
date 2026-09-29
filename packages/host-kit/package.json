@@ -30,6 +30,8 @@
     "README.md"
   ],
   "peerDependencies": {
+    "@threejson/audio-kit": "^0.1.0-alpha.3",
+    "@threejson/media-kit": "^0.1.0-alpha.3",
     "threejson": "^0.1.0-alpha.11",
     "three": ">=0.179.0",
     "three-viewport-gizmo": ">=2.0.0"
@@ -48,6 +50,8 @@
   ],
   "license": "MIT",
   "peerDependenciesMeta": {
+    "@threejson/audio-kit": { "optional": true },
+    "@threejson/media-kit": { "optional": true },
     "three-viewport-gizmo": {
       "optional": true
     }

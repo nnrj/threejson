@@ -1,0 +1,204 @@
+{
+  "version": "next",
+  "name": "Timeline • particles become text",
+  "sceneConfig": {
+    "scene": {
+      "background": "#050915"
+    },
+    "camera": {
+      "fov": 46,
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 65
+      },
+      "lookAt": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    "controls": {
+      "target": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    }
+  },
+  "objectList": [
+    {
+      "objType": "particleEmitter",
+      "threeJsonId": "letters",
+      "source": {
+        "type": "box",
+        "width": 45,
+        "height": 24,
+        "depth": 22
+      },
+      "emission": {
+        "mode": "static",
+        "count": 5000,
+        "seed": 73
+      },
+      "particle": {
+        "lifetime": 0,
+        "colorOverLife": [
+          "#65e8ff"
+        ],
+        "sizeOverLife": [
+          0.28
+        ]
+      },
+      "simulation": {
+        "backend": "cpu"
+      },
+      "render": {
+        "type": "points",
+        "blending": "additive",
+        "depthWrite": false,
+        "opacity": 0.95
+      }
+    }
+  ],
+  "output": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30
+  },
+  "timeline": {
+    "version": 1,
+    "duration": 8,
+    "effects": [
+      {
+        "id": "gather",
+        "target": "letters",
+        "operator": "morph",
+        "start": 1,
+        "duration": 4,
+        "params": {
+          "seed": 17,
+          "source": {
+            "type": "textMask",
+            "text": "ThreeJSON",
+            "font": "700 90px sans-serif",
+            "width": 48,
+            "height": 40,
+            "depth": 0.5,
+            "resolution": 512
+          }
+        }
+      },
+      {
+        "id": "ripple",
+        "target": "letters",
+        "operator": "wave",
+        "start": 5,
+        "duration": 3,
+        "params": {
+          "amplitude": 0.4,
+          "frequency": 0.4,
+          "speed": 2
+        }
+      }
+    ],
+    "captions": [
+      {
+        "id": "caption",
+        "text": "From particles to a story",
+        "start": 0,
+        "duration": 8,
+        "y": 0.9,
+        "fontSize": 34
+      }
+    ],
+    "audio": [
+      {
+        "id": "music",
+        "start": 0,
+        "duration": 8,
+        "padSilence": true,
+        "gain": 0.8,
+        "fadeIn": 0.3,
+        "fadeOut": 1,
+        "recipe": {
+          "kind": "score",
+          "score": {
+            "version": 1,
+            "ppq": 480,
+            "tempos": [
+              {
+                "tick": 0,
+                "bpm": 60
+              }
+            ],
+            "tracks": [
+              {
+                "id": "bells",
+                "instrument": "bell",
+                "notes": [
+                  {
+                    "id": "note-0",
+                    "tick": 0,
+                    "duration": 360,
+                    "pitch": 60,
+                    "velocity": 0.65
+                  },
+                  {
+                    "id": "note-1",
+                    "tick": 480,
+                    "duration": 360,
+                    "pitch": 64,
+                    "velocity": 0.65
+                  },
+                  {
+                    "id": "note-2",
+                    "tick": 960,
+                    "duration": 360,
+                    "pitch": 67,
+                    "velocity": 0.65
+                  },
+                  {
+                    "id": "note-3",
+                    "tick": 1440,
+                    "duration": 360,
+                    "pitch": 72,
+                    "velocity": 0.65
+                  },
+                  {
+                    "id": "note-4",
+                    "tick": 1920,
+                    "duration": 360,
+                    "pitch": 67,
+                    "velocity": 0.65
+                  },
+                  {
+                    "id": "note-5",
+                    "tick": 2400,
+                    "duration": 360,
+                    "pitch": 64,
+                    "velocity": 0.65
+                  },
+                  {
+                    "id": "note-6",
+                    "tick": 2880,
+                    "duration": 360,
+                    "pitch": 62,
+                    "velocity": 0.65
+                  },
+                  {
+                    "id": "note-7",
+                    "tick": 3360,
+                    "duration": 360,
+                    "pitch": 60,
+                    "velocity": 0.65
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

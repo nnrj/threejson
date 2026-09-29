@@ -68,7 +68,7 @@ function resizeRendererToDisplaySize(renderer, camera, composer){
 function renderFrame(renderer, scene, camera, composer, config){
 	const renderMode = getConfigValue(config, 'renderMode', 'auto');
 	if(composer && renderMode !== 'rendererOnly'){
-		composer.render();
+		composer.render(config.frameDeltaSeconds);
 		return;
 	}
 	renderer.render(scene, camera);
@@ -127,6 +127,16 @@ function createRenderLoop(options = {}){
 	let lastControlsStepTime = null;
 	let fpsInterval = 1000 / (getConfigValue(config, 'fps', DEFAULT_FPS) || DEFAULT_FPS);
 	let controlsChangeListener = null;
+	let timeDriver = null;
+	let lastDriverTime = null;
+
+	// Manual export renders evaluated state without advancing any wall clocks.
+	function renderCurrentFrame(frame = {}){
+		if (frame.autoResize === true) autoResize();
+		if (scene && camera) syncViewModelsToCamera(scene, camera);
+		renderFrame(renderer, scene, camera, activeComposer, { ...config, frameDeltaSeconds: frame.deltaSeconds ?? 0 });
+		return true;
+	}
 
 	function shouldRender(now){
 		if(!getConfigValue(config, 'lowFps', false)){
@@ -160,7 +170,11 @@ function createRenderLoop(options = {}){
 			return false;
 		}
 		beforeFrame?.(now);
-		if(scene && getConfigValue(config, 'updateAnimations', true)){
+		if (timeDriver) {
+			const delta = lastDriverTime === null ? 0 : Math.max(0, (now - lastDriverTime) / 1000);
+			lastDriverTime = now;
+			timeDriver.advance(delta);
+		} else if(scene && getConfigValue(config, 'updateAnimations', true)){
 			const animOpts = {};
 			const md = getConfigValue(config, 'maxDeltaSeconds', undefined);
 			if(Number.isFinite(md)){
@@ -171,7 +185,7 @@ function createRenderLoop(options = {}){
 			updateAnimationStateMachines(scene, animDelta);
 			updateRegisteredAnimationMixers(scene, animDelta);
 		}
-		if (controls) {
+		if (controls && !timeDriver?.controlsLocked) {
 			let deltaSec = 0;
 			if (lastControlsStepTime !== null && Number.isFinite(now)) {
 				deltaSec = Math.min((now - lastControlsStepTime) / 1000, 0.25);
@@ -278,6 +292,7 @@ function createRenderLoop(options = {}){
 			return;
 		}
 		running = true;
+		lastDriverTime = null;
 		lastRenderTime = typeof performance !== 'undefined' ? performance.now() : Date.now();
 		bindDemandControls();
 		scheduleNextFrame();
@@ -285,6 +300,7 @@ function createRenderLoop(options = {}){
 
 	function stop(){
 		running = false;
+		lastDriverTime = null;
 		unbindDemandControls();
 		if(animationFrameId !== null){
 			cancelFrame(animationFrameId);
@@ -299,6 +315,8 @@ function createRenderLoop(options = {}){
 		setComposer,
 		invalidate,
 		renderOnce,
+		renderCurrentFrame,
+		setTimeDriver(driver) { timeDriver = driver; lastDriverTime = null; },
 		isRunning: () => running,
 		getAnimationFrameId: () => animationFrameId
 	};

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { createSceneToolHost } from "../js/index.js";
 import { reserveStdoutForProtocol } from "../js/stdio.js";
 
@@ -14,10 +15,21 @@ try {
     if (!tokens[i].startsWith("--")) throw new Error(`Expected --option, received ${tokens[i]}`);
     const key = tokens[i].slice(2); flags[key] = tokens[i + 1] && !tokens[i + 1].startsWith("--") ? tokens[++i] : true;
   }
-  if (command === "help") result = { ok: true, usage: ["threejson discover", "threejson query --file scene.json [--args '{...}']", "threejson preflight --file scene.json --commands edits.json", "threejson apply --file scene.json --commands edits.json [--output edited.json | --write]", "threejson check --file scene.json --args '{\"assertions\":[...]}'", "threejson browser-check --file scene.json", "threejson mcp"], note: "No AI calls or browser downloads by default. Existing output files require --expected-version HASH; --write checks the opened source version." };
+  if (command === "help") result = { ok: true, usage: ["threejson discover", "threejson query --file scene.json [--args '{...}']", "threejson preflight --file scene.json --commands edits.json", "threejson apply --file scene.json --commands edits.json [--output edited.json | --write]", "threejson check --file scene.json --args '{\"assertions\":[...]}'", "threejson browser-check --file scene.json", "threejson media-export --file scene.json --output movie.mp4 --browser PATH [--config media.json --fps 30 --end 8]", "threejson mcp"], note: "No AI calls or browser downloads by default. Media export refuses to overwrite outputs. Scene writes require --expected-version HASH or --write with the opened source version." };
   else if (command === "mcp") { const { createSceneMcpServer } = await import("../js/mcp.js"); await createSceneMcpServer().start(); }
   else if (command === "discover") result = host.discover();
   else if (command === "browser-check") { const { verifySceneInBrowser } = await import("../js/browser.js"); result = await verifySceneInBrowser({ file: flags.file, executablePath: flags.browser, capabilities: flags.capabilities ? flags.capabilities.split(",") : [] }); }
+  else if (command === "media-export") {
+    const { renderSceneMedia } = await import("../js/media.js");
+    const configuration = flags.config || flags.options;
+    const options = configuration ? JSON.parse(await readFile(configuration, "utf8")) : {};
+    if(configuration)for(const key of ["file","output","executablePath"])if(options[key])options[key]=path.resolve(path.dirname(path.resolve(configuration)),options[key]);
+    const controller = new AbortController(), cancel = () => controller.abort(); process.once("SIGINT", cancel);
+    try {
+      result = await renderSceneMedia({ ...options, file: flags.file || options.file, output: flags.output || options.output, format: flags.format || options.format, executablePath: flags.browser || options.executablePath, signal: controller.signal,
+        mediaOptions: { ...options.mediaOptions, ...Object.fromEntries(["width", "height", "fps", "start", "end", "time"].filter((key) => flags[key] !== undefined).map((key) => [key, Number(flags[key])])) } });
+    } finally { process.removeListener("SIGINT", cancel); }
+  }
   else if (command === "editor-bridge") {
     const { startEditorBridge } = await import("../js/editor-bridge.js");
     const bridge = await startEditorBridge({ origin: flags.origin, port: Number(flags.port) || 0 });

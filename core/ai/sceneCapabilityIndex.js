@@ -43,6 +43,7 @@ Effects and media:
 - shaderSurface uses a registered shaderPreset for requested shader surfaces; particleEmitter is only for an effect/weather/particle field that is actually needed; particleList/points is the legacy point-cloud path.
 - windList, heatList, weather domains, nature.sky, nature.water, sprites, tubes.
 - audioList supports ambient or positional audio attached to scene/camera/object; use audioUrl and sensible playback policy fields.
+- timeline supports authored seconds, stable-ID transform/material/morph/camera tracks, CPU particle motion effects, captions and optional audio recipes. Select timeline for movies, GIFs, kinetic typography or deliberate shot timing, not ordinary still scenes.
 - externalModelList/objModelList load GLTF/GLB/OBJ/STL/PLY/FBX/USD/USDZ assets; animationMode mixer and animationGraph support clip state machines where the format exposes clips. GLTF/GLB materialBindings can select loaded material slots and replace or patch them through the registered material factories.
 
 Domains:
@@ -87,6 +88,7 @@ ThreeJSON capability-selection index (selection only; do not author scene JSON i
 - complexMesh — genuinely free-form/organic/detailed mesh authoring; editableMesh — stable-ID control topology; rawBufferMesh — explicit complete coordinates; subdivisionSurface — Catmull-Clark/Loop; parametricSurface — parametric/NURBS/Bezier/lathe/loft/sweep; implicitSurface — SDF/scalar-field surface; meshModeling — topology operations; meshMorph — morph targets.
 - external — GLTF/GLB/OBJ/STL/PLY/FBX/USD/USDZ assets; audio — ambient/positional sound; shaderSurface — registered WebGL GLSL presets; postProcess — explicitly requested bloom/outline/FXAA/SMAA or registered pass presets.
 - events — clicks/pointer/keyboard behavior; lifecycle — scene/object ready/dispose behavior; declarativeAnimation — continuous transform/expression animation; animationGraph — imported-model clip state machines.
+- timeline — timed scenes, camera choreography, particle morph/motion, captions, procedural video/GIF and music; still images can capture a chosen scene time. Do not confuse video export with loading a video texture.
 - Select only ids whose detailed syntax/examples the authoring model actually needs. Do not select advanced capabilities for generic quality, realism, detail, or style wording.
 
 ${THREE_JSON_DOMAIN_CAPABILITY_INDEX.trim()}
@@ -248,6 +250,14 @@ Optional parameter/relationship authoring (root design, version:1):
       ? THREE_JSON_AGENT_NEGOTIATION_INDEX_BASE
       : THREE_JSON_AGENT_CAPABILITY_INDEX_BASE).trim(),
     runtimeSnapshot,
+    (!negotiationOnly && options.selectedCapabilityIds?.includes("timeline")) ? `
+Timeline authoring (seconds, not milliseconds): retain the normal standard scene root and objectList. Add timeline:{version:1,duration:8,tracks:[{id:"move",target:"object-id",property:"position",keyframes:[{time:0,value:[0,0,0]},{time:8,value:[4,0,0]}]}]}.
+Targets use existing threeJsonId, "$camera" or "$scene". Properties include position/rotation/scale (arrays or .x/.y/.z), visible (step), material.color (CSS color), material.opacity, morphTargetInfluences.0, camera fov and lookAt:[x,y,z]. Quaternion tracks use [x,y,z,w]. Easing: linear, step, smoothstep, easeIn/easeOut/easeInOut. Assign unique track IDs and strictly increasing keyframe times. Keyframes are runtime output, not commands per frame.
+Use timeline.effects:[{id,target,operator:"wave|swirl|orbit|morph",start:0,duration:3,params:{...}}] for static CPU point-cloud effects. Morph params.source is a Particle V2 source (positions/box/sphere/textMask/imageMask...), deterministically sampled to the existing point count. Choose CPU static emission for these effects, not GPU compute. Wave params amplitude/frequency/speed; swirl speed/twist; orbit radius/speed. Custom operator names must be explicitly registered by the host. Keep dynamic fire/rain in their simulation instead.
+Use timeline.captions:[{id,text,start,duration,x:0.5,y:0.9,fontSize:36,color:"#ffffff"}] for screen captions in media preview/export. Coordinates x/y are normalized. Root output:{width:1920,height:1080,fps:30} is an export preference, not a geometry cap.
+Use timeline.audio:[{id,start,duration,url,sourceStart:0,rate:1,gain:1,pan:0,fadeIn:0.2,fadeOut:0.3}] for audio assets. Never invent an audio URL or available speech model. Alternatively recipe:{kind:"score",score:{version:1,ppq:480,tempos:[{tick:0,bpm:120}],tracks:[{id:"melody",instrument:"soft-piano",notes:[{id:"n1",tick:0,duration:480,pitch:60,velocity:0.7}]}]}} uses local synthesis; built-ins sine/triangle/soft-piano/bell/noise, MIDI pitch 0..127, ticks not seconds. Same tie string joins adjacent equal-pitch notes; score.repeats uses startTick/endTick/count. Audio beyond the authored duration needs an explicit duration edit, not silent trimming. TTS requires a registered producer and installed compatible model; ordinary browser speech is preview-only, not exportable PCM.
+Generate an ordinary single scene with timeline by default; do not emit a composition root to a host expecting objectList. The optional media-kit API can assemble compositionVersion:1/documentType:"composition" with scenes and timeline.clips externally. Existing JSON Patch operations edit /timeline atomically; never rewrite unrelated geometry to change camera motion or timing.
+` : "",
     designAuthoring.trim(),
     modelingAuthoring.trim(),
     complexMeshAuthoring.trim(),

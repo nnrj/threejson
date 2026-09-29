@@ -16,6 +16,11 @@ export const SCENE_CAPABILITY_STATUS = Object.freeze({
 const VALID_STATUSES = new Set(Object.values(SCENE_CAPABILITY_STATUS));
 
 const BUILTIN_CAPABILITIES = Object.freeze({
+  timelines: Object.freeze({
+    absoluteTracks: Object.freeze({ status: "preview", entry: "threejson/timeline", activation: "descriptor", version: 1 }),
+    fixedStepReplay: Object.freeze({ status: "preview", entry: "threejson/timeline", backends: ["cpu", "webgl-compute"] }),
+    pointCloudEffects: Object.freeze({ status: "preview", entry: "threejson/timeline", operators: ["wave", "swirl", "orbit", "morph"], backend: "cpu" })
+  }),
   authoring: Object.freeze({
     sceneDesign: Object.freeze({ status: "stable", version: 1, units: ["m", "cm", "mm", "km", "in", "ft", "deg", "rad", "s", "ms"],
       relations: ["attach", "lookAt"], evaluation: "static-dependency-graph", entry: "threejson/document" })

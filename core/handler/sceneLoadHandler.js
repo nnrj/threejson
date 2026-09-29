@@ -1336,6 +1336,8 @@ function buildRuntimeCreationOptions(normalized, options, lifecycleBus, runtimeF
       };
     const creation = runtimeFactory({
       canvas: options.canvas,
+      renderer: options.renderer,
+      ownsRenderer: options.ownsRenderer,
       config: {
         canvasWidth: sizeHint.width,
         canvasHeight: sizeHint.height,
@@ -1535,6 +1537,7 @@ function resolveRuntimeLoadOptions(normalized, callerOptions = {}) {
 }
 
 async function createJsonScene(payload, options = {}) {
+  if (payload?.documentType === "composition") throw Object.assign(new Error("A composition requires a composition runtime; this API loads one scene."), { code: "COMPOSITION_REQUIRES_MEDIA_RUNTIME" });
   const preparation = await ensureOptionalSceneCapabilitiesForPayload(payload, options);
   options = { ...options, preparedBufferReferences: preparation.bufferReferences };
   assertPayloadCapabilitiesBeforePreparation(payload);
@@ -1553,6 +1556,10 @@ async function createJsonScene(payload, options = {}) {
   // event bindings, animation registries, asset/texture caches, etc. never collide with
   // a concurrently-mounted sibling canvas's. Single-canvas callers see no behavior change.
   const runtimeCtx = configureSceneResourcePolicy(createRuntimeContext(), payload, options);
+  if (options.audioPlaybackPolicy) {
+    runtimeCtx.audioSession.policy.paused = options.audioPlaybackPolicy.paused === true;
+    runtimeCtx.audioSession.policy.masterVolume = Number.isFinite(options.audioPlaybackPolicy.masterVolume) ? Math.min(1, Math.max(0, options.audioPlaybackPolicy.masterVolume)) : 1;
+  }
 
   const loadOptions = {
     ...mergedLoadOptions,
@@ -1647,6 +1654,10 @@ async function createJsonScene(payload, options = {}) {
 
     deployed.runtimeContext = runtimeCtx;
     attachLifecycleBusToRuntime(deployed, bus, runtimeCtx);
+    if (payload?.timeline && options.timeline !== false) {
+      const { attachSceneTimeline } = await import("../timeline/playback.js");
+      await attachSceneTimeline(deployed, payload.timeline, { autoPlay: options.timelineAutoPlay ?? normalized.renderLoopConfig?.autoStart !== false });
+    }
     return deployed;
   } catch (error) {
     runtimeCtx.dispose();
@@ -1800,6 +1811,7 @@ async function createJsonSceneFromArchive(input, options = {}) {
  * @returns {object}
  */
 function createJsonSceneSimple(payload, options = {}) {
+  if (payload?.documentType === "composition") throw Object.assign(new Error("A composition requires a composition runtime; this API loads one scene."), { code: "COMPOSITION_REQUIRES_MEDIA_RUNTIME" });
   assertSimpleSceneHasNoAsyncOptionalCapabilities(payload);
   assertPayloadCapabilitiesBeforePreparation(payload);
   assertCsgBrushOpsReadyForPayload(payload);
@@ -1863,6 +1875,7 @@ function createJsonSceneSimple(payload, options = {}) {
  * @param {{ resetScene?: boolean, context?: object }} [options]
  */
 async function deployJsonScene(target, payload, options = {}) {
+  if (payload?.documentType === "composition") throw Object.assign(new Error("A composition cannot be deployed as one scene."), { code: "COMPOSITION_REQUIRES_MEDIA_RUNTIME" });
   const targetBackend = rendererBackendForTarget(target);
   const preparation = await ensureOptionalSceneCapabilitiesForPayload(payload, options);
   resolveRuntimeContext(target).registerPreparedBufferReferences?.(preparation.bufferReferences);
@@ -1882,6 +1895,7 @@ async function deployJsonScene(target, payload, options = {}) {
   // Deploying into an existing target (no new Scene): only cancel *this* target's
   // own in-flight scheduled deploy, never a sibling canvas's.
   cancelActiveDeployScheduler(target);
+  target.timeline?.dispose();
   const deployed = await deployIntoTarget(target, normalized, options);
   bindLightRelationships(deployed.scene || deployed);
   const runtime = extractDeploymentTarget(deployed);
@@ -1892,6 +1906,10 @@ async function deployJsonScene(target, payload, options = {}) {
     resolveRuntimeLoadOptions(normalized, options)
   );
   await runScenePostLoadIntroIfConfigured(normalized, options);
+  if (payload.timeline && options.timeline !== false && runtime.renderLoop) {
+    const { attachSceneTimeline } = await import("../timeline/playback.js");
+    await attachSceneTimeline(runtime, payload.timeline, { autoPlay: options.timelineAutoPlay ?? normalized.renderLoopConfig?.autoStart !== false });
+  }
   return deployed;
 }
 

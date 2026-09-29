@@ -16,8 +16,8 @@ if (typeof strFromU8 !== "function" || typeof unzipSync !== "function") {
   throw new Error("ThreeJSON .tjz loading requires the optional peer: npm install fflate");
 }
 
-function unzipToFileMap(bytes) {
-  const unzipped = unzipSync(bytes);
+async function unzipToFileMap(bytes, asynchronous = false) {
+  const unzipped = asynchronous ? await new Promise((resolve, reject) => fflate.unzip(bytes, (error, files) => error ? reject(error) : resolve(files))) : unzipSync(bytes);
   const map = new Map();
   for (const [rawPath, data] of Object.entries(unzipped)) {
     const path = normalizeArchivePath(rawPath);
@@ -51,7 +51,7 @@ async function parseTjzArchive(input, options = {}) {
   if (!isZipMagic(bytes)) {
     throw new Error("[archive] input is not a valid zip archive");
   }
-  const fileMap = unzipToFileMap(bytes);
+  const fileMap = await unzipToFileMap(bytes, options.async === true);
   if (!fileMap.size) {
     throw new Error("[archive] archive is empty");
   }

@@ -19,6 +19,7 @@ import { resolveArchiveEntryKind } from "../util/archiveEntryKind.js";
  */
 async function parseTjzArchiveForScene(input, options = {}) {
   const parsed = await parseTjzArchive(input);
+  if (parsed.entryKind === "composition") throw Object.assign(new Error("This archive is a timeline composition, not a single scene. Open it with @threejson/media-kit or the media studio."), { code: "COMPOSITION_REQUIRES_MEDIA_RUNTIME" });
   const policy = options.missingAssetPolicy || parsed.manifest?.missingAssetPolicy || "warn";
   const rewritten = createArchiveResourceDocument(parsed, {
     missingAssetPolicy: policy,

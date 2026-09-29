@@ -12,6 +12,8 @@ export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url
 export const PACKAGE_PLAN = Object.freeze([
   { key: "assets", name: "@threejson/assets", dir: "assets", versionGroup: "assets" },
   { key: "threejson", name: "threejson", dir: ".", versionGroup: "threejson" },
+  { key: "audio-kit", name: "@threejson/audio-kit", dir: "packages/audio-kit", versionGroup: "packages" },
+  { key: "media-kit", name: "@threejson/media-kit", dir: "packages/media-kit", versionGroup: "packages" },
   { key: "scene-tools", name: "@threejson/scene-tools", dir: "packages/scene-tools", versionGroup: "packages" },
   { key: "host-kit", name: "@threejson/host-kit", dir: "packages/host-kit", versionGroup: "packages" },
   { key: "editor-kit", name: "@threejson/editor-kit", dir: "packages/editor-kit", versionGroup: "packages" },
@@ -31,6 +33,8 @@ const PACKAGE_BY_NAME = new Map(PACKAGE_PLAN.map((item) => [item.name, item]));
 const VERSION_PATTERN = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?(?:\+[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?$/;
 const REQUIRED_THREEJSON_PACKAGE_FILES = Object.freeze([
   "core/runtime.js",
+  "core/timeline.js",
+  "core/timeline.d.ts",
   "core/ai/index.js",
   "core/document.js",
   "core/session.js",

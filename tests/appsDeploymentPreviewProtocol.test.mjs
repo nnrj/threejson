@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
+import { spawnSync } from "node:child_process";
 import {
   SCENE_PREVIEW_ALLOWED_ORIGINS,
   configureScenePreviewAllowedOrigins,
@@ -36,7 +37,7 @@ test("root deployment ignore list excludes non-runtime projects and credentials"
   for (const entry of [
     "servertmp/",
     "apps/",
-    "packages/",
+    "packages/*",
     "tests/",
     "**/dist/",
     "docs/dev/",
@@ -47,6 +48,18 @@ test("root deployment ignore list excludes non-runtime projects and credentials"
   ]) {
     assert.match(ignore, linePattern(entry), entry);
   }
+});
+
+test("deployment includes opt-in media modules without exposing other packages or secrets", () => {
+  const included = ["packages/audio-kit/js/index.js", "packages/audio-kit/js/models.js", "packages/media-kit/js/index.js", "packages/media-kit/js/gifWorkerRuntime.js", "packages/host-kit/js/mediaStudio.js", "packages/host-kit/js/audioModelPanel.js"];
+  const excluded = ["packages/scene-tools/js/index.js", "packages/host-kit/js/aiTurnOrchestrator.js", "packages/audio-kit/js/nodeModels.js", "packages/audio-kit/package.json", "packages/media-kit/.env", "packages/audio-kit/js/.dev.vars", "servertmp/threebox-server/.dev.vars"];
+  // Cloudflare documents .assetsignore as gitignore syntax. Use the actual Git
+  // matcher, including parent-directory exclusion rules, not regex approximations.
+  const checked = spawnSync("git", ["-c", `core.excludesFile=${path.join(REPO_ROOT, ".assetsignore")}`, "check-ignore", "--no-index", "--stdin"], { cwd: REPO_ROOT, input: [...included, ...excluded].join("\n") + "\n", encoding: "utf8", windowsHide: true });
+  assert.equal(checked.status, 0, checked.stderr || checked.error?.message);
+  const ignored = new Set(checked.stdout.trim().split(/\r?\n/));
+  for (const file of included) assert.ok(!ignored.has(file), `Runtime file excluded: ${file}`);
+  for (const file of excluded) assert.ok(ignored.has(file), `Development/private file exposed: ${file}`);
 });
 
 test("each React product carries independent Cloudflare deployment hygiene", () => {

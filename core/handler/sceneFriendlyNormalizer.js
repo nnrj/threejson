@@ -768,6 +768,7 @@ function buildCanonicalScenePayloadFromFriendly(sourcePayload) {
 }
 
 function copySceneDocumentMetadata(sourcePayload, targetPayload, canvasMeta = {}) {
+  for (const key of ["timeline", "output", "documentType"]) if (sourcePayload[key] !== undefined) targetPayload[key] = clonePlainValue(sourcePayload[key]);
   if (typeof sourcePayload.threeJsonId === "string" && sourcePayload.threeJsonId) {
     targetPayload.threeJsonId = sourcePayload.threeJsonId;
   }
@@ -1088,6 +1089,7 @@ function buildCompatPayloadFromCanonical(sourcePayload, canonicalPayload, splitS
     sceneConfig,
     worldInfo
   };
+  copySceneDocumentMetadata(sourcePayload, compatPayload);
   if (typeof sourcePayload.threeJsonId === "string" && sourcePayload.threeJsonId) {
     compatPayload.threeJsonId = sourcePayload.threeJsonId;
   } else if (typeof canonicalPayload.threeJsonId === "string" && canonicalPayload.threeJsonId) {

@@ -1,0 +1,12 @@
+{
+  "name": "@threejson/audio-kit",
+  "version": "0.1.0-alpha.3",
+  "description": "Optional score, deterministic synthesis, PCM mixing and local model storage for ThreeJSON.",
+  "type": "module",
+  "types": "./js/index.d.ts",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/nnrj/threejson.git", "directory": "packages/audio-kit" },
+  "exports": { ".": "./js/index.js", "./models": "./js/models.js", "./node-models": "./js/nodeModels.js", "./worker-producer": "./js/workerProducer.js", "./sherpa": "./js/sherpa.js", "./soundfont": "./js/soundfont.js", "./package.json": "./package.json" },
+  "files": ["js", "README.md", "LICENSE"],
+  "engines": { "node": ">=24.0.0" }
+}

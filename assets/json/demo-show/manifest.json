@@ -984,6 +984,18 @@
     ]
   },
   {
+    "section": "timeline-media",
+    "sectionTitle": "时间线与程序化视频",
+    "sectionTitleEn": "Timeline & Procedural Media",
+    "items": [
+      { "id": "timeline-particles", "title": "粒子聚合文字与波动", "titleEn": "Particle typography and waves", "desc": "确定性粒子变形；点击“图片 / 视频”预览字幕、配乐并导出。", "descEn": "Deterministic morphing. Use Image / Video for captions, music and export.", "json": "assets/json/demo-show/timeline-media/particle-morph.json" },
+      { "id": "timeline-camera", "title": "产品运镜与材质动画", "titleEn": "Product camera and material animation", "desc": "单个场景的相机轨道与材质颜色动画，可定位到任意时间导出图片。", "descEn": "One scene with camera and material tracks. Seek to any time for a still.", "json": "assets/json/demo-show/timeline-media/camera-product.json" },
+      { "id": "timeline-data", "title": "数据动画与电子配乐", "titleEn": "Animated data and synthesized score", "desc": "规则模型、图表和字幕也能制作视频，无需粒子或 AI 视频供应商。", "descEn": "Geometry, data and captions can make videos without a video AI provider.", "json": "assets/json/demo-show/timeline-media/data-film.json" },
+      { "id": "timeline-composition", "title": "多场景动态片段与转场", "titleEn": "Dynamic clips and transitions", "desc": "媒体工作台：单场景、多场景 JSON / .tjz，播放、定位和本机导出。", "descEn": "Media studio: scenes or compositions, JSON / .tjz, playback and local export.", "external": "examples/html-demo/track-08-media/08-01-media-studio.html" }
+    ],
+    "docLinks": [{ "file": "timeline-media.md", "label": "时间线与媒体", "labelEn": "Timeline and media" }]
+  },
+  {
     "section": "misc",
     "sectionTitle": "其他",
     "sectionTitleEn": "Misc",

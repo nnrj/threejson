@@ -7,9 +7,10 @@ function normalizeMissingAssetPolicy(manifest = {}) {
 
 function normalizeEntryKind(kind, fallback = "scene") {
   const normalized = String(kind || "").trim().toLowerCase();
-  if (normalized === "scene" || normalized === "object") {
+  if (normalized === "scene" || normalized === "object" || normalized === "composition") {
     return normalized;
   }
+  if (normalized) throw new Error(`[archive] unsupported entryKind: ${kind}`);
   return fallback;
 }
 

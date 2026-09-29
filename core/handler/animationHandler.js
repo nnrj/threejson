@@ -270,8 +270,18 @@ function computeSceneAnimationDelta(scene, deltaSeconds, options = {}){
 	return Math.min(currentDeltaSeconds, maxDeltaSeconds);
 }
 
+/** Sample legacy declarative animations after the caller restores authoring transforms.
+ * No tweens, events or simulation side effects are advanced here. */
+function evaluateDeclarativeAnimationsAt(scene, time){
+	scene.traverse(object => {
+		objectAnimationStateMap.delete(object);
+		updateObjectAnimations(object, time);
+	});
+}
+
 export {
 	updateSceneAnimations,
 	computeSceneAnimationDelta,
+	evaluateDeclarativeAnimationsAt,
 	getAnimationMode
 }

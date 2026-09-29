@@ -113,9 +113,10 @@ test("lifecycle curves preserve intermediate peaks across particle backends", ()
   assert.equal(a.value + (b.value - a.value) * factor, 0.9);
 });
 
-test("lifecycle curves reject keys beyond the shared shader contract instead of truncating", () => {
+test("lifecycle curves have no shared eight-key cap, but honor explicit host budgets", () => {
+  assert.equal(normalizeParticleLifecycleFrames(Array.from({ length: 32 }, (_, index) => index), 0).length, 32);
   assert.throws(
-    () => normalizeParticleLifecycleFrames(Array.from({ length: 9 }, (_, index) => index), 0),
+    () => normalizeParticleLifecycleFrames(Array.from({ length: 9 }, (_, index) => index), 0, { maxKeyframes: 8 }),
     (error) => error?.code === "E_PARTICLE_LIFECYCLE_KEYFRAME_LIMIT"
       && error?.keyframeCount === 9
       && error?.maxKeyframes === 8

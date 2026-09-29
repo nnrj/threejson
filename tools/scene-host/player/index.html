@@ -9,6 +9,15 @@
     {
       "imports": {
         "threejson": "../../../builtins/full.js",
+        "threejson/runtime": "../../../core/runtime.js",
+        "threejson/timeline": "../../../core/timeline.js",
+        "threejson/archive": "../../../core/archive/index.js",
+        "@threejson/media-kit": "../../../packages/media-kit/js/index.js",
+        "@threejson/host-kit/js/mediaStudio.js": "../../../packages/host-kit/js/mediaStudio.js",
+        "@threejson/audio-kit": "../../../packages/audio-kit/js/index.js",
+        "@threejson/audio-kit/models": "../../../packages/audio-kit/js/models.js",
+        "mediabunny": "https://cdn.jsdelivr.net/npm/mediabunny@1.60.0/dist/bundles/mediabunny.mjs",
+        "gifenc": "https://cdn.jsdelivr.net/npm/gifenc@1.0.3/dist/gifenc.esm.js",
         "threejson/core": "../../../core/index.js",
         "threejson/runtime-config": "../../../core/runtimeConfig.js",
         "three": "https://esm.sh/three@0.184.0",
@@ -37,6 +46,7 @@
             <button type="button" id="menuLoadSceneJson" data-i18n="player.shell.menuLoadSceneJson">Load ThreeJSON</button>
             <button type="button" id="menuLoadNativeThreeJson" data-i18n="player.shell.menuLoadNativeThreeJson">Load Native JSON</button>
             <button type="button" id="menuLoadTjzArchive" data-i18n="player.shell.menuLoadTjzArchive">Load .tjz Archive</button>
+            <button type="button" id="menuExportMedia">Timeline / Media export</button>
           </div>
         </details>
         <details class="topMenu">

@@ -1,0 +1,271 @@
+{
+  "version": "next",
+  "name": "Timeline • product camera",
+  "sceneConfig": {
+    "scene": {
+      "background": "#111827"
+    },
+    "camera": {
+      "fov": 42,
+      "position": {
+        "x": 7,
+        "y": 5,
+        "z": 10
+      },
+      "lookAt": {
+        "x": 0,
+        "y": 1,
+        "z": 0
+      }
+    },
+    "controls": {
+      "target": {
+        "x": 0,
+        "y": 1,
+        "z": 0
+      }
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "intensity": 0.7
+      },
+      {
+        "type": "directional",
+        "intensity": 3.5,
+        "position": {
+          "x": 6,
+          "y": 10,
+          "z": 6
+        }
+      },
+      {
+        "type": "directional",
+        "intensity": 1.6,
+        "color": "#78aaff",
+        "position": {
+          "x": -6,
+          "y": 4,
+          "z": -4
+        }
+      }
+    ]
+  },
+  "objectList": [
+    {
+      "objType": "sphere",
+      "threeJsonId": "orb",
+      "position": {
+        "x": 0,
+        "y": 1.5,
+        "z": 0
+      },
+      "material": {
+        "type": "physical",
+        "color": "#d47736",
+        "metalness": 0.25,
+        "roughness": 0.22,
+        "clearcoat": 1
+      },
+      "geometry": {
+        "radius": 1.5
+      }
+    },
+    {
+      "objType": "box",
+      "threeJsonId": "plinth",
+      "position": {
+        "x": 0,
+        "y": -0.1,
+        "z": 0
+      },
+      "material": {
+        "type": "standard",
+        "color": "#374151",
+        "roughness": 0.6
+      },
+      "geometry": {
+        "width": 5,
+        "height": 0.2,
+        "depth": 5
+      }
+    }
+  ],
+  "timeline": {
+    "version": 1,
+    "duration": 8,
+    "tracks": [
+      {
+        "id": "camera-position",
+        "target": "$camera",
+        "property": "position",
+        "easing": "smoothstep",
+        "keyframes": [
+          {
+            "time": 0,
+            "value": [
+              7,
+              5,
+              10
+            ]
+          },
+          {
+            "time": 4,
+            "value": [
+              -5,
+              3,
+              7
+            ]
+          },
+          {
+            "time": 8,
+            "value": [
+              0,
+              2,
+              6
+            ]
+          }
+        ]
+      },
+      {
+        "id": "camera-target",
+        "target": "$camera",
+        "property": "lookAt",
+        "keyframes": [
+          {
+            "time": 0,
+            "value": [
+              0,
+              1.3,
+              0
+            ]
+          },
+          {
+            "time": 8,
+            "value": [
+              0,
+              1.3,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "finish",
+        "target": "orb",
+        "property": "material.color",
+        "keyframes": [
+          {
+            "time": 0,
+            "value": "#d47736"
+          },
+          {
+            "time": 4,
+            "value": "#73a5cf"
+          },
+          {
+            "time": 8,
+            "value": "#ea955f"
+          }
+        ]
+      }
+    ],
+    "captions": [
+      {
+        "id": "title",
+        "text": "A scene is also a film",
+        "start": 0,
+        "duration": 8,
+        "fontSize": 32
+      }
+    ],
+    "audio": [
+      {
+        "id": "music",
+        "start": 0,
+        "duration": 8,
+        "padSilence": true,
+        "gain": 0.8,
+        "fadeIn": 0.3,
+        "fadeOut": 1,
+        "recipe": {
+          "kind": "score",
+          "score": {
+            "version": 1,
+            "ppq": 480,
+            "tempos": [
+              {
+                "tick": 0,
+                "bpm": 60
+              }
+            ],
+            "tracks": [
+              {
+                "id": "bells",
+                "instrument": "bell",
+                "notes": [
+                  {
+                    "id": "note-0",
+                    "tick": 0,
+                    "duration": 360,
+                    "pitch": 60,
+                    "velocity": 0.65
+                  },
+                  {
+                    "id": "note-1",
+                    "tick": 480,
+                    "duration": 360,
+                    "pitch": 64,
+                    "velocity": 0.65
+                  },
+                  {
+                    "id": "note-2",
+                    "tick": 960,
+                    "duration": 360,
+                    "pitch": 67,
+                    "velocity": 0.65
+                  },
+                  {
+                    "id": "note-3",
+                    "tick": 1440,
+                    "duration": 360,
+                    "pitch": 72,
+                    "velocity": 0.65
+                  },
+                  {
+                    "id": "note-4",
+                    "tick": 1920,
+                    "duration": 360,
+                    "pitch": 67,
+                    "velocity": 0.65
+                  },
+                  {
+                    "id": "note-5",
+                    "tick": 2400,
+                    "duration": 360,
+                    "pitch": 64,
+                    "velocity": 0.65
+                  },
+                  {
+                    "id": "note-6",
+                    "tick": 2880,
+                    "duration": 360,
+                    "pitch": 62,
+                    "velocity": 0.65
+                  },
+                  {
+                    "id": "note-7",
+                    "tick": 3360,
+                    "duration": 360,
+                    "pitch": 60,
+                    "velocity": 0.65
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

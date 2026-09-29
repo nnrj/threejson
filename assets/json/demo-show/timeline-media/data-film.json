@@ -1,0 +1,439 @@
+{
+  "version": "next",
+  "name": "Timeline • animated data",
+  "sceneConfig": {
+    "scene": {
+      "background": "#0b1223"
+    },
+    "camera": {
+      "fov": 40,
+      "position": {
+        "x": 0,
+        "y": 4,
+        "z": 10
+      },
+      "lookAt": {
+        "x": 0,
+        "y": 2,
+        "z": 0
+      }
+    },
+    "controls": {
+      "target": {
+        "x": 0,
+        "y": 2,
+        "z": 0
+      }
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "intensity": 1
+      },
+      {
+        "type": "directional",
+        "intensity": 2,
+        "position": {
+          "x": 4,
+          "y": 8,
+          "z": 5
+        }
+      }
+    ]
+  },
+  "objectList": [
+    {
+      "objType": "box",
+      "threeJsonId": "bar-0",
+      "position": {
+        "x": -3.2,
+        "y": 0.5,
+        "z": 0
+      },
+      "material": {
+        "type": "standard",
+        "color": "#6699ff"
+      },
+      "geometry": {
+        "width": 1,
+        "height": 1,
+        "depth": 1
+      }
+    },
+    {
+      "objType": "box",
+      "threeJsonId": "bar-1",
+      "position": {
+        "x": -1.6,
+        "y": 0.5,
+        "z": 0
+      },
+      "material": {
+        "type": "standard",
+        "color": "#62c8eb"
+      },
+      "geometry": {
+        "width": 1,
+        "height": 1,
+        "depth": 1
+      }
+    },
+    {
+      "objType": "box",
+      "threeJsonId": "bar-2",
+      "position": {
+        "x": 0,
+        "y": 0.5,
+        "z": 0
+      },
+      "material": {
+        "type": "standard",
+        "color": "#62d9b1"
+      },
+      "geometry": {
+        "width": 1,
+        "height": 1,
+        "depth": 1
+      }
+    },
+    {
+      "objType": "box",
+      "threeJsonId": "bar-3",
+      "position": {
+        "x": 1.6,
+        "y": 0.5,
+        "z": 0
+      },
+      "material": {
+        "type": "standard",
+        "color": "#dcca69"
+      },
+      "geometry": {
+        "width": 1,
+        "height": 1,
+        "depth": 1
+      }
+    },
+    {
+      "objType": "box",
+      "threeJsonId": "bar-4",
+      "position": {
+        "x": 3.2,
+        "y": 0.5,
+        "z": 0
+      },
+      "material": {
+        "type": "standard",
+        "color": "#ef9862"
+      },
+      "geometry": {
+        "width": 1,
+        "height": 1,
+        "depth": 1
+      }
+    }
+  ],
+  "timeline": {
+    "version": 1,
+    "duration": 8,
+    "tracks": [
+      {
+        "id": "height-0",
+        "target": "bar-0",
+        "property": "scale.y",
+        "easing": "smoothstep",
+        "keyframes": [
+          {
+            "time": 0,
+            "value": 0.05
+          },
+          {
+            "time": 1,
+            "value": 0.05
+          },
+          {
+            "time": 4,
+            "value": 1
+          }
+        ]
+      },
+      {
+        "id": "base-0",
+        "target": "bar-0",
+        "property": "position.y",
+        "easing": "smoothstep",
+        "keyframes": [
+          {
+            "time": 0,
+            "value": 0.025
+          },
+          {
+            "time": 1,
+            "value": 0.025
+          },
+          {
+            "time": 4,
+            "value": 0.5
+          }
+        ]
+      },
+      {
+        "id": "height-1",
+        "target": "bar-1",
+        "property": "scale.y",
+        "easing": "smoothstep",
+        "keyframes": [
+          {
+            "time": 0,
+            "value": 0.05
+          },
+          {
+            "time": 1.3,
+            "value": 0.05
+          },
+          {
+            "time": 4.3,
+            "value": 1.7
+          }
+        ]
+      },
+      {
+        "id": "base-1",
+        "target": "bar-1",
+        "property": "position.y",
+        "easing": "smoothstep",
+        "keyframes": [
+          {
+            "time": 0,
+            "value": 0.025
+          },
+          {
+            "time": 1.3,
+            "value": 0.025
+          },
+          {
+            "time": 4.3,
+            "value": 0.85
+          }
+        ]
+      },
+      {
+        "id": "height-2",
+        "target": "bar-2",
+        "property": "scale.y",
+        "easing": "smoothstep",
+        "keyframes": [
+          {
+            "time": 0,
+            "value": 0.05
+          },
+          {
+            "time": 1.6,
+            "value": 0.05
+          },
+          {
+            "time": 4.6,
+            "value": 2.4
+          }
+        ]
+      },
+      {
+        "id": "base-2",
+        "target": "bar-2",
+        "property": "position.y",
+        "easing": "smoothstep",
+        "keyframes": [
+          {
+            "time": 0,
+            "value": 0.025
+          },
+          {
+            "time": 1.6,
+            "value": 0.025
+          },
+          {
+            "time": 4.6,
+            "value": 1.2
+          }
+        ]
+      },
+      {
+        "id": "height-3",
+        "target": "bar-3",
+        "property": "scale.y",
+        "easing": "smoothstep",
+        "keyframes": [
+          {
+            "time": 0,
+            "value": 0.05
+          },
+          {
+            "time": 1.9,
+            "value": 0.05
+          },
+          {
+            "time": 4.9,
+            "value": 3.0999999999999996
+          }
+        ]
+      },
+      {
+        "id": "base-3",
+        "target": "bar-3",
+        "property": "position.y",
+        "easing": "smoothstep",
+        "keyframes": [
+          {
+            "time": 0,
+            "value": 0.025
+          },
+          {
+            "time": 1.9,
+            "value": 0.025
+          },
+          {
+            "time": 4.9,
+            "value": 1.5499999999999998
+          }
+        ]
+      },
+      {
+        "id": "height-4",
+        "target": "bar-4",
+        "property": "scale.y",
+        "easing": "smoothstep",
+        "keyframes": [
+          {
+            "time": 0,
+            "value": 0.05
+          },
+          {
+            "time": 2.2,
+            "value": 0.05
+          },
+          {
+            "time": 5.2,
+            "value": 3.8
+          }
+        ]
+      },
+      {
+        "id": "base-4",
+        "target": "bar-4",
+        "property": "position.y",
+        "easing": "smoothstep",
+        "keyframes": [
+          {
+            "time": 0,
+            "value": 0.025
+          },
+          {
+            "time": 2.2,
+            "value": 0.025
+          },
+          {
+            "time": 5.2,
+            "value": 1.9
+          }
+        ]
+      }
+    ],
+    "captions": [
+      {
+        "id": "heading",
+        "text": "Data in motion · 20  34  48  62  76",
+        "start": 0,
+        "duration": 8,
+        "fontSize": 30
+      }
+    ],
+    "audio": [
+      {
+        "id": "music",
+        "start": 0,
+        "duration": 8,
+        "padSilence": true,
+        "gain": 0.8,
+        "fadeIn": 0.3,
+        "fadeOut": 1,
+        "recipe": {
+          "kind": "score",
+          "score": {
+            "version": 1,
+            "ppq": 480,
+            "tempos": [
+              {
+                "tick": 0,
+                "bpm": 60
+              }
+            ],
+            "tracks": [
+              {
+                "id": "bells",
+                "instrument": "bell",
+                "notes": [
+                  {
+                    "id": "note-0",
+                    "tick": 0,
+                    "duration": 360,
+                    "pitch": 60,
+                    "velocity": 0.65
+                  },
+                  {
+                    "id": "note-1",
+                    "tick": 480,
+                    "duration": 360,
+                    "pitch": 64,
+                    "velocity": 0.65
+                  },
+                  {
+                    "id": "note-2",
+                    "tick": 960,
+                    "duration": 360,
+                    "pitch": 67,
+                    "velocity": 0.65
+                  },
+                  {
+                    "id": "note-3",
+                    "tick": 1440,
+                    "duration": 360,
+                    "pitch": 72,
+                    "velocity": 0.65
+                  },
+                  {
+                    "id": "note-4",
+                    "tick": 1920,
+                    "duration": 360,
+                    "pitch": 67,
+                    "velocity": 0.65
+                  },
+                  {
+                    "id": "note-5",
+                    "tick": 2400,
+                    "duration": 360,
+                    "pitch": 64,
+                    "velocity": 0.65
+                  },
+                  {
+                    "id": "note-6",
+                    "tick": 2880,
+                    "duration": 360,
+                    "pitch": 62,
+                    "velocity": 0.65
+                  },
+                  {
+                    "id": "note-7",
+                    "tick": 3360,
+                    "duration": 360,
+                    "pitch": 60,
+                    "velocity": 0.65
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

@@ -49,6 +49,7 @@ export function createParticleSimulationExtensionStore() {
     unregister(target);
     const entry = {
       update: typeof lifecycle.update === "function" ? lifecycle.update : null,
+      resetTime: typeof lifecycle.resetTime === "function" ? lifecycle.resetTime : null,
       dispose: typeof lifecycle.dispose === "function" ? lifecycle.dispose : null,
       onRemoved: () => unregister(target)
     };
@@ -72,7 +73,11 @@ export function createParticleSimulationExtensionStore() {
     for (const target of [...entries.keys()]) unregister(target);
   }
 
-  return { register, unregister, update, dispose };
+  function assertSeekable() {
+    for (const [target, entry] of entries) if (!entry.resetTime) throw Object.assign(new Error(`Particle backend cannot replay deterministically: ${target.name || target.uuid}`), { code: "TIMELINE_BACKEND_NOT_SEEKABLE" });
+  }
+  function resetTime() { assertSeekable(); for (const entry of entries.values()) entry.resetTime(); }
+  return { register, unregister, update, assertSeekable, resetTime, dispose };
 }
 
 function resolveStore(scope) {

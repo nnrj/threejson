@@ -74,6 +74,7 @@ export function SceneAgentSceneCard({ sceneJson, label, showToast, options, onRe
       action(text(mergedOptions, "sceneAgent.sceneCard.downloadJson", "下载 JSON"), "&#8681;", card.handleDownloadJson),
       action(text(mergedOptions, "sceneAgent.sceneCard.exportTjz", "导出 .tjz 场景包"), "&#128230;", () => void card.handleExportTjz(), card.exporting === "tjz"),
       action(text(mergedOptions, "sceneAgent.sceneCard.exportMesh", "导出三方模型"), "&#9672;", () => void card.handleExportMesh(), card.exporting === "mesh"),
+      action(text(mergedOptions, "sceneAgent.sceneCard.mediaExport", "时间线 / 图片 / 视频"), "&#9635;", () => void card.handleMediaExport()),
       mergedOptions.openInEditor
         ? action(text(mergedOptions, "sceneAgent.sceneCard.openInEditor", "在编辑器内打开"), "&#9998;", card.handleOpenEditor)
         : null,
