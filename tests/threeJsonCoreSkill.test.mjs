@@ -39,7 +39,7 @@ test("generation system prompt covers core ThreeJSON capabilities", () => {
   assert.match(prompt, /Particle emitters are opt-in effects/);
   assert.match(prompt, /ambient 0\.45-0\.65 plus directional 0\.9-1\.2/);
   assert.match(prompt, /point\/spot lights/);
-  assert.match(prompt, /grounded physical scenes should usually include/);
+  assert.match(prompt, /Absence of a support surface is not by itself a scene defect/);
   assert.match(prompt, /Never output empty placeholder arrays/);
   assert.match(prompt, /single standard objectList/);
   assert.match(prompt, /renderLoop\.updateAnimations/);

@@ -4,7 +4,20 @@
  */
 import { analyzeSceneUsage } from "../capabilities/sceneUsage.js";
 
-/** @typedef {{ id: string, patterns: RegExp[], lists?: string[], objTypes?: string[], requiredObjTypes?: string[], selectionIds?: string[], requiredWhenMatched?: boolean, note: string, boxFriendly?: boolean }} IntentSignal */
+/** @typedef {{ id: string, patterns: RegExp[], ignoredMentions?: RegExp[], lists?: string[], objTypes?: string[], requiredObjTypes?: string[], selectionIds?: string[], requiredWhenMatched?: boolean, note: string, boxFriendly?: boolean }} IntentSignal */
+
+// These are only local hint exclusions, not a semantic scene classifier. Mask
+// negative mentions rather than rejecting the entire request: "remove the floor,
+// add terrain" can still contain a separate positive support-surface request.
+const supportNoun = String.raw`(?:floors?|ground(?:\s+(?:planes?|surfaces?))?|slabs?|terrain\s+base|pedestals?|plinths?)\b`;
+const supportQualifier = String.raw`(?:(?:an?|the|any|extra|additional|visible|separate|flat|large|unnecessary)\s+)*`;
+const chineseSupportNoun = "(?:地板|地面|地坪|底板|底座|基座|平台)";
+const negativeSupportMentions = [
+  new RegExp(String.raw`\b(?:no|without|omit|remove|delete|exclude|avoid|disable|do\s+not\s+add|don't\s+add|does\s+not\s+need|doesn't\s+need|no\s+need\s+(?:to\s+add|for))\s+${supportQualifier}${supportNoun}(?:\s*(?:,|and|or|/)\s*${supportQualifier}${supportNoun})*`, "gi"),
+  new RegExp(String.raw`\b${supportNoun}\s+(?:(?:is|are)\s+)?(?:not\s+(?:needed|required|wanted)|unnecessary)\b`, "gi"),
+  new RegExp(`(?:不要|不需要|无需|不用|别|禁止|避免|去掉|移除|删除|取消|无)(?:再|另外|额外|自动|任何|那个|这个|场景中的|添加|增加|生成|创建|保留|一个|一块|加|的|\\s)*${chineseSupportNoun}(?:[、和或及]+${chineseSupportNoun})*`, "g"),
+  new RegExp(`${chineseSupportNoun}(?:都|也|完全|并)?(?:不需要|不要|无需|不用|去掉|移除|删除)`, "g")
+];
 
 const INTENT_SIGNALS = [
   {
@@ -107,10 +120,11 @@ const INTENT_SIGNALS = [
   },
   {
     id: "floor",
-    patterns: [/floor|ground|slab|terrain base|地面|地板|地坪/i],
+    patterns: [/\bfloors?\b(?!\s+lamps?\b)|\bground\b(?!\s+(?:glass|state|truth|control)\b)|\bslabs?\b|\bterrain\s+base\b|地面|地板|地坪/i],
+    ignoredMentions: negativeSupportMentions,
     lists: ["boxModelList", "floorList"],
     objTypes: ["floor"],
-    note: "Use objType floor in boxModelList or floorList."
+    note: "For a requested floor/ground surface, use objectList objType floor; do not infer an extra support surface from a background or isolated object."
   },
   {
     id: "wall",
@@ -415,7 +429,10 @@ function matchIntentSignals(prompt) {
   if (!text.trim()) {
     return [];
   }
-  return INTENT_SIGNALS.filter((signal) => signal.patterns.some((re) => re.test(text)));
+  return INTENT_SIGNALS.filter((signal) => {
+    const mentioned = (signal.ignoredMentions || []).reduce((value, re) => value.replace(re, " "), text);
+    return signal.patterns.some((re) => re.test(mentioned));
+  });
 }
 
 /**
@@ -582,9 +599,11 @@ function analyzeDeviceCabinetLayout(sceneObj) {
       cabinet.z + cabinet.depth / 2 <= z + depth / 2 + 1e-6
     );
   });
-  if (!containsAllCabinets) {
+  // An authored room floor may need resizing; a standalone equipment render
+  // does not acquire a missing-floor defect just because it uses this domain.
+  if (floors.length > 0 && !containsAllCabinets) {
     gaps.push(
-      "Size and position a floor from the complete cabinet-grid bounds plus aisle/wall margins; the current floor is missing or does not contain every cabinet footprint."
+      "Size and position the existing floor from the complete cabinet-grid bounds plus aisle/wall margins; the current floor does not contain every cabinet footprint."
     );
   }
   return gaps;

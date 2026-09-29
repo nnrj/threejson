@@ -8,13 +8,13 @@ import { THREE_JSON_DOMAIN_CAPABILITY_INDEX } from "./sceneDomainCapability.js";
 import { getSceneCapabilityManifest } from "../capabilities/sceneCapabilityManifest.js";
 import { getModelingOperatorManifest } from "../modeling/registry.js";
 import { registerBuiltinModelingOperators } from "../modeling/builtins.js";
+import { SCENE_SUPPORT_SURFACE_POLICY } from "./sceneCompositionPolicy.js";
 
 const THREE_JSON_AGENT_CAPABILITY_INDEX_BASE = `
 ThreeJSON capability index (choose the most appropriate/specific feature for what's described; this is not a checklist):
 
 Selection principle:
 - Prefer basic primitives and semantic presets when they fully satisfy the user's scene.
-- For grounded scenes (rooms, buildings, campuses, streets, gardens, factories, exhibits, furniture layouts, game levels, dashboards standing in space), include an appropriate floor/ground/base plane even when the user does not spell out "floor"; omit it only for floating/space/abstract scenes where no support surface is implied.
 - Use advanced/native/domain/effect features only when the user explicitly asks for them or the scene clearly needs them.
 - Do not add lineList, particleEmitter, shaderSurface, native geometry, domain records, audio, or lifecycle scripts just to demonstrate capability.
 - lineList is for visible paths/routes/cables/boundaries/outlines; particleEmitter is only for explicit particles, rain, snow, dust, sparks, starfields, smoke, magic, or similar requested atmospheric effects. A normal scene should not get particles as default decoration.
@@ -249,6 +249,7 @@ Optional parameter/relationship authoring (root design, version:1):
     (negotiationOnly
       ? THREE_JSON_AGENT_NEGOTIATION_INDEX_BASE
       : THREE_JSON_AGENT_CAPABILITY_INDEX_BASE).trim(),
+    SCENE_SUPPORT_SURFACE_POLICY.trim(),
     runtimeSnapshot,
     (!negotiationOnly && options.selectedCapabilityIds?.includes("timeline")) ? `
 Timeline authoring (seconds, not milliseconds): retain the normal standard scene root and objectList. Add timeline:{version:1,duration:8,tracks:[{id:"move",target:"object-id",property:"position",keyframes:[{time:0,value:[0,0,0]},{time:8,value:[4,0,0]}]}]}.

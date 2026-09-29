@@ -11,6 +11,7 @@ import { sanitizeAiJsonText, stripMarkdownCodeFence } from "./sceneJsonSanitize.
 import { buildCompactReferenceDescriptor } from "./sceneSpatialContext.js";
 import { buildModelingCapabilityFragment } from "./sceneCapabilityIndex.js";
 import { defaultSceneOperationRegistry } from "../command/operationRegistry.js";
+import { SCENE_SUPPORT_SURFACE_POLICY } from "./sceneCompositionPolicy.js";
 
 const UPDATE_COMMAND_OPS = new Set([
   "model.operators", "model.inspect", "model.evaluate", "model.patch", "model.bake",
@@ -407,6 +408,7 @@ function buildCommandPromptRulesFragment(options = {}) {
     buildScaleMatchingFragment(),
     "",
     buildEditScopeEconomyFragment(),
+    SCENE_SUPPORT_SURFACE_POLICY.trim(),
     "- Match the existing representation: modeledMesh -> model.inspect, model.operators, model.patch; editableMesh -> mesh.getTopology, mesh.edit; bufferMesh -> mesh.inspect, mesh.buffer.*; procedural objects -> object.get and object.patch. mesh.getTopology cannot inspect an evaluated modeledMesh. Preserve its source graph and stable ID.",
     '- A tube is a swept circular pipe, not a surface of revolution. Its path must be at record.path (or record.curve), e.g. {"objType":"tube","path":{"type":"catmullRom","points":[[0,0,0],[0,1,0],[0.2,2,0]]},"geometry":{"radius":0.05,"tubularSegments":48,"radialSegments":8}}. Do not put the path inside geometry or use a radius/height profile as a spatial path. For revolved hollow objects, edit the radial profile to include outer wall, rim and inner wall; do not replace the source graph with a pathless tube.',
     "",

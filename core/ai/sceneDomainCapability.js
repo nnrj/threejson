@@ -35,17 +35,18 @@ Record contract:
 
 Scale and anchoring:
 - A practical rack default in this runtime is width 6, length 12, height 20. Treat those three values as one coherent scene scale. Do not combine a 6x12x20 rack with a 10x10 room floor.
-- Cabinets are base-anchored: position.y=0 puts the cabinet on a floor whose top is y=0. Standalone UPS/air-conditioner records are center-anchored, so a height-20 unit normally uses position.y=10.
+- Cabinets are base-anchored: position.y=0 puts the cabinet base at y=0, whether or not a floor is present. Standalone UPS/air-conditioner records are center-anchored, so a height-20 unit normally uses position.y=10.
 - A multi-rack machine room typically needs a floor tens of units across (for example 60x50 for a modest two-row layout), walls about 22-26 units high, and camera/controls fitted to the full room bounds.
+- This room guidance applies only when depicting a room/environment. Standalone rack/equipment renders need no added floor, room walls or display base.
 
 Layout rules (mandatory for repeated full-size equipment):
-1. Decide equipment dimensions and row/column counts before sizing the room.
+1. Decide equipment dimensions and row/column counts before sizing any requested room.
 2. Give every cabinet a unique threeJsonId and a distinct x/z center. Adjacent centers must be separated by at least the cabinet width along a row; opposing rows must be separated by at least cabinet length plus the desired aisle. Never place several cabinets at the same coordinates unless the user explicitly requests stacking/overlap.
-3. Derive the floor and walls from the occupied equipment bounds plus service aisles and wall margins. Verify every footprint lies inside the room.
+3. When a room/environment is part of the request, derive its floor and walls from the occupied equipment bounds plus service aisles and wall margins. Verify every footprint lies inside the authored room; do not add a room just to display equipment.
 4. Use opposing toward values for facing rack rows when appropriate. Put rack-mounted servers/switches in the parent cabinet's devices[] using uStart/uSize; do not scatter them as building-sized standalone objects.
 5. Before output, perform a mental collision pass: compare each pair's x/z footprints and fix accidental overlaps; then compare rack height with wall height and camera target.
 
-Compact two-row example (direct fields, distinct positions, coherent room scale):
+Compact two-row machine-room example (direct fields, distinct positions, coherent room scale; its floor is environment content, not a requirement for standalone equipment):
 {"threeJsonId":"machine-room-floor","objType":"floor","geometry":{"width":50,"height":0.5,"depth":44},"position":{"x":0,"y":-0.25,"z":0}}
 {"threeJsonId":"rack-01","objType":"domain","domain":"device.cabinet","handler":"deployCabinet","name":"cabinet","label":"Rack 01","geometry":{"width":6,"length":12,"height":20},"position":{"x":-6,"y":0,"z":-10},"toward":"front","slots":{"total":24,"unitHeight":0.48,"bottomMargin":0.77},"devices":[{"deviceType":"server","uStart":24,"uSize":1,"name":"Compute 01"}]}
 {"threeJsonId":"rack-02","objType":"domain","domain":"device.cabinet","handler":"deployCabinet","name":"cabinet","label":"Rack 02","geometry":{"width":6,"length":12,"height":20},"position":{"x":0,"y":0,"z":-10},"toward":"front"}

@@ -14,6 +14,14 @@ Done: the scene editor/player have moved from single root-level files to the mod
 
 `scene-host/shared/` is private to applications inside `scene-host`. Independent hosts such as `room-show.html` and `port-show.html` must use public core/domain APIs and implement host-specific interaction locally. Navigating to another application or exchanging scenes through an explicit message protocol is integration, not permission to call its internal methods. These constraints are guarded by [`tests/architectureDependencies.test.mjs`](../../tests/architectureDependencies.test.mjs).
 
+### ThreeBox AI scene composition
+
+Floors, ground planes, display stages and extra pedestals are optional content, not required scene/video scaffolding. Depicted interiors, roads and terrain can need a real surface; explicit requests remain supported. Isolated objects, product renders, scientific diagrams, particle/text effects, data graphics and videos without a ground-based environment default to no extra floor. Preserve structural bases belonging to the subject itself, such as a lamp's foot or a building's own floor.
+
+Planning, generation, image references, command/JSON edits and review share `core/ai/sceneCompositionPolicy.js`. Local hints no longer match `ground` inside `background` or treat a negative floor request as an addition. Missing floors alone do not trigger corrective generation; checks for undersized authored floors and overlapping equipment remain.
+
+This is not a runtime hide/delete filter: existing JSON, history and the editor's manual new-scene defaults remain unchanged. Refinement must not restore a surface the user removed merely to make a scene look complete. `tests/sceneCompositionPolicy.test.mjs` covers this contract with a mocked provider; it is not a live model-quality evaluation.
+
 ## Ecosystem overview
 
 | Component | Path | Notes |

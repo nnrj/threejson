@@ -30,6 +30,14 @@ scene-host 与旧版归档 **共用** settings / localStorage / 播放列表等�
 
 上述约束由 [`tests/architectureDependencies.test.mjs`](../../tests/architectureDependencies.test.mjs) 自动检查。
 
+### ThreeBox 的 AI 场景构图
+
+地板、地面、展示台和额外底座是按需内容，不是场景或视频的必需脚手架。房间内部、道路、地形等确实需要地面的环境，以及用户明确要求的地面，仍应生成；独立物体、产品展示、科学示意、粒子/文字特效、统计图形及无地面环境的视频，默认不额外加地板。物体本身的结构底座（如灯座、建筑自身的楼板）应保留。
+
+规划、生成、看图生成、命令/JSON 调整和审查共用 `core/ai/sceneCompositionPolicy.js`。关键词提示不再把 `background` 误认为 `ground`，也不把“不要地板”转成新增地板要求。无地板本身不触发补地板审查；已有地面的尺寸和设备间重叠仍可检查。
+
+这不是渲染时隐藏/删除地面的开关：已有 JSON、历史场景和手动新建编辑器场景的默认设置不受影响。用户要求删除后，后续细化不应以“完善场景”为由重新添加。回归测试见 `tests/sceneCompositionPolicy.test.mjs`；其中供应商调用为本地模拟，不等同于实际模型的生成质量评测。
+
 ## 生态概览
 
 | 组件 | 路径 | 说明 |
