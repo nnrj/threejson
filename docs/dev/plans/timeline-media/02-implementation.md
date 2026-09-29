@@ -64,3 +64,12 @@ node tools/dev/verify-timeline-media.mjs
 ## 下一步顺序
 
 先验证并交付一个真正可用的本地语音运行库/模型组合和音源合成样本，再补音频烘焙/缓存与音频驱动算子、长作品回放性能、必要的轨道编辑。视频/图片 AI 反向重建排在这些音视频主线之后；不要求大改 ThreeJSON 核心。
+
+## 2026-09-29：ThreeBox 文字透明度轨道回归修复
+
+- 用户的双缝干涉视频 JSON 在真实浏览器中复现 `Timeline property not found: material.opacity`。`title-text` 是 billboard 包装 Group，而 SDF 文字的填充、描边是后代上的多材质；原轨道绑定只访问直接对象属性。现在无槽号的材质路径绑定所有材质槽，无自身材质的 Group 绑定后代材质；变换轨道仍绑定作者选中的对象。不存在的路径继续报错，并补充轨道 ID、目标 ID、对象类型。
+- 浏览器画面检查同时发现，资源等待依赖了 Troika 不存在的 `isTroikaText` 标记，导致图片/视频导出可能漏字。改为 Builder 注册异步就绪 Promise，时间线等待通用对象就绪契约，不导入文字库、不读取其私有状态；重复导出复用已完成的 Promise。字体预热补上传入库要求的完成回调，修复 `r is not a function`。
+- 增加 `tests/timelineMaterialTracks.test.mjs`：包装文字、描边/填充、多材质槽、Group、颜色、无关对象、逆向 seek、基线恢复、真源不变及错误定位；`tests/timeline.test.mjs` 补就绪等待、重复等待、失败传播与取消。
+- 完整 Node 回归：1,614 项中 1,613 通过、1 跳过、0 失败。日志 `dist/timeline-material-check/full-tests.log`。
+- 真实本机 Edge：`THREEJSON_BROWSER` 指定已安装浏览器，执行 `node tools/dev/verify-timeline-material-browser.mjs [可选场景JSON路径]`。原生 ThreeBox 卡片中检验中文 SDF 的实际像素、填充/描边共同淡出、后退结果一致、源文档不变；最小场景及用户原 JSON 均通过，无浏览器错误。报告 `dist/timeline-material-check/2026-09-29T06-22-48-202Z/report.json`。
+- 用户原 JSON 未修改，图片及完整 16 秒、192 帧、960×540 MP4 导出通过，重读视频元数据确认为 16 秒；无浏览器/资源错误。报告 `dist/timeline-material-check/export-1790663041668/report.json`。测试产物留在忽略目录，不提交用户附件或生成视频；未调用 AI、未发布或部署。

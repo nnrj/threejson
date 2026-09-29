@@ -10,6 +10,7 @@ import { prepareParticleEffects } from "../core/timeline/particleEffects.js";
 import { normalizeScenePayload } from "../core/handler/sceneFriendlyNormalizer.js";
 import { convertStandardJsonToFriendlyJson, convertFriendlyJsonToStandardJson } from "../core/util/util.js";
 import { extractRootMetadataFromBase } from "../core/util/scenePayloadMerge.js";
+import { registerObjectReadiness } from "../core/resource/objectReadiness.js";
 
 test("timeline clock pause, seek, end and looping are explicit", () => {
   const clock = createSceneClock({ duration: 3 });
@@ -74,9 +75,21 @@ test("object-only timelines preserve interactive cameras; camera tracks own came
 
 test("resource readiness can be cancelled while a font is still pending", async () => {
   const scene = new THREE.Scene(), text = new THREE.Object3D(), controller = new AbortController();
-  text.isTroikaText = true; text.sync = () => {}; scene.add(text);
+  registerObjectReadiness(text, new Promise(() => {})); scene.add(text);
   const pending = prepareTimelineResources({ scene }, { signal: controller.signal });
   controller.abort(); await assert.rejects(pending, { name: "AbortError" });
+});
+
+test("registered object resources are awaited once and remain ready for repeated exports", async () => {
+  const scene = new THREE.Scene(), object = new THREE.Object3D(); scene.add(object);
+  let complete, ready = false;
+  registerObjectReadiness(object, new Promise(resolve => { complete = resolve; }));
+  const pending = prepareTimelineResources({ scene }).then(() => { ready = true; });
+  await new Promise(resolve => setImmediate(resolve)); assert.equal(ready, false);
+  complete(); await pending; assert.equal(ready, true);
+  await prepareTimelineResources({ scene });
+  registerObjectReadiness(object, Promise.reject(new Error("Font preparation failed")));
+  await assert.rejects(prepareTimelineResources({ scene }), /Font preparation failed/);
 });
 
 test("renderer ownership transfers only after a runtime is successfully prepared", () => {

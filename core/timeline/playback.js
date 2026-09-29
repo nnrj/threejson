@@ -5,6 +5,7 @@ import { evaluateDeclarativeAnimationsAt } from "../handler/animationHandler.js"
 import { resolveRuntimeContext } from "../runtime/runtimeContext.js";
 import { whenTextureReady, getMaterialTextureRequests } from "../resource/textureRequest.js";
 import { getSceneMediaTextureControllers } from "../resource/mediaTextureTimeline.js";
+import { whenObjectReady } from "../resource/objectReadiness.js";
 const wrappedDisposers = new WeakSet();
 
 function untilAborted(promise, signal) {
@@ -29,7 +30,7 @@ export async function prepareTimelineResources(runtime, options = {}) {
         if (Array.isArray(uniform.value)) uniform.value.forEach(visit); else visit(uniform.value);
       });
     }
-    if (object.isTroikaText && object.sync) pending.push(new Promise((resolve) => object.sync(resolve)));
+    pending.push(whenObjectReady(object));
   });
   visit(runtime.scene.background); visit(runtime.scene.environment);
   await untilAborted(Promise.all([...textures].map(whenTextureReady).concat(pending)), options.signal);

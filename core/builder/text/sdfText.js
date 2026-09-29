@@ -3,6 +3,7 @@
  */
 import * as THREE from "three";
 import { resolveRuntimeResourceUrl } from "../../resource/runtimeResourceUrl.js";
+import { registerObjectReadiness } from "../../resource/objectReadiness.js";
 import * as TroikaText from "troika-three-text";
 
 import { trackDisposableResource } from "../../handler/trackedResourceRegistry.js";
@@ -123,7 +124,12 @@ export function createSdfText(parent, record, ctx = {}) {
   }
 
   setUserDataObjJson(sceneRoot, outRecord);
-  text.sync();
+  // Capture the initial sync at its source. Troika has no isTroikaText flag,
+  // and sync(callback) does not call back when no further sync is required.
+  let markReady;
+  const ready = new Promise((resolve) => { markReady = resolve; });
+  text.sync(markReady); // keep synchronous errors visible to the existing fallback
+  registerObjectReadiness(text, ready);
 
   parent.add(sceneRoot);
   registerObject(sceneRoot, outRecord, {}, parent);
@@ -167,5 +173,5 @@ export function preloadSceneTextFonts(sceneConfig, objectList = []) {
   preloadFont({
     font: fontConfig.fontUrl,
     characters: [...chars].join("")
-  });
+  }, () => {}); // Troika requires a completion callback, even for background warmup.
 }

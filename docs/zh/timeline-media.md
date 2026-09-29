@@ -37,6 +37,8 @@
 
 时间为秒、旋转为弧度。target 使用 threeJsonId 或 `$camera` / `$scene`。支持 position/rotation/scale、visible、材质颜色/透明度等数值、morphTargetInfluences.0、相机 fov/lookAt；四元数 `[x,y,z,w]` 使用球面插值。轨道 ID 唯一、时间严格递增；首个关键点前保持初始值，末尾保持末值。缓动有 linear/step/smoothstep/easeIn/easeOut/easeInOut，或 registerTimelineEasing 注册函数。
 
+`material.opacity` / `material.color` 指向该对象的所有材质槽；无自身材质的 Group（包括 billboard 文字的内部包装）则作用于后代材质，因此 SDF 文字的填充和描边可以一起淡入淡出。`material.1.opacity` 可指定单个材质槽；对于 Group，槽号按各后代对象的材质列表解释。位置、旋转等轨道仍操作 target 本身。不存在的属性或材质槽会明确报错，包含轨道 ID、目标 ID 和对象类型，不会静默丢弃动画。
+
 createJsonScene 按需安装 runtime.timeline：play/pause/seek/renderAt/reset。timelineAutoPlay:false 禁止自动推进。同步 createJsonSceneSimple 不安装异步时间线，改用异步加载或显式 attachSceneTimeline。编辑 `/timeline` 仍走 JSON Patch / SceneSession；帧求值不写回真源，也不产生逐帧撤销记录。元数据随标准/友好 JSON 转换、导出保留。
 
 只有包含有效相机轨道时，时间线接管相机；仅有对象动画的场景继续允许交互转动视角。字幕的 x/y 为相对画布比例，显式 fontSize/outlineWidth 以 `output.height`（缺省 1080）为设计分辨率，预览与导出按比例缩放。

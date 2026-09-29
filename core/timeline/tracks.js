@@ -35,24 +35,44 @@ export function sampleTimelineTrack(track, time, kind) {
   return lerp(a.value, b.value, ease((time - a.time) / (b.time - a.time)), kind);
 }
 
-/** A compiled track only touches runtime state, never the authoring descriptor. */
-export function compileTimelineTracks(runtime, tracks = [], options = {}) {
-  const objects = new Map();
-  runtime.scene.traverse((object) => { const id = object.userData?.threeJsonId || object.userData?.objJson?.threeJsonId; if (id) objects.set(id, object); });
-  objects.set("$camera", runtime.camera); objects.set("$scene", runtime.scene);
-  // Resolve aim constraints after every position/parent transform, regardless
-  // of JSON ordering. Otherwise moving the camera changes its intended target.
-  const bindings = tracks.filter((track) => track.enabled !== false).map((track) => {
-    const target = options.resolveTarget?.(track.target, runtime) || objects.get(track.target);
-    if (!target) throw timelineError("TIMELINE_TARGET_MISSING", `Timeline target not found: ${track.target}`, { trackId: track.id });
-    if (track.property === "lookAt") return { track, aim: true, restore() {}, apply(value) { target.lookAt(new THREE.Vector3(...vectorArray(value))); } };
-    const keys = track.property.split(".");
-    if (keys.some((key) => ["__proto__", "prototype", "constructor", "userData"].includes(key))) throw timelineError("INVALID_TIMELINE_PROPERTY", `Invalid runtime property: ${track.property}`);
-    let owner = target;
-    for (const key of keys.slice(0, -1)) owner = owner?.[key];
-    const key = keys.at(-1), initial = owner?.[key];
-    if (initial === undefined || typeof initial === "function") throw timelineError("TIMELINE_PROPERTY_MISSING", `Timeline property not found: ${track.property}`, { trackId: track.id });
-    const baseline = copy(initial), transparent = owner.isMaterial ? owner.transparent : undefined, kind = initial?.isColor ? "color" : initial?.isQuaternion ? "quaternion" : undefined;
+function propertyMissing(track, target) {
+  const objectType = target.userData?.objJson?.objType || target.type;
+  return timelineError("TIMELINE_PROPERTY_MISSING",
+    `Timeline property not found: ${track.property} (track "${track.id}", target "${track.target}", type "${objectType}")`,
+    { trackId: track.id, targetId: track.target, property: track.property, objectType });
+}
+
+/** Resolve author-facing material paths without exposing builder wrapper nodes.
+ * A mesh owns its materials; a material-less group addresses its descendants.
+ * Unindexed paths broadcast to all slots (including SDF text fill and outline).
+ */
+function resolvePropertyBindings(target, keys, track) {
+  let roots = [target], path = keys;
+  if (keys[0] === "material" && keys.length > 1) {
+    const materials = [], slot = /^\d+$/.test(keys[1]) ? Number(keys[1]) : null;
+    const collect = (object) => {
+      const material = object.material;
+      if (!material) return;
+      const slots = Array.isArray(material) ? material : [material];
+      if (slot === null) materials.push(...slots);
+      else {
+        if (!slots[slot]) throw propertyMissing(track, target);
+        materials.push(slots[slot]);
+      }
+    };
+    if (target.material) collect(target);
+    else target.traverse?.(collect);
+    roots = [...new Set(materials)];
+    path = keys.slice(slot === null ? 1 : 2);
+    if (!roots.length || !path.length) throw propertyMissing(track, target);
+  }
+  return roots.map((root) => {
+    let owner = root;
+    for (const key of path.slice(0, -1)) owner = owner?.[key];
+    const key = path.at(-1), initial = owner?.[key];
+    if (initial === undefined || typeof initial === "function") throw propertyMissing(track, target);
+    const baseline = copy(initial), transparent = owner.isMaterial ? owner.transparent : undefined;
+    const kind = initial?.isColor ? "color" : initial?.isQuaternion ? "quaternion" : undefined;
     const apply = (value) => {
       if (initial?.isColor) owner[key].set(value);
       else if (initial?.isQuaternion) owner[key].copy(value?.isQuaternion ? value : new THREE.Quaternion(...vectorArray(value)));
@@ -62,6 +82,23 @@ export function compileTimelineTracks(runtime, tracks = [], options = {}) {
       if (owner.isMaterial && key === "opacity" && owner.opacity < 1) owner.transparent = true;
     };
     return { track, kind, restore() { apply(baseline); if (transparent !== undefined) owner.transparent = transparent; }, apply };
+  });
+}
+
+/** A compiled track only touches runtime state, never the authoring descriptor. */
+export function compileTimelineTracks(runtime, tracks = [], options = {}) {
+  const objects = new Map();
+  runtime.scene.traverse((object) => { const id = object.userData?.threeJsonId || object.userData?.objJson?.threeJsonId; if (id) objects.set(id, object); });
+  objects.set("$camera", runtime.camera); objects.set("$scene", runtime.scene);
+  // Resolve aim constraints after every position/parent transform, regardless
+  // of JSON ordering. Otherwise moving the camera changes its intended target.
+  const bindings = tracks.filter((track) => track.enabled !== false).flatMap((track) => {
+    const target = options.resolveTarget?.(track.target, runtime) || objects.get(track.target);
+    if (!target) throw timelineError("TIMELINE_TARGET_MISSING", `Timeline target not found: ${track.target}`, { trackId: track.id });
+    if (track.property === "lookAt") return { track, aim: true, restore() {}, apply(value) { target.lookAt(new THREE.Vector3(...vectorArray(value))); } };
+    const keys = track.property.split(".");
+    if (keys.some((key) => ["__proto__", "prototype", "constructor", "userData"].includes(key))) throw timelineError("INVALID_TIMELINE_PROPERTY", `Invalid runtime property: ${track.property}`);
+    return resolvePropertyBindings(target, keys, track);
   });
   return {
     restore() { for (const binding of bindings) binding.restore(); },
