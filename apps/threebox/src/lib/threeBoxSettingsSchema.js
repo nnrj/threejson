@@ -89,6 +89,11 @@ export const THREEBOX_SETTINGS_FIELDS = [
     label: "场景生成方式",
     options: [["auto", "自动（由 AI 判断）"], ["direct", "完整生成"], ["draft_refine", "增量构建"]]
   },
+  { section: "ai", path: "ai.mediaOutputKind", type: "select", label: "输出目标", options: [["auto", "自动（根据请求）"], ["scene", "3D 场景"], ["video", "视频项目"]] },
+  { section: "ai", path: "ai.videoDuration", type: "number", label: "视频时长（秒，0 = 按内容决定）", min: 0, hint: "多镜头项目逐镜头生成；科普通常为 90–180 秒，不是引擎上限。" },
+  { section: "ai", path: "ai.videoQuality", type: "select", label: "视频质量目标", options: [["draft", "可播放粗剪"], ["balanced", "平衡"], ["high", "精细"]] },
+  { section: "ai", path: "ai.videoConfirmStoryboard", type: "checkbox", label: "视频先确认分镜再制作", hint: "关闭时自动制作；开启时生成分镜后暂停，可在下一条消息确认或修改。" },
+  { section: "ai", path: "ai.videoVisualReview", type: "select", label: "视频画面复核", options: [["auto", "依据已声明的模型能力"], ["enabled", "开启（当前模型支持图片输入）"], ["disabled", "仅结构检查"]], hint: "开启会向当前文本模型发送实际镜头截图，可能增加费用。未知模型默认仅结构检查，不按供应商品牌猜测。" },
   {
     section: "ai",
     path: "ai.sceneMaxOutputTokens",

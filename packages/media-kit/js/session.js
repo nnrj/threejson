@@ -1,0 +1,158 @@
+import { validateTimeline, getTimelineDuration } from "threejson/timeline";
+import { createSceneSession, captureSceneSession, createSceneOperationService } from "threejson/session";
+import { validateMediaDocument } from "./documents.js";
+
+const error = (code, message) => Object.assign(new Error(message), { code });
+const fail = (code, message) => { throw error(code, message); };
+const freeze = (value) => { if (value && typeof value === "object" && !Object.isFrozen(value)) { Object.values(value).forEach(freeze); Object.freeze(value); } return value; };
+const validId = (id) => typeof id === "string" && id.trim() && !["__proto__", "constructor", "prototype"].includes(id);
+const blankScene = () => ({ version: "next", sceneConfig: { scene: { background: "#050812" }, camera: { position: { x: 0, y: 2, z: 10 } }, controls: { type: "none" } }, objectList: [], timeline: { version: 1, tracks: [] } });
+const defaultDocument = () => ({ documentType: "composition", compositionVersion: 1, output: { width: 1920, height: 1080, fps: 30 }, scenes: {}, timeline: { version: 1, clips: [] }, production: { version: 1, state: "planning", shots: {} } });
+const sceneOf = (document, id) => {
+  const clip = document.timeline.clips.find(item => item.id === id);
+  if (!clip) fail("MEDIA_SHOT_MISSING", `Shot not found: ${id}`);
+  const scene = typeof clip.source === "string" ? document.scenes?.[clip.source] : clip.source;
+  if (!scene) fail("MEDIA_EXTERNAL_SHOT", "Resolve an external shot to an embedded scene before editing it.");
+  return { clip, scene };
+};
+
+export function inspectMediaDocument(document, revision = 0) {
+  return { revision, duration: getTimelineDuration(document.timeline), output: document.output, state: document.production?.state,
+    shots: (document.timeline.clips || []).map(clip => {
+      const scene = typeof clip.source === "string" ? document.scenes?.[clip.source] : clip.source;
+      return { ...document.production?.shots?.[clip.id], id: clip.id, start: clip.start || 0, duration: clip.duration, sourceStart: clip.sourceStart || 0, rate: clip.rate ?? 1,
+        objects: scene?.objectList?.length, tracks: scene?.timeline?.tracks?.length || 0, effects: scene?.timeline?.effects?.length || 0 };
+    }) };
+}
+
+export function diagnoseMediaDocument(document) {
+  const diagnostics = [], clips = document.timeline.clips || [];
+  const add = (code, message, shotId, severity = "error") => diagnostics.push({ code, message, shotId, severity });
+  if (!clips.some(c => c.enabled !== false)) add("MEDIA_NO_SHOTS", "The project has no enabled shots.");
+  for (const clip of clips) {
+    if (clip.enabled === false) continue;
+    let scene;
+    try { scene = sceneOf(document, clip.id).scene; validateMediaDocument(scene); }
+    catch (e) { add(e.code || "MEDIA_SCENE_INVALID", e.message, clip.id); continue; }
+    if (document.production?.shots?.[clip.id]?.stage === "planned") add("MEDIA_SHOT_UNBUILT", "Storyboard shot has not been produced.", clip.id);
+    const ids = new Set(["$camera", "$scene", "$renderer"]);
+    const visit = (record) => { if (!record || typeof record !== "object") return; if (record.threeJsonId) ids.add(record.threeJsonId); if (record.objType === "pass") ids.add(`$pass:${record.id || record.threeJsonId}`); for (const child of record.children || []) visit(child); };
+    (scene.objectList || []).forEach(visit);
+    for (const [key, prefix] of [["effects", "$effect:"], ["captions", "$caption:"], ["audio", "$audio:"]]) for (const item of scene.timeline?.[key] || []) ids.add(prefix + item.id);
+    for (const item of [...(scene.timeline?.tracks || []), ...(scene.timeline?.effects || [])]) if (!ids.has(item.target)) add("TIMELINE_TARGET_MISSING", `Target ${item.target} is not in this shot.`, clip.id);
+    if (!(scene.timeline?.tracks?.length || scene.timeline?.effects?.length || scene.timeline?.audio?.length)) add("MEDIA_STATIC_SHOT", "No timeline motion or audio in this shot; verify this is intentional.", clip.id, "warning");
+  }
+  const sorted = clips.filter(c => c.enabled !== false).toSorted((a, b) => (a.start || 0) - (b.start || 0));
+  let end = 0;
+  for (const clip of sorted) { if ((clip.start || 0) > end + 1e-6) add("MEDIA_GAP", `Blank interval ${end}–${clip.start}s.`, clip.id, "warning"); end = Math.max(end, (clip.start || 0) + clip.duration); }
+  if (document.timeline.duration !== undefined && end > document.timeline.duration + 1e-6) add("MEDIA_CLIPS_EXCEED_DURATION", "Shots extend beyond the declared film duration; explicitly retime or trim them.");
+  if (document.timeline.duration > end + 1e-6) add("MEDIA_GAP", `Blank final interval ${end}–${document.timeline.duration}s.`, undefined, "warning");
+  return { satisfied: !diagnostics.some(d => d.severity === "error"), diagnostics, checks: { structure: diagnostics.some(d => d.severity === "error") ? "failed" : "passed", resources: "unchecked", render: "unchecked", narrative: "unchecked" } };
+}
+
+/** Authoring project, not a renderer. Unchanged shot scenes are structurally shared.
+ * Scene edits delegate to the existing SceneSession command transaction machinery.
+ */
+export function createMediaProjectSession(input, options = {}) {
+  let document = input ? validateMediaDocument(input) : defaultDocument();
+  if (document.documentType !== "composition") {
+    const scene = document, duration = Math.max(getTimelineDuration(scene.timeline), options.duration || 0);
+    if (!(duration > 0)) fail("MEDIA_DURATION_REQUIRED", "A scene needs an explicit positive duration to become a project.");
+    document = { ...defaultDocument(), output: scene.output || defaultDocument().output, scenes: { scene }, timeline: { version: 1, clips: [{ id: "scene", source: "scene", duration }] } };
+  }
+  document = freeze(document);
+  let revision = 0, disposed = false, queue = Promise.resolve();
+  const listeners = new Set(), undo = [], redo = [];
+  const enqueue = (fn) => { const task = queue.then(() => { if (disposed) fail("MEDIA_SESSION_DISPOSED", "Project session is disposed."); return fn(); }); queue = task.catch(() => {}); return task; };
+  const publish = (next, before, label) => {
+    document = freeze(next); revision++;
+    const event = { document, previousDocument: before, revision, label };
+    for (const listener of listeners) { try { listener(event); } catch (e) { try { options.onError?.(e); } catch { /* observers cannot invalidate a committed transaction */ } } }
+    return event;
+  };
+  const assertRevision = (args) => { args.signal?.throwIfAborted(); if (args.baseRevision != null && args.baseRevision !== revision) fail("STALE_MEDIA_REVISION", `Expected project revision ${revision}, received ${args.baseRevision}.`); };
+  return {
+    get document() { return document; }, get revision() { return revision; }, get disposed() { return disposed; },
+    snapshot() { return document; }, inspect() { return inspectMediaDocument(document, revision); },
+    subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
+    dispatch(commands, args = {}) {
+      const captured = structuredClone(Array.isArray(commands) ? commands : [commands]);
+      return enqueue(async () => {
+        assertRevision(args);
+        const before = document;
+        let draft = { ...before, scenes: { ...before.scenes }, timeline: { ...before.timeline, clips: [...before.timeline.clips] }, production: { ...before.production, version: 1, shots: { ...before.production?.shots } } };
+        for (const { op, args: a = {} } of captured) {
+          args.signal?.throwIfAborted();
+          if (op === "media.plan.set") {
+            if (!Array.isArray(a.shots) || !a.shots.length) fail("INVALID_MEDIA_PLAN", "Plan needs shots with id, title and duration.");
+            if (draft.timeline.clips.length) fail("MEDIA_PLAN_EXISTS", "Edit individual shots to preserve completed work; do not replace the entire project plan.");
+            let start = 0;
+            for (const shot of a.shots) {
+              if (!validId(shot.id) || draft.scenes[shot.id]) fail("INVALID_MEDIA_SHOT_ID", "Shot id must be unique.");
+              const duration = shot.duration;
+              if (!(Number.isFinite(duration) && duration > 0)) fail("INVALID_MEDIA_DURATION", "Shot duration must be positive.");
+              draft.timeline.clips.push({ id: shot.id, source: shot.id, start, duration }); start += duration;
+              draft.scenes[shot.id] = blankScene();
+              draft.production.shots[shot.id] = { title: shot.title || shot.id, intent: shot.intent || "", narration: shot.narration || "", stage: "planned" };
+            }
+            draft.production.brief = a.brief || ""; draft.production.state = "storyboard";
+          } else if (op === "media.shot.put") {
+            if (!validId(a.id)) fail("INVALID_MEDIA_SHOT_ID", "Shot needs a valid id.");
+            const existing = draft.timeline.clips.find(c => c.id === a.id);
+            const clip = { ...existing, ...a.clip, id: a.id, source: a.id };
+            if (!existing && a.scene === undefined) fail("MEDIA_SCENE_REQUIRED", "A new shot needs a scene.");
+            const scene = a.scene === undefined ? sceneOf(draft, a.id).scene : validateMediaDocument(a.scene);
+            if (scene.documentType === "composition") fail("MEDIA_NESTED_COMPOSITION", "A shot must be a scene, not another composition.");
+            // Canonicalize through the engine's authoring adapter before acceptance.
+            const session = createSceneSession(scene);
+            try { draft.scenes[a.id] = { ...captureSceneSession(session), timeline: scene.timeline || { version: 1 }, ...(scene.output ? { output: scene.output } : {}) }; }
+            finally { session.dispose(); }
+            if (existing) draft.timeline.clips = draft.timeline.clips.map(c => c.id === a.id ? clip : c); else draft.timeline.clips.push(clip);
+            draft.production.shots[a.id] = { ...draft.production.shots[a.id], ...a.metadata, stage: a.metadata?.stage || (a.scene === undefined ? draft.production.shots[a.id]?.stage : "draft") || "draft" };
+          } else if (op === "media.shot.remove") {
+            sceneOf(draft, a.id); draft.timeline.clips = draft.timeline.clips.filter(c => c.id !== a.id);
+            delete draft.scenes[a.id]; delete draft.production.shots[a.id];
+          } else if (op === "media.shot.edit") {
+            const { scene } = sceneOf(draft, a.id), session = createSceneSession(scene);
+            try {
+              const receipt = await createSceneOperationService({ session }).execute(a.commands, { signal: args.signal });
+              if (!receipt.ok) fail(receipt.code || "MEDIA_SCENE_EDIT_FAILED", receipt.error);
+              draft.scenes[a.id] = captureSceneSession(session);
+              draft.timeline.clips = draft.timeline.clips.map(c => c.id === a.id ? { ...c, source: a.id } : c);
+            } finally { session.dispose(); }
+          } else if (op === "timeline.edit") {
+            const allowed = ["tracks", "effects", "captions", "audio"];
+            if (!allowed.includes(a.section)) fail("INVALID_TIMELINE_SECTION", "Edit tracks, effects, captions or audio by stable id.");
+            const scene = a.shotId ? sceneOf(draft, a.shotId).scene : draft;
+            const timeline = { ...scene.timeline }, records = new Map((timeline[a.section] || []).map(item => [item.id, item]));
+            for (const id of a.remove || []) { if (!records.delete(id)) fail("TIMELINE_ITEM_MISSING", `Item not found: ${id}`); }
+            for (const item of a.upsert || []) records.set(item.id, item);
+            timeline[a.section] = [...records.values()];
+            const checked = validateTimeline(timeline);
+            if (a.shotId) { draft.scenes[a.shotId] = { ...scene, timeline: checked }; draft.timeline.clips = draft.timeline.clips.map(c => c.id === a.shotId ? { ...c, source: a.shotId } : c); }
+            else draft.timeline = checked;
+          } else if (op === "media.duration.set") {
+            if (!(Number.isFinite(a.duration) && a.duration > 0)) fail("INVALID_MEDIA_DURATION", "Duration must be positive.");
+            const end = Math.max(0, ...draft.timeline.clips.map(c => (c.start || 0) + c.duration));
+            if (a.duration < end - 1e-6) fail("MEDIA_CLIPS_EXCEED_DURATION", "Move/trim clips explicitly before shortening the project.");
+            draft.timeline.duration = a.duration;
+          } else if (op === "media.project.set") {
+            if (a.output) draft.output = { ...draft.output, ...a.output };
+            if (a.state) { if (!["planning", "storyboard", "producing", "paused", "complete"].includes(a.state)) fail("INVALID_MEDIA_STATE", "Unknown production state."); draft.production.state = a.state; }
+          } else fail("UNKNOWN_MEDIA_OPERATION", `Unknown media operation: ${op}`);
+        }
+        draft.timeline = validateTimeline(draft.timeline);
+        if (draft.production.state === "complete" && !diagnoseMediaDocument(draft).satisfied) fail("MEDIA_INCOMPLETE", "Unbuilt or invalid shots remain.");
+        for (const name of ["width", "height", "fps"]) if (draft.output?.[name] !== undefined && !(Number.isFinite(draft.output[name]) && draft.output[name] > 0)) fail("INVALID_MEDIA_OUTPUT", `${name} must be positive.`);
+        await options.prepare?.(freeze(draft), { signal: args.signal, commands: captured });
+        args.signal?.throwIfAborted(); if (disposed) fail("MEDIA_SESSION_DISPOSED", "Project session is disposed.");
+        undo.push({ before, after: draft }); redo.length = 0;
+        if (options.historyLimit && undo.length > options.historyLimit) undo.shift();
+        return publish(draft, before, args.label || captured.map(c => c.op).join(", "));
+      });
+    },
+    undo(args = {}) { return enqueue(() => { assertRevision(args); const entry = undo.pop(); if (!entry) return { revision, changed: false }; redo.push(entry); return publish(entry.before, document, "undo"); }); },
+    redo(args = {}) { return enqueue(() => { assertRevision(args); const entry = redo.pop(); if (!entry) return { revision, changed: false }; undo.push(entry); return publish(entry.after, document, "redo"); }); },
+    dispose() { disposed = true; listeners.clear(); undo.length = 0; redo.length = 0; }
+  };
+}

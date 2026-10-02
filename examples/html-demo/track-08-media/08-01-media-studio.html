@@ -8,6 +8,8 @@
     "threejson":"../../../builtins/full.js",
     "threejson/runtime":"../../../core/runtime.js",
     "threejson/timeline":"../../../core/timeline.js",
+    "threejson/session":"../../../core/session.js",
+    "threejson/assets":"../../../core/assets.js",
     "threejson/archive":"../../../core/archive/index.js",
     "@threejson/media-kit":"../../../packages/media-kit/js/index.js",
     "@threejson/audio-kit":"../../../packages/audio-kit/js/index.js",
@@ -32,7 +34,7 @@
   <h1>ThreeJSON · 时间线与媒体 / Timeline & media</h1>
   <p>单场景和多场景共用确定性时间。No AI or model download is needed for these examples.</p>
   <label for="sample">示例 / Example</label><br>
-  <select id="sample"><option value="composition">多片段转场 / Composition</option><option value="particle-morph">粒子文字 / Particle typography</option><option value="camera-product">产品运镜 / Product camera</option><option value="data-film">数据动画 / Animated data</option></select>
+  <select id="sample"><option value="composition">多片段转场 / Composition</option><option value="particle-morph">粒子文字 / Particle typography</option><option value="camera-product">产品运镜 / Product camera</option><option value="data-film">数据动画 / Animated data</option><option value="cinematic-film">两分钟视觉母题联映 / Two-minute study</option><option value="cinematic-long-film">五分钟导出压力测试 / Five-minute export fixture</option></select>
   <button id="open">打开工作台 / Open studio</button>
   <p>浏览器会检测 MP4/WebM 编码能力。GIF 无声；图片导出当前定位时刻。字幕与配乐在工作台预览。</p>
   <p>Codec support is browser-dependent. GIF has no sound. Still images capture the selected time.</p>
@@ -40,6 +42,8 @@
 </main>
 <script type="module">
   import { openSceneMediaStudio } from "../../../packages/host-kit/js/mediaStudio.js";
+  const requested = new URLSearchParams(location.search).get("sample");
+  if ([...document.getElementById("sample").options].some(option => option.value === requested)) document.getElementById("sample").value = requested;
   document.getElementById("open").onclick=async()=>{
     try { await openSceneMediaStudio(new URL(`../../../assets/json/demo-show/timeline-media/${document.getElementById("sample").value}.json`,location.href).href); }
     catch(error){document.getElementById("status").textContent=error.message;}

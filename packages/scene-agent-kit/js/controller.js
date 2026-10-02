@@ -15,6 +15,7 @@ import {
   buildStructuredTurnEnvelope,
   projectSceneJsonString
 } from "threejson/ai";
+import { resolveMediaOutputKind } from "threejson/ai";
 import { resolveSceneAgentRoute } from "./turnState.js";
 
 export {
@@ -25,8 +26,10 @@ export {
   runAiTurnSummary as runSceneAgentSummary
 };
 
-export const runSceneAgentGenerateTurn = (input) => runAiGenerateTurn(input);
-export const runSceneAgentAdjustTurn = (input) => runAiAdjustTurn(input);
+export const runSceneAgentGenerateTurn = (input) => resolveMediaOutputKind(input.userPrompt, input.outputKind || input.videoOptions?.outputKind) === "video"
+  ? import("@threejson/host-kit/js/videoTurn.js").then(({ runAiVideoTurn }) => runAiVideoTurn(input)) : runAiGenerateTurn(input);
+export const runSceneAgentAdjustTurn = (input) => JSON.parse(input.targetSceneJsonString || "{}").documentType === "composition" || resolveMediaOutputKind(input.userPrompt, input.outputKind || input.videoOptions?.outputKind) === "video"
+  ? import("@threejson/host-kit/js/videoTurn.js").then(({ runAiVideoTurn }) => runAiVideoTurn(input)) : runAiAdjustTurn(input);
 export const buildSceneAgentTurnEnvelope = (input) => buildStructuredTurnEnvelope(input);
 export const createSceneAgentTurnContext = (turnId, userPrompt) =>
   ({ turnId: String(turnId || "").trim(), originalPrompt: String(userPrompt || "") });

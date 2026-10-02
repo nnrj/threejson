@@ -47,6 +47,17 @@ test("queued deferred history is superseded and never replaces a later snapshot"
   } finally { card.dispose(); }
 });
 
+test("nested composition labels do not activate media routing in ordinary history", async () => {
+  const card = createSceneCardSession({ createRuntime: createJsonScene });
+  try {
+    const input = { ...scene(), metadata: { documentType: "composition" }, name: 'Example: "documentType":"composition"' };
+    await card.render(JSON.stringify(input), { defer: true });
+    assert.equal(card.session, null);
+    assert.equal(card.export().name, input.name);
+    const discovery = await card.discover(); assert.ok(discovery.commands.some(c => c.op === "scene.query"));
+  } finally { card.dispose(); }
+});
+
 test("progressive texture assignment commits once only after decoding and rejects stale plans", async () => {
   let fail = false, commitCount = 0;
   const card = createSceneCardSession({ createRuntime: createJsonScene, loader: { load(_url, ready, _progress, error) {

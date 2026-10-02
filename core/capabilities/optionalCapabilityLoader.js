@@ -1,6 +1,6 @@
 import { createSceneResourcePolicy } from "../resource/sceneResourcePolicy.js";
 
-const ADVANCED_WEBGL_PASS_TYPES = new Set(["unrealbloom", "fxaa", "smaa", "shader", "shaderpreset"]);
+const ADVANCED_WEBGL_PASS_TYPES = new Set(["unrealbloom", "fxaa", "smaa", "shader", "shaderpreset", "selectivebloom", "dof", "cinematic"]);
 const RASTER_PARTICLE_SOURCES = new Set(["textmask", "imagemask"]);
 const EXTRA_CONTROLS_TYPES = new Set(["map", "mapcontrols", "trackball", "trackballcontrols", "arcball", "arcballcontrols"]);
 const COMPLEX_MESH_TYPES = new Set([

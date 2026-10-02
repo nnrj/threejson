@@ -1,3 +1,4 @@
+import { getLocalSpeechPreference, setLocalSpeechPreference } from "./localSpeech.js";
 /** Optional, explicit local-model management. No catalog downloads on open. */
 export function createAudioModelPanel(container, options = {}) {
   const text = options.text || ((zh) => zh), abort = new AbortController();
@@ -26,7 +27,7 @@ export function createAudioModelPanel(container, options = {}) {
   const local = element("button", text("导入所选文件", "Import selected files"), actions);
   const cancel = element("button", text("取消", "Cancel"), actions); cancel.hidden = true;
   const list = element("ul");
-  let manager, manifest, operation, disposed = false, busy = false;
+  let manager, manifest, operation, disposed = false, busy = false, availableCatalog = options.catalog || [];
   const imports = new Map();
   const error = (value) => { if (!disposed) status.textContent = value.name === "AbortError" ? text("操作已取消。", "Cancelled.") : value.message; };
   function updateButtons() {
@@ -42,6 +43,11 @@ export function createAudioModelPanel(container, options = {}) {
     list.replaceChildren();
     for (const item of saved.filter(Boolean)) {
       const row = element("li", `${item.id} / ${item.version} · ${item.adapter} `, list);
+      if (availableCatalog.some(model => model.id === item.id && model.adapter === "threejson-melo-wasm-v1")) {
+        const enabled = getLocalSpeechPreference() === item.id;
+        const activate = element("button", enabled ? text("停用本地旁白", "Disable local narration") : text("启用本地旁白", "Enable local narration"), row);
+        activate.onclick = async () => { try { setLocalSpeechPreference(enabled ? null : item.id); await refresh(); } catch (failure) { error(failure); } };
+      }
       const remove = element("button", text("删除缓存", "Remove cache"), row);
       remove.onclick = async () => {
         if (busy) return;
@@ -59,7 +65,7 @@ export function createAudioModelPanel(container, options = {}) {
     const { validateAudioModelManifest } = await import("@threejson/audio-kit/models");
     if (disposed) return;
     manifest = validateAudioModelManifest(input); imports.clear(); files.replaceChildren();
-    description.textContent = `${manifest.id} / ${manifest.version} · ${manifest.adapter} · ${manifest.license} · ${(manifest.files.reduce((total, file) => total + file.bytes, 0) / 1048576).toFixed(1)} MiB`;
+    description.textContent = `${manifest.id} / ${manifest.version} · ${manifest.adapter} · ${manifest.license} · ${(manifest.files.reduce((total, file) => total + file.bytes, 0) / 1048576).toFixed(1)} MiB. ${manifest.description || ""}`;
     for (const file of manifest.files) {
       const label = element("label", `${file.role} (${file.path || file.role}): `, files);
       label.style.whiteSpace = "normal";
@@ -81,12 +87,18 @@ export function createAudioModelPanel(container, options = {}) {
   }
   choose.onclick = () => manifestInput.click();
   manifestInput.onchange = async () => { try { if (manifestInput.files[0]) await select(JSON.parse(await manifestInput.files[0].text())); } catch (failure) { error(failure); } };
-  catalog.onchange = () => { if (catalog.value !== "") void select(options.catalog[Number(catalog.value)]).catch(error); };
+  catalog.onchange = () => { if (catalog.value !== "") void select(availableCatalog[Number(catalog.value)]).catch(error); };
   persist.onclick = async () => { try { status.textContent = await manager.persist() ? text("已获准持久保存。", "Persistent storage granted.") : text("浏览器未批准；仍可使用普通缓存。", "Not granted; ordinary cache remains usable."); } catch (failure) { error(failure); } };
   download.onclick = () => void install(false); local.onclick = () => void install(true); cancel.onclick = () => operation?.abort();
   updateButtons();
   const ready = (async () => {
     const sdk = await import("@threejson/audio-kit/models");
+    availableCatalog = options.catalog || sdk.getBuiltinAudioModels();
+    if (!disposed) {
+      catalog.replaceChildren(); element("option", text("选择可选模型…", "Select an optional model…"), catalog).value = "";
+      availableCatalog.forEach((manifest, index) => { element("option", manifest.title || `${manifest.id} / ${manifest.version}`, catalog).value = String(index); });
+      catalog.hidden = !availableCatalog.length;
+    }
     const storage = await sdk.createBrowserAudioModelStorage();
     if (disposed) { storage.close?.(); return; }
     manager = sdk.createAudioModelManager(storage); await refresh();

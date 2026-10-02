@@ -119,6 +119,10 @@ function normalizeOptionalBudget(value) {
 export function loadThreeBoxSettingsBundle() {
   const cached = readThreeBoxSettingsCache();
   const merged = deepMergeThreeBoxSettings(THREEBOX_SETTINGS_DEFAULTS, cached || {});
+  if (!["auto", "scene", "video"].includes(merged.ai?.mediaOutputKind)) merged.ai.mediaOutputKind = "auto";
+  if (!["draft", "balanced", "high"].includes(merged.ai?.videoQuality)) merged.ai.videoQuality = "balanced";
+  if (!["auto", "enabled", "disabled"].includes(merged.ai?.videoVisualReview)) merged.ai.videoVisualReview = "auto";
+  merged.ai.videoDuration = Number.isFinite(Number(merged.ai?.videoDuration)) && Number(merged.ai.videoDuration) > 0 ? Number(merged.ai.videoDuration) : 0;
   if (!["auto", "direct", "draft_refine"].includes(merged.ai?.sceneGenerationMode)) {
     merged.ai.sceneGenerationMode = "auto";
   }

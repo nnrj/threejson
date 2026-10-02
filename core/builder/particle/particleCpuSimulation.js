@@ -258,6 +258,9 @@ function updateAttributes(state) {
 
 function simulate(state, delta) {
   const { descriptor } = state; state.elapsed += delta;
+  // Static infinite-lifetime clouds need no physics integration or attribute
+  // upload. Analytic timeline effects then cost uniforms, not count × ticks.
+  if (state.immutableCloud) return;
   const acceleration = {
     x: descriptor.simulation.gravity.x + descriptor.simulation.acceleration.x + descriptor.particle.acceleration.x,
     y: descriptor.simulation.gravity.y + descriptor.simulation.acceleration.y + descriptor.particle.acceleration.y,
@@ -301,8 +304,18 @@ function pointsPositionNeedsUpdate(state) { state.points.geometry.getAttribute(s
 
 export function createParticleCpuSimulationStore() {
   const states = new WeakMap(); const targets = new Set();
-  function disposeParticleCpuSimulation(points) { const state = states.get(points); if (!state) return; points.removeEventListener("removed", state.onRemoved); states.delete(points); targets.delete(points); }
-  function register(points, state) { state.points = points; state.initialAges = state.ages.slice(); state.initialAlive = state.alive.slice(); state.onRemoved = () => disposeParticleCpuSimulation(points); points.addEventListener("removed", state.onRemoved); states.set(points, state); targets.add(points); }
+  let revision = 0;
+  const fields = ["positions", "velocities", "ages", "alive", "rotations"];
+  function disposeParticleCpuSimulation(points) { const state = states.get(points); if (!state) return; points.removeEventListener("removed", state.onRemoved); states.delete(points); targets.delete(points); revision++; }
+  function register(points, state) {
+    const d = state.descriptor;
+    state.immutableCloud = d.emission.mode === "static" && state.lifetimes.every(v => !Number.isFinite(v) || v <= 0) &&
+      state.velocities.every(v => v === 0) && state.angularVelocities.every(v => v === 0) &&
+      [d.simulation.gravity, d.simulation.acceleration, d.particle.acceleration].every(v => !v.x && !v.y && !v.z) &&
+      !d.simulation.noise.strength && !d.simulation.attractors.length && d.simulation.boundary.type === "none";
+    state.points = points; state.initialAges = state.ages.slice(); state.initialAlive = state.alive.slice(); state.onRemoved = () => disposeParticleCpuSimulation(points); points.addEventListener("removed", state.onRemoved); states.set(points, state); targets.add(points);
+    revision++;
+  }
   function update(delta) { if (!(delta > 0)) return; for (const points of targets) { const state = states.get(points); if (!points?.parent || !state) { disposeParticleCpuSimulation(points); continue; } simulate(state, delta); } }
   function dispose() { for (const points of [...targets]) disposeParticleCpuSimulation(points); }
   function resetTime() {
@@ -314,7 +327,22 @@ export function createParticleCpuSimulationStore() {
       pointsPositionNeedsUpdate(state); updateAttributes(state);
     }
   }
-  return { register, update, resetTime, disposeParticleCpuSimulation, dispose };
+  function checkpointBytes() { let bytes = 0; for (const target of targets) { const state = states.get(target); if (!state.immutableCloud) for (const field of fields) bytes += state[field].byteLength; } return bytes; }
+  function captureCheckpoint() {
+    return { revision, entries: [...targets].filter(target => !states.get(target).immutableCloud).map(target => {
+      const state = states.get(target); return { target, elapsed: state.elapsed, arrays: Object.fromEntries(fields.map(field => [field, state[field].slice()])) };
+    }) };
+  }
+  function restoreCheckpoint(checkpoint) {
+    if (checkpoint.revision !== revision) return false;
+    for (const entry of checkpoint.entries) {
+      const state = states.get(entry.target); state.elapsed = entry.elapsed;
+      for (const field of fields) state[field].set(entry.arrays[field]);
+      pointsPositionNeedsUpdate(state); updateAttributes(state);
+    }
+    return true;
+  }
+  return { register, update, resetTime, checkpointBytes, captureCheckpoint, restoreCheckpoint, disposeParticleCpuSimulation, dispose };
 }
 
 function resolveStore(scope) { return resolveRuntimeContext(scope).particleCpuSimulation; }

@@ -397,6 +397,10 @@ export function useSceneCardRuntime(options = {}) {
     }
     setExporting("tjz");
     try {
+      if (sceneJson.documentType === "composition") {
+        const { packMediaDocument } = await import("@threejson/media-kit");
+        downloadBlob(await packMediaDocument(sceneJson, { outputType: "blob" }), `${currentLabelRef.current}.tjz`); return;
+      }
       const { packJsonSceneArchive } = await import("threejson");
       const archiveOptions = typeof optionsRef.current.archiveOptions === "function"
         ? await optionsRef.current.archiveOptions(sceneJson)
@@ -454,11 +458,12 @@ export function useSceneCardRuntime(options = {}) {
   }, [getCardSession, requireSceneJson, toast]);
 
   const handleOpenEditor = useCallback(async () => {
-    const sceneJson = requireSceneJson();
+    let sceneJson = requireSceneJson();
     if (!sceneJson) {
       return;
     }
     try {
+      if (sceneJson.documentType === "composition") { const { chooseMediaShot } = await import("@threejson/host-kit/js/mediaStudio.js"); sceneJson = await chooseMediaShot(sceneJson); if (!sceneJson) return; }
       if (!optionsRef.current.openInEditor) throw new Error("Editor navigation is not configured.");
       await optionsRef.current.openInEditor(sceneJson, currentLabelRef.current);
       toast(translate(optionsRef.current, "sceneAgent.sceneCard.openInEditorSuccess", "已将场景发送到编辑器。"), "success");
@@ -477,6 +482,7 @@ export function useSceneCardRuntime(options = {}) {
       return;
     }
     try {
+      if (sceneJson.documentType === "composition") { const { openSceneMediaStudio } = await import("@threejson/host-kit/js/mediaStudio.js"); await openSceneMediaStudio(sceneJson, { name: currentLabelRef.current }); return; }
       if (!optionsRef.current.openInPlayer) throw new Error("Player navigation is not configured.");
       await optionsRef.current.openInPlayer(sceneJson, currentLabelRef.current);
       toast(translate(optionsRef.current, "sceneAgent.sceneCard.openInPlayerSuccess", "已将场景发送到播放器。"), "success");

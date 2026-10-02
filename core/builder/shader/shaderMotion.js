@@ -106,7 +106,7 @@ export function createShaderMotionStore() {
       getShaderPreset(state.presetId)?.updateUniforms?.(material, { ...ctx, deltaSeconds: 0, elapsed: time, globalElapsed: time, mesh: state.mesh, presetId: state.presetId });
     }
   }
-  return { trackShaderMaterial, disposeShaderMotion, updateShaderMotion, evaluateAt, dispose: reset, reset };
+  return { trackShaderMaterial, disposeShaderMotion, updateShaderMotion, evaluateAt, get time() { return globalElapsed; }, dispose: reset, reset };
 }
 
 function resolveStore(runtimeScope) {

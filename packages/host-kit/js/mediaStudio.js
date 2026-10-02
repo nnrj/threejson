@@ -1,4 +1,9 @@
 let currentClose = null;
+export const loadMediaKit = () => import("@threejson/media-kit");
+export const packMediaDocument = async (...args) => (await loadMediaKit()).packMediaDocument(...args);
+export const createLocalNarrationHost = async () => (await import("./localSpeech.js")).createLocalNarrationHost();
+export const createMediaAudioPlayback = async (...args) => (await import("@threejson/audio-kit")).createPcmPlayback(...args);
+const documentDuration = (source) => (source.timeline?.duration ?? Math.max(0, ...(source.timeline?.clips || []).map(c => (c.start || 0) + c.duration), ...(source.timeline?.tracks || []).flatMap(t => (t.keyframes || []).map(k => k.time)))) || 8;
 const save = (blob, name) => { const url=URL.createObjectURL(blob), a=document.createElement("a"); a.href=url; a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000); };
 
 /** Shared native/React media dialog. Preview/export own an isolated runtime. */
@@ -30,7 +35,7 @@ export async function openSceneMediaStudio(source, options = {}) {
   seek.type="range";seek.min="0";seek.step="0.01";seek.value="0";seek.setAttribute("aria-label",text("场景时间","Scene time"));
   const settings=row();
   const field=(label,type,value)=>{const owner=node("label",label,settings),input=node("input",undefined,owner);input.type=type;input.value=String(value);input.min="1";return input;};
-  const duration=field(text("时长（秒）","Seconds"),"number",source.timeline?.duration||8);duration.step="0.1";duration.min="0.1";
+  const duration=field(text("时长（秒）","Seconds"),"number",documentDuration(source));duration.step="0.1";duration.min="0.1";
   const width=field(text("宽","Width"),"number",source.output?.width||1920),height=field(text("高","Height"),"number",source.output?.height||1080),fps=field("FPS","number",source.output?.fps||30);
   const actions=row(),format=node("select",undefined,actions);format.setAttribute("aria-label",text("导出格式","Export format"));
   for(const value of ["mp4","webm","gif","png","jpeg","webp"]){const item=node("option",value.toUpperCase(),format);item.value=value;}
@@ -58,7 +63,7 @@ export async function openSceneMediaStudio(source, options = {}) {
   currentClose=closeStudio;close.onclick=closeStudio;dialog.addEventListener("cancel",event=>{event.preventDefault();closeStudio();});
   document.body.append(dialog);dialog.showModal();close.focus();
   const fail=(error)=>{if(!closed&&error?.name!=="AbortError")status.textContent=String(error.message||error);};
-  const paint=(value)=>{const id=++paintId;paintQueue=paintQueue.catch(()=>{}).then(async()=>{if(closed||id!==paintId)return;await project.renderAt(value);if(closed||id!==paintId)return;seek.value=String(value);time.textContent=`${value.toFixed(2)} s`;});return paintQueue;};
+  const paint=(value)=>{const id=++paintId;paintQueue=paintQueue.catch(()=>{}).then(async()=>{if(closed||id!==paintId)return;await project.renderAt(Math.min(value,Math.max(0,project.duration-1e-6)));if(closed||id!==paintId)return;seek.value=String(value);time.textContent=`${value.toFixed(2)} s`;});return paintQueue;};
   async function playAudio(at){
     stopAudio(); if(!audio.checked||!mixer)return;
     audioPlayback??=(await import("@threejson/audio-kit")).createPcmPlayback(mixer,{onError:fail});
@@ -73,14 +78,22 @@ export async function openSceneMediaStudio(source, options = {}) {
   cancel.onclick=()=>exportController?.abort();
   exportButton.onclick=async()=>{
     if(busy||!ready)return;pause();exportController=new AbortController();busy=true;exportButton.disabled=true;play.disabled=true;cancel.hidden=false;progress.hidden=false;progress.value=0;
+    let writable;
     try{
+      // A file-backed target keeps long films out of a single in-memory Blob.
+      // Unsupported browsers retain the explicit download fallback.
+      if (["mp4","webm"].includes(format.value) && typeof showSaveFilePicker === "function") {
+        const handle = await showSaveFilePicker({ suggestedName: `${options.name||"threejson-media"}.${format.value}`, types: [{ description: "Video", accept: { [`video/${format.value}`]: [`.${format.value}`] } }] });
+        writable = await handle.createWritable();
+      }
       const config={...options.exportOptions,width:Number(width.value),height:Number(height.value),fps:Number(fps.value),end:Number(duration.value),audio:audio.checked,audioClips:localAudioUrl?[{id:"$imported-audio",url:localAudioUrl}]:[],time:Number(seek.value),signal:exportController.signal,onProgress:(value)=>{progress.value=value.progress;status.textContent=`${Math.round(value.progress*100)}%`;}};
+      if (writable) config.writable = writable;
       let result;
       if(["png","jpeg","webp"].includes(format.value))result=await kit.renderImage(source,{...config,type:`image/${format.value}`});
       else if(format.value==="gif")result=await kit.renderGif(source,config);
       else result=await kit.renderVideo(source,{...config,format:format.value});
-      if(!closed){save(result.blob,`${options.name||"threejson-media"}.${format.value}`);status.textContent=text("已导出。","Export complete.");}
-    }catch(error){if(error.name==="AbortError")status.textContent=text("导出已取消。","Export cancelled.");else fail(error);}
+      if(!closed){if(result.blob)save(result.blob,`${options.name||"threejson-media"}.${format.value}`);status.textContent=text("已导出。","Export complete.");}
+    }catch(error){await writable?.abort().catch(()=>{});if(error.name==="AbortError")status.textContent=text("导出已取消。","Export cancelled.");else fail(error);}
     finally{busy=false;exportButton.disabled=false;play.disabled=false;cancel.hidden=true;progress.hidden=true;}
   };
   async function preparePreview() {
@@ -102,8 +115,24 @@ export async function openSceneMediaStudio(source, options = {}) {
   }
   try {
     kit=await (options.loadMediaKit?.() || import("@threejson/media-kit"));
-    if(typeof source === "string" || source instanceof Blob){const opened=await kit.openMediaDocument(source,{signal:lifecycle.signal});duration.value=String(opened.document.timeline?.duration||8);for(const[key,field]of Object.entries({width,height,fps}))if(opened.document.output?.[key])field.value=String(opened.document.output[key]);opened.dispose();}
+    if(typeof source === "string" || source instanceof Blob){const opened=await kit.openMediaDocument(source,{signal:lifecycle.signal});duration.value=String(documentDuration(opened.document));for(const[key,field]of Object.entries({width,height,fps}))if(opened.document.output?.[key])field.value=String(opened.document.output[key]);opened.dispose();}
     await preparePreview();
   } catch(error){fail(error);}
   return {close:closeStudio};
+}
+
+/** SceneEditor edits a selected scene, never mis-parses a composition as a cube. */
+export async function chooseMediaShot(source) {
+  if (source.documentType !== "composition") return source;
+  const dialog = document.createElement("dialog"), select = document.createElement("select"), label = document.createElement("label"), ok = document.createElement("button"), cancel = document.createElement("button");
+  dialog.className = "threejsonMediaStudio"; dialog.style.cssText = "max-width:94vw;padding:20px;border-radius:12px;background:var(--panel,#252a31);color:var(--text,#eee);border:1px solid #8886";
+  label.textContent = "选择要编辑的镜头 / Select a shot "; label.append(select);
+  for (const clip of source.timeline.clips) { const option = document.createElement("option"); option.value = clip.id; option.textContent = `${source.production?.shots?.[clip.id]?.title || clip.id} · ${clip.start || 0}s`; select.append(option); }
+  ok.textContent = "打开 / Open"; cancel.textContent = "取消 / Cancel"; dialog.append(label, ok, cancel); document.body.append(dialog); dialog.showModal();
+  const id = await new Promise(resolve => { ok.onclick = () => resolve(select.value); cancel.onclick = () => resolve(null); dialog.oncancel = e => { e.preventDefault(); resolve(null); }; });
+  dialog.close(); dialog.remove(); if (!id) return null;
+  const clip = source.timeline.clips.find(c => c.id === id);
+  if (typeof clip.source === "object") return structuredClone(clip.source);
+  if (source.scenes?.[clip.source]) return structuredClone(source.scenes[clip.source]);
+  throw new Error("External shot: open its JSON/.tjz source in SceneEditor.");
 }

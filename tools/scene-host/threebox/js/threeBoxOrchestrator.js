@@ -96,7 +96,10 @@ export function buildResultDigest(sceneJson) {
 }
 
 export function runThreeBoxGenerateTurn(input) {
-  return runAiGenerateTurn(input);
+  return import("threejson/ai").then(async ({ resolveMediaOutputKind }) => {
+    if (resolveMediaOutputKind(input.userPrompt, input.outputKind || input.videoOptions?.outputKind) === "video") return (await import("../../shared/js/videoTurn.js")).runAiVideoTurn(input);
+    return runAiGenerateTurn(input);
+  });
 }
 
 export function classifyThreeBoxTurnIntent(input, providerOptions) {
@@ -116,7 +119,10 @@ export function resolveAdjustContextPayload(targetSceneJson, settings = {}) {
 }
 
 export function runThreeBoxAdjustTurn(input) {
-  return runAiAdjustTurn(input);
+  return import("threejson/ai").then(async ({ resolveMediaOutputKind }) => {
+    if (JSON.parse(input.targetSceneJsonString || "{}").documentType === "composition" || resolveMediaOutputKind(input.userPrompt, input.outputKind || input.videoOptions?.outputKind) === "video") return (await import("../../shared/js/videoTurn.js")).runAiVideoTurn(input);
+    return runAiAdjustTurn(input);
+  });
 }
 
 /**

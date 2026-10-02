@@ -12,6 +12,10 @@ Inputs: scene/composition object, JSON text/URL, Blob, `.tjz` bytes. A browser c
 
 `createMediaProject` shares replay and resources between preview and encoding. `renderVideo` supports a seekable StreamTarget-compatible WritableStream; MP4 uses H.264/AAC, WebM uses VP9/Opus. Actual encoder availability is checked, not assumed. GIF is silent and palette-limited. Cancellation releases runtimes and encoders.
 
+`createMediaProjectSession` / `createMediaOperationService` support revision-checked, atomic storyboard/shot/timeline edits, undo/redo, compact queries and injected frame-capture/export/narration adapters. `threejson/ai` can drive this service through `runVideoAgent` without depending on this package. Ordinary scene generation is unchanged.
+
+Compositions support cross-dissolves, wipe and seeded dissolve reveals, CJK-safe captions with highlights/typewriter effects, and bounded next-shot preloading. Narration uses actual PCM sentence duration; `packMediaDocument` turns existing inline audio into deduplicated binary assets without downloading remote dependencies. Runtime resource resolution preserves host gateway/cache policies.
+
 `/reconstruction` is a separate phase-two interface for host-injected analysis, not a video-to-3D implementation. It never uploads media or calls AI implicitly.
 
 [中文指南](https://github.com/nnrj/threejson/blob/master/docs/zh/timeline-media.md) · [English guide](https://github.com/nnrj/threejson/blob/master/docs/en/timeline-media.md)

@@ -53,6 +53,19 @@ test("CPU particles use reproducible fixed ticks across output fps and backward 
   player.evaluateAt(.4); player.evaluateAt(2); assert.deepEqual(Array.from(points.geometry.attributes.position.array), snapshot);
   player.dispose(); ctx.dispose();
 });
+
+test("CPU checkpoint replay is exact and skips cached integration without imposing a particle budget", () => {
+  const scene = new THREE.Scene(), ctx = createRuntimeContext(); attachRuntimeContext(scene, ctx);
+  const points = deployParticleCpuEmitter({ objType: "particleEmitter", threeJsonId: "p", source: { type: "sphere", radius: 2 }, emission: { count: 20, seed: 42 }, particle: { velocity: { x: 1, y: 1, z: 0 } }, simulation: { backend: "cpu", noise: { strength: .5, frequency: 1 } } }, scene);
+  let steps = 0; const update = ctx.particleCpuSimulation.update;
+  ctx.particleCpuSimulation.update = dt => { steps++; update(dt); };
+  const player = createSceneTimelineController({ scene, runtimeContext: ctx }, { duration: 12 }, { checkpointInterval: 1 });
+  player.evaluateAt(5); const expected = points.geometry.attributes.position.array.slice();
+  player.evaluateAt(8); steps = 0; player.evaluateAt(5);
+  assert.deepEqual(points.geometry.attributes.position.array, expected); assert.equal(steps, 0);
+  player.evaluateAt(0); player.evaluateAt(5); assert.deepEqual(points.geometry.attributes.position.array, expected);
+  player.dispose(); ctx.dispose();
+});
 test("manual render works while stopped without advancing controls or animation", () => {
   let renders = 0, controls = 0;
   const loop = createRenderLoop({ scene: new THREE.Scene(), camera: new THREE.PerspectiveCamera(), renderer: { render() { renders++; } }, controls: { update() { controls++; } } });

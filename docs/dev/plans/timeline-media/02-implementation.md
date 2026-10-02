@@ -27,7 +27,9 @@
 - [x] 官网/HTML 四个示例（粒子文字、产品运镜、数据动画、多片段）；中英文指南、类型、LICENSE/README 和 release 包顺序。
 - [x] 原生站点 `.assetsignore` 精确放行媒体浏览器模块，仍排除其他 package、Node 工具和本地凭据；普通场景启动零媒体请求。
 
-## 尚未完成 / 未验证（不能当成已可用）
+## 首次交付时尚未完成 / 未验证（2026-09-29 快照）
+
+以下是历史记录；2026-10-02 已补齐的条目及仍未覆盖的范围以文末更新为准。
 
 1. **真实 TTS 模型目录**：没有发布实测的 Melo/Kokoro 权重、运行库组合和音色目录。Sherpa/Worker 及存储接口已实现，mock 契约测试不证明真实模型可用或音质合格。未自动下载大模型。SoundFont 同样尚未用真实高质量音源验收。
 2. **高级声音与音乐**：MIDI/MusicXML、完整记谱/编曲 UI、生成音频配方缓存与一键烘焙、自动音频分析/节拍驱动粒子算子未交付。电子合成不是自然演唱。显式 timeline.audio 可导出；不自动捕获旧交互事件/空间声场。
@@ -73,3 +75,42 @@ node tools/dev/verify-timeline-media.mjs
 - 完整 Node 回归：1,614 项中 1,613 通过、1 跳过、0 失败。日志 `dist/timeline-material-check/full-tests.log`。
 - 真实本机 Edge：`THREEJSON_BROWSER` 指定已安装浏览器，执行 `node tools/dev/verify-timeline-material-browser.mjs [可选场景JSON路径]`。原生 ThreeBox 卡片中检验中文 SDF 的实际像素、填充/描边共同淡出、后退结果一致、源文档不变；最小场景及用户原 JSON 均通过，无浏览器错误。报告 `dist/timeline-material-check/2026-09-29T06-22-48-202Z/report.json`。
 - 用户原 JSON 未修改，图片及完整 16 秒、192 帧、960×540 MP4 导出通过，重读视频元数据确认为 16 秒；无浏览器/资源错误。报告 `dist/timeline-material-check/export-1790663041668/report.json`。测试产物留在忽略目录，不提交用户附件或生成视频；未调用 AI、未发布或部署。
+
+## 2026-10-02：高质量影片制作主链路
+
+本轮基线为 `3052cd1`。没有 push、npm publish、部署或真实收费供应商调用。实现的是可编辑程序化影片的工具与生产流程，不以测试母题或提示词改进承诺任意模型的成片审美。
+
+### 交付
+
+- 时间信号、Pass/renderer/effect/caption/audio 属性绑定；相机 path/orbit 与目标顺序、效果起止/保持/循环。TSL 内置 time/pulse 接显式场景时钟，factory 收到 timeNode。
+- 粒子 wave/swirl/orbit/morph/scatter/wavefront/flow：CPU 参考与可选 WebGL 解析式顶点效果，空间形变对应、错峰、路径光带；静态云不重复积分上传。有状态 CPU 粒子提供可配置有界检查点。
+- 按需 WebGL 选择性 Bloom、景深、光条/暗角/调色；修正 Troika SDF getter 材质的临时替换/恢复、填充/描边和内置粒子深度。未选中 SDF 在 selectivebloom 前后像素差为零。
+- CJK 换行/安全区、打字、关键词、淡入/滑动与双语字幕；wipe/种子 dissolve 与正确 source-over 权重；一个近邻镜头预加载和 GPU 上下文复用/释放。
+- media-kit 项目会话、原子 revision 操作、撤销；shot 编辑复用 SceneSession。core/ai 新增注入式 runVideoAgent：分镜/粗剪/局部细化/检查，无反向宿主依赖，无固定 64 响应限制，提交后只保留紧凑上下文。
+- 原生与 React ThreeBox 同步：视频意图路由、目标/时长/质量/确认分镜/视觉复核设置，分镜卡片与播放/定位，暂停后继续对话，指定单镜头修改，完整项目历史和刷新恢复，默认单活动画布，Editor 选择镜头。没有专用“一键重做镜头”按钮。
+- 固定版本 MeloTTS INT8 + Sherpa-ONNX 单线程 WASM 中文旁白（约 71 MiB），显式下载/导入、启用/停用、Worker 合成、句级缓存，按真实音频时长编排。独立口播/显示文本，延长镜头须显式允许。
+- 音乐 ducking、gain/pan 自动化、RMS/peak/削波及 samples 包络；生成旁白存入作品，.tjz 将已有内嵌音频转为去重二进制，不打包模型。视频可直接流式写入文件。
+- 影片资源解析保留宿主纹理缓存与代理策略；恢复历史的惰性 JSON 解析，避免新增影片路径阻塞普通聊天历史。补齐原生页面、CLI 和示例 import map 与部署 allowlist。
+- 官网新增五类镜头和两分钟影片入口；HTML 工作台提供 120/300 秒样例。`tools/dev/generate-cinematic-examples.mjs` 从同一 fixture 生成 JSON，未下载图片/三方模型。五分钟样例是长导出压力/机制验证，不是五分钟原创科学脚本或自动生成质量基准。
+
+### 验证
+
+- `npm test`：1,644 项，1,643 通过、1 跳过、0 失败；`dist/video-final-tests.log`。覆盖 68 次响应的逐镜头生成、原子失败/撤销、检查点、TSL 时钟隔离、宿主资源策略、音频二进制打包等。曾发现历史 JSON 被提前解析的回归，修复后重跑全套通过。
+- `npm run verify:ai-static` 3/3；`npm run validate:demo-catalog` 51 项/66 ID；`npm run release:check` 通过。严格 NodeNext 类型检查、React ThreeBox 生产构建通过；保留已有大 chunk/静动态导入告警。
+- `verify-cinematic-video.mjs`：真实 Edge 10 万粒子五镜头、50 万粒子、随机后退逐像素一致、选择性辉光 SDF 隔离、wipe/dissolve 像素与种子重复性，无 shader/page 错误。`dist/cinematic-video/2026-10-02T15-27-59-459Z/report.json`。未把此结果外推为手机帧率保证。
+- `verify-cinematic-export.mjs`：1920×1080/30fps，120 秒 3,600 帧、300 秒 9,000 帧 MP4；seekable writable 流式写入，结果 blob:null，重解码尺寸与时长正确。`dist/cinematic-export/2026-10-02T15-31-47-146Z/report.json`。这组长片无音轨；有声短片另由既有 timeline-media 导出回归覆盖。
+- `verify-threebox-film-browser.mjs`：390px 播放/定位，旧作品未被新卡片修改、一个活动播放器、无横向溢出、序列化后页面刷新重载、无隐式 ONNX/WASM 下载。`dist/threebox-film/2026-10-02T15-31-06-738Z/report.json`。此项验证共享卡片与保存文档，并非真实供应商对话 E2E。
+- `verify-media-studio-browser.mjs`：四个既有示例、明暗/窄屏、可选模型面板和 Editor 零预加载边界，5 项通过。`dist/media-studio-check/2026-10-02T15-31-26-283Z/report.json`。
+- `verify-scene-operations-browser.mjs`：cube、room-show、port-show、FPS、片头、算子建模、粒子、Editor 编辑/撤销原文恢复，8 项通过，未见网络/页面错误。`dist/scene-operation-check/report.json`。
+- `verify-timeline-media.mjs`：PNG/GIF/MP4/WebM（含音频）、多片段归档、GIF 红绿时间点精确像素、取消清理，9 项通过。`dist/timeline-media/2026-10-02T15-01-46-357Z/report.json`。
+- `verify-local-chinese-tts.mjs`：实际下载并校验固定文件，真实 WASM/ONNX 合成“你好，这是在用户电脑上合成的中文旁白。”，44,100Hz、3.159 秒、非静音 PCM；`dist/local-chinese-tts/report.json` 及 `chinese-narration.wav`。真实样本验证不是专业音质保证，未用 mock 代替。模型缓存、WAV、MP4、截图均留在 gitignored dist，不进入仓库或 npm 包。
+
+浏览器测试需显式设置 `THREEJSON_BROWSER` 为已安装浏览器；真实 TTS 测试首次需 `--download`，下载模型有明确体积成本。所有脚本使用自己的临时测试服务器并在结束时关闭，不接管用户服务。
+
+### 仍待后续 / 不夸大的边界
+
+- 真实文本/视觉供应商的端到端成片质量、服务器有效 token/超时参数的统一发现与界面展示未做；本期保留现有请求限制/故障保护，失败保存已完成镜头。未知图片能力不按厂商品牌推测。
+- WebGPU 后处理/整片导出、GPU compute/外部状态机检查点、任意 shader 深度、真实手机/Safari/Firefox及长时内存曲线未验收。当前 GPU 解析式效果为 WebGL 静态 Particle V2 支持子集。
+- 通用 GPU 流场/流体/碰撞/持久轨迹、外部遮罩转场、MathJax 排版、联系表拼图、专业多轨 NLE 不在此次已交付列表。
+- Melo 仅一个预览音色；英语长句/中英混读、移动端内存、专业配音标准尚未验收。Kokoro、词级对齐、高质量音源、演唱、MIDI/MusicXML和跨轮持久化音频配方缓存后续。
+- 不改 threebox-server/dashboard 或 Cloud 业务；Cloud/独立 React 使用方需升级公共包并重新构建。反向媒体 AI 重建仍是二期，不侵入引擎主线。

@@ -1,0 +1,409 @@
+{
+  "version": "next",
+  "threeJsonId": "energy",
+  "name": "能量的阶梯",
+  "sceneConfig": {
+    "scene": {
+      "background": "#020510"
+    },
+    "camera": {
+      "position": {
+        "x": 0,
+        "y": 8,
+        "z": 62
+      },
+      "fov": 46,
+      "near": 0.1,
+      "far": 1000,
+      "lookAt": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    "controls": {
+      "type": "none"
+    },
+    "renderer": {
+      "antialias": true,
+      "toneMapping": "aces",
+      "exposure": 1
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "intensity": 0.5
+      },
+      {
+        "type": "directional",
+        "intensity": 2,
+        "position": {
+          "x": 5,
+          "y": 12,
+          "z": 16
+        }
+      }
+    ]
+  },
+  "objectList": [
+    {
+      "objType": "text",
+      "threeJsonId": "title",
+      "mode": "sdf",
+      "content": "能量的阶梯",
+      "fontSize": 2.2,
+      "color": "#dbf6ff",
+      "align": "center",
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "billboard": true,
+      "position": {
+        "x": 0,
+        "y": 17,
+        "z": 0
+      },
+      "sdf": {
+        "outlineWidth": 0.035,
+        "outlineColor": "#050919"
+      }
+    },
+    {
+      "objType": "box",
+      "threeJsonId": "level-0",
+      "position": {
+        "x": -12.600000000000001,
+        "y": -6,
+        "z": 0
+      },
+      "geometry": {
+        "width": 4,
+        "height": 0.3,
+        "depth": 7
+      },
+      "material": {
+        "type": "basic",
+        "color": "#69d9ff",
+        "wireframe": true
+      }
+    },
+    {
+      "objType": "box",
+      "threeJsonId": "level-1",
+      "position": {
+        "x": -8.4,
+        "y": -4,
+        "z": 0
+      },
+      "geometry": {
+        "width": 4,
+        "height": 0.3,
+        "depth": 7
+      },
+      "material": {
+        "type": "basic",
+        "color": "#69d9ff",
+        "wireframe": true
+      }
+    },
+    {
+      "objType": "box",
+      "threeJsonId": "level-2",
+      "position": {
+        "x": -4.2,
+        "y": -2,
+        "z": 0
+      },
+      "geometry": {
+        "width": 4,
+        "height": 0.3,
+        "depth": 7
+      },
+      "material": {
+        "type": "basic",
+        "color": "#69d9ff",
+        "wireframe": true
+      }
+    },
+    {
+      "objType": "box",
+      "threeJsonId": "level-3",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "geometry": {
+        "width": 4,
+        "height": 0.3,
+        "depth": 7
+      },
+      "material": {
+        "type": "basic",
+        "color": "#69d9ff",
+        "wireframe": true
+      }
+    },
+    {
+      "objType": "box",
+      "threeJsonId": "level-4",
+      "position": {
+        "x": 4.2,
+        "y": 2,
+        "z": 0
+      },
+      "geometry": {
+        "width": 4,
+        "height": 0.3,
+        "depth": 7
+      },
+      "material": {
+        "type": "basic",
+        "color": "#69d9ff",
+        "wireframe": true
+      }
+    },
+    {
+      "objType": "box",
+      "threeJsonId": "level-5",
+      "position": {
+        "x": 8.4,
+        "y": 4,
+        "z": 0
+      },
+      "geometry": {
+        "width": 4,
+        "height": 0.3,
+        "depth": 7
+      },
+      "material": {
+        "type": "basic",
+        "color": "#69d9ff",
+        "wireframe": true
+      }
+    },
+    {
+      "objType": "box",
+      "threeJsonId": "level-6",
+      "position": {
+        "x": 12.600000000000001,
+        "y": 6,
+        "z": 0
+      },
+      "geometry": {
+        "width": 4,
+        "height": 0.3,
+        "depth": 7
+      },
+      "material": {
+        "type": "basic",
+        "color": "#69d9ff",
+        "wireframe": true
+      }
+    },
+    {
+      "objType": "text",
+      "threeJsonId": "formula",
+      "mode": "sdf",
+      "content": "E = hν",
+      "fontSize": 3.2,
+      "color": "#ffda93",
+      "position": {
+        "x": -13,
+        "y": 9,
+        "z": 0
+      }
+    },
+    {
+      "objType": "text",
+      "threeJsonId": "energy-label",
+      "mode": "mesh",
+      "content": "ENERGY",
+      "fontSize": 1.2,
+      "color": "#bf9563",
+      "position": {
+        "x": -12,
+        "y": 6,
+        "z": 0
+      },
+      "mesh": {
+        "fontJsonUrl": "/assets/fonts/helvetiker_bold.typeface.json",
+        "depth": 0.2,
+        "bevelEnabled": true,
+        "bevelThickness": 0.04,
+        "bevelSize": 0.03
+      }
+    },
+    {
+      "objType": "sphere",
+      "threeJsonId": "packet",
+      "position": {
+        "x": -13,
+        "y": -4,
+        "z": 0
+      },
+      "geometry": {
+        "radius": 0.5,
+        "widthSegments": 32,
+        "heightSegments": 20
+      },
+      "material": {
+        "type": "basic",
+        "color": "#ffffff"
+      }
+    },
+    {
+      "objType": "pass",
+      "id": "dof",
+      "passType": "dof",
+      "focus": 62,
+      "aperture": 0.000035,
+      "maxblur": 0.007
+    },
+    {
+      "objType": "pass",
+      "id": "glow",
+      "passType": "selectivebloom",
+      "targets": [
+        "level-0",
+        "level-1",
+        "level-2",
+        "level-3",
+        "level-4",
+        "level-5",
+        "level-6",
+        "packet"
+      ],
+      "strength": 0.6,
+      "radius": 0.5,
+      "threshold": 0.65
+    },
+    {
+      "objType": "pass",
+      "id": "grade",
+      "passType": "cinematic",
+      "vignette": 0.22,
+      "streak": 0.2,
+      "streakThreshold": 0.8
+    },
+    {
+      "objType": "pass",
+      "id": "output",
+      "passType": "output"
+    }
+  ],
+  "timeline": {
+    "version": 1,
+    "duration": 24,
+    "effects": [],
+    "tracks": [
+      {
+        "id": "dolly",
+        "target": "$camera",
+        "property": "position",
+        "signal": {
+          "type": "path",
+          "duration": 24,
+          "points": [
+            [
+              -4,
+              8,
+              66
+            ],
+            [
+              4,
+              10,
+              61
+            ],
+            [
+              0,
+              8,
+              57
+            ]
+          ]
+        }
+      },
+      {
+        "id": "aim",
+        "target": "$camera",
+        "property": "lookAt",
+        "keyframes": [
+          {
+            "time": 0,
+            "value": [
+              0,
+              0,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "climb",
+        "target": "packet",
+        "property": "position",
+        "signal": {
+          "type": "path",
+          "duration": 19.200000000000003,
+          "interpolation": "linear",
+          "points": [
+            [
+              -12.600000000000001,
+              -5,
+              0
+            ],
+            [
+              -8.4,
+              -3,
+              0
+            ],
+            [
+              -4.2,
+              -1,
+              0
+            ],
+            [
+              0,
+              1,
+              0
+            ],
+            [
+              4.2,
+              3,
+              0
+            ],
+            [
+              8.4,
+              5,
+              0
+            ],
+            [
+              12.600000000000001,
+              7,
+              0
+            ]
+          ]
+        }
+      }
+    ],
+    "captions": [
+      {
+        "id": "caption",
+        "text": "E = hν。能量交换呈离散份额；阶梯是概念图，不是原子的真实结构。",
+        "start": 1,
+        "duration": 22,
+        "fontSize": 32,
+        "y": 0.9,
+        "fadeIn": 0.6,
+        "fadeOut": 0.6,
+        "maxWidth": 0.86
+      }
+    ]
+  },
+  "output": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30
+  }
+}

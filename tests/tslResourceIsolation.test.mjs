@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import * as THREE from "three";
 import { prepareTslGraphsForPayload, compileTslGraph } from "../webgpu/tslGraph.js";
-import { createTslMaterialFromDescriptor } from "../webgpu/tslMaterial.js";
+import { createTslMaterialFromDescriptor, registerTslPreset } from "../webgpu/tslMaterial.js";
 import { createRuntimeContext, attachRuntimeContext, runWithRuntimeContextScope } from "../core/runtime/runtimeContext.js";
 import { registerSceneCapabilityPreparer, unregisterSceneCapabilityPreparer, runSceneCapabilityPreparers } from "../core/capabilities/scenePreparationRegistry.js";
 
@@ -10,6 +10,22 @@ const tick = () => new Promise((resolve) => setImmediate(resolve));
 const graph = (url = "map.png") => ({ graphVersion: 1, nodes: [{ id: "image", type: "texture", url, repeat: [2, 3] }], outputs: { color: "image" } });
 const descriptor = { type: "tsl", tsl: { kind: "graph", source: { url: "/assets/graphs/material.json" } } };
 const scene = (material = descriptor) => ({ objectList: [{ objType: "box", material }] });
+
+test("TSL factories use the explicit owning scene clock and release registration", () => {
+  const first = createRuntimeContext(), second = createRuntimeContext(), a = new THREE.Scene(), b = new THREE.Scene();
+  attachRuntimeContext(a, first); attachRuntimeContext(b, second);
+  let clock;
+  registerTslPreset("test-explicit-clock", (_params, context) => { clock = context.timeNode; return { opacity: clock }; });
+  const material = createTslMaterialFromDescriptor({ base: "basic", tsl: { kind: "preset", id: "test-explicit-clock" } });
+  try {
+    first.shaderMotion.evaluateAt(2); second.shaderMotion.evaluateAt(9);
+    material.onBeforeRender(null, a); assert.equal(clock.value, 2);
+    first.shaderMotion.evaluateAt(.25); assert.equal(clock.value, .25);
+    material.onBeforeRender(null, b); assert.equal(clock.value, 9);
+    material.onBeforeRender(null, a); assert.equal(clock.value, .25);
+    material.dispose(); first.shaderMotion.evaluateAt(7); second.shaderMotion.evaluateAt(8); assert.equal(clock.value, .25);
+  } finally { first.dispose(); second.dispose(); }
+});
 function loader() {
   const calls = [];
   return { calls, load(url, ready, _progress, fail) {

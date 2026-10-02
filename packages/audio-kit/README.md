@@ -12,6 +12,10 @@ const wav = encodeWav(pcm);
 
 Use `createScoreRenderer` and `createPcmMixer` for bounded-block synthesis. `createPcmPlayback` schedules the same blocks on a WebAudio clock. Basic electronic instruments are not natural singing.
 
-Optional subpaths: `/models` (explicit download/import, SHA-256 verification, OPFS/IndexedDB, leases), `/node-models` (user cache), `/worker-producer`, `/sherpa`, `/soundfont`. Host applications supply matching runtime factories, models and licenses. No preverified downloadable Melo/Kokoro catalog is bundled; adapter tests are not voice-quality validation.
+Optional subpaths: `/models` (explicit download/import, SHA-256 verification, OPFS/IndexedDB, leases), `/node-models` (user cache), `/worker-producer`, `/sherpa`, `/soundfont`.
+
+`/models` exports `getBuiltinAudioModels` and `createLocalSpeechProducer({modelManager})`: a pinned MeloTTS Chinese + Sherpa-ONNX single-thread WASM preview, about 71 MiB, loaded only after explicit installation. Actual Chinese PCM synthesis was verified in local Edge; this is not a claim of professional voice quality or mobile performance. Kokoro and other voices still need adapters. Weights are not shipped or downloaded by npm installation.
+
+`analyzePcm` returns RMS, peak, clipping and a sampled envelope. The deterministic mixer supports gain/pan automation and music ducking keyed to narration or explicit clip IDs. Generated WAVs are portable; listeners do not need the original voice model.
 
 [中文指南](https://github.com/nnrj/threejson/blob/master/docs/zh/timeline-media.md) · [English guide](https://github.com/nnrj/threejson/blob/master/docs/en/timeline-media.md)

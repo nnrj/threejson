@@ -1,0 +1,247 @@
+{
+  "version": "next",
+  "threeJsonId": "cloud",
+  "name": "从一个电子开始",
+  "sceneConfig": {
+    "scene": {
+      "background": "#020510"
+    },
+    "camera": {
+      "position": {
+        "x": 0,
+        "y": 8,
+        "z": 62
+      },
+      "fov": 46,
+      "near": 0.1,
+      "far": 1000,
+      "lookAt": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    "controls": {
+      "type": "none"
+    },
+    "renderer": {
+      "antialias": true,
+      "toneMapping": "aces",
+      "exposure": 1
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "intensity": 0.5
+      },
+      {
+        "type": "directional",
+        "intensity": 2,
+        "position": {
+          "x": 5,
+          "y": 12,
+          "z": 16
+        }
+      }
+    ]
+  },
+  "objectList": [
+    {
+      "objType": "text",
+      "threeJsonId": "title",
+      "mode": "sdf",
+      "content": "从一个电子开始",
+      "fontSize": 2.2,
+      "color": "#dbf6ff",
+      "align": "center",
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "billboard": true,
+      "position": {
+        "x": 0,
+        "y": 17,
+        "z": 0
+      },
+      "sdf": {
+        "outlineWidth": 0.035,
+        "outlineColor": "#050919"
+      }
+    },
+    {
+      "objType": "particleEmitter",
+      "threeJsonId": "cloud",
+      "source": {
+        "type": "sphere",
+        "radius": 16
+      },
+      "emission": {
+        "mode": "static",
+        "count": 100000,
+        "seed": 73
+      },
+      "particle": {
+        "lifetime": 0,
+        "colorOverLife": [
+          "#5ea8ff"
+        ],
+        "sizeOverLife": [
+          0.12
+        ]
+      },
+      "simulation": {
+        "backend": "cpu"
+      },
+      "render": {
+        "type": "points",
+        "blending": "additive",
+        "depthWrite": false,
+        "opacity": 0.075
+      }
+    },
+    {
+      "objType": "sphere",
+      "threeJsonId": "core",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "geometry": {
+        "radius": 0.65,
+        "widthSegments": 32,
+        "heightSegments": 20
+      },
+      "material": {
+        "type": "basic",
+        "color": "#ffffff"
+      }
+    },
+    {
+      "objType": "pass",
+      "id": "dof",
+      "passType": "dof",
+      "focus": 62,
+      "aperture": 0.000035,
+      "maxblur": 0.007
+    },
+    {
+      "objType": "pass",
+      "id": "glow",
+      "passType": "selectivebloom",
+      "targets": [
+        "cloud",
+        "core"
+      ],
+      "strength": 0.6,
+      "radius": 0.5,
+      "threshold": 0.65
+    },
+    {
+      "objType": "pass",
+      "id": "grade",
+      "passType": "cinematic",
+      "vignette": 0.22,
+      "streak": 0.2,
+      "streakThreshold": 0.8
+    },
+    {
+      "objType": "pass",
+      "id": "output",
+      "passType": "output"
+    }
+  ],
+  "timeline": {
+    "version": 1,
+    "duration": 24,
+    "effects": [
+      {
+        "id": "swirl",
+        "target": "cloud",
+        "operator": "swirl",
+        "params": {
+          "speed": 0.04,
+          "twist": 0.08
+        },
+        "start": 0,
+        "duration": 24,
+        "backend": "webgl"
+      },
+      {
+        "id": "ripple",
+        "target": "cloud",
+        "operator": "wave",
+        "params": {
+          "amplitude": 1.1,
+          "frequency": 0.4,
+          "speed": 0.6
+        },
+        "start": 0,
+        "duration": 24,
+        "backend": "webgl"
+      }
+    ],
+    "tracks": [
+      {
+        "id": "dolly",
+        "target": "$camera",
+        "property": "position",
+        "signal": {
+          "type": "path",
+          "duration": 24,
+          "points": [
+            [
+              -4,
+              8,
+              66
+            ],
+            [
+              4,
+              10,
+              61
+            ],
+            [
+              0,
+              8,
+              57
+            ]
+          ]
+        }
+      },
+      {
+        "id": "aim",
+        "target": "$camera",
+        "property": "lookAt",
+        "keyframes": [
+          {
+            "time": 0,
+            "value": [
+              0,
+              0,
+              0
+            ]
+          }
+        ]
+      }
+    ],
+    "captions": [
+      {
+        "id": "caption",
+        "text": "亮点是视觉示意，而不是电子沿固定轨道运动的实景。",
+        "start": 1,
+        "duration": 22,
+        "fontSize": 32,
+        "y": 0.9,
+        "fadeIn": 0.6,
+        "fadeOut": 0.6,
+        "maxWidth": 0.86
+      }
+    ]
+  },
+  "output": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30
+  }
+}

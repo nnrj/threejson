@@ -165,6 +165,7 @@ export function resolveSceneHostAiRendererBackend({
  * capability. The earlier immutable turn remains unchanged. */
 export function projectSceneToRendererBackend(scene, rendererBackend) {
   if (!scene || typeof scene !== "object" || rendererBackend !== "webgpu") return scene;
+  if (scene.documentType === "composition") return { ...scene, scenes: Object.fromEntries(Object.entries(scene.scenes || {}).map(([id, shot]) => [id, projectSceneToRendererBackend(shot, rendererBackend)])) };
   return {
     ...scene,
     sceneConfig: {

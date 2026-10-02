@@ -457,6 +457,10 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
     }
     exportBtn.disabled = true;
     try {
+      if (sceneJson.documentType === "composition") {
+        const { packMediaDocument } = await import("../../shared/js/mediaStudio.js");
+        downloadBlob(await packMediaDocument(sceneJson, { outputType: "blob" }), `${currentLabel}.tjz`); return;
+      }
       const { packJsonSceneArchive } = await import("threejson");
       const archiveOptions = typeof cardOptions.archiveOptions === "function"
         ? await cardOptions.archiveOptions(sceneJson)
@@ -516,12 +520,13 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
     }
   });
 
-  openEditorBtn.addEventListener("click", () => {
-    const sceneJson = requireSceneJson();
+  openEditorBtn.addEventListener("click", async () => {
+    let sceneJson = requireSceneJson();
     if (!sceneJson) {
       return;
     }
     try {
+      if (sceneJson.documentType === "composition") { const { chooseMediaShot } = await import("../../shared/js/mediaStudio.js"); sceneJson = await chooseMediaShot(sceneJson); if (!sceneJson) return; }
       const bridgeId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       localStorage.setItem(
         `${EDITOR_OPEN_SCENE_BRIDGE_PREFIX}${bridgeId}`,
@@ -542,6 +547,7 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
     if (!sceneJson) {
       return;
     }
+    if (sceneJson.documentType === "composition") { mediaBtn.click(); return; }
     const playerUrl = new URL("../player/index.html", window.location.href);
     const playerOrigin = resolveScenePreviewPeerOrigin(
       playerUrl.href,

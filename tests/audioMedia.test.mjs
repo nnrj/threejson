@@ -67,7 +67,7 @@ test("composition releases inactive renderer configurations instead of accumulat
   const live = new Set(), context = { clearRect() {}, fillRect() {}, save() {}, restore() {}, drawImage() {} };
   const canvas = () => ({ getContext: () => context });
   const document = { documentType: "composition", compositionVersion: 1, timeline: { duration: 3, clips: [0,1,2].map(index => ({ id: `clip-${index}`, start: index, duration: 1, source: { sceneConfig: { renderer: { exposure: index + 1 } }, objectList: [] } })) } };
-  const project = await createMediaProject(document, { width: 32, height: 32, createCanvas: canvas, createScene: async (_scene, options) => {
+  const project = await createMediaProject(document, { width: 32, height: 32, preloadNext: false, createCanvas: canvas, createScene: async (_scene, options) => {
     const renderer = options.renderer || { domElement: canvas(), setPixelRatio() {}, setSize() {}, dispose() { live.delete(this); } };
     live.add(renderer); let owned = options.ownsRenderer;
     return { scene: new THREE.Scene(), camera: new THREE.PerspectiveCamera(), renderer, setRendererOwnership(value) { owned = value; }, renderLoop: { setTimeDriver() {}, renderCurrentFrame() {} }, dispose() { if (owned) renderer.dispose(); } };
@@ -75,4 +75,58 @@ test("composition releases inactive renderer configurations instead of accumulat
   try { for (const time of [.1, 1.1, 2.1, .1]) { await project.renderAt(time); assert.equal(live.size, 1); } }
   finally { project.dispose(); }
   assert.equal(live.size, 0);
+});
+
+test("preload prepares only the next nearby shot and reuses the renderer", async () => {
+  const built = [], released = [], live = new Set(), context = { clearRect() {}, fillRect() {}, save() {}, restore() {}, drawImage() {} };
+  const canvas = () => ({ getContext: () => context });
+  const document = { documentType: "composition", compositionVersion: 1, timeline: { duration: 30, clips: [0, 1, 2].map(i => ({ id: `clip-${i}`, start: i * 10, duration: 10, source: { name: `shot-${i}`, objectList: [] } })) } };
+  const project = await createMediaProject(document, { width: 32, height: 32, createCanvas: canvas, createScene: async (scene, options) => {
+    built.push(scene.name);
+    const renderer = options.renderer || { domElement: canvas(), setPixelRatio() {}, setSize() {}, dispose() { live.delete(this); } };
+    live.add(renderer); let owned = options.ownsRenderer;
+    return { scene: new THREE.Scene(), camera: new THREE.PerspectiveCamera(), renderer, setRendererOwnership(value) { owned = value; }, renderLoop: { setTimeDriver() {}, renderCurrentFrame() {} }, dispose() { released.push(scene.name); if (owned) renderer.dispose(); } };
+  } });
+  try {
+    await project.renderAt(0); assert.deepEqual(built, ["shot-0"]);
+    await project.renderAt(8.5); assert.deepEqual(built, ["shot-0", "shot-1"]); assert.equal(live.size, 1);
+    await project.renderAt(10.1); assert.equal(built.length, 2); assert.deepEqual(released, ["shot-0"]);
+    await project.renderAt(18.5); assert.deepEqual(built, ["shot-0", "shot-1", "shot-2"]); assert.equal(live.size, 1);
+  } finally { project.dispose(); }
+  assert.equal(live.size, 0); assert.equal(released.length, 3);
+});
+
+test("media keeps child asset bases, host cache/proxy policy and abort signals", async () => {
+  const context = { clearRect() {}, fillRect() {}, save() {}, restore() {}, drawImage() {} }, canvas = () => ({ getContext: () => context });
+  const abort = new AbortController(), resolved = [];
+  const project = await createMediaProject({ objectList: [], timeline: { duration: 1 } }, {
+    width: 32, height: 32, baseUrl: "https://assets.test/film/scene.json", createCanvas: canvas, signal: abort.signal,
+    runtimeOptions: { assetGateway: { enabled: true, resolveUrl: (url, c) => `https://proxy.test/?kind=${c.kind}&url=${encodeURIComponent(url)}` },
+      resolveResourceUrl: (url, context) => { resolved.push({ url, context }); return context.runtimeUrl; } },
+    createScene: async (_scene, options) => {
+      assert.equal(options.signal, abort.signal);
+      assert.equal(await options.resolveResourceUrl("image.png", { kind: "texture" }), "https://proxy.test/?kind=image&url=https%3A%2F%2Fassets.test%2Ffilm%2Fimage.png");
+      return { scene: new THREE.Scene(), camera: new THREE.PerspectiveCamera(), renderer: { domElement: canvas(), setPixelRatio() {}, setSize() {} },
+        renderLoop: { setTimeDriver() {}, renderCurrentFrame() {} }, dispose() {} };
+    }
+  });
+  try {
+    await project.renderAt(0);
+    assert.equal(await project.resolveAsset("voice.wav", { kind: "audio" }), "https://proxy.test/?kind=audio&url=https%3A%2F%2Fassets.test%2Ffilm%2Fvoice.wav");
+    assert.equal(resolved[0].context.kind, "image"); assert.equal(resolved[1].context.kind, "audio");
+    abort.abort(); await assert.rejects(project.renderAt(.5), { name: "AbortError" });
+  } finally { project.dispose(); }
+});
+
+test("already-generated inline narration packs as deduplicated binary, without its model", async () => {
+  const url = "data:audio/wav;base64,AQIDBA==", document = { objectList: [], timeline: { duration: 2, audio: [{ id: "one", url, start: 0, duration: 1 }, { id: "two", url, start: 1, duration: 1 }] } };
+  const bytes = await packMediaDocument(document), opened = await openMediaDocument(bytes, { asyncArchive: false });
+  try {
+    assert.ok(!JSON.stringify(opened.document).includes("base64"));
+    assert.equal(opened.document.timeline.audio[0].url, opened.document.timeline.audio[1].url);
+    assert.match(opened.document.timeline.audio[0].url, /^pack:\/\/assets\/[a-f0-9]+\.wav$/);
+    const asset = await opened.resolveAsset(opened.document.timeline.audio[0].url);
+    assert.deepEqual(new Uint8Array(await (await fetch(asset)).arrayBuffer()), new Uint8Array([1, 2, 3, 4]));
+    assert.equal(document.timeline.audio[0].url, url);
+  } finally { opened.dispose(); }
 });

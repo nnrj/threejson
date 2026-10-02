@@ -151,6 +151,9 @@ const BUILTIN_CAPABILITIES = Object.freeze({
     iridescenceThickness: Object.freeze({ status: "stable" })
   }),
   passes: Object.freeze({
+    dof: Object.freeze({ status: "preview", rendererBackends: ["webgl"], lazy: true, asyncRuntime: true, activation: "descriptor", entry: "threejson/postprocessing-webgl" }),
+    selectivebloom: Object.freeze({ status: "preview", rendererBackends: ["webgl"], lazy: true, asyncRuntime: true, activation: "descriptor", entry: "threejson/postprocessing-webgl" }),
+    cinematic: Object.freeze({ status: "preview", rendererBackends: ["webgl"], lazy: true, asyncRuntime: true, activation: "descriptor", entry: "threejson/postprocessing-webgl" }),
     render: Object.freeze({ status: "stable", rendererBackends: ["webgl"] }),
     outline: Object.freeze({ status: "stable", rendererBackends: ["webgl"] }),
     output: Object.freeze({ status: "stable", rendererBackends: ["webgl"] }),

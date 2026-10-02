@@ -36,6 +36,8 @@ async function runSceneBrowserTask({ file, json, executablePath, channel, headle
     imports["threejson/archive"] = `${prefix}engine/core/archive/index.js`;
     imports["threejson/runtime"] = `${prefix}engine/core/runtime.js`;
     imports["threejson/timeline"] = `${prefix}engine/core/timeline.js`;
+    imports["threejson/session"] = `${prefix}engine/core/session.js`;
+    imports["threejson/assets"] = `${prefix}engine/core/assets.js`;
   }
   // Static browser ESM peers are mounted locally, not replaced with CDN dependencies.
   for (const name of ["@tweenjs/tween.js", "troika-three-text", "troika-worker-utils", "troika-three-utils", "webgl-sdf-generator", "bidi-js", "fflate", "three-mesh-bvh", "three-bvh-csg"]) {

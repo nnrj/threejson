@@ -30,6 +30,7 @@ export function createSherpaOnnxAudioProducer({ loadRuntime, modelManager, model
         return paths.get(value.file);
       }
       if (value && typeof value === "object" && Object.keys(value).length===1 && value.directory) { const path=`${directory}/${value.directory}`;if(!directories.has(path))throw new Error("Model directory is not installed.");return path; }
+      if (value && typeof value === "object" && Object.keys(value).length === 1 && Array.isArray(value.files)) return value.files.map(file => resolve({ file })).join(",");
       if (Array.isArray(value)) return value.map(resolve);
       if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([key,item])=>[key,resolve(item)]));
       return value;

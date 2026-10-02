@@ -23,6 +23,7 @@ packages/host-kit/*
 packages/host-kit/js/*
 !packages/host-kit/js/mediaStudio.js
 !packages/host-kit/js/audioModelPanel.js
+!packages/host-kit/js/localSpeech.js
 tests/
 **/dist/
 

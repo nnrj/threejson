@@ -3,8 +3,49 @@ import { createRuntimeSceneSession, createSceneOperationService, defaultSceneOpe
 import { captureSceneCardPreview } from "./sceneViewportPool.js";
 import { sceneHostGeometryCompiler } from "./sceneGeometryCompiler.js";
 
+// Route serialized history without parsing/copying every dormant dense scene.
+// Only a root-level key counts; a label, nested scene or quoted example cannot
+// accidentally activate the optional media stack. Invalid JSON fails on use.
+function isCompositionInput(input) {
+  if (typeof input !== "string") return input?.documentType === "composition";
+  let depth = 0;
+  for (let i = 0; i < input.length; i++) {
+    const char = input[i];
+    if (char === "{") depth++;
+    else if (char === "}") depth--;
+    else if (char === '"') {
+      const start = i;
+      while (++i < input.length) { if (input[i] === "\\") i++; else if (input[i] === '"') break; }
+      if (depth === 1 && input.slice(start, i + 1) === '"documentType"') {
+        return /^\s*:\s*"composition"\s*[,}]/.test(input.slice(i + 1));
+      }
+    }
+  }
+  return false;
+}
+
 /** Framework-independent document ownership and serialized, cancellable card operations. */
 export function createSceneCardSession(options = {}) {
+  let card = createSceneOnlyCardSession(options), kind = "scene", disposed = false, renderSequence = 0;
+  return new Proxy({}, { get(_target, property) {
+    if (property === "dispose") return () => { disposed = true; card.dispose(); };
+    if (property === "render") return async (input, settings = {}) => {
+      if (disposed) throw new DOMException("Scene card disposed.", "AbortError");
+      const sequence = ++renderSequence;
+      const composition = isCompositionInput(input);
+      const next = composition ? "composition" : "scene";
+      if (next !== kind) {
+        const factory = composition ? (await import("./mediaCardSession.js")).createMediaCardSession : createSceneOnlyCardSession;
+        if (disposed || sequence !== renderSequence) throw new DOMException("Scene card render superseded.", "AbortError");
+        card.dispose(); card = factory(options); kind = next;
+      }
+      return card.render(input, settings);
+    };
+    const value = card[property]; return typeof value === "function" ? value.bind(card) : value;
+  } });
+}
+
+function createSceneOnlyCardSession(options = {}) {
   let session = null, queue = Promise.resolve(), active = null, disposed = false;
   let renderOptions = {}, loadController = null, preview = null, playback = null;
   let unsubscribeDiagnostics = null;

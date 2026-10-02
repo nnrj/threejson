@@ -30,7 +30,7 @@ import { resolveSceneAgentOptions, resolveSceneAgentTokenOptions } from "@threej
 import { createUnsuccessfulTurnRecord, isUnsuccessfulTurn } from "@threejson/scene-agent-kit/turn-state";
 import { buildStructuredTurnEnvelope } from "threejson/ai";
 import { getAiErrorFeedback } from "@threejson/host-kit/js/aiErrorFeedback.js";
-import { resolveSceneHostUrl } from "@threejson/host-kit/js/sceneHostPaths.js";
+import { resolveSceneHostUrl, sceneHostAssetUrl } from "@threejson/host-kit/js/sceneHostPaths.js";
 import {
   sceneAgentRepository,
   getAllProjects,
@@ -1452,6 +1452,8 @@ export function App() {
             modelQuality: negotiation.modelQuality || settings.ai.modelQuality || "balanced"
           });
           const result = await runAiAdjustTurn({
+            videoOptions: { duration: Number(settings.ai?.videoDuration) || undefined, quality: settings.ai?.videoQuality || "balanced", visualReview: settings.ai?.videoVisualReview },
+            runtimeOptions: { assetsBase: sceneHostAssetUrl("assets/"), resolveResourceUrl: sceneCardOptions.resolveResourceUrl, assetGateway: sceneCardOptions.assetGateway() },
             userPrompt,
             envelope,
             targetSceneJsonString: adjustTargetString,
@@ -1507,6 +1509,8 @@ export function App() {
           }
         } else {
           const result = await runAiGenerateTurn({
+            videoOptions: { outputKind: settings.ai?.mediaOutputKind || "auto", duration: Number(settings.ai?.videoDuration) || undefined, quality: settings.ai?.videoQuality || "balanced", confirmStoryboard: settings.ai?.videoConfirmStoryboard === true, visualReview: settings.ai?.videoVisualReview },
+            runtimeOptions: { assetsBase: sceneHostAssetUrl("assets/"), resolveResourceUrl: sceneCardOptions.resolveResourceUrl, assetGateway: sceneCardOptions.assetGateway() },
             userPrompt,
             providerOptions: sceneProviderOptions,
             locale,

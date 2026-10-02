@@ -166,6 +166,11 @@ function projectSceneOutputObject(sceneObj, outputFormat = "standard", options =
 }
 
 function projectSceneJsonString(sceneJsonString, outputFormat = "standard", options = {}) {
+  // A video Agent returns an optional composition document. Formatting it must
+  // not run a scene normalizer that would discard its shots; the media host owns
+  // validation/playback. Ordinary scene parser contracts remain unchanged.
+  const candidate = parseJsonObjectWithoutSceneValidation(String(sceneJsonString || ""));
+  if (candidate.documentType === "composition" && candidate.compositionVersion === 1 && Array.isArray(candidate.timeline?.clips)) return prettyJson(candidate);
   const parsed = parseSceneJsonString(String(sceneJsonString || ""));
   return prettyJson(projectSceneOutputObject(parsed, outputFormat, options));
 }

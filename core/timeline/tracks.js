@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { timelineError } from "./schema.js";
+import { sampleTimelineSignal, sampleTimelineWindow } from "./signals.js";
 
 const easings = new Map([
   ["linear", (t) => t], ["step", () => 0], ["smoothstep", (t) => t * t * (3 - 2 * t)],
@@ -23,7 +24,10 @@ function lerp(a, b, t, kind) {
 }
 
 export function sampleTimelineTrack(track, time, kind) {
-  if (track.enabled === false) return undefined;
+  const window = sampleTimelineWindow(track, time);
+  if (!window) return undefined;
+  time = window.time;
+  if (track.signal) return sampleTimelineSignal(track.signal, time);
   const frames = track.keyframes;
   if (time < frames[0].time) return undefined;
   if (time >= frames.at(-1).time) return copy(frames.at(-1).value);
@@ -36,7 +40,7 @@ export function sampleTimelineTrack(track, time, kind) {
 }
 
 function propertyMissing(track, target) {
-  const objectType = target.userData?.objJson?.objType || target.type;
+  const objectType = target.userData?.objJson?.objType || target.type || "runtime";
   return timelineError("TIMELINE_PROPERTY_MISSING",
     `Timeline property not found: ${track.property} (track "${track.id}", target "${track.target}", type "${objectType}")`,
     { trackId: track.id, targetId: track.target, property: track.property, objectType });
@@ -90,10 +94,13 @@ export function compileTimelineTracks(runtime, tracks = [], options = {}) {
   const objects = new Map();
   runtime.scene.traverse((object) => { const id = object.userData?.threeJsonId || object.userData?.objJson?.threeJsonId; if (id) objects.set(id, object); });
   objects.set("$camera", runtime.camera); objects.set("$scene", runtime.scene);
+  objects.set("$renderer", runtime.renderer);
+  for (const kind of ["effects", "captions", "audio"]) for (const item of options.timeline?.[kind] || []) objects.set(`$${kind === "effects" ? "effect" : kind === "captions" ? "caption" : "audio"}:${item.id}`, item);
   // Resolve aim constraints after every position/parent transform, regardless
   // of JSON ordering. Otherwise moving the camera changes its intended target.
   const bindings = tracks.filter((track) => track.enabled !== false).flatMap((track) => {
-    const target = options.resolveTarget?.(track.target, runtime) || objects.get(track.target);
+    const target = options.resolveTarget?.(track.target, runtime) || objects.get(track.target) ||
+      (track.target.startsWith("$pass:") ? runtime.runtimeContext?.scenePassRegistry?.getDeployedPass(track.target.slice(6))?.pass : undefined);
     if (!target) throw timelineError("TIMELINE_TARGET_MISSING", `Timeline target not found: ${track.target}`, { trackId: track.id });
     if (track.property === "lookAt") return { track, aim: true, restore() {}, apply(value) { target.lookAt(new THREE.Vector3(...vectorArray(value))); } };
     const keys = track.property.split(".");

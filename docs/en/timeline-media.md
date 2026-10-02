@@ -23,13 +23,21 @@ Time is seconds, rotation radians. Targets are threeJsonId, `$camera`, `$scene`.
 
 createJsonScene lazily installs runtime.timeline: play/pause/seek/renderAt/reset. Disable autoplay with timelineAutoPlay:false. The synchronous simple loader requires explicit attachSceneTimeline or switching to the async loader. `/timeline` edits use existing SceneSession/JSON Patch transactions; playback never creates per-frame undo entries. Standard/friendly conversion and scene export preserve timeline metadata.
 
-CPU/WebGL-compute particles replay fixed ticks (default 1/60 s, configurable simulationStep), independently of output fps. Backward seek resets/replays and may be expensive. Cross-device floating-point bit identity is not promised. Custom/WebGPU simulation without resetTime is explicitly rejected. Interactive scripts, external physics and arbitrary events do not automatically become deterministic.
+CPU/WebGL-compute particles replay fixed ticks (default 1/60 s, configurable simulationStep), independently of output fps. Stateful CPU particles cache checkpoints (default every 2 seconds within 32 MiB; checkpointInterval/checkpointBytes are configurable); GPU compute and other systems still replay. A cache budget is not a scene/particle limit. First-time late seeks may remain expensive. Cross-device floating-point bit identity is not promised. Custom/WebGPU simulation without resetTime is explicitly rejected. Interactive scripts, external physics and arbitrary events do not automatically become deterministic.
+
+Tracks accept a signal instead of keyframes: constant/sine/pulse/noise/envelope/orbit/path/beat/samples, with start/duration/extrapolation (hold/loop/none). Additional targets are $renderer, $pass:id, $effect:id, $caption:id and $audio:id (gain/pan); address existing properties such as strength, uniforms.focus.value or params.amplitude. Camera lookAt is evaluated after transforms. Built-in TSL graph time and the pulse preset use the scene clock; custom factories receive timeNode. Third-party code using global TSL time is outside this guarantee.
 
 ## Particles and clips
 
 Object-only timelines leave interactive camera controls available; enabled camera tracks own camera motion. Caption x/y are normalized canvas coordinates. Explicit fontSize/outlineWidth use `output.height` (1080 by default) as the authoring resolution and scale consistently between preview and export.
 
-timeline.effects entries are `{id,target,operator,start,duration,params}`. Built-ins: wave (amplitude/frequency/speed), swirl (speed/twist), orbit (radius/speed), morph (source/seed). Morph deterministically samples an existing Particle V2 source to the current count; raster remains optional. registerParticleMotionOperator accepts custom pure callbacks. CPU position effects compose after simulation without feeding positions back into physics. Lifecycle curves no longer share an eight-key ceiling; real GPU uniform limits are reported.
+timeline.effects entries are `{id,target,operator,start,duration,backend,params}`. Built-ins: wave (amplitude/frequency/speed), swirl (speed/twist), orbit (radius/speed), morph (source/seed), scatter (distance/seed), wavefront (amplitude/frequency/speed/width), and flow (path/speed/length/spread). Flow reuses curve descriptors; speed is path cycles/second and length is the occupied path fraction. Morph deterministically samples Particle V2 sources, with spatial or index correspondence and staggered assembly; raster remains optional.
+
+CPU reference effects compose after simulation without feeding positions back. Optional backend:"webgl" evaluates these seven analytic operators in vertex shaders on static Particle V2 points/billboards with simulation.backend:"cpu". It is not fluid/GPU-compute simulation. Use one effect backend per object; unsupported GPU operators fail explicitly. registerParticleMotionOperator accepts custom CPU callbacks. Lifecycle curves have no shared eight-key ceiling; actual hardware limits are reported.
+
+Optional r184 WebGL preview passes: dof (focus/aperture/maxblur), selectivebloom (targets/strength/radius/threshold) and cinematic (vignette/saturation/contrast/exposure/streak). Register passes with id, retain a final output pass. Depth and bloom support built-in particle displacement and SDF fill/outline; arbitrary shaders and WebGPU are not implied.
+
+Use existing SDF, mesh and texture text for spatial titles, particle text for morphing, and independent screen captions for dialogue. Mesh text needs a usable font JSON. Captions support CJK wrapping/safe areas, fadeIn/fadeOut, slideY, reveal:"typewriter", charactersPerSecond and highlights:[{text,color}]. Bilingual lines use separate IDs/y positions. No MathJax/LaTeX formula layout engine is included.
 
 ```json
 { "documentType": "composition", "compositionVersion": 1,
@@ -41,7 +49,19 @@ timeline.effects entries are `{id,target,operator,start,duration,params}`. Built
 
 Keep JSON/.tjz, no new extension. Sources can be inline scenes, scenes dictionary keys, JSON/.tjz URLs or pack references. Source time is sourceStart+(globalTime-start)*rate. Repeated sources have isolated state. Later clips composite on top: fadeIn over a visible lower clip gives a cross-dissolve. Global audio continues across cuts. Nested compositions currently require flattening.
 
-Archive entryKind is composition, entry composition.json. Explicit binary assets are hash-deduplicated; packMediaDocument never silently fetches all remote dependencies. Single-scene loaders reject compositions clearly rather than producing placeholder cubes.
+clip.transitionIn accepts `{type:"wipe",duration:1,direction:"left"}` or `{type:"dissolve",duration:1,seed:7,softness:0.08}`; overlap clips to reveal the next image over the previous one. Arbitrary mask URLs are not supported yet. The nearest next clip is prepared within 2 seconds by default (preloadNext/preloadSeconds), sharing compatible WebGL renderers and releasing inactive resources.
+
+Archive entryKind is composition, entry composition.json. Explicit assets and existing inline Base64 audio are hash-deduplicated as binary; packMediaDocument never silently fetches remote dependencies. Narration is shareable without its model. Single-scene loaders reject compositions clearly rather than producing placeholder cubes.
+
+## ThreeBox filmmaking and Agent operations
+
+Settings → AI offers automatic/scene/video output, requested duration (0 means content-driven), draft/balanced/high quality, and optional storyboard approval. Substantive explainers are encouraged to plan 90–180 seconds, not a required minimum or hard limit. Ordinary scene/model generation stays intact. Still/GIF output remains available in the studio rather than separate generation buttons.
+
+The video route creates a storyboard, playable rough cut, per-shot refinements and checks. Stop pauses; a later message can continue or rebuild an individual shot without replacing the film. Reload does not restart paid requests. Cards have playback, seeking and shot selection; Editor opens a selected shot. History remains immutable with one active viewport by default.
+
+Visual review uses declared image-input capability; unknown models receive structural diagnostics only. A user who knows the current model accepts images can explicitly enable actual timestamped frame review in settings (additional provider cost may apply). Unrendered output is never marked visually verified. Narrative, aesthetics and scientific correctness still depend on the model.
+
+media-kit exposes createMediaProjectSession/createMediaOperationService; threejson/ai exposes runVideoAgent with an injected service, no reverse dependency. Operations include media.inspect/plan.set/shot.put/shot.edit/shot.query/shot.remove, timeline.inspect/edit, media.validate/captureFrames/render/shot.narrate. Commits are revision-checked and atomic with undo/redo. Explicit budgets, cancellation, provider failure or repeated non-progress stop work while preserving completed shots; there is no fixed total round ceiling. Runtime adapters are advertised only when supplied.
 
 ## Export
 
@@ -76,11 +96,15 @@ audio-kit exports score compilation/synthesis, PCM mixing/playback, WAV, decodeA
 
 Model manifests require id/version/adapter/license/files; files require role/bytes/sha256, optionally path/url. Download/import occurs only after user selection. Weights are tool dependencies; generated audio is the shareable artifact.
 
-The shared workbench includes an “Optional speech models & cache” panel: select a host-provided `modelCatalog` entry or import a manifest, inspect license/size, explicitly download/import files, cancel, inspect quota and remove cached models. A cached model still needs its matching audio producer; the panel does not claim otherwise.
+The “Optional speech models & cache” panel includes a pinned MeloTTS Chinese local narration preview, or accepts host manifests. Inspect license/size, explicitly download/import, then enable local narration. Other imported models still need matching producers. Download/cancel/quota/remove remain explicit actions.
 
-The baseline site's `.assetsignore` now includes only the required browser modules from audio-kit/media-kit and two host-kit modules. Ordinary scene startup remains independent. Other package sources and local configuration stay excluded. Independent React consumers must install/upgrade the published packages.
+The baseline site's `.assetsignore` includes only the required browser modules from audio-kit/media-kit and their host bridges. Ordinary scene startup remains independent. Other package sources and local configuration stay excluded. Independent React consumers must install/upgrade the published packages.
 
-**No preverified downloadable Melo/Kokoro catalog is bundled yet.** Storage/runtime/Worker bindings exist, but real model distribution, loading and quality need separate verification. Mock contract tests are not voice model validation. Browser speechSynthesis is preview-only, not exportable PCM.
+`/models` exports getBuiltinAudioModels/createLocalSpeechProducer for pinned MeloTTS + Sherpa-ONNX single-thread WASM: about 71 MiB, exact sizes/hashes/licenses, no npm model download. Actual Chinese PCM synthesis was verified in local Edge; cross-origin isolation is not required, but CSP must allow its Worker/WASM/blob modules. Single voice, dictionary-dependent mixed English, substantial memory use; mobile devices and professional voice quality are not validated. Kokoro remains future work. Browser speechSynthesis remains preview-only.
+
+media.shot.narrate synthesizes/caches sentences and uses measured PCM durations. Its optional captions array separates displayed text from spoken formulas/terms. Duration conflicts fail unless extend:true explicitly retimes the shot and later clips. Sentence alignment is not word-level alignment.
+
+Music ducking accepts `{mode:"narration",gain:0.25,attack:0.15,release:0.3}` (voice clips carry narration:true), or explicit targets. analyzePcm returns RMS/peak/clipping and a sampled envelope usable in animation tracks. A beat signal follows supplied BPM; it does not analyze unknown music. Audio gain/pan automation and export share clip/source time mapping.
 
 ## CLI, MCP and phase two
 

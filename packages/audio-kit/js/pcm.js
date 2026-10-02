@@ -30,6 +30,12 @@ export function createPcmMixer(clips, options = {}) {
     if (!source.duration) throw new Error("Audio source is empty.");
     for (const key of ["duration", "fadeIn", "fadeOut", "gain"]) if (clip[key] !== undefined && (!Number.isFinite(clip[key]) || clip[key] < 0)) throw new Error(`Invalid audio ${key}.`);
     if (clip.pan !== undefined && (!Number.isFinite(clip.pan) || Math.abs(clip.pan) > 1)) throw new Error("Audio pan must be between -1 and 1.");
+    if (clip.ducking) {
+      const d = clip.ducking;
+      if (d.gain !== undefined && !(Number.isFinite(d.gain) && d.gain >= 0 && d.gain <= 1)) throw new Error("Ducking gain must be in [0, 1].");
+      for (const key of ["attack", "release"]) if (d[key] !== undefined && !(Number.isFinite(d[key]) && d[key] >= 0)) throw new Error(`Invalid ducking ${key}.`);
+      if (d.targets !== undefined && !Array.isArray(d.targets)) throw new Error("Ducking targets must be clip ids.");
+    }
     if (!(Number.isFinite(clip.rate ?? 1) && (clip.rate ?? 1) > 0) || !Number.isFinite(clip.start ?? 0) || (clip.start ?? 0) < 0 || !Number.isFinite(clip.sourceStart ?? 0) || (clip.sourceStart ?? 0) < 0) throw new Error("Invalid audio clip timing.");
     if (clip.sourceStart >= source.duration) throw new Error("Audio trim begins beyond the source.");
     const available = (source.duration - (clip.sourceStart || 0)) / (clip.rate ?? 1);
@@ -56,9 +62,22 @@ export function createPcmMixer(clips, options = {}) {
         };
         const duration = clip.duration ?? available / rate;
         const first = Math.max(0, Math.ceil(start * sampleRate) - startFrame), last = Math.min(frameCount, Math.ceil((start + duration) * sampleRate) - startFrame);
-        const pan = Math.max(-1, Math.min(1, clip.pan ?? 0)), gain = clip.gain ?? 1;
+        const duckSources = clip.ducking ? clips.flatMap((other, i) => other !== clip && (clip.ducking.targets?.includes(other.id) || clip.ducking.mode === "narration" && other.narration === true)
+          ? [{ start: other.start || 0, duration: other.duration ?? (sources[i].duration - (other.sourceStart || 0)) / (other.rate ?? 1) }] : []) : [];
         for (let i = first; i < last; i++) {
           const time = (startFrame + i) / sampleRate - start;
+          const globalTime = (startFrame + i) / sampleRate;
+          const baseGain = clip.gainAt?.(globalTime) ?? clip.gain ?? 1;
+          let gain = baseGain;
+          const pan = clip.panAt?.(globalTime) ?? clip.pan ?? 0;
+          if (!Number.isFinite(gain) || gain < 0 || !Number.isFinite(pan) || Math.abs(pan) > 1) throw new Error("Audio automation produced invalid gain/pan.");
+          for (const voice of duckSources) {
+            const voiceStart = voice.start, voiceDuration = voice.duration;
+            const attack = clip.ducking.attack ?? .15, release = clip.ducking.release ?? .3;
+            const amount = Math.max(0, Math.min(1, attack ? (globalTime - voiceStart + attack) / attack : globalTime >= voiceStart ? 1 : 0, release ? (voiceStart + voiceDuration + release - globalTime) / release : globalTime < voiceStart + voiceDuration ? 1 : 0));
+            // Overlapping voice clips should not attenuate the music repeatedly.
+            gain = Math.min(gain, baseGain * (1 - amount * (1 - (clip.ducking.gain ?? .25))));
+          }
           let sourceTime = time * rate;
           if (clip.loop) sourceTime %= available;
           if (sourceTime >= available) continue;
@@ -74,6 +93,26 @@ export function createPcmMixer(clips, options = {}) {
       return { sampleRate, channels: output };
     }
   };
+}
+
+/** Deterministic block analysis; output is small reusable data, not live FFT state. */
+export function analyzePcm(pcm, options = {}) {
+  validatePcm(pcm);
+  const interval = options.interval ?? .05;
+  if (!(Number.isFinite(interval) && interval > 0)) throw new RangeError("Analysis interval must be positive.");
+  const size = Math.max(1, Math.round(interval * pcm.sampleRate)), values = [];
+  let peak = 0, clipped = 0, sum = 0, count = 0;
+  for (let start = 0; start < pcm.channels[0].length; start += size) {
+    let square = 0, n = 0;
+    for (const channel of pcm.channels) for (let i = start; i < Math.min(channel.length, start + size); i++) {
+      const value = channel[i]; if (!Number.isFinite(value)) throw new Error("Non-finite audio sample.");
+      peak = Math.max(peak, Math.abs(value)); if (Math.abs(value) > 1) clipped++;
+      square += value * value; n++;
+    }
+    values.push(n ? Math.sqrt(square / n) : 0); sum += square; count += n;
+  }
+  return { duration: pcmDuration(pcm), peak, rms: count ? Math.sqrt(sum / count) : 0, clippedSamples: clipped,
+    envelope: { type: "samples", interval: size / pcm.sampleRate, values } };
 }
 
 export async function decodeAudio(input, options = {}) {

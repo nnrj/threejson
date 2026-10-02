@@ -21,6 +21,13 @@ export function formatAgentProgressLabel(progress, t) {
     return "";
   }
   const { kind, round, maxRounds, attempt, maxAttempts, count, error } = progress;
+  if (progress.type === "video") {
+    if (progress.mediaProject) {
+      const project = progress.mediaProject, ready = project.shots.filter(shot => shot.stage !== "planned").length;
+      return t("aiAgent.progress.videoShots", "视频项目：已制作 {ready} 个镜头，规划时长 {duration} 秒", { ready, duration: Math.round(project.duration) });
+    }
+    return t("aiAgent.progress.videoWork", "正在编排、制作或检查视频镜头…");
+  }
   const roundNum = round ?? attempt;
   const roundMax = maxRounds ?? maxAttempts;
   switch (kind) {

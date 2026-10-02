@@ -1,0 +1,520 @@
+{
+  "version": "next",
+  "threeJsonId": "orbits",
+  "name": "从经典图像到量子描述",
+  "sceneConfig": {
+    "scene": {
+      "background": "#020510"
+    },
+    "camera": {
+      "position": {
+        "x": 0,
+        "y": 8,
+        "z": 62
+      },
+      "fov": 46,
+      "near": 0.1,
+      "far": 1000,
+      "lookAt": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    "controls": {
+      "type": "none"
+    },
+    "renderer": {
+      "antialias": true,
+      "toneMapping": "aces",
+      "exposure": 1
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "intensity": 0.5
+      },
+      {
+        "type": "directional",
+        "intensity": 2,
+        "position": {
+          "x": 5,
+          "y": 12,
+          "z": 16
+        }
+      }
+    ]
+  },
+  "objectList": [
+    {
+      "objType": "text",
+      "threeJsonId": "title",
+      "mode": "sdf",
+      "content": "从经典图像到量子描述",
+      "fontSize": 2.2,
+      "color": "#dbf6ff",
+      "align": "center",
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "billboard": true,
+      "position": {
+        "x": 0,
+        "y": 17,
+        "z": 0
+      },
+      "sdf": {
+        "outlineWidth": 0.035,
+        "outlineColor": "#050919"
+      }
+    },
+    {
+      "objType": "torus",
+      "threeJsonId": "ring-0",
+      "geometry": {
+        "radius": 5,
+        "tube": 0.055,
+        "tubularSegments": 160,
+        "radialSegments": 5
+      },
+      "rotation": {
+        "x": 0.9,
+        "y": 0,
+        "z": 0.1
+      },
+      "material": {
+        "type": "basic",
+        "color": "#eeb661"
+      }
+    },
+    {
+      "objType": "torus",
+      "threeJsonId": "ring-1",
+      "geometry": {
+        "radius": 8.2,
+        "tube": 0.055,
+        "tubularSegments": 160,
+        "radialSegments": 5
+      },
+      "rotation": {
+        "x": 1.02,
+        "y": 0.2,
+        "z": 0.1
+      },
+      "material": {
+        "type": "basic",
+        "color": "#eeb661"
+      }
+    },
+    {
+      "objType": "torus",
+      "threeJsonId": "ring-2",
+      "geometry": {
+        "radius": 11.4,
+        "tube": 0.055,
+        "tubularSegments": 160,
+        "radialSegments": 5
+      },
+      "rotation": {
+        "x": 1.1400000000000001,
+        "y": 0.4,
+        "z": 0.1
+      },
+      "material": {
+        "type": "basic",
+        "color": "#eeb661"
+      }
+    },
+    {
+      "objType": "torus",
+      "threeJsonId": "ring-3",
+      "geometry": {
+        "radius": 14.600000000000001,
+        "tube": 0.055,
+        "tubularSegments": 160,
+        "radialSegments": 5
+      },
+      "rotation": {
+        "x": 1.26,
+        "y": 0.6000000000000001,
+        "z": 0.1
+      },
+      "material": {
+        "type": "basic",
+        "color": "#eeb661"
+      }
+    },
+    {
+      "objType": "torus",
+      "threeJsonId": "ring-4",
+      "geometry": {
+        "radius": 17.8,
+        "tube": 0.055,
+        "tubularSegments": 160,
+        "radialSegments": 5
+      },
+      "rotation": {
+        "x": 1.38,
+        "y": 0.8,
+        "z": 0.1
+      },
+      "material": {
+        "type": "basic",
+        "color": "#eeb661"
+      }
+    },
+    {
+      "objType": "sphere",
+      "threeJsonId": "core",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "geometry": {
+        "radius": 0.9,
+        "widthSegments": 32,
+        "heightSegments": 20
+      },
+      "material": {
+        "type": "basic",
+        "color": "#fff0b8"
+      }
+    },
+    {
+      "objType": "particleEmitter",
+      "threeJsonId": "tail",
+      "source": {
+        "type": "sphere",
+        "radius": 0.5
+      },
+      "emission": {
+        "mode": "static",
+        "count": 4000,
+        "seed": 73
+      },
+      "particle": {
+        "lifetime": 0,
+        "colorOverLife": [
+          "#ffe1a2"
+        ],
+        "sizeOverLife": [
+          0.12
+        ]
+      },
+      "simulation": {
+        "backend": "cpu"
+      },
+      "render": {
+        "type": "points",
+        "blending": "additive",
+        "depthWrite": false,
+        "opacity": 0.15
+      }
+    },
+    {
+      "objType": "sphere",
+      "threeJsonId": "electron-0",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "geometry": {
+        "radius": 0.22,
+        "widthSegments": 32,
+        "heightSegments": 20
+      },
+      "material": {
+        "type": "basic",
+        "color": "#d6eeff"
+      }
+    },
+    {
+      "objType": "sphere",
+      "threeJsonId": "electron-1",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "geometry": {
+        "radius": 0.22,
+        "widthSegments": 32,
+        "heightSegments": 20
+      },
+      "material": {
+        "type": "basic",
+        "color": "#d6eeff"
+      }
+    },
+    {
+      "objType": "sphere",
+      "threeJsonId": "electron-2",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "geometry": {
+        "radius": 0.22,
+        "widthSegments": 32,
+        "heightSegments": 20
+      },
+      "material": {
+        "type": "basic",
+        "color": "#d6eeff"
+      }
+    },
+    {
+      "objType": "sphere",
+      "threeJsonId": "electron-3",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "geometry": {
+        "radius": 0.22,
+        "widthSegments": 32,
+        "heightSegments": 20
+      },
+      "material": {
+        "type": "basic",
+        "color": "#d6eeff"
+      }
+    },
+    {
+      "objType": "sphere",
+      "threeJsonId": "electron-4",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "geometry": {
+        "radius": 0.22,
+        "widthSegments": 32,
+        "heightSegments": 20
+      },
+      "material": {
+        "type": "basic",
+        "color": "#d6eeff"
+      }
+    },
+    {
+      "objType": "pass",
+      "id": "dof",
+      "passType": "dof",
+      "focus": 62,
+      "aperture": 0.000035,
+      "maxblur": 0.007
+    },
+    {
+      "objType": "pass",
+      "id": "glow",
+      "passType": "selectivebloom",
+      "targets": [
+        "ring-0",
+        "ring-1",
+        "ring-2",
+        "ring-3",
+        "ring-4",
+        "core",
+        "tail",
+        "electron-0",
+        "electron-1",
+        "electron-2",
+        "electron-3",
+        "electron-4"
+      ],
+      "strength": 0.6,
+      "radius": 0.5,
+      "threshold": 0.65
+    },
+    {
+      "objType": "pass",
+      "id": "grade",
+      "passType": "cinematic",
+      "vignette": 0.22,
+      "streak": 0.2,
+      "streakThreshold": 0.8
+    },
+    {
+      "objType": "pass",
+      "id": "output",
+      "passType": "output"
+    }
+  ],
+  "timeline": {
+    "version": 1,
+    "duration": 24,
+    "effects": [
+      {
+        "id": "orbit-tail",
+        "target": "tail",
+        "operator": "flow",
+        "params": {
+          "path": {
+            "type": "ellipse",
+            "radius": 15,
+            "plane": "xz"
+          },
+          "speed": 0.08,
+          "length": 0.18,
+          "spread": 0.5
+        },
+        "start": 0,
+        "duration": 24,
+        "backend": "webgl"
+      }
+    ],
+    "tracks": [
+      {
+        "id": "dolly",
+        "target": "$camera",
+        "property": "position",
+        "signal": {
+          "type": "path",
+          "duration": 24,
+          "points": [
+            [
+              -4,
+              8,
+              66
+            ],
+            [
+              4,
+              10,
+              61
+            ],
+            [
+              0,
+              8,
+              57
+            ]
+          ]
+        }
+      },
+      {
+        "id": "aim",
+        "target": "$camera",
+        "property": "lookAt",
+        "keyframes": [
+          {
+            "time": 0,
+            "value": [
+              0,
+              0,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "orbit-0",
+        "target": "electron-0",
+        "property": "position",
+        "duration": 24,
+        "signal": {
+          "type": "orbit",
+          "center": [
+            0,
+            0,
+            0
+          ],
+          "radius": 5,
+          "duration": 5,
+          "plane": "xz"
+        }
+      },
+      {
+        "id": "orbit-1",
+        "target": "electron-1",
+        "property": "position",
+        "duration": 24,
+        "signal": {
+          "type": "orbit",
+          "center": [
+            0,
+            0,
+            0
+          ],
+          "radius": 8.2,
+          "duration": 7,
+          "plane": "xz"
+        }
+      },
+      {
+        "id": "orbit-2",
+        "target": "electron-2",
+        "property": "position",
+        "duration": 24,
+        "signal": {
+          "type": "orbit",
+          "center": [
+            0,
+            0,
+            0
+          ],
+          "radius": 11.4,
+          "duration": 9,
+          "plane": "xz"
+        }
+      },
+      {
+        "id": "orbit-3",
+        "target": "electron-3",
+        "property": "position",
+        "duration": 24,
+        "signal": {
+          "type": "orbit",
+          "center": [
+            0,
+            0,
+            0
+          ],
+          "radius": 14.600000000000001,
+          "duration": 11,
+          "plane": "xz"
+        }
+      },
+      {
+        "id": "orbit-4",
+        "target": "electron-4",
+        "property": "position",
+        "duration": 24,
+        "signal": {
+          "type": "orbit",
+          "center": [
+            0,
+            0,
+            0
+          ],
+          "radius": 17.8,
+          "duration": 13,
+          "plane": "xz"
+        }
+      }
+    ],
+    "captions": [
+      {
+        "id": "caption",
+        "text": "轨道线是帮助理解的图示。量子态需要概率分布，而非确定路径。",
+        "start": 1,
+        "duration": 22,
+        "fontSize": 32,
+        "y": 0.9,
+        "fadeIn": 0.6,
+        "fadeOut": 0.6,
+        "maxWidth": 0.86
+      }
+    ]
+  },
+  "output": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30
+  }
+}

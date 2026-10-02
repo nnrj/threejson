@@ -7,6 +7,7 @@ import { registerPassTypeFactory } from "../../handler/postProcessPassTypeRegist
 import { trackDisposableResource } from "../../handler/trackedResourceRegistry.js";
 import { registerSceneCapability } from "../../capabilities/sceneCapabilityManifest.js";
 import { resolveShaderPassPreset } from "./shaderPassPresetRegistry.js";
+import { SceneDepthOfFieldPass, SelectiveBloomPass, createCinematicPass } from "./cinematicPasses.js";
 
 function finiteOr(value, fallback) {
   const number = Number(value);
@@ -91,6 +92,9 @@ export function ensureWebglAdvancedPassesRegistered() {
   registerPassTypeFactory("smaa", createSmaaPassFromRecord);
   registerPassTypeFactory("shader", createShaderPresetPassFromRecord);
   registerPassTypeFactory("shaderpreset", createShaderPresetPassFromRecord);
+  registerPassTypeFactory("dof", (record, ctx) => applyCommon(new SceneDepthOfFieldPass(ctx.scene, ctx.camera, record), record));
+  registerPassTypeFactory("selectivebloom", (record, ctx) => applyCommon(new SelectiveBloomPass(ctx.scene, ctx.camera, record), record));
+  registerPassTypeFactory("cinematic", record => applyCommon(createCinematicPass(record), record));
   for (const id of ["unrealBloom", "fxaa", "smaa", "shaderPreset"]) {
     registerSceneCapability("passes", id, {
       status: "stable",

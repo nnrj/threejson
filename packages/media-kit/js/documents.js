@@ -78,15 +78,26 @@ export async function openMediaDocument(input, options = {}) {
   return api;
 }
 
-/** Explicit asset inputs only: never fetch/copy unrequested remote dependencies. */
+/** Binary assets plus already-inline generated audio; never fetch remote dependencies. */
 export async function packMediaDocument(document, options = {}) {
   document = validateMediaDocument(document);
-  const assets = {}, replacements = new Map();
-  for (const [source, input] of Object.entries(options.assets || {})) {
+  const assets = {}, replacements = new Map(), inputs = new Map(Object.entries(options.assets || {}));
+  const collectAudio = value => {
+    if (!value || typeof value !== "object") return;
+    if (typeof value.url === "string" && /^data:audio\/[a-z0-9.+-]+;base64,/i.test(value.url) && !inputs.has(value.url)) {
+      const binary = atob(value.url.slice(value.url.indexOf(",") + 1));
+      inputs.set(value.url, Uint8Array.from(binary, char => char.charCodeAt(0)));
+    }
+    for (const child of Object.values(value)) if (typeof child === "object") collectAudio(child);
+  };
+  collectAudio(document);
+  for (const [source, input] of inputs) {
     const bytes = input instanceof Blob ? new Uint8Array(await input.arrayBuffer()) : input instanceof ArrayBuffer ? new Uint8Array(input) : input;
     if (!(bytes instanceof Uint8Array)) throw new TypeError("Archive assets must be binary bytes or Blobs.");
     const hash = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map((b) => b.toString(16).padStart(2, "0")).join("");
-    const extension = /\.([a-z0-9]+)(?:[?#]|$)/i.exec(source)?.[1] || "bin", path = `assets/${hash}.${extension}`;
+    const audioType = /^data:audio\/([a-z0-9.+-]+);/i.exec(source)?.[1]?.toLowerCase();
+    const extension = audioType ? ({ wav: "wav", "x-wav": "wav", mpeg: "mp3", ogg: "ogg", mp4: "m4a", webm: "webm" }[audioType] || "bin") : /\.([a-z0-9]+)(?:[?#]|$)/i.exec(source)?.[1] || "bin";
+    const path = `assets/${hash}.${extension}`;
     assets[path] = bytes; replacements.set(source, `pack://${path}`);
   }
   const rewrite = (value) => typeof value === "string" ? replacements.get(value) || value : Array.isArray(value) ? value.map(rewrite) : value && typeof value === "object" ? Object.fromEntries(Object.entries(value).map(([key, item]) => [key, rewrite(item)])) : value;

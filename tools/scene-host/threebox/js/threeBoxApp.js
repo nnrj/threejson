@@ -56,6 +56,7 @@ import {
 } from "../../shared/js/sceneTextureOrchestrator.js";
 import { createTextureProxyUrl } from "../../shared/js/textureProviderClient.js";
 import { getCachedTextureBlob, putCachedTextureBlob, createTextureResourceResolver } from "../../shared/js/browserTextureCache.js";
+import { sceneHostAssetUrl } from "../../shared/js/sceneHostPaths.js";
 import {
   activateThreeBoxAiCapabilities,
   projectSceneToRendererBackend,
@@ -284,32 +285,25 @@ async function main() {
   // stay in sync without a second hidden scene.
   const sceneCardsByTurnId = new Map();
 
+  const resolveCardResourceUrl = createTextureResourceResolver({ enabled: () => settingsModal.getSettings()?.ai?.textureLocalCache !== false });
+  function getCardAssetGateway() {
+    const bundle = settingsModal.getSettings(), baseUrl = bundle?.general?.assetGatewayUrl?.trim();
+    if (!baseUrl) return null;
+    const builtinBackend = String(bundle?.ai?.builtinBackendUrl || "").replace(/\/$/, "");
+    const apiKey = builtinBackend && baseUrl.replace(/\/$/, "") === builtinBackend
+      ? bundle?.ai?.providers?.find(entry => entry.provider === "threebox-builtin")?.apiKey : "";
+    return apiKey ? { baseUrl, apiKey } : { baseUrl };
+  }
+  const getMediaRuntimeOptions = () => ({ assetsBase: sceneHostAssetUrl("assets/"), resolveResourceUrl: resolveCardResourceUrl, assetGateway: getCardAssetGateway() });
   const createConfiguredSceneCard = () => createThreeBoxSceneCard({
     getViewportLimit: () => { const general = settingsModal.getSettings()?.general; return general?.multipleActiveViewports ? general.maxActiveViewports : 1; },
-    resolveResourceUrl: createTextureResourceResolver({ enabled: () => settingsModal.getSettings()?.ai?.textureLocalCache !== false }),
+    resolveResourceUrl: resolveCardResourceUrl,
     shouldShowMeshExportWarnings: () =>
       settingsModal.getSettings()?.io?.showMeshExportWarnings !== false,
     shouldUsePreviewAuxiliaryLights: () =>
       settingsModal.getSettings()?.general?.previewAuxiliaryLights !== false,
     shouldProvideMeshVisionFeedback: getVisionCapable,
-    assetGateway: () => {
-      const settings = settingsModal.getSettings();
-      const baseUrl = settings?.general?.assetGatewayUrl?.trim();
-      if (!baseUrl) {
-        return null;
-      }
-      // The gateway may be configured to require an API key (see threebox-server's asset-gateway
-      // admin setting); proxied URLs are loaded as plain <img>/texture `src` GETs with no
-      // Authorization header, so the key has to travel as a query param instead (see
-      // core/util/assetGateway.js). Only attach it when the gateway is the same built-in backend
-      // the key was issued for — never send our trial key to an arbitrary self-hosted gateway URL.
-      const builtinBackendUrl = String(settings?.ai?.builtinBackendUrl || "").replace(/\/$/, "");
-      const isBuiltinGateway = builtinBackendUrl && baseUrl.replace(/\/$/, "") === builtinBackendUrl;
-      const apiKey = isBuiltinGateway
-        ? settings?.ai?.providers?.find((provider) => provider.provider === "threebox-builtin")?.apiKey
-        : "";
-      return apiKey ? { baseUrl, apiKey } : { baseUrl };
-    },
+    assetGateway: getCardAssetGateway,
     archiveOptions: () => {
       const settings = settingsModal.getSettings();
       const assetPolicy = settings?.io?.tjzAssetPolicy === "tryPack" ? "tryPack" : "preserve";
@@ -793,6 +787,8 @@ async function main() {
 
     try {
       const { sceneJson, agentResult } = await runThreeBoxGenerateTurn({
+        videoOptions: { outputKind: settings.ai?.mediaOutputKind || "auto", duration: Number(settings.ai?.videoDuration) || undefined, quality: settings.ai?.videoQuality || "balanced", confirmStoryboard: settings.ai?.videoConfirmStoryboard === true, visualReview: settings.ai?.videoVisualReview },
+        runtimeOptions: getMediaRuntimeOptions(),
         userPrompt: text,
         providerOptions,
         globalPromptPrefix: settings.ai?.globalPromptPrefix,
@@ -1242,6 +1238,8 @@ async function main() {
       });
 
       const result = await runThreeBoxAdjustTurn({
+        videoOptions: { duration: Number(settings.ai?.videoDuration) || undefined, quality: settings.ai?.videoQuality || "balanced", visualReview: settings.ai?.videoVisualReview },
+        runtimeOptions: getMediaRuntimeOptions(),
         userPrompt: text,
         envelope,
         targetSceneJsonString,

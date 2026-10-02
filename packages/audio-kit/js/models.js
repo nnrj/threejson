@@ -1,6 +1,8 @@
 const digest = async (blob) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", await blob.arrayBuffer()))].map((b) => b.toString(16).padStart(2, "0")).join("");
 const encodeKey = (value) => [...new TextEncoder().encode(value)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 const keyOf = (manifest) => `manifest-${encodeKey(manifest.id)}-${encodeKey(manifest.version)}.json`;
+export { getBuiltinAudioModels } from "./modelCatalog.js";
+export async function createLocalSpeechProducer(options) { return (await import("./melo.js")).createMeloTtsProducer(options); }
 export function validateAudioModelManifest(input) {
   const manifest = structuredClone(input);
   if (![manifest?.id, manifest?.version, manifest?.adapter, manifest?.license].every((value) => typeof value === "string" && value.trim()) || !Array.isArray(manifest.files) || !manifest.files.length) throw new TypeError("Model needs string id, version, adapter, license and files.");

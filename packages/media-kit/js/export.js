@@ -1,4 +1,5 @@
 import { createMediaProject } from "./project.js";
+import { sampleTimelineTrack } from "threejson/timeline";
 
 const abort = (options) => options.signal?.throwIfAborted();
 const yieldTask = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -44,12 +45,23 @@ export async function prepareProjectAudio(project, options = {}) {
     if (!source) {
       source = clip.recipe?.kind === "score" && !clip.recipe.producer
         ? { renderer: kit.createScoreRenderer(clip.recipe.score, clip.recipe.options) }
-        : { pcm: clip.recipe ? await kit.produceAudio(clip.recipe, options) : await (options.decodeAudio || kit.decodeAudio)(await project.resolveAsset(clip.url), options) };
+          : { pcm: clip.recipe ? await kit.produceAudio(clip.recipe, options) : await (options.decodeAudio || kit.decodeAudio)(await project.resolveAsset(clip.url, { kind: "audio" }), options) };
       cache.set(key, source);
     }
     const sourceDuration = source.renderer?.duration ?? kit.pcmDuration(source.pcm);
     const duration = clip.duration ?? (sourceDuration - (clip.sourceStart || 0)) / (clip.rate ?? 1);
-    clips.push({ ...clip, ...source, duration });
+    const automation = {};
+    for (const property of ["gain", "pan"]) {
+      const tracks = (clip.automation?.tracks || []).filter(t => t.property === property);
+      if (tracks.length) automation[`${property}At`] = time => {
+        const sourceTime = (time - (clip.automation.start || 0)) * (clip.automation.rate ?? 1) + (clip.automation.sourceStart || 0);
+        let value = clip[property] ?? (property === "gain" ? 1 : 0);
+        for (const track of tracks) value = sampleTimelineTrack(track, sourceTime) ?? value;
+        return value;
+      };
+    }
+    for (const track of clip.automation?.tracks || []) if (!["gain", "pan"].includes(track.property)) throw new Error(`Unsupported audio automation: ${track.property}. Use gain or pan.`);
+    clips.push({ ...clip, ...source, ...automation, duration });
   }
   const mixer = kit.createPcmMixer(clips, { sampleRate: options.sampleRate ?? 48000 });
   return { ...mixer, duration: Math.max(...clips.map((clip) => (clip.start || 0) + clip.duration)) };

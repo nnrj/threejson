@@ -12,7 +12,7 @@
 
 工作台可播放、暂停、定位、打开 JSON/.tjz、设置时长/尺寸/fps、临时导入本地配乐或旁白。独立预览不改写聊天历史、编辑器文档或撤销栈；工作台参数及临时音频也不自动保存进原场景。
 
-“可选语音模型与缓存”区域支持选择宿主提供的清单或导入清单 JSON，查看许可和大小，显式下载/导入各文件、取消、查询缓存和删除。宿主通过 `modelCatalog` 提供经过验证的目录；没有目录时不会显示虚构的可用音色，也不会自动下载模型。缓存中的模型仍需匹配的音频生产器，不等于已经能合成。
+“可选语音模型与缓存”内置一个固定版本的 **MeloTTS 中文本地配音（预览）**，也可导入宿主清单。查看许可和大小后，显式下载或导入文件，再点“启用本地旁白”。内置模型已配套生产器；其他模型仍需宿主适配。不会在打开页面、生成普通场景或无旁白影片时自动下载。
 
 基线站点的 `.assetsignore` 已精确包含工作台所需的浏览器模块，无需先把这些模块发布到 npm 才能预览仓库版本；其他 packages 和本地配置仍排除。独立 React 消费者需要安装/升级相应发布包。普通场景不会提前加载媒体库。
 
@@ -43,11 +43,19 @@ createJsonScene 按需安装 runtime.timeline：play/pause/seek/renderAt/reset�
 
 只有包含有效相机轨道时，时间线接管相机；仅有对象动画的场景继续允许交互转动视角。字幕的 x/y 为相对画布比例，显式 fontSize/outlineWidth 以 `output.height`（缺省 1080）为设计分辨率，预览与导出按比例缩放。
 
-CPU/WebGL-compute 粒子使用固定步长（默认 1/60 秒，simulationStep 可配置），输出 fps 不改变运动速度。后退重置重放，长仿真的随机 seek 可能较慢；不同设备不承诺浮点逐字节一致。WebGPU/自定义后端缺少 resetTime 时明确拒绝，任意交互事件、脚本和外部物理插件也不会自动变成确定性动画。
+CPU/WebGL-compute 粒子使用固定步长（默认 1/60 秒，simulationStep 可配置），输出 fps 不改变运动速度。CPU 有状态模拟保留有界检查点（默认每 2 秒、缓存 32 MiB，`checkpointInterval/checkpointBytes` 可配置）；后退优先恢复检查点。GPU compute 等其他有状态系统仍重放，首次远距离 seek 仍可能较慢。缓存预算不是粒子数/作品时长限制。不同设备不承诺浮点逐字节一致。WebGPU/自定义后端缺少 resetTime 时明确拒绝；任意交互事件、脚本和外部物理插件不会自动变成确定性动画。
+
+轨道也接受 `signal` 代替 keyframes：constant/sine/pulse/noise/envelope/orbit/path/beat/samples。`start/duration/extrapolation:"hold|loop|none"` 统一起止语义。`$renderer`、`$pass:id`、`$effect:id`、`$caption:id` 和 `$audio:id` 可寻址已有属性；例如 `$pass:glow` 的 strength、`$effect:wave` 的 params.amplitude、`$audio:music` 的 gain/pan。相机位置可以使用 path/orbit，lookAt 在变换后求值。内置 TSL graph 的 time 和 pulse preset 使用场景显式时钟；自定义 factory 使用传入的 `timeNode`，直接使用 TSL 全局时间的第三方代码不在保证范围。
 
 ## 粒子和片段
 
-timeline.effects 每项为 `{id,target,operator,start,duration,params}`。内置 wave（amplitude/frequency/speed）、swirl（speed/twist）、orbit（radius/speed）、morph（source/seed）。Morph 使用普通 Particle V2 source，稳定采样到已有粒子数；textMask/imageMask 按需加载 raster。自定义纯函数使用 registerParticleMotionOperator。首版位置算子为 CPU，实现按顺序组合、仿真后求值、不反向污染仿真。生命周期曲线不再统一限制 8 点，GPU 真实 uniform 上限会具体报错。
+timeline.effects 每项为 `{id,target,operator,start,duration,backend,params}`。内置 wave（amplitude/frequency/speed）、swirl（speed/twist）、orbit（radius/speed）、morph（source/seed）、scatter（distance/seed）、wavefront（amplitude/frequency/speed/width）、flow（path/speed/length/spread）。Flow 复用 CurvePath 描述，speed 是每秒路径圈数，length 是光带占据路径的比例。Morph 稳定采样 Particle V2 source 到已有粒子数，默认空间排序对应，也可 matching:"index"；textMask/imageMask 按需加载 raster，stagger 配置错峰聚散。
+
+CPU 参考实现按顺序组合、仿真后求值，不污染仿真。`backend:"webgl"` 将这七个解析式效果放到静态 Particle V2 points/billboards 的顶点着色器，底层 simulation.backend 仍为 cpu；它不是流体或 GPU compute。单个对象不能混用效果后端。自定义 CPU 算子使用 registerParticleMotionOperator；不支持的 GPU 算子明确报错。生命周期曲线无统一 8 点上限，真实硬件限制会具体报告。
+
+WebGL 新增按需 Pass：`dof`（focus/aperture/maxblur）、`selectivebloom`（targets/strength/radius/threshold）、`cinematic`（vignette/saturation/contrast/exposure/streak）。Pass 使用 `id` 注册，末尾保留 output；景深和选择性辉光处理了内置粒子位移、SDF 填充/描边，仍是 r184 WebGL 预览能力，不代表任意自定义 shader 或 WebGPU 后处理兼容。
+
+标题可混用 objType:text 的 sdf/mesh/texture，以及粒子文字。SDF 适合中文空间标题，mesh 适合挤出实体文字且需要可用字体 JSON；字幕独立合成，支持中文换行、安全区、fadeIn/fadeOut、slideY、reveal:"typewriter"、charactersPerSecond 和 highlights:[{text,color}]。双语使用不同字幕 ID 与 y 位置。没有引入 MathJax/LaTeX 排版器，不把纯文本公式当成完整数学排版。
 
 ```json
 {
@@ -61,7 +69,19 @@ timeline.effects 每项为 `{id,target,operator,start,duration,params}`。内置
 
 仍用 JSON/.tjz，不新增扩展名。source 可为内嵌场景、scenes 字典键、JSON/.tjz URL 或 pack 引用。源时间为 sourceStart+(globalTime-start)*rate；重复引用隔离可变状态。后面的片段盖在上面；上层 fadeIn 和保持可见的下层实现交叉溶解。全局音乐不因镜头切换重启。嵌套 composition 首版需展平。
 
-归档 entryKind 为 composition，入口 composition.json。packMediaDocument 对显式二进制资产按内容哈希去重，不自动抓取所有远程依赖。单场景加载器遇到 composition 明确提示使用媒体运行时，不生成占位立方体。
+clip.transitionIn 支持 `{type:"wipe",duration:1,direction:"left"}` 或 `{type:"dissolve",duration:1,seed:7,softness:0.08}`，重叠片段可在下一画面揭示时保留下层画面。不同时淡出下层即可避免无意变暗。尚不支持任意外部遮罩 URL。默认在切换前 2 秒准备最近的一个镜头（preloadNext/preloadSeconds 可配置），相容镜头复用 WebGLRenderer，已离场资源及时释放。
+
+归档 entryKind 为 composition，入口 composition.json。packMediaDocument 对显式二进制资产及已有的 Base64 音频 URL 按内容哈希去重保存，不自动抓取远程依赖。生成的旁白可以离线分享，接收方不需要模型。单场景加载器遇到 composition 明确提示使用媒体运行时，不生成占位立方体。
+
+## ThreeBox 分镜制作与 Agent
+
+在 **设置 → AI** 选择输出目标（自动/3D 场景/视频项目）、视频时长（0 表示按内容）、质量和“先确认分镜”。讲解类默认按内容规划，通常 90–180 秒；这是提示策略，不是时长下限/上限。原有普通场景、模型和调整流程保留。图片/GIF 在媒体工作台导出，当前不另设专用生成目标按钮。
+
+视频按「分镜 → 可播放粗剪 → 逐镜头细化 → 检查」执行，不要求一次输出整部影片。发送停止可暂停，后续“继续制作”或“重做第二镜头，其他不变”基于保存的项目继续；刷新不会自动恢复 AI 请求。分镜确认开启时，在分镜保存后暂停，发下一条消息批准。聊天画布提供播放、定位和镜头列表；编辑器入口先选择镜头。历史版本独立，默认仅一个画布活动，移动端沿用同一流程。
+
+“视频画面复核”默认使用模型已声明的图片能力，未知时只进行结构检查。若当前模型确实支持图片输入，可显式开启，Agent 收到真实时间戳截图；这可能增加调用费用。未渲染/无视觉输入不标记为视觉通过。最终审美、叙事和科学正确性仍受模型影响，不能承诺任意模型达到演示作品水平。
+
+SDK：`createMediaProjectSession` 和 `createMediaOperationService` 属于 media-kit；`runVideoAgent` 属于 threejson/ai，只接收注入的服务，不依赖宿主或媒体包。操作有 media.inspect/plan.set/shot.put/shot.edit/shot.query/shot.remove、timeline.inspect/edit、media.validate/captureFrames/render/shot.narrate。编辑按 revision 原子提交，可 undo/redo；无固定 AI 总轮数。模型重复无进展、供应商失败、用户取消或显式预算会停止，保留已完成镜头。宿主注入的 capture/render/narration 能力与权限分开，不存在未实现命令假装成功。
 
 ## SDK / 导出
 
@@ -105,7 +125,11 @@ audio-kit 主入口提供 compileScore/createScoreRenderer/synthesizeScore、PCM
 
 模型 manifest 包含 id/version/adapter/license/files；文件包含 role/bytes/sha256、可选 path/url。用户选择后才调用 download 或 import。模型和运行库必须配套，许可分别记录。模型不自动随作品分享，生成的 WAV 等才是作品资源。
 
-**尚未随包提供实测可下载的 Melo/Kokoro 目录。** 已实现存储、适配和 Worker 接口；真实模型分发、加载及音质仍需单独验证。mock 适配测试不是模型验证。speechSynthesis 只能试听，不冒充可导出 PCM。
+`/models` 的 getBuiltinAudioModels/createLocalSpeechProducer 提供固定版本 MeloTTS + Sherpa-ONNX 单线程 WASM，约 71 MiB，SHA-256/大小/许可固定；权重不随 npm 包下载。已在本机 Edge 用真实模型合成中文 PCM，不要求跨源隔离；CSP 需允许其 Worker/WASM/blob 模块。单音色，中英混读受词典影响，内存成本明显高于电子合成；未做手机实机或专业配音音质验收。Kokoro 仍为后续适配，speechSynthesis 只可试听。
+
+已启用本地旁白后，Agent 可调用 media.shot.narrate。按句合成、按实测 PCM 时长编排并缓存；captions 参数可独立于口播，例如公式显示与读法不同。音频超出镜头会报冲突，显式 extend:true 才延长并移动后续镜头。仅有句级对齐，不声称词/字级精确。
+
+音乐可加 `ducking:{mode:"narration",gain:0.25,attack:0.15,release:0.3}`，旁白片段标记 narration:true；也可 targets 指定音轨。`analyzePcm` 提供 RMS/peak/削波统计及 samples 包络，供效果/材质轨道使用；beat 信号是给定 BPM 的合成节奏，不是自动识别未知音乐。音频 gain/pan 轨道、ducking 与视频导出共用源时间映射。
 
 ## CLI / MCP 与后续
 

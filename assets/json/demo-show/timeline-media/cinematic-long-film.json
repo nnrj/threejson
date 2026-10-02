@@ -1,0 +1,1710 @@
+{
+  "documentType": "composition",
+  "compositionVersion": 1,
+  "name": "程序化科普镜头参考",
+  "output": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30
+  },
+  "scenes": {
+    "cloud": {
+      "version": "next",
+      "threeJsonId": "cloud",
+      "name": "从一个电子开始",
+      "sceneConfig": {
+        "scene": {
+          "background": "#020510"
+        },
+        "camera": {
+          "position": {
+            "x": 0,
+            "y": 8,
+            "z": 62
+          },
+          "fov": 46,
+          "near": 0.1,
+          "far": 1000,
+          "lookAt": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "controls": {
+          "type": "none"
+        },
+        "renderer": {
+          "antialias": true,
+          "toneMapping": "aces",
+          "exposure": 1
+        },
+        "lights": [
+          {
+            "type": "ambient",
+            "intensity": 0.5
+          },
+          {
+            "type": "directional",
+            "intensity": 2,
+            "position": {
+              "x": 5,
+              "y": 12,
+              "z": 16
+            }
+          }
+        ]
+      },
+      "objectList": [
+        {
+          "objType": "text",
+          "threeJsonId": "title",
+          "mode": "sdf",
+          "content": "从一个电子开始",
+          "fontSize": 2.2,
+          "color": "#dbf6ff",
+          "align": "center",
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "billboard": true,
+          "position": {
+            "x": 0,
+            "y": 17,
+            "z": 0
+          },
+          "sdf": {
+            "outlineWidth": 0.035,
+            "outlineColor": "#050919"
+          }
+        },
+        {
+          "objType": "particleEmitter",
+          "threeJsonId": "cloud",
+          "source": {
+            "type": "sphere",
+            "radius": 16
+          },
+          "emission": {
+            "mode": "static",
+            "count": 100000,
+            "seed": 73
+          },
+          "particle": {
+            "lifetime": 0,
+            "colorOverLife": [
+              "#5ea8ff"
+            ],
+            "sizeOverLife": [
+              0.12
+            ]
+          },
+          "simulation": {
+            "backend": "cpu"
+          },
+          "render": {
+            "type": "points",
+            "blending": "additive",
+            "depthWrite": false,
+            "opacity": 0.075
+          }
+        },
+        {
+          "objType": "sphere",
+          "threeJsonId": "core",
+          "position": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "geometry": {
+            "radius": 0.65,
+            "widthSegments": 32,
+            "heightSegments": 20
+          },
+          "material": {
+            "type": "basic",
+            "color": "#ffffff"
+          }
+        },
+        {
+          "objType": "pass",
+          "id": "dof",
+          "passType": "dof",
+          "focus": 62,
+          "aperture": 0.000035,
+          "maxblur": 0.007
+        },
+        {
+          "objType": "pass",
+          "id": "glow",
+          "passType": "selectivebloom",
+          "targets": [
+            "cloud",
+            "core"
+          ],
+          "strength": 0.6,
+          "radius": 0.5,
+          "threshold": 0.65
+        },
+        {
+          "objType": "pass",
+          "id": "grade",
+          "passType": "cinematic",
+          "vignette": 0.22,
+          "streak": 0.2,
+          "streakThreshold": 0.8
+        },
+        {
+          "objType": "pass",
+          "id": "output",
+          "passType": "output"
+        }
+      ],
+      "timeline": {
+        "version": 1,
+        "duration": 60,
+        "effects": [
+          {
+            "id": "swirl",
+            "target": "cloud",
+            "operator": "swirl",
+            "params": {
+              "speed": 0.04,
+              "twist": 0.08
+            },
+            "start": 0,
+            "duration": 60,
+            "backend": "webgl"
+          },
+          {
+            "id": "ripple",
+            "target": "cloud",
+            "operator": "wave",
+            "params": {
+              "amplitude": 1.1,
+              "frequency": 0.4,
+              "speed": 0.6
+            },
+            "start": 0,
+            "duration": 60,
+            "backend": "webgl"
+          }
+        ],
+        "tracks": [
+          {
+            "id": "dolly",
+            "target": "$camera",
+            "property": "position",
+            "signal": {
+              "type": "path",
+              "duration": 60,
+              "points": [
+                [
+                  -4,
+                  8,
+                  66
+                ],
+                [
+                  4,
+                  10,
+                  61
+                ],
+                [
+                  0,
+                  8,
+                  57
+                ]
+              ]
+            }
+          },
+          {
+            "id": "aim",
+            "target": "$camera",
+            "property": "lookAt",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            ]
+          }
+        ],
+        "captions": [
+          {
+            "id": "caption",
+            "text": "亮点是视觉示意，而不是电子沿固定轨道运动的实景。",
+            "start": 1,
+            "duration": 58,
+            "fontSize": 32,
+            "y": 0.9,
+            "fadeIn": 0.6,
+            "fadeOut": 0.6,
+            "maxWidth": 0.86
+          }
+        ]
+      }
+    },
+    "human": {
+      "version": "next",
+      "threeJsonId": "human",
+      "name": "微小，组成宏大",
+      "sceneConfig": {
+        "scene": {
+          "background": "#020510"
+        },
+        "camera": {
+          "position": {
+            "x": 0,
+            "y": 8,
+            "z": 62
+          },
+          "fov": 46,
+          "near": 0.1,
+          "far": 1000,
+          "lookAt": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "controls": {
+          "type": "none"
+        },
+        "renderer": {
+          "antialias": true,
+          "toneMapping": "aces",
+          "exposure": 1
+        },
+        "lights": [
+          {
+            "type": "ambient",
+            "intensity": 0.5
+          },
+          {
+            "type": "directional",
+            "intensity": 2,
+            "position": {
+              "x": 5,
+              "y": 12,
+              "z": 16
+            }
+          }
+        ]
+      },
+      "objectList": [
+        {
+          "objType": "text",
+          "threeJsonId": "title",
+          "mode": "sdf",
+          "content": "微小，组成宏大",
+          "fontSize": 2.2,
+          "color": "#dbf6ff",
+          "align": "center",
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "billboard": true,
+          "position": {
+            "x": 0,
+            "y": 17,
+            "z": 0
+          },
+          "sdf": {
+            "outlineWidth": 0.035,
+            "outlineColor": "#050919"
+          }
+        },
+        {
+          "objType": "particleEmitter",
+          "threeJsonId": "letters",
+          "source": {
+            "type": "box",
+            "width": 46,
+            "height": 30,
+            "depth": 24
+          },
+          "emission": {
+            "mode": "static",
+            "count": 100000,
+            "seed": 73
+          },
+          "particle": {
+            "lifetime": 0,
+            "colorOverLife": [
+              "#a6eaff"
+            ],
+            "sizeOverLife": [
+              0.12
+            ]
+          },
+          "simulation": {
+            "backend": "cpu"
+          },
+          "render": {
+            "type": "points",
+            "blending": "additive",
+            "depthWrite": false,
+            "opacity": 0.075
+          }
+        },
+        {
+          "objType": "pass",
+          "id": "dof",
+          "passType": "dof",
+          "focus": 62,
+          "aperture": 0.000035,
+          "maxblur": 0.007
+        },
+        {
+          "objType": "pass",
+          "id": "glow",
+          "passType": "selectivebloom",
+          "targets": [
+            "letters"
+          ],
+          "strength": 0.6,
+          "radius": 0.5,
+          "threshold": 0.65
+        },
+        {
+          "objType": "pass",
+          "id": "grade",
+          "passType": "cinematic",
+          "vignette": 0.22,
+          "streak": 0.2,
+          "streakThreshold": 0.8
+        },
+        {
+          "objType": "pass",
+          "id": "output",
+          "passType": "output"
+        }
+      ],
+      "timeline": {
+        "version": 1,
+        "duration": 60,
+        "effects": [
+          {
+            "id": "gather",
+            "target": "letters",
+            "operator": "morph",
+            "params": {
+              "source": {
+                "type": "textMask",
+                "text": "人",
+                "font": "700 120px sans-serif",
+                "width": 32,
+                "height": 32,
+                "depth": 0.8,
+                "resolution": 512
+              },
+              "seed": 21
+            },
+            "start": 1,
+            "duration": 21,
+            "backend": "webgl",
+            "stagger": 0.22,
+            "easing": "smoothstep"
+          },
+          {
+            "id": "scatter",
+            "target": "letters",
+            "operator": "scatter",
+            "params": {
+              "seed": 33,
+              "distance": 28
+            },
+            "start": 42,
+            "duration": 16.8,
+            "backend": "webgl",
+            "easing": "smoothstep"
+          }
+        ],
+        "tracks": [
+          {
+            "id": "dolly",
+            "target": "$camera",
+            "property": "position",
+            "signal": {
+              "type": "path",
+              "duration": 60,
+              "points": [
+                [
+                  -4,
+                  8,
+                  66
+                ],
+                [
+                  4,
+                  10,
+                  61
+                ],
+                [
+                  0,
+                  8,
+                  57
+                ]
+              ]
+            }
+          },
+          {
+            "id": "aim",
+            "target": "$camera",
+            "property": "lookAt",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            ]
+          }
+        ],
+        "captions": [
+          {
+            "id": "caption",
+            "text": "粒子汇聚成文字：同一组位置可以连续变形，而不必重写每一帧。",
+            "start": 1,
+            "duration": 58,
+            "fontSize": 32,
+            "y": 0.9,
+            "fadeIn": 0.6,
+            "fadeOut": 0.6,
+            "maxWidth": 0.86
+          }
+        ]
+      }
+    },
+    "orbits": {
+      "version": "next",
+      "threeJsonId": "orbits",
+      "name": "从经典图像到量子描述",
+      "sceneConfig": {
+        "scene": {
+          "background": "#020510"
+        },
+        "camera": {
+          "position": {
+            "x": 0,
+            "y": 8,
+            "z": 62
+          },
+          "fov": 46,
+          "near": 0.1,
+          "far": 1000,
+          "lookAt": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "controls": {
+          "type": "none"
+        },
+        "renderer": {
+          "antialias": true,
+          "toneMapping": "aces",
+          "exposure": 1
+        },
+        "lights": [
+          {
+            "type": "ambient",
+            "intensity": 0.5
+          },
+          {
+            "type": "directional",
+            "intensity": 2,
+            "position": {
+              "x": 5,
+              "y": 12,
+              "z": 16
+            }
+          }
+        ]
+      },
+      "objectList": [
+        {
+          "objType": "text",
+          "threeJsonId": "title",
+          "mode": "sdf",
+          "content": "从经典图像到量子描述",
+          "fontSize": 2.2,
+          "color": "#dbf6ff",
+          "align": "center",
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "billboard": true,
+          "position": {
+            "x": 0,
+            "y": 17,
+            "z": 0
+          },
+          "sdf": {
+            "outlineWidth": 0.035,
+            "outlineColor": "#050919"
+          }
+        },
+        {
+          "objType": "torus",
+          "threeJsonId": "ring-0",
+          "geometry": {
+            "radius": 5,
+            "tube": 0.055,
+            "tubularSegments": 160,
+            "radialSegments": 5
+          },
+          "rotation": {
+            "x": 0.9,
+            "y": 0,
+            "z": 0.1
+          },
+          "material": {
+            "type": "basic",
+            "color": "#eeb661"
+          }
+        },
+        {
+          "objType": "torus",
+          "threeJsonId": "ring-1",
+          "geometry": {
+            "radius": 8.2,
+            "tube": 0.055,
+            "tubularSegments": 160,
+            "radialSegments": 5
+          },
+          "rotation": {
+            "x": 1.02,
+            "y": 0.2,
+            "z": 0.1
+          },
+          "material": {
+            "type": "basic",
+            "color": "#eeb661"
+          }
+        },
+        {
+          "objType": "torus",
+          "threeJsonId": "ring-2",
+          "geometry": {
+            "radius": 11.4,
+            "tube": 0.055,
+            "tubularSegments": 160,
+            "radialSegments": 5
+          },
+          "rotation": {
+            "x": 1.1400000000000001,
+            "y": 0.4,
+            "z": 0.1
+          },
+          "material": {
+            "type": "basic",
+            "color": "#eeb661"
+          }
+        },
+        {
+          "objType": "torus",
+          "threeJsonId": "ring-3",
+          "geometry": {
+            "radius": 14.600000000000001,
+            "tube": 0.055,
+            "tubularSegments": 160,
+            "radialSegments": 5
+          },
+          "rotation": {
+            "x": 1.26,
+            "y": 0.6000000000000001,
+            "z": 0.1
+          },
+          "material": {
+            "type": "basic",
+            "color": "#eeb661"
+          }
+        },
+        {
+          "objType": "torus",
+          "threeJsonId": "ring-4",
+          "geometry": {
+            "radius": 17.8,
+            "tube": 0.055,
+            "tubularSegments": 160,
+            "radialSegments": 5
+          },
+          "rotation": {
+            "x": 1.38,
+            "y": 0.8,
+            "z": 0.1
+          },
+          "material": {
+            "type": "basic",
+            "color": "#eeb661"
+          }
+        },
+        {
+          "objType": "sphere",
+          "threeJsonId": "core",
+          "position": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "geometry": {
+            "radius": 0.9,
+            "widthSegments": 32,
+            "heightSegments": 20
+          },
+          "material": {
+            "type": "basic",
+            "color": "#fff0b8"
+          }
+        },
+        {
+          "objType": "particleEmitter",
+          "threeJsonId": "tail",
+          "source": {
+            "type": "sphere",
+            "radius": 0.5
+          },
+          "emission": {
+            "mode": "static",
+            "count": 4000,
+            "seed": 73
+          },
+          "particle": {
+            "lifetime": 0,
+            "colorOverLife": [
+              "#ffe1a2"
+            ],
+            "sizeOverLife": [
+              0.12
+            ]
+          },
+          "simulation": {
+            "backend": "cpu"
+          },
+          "render": {
+            "type": "points",
+            "blending": "additive",
+            "depthWrite": false,
+            "opacity": 0.15
+          }
+        },
+        {
+          "objType": "sphere",
+          "threeJsonId": "electron-0",
+          "position": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "geometry": {
+            "radius": 0.22,
+            "widthSegments": 32,
+            "heightSegments": 20
+          },
+          "material": {
+            "type": "basic",
+            "color": "#d6eeff"
+          }
+        },
+        {
+          "objType": "sphere",
+          "threeJsonId": "electron-1",
+          "position": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "geometry": {
+            "radius": 0.22,
+            "widthSegments": 32,
+            "heightSegments": 20
+          },
+          "material": {
+            "type": "basic",
+            "color": "#d6eeff"
+          }
+        },
+        {
+          "objType": "sphere",
+          "threeJsonId": "electron-2",
+          "position": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "geometry": {
+            "radius": 0.22,
+            "widthSegments": 32,
+            "heightSegments": 20
+          },
+          "material": {
+            "type": "basic",
+            "color": "#d6eeff"
+          }
+        },
+        {
+          "objType": "sphere",
+          "threeJsonId": "electron-3",
+          "position": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "geometry": {
+            "radius": 0.22,
+            "widthSegments": 32,
+            "heightSegments": 20
+          },
+          "material": {
+            "type": "basic",
+            "color": "#d6eeff"
+          }
+        },
+        {
+          "objType": "sphere",
+          "threeJsonId": "electron-4",
+          "position": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "geometry": {
+            "radius": 0.22,
+            "widthSegments": 32,
+            "heightSegments": 20
+          },
+          "material": {
+            "type": "basic",
+            "color": "#d6eeff"
+          }
+        },
+        {
+          "objType": "pass",
+          "id": "dof",
+          "passType": "dof",
+          "focus": 62,
+          "aperture": 0.000035,
+          "maxblur": 0.007
+        },
+        {
+          "objType": "pass",
+          "id": "glow",
+          "passType": "selectivebloom",
+          "targets": [
+            "ring-0",
+            "ring-1",
+            "ring-2",
+            "ring-3",
+            "ring-4",
+            "core",
+            "tail",
+            "electron-0",
+            "electron-1",
+            "electron-2",
+            "electron-3",
+            "electron-4"
+          ],
+          "strength": 0.6,
+          "radius": 0.5,
+          "threshold": 0.65
+        },
+        {
+          "objType": "pass",
+          "id": "grade",
+          "passType": "cinematic",
+          "vignette": 0.22,
+          "streak": 0.2,
+          "streakThreshold": 0.8
+        },
+        {
+          "objType": "pass",
+          "id": "output",
+          "passType": "output"
+        }
+      ],
+      "timeline": {
+        "version": 1,
+        "duration": 60,
+        "effects": [
+          {
+            "id": "orbit-tail",
+            "target": "tail",
+            "operator": "flow",
+            "params": {
+              "path": {
+                "type": "ellipse",
+                "radius": 15,
+                "plane": "xz"
+              },
+              "speed": 0.08,
+              "length": 0.18,
+              "spread": 0.5
+            },
+            "start": 0,
+            "duration": 60,
+            "backend": "webgl"
+          }
+        ],
+        "tracks": [
+          {
+            "id": "dolly",
+            "target": "$camera",
+            "property": "position",
+            "signal": {
+              "type": "path",
+              "duration": 60,
+              "points": [
+                [
+                  -4,
+                  8,
+                  66
+                ],
+                [
+                  4,
+                  10,
+                  61
+                ],
+                [
+                  0,
+                  8,
+                  57
+                ]
+              ]
+            }
+          },
+          {
+            "id": "aim",
+            "target": "$camera",
+            "property": "lookAt",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            ]
+          },
+          {
+            "id": "orbit-0",
+            "target": "electron-0",
+            "property": "position",
+            "duration": 60,
+            "signal": {
+              "type": "orbit",
+              "center": [
+                0,
+                0,
+                0
+              ],
+              "radius": 5,
+              "duration": 5,
+              "plane": "xz"
+            }
+          },
+          {
+            "id": "orbit-1",
+            "target": "electron-1",
+            "property": "position",
+            "duration": 60,
+            "signal": {
+              "type": "orbit",
+              "center": [
+                0,
+                0,
+                0
+              ],
+              "radius": 8.2,
+              "duration": 7,
+              "plane": "xz"
+            }
+          },
+          {
+            "id": "orbit-2",
+            "target": "electron-2",
+            "property": "position",
+            "duration": 60,
+            "signal": {
+              "type": "orbit",
+              "center": [
+                0,
+                0,
+                0
+              ],
+              "radius": 11.4,
+              "duration": 9,
+              "plane": "xz"
+            }
+          },
+          {
+            "id": "orbit-3",
+            "target": "electron-3",
+            "property": "position",
+            "duration": 60,
+            "signal": {
+              "type": "orbit",
+              "center": [
+                0,
+                0,
+                0
+              ],
+              "radius": 14.600000000000001,
+              "duration": 11,
+              "plane": "xz"
+            }
+          },
+          {
+            "id": "orbit-4",
+            "target": "electron-4",
+            "property": "position",
+            "duration": 60,
+            "signal": {
+              "type": "orbit",
+              "center": [
+                0,
+                0,
+                0
+              ],
+              "radius": 17.8,
+              "duration": 13,
+              "plane": "xz"
+            }
+          }
+        ],
+        "captions": [
+          {
+            "id": "caption",
+            "text": "轨道线是帮助理解的图示。量子态需要概率分布，而非确定路径。",
+            "start": 1,
+            "duration": 58,
+            "fontSize": 32,
+            "y": 0.9,
+            "fadeIn": 0.6,
+            "fadeOut": 0.6,
+            "maxWidth": 0.86
+          }
+        ]
+      }
+    },
+    "energy": {
+      "version": "next",
+      "threeJsonId": "energy",
+      "name": "能量的阶梯",
+      "sceneConfig": {
+        "scene": {
+          "background": "#020510"
+        },
+        "camera": {
+          "position": {
+            "x": 0,
+            "y": 8,
+            "z": 62
+          },
+          "fov": 46,
+          "near": 0.1,
+          "far": 1000,
+          "lookAt": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "controls": {
+          "type": "none"
+        },
+        "renderer": {
+          "antialias": true,
+          "toneMapping": "aces",
+          "exposure": 1
+        },
+        "lights": [
+          {
+            "type": "ambient",
+            "intensity": 0.5
+          },
+          {
+            "type": "directional",
+            "intensity": 2,
+            "position": {
+              "x": 5,
+              "y": 12,
+              "z": 16
+            }
+          }
+        ]
+      },
+      "objectList": [
+        {
+          "objType": "text",
+          "threeJsonId": "title",
+          "mode": "sdf",
+          "content": "能量的阶梯",
+          "fontSize": 2.2,
+          "color": "#dbf6ff",
+          "align": "center",
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "billboard": true,
+          "position": {
+            "x": 0,
+            "y": 17,
+            "z": 0
+          },
+          "sdf": {
+            "outlineWidth": 0.035,
+            "outlineColor": "#050919"
+          }
+        },
+        {
+          "objType": "box",
+          "threeJsonId": "level-0",
+          "position": {
+            "x": -12.600000000000001,
+            "y": -6,
+            "z": 0
+          },
+          "geometry": {
+            "width": 4,
+            "height": 0.3,
+            "depth": 7
+          },
+          "material": {
+            "type": "basic",
+            "color": "#69d9ff",
+            "wireframe": true
+          }
+        },
+        {
+          "objType": "box",
+          "threeJsonId": "level-1",
+          "position": {
+            "x": -8.4,
+            "y": -4,
+            "z": 0
+          },
+          "geometry": {
+            "width": 4,
+            "height": 0.3,
+            "depth": 7
+          },
+          "material": {
+            "type": "basic",
+            "color": "#69d9ff",
+            "wireframe": true
+          }
+        },
+        {
+          "objType": "box",
+          "threeJsonId": "level-2",
+          "position": {
+            "x": -4.2,
+            "y": -2,
+            "z": 0
+          },
+          "geometry": {
+            "width": 4,
+            "height": 0.3,
+            "depth": 7
+          },
+          "material": {
+            "type": "basic",
+            "color": "#69d9ff",
+            "wireframe": true
+          }
+        },
+        {
+          "objType": "box",
+          "threeJsonId": "level-3",
+          "position": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "geometry": {
+            "width": 4,
+            "height": 0.3,
+            "depth": 7
+          },
+          "material": {
+            "type": "basic",
+            "color": "#69d9ff",
+            "wireframe": true
+          }
+        },
+        {
+          "objType": "box",
+          "threeJsonId": "level-4",
+          "position": {
+            "x": 4.2,
+            "y": 2,
+            "z": 0
+          },
+          "geometry": {
+            "width": 4,
+            "height": 0.3,
+            "depth": 7
+          },
+          "material": {
+            "type": "basic",
+            "color": "#69d9ff",
+            "wireframe": true
+          }
+        },
+        {
+          "objType": "box",
+          "threeJsonId": "level-5",
+          "position": {
+            "x": 8.4,
+            "y": 4,
+            "z": 0
+          },
+          "geometry": {
+            "width": 4,
+            "height": 0.3,
+            "depth": 7
+          },
+          "material": {
+            "type": "basic",
+            "color": "#69d9ff",
+            "wireframe": true
+          }
+        },
+        {
+          "objType": "box",
+          "threeJsonId": "level-6",
+          "position": {
+            "x": 12.600000000000001,
+            "y": 6,
+            "z": 0
+          },
+          "geometry": {
+            "width": 4,
+            "height": 0.3,
+            "depth": 7
+          },
+          "material": {
+            "type": "basic",
+            "color": "#69d9ff",
+            "wireframe": true
+          }
+        },
+        {
+          "objType": "text",
+          "threeJsonId": "formula",
+          "mode": "sdf",
+          "content": "E = hν",
+          "fontSize": 3.2,
+          "color": "#ffda93",
+          "position": {
+            "x": -13,
+            "y": 9,
+            "z": 0
+          }
+        },
+        {
+          "objType": "text",
+          "threeJsonId": "energy-label",
+          "mode": "mesh",
+          "content": "ENERGY",
+          "fontSize": 1.2,
+          "color": "#bf9563",
+          "position": {
+            "x": -12,
+            "y": 6,
+            "z": 0
+          },
+          "mesh": {
+            "fontJsonUrl": "/assets/fonts/helvetiker_bold.typeface.json",
+            "depth": 0.2,
+            "bevelEnabled": true,
+            "bevelThickness": 0.04,
+            "bevelSize": 0.03
+          }
+        },
+        {
+          "objType": "sphere",
+          "threeJsonId": "packet",
+          "position": {
+            "x": -13,
+            "y": -4,
+            "z": 0
+          },
+          "geometry": {
+            "radius": 0.5,
+            "widthSegments": 32,
+            "heightSegments": 20
+          },
+          "material": {
+            "type": "basic",
+            "color": "#ffffff"
+          }
+        },
+        {
+          "objType": "pass",
+          "id": "dof",
+          "passType": "dof",
+          "focus": 62,
+          "aperture": 0.000035,
+          "maxblur": 0.007
+        },
+        {
+          "objType": "pass",
+          "id": "glow",
+          "passType": "selectivebloom",
+          "targets": [
+            "level-0",
+            "level-1",
+            "level-2",
+            "level-3",
+            "level-4",
+            "level-5",
+            "level-6",
+            "packet"
+          ],
+          "strength": 0.6,
+          "radius": 0.5,
+          "threshold": 0.65
+        },
+        {
+          "objType": "pass",
+          "id": "grade",
+          "passType": "cinematic",
+          "vignette": 0.22,
+          "streak": 0.2,
+          "streakThreshold": 0.8
+        },
+        {
+          "objType": "pass",
+          "id": "output",
+          "passType": "output"
+        }
+      ],
+      "timeline": {
+        "version": 1,
+        "duration": 60,
+        "effects": [],
+        "tracks": [
+          {
+            "id": "dolly",
+            "target": "$camera",
+            "property": "position",
+            "signal": {
+              "type": "path",
+              "duration": 60,
+              "points": [
+                [
+                  -4,
+                  8,
+                  66
+                ],
+                [
+                  4,
+                  10,
+                  61
+                ],
+                [
+                  0,
+                  8,
+                  57
+                ]
+              ]
+            }
+          },
+          {
+            "id": "aim",
+            "target": "$camera",
+            "property": "lookAt",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            ]
+          },
+          {
+            "id": "climb",
+            "target": "packet",
+            "property": "position",
+            "signal": {
+              "type": "path",
+              "duration": 48,
+              "interpolation": "linear",
+              "points": [
+                [
+                  -12.600000000000001,
+                  -5,
+                  0
+                ],
+                [
+                  -8.4,
+                  -3,
+                  0
+                ],
+                [
+                  -4.2,
+                  -1,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ],
+                [
+                  4.2,
+                  3,
+                  0
+                ],
+                [
+                  8.4,
+                  5,
+                  0
+                ],
+                [
+                  12.600000000000001,
+                  7,
+                  0
+                ]
+              ]
+            }
+          }
+        ],
+        "captions": [
+          {
+            "id": "caption",
+            "text": "E = hν。能量交换呈离散份额；阶梯是概念图，不是原子的真实结构。",
+            "start": 1,
+            "duration": 58,
+            "fontSize": 32,
+            "y": 0.9,
+            "fadeIn": 0.6,
+            "fadeOut": 0.6,
+            "maxWidth": 0.86
+          }
+        ]
+      }
+    },
+    "waves": {
+      "version": "next",
+      "threeJsonId": "waves",
+      "name": "波、粒子与测量",
+      "sceneConfig": {
+        "scene": {
+          "background": "#020510"
+        },
+        "camera": {
+          "position": {
+            "x": 0,
+            "y": 8,
+            "z": 62
+          },
+          "fov": 46,
+          "near": 0.1,
+          "far": 1000,
+          "lookAt": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "controls": {
+          "type": "none"
+        },
+        "renderer": {
+          "antialias": true,
+          "toneMapping": "aces",
+          "exposure": 1
+        },
+        "lights": [
+          {
+            "type": "ambient",
+            "intensity": 0.5
+          },
+          {
+            "type": "directional",
+            "intensity": 2,
+            "position": {
+              "x": 5,
+              "y": 12,
+              "z": 16
+            }
+          }
+        ]
+      },
+      "objectList": [
+        {
+          "objType": "text",
+          "threeJsonId": "title",
+          "mode": "sdf",
+          "content": "波、粒子与测量",
+          "fontSize": 2.2,
+          "color": "#dbf6ff",
+          "align": "center",
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "billboard": true,
+          "position": {
+            "x": 0,
+            "y": 17,
+            "z": 0
+          },
+          "sdf": {
+            "outlineWidth": 0.035,
+            "outlineColor": "#050919"
+          }
+        },
+        {
+          "objType": "particleEmitter",
+          "threeJsonId": "wave",
+          "source": {
+            "type": "box",
+            "width": 42,
+            "height": 0.08,
+            "depth": 36
+          },
+          "emission": {
+            "mode": "static",
+            "count": 100000,
+            "seed": 73
+          },
+          "particle": {
+            "lifetime": 0,
+            "colorOverLife": [
+              "#68caff"
+            ],
+            "sizeOverLife": [
+              0.12
+            ]
+          },
+          "simulation": {
+            "backend": "cpu"
+          },
+          "render": {
+            "type": "points",
+            "blending": "additive",
+            "depthWrite": false,
+            "opacity": 0.075
+          }
+        },
+        {
+          "objType": "sphere",
+          "threeJsonId": "emitter",
+          "position": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "geometry": {
+            "radius": 0.6,
+            "widthSegments": 32,
+            "heightSegments": 20
+          },
+          "material": {
+            "type": "basic",
+            "color": "#ffffff"
+          }
+        },
+        {
+          "objType": "pass",
+          "id": "dof",
+          "passType": "dof",
+          "focus": 62,
+          "aperture": 0.000035,
+          "maxblur": 0.007
+        },
+        {
+          "objType": "pass",
+          "id": "glow",
+          "passType": "selectivebloom",
+          "targets": [
+            "wave",
+            "emitter"
+          ],
+          "strength": 0.6,
+          "radius": 0.5,
+          "threshold": 0.65
+        },
+        {
+          "objType": "pass",
+          "id": "grade",
+          "passType": "cinematic",
+          "vignette": 0.22,
+          "streak": 0.2,
+          "streakThreshold": 0.8
+        },
+        {
+          "objType": "pass",
+          "id": "output",
+          "passType": "output"
+        }
+      ],
+      "timeline": {
+        "version": 1,
+        "duration": 60,
+        "effects": [
+          {
+            "id": "front",
+            "target": "wave",
+            "operator": "wavefront",
+            "params": {
+              "amplitude": 3,
+              "frequency": 1.7,
+              "speed": 2.5,
+              "width": 10
+            },
+            "start": 0,
+            "duration": 12,
+            "backend": "webgl",
+            "extrapolation": "loop"
+          }
+        ],
+        "tracks": [
+          {
+            "id": "dolly",
+            "target": "$camera",
+            "property": "position",
+            "signal": {
+              "type": "path",
+              "duration": 60,
+              "points": [
+                [
+                  -4,
+                  8,
+                  66
+                ],
+                [
+                  4,
+                  10,
+                  61
+                ],
+                [
+                  0,
+                  8,
+                  57
+                ]
+              ]
+            }
+          },
+          {
+            "id": "aim",
+            "target": "$camera",
+            "property": "lookAt",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            ]
+          }
+        ],
+        "captions": [
+          {
+            "id": "caption",
+            "text": "传播、干涉和探测共同构成实验；这些程序化波纹只是视觉比喻。",
+            "start": 1,
+            "duration": 58,
+            "fontSize": 32,
+            "y": 0.9,
+            "fadeIn": 0.6,
+            "fadeOut": 0.6,
+            "maxWidth": 0.86
+          }
+        ]
+      }
+    }
+  },
+  "timeline": {
+    "version": 1,
+    "duration": 300,
+    "clips": [
+      {
+        "id": "cloud",
+        "source": "cloud",
+        "start": 0,
+        "duration": 60
+      },
+      {
+        "id": "human",
+        "source": "human",
+        "start": 60,
+        "duration": 60
+      },
+      {
+        "id": "orbits",
+        "source": "orbits",
+        "start": 120,
+        "duration": 60
+      },
+      {
+        "id": "energy",
+        "source": "energy",
+        "start": 180,
+        "duration": 60
+      },
+      {
+        "id": "waves",
+        "source": "waves",
+        "start": 240,
+        "duration": 60
+      }
+    ]
+  },
+  "production": {
+    "version": 1,
+    "state": "complete",
+    "brief": "五种可编辑的程序化视觉母题；不是物理仿真或自动生成质量承诺。",
+    "shots": {
+      "cloud": {
+        "title": "从一个电子开始",
+        "intent": "亮点是视觉示意，而不是电子沿固定轨道运动的实景。",
+        "stage": "complete"
+      },
+      "human": {
+        "title": "微小，组成宏大",
+        "intent": "粒子汇聚成文字：同一组位置可以连续变形，而不必重写每一帧。",
+        "stage": "complete"
+      },
+      "orbits": {
+        "title": "从经典图像到量子描述",
+        "intent": "轨道线是帮助理解的图示。量子态需要概率分布，而非确定路径。",
+        "stage": "complete"
+      },
+      "energy": {
+        "title": "能量的阶梯",
+        "intent": "E = hν。能量交换呈离散份额；阶梯是概念图，不是原子的真实结构。",
+        "stage": "complete"
+      },
+      "waves": {
+        "title": "波、粒子与测量",
+        "intent": "传播、干涉和探测共同构成实验；这些程序化波纹只是视觉比喻。",
+        "stage": "complete"
+      }
+    }
+  }
+}

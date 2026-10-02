@@ -1,5 +1,8 @@
-import { attachSceneTimeline, getActiveClips, getTimelineDuration } from "threejson/timeline";
+import { attachSceneTimeline, getActiveClips, getTimelineDuration, compileTimelineTracks } from "threejson/timeline";
 import { openMediaDocument } from "./documents.js";
+import { drawMediaCaptions, getCompositeAlphas } from "./captions.js";
+import { createMediaTransitions } from "./transitions.js";
+import { resolveAssetUrl } from "threejson/assets";
 
 const makeCanvas = (options) => options.createCanvas?.() || globalThis.document?.createElement("canvas");
 const dimensions = (value, label) => { if (!Number.isInteger(value) || value <= 0) throw new RangeError(`${label} must be a positive integer.`); return value; };
@@ -14,9 +17,22 @@ export async function createMediaProject(input, options = {}) {
   const context = canvas.getContext("2d", { alpha: options.alpha === true, willReadFrequently: options.readPixels === true });
   if (!context) { source.dispose(); throw new Error("Canvas 2D compositor is unavailable."); }
   const timeline = document.timeline || {}, composition = document.documentType === "composition";
+  const overlayTimeline = structuredClone(timeline);
+  if (composition && (timeline.tracks || []).some(t => !t.target.startsWith("$caption:") && !t.target.startsWith("$audio:"))) { source.dispose(); throw new Error("Composition tracks address $caption:id or $audio:id; camera and effects belong to individual shot timelines."); }
+  let overlayTracks;
+  try { overlayTracks = composition ? compileTimelineTracks({ scene: { traverse() {} } }, (overlayTimeline.tracks || []).filter(t => t.target.startsWith("$caption:")), { timeline: overlayTimeline }) : null; }
+  catch (error) { source.dispose(); throw error; }
   const duration = options.duration ?? options.end ?? getTimelineDuration(timeline);
   const instances = new Map(), sceneCache = new Map(), renderers = new Map();
-  let disposed = false;
+  const resolveAsset = async (owner, url, request = {}) => {
+    const resolved = await owner.resolveAsset(url);
+    const settings = options.runtimeOptions || {}, kind = request.kind === "texture" ? "image" : request.kind;
+    const runtimeUrl = resolveAssetUrl(resolved, settings.assetGateway ?? settings.resourceProxy, { ...request, kind });
+    const resolver = kind === "image" && typeof settings.resolveRuntimeUrl === "function" ? settings.resolveRuntimeUrl : settings.resolveResourceUrl;
+    return typeof resolver === "function" ? resolver(resolved, { ...request, kind, runtimeUrl }) : runtimeUrl;
+  };
+  let disposed = false, renderQueue = Promise.resolve();
+  const transitions = createMediaTransitions(() => makeCanvas(options), width, height);
   async function sceneFor(clip) {
     const key = typeof clip.source === "string" ? clip.source : clip.id;
     if (!sceneCache.has(key)) sceneCache.set(key, composition ? await source.loadScene(clip.source) : document);
@@ -43,16 +59,17 @@ export async function createMediaProject(input, options = {}) {
     const factory = options.createScene || (await import("threejson/runtime")).createJsonScene;
     const runtime = await factory(descriptor, {
       ...options.runtimeOptions, canvas: sceneCanvas, viewportSize: { width, height }, timeline: false,
+      signal: options.signal ?? options.runtimeOptions?.signal,
       audioPlaybackPolicy: { paused: true, masterVolume: 0 },
       renderer: backend === "webgl" ? pooled : undefined, ownsRenderer: !pooled || backend !== "webgl",
-      resolveResourceUrl: owner.resolveAsset,
-      assetsBase: owner.baseUrl ? new URL(".", owner.baseUrl).href : undefined
+      // Keep archive/child bases and host proxy/cache policy in a single chain.
+      resolveRuntimeUrl: undefined, resolveResourceUrl: (url, context) => resolveAsset(owner, url, context),
+      assetsBase: owner.baseUrl ? new URL(".", owner.baseUrl).href : options.runtimeOptions?.assetsBase
     });
     try {
     options.signal?.throwIfAborted();
     if (disposed) throw new DOMException("Media project has been disposed.", "AbortError");
     runtime.stop?.();
-    if (runtime.runtimeContext) runtime.runtimeContext.resolveAssetUrl = owner.resolveAsset;
     runtime.renderer.setPixelRatio(1); runtime.renderer.setSize(width, height, false);
     runtime.composer?.setPixelRatio?.(1); runtime.composer?.setSize?.(width, height);
     await attachSceneTimeline(runtime, { ...scene.timeline, duration: Math.max(scene.timeline?.duration || 0, (clip.sourceStart || 0) + clip.duration * (clip.rate ?? 1)) }, { autoPlay: false, signal: options.signal });
@@ -67,39 +84,39 @@ export async function createMediaProject(input, options = {}) {
     return result;
     } catch (error) { runtime.dispose(); throw error; }
   }
-  const drawCaptions = (items, time, authoredOutput = document.output) => {
-    for (const item of items || []) if (item.enabled !== false && time >= (item.start || 0) && time < (item.start || 0) + (item.duration ?? duration)) {
-      const scale = height / (authoredOutput?.height || 1080), fontSize = item.fontSize ? item.fontSize * scale : height * .04;
-      context.save(); context.font = `${fontSize}px ${item.fontFamily || "sans-serif"}`;
-      context.textAlign = item.align || "center"; context.textBaseline = "middle";
-      context.fillStyle = item.color || "#ffffff"; context.strokeStyle = item.outlineColor || "#000000"; context.lineWidth = (item.outlineWidth ?? 3) * scale;
-      const lines = String(item.text || "").split("\n"), lineHeight = fontSize * 1.3;
-      for (let i = 0; i < lines.length; i++) { const x = (item.x ?? .5) * width, y = (item.y ?? .9) * height + (i - (lines.length - 1)/2)*lineHeight; if (context.lineWidth) context.strokeText(lines[i], x, y, width * .94); context.fillText(lines[i], x, y, width * .94); }
-      context.restore();
-    }
-  };
-  const api = {
-    canvas, document, duration, width, height, resolveAsset: source.resolveAsset,
-    async renderAt(time) {
+  const drawCaptions = (items, time, output = document.output) => drawMediaCaptions(context, items, time, { width, height, duration, output });
+  async function renderFrame(time) {
       if (disposed) throw new Error("Media project has been disposed.");
       options.signal?.throwIfAborted();
       if (!Number.isFinite(time) || time < 0) throw new RangeError("Render time must be finite and nonnegative.");
       const clips = composition ? getActiveClips(timeline, time) : [{ id: "$scene", source: document, sourceTime: time, duration: Math.max(duration, time), opacity: 1 }];
       const active = new Set(clips.map((clip) => clip.id));
-      for (const [id, instance] of instances) if (!active.has(id)) { instance.runtime.dispose(); instances.delete(id); }
+      const next = composition && options.preloadNext !== false ? (timeline.clips || []).filter(c => c.enabled !== false && (c.start || 0) > time && c.start - time <= (options.preloadSeconds ?? 2)).sort((a, b) => a.start - b.start)[0] : null;
+      for (const [id, instance] of instances) if (!active.has(id) && id !== next?.id) { instance.runtime.dispose(); instances.delete(id); }
       context.clearRect(0, 0, width, height);
       if (options.alpha !== true) { context.fillStyle = document.output?.background || "#000000"; context.fillRect(0, 0, width, height); }
-      for (const clip of clips) {
+      const alphas = getCompositeAlphas(clips);
+      for (const [index, clip] of clips.entries()) {
         const instance = instances.get(clip.id) || await instantiate(clip);
         await instance.runtime.timeline.renderAt(clip.sourceTime);
         options.signal?.throwIfAborted();
         if (instance.runtime.renderer.getContext?.().isContextLost?.()) throw Object.assign(new Error("Rendering context was lost."), { code: "MEDIA_CONTEXT_LOST" });
-        context.save(); context.globalAlpha = clip.opacity;
-        context.drawImage(instance.runtime.renderer.domElement, 0, 0, width, height);
-        drawCaptions(instance.scene.timeline?.captions, clip.sourceTime, instance.scene.output);
+        context.save(); context.globalAlpha = alphas[index];
+        if (clip.transitionIn && clip.localTime < clip.transitionIn.duration) {
+          const layer = transitions.layer(), layerContext = layer.getContext("2d");
+          layerContext.clearRect(0, 0, width, height); layerContext.drawImage(instance.runtime.renderer.domElement, 0, 0, width, height);
+          drawMediaCaptions(layerContext, instance.runtime.timeline.timeline.captions, clip.sourceTime, { width, height, duration, output: instance.scene.output });
+          transitions.draw(context, layer, clip);
+        } else {
+          context.drawImage(instance.runtime.renderer.domElement, 0, 0, width, height);
+          drawCaptions(instance.runtime.timeline.timeline.captions, clip.sourceTime, instance.scene.output);
+        }
         context.restore();
       }
-      if (composition) drawCaptions(timeline.captions, time);
+      if (composition) { overlayTracks.restore(); overlayTracks.evaluate(time); drawCaptions(overlayTimeline.captions, time); }
+      // Await one nearby shot ahead of the cut, including font layout/textures.
+      // No unbounded background jobs or one permanent context per storyboard item.
+      if (next && !instances.has(next.id)) await instantiate(next);
       // Reuse compatible renderers across adjacent clips, but do not retain one
       // GPU context per distinct historical configuration for the entire film.
       const usedRenderers = new Set([...instances.values()].map(instance => instance.runtime.renderer));
@@ -107,9 +124,16 @@ export async function createMediaProject(input, options = {}) {
         renderer.dispose(); renderer.forceContextLoss?.(); renderers.delete(key);
       }
       return canvas;
+  }
+  const api = {
+    canvas, document, duration, width, height, resolveAsset: (url, context) => resolveAsset(source, url, context),
+    renderAt(time) {
+      const task = renderQueue.then(() => renderFrame(time));
+      renderQueue = task.catch(() => {}); return task;
     },
     async getAudioClips() {
-      const clips = [...(timeline.audio || []), ...(options.audioClips || [])].filter((clip) => clip.enabled !== false).map((clip) => ({ ...clip }));
+      const audioTracks = (value, id) => (value.tracks || []).filter(t => t.enabled !== false && t.target === `$audio:${id}`);
+      const clips = [...(timeline.audio || []), ...(options.audioClips || [])].filter((clip) => clip.enabled !== false).map((clip) => ({ ...clip, automation: { tracks: audioTracks(timeline, clip.id) } }));
       if (composition) for (const clip of timeline.clips || []) {
         if (clip.enabled === false) continue;
         const scene = await sceneFor(clip), rate = clip.rate ?? 1, sourceStart = clip.sourceStart || 0;
@@ -118,7 +142,9 @@ export async function createMediaProject(input, options = {}) {
           const sourceEnd = sourceStart + clip.duration * rate;
           const audioStart = audio.start || 0, audioEnd = audio.duration === undefined ? sourceEnd : audioStart + audio.duration;
           const begin = Math.max(sourceStart, audioStart), end = Math.min(sourceEnd, audioEnd);
-          if (end > begin) clips.push({ ...audio, url: audio.url ? await source.ownerOf(scene).resolveAsset(audio.url) : undefined, id: `${clip.id}/${audio.id}`, start: (clip.start || 0) + (begin-sourceStart)/rate, duration: (end-begin)/rate, sourceStart: (audio.sourceStart || 0)+(begin-audioStart)*(audio.rate??1), rate: rate*(audio.rate??1), fadeIn: (audio.fadeIn || 0)/rate, fadeOut: (audio.fadeOut || 0)/rate });
+          if (end > begin) clips.push({ ...audio, url: audio.url ? await source.ownerOf(scene).resolveAsset(audio.url) : undefined, id: `${clip.id}/${audio.id}`, start: (clip.start || 0) + (begin-sourceStart)/rate, duration: (end-begin)/rate, sourceStart: (audio.sourceStart || 0)+(begin-audioStart)*(audio.rate??1), rate: rate*(audio.rate??1), fadeIn: (audio.fadeIn || 0)/rate, fadeOut: (audio.fadeOut || 0)/rate,
+            automation: { tracks: audioTracks(scene.timeline || {}, audio.id), start: clip.start || 0, sourceStart, rate },
+            ...(audio.ducking ? { ducking: { ...audio.ducking, targets: audio.ducking.targets?.map(id => `${clip.id}/${id}`) } } : {}) });
         }
       }
       return clips;
@@ -127,7 +153,7 @@ export async function createMediaProject(input, options = {}) {
       if (disposed) return; disposed = true;
       for (const instance of instances.values()) instance.runtime.dispose(); instances.clear();
       for (const renderer of new Set(renderers.values())) { renderer.dispose(); renderer.forceContextLoss?.(); } renderers.clear();
-      source.dispose(); sceneCache.clear();
+      source.dispose(); sceneCache.clear(); transitions.dispose();
     }
   };
   return api;

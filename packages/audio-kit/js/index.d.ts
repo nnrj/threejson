@@ -10,10 +10,11 @@ export interface ScoreRenderer extends BlockRenderer { duration: number }
 export interface SynthesisOptions { sampleRate?: number; release?: number; gain?: number }
 export interface AudioRecipe { kind: string; producer?: string; text?: string; score?: Score; options?: SynthesisOptions; [key: string]: unknown }
 export interface AudioProducer { capabilities?: Record<string, unknown>; synthesize(recipe: AudioRecipe, context?: AudioContextOptions): Promise<Pcm> | Pcm; dispose?(): void }
-export interface AudioClip { id?: string; pcm?: Pcm; renderer?: ScoreRenderer; start?: number; duration?: number; sourceStart?: number; rate?: number; gain?: number; pan?: number; loop?: boolean; padSilence?: boolean; fadeIn?: number; fadeOut?: number }
+export interface AudioClip { id?: string; pcm?: Pcm; renderer?: ScoreRenderer; start?: number; duration?: number; sourceStart?: number; rate?: number; gain?: number; pan?: number; loop?: boolean; padSilence?: boolean; fadeIn?: number; fadeOut?: number; narration?: boolean; gainAt?: (time: number) => number; panAt?: (time: number) => number; ducking?: { mode?: "narration"; targets?: string[]; gain?: number; attack?: number; release?: number } }
 export function compileScore(score: Score): PerformancePlan;
 export function validatePcm(pcm: Pcm): Pcm;
 export function pcmDuration(pcm: Pcm): number;
+export function analyzePcm(pcm: Pcm, options?: { interval?: number }): { duration: number; peak: number; rms: number; clippedSamples: number; envelope: { type: "samples"; interval: number; values: number[] } };
 export function encodeWav(pcm: Pcm): Uint8Array;
 export function createScoreRenderer(score: Score | PerformancePlan, options?: SynthesisOptions): ScoreRenderer;
 export function synthesizeScore(score: Score | PerformancePlan, options?: SynthesisOptions): Pcm;

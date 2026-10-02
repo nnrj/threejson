@@ -8,7 +8,7 @@ export function createSceneAgentTools(service) {
   return { operations, tools: specs.map((spec, i) => ({ type: "function", function: { name: [...operations.keys()][i], description: `${spec.summary} Category:${spec.category}; targets:${spec.targets.join(",") || "any"}; prerequisites:${spec.requirements.join(",") || "none"}.`, parameters: spec.inputSchema } })) };
 }
 
-export async function runSceneOperationAgent({ service, prompt, protocol = "jsonl", assertions, signal, request, modelBudget = {}, onProgress, ...transport } = {}) {
+export async function runSceneOperationAgent({ service, prompt, protocol = "jsonl", assertions, signal, request, modelBudget = {}, onProgress, systemInstructions, onReceipt, completionCheck, contextCheckpoint, visionAvailable = true, ...transport } = {}) {
   if (!service?.execute || !prompt) throw new TypeError("A scene operation service and prompt are required.");
   if (!["jsonl", "native"].includes(protocol)) throw new TypeError("protocol must be jsonl or native.");
   for (const [name, value] of Object.entries(modelBudget)) if (value != null && (!Number.isFinite(value) || value <= 0)) throw new TypeError(`Invalid explicit budget ${name}.`);
@@ -21,6 +21,7 @@ export async function runSceneOperationAgent({ service, prompt, protocol = "json
   const timer = deadline ? setTimeout(() => controller.abort(Object.assign(new Error("Explicit time budget exhausted."), { code: "AI_BUDGET_EXCEEDED" })), modelBudget.maxTimeMs) : null;
   const messages = [{ role: "system", content: `You operate a versioned ThreeJSON scene through tools, not by guessing runtime state. Start with compact scene.query/scene.observe. Read controls before edits. Use model.inspect for modeledMesh, mesh.getTopology only for editableMesh. No geometry data is needed for object placement. Regular primitives remain appropriate for regular shapes; use control meshes, graphs or surfaces where the shape requires them. Prefer parameter/operator edits and deterministic local refinement over rewriting dense geometry. Use preconditions/revisions and verify scene.check/scene.capture when available. A diagnostic relit view is not evidence that actual scene lighting works. Unchecked is not passed. Never invent resources or claim visual verification without rendering. Each response is one atomic authoring batch; runtime-only actions must be separate. Stop after fulfilling the request, without a fixed quality-round count. ${protocol === "native" ? "Use the supplied functions; finish with a concise result once verified." : `Return only JSONL commands {"op":"...","args":{...}}; after completion return # done. Contracts: ${JSON.stringify(discovery.commands)}`}\nSession: ${JSON.stringify({ sessionId: discovery.sessionId, revision: discovery.revision, capabilities: discovery.capabilities })}` }, { role: "user", content: prompt }];
   const finish = (completed, stopReason, message = "") => ({ completed, stopReason, message, receipts, requests, tokens, revision: service.revision });
+  if (systemInstructions) messages[0].content = `${systemInstructions}\n${protocol === "native" ? "Use supplied functions. After verified completion return a concise result." : `Return only JSONL commands {"op":"...","args":{...}}; finish with # done. Contracts: ${JSON.stringify(discovery.commands)}`}\nSession: ${JSON.stringify({ sessionId: discovery.sessionId, revision: discovery.revision, capabilities: discovery.capabilities })}`;
   try {
     while (true) {
       controller.signal.throwIfAborted();
@@ -57,6 +58,14 @@ export async function runSceneOperationAgent({ service, prompt, protocol = "json
         continue;
       }
       if (!commands.length) {
+        if (completionCheck) {
+          const check = await completionCheck({ service, signal: controller.signal });
+          if (!check.ok) {
+            const key = `completion:${JSON.stringify(check)}`;
+            if (seen.has(key)) return finish(false, "postconditions_not_satisfied", check.message || "Completion checks failed.");
+            seen.add(key); messages.push({ role: "user", content: JSON.stringify(check) }); continue;
+          }
+        }
         if (assertions?.length) {
           const check = await service.execute({ op: "scene.check", args: { assertions } }, { signal: controller.signal }); receipts.push(check);
           if (!check.ok || !check.results[0]?.data?.satisfied) return finish(false, "postconditions_not_satisfied");
@@ -70,15 +79,26 @@ export async function runSceneOperationAgent({ service, prompt, protocol = "json
       onProgress?.({ stage: "preparing", operations: commands.map((command) => command.op), revision: baseRevision });
       const receipt = await service.execute(commands, { baseRevision, requestId: `${turnId}:${requests}`, signal: controller.signal }); receipts.push(receipt);
       onProgress?.({ stage: receipt.status, revision: service.revision, diagnostics: receipt.diagnostics });
+      const action = await onReceipt?.(receipt, { service, commands, signal: controller.signal });
+      if (action?.pause) return finish(false, action.reason || "paused");
       // Image data is sent as image input, never repeated as thousands of text tokens.
       const images = [];
       const content = JSON.stringify(receipt, (key, value) => {
-        if (key === "dataUrl" && typeof value === "string" && value.startsWith("data:image/")) { images.push(value); return "[image attached]"; }
+        if (key === "dataUrl" && typeof value === "string" && value.startsWith("data:image/")) { if (visionAvailable) images.push(value); return visionAvailable ? "[image attached]" : "[image not supplied: provider has no declared vision support]"; }
         return value;
       });
       if (calls.length) for (const call of calls) messages.push({ role: "tool", tool_call_id: call.id, content });
       else messages.push({ role: "user", content });
       if (images.length) messages.push({ role: "user", content: [{ type: "text", text: "Scene feedback; preserve each receipt's scene/diagnostic lighting distinction." }, ...images.map((url) => ({ type: "image_url", image_url: { url } }))] });
+      if (contextCheckpoint && receipt.ok && receipt.status === "committed") {
+        const checkpoint = await contextCheckpoint({ service, receipt, commands, signal: controller.signal });
+        if (checkpoint) {
+          // Complete native tool exchanges are retired together, never leave an
+          // orphaned tool_call_id. Receipts remain available to the host/audit log.
+          messages.splice(2);
+          messages.push({ role: "user", content: `Committed state checkpoint (not a new request): ${JSON.stringify(checkpoint)}. Continue the original request; inspect a shot when its detailed data is needed.` });
+        }
+      }
     }
   } catch (error) {
     if (controller.signal.aborted) return finish(false, controller.signal.reason?.code === "AI_BUDGET_EXCEEDED" ? "budget_exhausted" : "cancelled");

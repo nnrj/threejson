@@ -3,6 +3,7 @@ import * as TSL from "three/tsl";
 import { compileTslGraph } from "./tslGraph.js";
 import { cloneTextureResource } from "../core/resource/textureRequest.js";
 import { findPreparedResource } from "./preparedResources.js";
+import { resolveRuntimeContext } from "../core/runtime/runtimeContext.js";
 
 const presets = new Map();
 const MATERIAL_TEXTURE_FIELDS = [
@@ -134,6 +135,8 @@ export function createTslMaterialFromDescriptor(descriptor = {}, context = {}) {
   const tsl = descriptor.tsl && typeof descriptor.tsl === "object" ? descriptor.tsl : {};
   const kind = String(tsl.kind || "preset").trim().toLowerCase();
   let material = baseMaterial(descriptor.base);
+  const timeNode = TSL.uniform(0), clocks = new Set();
+  const clockTarget = { uniforms: { time: timeNode } };
   const ownedTextures = new Set();
   const ownTexture = (source, node) => {
     const texture = cloneTextureResource(source); ownedTextures.add(texture);
@@ -157,9 +160,9 @@ export function createTslMaterialFromDescriptor(descriptor = {}, context = {}) {
       const id = tsl.preset ?? tsl.id ?? tsl.source?.id;
       const preset = getTslPreset(id);
       if (!preset) throw new Error(`[tslMaterial] unknown preset: ${String(id || "")}`);
-      outputs = preset(tsl.params || {}, { ...context, descriptor, material, TSL, WEBGPU });
+      outputs = preset(tsl.params || {}, { ...context, descriptor, material, TSL, WEBGPU, timeNode });
     } else if (kind === "graph") {
-      outputs = compileTslGraph(tsl, { ...context, ownTexture });
+      outputs = compileTslGraph(tsl, { ...context, ownTexture, timeNode });
     } else if (kind === "code") {
       const sourceKey = typeof tsl.source?.url === "string" ? `url:${tsl.source.url.trim()}` : `inline:${String(tsl.source?.inline || "")}`;
       const factory = context.codeResources ? context.codeResources.get(sourceKey) : findPreparedResource(context, "tsl-code-module", (resources) => resources.get(sourceKey));
@@ -167,7 +170,7 @@ export function createTslMaterialFromDescriptor(descriptor = {}, context = {}) {
         new Error("TSL code was not prepared; import threejson/tsl-code and verify the host execution policy"),
         { code: "E_TSL_CODE_NOT_PREPARED" }
       );
-      const result = factory(tsl.params || {}, { ...context, descriptor, material, TSL, WEBGPU });
+      const result = factory(tsl.params || {}, { ...context, descriptor, material, TSL, WEBGPU, timeNode });
       if (result?.isMaterial === true) {
         if (result !== material) material.dispose();
         material = result;
@@ -190,9 +193,20 @@ export function createTslMaterialFromDescriptor(descriptor = {}, context = {}) {
       throw new Error(`[tslMaterial] unsupported kind: ${kind}`);
     }
     if (outputs) applyOutputs(material, outputs);
+    // Each material uses the scene's explicit clock, never the global TSL timer.
+    // Registration waits until a scene exists; constructors may run before deploy.
+    const priorRender = material.onBeforeRender;
+    material.onBeforeRender = function(renderer, scene, ...args) {
+      const clock = resolveRuntimeContext(scene, { fallback: false })?.shaderMotion;
+      if (clock) {
+        if (!clocks.has(clock)) { clock.trackShaderMaterial(clockTarget, "$tsl-clock"); clocks.add(clock); }
+        timeNode.value = clock.time;
+      }
+      return priorRender?.call(this, renderer, scene, ...args);
+    };
     material.userData = { ...(material.userData || {}), threeJsonTsl: { kind, graphVersion: tsl.graphVersion ?? tsl.source?.inline?.graphVersion } };
     material.needsUpdate = true;
-    material.addEventListener("dispose", () => { for (const texture of ownedTextures) texture.dispose(); ownedTextures.clear(); });
+    material.addEventListener("dispose", () => { for (const clock of clocks) clock.disposeShaderMotion(clockTarget); clocks.clear(); for (const texture of ownedTextures) texture.dispose(); ownedTextures.clear(); });
     return material;
   } catch (error) { material.dispose(); for (const texture of ownedTextures) texture.dispose(); throw error; }
 }
@@ -201,6 +215,6 @@ registerTslPreset("solid", (params) => ({ color: TSL.color(params.color || "#fff
 registerTslPreset("uv-gradient", (params) => ({
   color: TSL.mix(TSL.color(params.colorA || "#2563eb"), TSL.color(params.colorB || "#f97316"), TSL.uv().y)
 }));
-registerTslPreset("pulse", (params) => ({
-  color: TSL.color(params.color || "#62d8ff").mul(TSL.sin(TSL.time.mul(finiteParam(params, "speed", 2))).mul(0.5).add(0.5))
+registerTslPreset("pulse", (params, { timeNode }) => ({
+  color: TSL.color(params.color || "#62d8ff").mul(TSL.sin(timeNode.mul(finiteParam(params, "speed", 2))).mul(0.5).add(0.5))
 }));

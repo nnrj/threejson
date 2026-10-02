@@ -104,7 +104,7 @@ export function compileTslGraph(graphOrDescriptor, options = {}) {
     let value;
     if (type === "constant" || type === "color") value = constant(node.value, type === "color" ? "color" : node.valueType);
     else if (type === "uniform") value = TSL.uniform(node.value ?? 0, node.valueType);
-    else if (type === "time") value = TSL.time;
+    else if (type === "time") value = options.timeNode || TSL.time;
     else if (type === "uv") value = TSL.uv(Number(node.channel) || 0);
     else if (type === "position") value = ({ local: TSL.positionLocal, world: TSL.positionWorld, view: TSL.positionView })[node.space] || TSL.positionLocal;
     else if (type === "normal") value = ({ world: TSL.normalWorld, view: TSL.normalView })[node.space] || TSL.normalLocal;

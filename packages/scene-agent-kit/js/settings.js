@@ -2,6 +2,11 @@ export const SCENE_AGENT_SETTINGS_DEFAULTS = Object.freeze({
   ai: {
     thinkingPreference: "disabled",
     sceneGenerationMode: "auto",
+    mediaOutputKind: "auto",
+    videoQuality: "balanced",
+    videoDuration: 0,
+    videoConfirmStoryboard: false,
+    videoVisualReview: "auto",
     sceneMaxOutputTokens: 0,
     updateOutputMode: "commands",
     includeSpatialSummary: true,
@@ -41,6 +46,9 @@ export const SCENE_AGENT_SETTINGS_DEFAULTS = Object.freeze({
 });
 
 const ENUMS = {
+  "ai.mediaOutputKind": new Set(["auto", "scene", "video"]),
+  "ai.videoQuality": new Set(["draft", "balanced", "high"]),
+  "ai.videoVisualReview": new Set(["auto", "enabled", "disabled"]),
   "ai.thinkingPreference": new Set(["disabled", "high", "max", "inherit"]),
   "ai.sceneGenerationMode": new Set(["auto", "direct", "draft_refine"]),
   "ai.complexModelStrategy": new Set(["auto", "full-coordinates", "progressive"]),

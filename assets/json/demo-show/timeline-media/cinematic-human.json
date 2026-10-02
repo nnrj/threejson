@@ -1,0 +1,240 @@
+{
+  "version": "next",
+  "threeJsonId": "human",
+  "name": "微小，组成宏大",
+  "sceneConfig": {
+    "scene": {
+      "background": "#020510"
+    },
+    "camera": {
+      "position": {
+        "x": 0,
+        "y": 8,
+        "z": 62
+      },
+      "fov": 46,
+      "near": 0.1,
+      "far": 1000,
+      "lookAt": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    "controls": {
+      "type": "none"
+    },
+    "renderer": {
+      "antialias": true,
+      "toneMapping": "aces",
+      "exposure": 1
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "intensity": 0.5
+      },
+      {
+        "type": "directional",
+        "intensity": 2,
+        "position": {
+          "x": 5,
+          "y": 12,
+          "z": 16
+        }
+      }
+    ]
+  },
+  "objectList": [
+    {
+      "objType": "text",
+      "threeJsonId": "title",
+      "mode": "sdf",
+      "content": "微小，组成宏大",
+      "fontSize": 2.2,
+      "color": "#dbf6ff",
+      "align": "center",
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "billboard": true,
+      "position": {
+        "x": 0,
+        "y": 17,
+        "z": 0
+      },
+      "sdf": {
+        "outlineWidth": 0.035,
+        "outlineColor": "#050919"
+      }
+    },
+    {
+      "objType": "particleEmitter",
+      "threeJsonId": "letters",
+      "source": {
+        "type": "box",
+        "width": 46,
+        "height": 30,
+        "depth": 24
+      },
+      "emission": {
+        "mode": "static",
+        "count": 100000,
+        "seed": 73
+      },
+      "particle": {
+        "lifetime": 0,
+        "colorOverLife": [
+          "#a6eaff"
+        ],
+        "sizeOverLife": [
+          0.12
+        ]
+      },
+      "simulation": {
+        "backend": "cpu"
+      },
+      "render": {
+        "type": "points",
+        "blending": "additive",
+        "depthWrite": false,
+        "opacity": 0.075
+      }
+    },
+    {
+      "objType": "pass",
+      "id": "dof",
+      "passType": "dof",
+      "focus": 62,
+      "aperture": 0.000035,
+      "maxblur": 0.007
+    },
+    {
+      "objType": "pass",
+      "id": "glow",
+      "passType": "selectivebloom",
+      "targets": [
+        "letters"
+      ],
+      "strength": 0.6,
+      "radius": 0.5,
+      "threshold": 0.65
+    },
+    {
+      "objType": "pass",
+      "id": "grade",
+      "passType": "cinematic",
+      "vignette": 0.22,
+      "streak": 0.2,
+      "streakThreshold": 0.8
+    },
+    {
+      "objType": "pass",
+      "id": "output",
+      "passType": "output"
+    }
+  ],
+  "timeline": {
+    "version": 1,
+    "duration": 24,
+    "effects": [
+      {
+        "id": "gather",
+        "target": "letters",
+        "operator": "morph",
+        "params": {
+          "source": {
+            "type": "textMask",
+            "text": "人",
+            "font": "700 120px sans-serif",
+            "width": 32,
+            "height": 32,
+            "depth": 0.8,
+            "resolution": 512
+          },
+          "seed": 21
+        },
+        "start": 1,
+        "duration": 8.399999999999999,
+        "backend": "webgl",
+        "stagger": 0.22,
+        "easing": "smoothstep"
+      },
+      {
+        "id": "scatter",
+        "target": "letters",
+        "operator": "scatter",
+        "params": {
+          "seed": 33,
+          "distance": 28
+        },
+        "start": 16.799999999999997,
+        "duration": 6.720000000000001,
+        "backend": "webgl",
+        "easing": "smoothstep"
+      }
+    ],
+    "tracks": [
+      {
+        "id": "dolly",
+        "target": "$camera",
+        "property": "position",
+        "signal": {
+          "type": "path",
+          "duration": 24,
+          "points": [
+            [
+              -4,
+              8,
+              66
+            ],
+            [
+              4,
+              10,
+              61
+            ],
+            [
+              0,
+              8,
+              57
+            ]
+          ]
+        }
+      },
+      {
+        "id": "aim",
+        "target": "$camera",
+        "property": "lookAt",
+        "keyframes": [
+          {
+            "time": 0,
+            "value": [
+              0,
+              0,
+              0
+            ]
+          }
+        ]
+      }
+    ],
+    "captions": [
+      {
+        "id": "caption",
+        "text": "粒子汇聚成文字：同一组位置可以连续变形，而不必重写每一帧。",
+        "start": 1,
+        "duration": 22,
+        "fontSize": 32,
+        "y": 0.9,
+        "fadeIn": 0.6,
+        "fadeOut": 0.6,
+        "maxWidth": 0.86
+      }
+    ]
+  },
+  "output": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30
+  }
+}

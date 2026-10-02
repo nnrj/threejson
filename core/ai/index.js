@@ -177,3 +177,4 @@ export {
   buildStructuredTurnEnvelope
 };
 export { createSceneAgentTools, runSceneOperationAgent } from "./sceneOperationAgent.js";
+export { resolveMediaOutputKind, buildVideoAgentInstructions, runVideoAgent } from "./videoAgent.js";

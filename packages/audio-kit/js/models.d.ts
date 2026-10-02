@@ -23,3 +23,5 @@ export interface AudioModelManager {
 export function validateAudioModelManifest(input: AudioModelManifest): AudioModelManifest;
 export function createAudioModelManager(storage: ModelStorage, options?: { fetch?: typeof fetch; onCleanupError?: (error: Error, key: string) => void }): AudioModelManager;
 export function createBrowserAudioModelStorage(options?: { preferIndexedDb?: boolean; storage?: StorageManager; onFallback?: (error: Error) => void }): Promise<ModelStorage>;
+export function getBuiltinAudioModels(): AudioModelManifest[];
+export function createLocalSpeechProducer(options: { modelManager: AudioModelManager; createWorker?: () => Worker }): Promise<import("./index.js").AudioProducer>;

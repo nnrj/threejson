@@ -26,3 +26,4 @@ export {
   setAssetsBaseMode,
   setAssetsBaseUrl
 } from "./util/assetsBase.js";
+export { resolveAssetUrl } from "./util/assetGateway.js";

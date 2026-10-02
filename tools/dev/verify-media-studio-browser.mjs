@@ -53,7 +53,7 @@ try {
   // Mirror the tested deploy allowlist: no unrelated workspace package is served.
   await page.route("**/packages/**", route => {
     const name = new URL(route.request().url()).pathname;
-    if (/\/packages\/(?:audio-kit|media-kit)\/js\//.test(name) && !name.includes("/nodeModels") || /\/packages\/host-kit\/js\/(?:mediaStudio|audioModelPanel)\.js$/.test(name)) return route.continue();
+    if (/\/packages\/(?:audio-kit|media-kit)\/js\//.test(name) && !name.includes("/nodeModels") || /\/packages\/host-kit\/js\/(?:mediaStudio|audioModelPanel|localSpeech)\.js$/.test(name)) return route.continue();
     return route.abort("blockedbyclient");
   });
   try {

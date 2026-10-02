@@ -387,6 +387,7 @@ export async function runAiSceneTitle({ userPrompt, resultDigest, providerOption
  * @param {{ includeFullJson?: boolean, includeSpatialSummary?: boolean }} settings
  */
 export function resolveAiAdjustContextPayload(targetSceneJson, settings = {}) {
+  if (targetSceneJson?.documentType === "composition") return { documentType: "composition", output: targetSceneJson.output, shots: targetSceneJson.timeline?.clips?.map(({ id, start, duration }) => ({ id, start, duration, ...targetSceneJson.production?.shots?.[id] })) };
   if (settings.includeFullJson) {
     return { fullSceneJson: targetSceneJson };
   }

@@ -1,0 +1,239 @@
+{
+  "version": "next",
+  "threeJsonId": "waves",
+  "name": "波、粒子与测量",
+  "sceneConfig": {
+    "scene": {
+      "background": "#020510"
+    },
+    "camera": {
+      "position": {
+        "x": 0,
+        "y": 8,
+        "z": 62
+      },
+      "fov": 46,
+      "near": 0.1,
+      "far": 1000,
+      "lookAt": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    "controls": {
+      "type": "none"
+    },
+    "renderer": {
+      "antialias": true,
+      "toneMapping": "aces",
+      "exposure": 1
+    },
+    "lights": [
+      {
+        "type": "ambient",
+        "intensity": 0.5
+      },
+      {
+        "type": "directional",
+        "intensity": 2,
+        "position": {
+          "x": 5,
+          "y": 12,
+          "z": 16
+        }
+      }
+    ]
+  },
+  "objectList": [
+    {
+      "objType": "text",
+      "threeJsonId": "title",
+      "mode": "sdf",
+      "content": "波、粒子与测量",
+      "fontSize": 2.2,
+      "color": "#dbf6ff",
+      "align": "center",
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "billboard": true,
+      "position": {
+        "x": 0,
+        "y": 17,
+        "z": 0
+      },
+      "sdf": {
+        "outlineWidth": 0.035,
+        "outlineColor": "#050919"
+      }
+    },
+    {
+      "objType": "particleEmitter",
+      "threeJsonId": "wave",
+      "source": {
+        "type": "box",
+        "width": 42,
+        "height": 0.08,
+        "depth": 36
+      },
+      "emission": {
+        "mode": "static",
+        "count": 100000,
+        "seed": 73
+      },
+      "particle": {
+        "lifetime": 0,
+        "colorOverLife": [
+          "#68caff"
+        ],
+        "sizeOverLife": [
+          0.12
+        ]
+      },
+      "simulation": {
+        "backend": "cpu"
+      },
+      "render": {
+        "type": "points",
+        "blending": "additive",
+        "depthWrite": false,
+        "opacity": 0.075
+      }
+    },
+    {
+      "objType": "sphere",
+      "threeJsonId": "emitter",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "geometry": {
+        "radius": 0.6,
+        "widthSegments": 32,
+        "heightSegments": 20
+      },
+      "material": {
+        "type": "basic",
+        "color": "#ffffff"
+      }
+    },
+    {
+      "objType": "pass",
+      "id": "dof",
+      "passType": "dof",
+      "focus": 62,
+      "aperture": 0.000035,
+      "maxblur": 0.007
+    },
+    {
+      "objType": "pass",
+      "id": "glow",
+      "passType": "selectivebloom",
+      "targets": [
+        "wave",
+        "emitter"
+      ],
+      "strength": 0.6,
+      "radius": 0.5,
+      "threshold": 0.65
+    },
+    {
+      "objType": "pass",
+      "id": "grade",
+      "passType": "cinematic",
+      "vignette": 0.22,
+      "streak": 0.2,
+      "streakThreshold": 0.8
+    },
+    {
+      "objType": "pass",
+      "id": "output",
+      "passType": "output"
+    }
+  ],
+  "timeline": {
+    "version": 1,
+    "duration": 24,
+    "effects": [
+      {
+        "id": "front",
+        "target": "wave",
+        "operator": "wavefront",
+        "params": {
+          "amplitude": 3,
+          "frequency": 1.7,
+          "speed": 2.5,
+          "width": 10
+        },
+        "start": 0,
+        "duration": 12,
+        "backend": "webgl",
+        "extrapolation": "loop"
+      }
+    ],
+    "tracks": [
+      {
+        "id": "dolly",
+        "target": "$camera",
+        "property": "position",
+        "signal": {
+          "type": "path",
+          "duration": 24,
+          "points": [
+            [
+              -4,
+              8,
+              66
+            ],
+            [
+              4,
+              10,
+              61
+            ],
+            [
+              0,
+              8,
+              57
+            ]
+          ]
+        }
+      },
+      {
+        "id": "aim",
+        "target": "$camera",
+        "property": "lookAt",
+        "keyframes": [
+          {
+            "time": 0,
+            "value": [
+              0,
+              0,
+              0
+            ]
+          }
+        ]
+      }
+    ],
+    "captions": [
+      {
+        "id": "caption",
+        "text": "传播、干涉和探测共同构成实验；这些程序化波纹只是视觉比喻。",
+        "start": 1,
+        "duration": 22,
+        "fontSize": 32,
+        "y": 0.9,
+        "fadeIn": 0.6,
+        "fadeOut": 0.6,
+        "maxWidth": 0.86
+      }
+    ]
+  },
+  "output": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30
+  }
+}

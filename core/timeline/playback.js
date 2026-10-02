@@ -49,6 +49,11 @@ export function createSceneTimelineController(runtime, input = {}, options = {})
   ctx?.particleSimulationExtension?.assertSeekable();
   const step = timeline.simulationStep ?? 1 / 60;
   let ticks = 0, disposed = false, evaluatedTime = null;
+  // Runtime cache policy, not a scene/particle size limit. GPU and third-party
+  // state machines still replay from zero unless their own backend supplies a cache.
+  const checkpoints = new Map(), checkpointBudget = options.checkpointBytes ?? 32 * 1024 * 1024;
+  const checkpointTicks = Math.max(1, Math.round((options.checkpointInterval ?? 2) / step));
+  let cachedBytes = 0, cpuRestoredTick = 0;
   const media = getSceneMediaTextureControllers(runtime.scene);
   let pendingMedia = Promise.resolve();
   const initial = new Map();
@@ -62,7 +67,8 @@ export function createSceneTimelineController(runtime, input = {}, options = {})
   const controlsLocked = timeline.tracks.some((track) => track.enabled !== false &&
     (track.target === "$camera" || track.target === (runtime.camera?.userData?.threeJsonId || runtime.camera?.userData?.objJson?.threeJsonId)));
   if (controlsLocked && runtime.camera && !initial.has(runtime.camera)) capture(runtime.camera);
-  const tracks = compileTimelineTracks(runtime, timeline.tracks, options);
+  options.effects?.bindTimeline?.(timeline);
+  const tracks = compileTimelineTracks(runtime, timeline.tracks, { ...options, timeline });
   function restoreTransforms() {
     for (const [object, state] of initial) {
       object.position.copy(state.position); object.quaternion.copy(state.quaternion); object.scale.copy(state.scale); object.visible = state.visible;
@@ -71,7 +77,7 @@ export function createSceneTimelineController(runtime, input = {}, options = {})
     tracks.restore();
   }
   function resetSimulation() {
-    ticks = 0;
+    ticks = 0; cpuRestoredTick = 0;
     options.effects?.reset?.();
     ctx?.particleCpuSimulation?.resetTime(); ctx?.particleGpuCompute?.resetTime();
     ctx?.particleSimulationExtension?.resetTime(); ctx?.animationStateMachine?.resetTime();
@@ -83,13 +89,25 @@ export function createSceneTimelineController(runtime, input = {}, options = {})
     if (time === evaluatedTime) return time;
     restoreTransforms();
     options.effects?.restore?.();
-    if (targetTicks < ticks) resetSimulation();
+    if (targetTicks < ticks) {
+      resetSimulation();
+      const cached = [...checkpoints.keys()].filter(tick => tick <= targetTicks).sort((a, b) => b - a)[0];
+      if (cached !== undefined && ctx?.particleCpuSimulation?.restoreCheckpoint(checkpoints.get(cached).state)) cpuRestoredTick = cached;
+    }
     // Integer ticks, never rounded frame deltas: all output fps share the same
     // simulation sequence, including backward/random seeks.
     while (ticks < targetTicks) {
-      ctx?.particleCpuSimulation?.update(step); ctx?.particleGpuCompute?.updateParticleGpuCompute(step);
+      if (ticks >= cpuRestoredTick) ctx?.particleCpuSimulation?.update(step);
+      ctx?.particleGpuCompute?.updateParticleGpuCompute(step);
       ctx?.particleSimulationExtension?.update(step); ctx?.animationStateMachine?.updateAnimationStateMachines(runtime.scene, step);
       ticks++;
+      if (ticks >= cpuRestoredTick && ticks % checkpointTicks === 0 && !checkpoints.has(ticks)) {
+        const bytes = ctx?.particleCpuSimulation?.checkpointBytes?.() || 0;
+        if (bytes > 0 && bytes <= checkpointBudget) {
+          while (cachedBytes + bytes > checkpointBudget && checkpoints.size) { const first = checkpoints.keys().next().value; cachedBytes -= checkpoints.get(first).bytes; checkpoints.delete(first); }
+          checkpoints.set(ticks, { bytes, state: ctx.particleCpuSimulation.captureCheckpoint() }); cachedBytes += bytes;
+        }
+      }
     }
     evaluateDeclarativeAnimationsAt(runtime.scene, time);
     ctx?.animationMixer?.evaluateAt(time); ctx?.pointsMotion?.evaluateAt(time);
@@ -112,7 +130,7 @@ export function createSceneTimelineController(runtime, input = {}, options = {})
     play() { clock.play(); runtime.renderLoop?.start(); }, pause() { clock.pause(); },
     reset() { clock.reset(); evaluatedTime = null; resetSimulation(); return api.seek(0); },
     async renderAt(time) { clock.seek(time); evaluateAt(clock.time); await pendingMedia; await options.beforeRender?.(clock.time, runtime); runtime.renderLoop?.renderCurrentFrame(); return runtime.renderer?.domElement; },
-    dispose() { if (disposed) return; disposed = true; clock.pause(); runtime.renderLoop?.setTimeDriver(null); initial.clear(); }
+    dispose() { if (disposed) return; disposed = true; clock.pause(); runtime.renderLoop?.setTimeDriver(null); tracks.restore(); options.effects?.dispose?.(); initial.clear(); checkpoints.clear(); }
   };
   resetSimulation(); evaluateAt(0);
   runtime.renderLoop?.setTimeDriver(api);
@@ -124,10 +142,12 @@ export async function attachSceneTimeline(runtime, timeline, options = {}) {
   await prepareTimelineResources(runtime, options);
   if (timeline.effects?.length) {
     const { prepareParticleEffects } = await import("./particleEffects.js");
-    options = { ...options, effects: await prepareParticleEffects(runtime, timeline.effects) };
+    options = { ...options, effects: await prepareParticleEffects(runtime, timeline.effects, options) };
   }
   options.signal?.throwIfAborted();
-  const controller = createSceneTimelineController(runtime, timeline, options);
+  let controller;
+  try { controller = createSceneTimelineController(runtime, timeline, options); }
+  catch (error) { options.effects?.dispose?.(); throw error; }
   runtime.timeline = controller;
   if (!wrappedDisposers.has(runtime)) {
     const dispose = runtime.dispose;
