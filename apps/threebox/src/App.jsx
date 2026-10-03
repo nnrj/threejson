@@ -455,6 +455,7 @@ export function App() {
   const chatMessagesRef = useRef(null);
   const leftDockRef = useRef(null);
   const mobileMenuBtnRef = useRef(null);
+  const mobileDockBackdropRef = useRef(null);
   const userMenuRef = useRef(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const composerRef = useRef(null);
@@ -560,7 +561,9 @@ export function App() {
 
   useEffect(() => {
     const handlePointerDown = (event) => {
-      if (mobileMenuBtnRef.current?.contains(event.target)) return;
+      // Let the backdrop consume the completed click before hiding it, so a touch cannot
+      // fall through to a chat control underneath when pointerdown removes the overlay.
+      if (mobileMenuBtnRef.current?.contains(event.target) || mobileDockBackdropRef.current?.contains(event.target)) return;
       if (!sidebarPinned && leftDockRef.current && !leftDockRef.current.contains(event.target)) {
         setMobilePeek(false);
       }
@@ -1859,6 +1862,20 @@ export function App() {
         onMouseLeave={onFlyoutLeave}
       >
         <div className="edgeHoverZone edgeHoverZoneLeft" />
+        <button
+          ref={mobileDockBackdropRef}
+          type="button"
+          className="mobileDockBackdrop"
+          aria-label={L("收起菜单", "Close menu")}
+          aria-controls="leftDock"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            closeLeftDock();
+            setUserMenuOpen(false);
+            mobileMenuBtnRef.current?.focus({ preventScroll: true });
+          }}
+        />
         <aside
           className="leftDock"
           id="leftDock"
@@ -2076,9 +2093,12 @@ export function App() {
               {history.loading && <div className="historyEmpty">{L("加载历史…", "Loading history…")}</div>}
               {!history.loading && activeConversations.length === 0 && (
                 <div className="historyEmpty">
-                  {history.persistent
-                    ? L("暂无对话。", "No conversations yet.")
-                    : L("此浏览器模式下历史不可用。", "History unavailable in this browser mode.")}
+                  {history.persistent ? (
+                    <>
+                      <span className="sidebarHistoryEmptyFull">{L("暂无对话。", "No conversations yet.")}</span>
+                      <span className="sidebarHistoryEmptyCompact">{L("暂无历史记录", "No chat history yet.")}</span>
+                    </>
+                  ) : L("此浏览器模式下历史不可用。", "History unavailable in this browser mode.")}
                 </div>
               )}
               {activeConversations.filter((c) => !c.projectId).map((conv) => renderHistoryItem(conv))}

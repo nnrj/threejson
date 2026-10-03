@@ -209,9 +209,17 @@ export function createThreeBoxSidebar(host = {}) {
       if (active.length === 0) {
         const hint = document.createElement("div");
         hint.className = "sidebarStubHint";
-        hint.textContent = hydrated
-          ? t("threebox.sidebar.historyEmpty", "暂无聊天记录，点击「新聊天」开始。")
-          : t("threebox.sidebar.historyLoading", "正在加载聊天历史…");
+        if (hydrated) {
+          const full = document.createElement("span");
+          full.className = "sidebarHistoryEmptyFull";
+          full.textContent = t("threebox.sidebar.historyEmpty", "暂无聊天记录，点击「新聊天」开始。");
+          const compact = document.createElement("span");
+          compact.className = "sidebarHistoryEmptyCompact";
+          compact.textContent = t("threebox.sidebar.historyEmptyCompact", "暂无历史记录");
+          hint.append(full, compact);
+        } else {
+          hint.textContent = t("threebox.sidebar.historyLoading", "正在加载聊天历史…");
+        }
         historyListEl.appendChild(hint);
       } else {
         appendHistoryItemsInBatches(historyListEl, active, renderVersion);

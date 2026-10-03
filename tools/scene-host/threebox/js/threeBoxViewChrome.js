@@ -44,6 +44,7 @@ export function createThreeBoxViewChrome() {
   const leftDock = document.getElementById("leftDock");
   const leftDockPinBtn = document.getElementById("leftDockPinBtn");
   const mobileMenuBtn = document.getElementById("mobileMenuBtn");
+  const mobileDockBackdrop = document.getElementById("mobileDockBackdrop");
   const mobileQuery = window.matchMedia(MOBILE_MEDIA_QUERY);
 
   let leftDockPinned = readPinnedFromStorage();
@@ -185,6 +186,12 @@ export function createThreeBoxViewChrome() {
       } else {
         event.stopPropagation();
       }
+    });
+    mobileDockBackdrop?.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      closeLeftDock();
+      mobileMenuBtn?.focus({ preventScroll: true });
     });
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {

@@ -52,6 +52,7 @@
   <div id="rootContainer">
     <div class="flyoutHost flyoutHostLeft" id="leftFlyoutHost">
       <div class="edgeHoverZone edgeHoverZoneLeft" id="leftEdgeHoverZone"></div>
+      <button type="button" id="mobileDockBackdrop" class="mobileDockBackdrop" aria-label="收起菜单" data-i18n-aria="threebox.shell.closeMenu" aria-controls="leftDock"></button>
       <aside id="leftDock" class="leftDock">
         <div class="sidebarHeaderRow">
           <a class="brand" href="../../../website/index.html#/examples">
@@ -160,6 +161,7 @@
         (() => {
           const root = document.getElementById("rootContainer");
           const button = document.getElementById("mobileMenuBtn");
+          const backdrop = document.getElementById("mobileDockBackdrop");
           const mobileQuery = window.matchMedia("(max-width: 720px)");
           if (!root || !button) return;
 
@@ -178,12 +180,24 @@
             sync(!root.classList.contains("leftDockPeek"));
           }
 
+          function onBackdropClick(event) {
+            if (!mobileQuery.matches) return;
+            event.preventDefault();
+            event.stopPropagation();
+            sync(false);
+            button.focus({ preventScroll: true });
+          }
+
           // Do not open on pointerdown: on touch screens the drawer would slide underneath the
           // still-pressed finger, and the later synthetic click could land on its brand link.
           button.addEventListener("click", onClick, true);
+          backdrop?.addEventListener("click", onBackdropClick);
           window.__threeBoxEarlyMobileMenu = {
             isOpen: () => root.classList.contains("leftDockPeek"),
-            dispose: () => button.removeEventListener("click", onClick, true)
+            dispose: () => {
+              button.removeEventListener("click", onClick, true);
+              backdrop?.removeEventListener("click", onBackdropClick);
+            }
           };
         })();
       </script>

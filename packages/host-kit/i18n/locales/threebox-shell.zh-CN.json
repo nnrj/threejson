@@ -1,6 +1,7 @@
 {
   "threebox.shell.subtitle": "Powered by ThreeJSON",
   "threebox.shell.pinLabel": "钉住侧栏",
+  "threebox.shell.closeMenu": "收起菜单",
   "threebox.shell.aiConfig": "AI 配置",
   "threebox.shell.newChat": "新聊天",
   "threebox.shell.searchChat": "搜索聊天",
@@ -83,6 +84,7 @@
   "threebox.sidebar.projectsEmpty": "暂无项目。",
   "threebox.sidebar.toastProjectComingSoon": "项目「{name}」的会话列表将在后续里程碑接入。",
   "threebox.sidebar.historyEmpty": "暂无聊天记录，点击「新聊天」开始。",
+  "threebox.sidebar.historyEmptyCompact": "暂无历史记录",
   "threebox.sidebar.unpin": "取消置顶",
   "threebox.sidebar.unarchive": "取消归档",
   "threebox.sidebar.noProjectsHint": "暂无项目，请先在「项目」区新建。",

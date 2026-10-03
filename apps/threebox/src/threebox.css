@@ -415,6 +415,7 @@ button { font: inherit; }
 
 .sidebarBody { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; padding-bottom: 10px; }
 .sidebarStubHint { padding: 8px 14px; color: var(--muted); font-size: 12.5px; line-height: 1.6; }
+.sidebarHistoryEmptyCompact { display: none; }
 
 .sidebarBody, .chatMessages {
   scrollbar-width: thin;
@@ -786,6 +787,7 @@ details[open] > .sidebarSectionTitle::before { transform: rotate(90deg); }
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.24); touch-action: manipulation;
 }
 .mobileMenuBtn svg { width: 16px; height: 16px; }
+.mobileDockBackdrop { display: none; }
 
 /* ---- Phone width: sidebar is always an overlay drawer (never pushes content), opened via
    #mobileMenuBtn instead of edge-hover (no hover state on touch); pin/unpin is meaningless here
@@ -793,22 +795,30 @@ details[open] > .sidebarSectionTitle::before { transform: rotate(90deg); }
    viewport regardless of the desktop-persisted preference. ---- */
 @media (max-width: 720px) {
   html, body { height: 100dvh; }
-  #rootContainer { height: 100dvh; }
+  #rootContainer {
+    height: 100dvh;
+    /* Reserve a usable dismissal strip even on the narrowest phone viewports. */
+    --leftDockWidth: min(288px, calc(100vw - 64px));
+  }
   .threeBoxMeshExportField,
   .threeBoxMeshExportScope { grid-template-columns: 1fr; gap: 6px; }
-  .mobileMenuBtn { display: flex; }
+  .mobileMenuBtn { display: flex; width: 44px; height: 44px; }
   #rootContainer.leftDockPeek .mobileMenuBtn {
-    left: calc(min(88vw, 360px) + 8px);
+    left: calc(var(--leftDockWidth) + 8px);
     background: var(--panel2);
   }
+  /* Floating notification controls otherwise cover the dismissal button on small phones. */
+  body:has(#rootContainer.leftDockPeek) .threeboxNotificationBell,
+  body:has(#rootContainer.leftDockPeek) .threeboxNotificationInbox { visibility: hidden; }
   #rootContainer.leftDockPinned .mainArea { margin-left: 0; }
   .sidebarPinRow { display: none; }
-  .flyoutHostLeft { width: var(--peekStripWidth); }
+  /* The backdrop must cover the page immediately, including while the drawer slides in. */
+  .flyoutHostLeft { width: var(--peekStripWidth); transition: none; }
   .edgeHoverZoneLeft { pointer-events: none !important; }
   #rootContainer.leftDockPinned .flyoutHostLeft,
   #rootContainer.leftDockPeek .flyoutHostLeft { width: 100vw; }
   .leftDock {
-    width: min(88vw, 360px);
+    width: var(--leftDockWidth);
     transform: translateX(-100%);
     border-right-color: rgba(255, 255, 255, 0.12);
     box-shadow: 16px 0 42px rgba(0, 0, 0, 0.42);
@@ -818,10 +828,13 @@ details[open] > .sidebarSectionTitle::before { transform: rotate(90deg); }
   /* The drawer opens only after the menu-button click completes. Keep it non-interactive for a
      brief guard window as a second line of defence against delayed synthetic touch clicks. */
   #rootContainer.mobileDockInteractionGuard .leftDock { pointer-events: none; }
-  #rootContainer.leftDockPeek .flyoutHostLeft::after {
-    content: ""; position: absolute; inset: 0; left: min(88vw, 360px);
-    background: rgba(0, 0, 0, 0.4); pointer-events: none;
+  #rootContainer.leftDockPeek .mobileDockBackdrop {
+    display: block; position: absolute; inset: 0; left: var(--leftDockWidth);
+    padding: 0; border: 0; border-radius: 0; background: rgba(0, 0, 0, 0.4);
+    pointer-events: auto; cursor: pointer; touch-action: manipulation;
   }
+  .sidebarHistoryEmptyFull { display: none; }
+  .sidebarHistoryEmptyCompact { display: inline; }
   .sidebarHeaderRow { padding: calc(14px + env(safe-area-inset-top, 0px)) 14px 10px; }
   .sidebarBody { padding-bottom: 14px; }
   .sidebarNavBtn { min-height: 44px; }
