@@ -1,5 +1,6 @@
 import { parseCommandScript } from "../command/parser.js";
 import { requestChatCompletion } from "./sceneAiService.js";
+import { stripMarkdownCodeFence } from "../util/sceneJsonSanitize.js";
 
 /** Provider functions and JSONL use the same service contracts and executor. */
 export function createSceneAgentTools(service) {
@@ -15,12 +16,12 @@ export async function runSceneOperationAgent({ service, prompt, protocol = "json
   for (const name of Object.keys(modelBudget)) if (!["maxRequests", "maxTokens", "maxTimeMs"].includes(name)) throw new TypeError(`This operation agent cannot account for budget ${name}; configure provider-side billing or a supported budget instead.`);
   const discovery = service.discover(), catalog = createSceneAgentTools(service), startedAt = Date.now(), turnId = globalThis.crypto.randomUUID();
   const deadline = modelBudget.maxTimeMs ? startedAt + modelBudget.maxTimeMs : undefined;
-  const receipts = [], seen = new Set(); let requests = 0, tokens = 0;
+  const receipts = [], steps = [], seen = new Set(); let requests = 0, tokens = 0;
   const controller = new AbortController(), abort = () => controller.abort(signal.reason);
   if (signal?.aborted) abort(); else signal?.addEventListener("abort", abort, { once: true });
   const timer = deadline ? setTimeout(() => controller.abort(Object.assign(new Error("Explicit time budget exhausted."), { code: "AI_BUDGET_EXCEEDED" })), modelBudget.maxTimeMs) : null;
   const messages = [{ role: "system", content: `You operate a versioned ThreeJSON scene through tools, not by guessing runtime state. Start with compact scene.query/scene.observe. Read controls before edits. Use model.inspect for modeledMesh, mesh.getTopology only for editableMesh. No geometry data is needed for object placement. Regular primitives remain appropriate for regular shapes; use control meshes, graphs or surfaces where the shape requires them. Prefer parameter/operator edits and deterministic local refinement over rewriting dense geometry. Use preconditions/revisions and verify scene.check/scene.capture when available. A diagnostic relit view is not evidence that actual scene lighting works. Unchecked is not passed. Never invent resources or claim visual verification without rendering. Each response is one atomic authoring batch; runtime-only actions must be separate. Stop after fulfilling the request, without a fixed quality-round count. ${protocol === "native" ? "Use the supplied functions; finish with a concise result once verified." : `Return only JSONL commands {"op":"...","args":{...}}; after completion return # done. Contracts: ${JSON.stringify(discovery.commands)}`}\nSession: ${JSON.stringify({ sessionId: discovery.sessionId, revision: discovery.revision, capabilities: discovery.capabilities })}` }, { role: "user", content: prompt }];
-  const finish = (completed, stopReason, message = "") => ({ completed, stopReason, message, receipts, requests, tokens, revision: service.revision });
+  const finish = (completed, stopReason, message = "") => ({ agentUsed: true, completed, stopReason, message, receipts, steps, requests, tokens, revision: service.revision });
   if (systemInstructions) messages[0].content = `${systemInstructions}\n${protocol === "native" ? "Use supplied functions. After verified completion return a concise result." : `Return only JSONL commands {"op":"...","args":{...}}; finish with # done. Contracts: ${JSON.stringify(discovery.commands)}`}\nSession: ${JSON.stringify({ sessionId: discovery.sessionId, revision: discovery.revision, capabilities: discovery.capabilities })}`;
   try {
     while (true) {
@@ -37,7 +38,7 @@ export async function runSceneOperationAgent({ service, prompt, protocol = "json
       const message = typeof response === "string" ? { role: "assistant", content: response } : response.message && { ...response.message };
       if (!message) throw new Error("Provider returned no assistant message.");
       if (Array.isArray(message.content)) message.content = message.content.filter((part) => part.type === "text").map((part) => part.text || "").join("\n");
-      if (response.finishReason === "length") return finish(false, "provider_output_truncated");
+      if (response.finishReason === "length") return finish(false, "provider_output_truncated", "The provider truncated the operation batch; no incomplete commands were applied.");
       if (!message.content?.trim() && !message.tool_calls?.length) return finish(false, "empty_provider_output");
       messages.push(message);
       let commands;
@@ -47,12 +48,15 @@ export async function runSceneOperationAgent({ service, prompt, protocol = "json
           const op = catalog.operations.get(call.function?.name);
           if (!op) throw new Error(`Unknown function: ${call.function?.name}`);
           return { op, args: JSON.parse(call.function.arguments || "{}") };
-        }) : /^\s*#\s*done\s*$/i.test(message.content || "") ? [] : parseCommandScript(String(message.content || "").replace(/^\s*#\s*(?:done|continue).*$/gmi, "").trim());
+        }) : /^\s*#\s*done\s*$/i.test(stripMarkdownCodeFence(message.content || "")) ? [] : parseCommandScript(message.content || "");
       } catch (error) {
-        const key = `invalid:${message.content || JSON.stringify(calls)}`;
+        steps.push({ kind: "invalid_command_output", ok: false, error: error.message, request: requests, revision: baseRevision });
+        onProgress?.({ stage: "invalid_output", revision: baseRevision, diagnostics: [{ code: "INVALID_COMMAND_OUTPUT", message: error.message }] });
+        const key = `invalid:${baseRevision}:${message.content || JSON.stringify(calls)}`;
         if (seen.has(key)) return finish(false, "repeated_invalid_output", error.message);
         seen.add(key);
-        const feedback = JSON.stringify({ ok: false, code: "INVALID_COMMAND_OUTPUT", error: error.message });
+        const feedback = JSON.stringify({ ok: false, code: "INVALID_COMMAND_OUTPUT", error: error.message,
+          recovery: 'Nothing in this response was applied. Return one complete command object {"op":"<discovered operation>","args":{...}} or a JSON array of such objects, not a scene/document or prose. Use the exact discovered argument names. Keep the next batch small; do not repeat the invalid response.' });
         if (calls.length) for (const call of calls) messages.push({ role: "tool", tool_call_id: call.id, content: feedback });
         else messages.push({ role: "user", content: feedback });
         continue;
@@ -61,7 +65,7 @@ export async function runSceneOperationAgent({ service, prompt, protocol = "json
         if (completionCheck) {
           const check = await completionCheck({ service, signal: controller.signal });
           if (!check.ok) {
-            const key = `completion:${JSON.stringify(check)}`;
+            const key = `completion:${baseRevision}:${JSON.stringify(check)}`;
             if (seen.has(key)) return finish(false, "postconditions_not_satisfied", check.message || "Completion checks failed.");
             seen.add(key); messages.push({ role: "user", content: JSON.stringify(check) }); continue;
           }
@@ -78,6 +82,7 @@ export async function runSceneOperationAgent({ service, prompt, protocol = "json
       seen.add(key);
       onProgress?.({ stage: "preparing", operations: commands.map((command) => command.op), revision: baseRevision });
       const receipt = await service.execute(commands, { baseRevision, requestId: `${turnId}:${requests}`, signal: controller.signal }); receipts.push(receipt);
+      steps.push({ kind: commands.map(command => command.op).join(", "), ok: receipt.ok, revision: service.revision, ...(receipt.ok ? {} : { error: receipt.error || receipt.diagnostics?.[0]?.message }) });
       onProgress?.({ stage: receipt.status, revision: service.revision, diagnostics: receipt.diagnostics });
       const action = await onReceipt?.(receipt, { service, commands, signal: controller.signal });
       if (action?.pause) return finish(false, action.reason || "paused");

@@ -29,7 +29,7 @@ const NUMERIC_EXPR_CHAR_RE = /[\d.eE+\-*/().\s]/;
  */
 function stripMarkdownCodeFence(rawText) {
   let text = String(rawText || "").trim();
-  text = text.replace(/^```[ \t]*(?:json|threejson|javascript|js|command|commands)?[ \t]*(?:\r?\n|$)/i, "");
+  text = text.replace(/^```[ \t]*(?:jsonl|ndjson|json|threejson|javascript|js|command|commands)?[ \t]*(?:\r?\n|$)/i, "");
   text = text.replace(/(?:\r?\n|^)[ \t]*```[ \t]*$/i, "");
   return text.trim();
 }

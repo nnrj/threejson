@@ -16,11 +16,34 @@ const sceneOf = (document, id) => {
   return { clip, scene };
 };
 
+// Structural evidence only, not a claim that the camera sees these objects. Keep
+// extension/native types eligible; camera, light and renderer records alone are
+// not a produced shot. Captions and deliberate blank intervals are valid media.
+function sceneContent(scene, metadata = {}) {
+  let visualObjects = 0;
+  const visit = record => {
+    if (!record || typeof record !== "object") return;
+    const type = String(record.objType || "").toLowerCase();
+    if (type && !["group", "scene", "camera", "renderer", "controls", "renderloop", "light", "ambientlight", "directionallight", "pointlight", "spotlight", "hemispherelight", "audio"].includes(type)) visualObjects++;
+    for (const child of record.children || []) visit(child);
+  };
+  (scene?.objectList || []).forEach(visit);
+  // Friendly records are canonicalized by shot.put. Imported friendly scenes
+  // remain eligible without forcing a runtime or geometry build for inspection.
+  for (const [key, records] of Object.entries(scene?.worldInfo || {})) if (Array.isArray(records) && !/light|camera|control|pass|audio/i.test(key)) visualObjects += records.length;
+  const captions = (scene?.timeline?.captions || []).filter(item => item.enabled !== false && String(item.text || "").trim()).length;
+  const animatedBackground = scene?.timeline?.tracks?.some(track => track.target === "$scene" && track.property.startsWith("background"));
+  return { visualObjects, captions, audio: (scene?.timeline?.audio || []).filter(item => item.enabled !== false).length,
+    hasContent: visualObjects > 0 || captions > 0 || animatedBackground === true || metadata.intentionalBlank === true };
+}
+
 export function inspectMediaDocument(document, revision = 0) {
   return { revision, duration: getTimelineDuration(document.timeline), output: document.output, state: document.production?.state,
     shots: (document.timeline.clips || []).map(clip => {
       const scene = typeof clip.source === "string" ? document.scenes?.[clip.source] : clip.source;
-      return { ...document.production?.shots?.[clip.id], id: clip.id, start: clip.start || 0, duration: clip.duration, sourceStart: clip.sourceStart || 0, rate: clip.rate ?? 1,
+      const content = sceneContent(scene, document.production?.shots?.[clip.id]);
+      const overlay = document.timeline.captions?.some(item => item.enabled !== false && String(item.text || "").trim() && (item.start || 0) < (clip.start || 0) + clip.duration && (item.start || 0) + (item.duration || 0) > (clip.start || 0));
+      return { ...document.production?.shots?.[clip.id], ...content, hasContent: content.hasContent || overlay === true, id: clip.id, enabled: clip.enabled !== false, start: clip.start || 0, duration: clip.duration, sourceStart: clip.sourceStart || 0, rate: clip.rate ?? 1,
         objects: scene?.objectList?.length, tracks: scene?.timeline?.tracks?.length || 0, effects: scene?.timeline?.effects?.length || 0 };
     }) };
 }
@@ -35,6 +58,9 @@ export function diagnoseMediaDocument(document) {
     try { scene = sceneOf(document, clip.id).scene; validateMediaDocument(scene); }
     catch (e) { add(e.code || "MEDIA_SCENE_INVALID", e.message, clip.id); continue; }
     if (document.production?.shots?.[clip.id]?.stage === "planned") add("MEDIA_SHOT_UNBUILT", "Storyboard shot has not been produced.", clip.id);
+    const metadata = document.production?.shots?.[clip.id];
+    const overlay = document.timeline.captions?.some(item => item.enabled !== false && String(item.text || "").trim() && (item.start || 0) < (clip.start || 0) + clip.duration && (item.start || 0) + (item.duration || 0) > (clip.start || 0));
+    if (!sceneContent(scene, metadata).hasContent && !overlay) add("MEDIA_SHOT_EMPTY", "Shot has no visual objects or captions. Produce its content; use metadata.intentionalBlank only for an intentionally blank interval.", clip.id);
     const ids = new Set(["$camera", "$scene", "$renderer"]);
     const visit = (record) => { if (!record || typeof record !== "object") return; if (record.threeJsonId) ids.add(record.threeJsonId); if (record.objType === "pass") ids.add(`$pass:${record.id || record.threeJsonId}`); for (const child of record.children || []) visit(child); };
     (scene.objectList || []).forEach(visit);
@@ -118,6 +144,7 @@ export function createMediaProjectSession(input, options = {}) {
               const receipt = await createSceneOperationService({ session }).execute(a.commands, { signal: args.signal });
               if (!receipt.ok) fail(receipt.code || "MEDIA_SCENE_EDIT_FAILED", receipt.error);
               draft.scenes[a.id] = captureSceneSession(session);
+              if (draft.production.shots[a.id]?.stage === "planned" && sceneContent(draft.scenes[a.id]).hasContent) draft.production.shots[a.id] = { ...draft.production.shots[a.id], stage: "draft" };
               draft.timeline.clips = draft.timeline.clips.map(c => c.id === a.id ? { ...c, source: a.id } : c);
             } finally { session.dispose(); }
           } else if (op === "timeline.edit") {

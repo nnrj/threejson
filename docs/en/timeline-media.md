@@ -106,6 +106,14 @@ media.shot.narrate synthesizes/caches sentences and uses measured PCM durations.
 
 Music ducking accepts `{mode:"narration",gain:0.25,attack:0.15,release:0.3}` (voice clips carry narration:true), or explicit targets. analyzePcm returns RMS/peak/clipping and a sampled envelope usable in animation tracks. A beat signal follows supplied BPM; it does not analyze unknown music. Audio gain/pan automation and export share clip/source time mapping.
 
+## Incomplete video production
+
+`media.plan.set` creates empty storyboard placeholders, not rendered shots. Titles, intents and narration in production metadata do not create visuals or sound. Produce scenes/timelines with `media.shot.put` or `media.shot.edit`. Changing an empty shot's stage cannot pass completion checks; explicitly intentional blank intervals may use `metadata.intentionalBlank:true`, and caption-only shots are supported.
+
+ThreeBox preserves plans and committed shots on interruption. Plan-only documents show the storyboard and pause reason instead of a black video player. Partial productions retain their original timeline with an unfinished notice. History feedback is rebuilt from the actual document, not an old success recap. `production.lastError` stores the last failure explanation and `stopReason` distinguishes invalid output, provider failure, explicit budgets and storyboard approval.
+
+The Agent accepts Markdown-wrapped JSON/JSONL command batches without executing prose or incomplete batches. Electronic background music uses `timeline.audio[].recipe.kind:"score"` and needs no installed TTS model. Merely mentioning music in the brief does not create an audio track.
+
 ## CLI, MCP and phase two
 
 `threejson media-export --file film.json --output film.mp4 --browser /path/to/installed/chrome --fps 30`

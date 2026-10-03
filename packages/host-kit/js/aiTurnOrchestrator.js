@@ -91,9 +91,13 @@ async function applyAiDraftCommands(commands, { sceneJsonString, visualReviewAva
   }
 }
 
-/** Compact, token-cheap description of a generated scene (object-type counts), for the summary call. */
+import { getMediaProductionSummary, formatMediaProductionSummary } from "./mediaProductionFeedback.js";
+
+/** Compact, token-cheap authoring evidence for result summaries. */
 export function buildResultDigest(sceneJson) {
   try {
+    const media = getMediaProductionSummary(sceneJson);
+    if (media) return JSON.stringify(media);
     const counts = {};
     const worldInfo = sceneJson?.worldInfo;
     if (worldInfo && typeof worldInfo === "object") {
@@ -366,6 +370,10 @@ export function resolveImmediateDirectGeneration({ userPrompt, history }, provid
  * rather than whatever language the user happened to type their prompt in.
  */
 export async function runAiTurnSummary({ userPrompt, mode, targetTurnId, turnId, resultDigest, providerOptions, responseLanguage, selfName }) {
+  // Film status is evidence, not prose to be invented from the user's request.
+  let media;
+  try { media = JSON.parse(resultDigest); } catch { /* ordinary scene digest */ }
+  if (media?.documentType === "composition") return formatMediaProductionSummary(media, responseLanguage);
   return summarizeSceneTurn({ userPrompt, mode, targetTurnId, turnId, resultDigest, responseLanguage, selfName }, providerOptions);
 }
 

@@ -9,7 +9,7 @@ const STOP_ICON =
   '<svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5" fill="currentColor"/></svg>';
 
 /**
- * @param {{ onUserMessage?: (text: string, api: { appendAssistantMessage: (t: string) => HTMLElement, updateAssistantMessage: (el: HTMLElement, t: string) => void }) => Promise<void>|void, onStopRequested?: () => void }} [host]
+ * @param {{ onUserMessage?: (text: string, api: { appendAssistantMessage: (t: string) => HTMLElement, updateAssistantMessage: (el: HTMLElement, t: string) => void }, route?: {intent: string, targetTurnId: string}) => Promise<void>|void, onStopRequested?: () => void }} [host]
  *   `onStopRequested` is called when the composer's send button is clicked while `setBusy(true)`
  *   is active (the button doubles as a stop button during an in-flight turn — see setBusy below).
  */
@@ -557,7 +557,7 @@ export function createThreeBoxChatPanel(host = {}) {
     showHeroView();
   }
 
-  async function sendMessage(rawText) {
+  async function sendMessage(rawText, route = undefined) {
     const text = String(rawText || "").trim();
     if (!text) {
       return;
@@ -634,7 +634,7 @@ export function createThreeBoxChatPanel(host = {}) {
           takeInitialActivity,
           finishInitialActivity,
           finishInitialActivityError
-        });
+        }, route);
         if (initialActivityState === "pending") {
           finishInitialActivity(
             t("threebox.chat.noProcessingResult", "处理已结束，但没有返回可显示的结果。")

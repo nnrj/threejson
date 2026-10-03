@@ -30,11 +30,20 @@ export async function runAiVideoTurn(input = {}) {
       onProgress: progress => onAgentProgress?.({ ...progress, type: "video", stageLabel: progress.stage === "reasoning" ? "正在编排或细化镜头" : progress.operations?.join(", ") || progress.stage }),
       onReceipt: async receipt => {
         if (!receipt.ok || receipt.status !== "committed") return;
-        const sceneJsonString = JSON.stringify(session.snapshot(), null, 2), project = session.inspect();
+        const project = session.inspect();
+        await input.onProjectDraft?.(session.snapshot(), project);
+        // A storyboard has only blank placeholders. Keep it for resume, but do
+        // not publish it as a playable scene or a successfully generated draft.
+        if (!project.shots.some(shot => shot.enabled && shot.stage !== "planned" && shot.hasContent)) {
+          await onAgentProgress?.({ type: "video", stage: "storyboard", stageLabel: "分镜已规划，正在制作镜头内容", mediaProject: project });
+          return;
+        }
+        const snapshot = structuredClone(session.snapshot());
+        snapshot.production = { ...snapshot.production, state: "producing" };
+        const sceneJsonString = JSON.stringify(snapshot, null, 2);
         // Both native and React already persist and preview these standard progress
         // snapshots. They contain authored shots, never camera playback state.
         await onAgentProgress?.({ type: "video", kind: "stage_preview", stage: "draft", phase: "draft", sceneJsonString, mediaProject: project, revision: session.revision });
-        await input.onProjectDraft?.(session.snapshot(), project);
         if (!draftPublished) { draftPublished = true; await onSceneDraft?.(sceneJsonString, { mediaProject: project }); }
       }
     });
@@ -42,7 +51,9 @@ export async function runAiVideoTurn(input = {}) {
     if (!sceneJson.timeline.clips.length) {
       const e = new Error(result.error?.message || result.message || "Video generation did not produce a storyboard."); e.agentResult = result; throw e;
     }
-    sceneJson.production = { ...sceneJson.production, state: result.completed ? "complete" : "paused", stopReason: result.stopReason };
-    return { stage: "media", sceneJson, sceneJsonString: JSON.stringify(sceneJson, null, 2), agentResult: result, mediaProject: session.inspect() };
+    const lastError = result.error?.message || result.message || result.steps?.findLast(step => step.ok === false)?.error || "";
+    sceneJson.production = { ...sceneJson.production, state: result.completed ? "complete" : result.stopReason === "storyboard_approval_required" ? "storyboard" : "paused", stopReason: result.stopReason,
+      lastError: result.completed || result.stopReason === "storyboard_approval_required" ? "" : lastError };
+    return { stage: "media", sceneJson, sceneJsonString: JSON.stringify(sceneJson, null, 2), agentResult: result, mediaProject: kit.inspectMediaDocument(sceneJson, session.revision) };
   } finally { narration.dispose(); session.dispose(); }
 }

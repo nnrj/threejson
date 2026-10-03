@@ -518,17 +518,23 @@ async function main() {
 
   /** Continues from the most recent saved draft as a normal follow-up adjustment. This keeps the
    * paused topology as the authoritative context instead of restarting the original generation. */
-  function buildContinueRefinementButton() {
+  function buildContinueRefinementButton(sceneJson, targetTurnId) {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "chatRetryBtn";
     btn.innerHTML = `${RETRY_ICON}<span>${t("threebox.chat.continueRefinement", "继续细化")}</span>`;
-    btn.addEventListener("click", () => {
+    const continuation = sceneJson ? import("../../shared/js/mediaProductionFeedback.js").then(({ getMediaContinuation }) => {
+      const mediaContinuation = getMediaContinuation(sceneJson, document.documentElement.lang);
+      if (mediaContinuation) btn.querySelector("span").textContent = mediaContinuation.label;
+      return mediaContinuation;
+    }) : Promise.resolve(null);
+    btn.addEventListener("click", async () => {
       btn.disabled = true;
-      void chatPanel.sendMessage(t(
+      const mediaContinuation = await continuation;
+      void chatPanel.sendMessage(mediaContinuation?.prompt || t(
         "threebox.chat.continueRefinementPrompt",
         "继续细化当前复杂模型，保留现有设计与已经完成的部分，并完成尚未达到质量目标的细节。"
-      ));
+      ), mediaContinuation && targetTurnId ? { intent: "adjust", targetTurnId } : undefined);
     });
     return btn;
   }
@@ -976,7 +982,7 @@ async function main() {
         api.appendToBody(textEl, api.buildSummaryBlock(recap));
       }
       if (refinementIncomplete) {
-        api.appendToBody(textEl, buildContinueRefinementButton());
+        api.appendToBody(textEl, buildContinueRefinementButton(outputSceneJson, turnId));
       }
 
       await updateStoredTurn(turnId, (turn) => ({
@@ -1345,7 +1351,7 @@ async function main() {
 
       let recap = "";
       if (settings.ai?.includeTurnSummary !== false) {
-        recap = t("threebox.app.defaultAdjustRecap", "已通过{stage}调整了场景。", {
+        recap = outputSceneJson.documentType === "composition" ? await runThreeBoxSummary({ resultDigest: buildResultDigest(outputSceneJson), responseLanguage: resolveSummaryResponseLanguage() }) : t("threebox.app.defaultAdjustRecap", "已通过{stage}调整了场景。", {
           stage: stageResultLabel(result.stage)
         });
         api.appendToBody(
@@ -1354,7 +1360,7 @@ async function main() {
         );
       }
       if (refinementIncomplete) {
-        api.appendToBody(textEl, buildContinueRefinementButton());
+        api.appendToBody(textEl, buildContinueRefinementButton(outputSceneJson, turnId));
       }
 
       // `commands`/`patch` are stored for display (item ④'s "查看调整命令/JSON Patch" collapse)
@@ -1537,10 +1543,10 @@ async function main() {
     return { conversationId, seedTurnId };
   }
 
-  async function handleUserMessage(text, api) {
+  async function handleUserMessage(text, api, route) {
     historyReplayVersion++; // Background replay must not append old rows after a new request.
     try {
-      await handleUserMessageUnsafe(text, api);
+      await handleUserMessageUnsafe(text, api, route);
     } catch (error) {
       // Last-resort safety net: any uncaught error in the routing logic above (e.g. a malformed
       // attached template/upload throwing inside sceneCard.render()) must still surface to the
@@ -1562,7 +1568,7 @@ async function main() {
     }
   }
 
-  async function handleUserMessageUnsafe(text, api) {
+  async function handleUserMessageUnsafe(text, api, requestedRoute) {
     let settings = settingsModal.getSettings();
     const selectedProviderId = document.getElementById("composerModelSelect")?.value;
     let providerOptions = await resolveProviderOptionsForRequest(settings, selectedProviderId);
@@ -1622,6 +1628,14 @@ async function main() {
     const conversationId = sidebar.ensureActiveConversation().id;
     const turnId = createTurnId();
     const turnContext = createBuiltinAiTurnContext(turnId, text);
+    // Clicking Continue is an explicit edit of this card, not a new AI intent
+    // negotiation. It must not silently switch to the latest unrelated scene.
+    if (requestedRoute?.intent === "adjust" && requestedRoute.targetTurnId) {
+      const target = await getTurn(requestedRoute.targetTurnId);
+      if (!target || target.conversationId !== conversationId || !isSceneContextTurn(target)) throw new Error(t("threebox.app.targetTurnMissing", "找不到要继续制作的场景，请重新打开该对话。"));
+      await handleAdjustTurn(text, api, { conversationId, turnId, targetTurnId: target.id, turnContext });
+      return;
+    }
     const turnAbortController = new AbortController();
     activeAbortController = turnAbortController;
     chatPanel.setBusy(true);
@@ -1810,11 +1824,14 @@ async function main() {
         sceneCard.setDraftStatus?.("paused");
       }
       sceneCardsByTurnId.set(turn.id, sceneCard);
-      if (turn.recapSummary) {
-        chatPanel.appendToBody(textEl, chatPanel.buildSummaryBlock(turn.recapSummary));
+      const restoredScene = /"documentType"\s*:\s*"composition"/.test(sceneJsonString) ? JSON.parse(sceneJsonString) : null;
+      const restoredSummary = restoredScene?.documentType === "composition"
+        ? await runThreeBoxSummary({ resultDigest: buildResultDigest(restoredScene), responseLanguage: resolveSummaryResponseLanguage() }) : turn.recapSummary;
+      if (restoredSummary) {
+        chatPanel.appendToBody(textEl, chatPanel.buildSummaryBlock(restoredSummary));
       }
-      if (turn.refinementIncomplete === true) {
-        chatPanel.appendToBody(textEl, buildContinueRefinementButton());
+      if (turn.refinementIncomplete === true || restoredScene?.documentType === "composition" && restoredScene.production?.state !== "complete") {
+        chatPanel.appendToBody(textEl, buildContinueRefinementButton(restoredScene, turn.id));
       }
     }
     // Replaying history re-triggers appendMessage("user", ...)'s "pin near top" scroll for every

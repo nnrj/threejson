@@ -30,6 +30,7 @@ import { resolveSceneAgentOptions, resolveSceneAgentTokenOptions } from "@threej
 import { createUnsuccessfulTurnRecord, isUnsuccessfulTurn } from "@threejson/scene-agent-kit/turn-state";
 import { buildStructuredTurnEnvelope } from "threejson/ai";
 import { getAiErrorFeedback } from "@threejson/host-kit/js/aiErrorFeedback.js";
+import { getMediaProductionSummary, formatMediaProductionSummary, getMediaContinuation } from "@threejson/host-kit/js/mediaProductionFeedback.js";
 import { resolveSceneHostUrl, sceneHostAssetUrl } from "@threejson/host-kit/js/sceneHostPaths.js";
 import {
   sceneAgentRepository,
@@ -929,14 +930,16 @@ export function App() {
             sceneObj = null;
             replaySceneJson = null;
           }
+          const mediaSummary = getMediaProductionSummary(replaySceneJson);
           replayed.push({
             id: `${turn.id}-a`,
             role: "assistant",
-            text: turn.sceneTitle || L("场景已生成。", "Scene generated."),
+            text: mediaSummary ? formatMediaProductionSummary(mediaSummary, locale) : turn.sceneTitle || L("场景已生成。", "Scene generated."),
             sceneObj,
             sceneJson: replaySceneJson,
             label: turn.sceneTitle || turn.userPrompt || "",
-            summary: turn.recapSummary || null,
+            summary: mediaSummary ? null : turn.recapSummary || null,
+            mediaContinuation: mediaSummary && (mediaSummary.state !== "complete" || mediaSummary.producedShots < mediaSummary.totalShots) ? getMediaContinuation(replaySceneJson, locale) : null,
             turnId: turn.id,
             mode: turn.mode || "generate",
             diff: turn.commands?.length
@@ -1559,6 +1562,7 @@ export function App() {
           sceneJson = result.sceneJson;
           sceneJsonString = result.sceneJsonString;
           agentResult = result.agentResult || null;
+          stage = result.stage || "generate";
         }
 
         setStream("");
@@ -1583,9 +1587,12 @@ export function App() {
           sceneJson = JSON.parse(snapshot);
           await finalSceneCard.updateSceneJson(sceneJson);
         }
-        const verifiedAdjustSummary = adjusting && settings.ai.includeTurnSummary
+        const mediaSummary = getMediaProductionSummary(sceneJson);
+        const mediaIncomplete = mediaSummary && (agentResult?.completed === false || mediaSummary.state !== "complete" || mediaSummary.producedShots < mediaSummary.totalShots);
+        const mediaRecap = mediaSummary ? formatMediaProductionSummary(mediaSummary, locale) : "";
+        const verifiedAdjustSummary = mediaRecap || (adjusting && settings.ai.includeTurnSummary
           ? L(`已通过 ${stage} 调整了场景。`, `Adjusted the scene via ${stage}.`)
-          : "";
+          : "");
         const useDiffCache = adjusting && settings.io.turnCacheMode === "diff" && stage === "commands" && commands?.length;
         const turnRecord = await history.appendTurn(conversationId, {
           id: currentTurnId,
@@ -1597,9 +1604,11 @@ export function App() {
           commands,
           patch,
           sceneTitle: "",
-          recapSummary: verifiedAdjustSummary
+          recapSummary: verifiedAdjustSummary,
+          refinementIncomplete: agentResult?.completed === false,
+          refinementStopReason: agentResult?.completed === false ? agentResult.stopReason : ""
         });
-        const baseText = adjusting ? L(`场景已调整（${stage}）。`, `Scene adjusted (${stage}).`) : L("场景已生成。", "Scene generated.");
+        const baseText = mediaSummary ? mediaRecap : adjusting ? L(`场景已调整（${stage}）。`, `Scene adjusted (${stage}).`) : L("场景已生成。", "Scene generated.");
         // Only show a recap when adaptive execution actually performed meaningful extra work.
         const agentProcess = buildAgentProcessSummary(
           agentResult,
@@ -1620,7 +1629,8 @@ export function App() {
           label: userPrompt,
           turnId: currentTurnId,
           mode: adjusting ? "adjust" : "generate",
-          summary: verifiedAdjustSummary || undefined
+          summary: mediaSummary ? undefined : verifiedAdjustSummary || undefined,
+          mediaContinuation: mediaIncomplete ? getMediaContinuation(sceneJson, locale) : null
         };
         // The card was appended early and streamed drafts (see above) — finalize it in place so
         // the last draft is superseded by the real result.
@@ -1668,7 +1678,7 @@ export function App() {
                     responseLanguage: resolveTitleLanguage()
                   }).catch(() => "")
                 : Promise.resolve(""),
-              settings.ai.includeTurnSummary
+              settings.ai.includeTurnSummary && !mediaSummary
                 ? runAiTurnSummary({
                     userPrompt,
                     mode: turnMode,
@@ -1681,7 +1691,7 @@ export function App() {
                   }).catch(() => "")
                 : Promise.resolve("")
             ]);
-            const recapText = settings.ai.includeTurnSummary
+            const recapText = mediaSummary ? "" : settings.ai.includeTurnSummary
               ? recap || L("已根据您的描述生成场景。", "Generated a scene from your description.")
               : "";
             const patch = {};
@@ -1714,7 +1724,7 @@ export function App() {
               void updateStoredTurn(currentTurnId, (current) => ({
                 ...current,
                 sceneTitle: title || current.sceneTitle || "",
-                recapSummary: recapText
+                recapSummary: mediaRecap || recapText
               })).catch(() => {});
             }
           })();
@@ -2270,6 +2280,12 @@ export function App() {
                       className="sceneSummaryText markdown-body"
                       dangerouslySetInnerHTML={{ __html: renderMarkdownToSafeHtml(m.summary) }}
                     />
+                  )}
+                  {m.mediaContinuation && (
+                    <button type="button" className="chatRetryBtn" disabled={busy}
+                      onClick={() => void send(m.mediaContinuation.prompt, { mode: "adjust", targetTurnId: m.turnId })}>
+                      {m.mediaContinuation.label}
+                    </button>
                   )}
                 </div>
               </div>

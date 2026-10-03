@@ -2,12 +2,14 @@
  * it owns one frame producer, not a permanently live renderer per shot.
  */
 import { loadMediaKit, createMediaAudioPlayback } from "./mediaStudio.js";
+import { getMediaProductionSummary, formatMediaProductionSummary } from "./mediaProductionFeedback.js";
 export function createMediaCardSession(options = {}) {
   let document = null, project = null, viewport = null, preview = null, disposed = false, time = 0, frame = 0, playing = false;
   let queue = Promise.resolve(), controller = new AbortController(), transport = null;
   let audioPlayback = null, mixerPrepared = false;
   let generation = 0, unlinkSignal = () => {};
   let diagnosticKey = "";
+  let productionNotice = null;
   const publishDiagnostics = () => {
     const entries = project?.resourceDiagnostics || [], nextKey = JSON.stringify(entries);
     if (nextKey !== diagnosticKey) { diagnosticKey = nextKey; options.onDiagnosticsChanged?.(entries); }
@@ -19,12 +21,12 @@ export function createMediaCardSession(options = {}) {
   const stop = () => { playing = false; cancelAnimationFrame(frame); audioPlayback?.pause(); };
   const hidden = () => { if (globalThis.document?.hidden) stop(); };
   globalThis.document?.addEventListener("visibilitychange", hidden);
-  const release = () => { stop(); audioPlayback?.dispose(); audioPlayback = null; mixerPrepared = false; project?.dispose(); project = null; transport?.remove(); transport = null; viewport?.dispose(); viewport = null; };
+  const release = () => { stop(); audioPlayback?.dispose(); audioPlayback = null; mixerPrepared = false; project?.dispose(); project = null; transport?.remove(); transport = null; productionNotice?.remove(); productionNotice = null; viewport?.dispose(); viewport = null; };
   const suspend = () => enqueue(() => { try { preview = project?.canvas.toDataURL("image/png") || preview; } catch { /* tainted canvas has no snapshot */ } release(); emit(true); });
   const unregister = pool?.register(key, suspend);
   const run = fn => pool ? pool.run(key, () => enqueue(fn), options.getViewportLimit?.() ?? 1) : enqueue(fn);
   async function activate() {
-    if (project) return;
+    if (project || viewport) return;
     const lifetime = controller;
     check(); lifetime.signal.throwIfAborted(); await options.beforePrepare?.({ signal: lifetime.signal });
     const kit = await loadMediaKit();
@@ -33,6 +35,35 @@ export function createMediaCardSession(options = {}) {
     viewport = await options.createViewport?.();
     if (!viewport?.canvas) throw new Error("Composition card needs a viewport canvas.");
     try {
+      const summary = getMediaProductionSummary(source), language = globalThis.document.documentElement.lang || "zh-CN";
+      const owner = viewport.canvas.parentElement;
+      if (source.production && summary && (summary.state !== "complete" || summary.producedShots < summary.totalShots) && owner) {
+        productionNotice = globalThis.document.createElement("section");
+        productionNotice.className = "mediaProductionNotice";
+        productionNotice.setAttribute("role", "status");
+        Object.assign(productionNotice.style, { position: "absolute", inset: "8px 8px auto", zIndex: "1", maxHeight: "45%", overflow: "auto", padding: "10px", borderRadius: "6px", color: "#eee", background: "#111e", font: "13px/1.5 system-ui", overflowWrap: "anywhere" });
+        const status = globalThis.document.createElement("div"); status.textContent = formatMediaProductionSummary(summary, language); productionNotice.append(status);
+        if (summary.lastError) {
+          const details = globalThis.document.createElement("details"), title = globalThis.document.createElement("summary"), error = globalThis.document.createElement("pre");
+          title.textContent = /^en/i.test(language) ? "Error details" : "错误详情";
+          error.textContent = summary.lastError; Object.assign(error.style, { whiteSpace: "pre-wrap", overflowWrap: "anywhere" });
+          details.append(title, error); productionNotice.append(details);
+        }
+        owner.append(productionNotice);
+        if (summary.producedShots === 0) {
+          Object.assign(productionNotice.style, { inset: "0", maxHeight: "100%", borderRadius: "0", boxSizing: "border-box", padding: "16px" });
+          const list = globalThis.document.createElement("ol");
+          for (const shot of summary.shots) {
+            const item = globalThis.document.createElement("li"); item.textContent = `${shot.title} · ${shot.start}–${shot.start + shot.duration}s`; list.append(item);
+          }
+          productionNotice.append(list);
+          viewport.commit({ resize() {}, renderOnce() {} });
+          options.onRuntimeChanged?.(null, null); emit(false);
+          // Saved plan remains exportable/resumable, but it is not a playable film.
+          return;
+        }
+        if (time === 0 && summary.shots[0]?.produced === false) time = summary.shots.find(shot => shot.produced)?.start || 0;
+      }
       project = await kit.createMediaProject(source, { canvas: viewport.canvas, width: viewport.canvas.width, height: viewport.canvas.height, signal: lifetime.signal,
         createScene: options.createRuntime, runtimeOptions: options.getRuntimeOptions?.({ authoritative: true }) });
       await project.renderAt(Math.min(time, Math.max(0, project.duration - .001))); check(); publishDiagnostics();
@@ -41,7 +72,6 @@ export function createMediaCardSession(options = {}) {
       // camera. Scale the compositor when a chat/mobile viewport changes size.
       Object.assign(viewport.canvas.style, { width: "100%", height: "100%", objectFit: "contain" });
       options.onRuntimeChanged?.(null, null); emit(false);
-      const owner = viewport.canvas.parentElement;
       if (owner) {
         transport = globalThis.document.createElement("div");
         Object.assign(transport.style, { position: "absolute", left: "8px", right: "8px", bottom: "8px", display: "flex", gap: "8px", alignItems: "center", background: "#111b", color: "white", padding: "6px", borderRadius: "6px" });
@@ -50,7 +80,13 @@ export function createMediaCardSession(options = {}) {
         slider.type = "range"; slider.min = "0"; slider.max = String(project.duration); slider.step = ".01"; slider.value = String(time); slider.setAttribute("aria-label", "Video time"); slider.style.flex = "1"; slider.style.minWidth = "35px";
         label.style.fontSize = "11px"; label.style.whiteSpace = "nowrap";
         label.textContent = `${time.toFixed(1)} / ${project.duration.toFixed(1)}s`;
-        const paint = async value => { if (!project) return; time = value; await project.renderAt(Math.min(value, Math.max(0, project.duration - .000001))); publishDiagnostics(); slider.value = String(value); label.textContent = `${value.toFixed(1)} / ${project.duration.toFixed(1)}s`; };
+        const paint = async value => { if (!project) return; time = value; await project.renderAt(Math.min(value, Math.max(0, project.duration - .000001))); publishDiagnostics(); slider.value = String(value); label.textContent = `${value.toFixed(1)} / ${project.duration.toFixed(1)}s`;
+          if (productionNotice) {
+            const active = summary.shots.filter(shot => value >= shot.start && value < shot.start + shot.duration);
+            productionNotice.dataset.unbuiltShot = String(active.length > 0 && active.every(shot => !shot.produced));
+            productionNotice.style.maxHeight = productionNotice.dataset.unbuiltShot === "true" ? "calc(100% - 60px)" : "45%";
+          }
+        };
         slider.oninput = () => { stop(); button.textContent = "▶"; void enqueue(() => paint(Number(slider.value))).catch(options.onError || console.warn); };
         button.onclick = async () => {
           if (playing) { stop(); button.textContent = "▶"; return; }
@@ -86,7 +122,7 @@ export function createMediaCardSession(options = {}) {
           item.value = String(clip.start || 0); item.textContent = `${metadata?.stage === "planned" ? "◻ " : ""}${metadata?.title || clip.id}`; shots.append(item);
         }
         shots.onchange = () => { stop(); button.textContent = "▶"; void enqueue(() => paint(Number(shots.value))).catch(options.onError || console.warn); };
-        if (source.production?.state === "storyboard" || source.production?.stopReason === "storyboard_approval_required") label.textContent = "分镜待确认 / Approve storyboard";
+        if (source.production?.stopReason === "storyboard_approval_required") label.textContent = "分镜待确认 / Approve storyboard";
         transport.append(button, slider, label, shots, studio); owner.append(transport);
       }
     } catch (e) { release(); throw e; }

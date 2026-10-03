@@ -50,3 +50,26 @@ test("film completion rejects unintentional duration clipping and reports exact 
     assert.equal((await service.execute({ op: "media.project.set", args: { state: "complete" } })).ok, true);
   } finally { session.dispose(); }
 });
+
+test("metadata alone cannot complete empty shots; deliberate blanks and caption-only shots remain valid", async () => {
+  const session = createMediaProjectSession(), service = createMediaOperationService({ session });
+  await service.execute({ op: "media.plan.set", args: { shots: [{ id: "a", title: "Intro", duration: 3 }] } });
+  await service.execute({ op: "media.shot.put", args: { id: "a", metadata: { stage: "complete" } } });
+  assert.equal(session.inspect().shots[0].hasContent, false);
+  assert.ok(diagnoseMediaDocument(session.document).diagnostics.some(d => d.code === "MEDIA_SHOT_EMPTY"));
+  assert.equal((await service.execute({ op: "media.project.set", args: { state: "complete" } })).ok, false);
+  await service.execute({ op: "timeline.edit", args: { shotId: "a", section: "captions", upsert: [{ id: "title", text: "Hello", start: 0, duration: 3 }] } });
+  assert.equal(session.inspect().shots[0].hasContent, true);
+  assert.equal((await service.execute({ op: "media.project.set", args: { state: "complete" } })).ok, true);
+  await service.execute({ op: "media.shot.put", args: { id: "a", scene: { objectList: [] }, metadata: { stage: "complete", intentionalBlank: true } } });
+  assert.equal(diagnoseMediaDocument(session.document).satisfied, true);
+  session.dispose();
+});
+
+test("incremental shot edits promote planned placeholders to actual drafts", async () => {
+  const session = createMediaProjectSession(), service = createMediaOperationService({ session });
+  await service.execute({ op: "media.plan.set", args: { shots: [{ id: "a", title: "Intro", duration: 3 }] } });
+  const receipt = await service.execute({ op: "media.shot.edit", args: { id: "a", commands: [{ op: "object.add", args: { descriptor: { objType: "box", threeJsonId: "actor" } } }] } });
+  assert.equal(receipt.ok, true, receipt.error); assert.equal(session.inspect().shots[0].stage, "draft"); assert.equal(session.inspect().shots[0].hasContent, true);
+  session.dispose();
+});

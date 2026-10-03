@@ -1,0 +1,22 @@
+{
+  "documentType": "composition", "compositionVersion": 1,
+  "output": { "width": 1920, "height": 1080, "fps": 30 },
+  "scenes": {
+    "shot1": { "version": "next", "sceneConfig": { "scene": { "background": "#050812" }, "camera": { "position": { "x": 0, "y": 2, "z": 10 } }, "controls": { "type": "none" } }, "objectList": [], "timeline": { "version": 1, "tracks": [] } },
+    "shot2": { "version": "next", "sceneConfig": { "scene": { "background": "#050812" }, "camera": { "position": { "x": 0, "y": 2, "z": 10 } }, "controls": { "type": "none" } }, "objectList": [], "timeline": { "version": 1, "tracks": [] } },
+    "shot3": { "version": "next", "sceneConfig": { "scene": { "background": "#050812" }, "camera": { "position": { "x": 0, "y": 2, "z": 10 } }, "controls": { "type": "none" } }, "objectList": [], "timeline": { "version": 1, "tracks": [] } },
+    "shot4": { "version": "next", "sceneConfig": { "scene": { "background": "#050812" }, "camera": { "position": { "x": 0, "y": 2, "z": 10 } }, "controls": { "type": "none" } }, "objectList": [], "timeline": { "version": 1, "tracks": [] } }
+  },
+  "timeline": { "version": 1, "clips": [
+    { "id": "shot1", "source": "shot1", "start": 0, "duration": 22 },
+    { "id": "shot2", "source": "shot2", "start": 22, "duration": 20 },
+    { "id": "shot3", "source": "shot3", "start": 42, "duration": 26 },
+    { "id": "shot4", "source": "shot4", "start": 68, "duration": 22 }
+  ], "tracks": [], "audio": [], "captions": [], "effects": [] },
+  "production": { "version": 1, "state": "paused", "shots": {
+    "shot1": { "title": "实验装置", "intent": "展示电子枪或光源、单缝挡板、双缝挡板与探测屏的经典双缝实验布局，镜头缓慢推进建立空间关系。", "narration": "双缝干涉实验是量子力学中最著名的实验之一。", "stage": "planned" },
+    "shot2": { "title": "单缝对照", "intent": "只开一条缝时，屏上出现单缝衍射的宽亮斑，作为对照基准。", "narration": "如果只打开一条缝，屏上只会出现一条模糊的亮带。", "stage": "planned" },
+    "shot3": { "title": "双缝干涉条纹", "intent": "同时打开两条缝，屏上出现明暗相间的干涉条纹，用波前动画解释相长与相消。", "narration": "但当两条缝同时打开，屏上出现了明暗相间的干涉条纹。", "stage": "planned" },
+    "shot4": { "title": "波粒二象性", "intent": "逐个发射电子，条纹依然逐渐累积形成，引出波粒二象性结论。", "narration": "即使一次只发射一个电子，条纹仍会逐渐累积出现。", "stage": "planned" }
+  }, "brief": "介绍双缝干涉实验的科普短片：从实验装置、单缝对照、双缝干涉条纹到波粒二象性结论。无 TTS，使用屏幕字幕与本地合成背景音乐。", "stopReason": "repeated_invalid_output" }
+}

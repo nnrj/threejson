@@ -131,6 +131,14 @@ audio-kit 主入口提供 compileScore/createScoreRenderer/synthesizeScore、PCM
 
 音乐可加 `ducking:{mode:"narration",gain:0.25,attack:0.15,release:0.3}`，旁白片段标记 narration:true；也可 targets 指定音轨。`analyzePcm` 提供 RMS/peak/削波统计及 samples 包络，供效果/材质轨道使用；beat 信号是给定 BPM 的合成节奏，不是自动识别未知音乐。音频 gain/pan 轨道、ducking 与视频导出共用源时间映射。
 
+## 视频生成结果与未完成分镜
+
+`media.plan.set` 只创建分镜占位，不代表已生成画面；`production.shots` 的 title、intent 和 narration 也不会自动渲染或发声。逐镜头通过 `media.shot.put` / `media.shot.edit` 写入实际场景和时间线。普通空镜头不能仅修改 stage 就通过完成检查；有意留白可显式使用 `metadata.intentionalBlank:true`，纯字幕镜头也受支持。
+
+ThreeBox 保留未完成的分镜和已提交镜头。只有计划时显示分镜、暂停原因和“继续制作视频”，不显示空白视频播放器；有部分内容时保留真实时间线并说明未完成状态。历史记录也从实际文档重建状态，不继续显示旧的成功摘要。`production.lastError` 保存最近的失败说明，`stopReason` 区分供应商失败、无效输出、显式预算和分镜待确认。
+
+Agent 支持用 Markdown 包裹的 JSON/JSONL 命令，但不执行说明文字或不完整批次。本地电子背景音乐使用 `timeline.audio[].recipe.kind:"score"`，无需安装 TTS 模型；分镜说明中写“背景音乐”并不会产生音轨。
+
 ## CLI / MCP 与后续
 
 ```powershell

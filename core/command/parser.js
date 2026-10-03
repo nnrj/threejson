@@ -1,4 +1,4 @@
-import { parseAiJsonFragment } from "../util/sceneJsonSanitize.js";
+import { parseAiJsonFragment, stripMarkdownCodeFence } from "../util/sceneJsonSanitize.js";
 import { COMMAND_API_VERSION } from "./types.js";
 import { looksLikeMicroDslLine, parseMicroDslLine } from "./microDsl.js";
 
@@ -128,7 +128,7 @@ export function parseCommandScript(input) {
   if (Array.isArray(input)) {
     return input.map((item) => normalizeCommand(item));
   }
-  const lines = splitCommandScript(String(input ?? ""));
+  const lines = splitCommandScript(stripMarkdownCodeFence(String(input ?? "")));
   if (lines.length === 0) {
     throw new Error("command script is empty.");
   }
