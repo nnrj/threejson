@@ -1042,6 +1042,11 @@ function buildCompatPayloadFromCanonical(sourcePayload, canonicalPayload, splitS
   }
 
   const sceneConfig = {};
+  // Font defaults do not become Object3D records; keep them when constructing
+  // the runtime projection, or an explicitly local font silently uses the CDN.
+  if (isPlainObject(sourcePayload.sceneConfig?.textFont)) {
+    sceneConfig.textFont = clonePlainValue(sourcePayload.sceneConfig.textFont);
+  }
   if (isFiniteNumber(canonicalPayload.canvasWidth)) {
     sceneConfig.canvasWidth = Number(canonicalPayload.canvasWidth);
   }

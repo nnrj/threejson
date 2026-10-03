@@ -13,6 +13,7 @@ import {
   resolveTextFontConfig
 } from "../core/builder/text/fontResolver.js";
 import { createText, createTextAsync } from "../core/builder/textBuilder.js";
+import { normalizeScenePayload } from "../core/handler/sceneFriendlyNormalizer.js";
 
 describe("textStyleShared", () => {
   it("defaults mode to sdf", () => {
@@ -115,6 +116,17 @@ describe("createText degradation", () => {
 });
 
 describe("fontResolver", () => {
+  it("keeps scene font defaults through runtime normalization for both JSON forms", () => {
+    const textFont = { fontUrl: "/local/font.ttf", unicodeFontsUrl: "/local/unicode/", fontWeight: "bold" };
+    for (const content of [{ objectList: [{ objType: "text", content: "Hello" }] }, { worldInfo: { modelList: [{ objType: "text", content: "Hello" }] } }]) {
+      const source = { version: "next", sceneConfig: { textFont }, ...content };
+      const normalized = normalizeScenePayload(source);
+      assert.deepEqual(normalized.sceneConfig.textFont, textFont);
+      assert.deepEqual(resolveTextFontConfig({}, normalized.sceneConfig), { ...textFont, fontStyle: "normal" });
+      normalized.sceneConfig.textFont.fontUrl = "/changed.ttf";
+      assert.equal(source.sceneConfig.textFont.fontUrl, "/local/font.ttf");
+    }
+  });
   it("per-object sdf.fontUrl overrides scene default", () => {
     const sceneConfig = {
       textFont: {

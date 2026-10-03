@@ -7,39 +7,28 @@ import { registerObjectReadiness } from "../../resource/objectReadiness.js";
 import * as TroikaText from "troika-three-text";
 
 import { trackDisposableResource } from "../../handler/trackedResourceRegistry.js";
-import { registerObject } from "../../handler/objectRegistry.js";
+import { registerObject, unregisterObject } from "../../handler/objectRegistry.js";
+import { resolveRuntimeContext } from "../../runtime/runtimeContext.js";
+import { log } from "../../util/logger.js";
 import { setUserDataObjJson } from "../../handler/objectDescriptorAttach.js";
 import {
   anchorToTroikaPercents,
   applyTextTransform,
-  attachBillboardBehavior,
   hasValue,
-  numberBetween,
   resolveTextRecord,
   wrapTextForBillboard
 } from "./textStyleShared.js";
 import { resolveTextFontConfig } from "./fontResolver.js";
+import { waitForSdfText, DEFAULT_TEXT_LOAD_TIMEOUT_MS } from "./sdfTextReadiness.js";
+import { createTextureText } from "./textureText.js";
 
-const { Text, configureTextBuilder, preloadFont } = TroikaText;
+const { Text, getTextRenderInfo } = TroikaText;
 
 if (
   typeof Text !== "function"
-  || typeof configureTextBuilder !== "function"
-  || typeof preloadFont !== "function"
+  || typeof getTextRenderInfo !== "function"
 ) {
   throw new Error("ThreeJSON SDF text requires the optional peer: npm install troika-three-text");
-}
-
-let configuredUnicodeFontsUrl = null;
-
-function ensureUnicodeFontsUrl(unicodeFontsUrl) {
-  if (!unicodeFontsUrl || unicodeFontsUrl === configuredUnicodeFontsUrl) {
-    return;
-  }
-  configureTextBuilder({
-    unicodeFontsURL: unicodeFontsUrl
-  });
-  configuredUnicodeFontsUrl = unicodeFontsUrl;
 }
 
 function mapTextAlign(align) {
@@ -64,12 +53,11 @@ export function createSdfText(parent, record, ctx = {}) {
   const sceneConfig = ctx.sceneConfig && typeof ctx.sceneConfig === "object" ? ctx.sceneConfig : null;
   const fontConfig = resolveTextFontConfig(record, sceneConfig);
 
-  if (fontConfig.unicodeFontsUrl) {
-    ensureUnicodeFontsUrl(fontConfig.unicodeFontsUrl);
-  }
-
   const text = new Text();
   trackDisposableResource(text);
+  // Global configureTextBuilder is ignored after the first font request, and
+  // would leak a scene's font source into other simultaneous/history canvases.
+  text.unicodeFontsURL = fontConfig.unicodeFontsUrl;
 
   text.text = resolved.content;
   text.fontSize = resolved.fontSize;
@@ -124,15 +112,38 @@ export function createSdfText(parent, record, ctx = {}) {
   }
 
   setUserDataObjJson(sceneRoot, outRecord);
-  // Capture the initial sync at its source. Troika has no isTroikaText flag,
-  // and sync(callback) does not call back when no further sync is required.
-  let markReady;
-  const ready = new Promise((resolve) => { markReady = resolve; });
-  text.sync(markReady); // keep synchronous errors visible to the existing fallback
-  registerObjectReadiness(text, ready);
-
   parent.add(sceneRoot);
   registerObject(sceneRoot, outRecord, {}, parent);
+  const runtime = resolveRuntimeContext(parent, { fallback: false });
+  const signals = [ctx.signal, runtime?.loadSignal, runtime?.signal];
+  // Start all text preparations during deploy; do not serially wait one timeout
+  // per label. The timeline's resource barrier waits for these promises instead.
+  const ready = waitForSdfText(text, {
+    root: sceneRoot,
+    signals,
+    timeoutMs: ctx.textLoadTimeoutMs ?? runtime?.textLoadTimeoutMs ?? DEFAULT_TEXT_LOAD_TIMEOUT_MS
+  }).catch((error) => {
+    if (error?.name === "AbortError" || signals.some(signal => signal?.aborted) || !sceneRoot.parent) throw error;
+    const owner = sceneRoot.parent;
+    // Dispose only this text's own geometry/material, never Troika's shared SDF
+    // atlas. Keep the original authoring record so a later load can retry SDF.
+    unregisterObject(sceneRoot, { recursive: true }, parent);
+    owner.remove(sceneRoot);
+    text.dispose();
+    for (const material of [].concat(text.material || [])) (material.baseMaterial || material).dispose();
+    const fallback = createTextureText(owner, record, { sdfFallback: true });
+    fallback.position.copy(sceneRoot.position); fallback.quaternion.copy(sceneRoot.quaternion);
+    fallback.scale.copy(sceneRoot.scale); fallback.visible = sceneRoot.visible;
+    setUserDataObjJson(fallback, outRecord);
+    registerObject(fallback, outRecord, {}, parent);
+    runtime?.diagnostics?.report({ code: "TEXT_SDF_FALLBACK", severity: "warning", objectId: record.threeJsonId,
+      source: fontConfig.fontUrl || fontConfig.unicodeFontsUrl || "troika default unicode fonts",
+      field: "sdf", message: `SDF text unavailable; using local canvas text. ${error.message}` });
+    log.warn("[ThreeJSON] SDF font preparation failed; using local canvas text:", error.message);
+    return fallback;
+  });
+  registerObjectReadiness(text, ready);
+  if (sceneRoot !== text) registerObjectReadiness(sceneRoot, ready);
   return text;
 }
 
@@ -140,38 +151,18 @@ export function createSdfText(parent, record, ctx = {}) {
  * @param {object} sceneConfig
  * @param {object[]} [objectList]
  */
-export function preloadSceneTextFonts(sceneConfig, objectList = []) {
-  const sceneFont = sceneConfig?.textFont;
-  const chars = new Set();
-  const preloadCharacters =
-    sceneFont && typeof sceneFont.preloadCharacters === "string"
-      ? sceneFont.preloadCharacters
-      : "";
-  for (const ch of preloadCharacters) {
-    chars.add(ch);
-  }
-  for (const rec of objectList) {
-    if (!rec || typeof rec !== "object") {
-      continue;
-    }
-    const objType = typeof rec.objType === "string" ? rec.objType.trim().toLowerCase() : "";
-    if (objType !== "text") {
-      continue;
-    }
-    const mode = typeof rec.mode === "string" ? rec.mode.trim().toLowerCase() : "sdf";
-    if (mode !== "sdf") {
-      continue;
-    }
-    for (const ch of String(rec.content ?? "")) {
-      chars.add(ch);
-    }
-  }
-  if (!chars.size) {
-    return;
-  }
+export async function preloadSceneTextFonts(sceneConfig, _objectList = [], ctx = {}) {
+  const characters = sceneConfig?.textFont?.preloadCharacters;
+  if (typeof characters !== "string" || !characters.length) return;
+  // Text.sync already loads its own glyphs. A fire-and-forget duplicate warmup
+  // can reserve atlas slots before they are filled, letting the real text sync
+  // finish with an empty first frame. Only explicit warmups run, and are awaited.
   const fontConfig = resolveTextFontConfig({}, sceneConfig);
-  preloadFont({
-    font: fontConfig.fontUrl,
-    characters: [...chars].join("")
-  }, () => {}); // Troika requires a completion callback, even for background warmup.
+  const runtime = ctx.scene ? resolveRuntimeContext(ctx.scene, { fallback: false }) : null;
+  await waitForSdfText({
+    sync: done => getTextRenderInfo({ font: fontConfig.fontUrl, unicodeFontsURL: fontConfig.unicodeFontsUrl,
+      fontStyle: fontConfig.fontStyle, fontWeight: fontConfig.fontWeight, text: characters }, done),
+    dispose() {} // warmup owns no mesh or private GPU geometry
+  }, { signals: [ctx.signal, runtime?.loadSignal, runtime?.signal],
+    timeoutMs: ctx.textLoadTimeoutMs ?? runtime?.textLoadTimeoutMs ?? DEFAULT_TEXT_LOAD_TIMEOUT_MS });
 }

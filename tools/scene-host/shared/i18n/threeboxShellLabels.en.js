@@ -294,6 +294,7 @@ export const THREEBOX_SHELL_LABELS_EN = {
   "threebox.sceneCard.rendering": "Rendering scene (no tokens used)…",
   "threebox.sceneCard.loadingContent": "Canvas ready; loading scene content (no tokens used)…",
   "threebox.sceneCard.loadingProgress": "Loading scene content {done}/{total} (no tokens used)…",
+  "threebox.sceneCard.preparingFrame": "Scene content loaded; preparing fonts, textures and the first frame (no tokens used)…",
   "threebox.sceneCard.texturePlanned": "Improving textures · 0/{total}",
   "threebox.sceneCard.textureProgress": "Improving textures · {completed}/{total}",
   "threebox.sceneCard.textureLicensePending": "Applied {assignments} · {pendingLicense} require license confirmation",

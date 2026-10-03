@@ -276,6 +276,7 @@
   "threebox.sceneCard.rendering": "场景渲染中（不消耗 Token）…",
   "threebox.sceneCard.loadingContent": "画布已启动，正在装载场景内容（不消耗 Token）…",
   "threebox.sceneCard.loadingProgress": "正在装载场景内容 {done}/{total}（不消耗 Token）…",
+  "threebox.sceneCard.preparingFrame": "场景内容已装载，正在准备字体、纹理和首帧（不消耗 Token）…",
   "threebox.sceneCard.texturePlanned": "正在完善纹理 · 0/{total}",
   "threebox.sceneCard.textureProgress": "正在完善纹理 · {completed}/{total}",
   "threebox.sceneCard.textureLicensePending": "已完善 {assignments} 项 · {pendingLicense} 项需许可确认",

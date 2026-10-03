@@ -20,6 +20,7 @@ export function subscribeSceneDiagnosticLanguage(listener) {
 export function describeSceneDiagnostic(item) {
   const en = english();
   const labels = {
+    TEXT_SDF_FALLBACK: en ? "SDF font unavailable; using local text. The original font can be retried on reload." : "SDF 字体暂不可用，已使用本地文字；重新加载时仍会尝试原字体。",
     TEXTURE_RESOURCE_FAILED: en ? "Texture unavailable; the previous map or base material is retained." : "纹理未能加载，已保留原贴图或基础材质。",
     BACKDROP_RESOURCE_FAILED: en ? "Background/environment unavailable; the previous value is retained." : "背景或环境贴图未能加载，已保留原设置。",
     MODEL_RESOURCE_FAILED: en ? "An imported model resource is unavailable." : "导入模型的部分资源未能加载。",

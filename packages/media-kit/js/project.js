@@ -127,6 +127,9 @@ export async function createMediaProject(input, options = {}) {
   }
   const api = {
     canvas, document, duration, width, height, resolveAsset: (url, context) => resolveAsset(source, url, context),
+    get resourceDiagnostics() {
+      return [...instances].flatMap(([clipId, { runtime }]) => (runtime.runtimeContext?.resourceDiagnostics || []).map(entry => ({ ...entry, clipId })));
+    },
     renderAt(time) {
       const task = renderQueue.then(() => renderFrame(time));
       renderQueue = task.catch(() => {}); return task;

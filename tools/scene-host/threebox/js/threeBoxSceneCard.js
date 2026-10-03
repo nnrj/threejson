@@ -297,7 +297,9 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
     loadingMask.classList.toggle("sceneCardLoadingMaskCompact", Boolean(runtime));
     const done = Number(deploy?.done);
     const total = Number(deploy?.total);
-    loadingMask.textContent = Number.isFinite(done) && Number.isFinite(total) && total > 0
+    loadingMask.textContent = Number.isFinite(total) && total > 0 && done >= total
+      ? t("threebox.sceneCard.preparingFrame", "场景内容已装载，正在准备字体、纹理和首帧（不消耗 Token）…")
+      : Number.isFinite(done) && Number.isFinite(total) && total > 0
       ? t(
           "threebox.sceneCard.loadingProgress",
           "正在装载场景内容 {done}/{total}（不消耗 Token）…",

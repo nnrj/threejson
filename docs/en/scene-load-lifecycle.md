@@ -31,4 +31,8 @@ When `sceneConfig.intro.postLoad` is configured, core displays a DOM intro overl
 
 ## Text Font Deployment
 
-Before canonical object deployment, `preloadSceneTextFonts(sceneConfig, objectList)` preloads SDF text fonts only when the scene needs them. Without SDF text, it is a no-op. Bare ESM pages that use SDF text should configure `troika-three-text` in the import map. `fflate` is unrelated and is needed only by `.tjz` archive APIs.
+SDF builders prepare their own glyphs concurrently. Only explicitly configured `sceneConfig.textFont.preloadCharacters` starts a separate warmup, which is awaited before object deployment; a fire-and-forget duplicate warmup could otherwise finish after the first video frame. Synchronous loaders use texture labels and start no SDF font requests.
+
+Deployment progress `done === total` counts objects, not ready fonts/textures. Video timelines await those resources before rendering their first frame. SDF preparation is cancellable and uses a 15-second watchdog because Troika's callback-only API does not report all font/worker failures. `createJsonScene(payload, { textLoadTimeoutMs })` lets the host extend the deadline or disable it with `0`/`Infinity`. If preparation fails or times out, local canvas text preserves the authored ID, transforms, color and approximate world-space text size, reports `TEXT_SDF_FALLBACK`, and leaves the original SDF JSON intact for retry. Outline/curvature and exact font metrics may differ in the fallback. Cancellation/disposal does not create fallback objects.
+
+Scene-wide font defaults survive normalization; per-text Unicode font sources are isolated between scenes. Bare ESM pages using SDF text need `troika-three-text` in their import map. `fflate` is unrelated and needed only by `.tjz` archive APIs.

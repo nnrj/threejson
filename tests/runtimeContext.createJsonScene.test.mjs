@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import { createJsonScene } from "../core/handler/sceneLoadHandler.js";
 import { getObjectByThreeJsonId } from "../core/handler/objectRegistry.js";
+import { registerObjectReadiness } from "../core/resource/objectReadiness.js";
 
 function boxPayload(threeJsonId) {
   return {
@@ -20,6 +21,21 @@ function boxPayload(threeJsonId) {
     }
   };
 }
+
+test("createJsonScene forwards cancellation to video resource preparation after full deploy", async () => {
+  const controller = new AbortController();
+  let runtime;
+  const pending = createJsonScene({ ...boxPayload("pending-text"), timeline: { duration: 2 } }, {
+    signal: controller.signal,
+    onSceneReady(context) {
+      runtime = context.runtime;
+      registerObjectReadiness(runtime.scene, new Promise(() => {}));
+      setTimeout(() => controller.abort(), 5);
+    }
+  });
+  await assert.rejects(pending, { name: "AbortError" });
+  assert.equal(runtime.runtimeContext.disposed, true, "failed preparations release their runtime");
+});
 
 test("two concurrently-created scenes with the same threeJsonId stay isolated end-to-end", async () => {
   const [runtimeA, runtimeB] = await Promise.all([

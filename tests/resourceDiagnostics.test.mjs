@@ -19,6 +19,7 @@ test("diagnostic language changes use one shared observer and dispose subscripti
     document.documentElement.lang = "en"; notify();
     assert.equal(updates, 2); assert.equal(sceneDiagnosticTitle(), "Scene notices");
     assert.match(describeSceneDiagnostic({ code: "TEXTURE_RESOURCE_FAILED" }), /Texture unavailable/);
+    assert.match(describeSceneDiagnostic({ code: "TEXT_SDF_FALLBACK" }), /using local text/);
     first(); notify(); assert.equal(updates, 3); assert.equal(disconnected, 0);
     second(); assert.equal(disconnected, 1);
   } finally {

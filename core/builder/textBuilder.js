@@ -140,14 +140,15 @@ export function deployText(parent, record, ctx = {}) {
  * @param {object[]} [objectList]
  * @returns {Promise<void>}
  */
-export async function preloadSceneTextFonts(sceneConfig, objectList = []) {
+export async function preloadSceneTextFonts(sceneConfig, objectList = [], ctx = {}) {
   if (!sceneNeedsSdfText(sceneConfig, objectList)) {
     return;
   }
   try {
     const { preloadSceneTextFonts: preload } = await loadSdfTextModule();
-    preload(sceneConfig, objectList);
+    await preload(sceneConfig, objectList, ctx);
   } catch (err) {
+    if (err?.name === "AbortError") throw err;
     log.warn(
       "[ThreeJSON] text font preload skipped:",
       err?.message || err

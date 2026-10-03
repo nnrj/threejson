@@ -39,10 +39,12 @@
 
 在 `deployIntoTarget`（异步 `createJsonScene` / `deployJsonScene`）内，runtime 就绪后、**`runCanonicalObjectDeploy` 之前**：
 
-1. **`preloadSceneTextFonts(sceneConfig, objectList)`** — 仅当 `sceneNeedsSdfText()` 为真（至少一条 `objType: "text"` 且 `mode: "sdf"` 或默认）时执行；经 `loadSdfTextModule()` 懒加载 `troika-three-text`，并按 `sceneConfig.textFont.preloadCharacters` 与各条 `content` 预热字形。无 SDF 文字时为 no-op。
-2. **逐条 `createText`** — 在 text 部署阶段调用；可能返回 `Promise`（`void Promise.resolve(createText(...))`）。SDF / mesh 加载或构建失败时降级为 `texture`，不阻塞整场景。
+1. **`preloadSceneTextFonts(sceneConfig, objectList)`** — 按需懒加载 `troika-three-text`，只有显式指定 `sceneConfig.textFont.preloadCharacters` 才额外预热，并等待完成。每条 SDF 文字自身已会准备字形，不再重复发起未等待的后台预热，避免“文字布局完成、字形图集尚未生成”的空白首帧。
+2. **逐条 `createTextAsync`** — 各文字并行准备字形，时间线在首帧前等待就绪。字体或 worker 不可用时使用本地 Canvas 文字兜底，并记录 `TEXT_SDF_FALLBACK` 警告；取消或销毁不会再创建兜底对象。
 
-同步路径（`createJsonSceneSimple`、`deployJsonSceneSimple`）在同步 deploy 前 `void preloadSceneTextFonts(...)`（fire-and-forget）。
+同步路径（`createJsonSceneSimple`、`deployJsonSceneSimple`）使用 texture 文字，不发起无用的 SDF 字体请求。
+
+部署进度 `done === total` 仅表示对象装配结束，不表示字体、纹理和首帧就绪。Troika 的回调式 API 对部分字体/worker 故障不返回失败，因此 SDF 准备默认使用 **15 秒可取消的等待期限**。宿主可通过 `createJsonScene(payload, { textLoadTimeoutMs })` 调整，`0` / `Infinity` 表示关闭期限。兜底保留 ID、变换、颜色和近似世界尺寸，不修改原始 SDF JSON，后续加载仍可重试原字体；轮廓、曲率和精确字体度量可能不同。场景级 `textFont` 在规范化过程中保留，各文字的 Unicode 字体来源互不污染。
 
 **宿主 import map**：裸 ESM 页面若加载 SDF 文字，只需为该能力配置 `troika-three-text`；`fflate` 与文字无关，仅供 `.tjz` 归档 API 使用。见 [quick-start.md](./quick-start.md) / [en/quick-start.md](../en/quick-start.md)。
 
@@ -111,10 +113,10 @@ When `sceneConfig.intro.postLoad` is set, core shows a DOM splash on the canvas 
 
 Inside `deployIntoTarget` (async `createJsonScene` / `deployJsonScene`), after runtime is ready and **before** `runCanonicalObjectDeploy`:
 
-1. **`preloadSceneTextFonts(sceneConfig, objectList)`** — runs only when `sceneNeedsSdfText()` is true (at least one `objType: "text"` with `mode: "sdf"` or default). Lazy-loads `troika-three-text` via `loadSdfTextModule()` and warms glyphs from `sceneConfig.textFont.preloadCharacters` and per-record `content`. No-op when the scene has no SDF text.
-2. **`createText` per record** — invoked during the text deploy phase; may return a `Promise` (`void Promise.resolve(createText(...))`). SDF / mesh load or build failure falls back to `texture` without blocking the rest of the scene.
+1. **`preloadSceneTextFonts(sceneConfig, objectList)`** — lazy-loads SDF support only as needed. Only explicit `textFont.preloadCharacters` triggers an extra, awaited warmup; individual text builders already prepare their glyphs.
+2. **`createTextAsync` per record** — starts concurrent, cancellable glyph preparation. Video timelines await readiness. Font/worker failures use local canvas text and report `TEXT_SDF_FALLBACK`, without changing the authored SDF descriptor. The host can configure `textLoadTimeoutMs` (default 15000; 0/Infinity disables the deadline).
 
-Sync paths (`createJsonSceneSimple`, `deployJsonSceneSimple`) call `void preloadSceneTextFonts(...)` (fire-and-forget) before synchronous deploy.
+Sync paths (`createJsonSceneSimple`, `deployJsonSceneSimple`) render texture labels and do not start SDF font requests.
 
 **Host import map**: bare-ESM pages that load SDF text need only `troika-three-text`; `fflate` is unrelated and is used only by `.tjz` archive APIs. See [quick-start.md](./quick-start.md) / [en/quick-start.md](../en/quick-start.md).
 

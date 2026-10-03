@@ -1124,7 +1124,7 @@ async function deployIntoTarget(target, normalized, options = {}) {
     renderer: runtime.renderer ?? null,
     composer: runtime.composer ?? options.composer ?? null
   };
-  await preloadSceneTextFonts(normalized.sceneConfig, normalized.objectList);
+  await preloadSceneTextFonts(normalized.sceneConfig, normalized.objectList, { scene, signal: options.signal });
   await runCanonicalObjectDeploy(scene, normalized, options, deployHints);
   const designState = normalized.designEvaluation ? applySceneDesignRelations(scene, normalized.designEvaluation.payload, normalized.designEvaluation.relations) : null;
 
@@ -1216,7 +1216,8 @@ function deployIntoTargetSimple(target, normalized, options = {}) {
     renderer: runtime.renderer ?? null,
     composer: runtime.composer ?? options.composer ?? null
   };
-  void preloadSceneTextFonts(normalized.sceneConfig, normalized.objectList);
+  // The synchronous path creates texture labels, so it must not start an
+  // unobserved SDF warmup or network request for text it will never render.
   deployCanonicalObjectList(scene, normalized, options, deployHints);
   const designState = normalized.designEvaluation ? applySceneDesignRelations(scene, normalized.designEvaluation.payload, normalized.designEvaluation.relations) : null;
 
@@ -1656,7 +1657,7 @@ async function createJsonScene(payload, options = {}) {
     attachLifecycleBusToRuntime(deployed, bus, runtimeCtx);
     if (payload?.timeline && options.timeline !== false) {
       const { attachSceneTimeline } = await import("../timeline/playback.js");
-      await attachSceneTimeline(deployed, payload.timeline, { autoPlay: options.timelineAutoPlay ?? normalized.renderLoopConfig?.autoStart !== false });
+      await attachSceneTimeline(deployed, payload.timeline, { signal: options.signal, autoPlay: options.timelineAutoPlay ?? normalized.renderLoopConfig?.autoStart !== false });
     }
     return deployed;
   } catch (error) {
@@ -1908,7 +1909,7 @@ async function deployJsonScene(target, payload, options = {}) {
   await runScenePostLoadIntroIfConfigured(normalized, options);
   if (payload.timeline && options.timeline !== false && runtime.renderLoop) {
     const { attachSceneTimeline } = await import("../timeline/playback.js");
-    await attachSceneTimeline(runtime, payload.timeline, { autoPlay: options.timelineAutoPlay ?? normalized.renderLoopConfig?.autoStart !== false });
+    await attachSceneTimeline(runtime, payload.timeline, { signal: options.signal, autoPlay: options.timelineAutoPlay ?? normalized.renderLoopConfig?.autoStart !== false });
   }
   return deployed;
 }

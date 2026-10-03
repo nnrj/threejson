@@ -7,6 +7,11 @@ export function createMediaCardSession(options = {}) {
   let queue = Promise.resolve(), controller = new AbortController(), transport = null;
   let audioPlayback = null, mixerPrepared = false;
   let generation = 0, unlinkSignal = () => {};
+  let diagnosticKey = "";
+  const publishDiagnostics = () => {
+    const entries = project?.resourceDiagnostics || [], nextKey = JSON.stringify(entries);
+    if (nextKey !== diagnosticKey) { diagnosticKey = nextKey; options.onDiagnosticsChanged?.(entries); }
+  };
   const key = {}, pool = options.viewportPool;
   const check = () => { if (disposed) throw new DOMException("Media card disposed.", "AbortError"); };
   const enqueue = fn => { const task = queue.then(() => { check(); return fn(); }); queue = task.catch(() => {}); return task; };
@@ -30,7 +35,7 @@ export function createMediaCardSession(options = {}) {
     try {
       project = await kit.createMediaProject(source, { canvas: viewport.canvas, width: viewport.canvas.width, height: viewport.canvas.height, signal: lifetime.signal,
         createScene: options.createRuntime, runtimeOptions: options.getRuntimeOptions?.({ authoritative: true }) });
-      await project.renderAt(Math.min(time, Math.max(0, project.duration - .001))); check();
+      await project.renderAt(Math.min(time, Math.max(0, project.duration - .001))); check(); publishDiagnostics();
       viewport.commit({ resize() {}, renderOnce() {} });
       // A composition is a fixed-aspect movie, not an interactive perspective
       // camera. Scale the compositor when a chat/mobile viewport changes size.
@@ -45,7 +50,7 @@ export function createMediaCardSession(options = {}) {
         slider.type = "range"; slider.min = "0"; slider.max = String(project.duration); slider.step = ".01"; slider.value = String(time); slider.setAttribute("aria-label", "Video time"); slider.style.flex = "1"; slider.style.minWidth = "35px";
         label.style.fontSize = "11px"; label.style.whiteSpace = "nowrap";
         label.textContent = `${time.toFixed(1)} / ${project.duration.toFixed(1)}s`;
-        const paint = async value => { if (!project) return; time = value; await project.renderAt(Math.min(value, Math.max(0, project.duration - .000001))); slider.value = String(value); label.textContent = `${value.toFixed(1)} / ${project.duration.toFixed(1)}s`; };
+        const paint = async value => { if (!project) return; time = value; await project.renderAt(Math.min(value, Math.max(0, project.duration - .000001))); publishDiagnostics(); slider.value = String(value); label.textContent = `${value.toFixed(1)} / ${project.duration.toFixed(1)}s`; };
         slider.oninput = () => { stop(); button.textContent = "▶"; void enqueue(() => paint(Number(slider.value))).catch(options.onError || console.warn); };
         button.onclick = async () => {
           if (playing) { stop(); button.textContent = "▶"; return; }

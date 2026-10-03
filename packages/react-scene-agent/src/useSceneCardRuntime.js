@@ -175,7 +175,9 @@ export function useSceneCardRuntime(options = {}) {
     const done = Number(deploy?.done);
     const total = Number(deploy?.total);
     setLoadingText(
-      Number.isFinite(done) && Number.isFinite(total) && total > 0
+      Number.isFinite(total) && total > 0 && done >= total
+        ? translate(optionsRef.current, "sceneAgent.sceneCard.preparingFrame", "场景内容已装载，正在准备字体、纹理和首帧（不消耗 Token）…")
+        : Number.isFinite(done) && Number.isFinite(total) && total > 0
         ? translate(optionsRef.current, "sceneAgent.sceneCard.loadingProgress", "正在装载场景内容 {done}/{total}（不消耗 Token）…", { done, total })
         : translate(optionsRef.current, "sceneAgent.sceneCard.loadingContent", "画布已启动，正在装载场景内容（不消耗 Token）…")
     );

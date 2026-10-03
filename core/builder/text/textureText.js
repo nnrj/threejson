@@ -14,6 +14,7 @@ import {
   hasValue,
   numberBetween,
   resolveTextRecord,
+  wrapTextForBillboard,
   valueOr
 } from "./textStyleShared.js";
 
@@ -136,26 +137,52 @@ function buildTexture(resolved) {
   return { map, canvasSize };
 }
 
+// SDF fontSize is in world units, whereas legacy texture labels use a fixed
+// plane width. Preserve readable size/anchors when a font cannot be fetched.
+function buildSdfFallbackTexture(resolved) {
+  const fontPx = 64, padding = 4, unit = resolved.fontSize / fontPx;
+  const measure = document.createElement("canvas").getContext("2d");
+  const font = `${fontPx}px ${resolved.fontFamily}`;
+  measure.font = font;
+  const maxWidth = resolved.maxWidth == null ? Infinity : resolved.maxWidth / unit;
+  const lines = [];
+  for (const paragraph of splitLines(resolved.content)) {
+    let line = "";
+    for (const char of paragraph) {
+      if (line && measure.measureText(line + char).width > maxWidth) { lines.push(line); line = ""; }
+      line += char;
+    }
+    lines.push(line);
+  }
+  const lineHeight = Math.ceil(fontPx * (resolved.lineHeight ?? 1.2));
+  const width = Math.ceil(lines.reduce((max, line) => Math.max(max, measure.measureText(line).width), 1) + padding * 2 + 1);
+  const height = Math.ceil(lines.length * lineHeight + padding * 2);
+  const map = createStrTextureMultiline({ str: lines.join("\n"), width, height, font, padding, lineHeight,
+    fillStyle: resolved.color, backgroundColor: "transparent", textBaseline: "top", textAlign: mapAlign(resolved.align) });
+  applyUiTextureSampling(map, resolved.texture);
+  return { map, canvasSize: { width, height }, planeWidth: width * unit };
+}
+
 /**
  * @param {THREE.Object3D} parent
  * @param {object} record
  * @returns {THREE.Object3D|null}
  */
-export function createTextureText(parent, record) {
+export function createTextureText(parent, record, options = {}) {
   if (!parent || !record) {
     return null;
   }
   const resolved = resolveTextRecord(record);
   const textureBlock = resolved.texture;
-  const { map, canvasSize } = buildTexture(resolved);
+  const { map, canvasSize, planeWidth: fallbackWidth } = options.sdfFallback ? buildSdfFallbackTexture(resolved) : buildTexture(resolved);
   const aspect = canvasSize.height / Math.max(1, canvasSize.width);
-  const planeWidth = resolved.maxWidth ?? numberBetween(textureBlock.planeWidth, TEXTURE_DEFAULTS.planeWidth, 0.1, 512);
+  const planeWidth = fallbackWidth ?? resolved.maxWidth ?? numberBetween(textureBlock.planeWidth, TEXTURE_DEFAULTS.planeWidth, 0.1, 512);
   const planeHeight = planeWidth * aspect;
 
   const outRecord = { ...record, objType: "text", mode: "texture" };
   let object3D;
 
-  if (resolved.billboard) {
+  if (resolved.billboard && !options.sdfFallback) {
     const mat = new THREE.SpriteMaterial({
       map,
       transparent: true,
@@ -173,6 +200,7 @@ export function createTextureText(parent, record) {
     applyTextTransform(object3D, { ...record, position: pos, scale, rotation: record.rotation, visible: record.visible });
   } else {
     const geometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
+    if (options.sdfFallback) geometry.translate((0.5 - resolved.anchor.x) * planeWidth, (resolved.anchor.y - 0.5) * planeHeight, 0);
     trackDisposableResource(geometry);
     const mat = new THREE.MeshBasicMaterial({
       map,
@@ -182,11 +210,13 @@ export function createTextureText(parent, record) {
       depthTest: valueOr(textureBlock.depthTest, true)
     });
     trackDisposableResource(mat);
+    if (options.sdfFallback && hasValue(resolved.sdf.fillOpacity)) mat.opacity = Number(resolved.sdf.fillOpacity);
     object3D = new THREE.Mesh(geometry, mat);
     trackDisposableResource(object3D);
     object3D.renderOrder = numberBetween(textureBlock.renderOrder, 0, -1000, 1000);
     applyTextTransform(object3D, record);
     attachBillboardBehavior(object3D, false);
+    if (resolved.billboard) object3D = wrapTextForBillboard(object3D, record, resolved.name);
   }
 
   object3D.name = resolved.name;

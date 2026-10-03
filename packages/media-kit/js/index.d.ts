@@ -23,6 +23,7 @@ export interface OpenMediaDocument {
 }
 export interface MediaProject {
   canvas: HTMLCanvasElement | OffscreenCanvas; document: MediaDocument; duration: number; width: number; height: number;
+  readonly resourceDiagnostics: Array<{ code: string; clipId: string; severity?: string; message?: string; source?: string; objectId?: string }>;
   resolveAsset(url: string, context?: { kind?: string }): Promise<string>; renderAt(time: number): Promise<HTMLCanvasElement | OffscreenCanvas>;
   getAudioClips(): Promise<MediaAudioClip[]>; dispose(): void;
 }

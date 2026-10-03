@@ -10,7 +10,10 @@ const wrappedDisposers = new WeakSet();
 
 function untilAborted(promise, signal) {
   if (!signal) return promise;
-  signal.throwIfAborted();
+  if (signal.aborted) {
+    promise.catch(() => {});
+    return Promise.reject(signal.reason);
+  }
   return new Promise((resolve, reject) => {
     const cancel = () => reject(signal.reason);
     signal.addEventListener("abort", cancel, { once: true });
@@ -33,7 +36,8 @@ export async function prepareTimelineResources(runtime, options = {}) {
     pending.push(whenObjectReady(object));
   });
   visit(runtime.scene.background); visit(runtime.scene.environment);
-  await untilAborted(Promise.all([...textures].map(whenTextureReady).concat(pending)), options.signal);
+  const resources = untilAborted(Promise.all([...textures].map(whenTextureReady).concat(pending)), runtime.runtimeContext?.signal);
+  await untilAborted(resources, options.signal);
   const errors = runtime.runtimeContext?.resourceDiagnostics?.filter((entry) => entry.status === "failed" || entry.severity === "error" || /FAILED|MISSING/.test(entry.code)) || [];
   if (errors.length) throw timelineError("TIMELINE_RESOURCE_FAILED", "Scene resources failed to load.", { diagnostics: errors });
 }
