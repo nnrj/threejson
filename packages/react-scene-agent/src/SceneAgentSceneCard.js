@@ -1,7 +1,8 @@
 /** Unbranded inline live ThreeJSON scene card for conversational authoring hosts. */
-import { createElement as h, useEffect, useState } from "react";
+import { createElement as h, useEffect, useRef, useState } from "react";
 import { useSceneCardRuntime } from "./useSceneCardRuntime.js";
 import { describeSceneDiagnostic, sceneDiagnosticTitle, subscribeSceneDiagnosticLanguage } from "@threejson/host-kit/js/sceneResourceDiagnostics.js";
+import { createSceneCardDownloadMenu } from "@threejson/host-kit/js/sceneCardDownloadMenu.js";
 
 function text(options, key, fallback) {
   return options?.translate?.(key, fallback) || fallback;
@@ -13,6 +14,33 @@ function ActionBtn({ title, glyph, onClick, disabled }) {
     { type: "button", className: "sceneCardActionBtn", title, "aria-label": title, onClick, disabled },
     h("span", { dangerouslySetInnerHTML: { __html: glyph } })
   );
+}
+
+function DownloadButton({ card, options }) {
+  const button = useRef(null), current = useRef({ card, options });
+  current.current = { card, options };
+  const [pending, setPending] = useState(false);
+  const label = text(options, "sceneAgent.sceneCard.download", "下载");
+  useEffect(() => {
+    const menu = createSceneCardDownloadMenu({
+      button: button.current,
+      getItems: () => current.current.card.getDownloadActions().map(id => ({ id, label: {
+        json: text(current.current.options, "sceneAgent.sceneCard.downloadJson", "下载 JSON"),
+        tjz: text(current.current.options, "sceneAgent.sceneCard.downloadTjz", "下载 .tjz 场景包"),
+        mesh: text(current.current.options, "sceneAgent.sceneCard.downloadMesh", "下载三方模型"),
+        video: text(current.current.options, "sceneAgent.sceneCard.downloadVideo", "下载视频")
+      }[id] })),
+      onSelect: async id => {
+        setPending(true);
+        const active = current.current.card;
+        try { await ({ json: active.handleDownloadJson, tjz: active.handleExportTjz, mesh: active.handleExportMesh, video: () => active.handleMediaExport("mp4") })[id](); }
+        finally { setPending(false); }
+      },
+      onError: error => current.current.options.showToast?.(String(error?.message || error), "error")
+    });
+    return () => menu.dispose();
+  }, []);
+  return h("button", { type: "button", className: "sceneCardActionBtn sceneCardDownloadBtn", ref: button, title: label, "aria-label": label, disabled: pending || Boolean(card.exporting) }, `⇩ ${label} ▾`);
 }
 
 export function SceneAgentSceneCard({ sceneJson, label, showToast, options, onReady, managed = false, defer = false }) {
@@ -71,9 +99,7 @@ export function SceneAgentSceneCard({ sceneJson, label, showToast, options, onRe
     h(
       "div",
       { className: "sceneCardActionBar" },
-      action(text(mergedOptions, "sceneAgent.sceneCard.downloadJson", "下载 JSON"), "&#8681;", card.handleDownloadJson),
-      action(text(mergedOptions, "sceneAgent.sceneCard.exportTjz", "导出 .tjz 场景包"), "&#128230;", () => void card.handleExportTjz(), card.exporting === "tjz"),
-      action(text(mergedOptions, "sceneAgent.sceneCard.exportMesh", "导出三方模型"), "&#9672;", () => void card.handleExportMesh(), card.exporting === "mesh"),
+      h(DownloadButton, { card, options: mergedOptions }),
       action(text(mergedOptions, "sceneAgent.sceneCard.mediaExport", "时间线 / 图片 / 视频"), "&#9635;", () => void card.handleMediaExport()),
       mergedOptions.openInEditor
         ? action(text(mergedOptions, "sceneAgent.sceneCard.openInEditor", "在编辑器内打开"), "&#9998;", card.handleOpenEditor)

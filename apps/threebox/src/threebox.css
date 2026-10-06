@@ -170,6 +170,7 @@ button { font: inherit; }
 }
 .sceneCardActionBtn:hover { background: var(--button-hover); color: var(--text); }
 .sceneCardActionBtn:disabled { opacity: 0.5; cursor: default; background: transparent; }
+.sceneCardActionBtn.sceneCardDownloadBtn { width: auto; padding-inline: 9px; gap: 4px; white-space: nowrap; }
 
 /* ---- Post-generation summary (shown below the scene card when enabled in settings) ---- */
 .sceneSummaryText { margin-top: 10px; font-size: 13.5px; line-height: 1.6; color: var(--muted); }

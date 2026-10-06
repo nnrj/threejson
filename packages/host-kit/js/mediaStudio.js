@@ -1,3 +1,5 @@
+import { createMediaNarrationPanel } from "./mediaNarrationPanel.js";
+
 let currentClose = null;
 export const loadMediaKit = () => import("@threejson/media-kit");
 export const packMediaDocument = async (...args) => (await loadMediaKit()).packMediaDocument(...args);
@@ -39,6 +41,7 @@ export async function openSceneMediaStudio(source, options = {}) {
   const width=field(text("宽","Width"),"number",source.output?.width||1920),height=field(text("高","Height"),"number",source.output?.height||1080),fps=field("FPS","number",source.output?.fps||30);
   const actions=row(),format=node("select",undefined,actions);format.setAttribute("aria-label",text("导出格式","Export format"));
   for(const value of ["mp4","webm","gif","png","jpeg","webp"]){const item=node("option",value.toUpperCase(),format);item.value=value;}
+  if (["mp4","webm","gif","png","jpeg","webp"].includes(options.initialFormat)) format.value=options.initialFormat;
   const exportButton=node("button",text("导出","Export"),actions),cancel=node("button",text("取消导出","Cancel export"),actions);cancel.hidden=true;
   const audioLabel=node("label",text("带音轨","Include audio"),actions),audio=node("input",undefined,audioLabel);audio.type="checkbox";audio.checked=true;
   const audioFileButton=node("button",text("导入配乐 / 旁白","Import music / voice"),actions),audioFile=node("input",undefined,actions);audioFile.type="file";audioFile.accept="audio/*";audioFile.hidden=true;
@@ -52,17 +55,25 @@ export async function openSceneMediaStudio(source, options = {}) {
   const listing=node("ul",undefined,summary);
   for(const clip of [...(source.timeline?.clips||[]),...(source.timeline?.audio||[])])node("li",`${clip.id}: ${clip.start||0}s → ${clip.duration??"auto"}s`,listing);
   if(!listing.children.length)node("li",text("单场景；可在 JSON 的 timeline 中编排。","Single scene; author tracks in JSON timeline."),listing);
+  const narrationSection=node("section"); narrationSection.className="mediaNarration";
   const models=node("details");node("summary",text("可选语音模型与缓存","Optional speech models & cache"),models);
-  let modelPanel;
-  models.addEventListener("toggle",async()=>{if(!models.open||models.dataset.loaded)return;models.dataset.loaded="yes";try{const {createAudioModelPanel}=await import("./audioModelPanel.js");if(!closed)modelPanel=createAudioModelPanel(models,{text,catalog:options.modelCatalog});}catch(error){fail(error);}});
+  let modelPanel, narrationPanel;
+  models.addEventListener("toggle",async()=>{if(!models.open||models.dataset.loaded)return;models.dataset.loaded="yes";try{const {createAudioModelPanel}=await import("./audioModelPanel.js");if(!closed)modelPanel=createAudioModelPanel(models,{text,catalog:options.modelCatalog,onChange:()=>void narrationPanel?.refreshAvailability()});}catch(error){delete models.dataset.loaded;fail(error);}});
   const lifecycle=new AbortController();let exportController, project, kit, playing=false, frame, closed=false, audioPlayback, mixer, startTime=0, offset=0, busy=false, ready=false, paintQueue=Promise.resolve(), paintId=0;
   play.disabled=true;exportButton.disabled=true;
   const stopAudio=()=>audioPlayback?.pause();
   const pause=()=>{playing=false;cancelAnimationFrame(frame);stopAudio();play.textContent=text("播放","Play");};
-  const closeStudio=()=>{if(closed)return;closed=true;pause();lifecycle.abort();exportController?.abort();project?.dispose();audioPlayback?.dispose();modelPanel?.dispose();if(localAudioUrl)URL.revokeObjectURL(localAudioUrl);dialog.close();dialog.remove();if(currentClose===closeStudio)currentClose=null;previousFocus?.focus?.();};
+  const closeStudio=()=>{if(closed)return;closed=true;pause();lifecycle.abort();exportController?.abort();narrationPanel?.dispose();project?.dispose();audioPlayback?.dispose();modelPanel?.dispose();if(localAudioUrl)URL.revokeObjectURL(localAudioUrl);dialog.close();dialog.remove();if(currentClose===closeStudio)currentClose=null;previousFocus?.focus?.();};
   currentClose=closeStudio;close.onclick=closeStudio;dialog.addEventListener("cancel",event=>{event.preventDefault();closeStudio();});
   document.body.append(dialog);dialog.showModal();close.focus();
   const fail=(error)=>{if(!closed&&error?.name!=="AbortError")status.textContent=String(error.message||error);};
+  const extraAudio=()=>[...(localAudioUrl?[{id:"$imported-audio",url:localAudioUrl}]:[]),...(narrationPanel?.getAudioClips()||[])];
+  const syncBusy=()=>{
+    play.disabled=exportButton.disabled=busy||!ready;
+    for(const input of [openFile,duration,width,height,fps,format,audio,audioFileButton])input.disabled=busy;
+    modelPanel?.setDisabled(busy);
+    narrationPanel?.setState({ready,busy});
+  };
   const paint=(value)=>{const id=++paintId;paintQueue=paintQueue.catch(()=>{}).then(async()=>{if(closed||id!==paintId)return;await project.renderAt(Math.min(value,Math.max(0,project.duration-1e-6)));if(closed||id!==paintId)return;seek.value=String(value);time.textContent=`${value.toFixed(2)} s`;});return paintQueue;};
   async function playAudio(at){
     stopAudio(); if(!audio.checked||!mixer)return;
@@ -73,11 +84,11 @@ export async function openSceneMediaStudio(source, options = {}) {
   play.onclick=async()=>{if(!ready||busy)return;if(playing){pause();return;}offset=Number(seek.value);if(offset>=Number(duration.value))offset=0;startTime=performance.now();playing=true;play.textContent=text("暂停","Pause");void playAudio(offset).catch(fail);void tick();};
   seek.oninput=()=>{pause();if(ready&&!busy)void paint(Number(seek.value)).catch(fail);};
   duration.onchange=()=>{if(ready&&!busy)void preparePreview().catch(fail);};
-  format.onchange=()=>{const noAudio=["gif","png","jpeg","webp"].includes(format.value);audioLabel.hidden=noAudio;};
+  format.onchange=()=>{const noAudio=["gif","png","jpeg","webp"].includes(format.value);audioLabel.hidden=noAudio;narrationSection.hidden=noAudio;};format.onchange();
   audio.onchange=()=>{if(!audio.checked)stopAudio();};
   cancel.onclick=()=>exportController?.abort();
   exportButton.onclick=async()=>{
-    if(busy||!ready)return;pause();exportController=new AbortController();busy=true;exportButton.disabled=true;play.disabled=true;cancel.hidden=false;progress.hidden=false;progress.value=0;
+    if(busy||!ready)return;pause();exportController=new AbortController();busy=true;syncBusy();cancel.hidden=false;progress.hidden=false;progress.value=0;
     let writable;
     try{
       // A file-backed target keeps long films out of a single in-memory Blob.
@@ -86,7 +97,7 @@ export async function openSceneMediaStudio(source, options = {}) {
         const handle = await showSaveFilePicker({ suggestedName: `${options.name||"threejson-media"}.${format.value}`, types: [{ description: "Video", accept: { [`video/${format.value}`]: [`.${format.value}`] } }] });
         writable = await handle.createWritable();
       }
-      const config={...options.exportOptions,width:Number(width.value),height:Number(height.value),fps:Number(fps.value),end:Number(duration.value),audio:audio.checked,audioClips:localAudioUrl?[{id:"$imported-audio",url:localAudioUrl}]:[],time:Number(seek.value),signal:exportController.signal,onProgress:(value)=>{progress.value=value.progress;status.textContent=`${Math.round(value.progress*100)}%`;}};
+      const config={...options.exportOptions,width:Number(width.value),height:Number(height.value),fps:Number(fps.value),end:Number(duration.value),audio:audio.checked,audioClips:[...(options.exportOptions?.audioClips||[]),...extraAudio()],time:Number(seek.value),signal:exportController.signal,onProgress:(value)=>{progress.value=value.progress;status.textContent=`${Math.round(value.progress*100)}%`;}};
       if (writable) config.writable = writable;
       let result;
       if(["png","jpeg","webp"].includes(format.value))result=await kit.renderImage(source,{...config,type:`image/${format.value}`});
@@ -94,28 +105,36 @@ export async function openSceneMediaStudio(source, options = {}) {
       else result=await kit.renderVideo(source,{...config,format:format.value});
       if(!closed){if(result.blob)save(result.blob,`${options.name||"threejson-media"}.${format.value}`);status.textContent=text("已导出。","Export complete.");}
     }catch(error){await writable?.abort().catch(()=>{});if(error.name==="AbortError")status.textContent=text("导出已取消。","Export cancelled.");else fail(error);}
-    finally{busy=false;exportButton.disabled=false;play.disabled=false;cancel.hidden=true;progress.hidden=true;}
+    finally{busy=false;if(!closed){syncBusy();cancel.hidden=true;progress.hidden=true;}}
   };
   async function preparePreview() {
-    pause();ready=false;play.disabled=true;exportButton.disabled=true;
+    pause();ready=false;syncBusy();
     audioPlayback?.dispose();audioPlayback=null;
     await paintQueue.catch(()=>{});project?.dispose();
     const snapshot=structuredClone(source);seek.max=duration.value;
     canvas.style.aspectRatio=`${Number(width.value)} / ${Number(height.value)}`;
-    project=await kit.createMediaProject(snapshot,{canvas,width:640,height:Math.round(640*Number(height.value)/Number(width.value)),duration:Number(duration.value),signal:lifecycle.signal,audioClips:localAudioUrl?[{id:"$imported-audio",url:localAudioUrl}]:[],...options.projectOptions});
+    project=await kit.createMediaProject(snapshot,{canvas,width:640,height:Math.round(640*Number(height.value)/Number(width.value)),duration:Number(duration.value),...options.projectOptions,signal:lifecycle.signal,audioClips:[...(options.projectOptions?.audioClips||[]),...extraAudio()]});
     if(closed){project.dispose();return{close:closeStudio};}
     listing.replaceChildren();
-    for(const clip of [...(project.document.timeline?.clips||[]),...(project.document.timeline?.audio||[])])node("li",`${clip.id}: ${clip.start||0}s → ${clip.duration??"auto"}s`,listing);
+    for(const clip of [...(project.document.timeline?.clips||[]),...await project.getAudioClips()])node("li",`${clip.id}: ${clip.start||0}s → ${clip.duration??"auto"}s`,listing);
     if(!listing.children.length)node("li",text("单场景；可在 JSON 的 timeline 中编排。","Single scene; author tracks in JSON timeline."),listing);
     await paint(0);
     // A missing optional voice must not prevent viewing/exporting the picture.
-    try { mixer=await kit.prepareProjectAudio(project,{signal:lifecycle.signal});status.textContent=mixer?.duration>Number(duration.value)+.1?text(`音轨长 ${mixer.duration.toFixed(2)} 秒，当前导出范围将裁剪结尾；可增加时长。`,`Audio is ${mixer.duration.toFixed(2)} seconds; the selected range trims its end. Increase duration to keep it.`):text("可播放、拖动时间或导出。","Ready to play, seek or export."); }
-    catch(error){mixer=null;fail(error);}
-    ready=true;play.disabled=false;exportButton.disabled=false;
+    let audioError;
+    try { mixer=await kit.prepareProjectAudio(project,{signal:lifecycle.signal});status.textContent=!mixer?text("当前没有音轨，导出将无声。可生成本地 TTS 旁白或导入配乐。","There are no audio tracks; export will be silent. Generate local TTS narration or import audio."):mixer.duration>Number(duration.value)+.1?text(`音轨长 ${mixer.duration.toFixed(2)} 秒，当前导出范围将裁剪结尾；可增加时长。`,`Audio is ${mixer.duration.toFixed(2)} seconds; the selected range trims its end. Increase duration to keep it.`):text("可播放、拖动时间或导出。","Ready to play, seek or export."); }
+    catch(error){mixer=null;audioError=error;fail(error);}
+    if(closed)return;
+    ready=true;syncBusy();void narrationPanel?.refreshScript();return {audioError};
   }
   try {
     kit=await (options.loadMediaKit?.() || import("@threejson/media-kit"));
     if(typeof source === "string" || source instanceof Blob){const opened=await kit.openMediaDocument(source,{signal:lifecycle.signal});duration.value=String(documentDuration(opened.document));for(const[key,field]of Object.entries({width,height,fps}))if(opened.document.output?.[key])field.value=String(opened.document.output[key]);opened.dispose();}
+    if(closed)return {close:closeStudio};
+    narrationPanel=createMediaNarrationPanel(narrationSection,{text,signal:lifecycle.signal,loadMediaKit:()=>kit,
+      createNarrationHost:options.createNarrationHost,projectOptions:options.projectOptions,
+      getSource:()=>source,getDuration:()=>Number(duration.value),getAudioClips:async()=>(await project?.getAudioClips()||[]).filter(clip=>!clip.id.startsWith("$export-narration-")),
+      openModels:()=>{models.open=true;models.scrollIntoView({block:"nearest"});},
+      onBusy:value=>{pause();busy=value;syncBusy();},onChange:async(change={})=>{if(change.enableAudio)audio.checked=true;const result=await preparePreview();if(result?.audioError)throw result.audioError;}});
     await preparePreview();
   } catch(error){fail(error);}
   return {close:closeStudio};

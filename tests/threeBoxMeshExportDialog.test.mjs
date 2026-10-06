@@ -11,17 +11,15 @@ test("ThreeBox third-party model picker exposes the editor more-formats set", ()
   assert.equal(formats.every((format) => SUPPORTED_MESH_FORMATS.has(format)), true);
 });
 
-test("ThreeBox scene-card model export action is immediately after .tjz export", async () => {
+test("ThreeBox scene-card model export is available through the shared download menu", async () => {
   const source = await readFile(
     new URL("../tools/scene-host/threebox/js/threeBoxSceneCard.js", import.meta.url),
     "utf8"
   );
-  const tjzAction = 'actionBtnHtml(t("threebox.sceneCard.exportTjz"';
-  const meshAction = 'actionBtnHtml(t("threebox.sceneCard.exportMesh"';
-  const tjzIndex = source.indexOf(tjzAction);
-  const meshIndex = source.indexOf(meshAction);
-  assert.ok(tjzIndex >= 0);
-  assert.ok(meshIndex > tjzIndex);
-  assert.doesNotMatch(source.slice(tjzIndex + tjzAction.length, meshIndex), /actionBtnHtml\(/);
+  assert.match(source, /createSceneCardDownloadMenu\(/);
+  assert.match(source, /getSceneCardDownloadActions\(requireSceneJson\(\)\)/);
+  assert.match(source, /actionBtnHtml\(t\("threebox\.sceneCard\.download"/);
+  assert.doesNotMatch(source, /actionBtnHtml\(t\("threebox\.sceneCard\.(?:downloadJson|exportTjz|exportMesh)"/);
+  assert.match(source, /mesh: handleExportMesh/);
   assert.match(source, /exportMesh\(runtime\.scene, \{/);
 });

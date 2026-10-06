@@ -18,6 +18,7 @@ import { createCanvasRenderActivity } from "../../shared/js/canvasRenderActivity
 import { createSceneCardSession, createSceneCardViewport } from "../../shared/js/sceneCardSession.js";
 import { createSceneResourceDiagnosticsView } from "../../shared/js/sceneResourceDiagnostics.js";
 import { sharedSceneViewportPool } from "../../shared/js/sceneViewportPool.js";
+import { createSceneCardDownloadMenu, getSceneCardDownloadActions } from "../../shared/js/sceneCardDownloadMenu.js";
 
 const EDITOR_OPEN_SCENE_BRIDGE_PREFIX = "threejson.editor.openScene.";
 
@@ -38,7 +39,7 @@ function actionBtnHtml(title, glyph) {
 
 /**
  * Inline scene canvas embedded at the end of an AI-generated chat reply, with an always-visible
- * action bar below the canvas (download JSON / export .tjz / export 3D model / open in editor / open in player /
+ * action bar below the canvas (download menu / open in editor / open in player /
  * fullscreen). Placed below rather than as a canvas hover overlay so it stays reliably reachable
  * regardless of pointer/touch input and doesn't compete with orbit-control drag gestures on the
  * canvas itself.
@@ -173,9 +174,7 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
   const actionBar = document.createElement("div");
   actionBar.className = "sceneCardActionBar";
   actionBar.innerHTML = [
-    actionBtnHtml(t("threebox.sceneCard.downloadJson", "下载 JSON"), "&#8681;"),
-    actionBtnHtml(t("threebox.sceneCard.exportTjz", "导出 .tjz 场景包"), "&#128230;"),
-    actionBtnHtml(t("threebox.sceneCard.exportMesh", "导出三方模型"), "&#9672;"),
+    actionBtnHtml(t("threebox.sceneCard.download", "下载"), "&#8681;"),
     actionBtnHtml(t("threebox.sceneCard.openInEditor", "在编辑器内打开"), "&#9998;"),
     actionBtnHtml(t("threebox.sceneCard.openInPlayer", "在播放器内打开"), "&#9654;"),
     actionBtnHtml(t("threebox.sceneCard.refresh", "刷新画布"), "&#8635;"),
@@ -185,21 +184,35 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
   const mediaBtn = document.createElement("button");
   mediaBtn.type = "button"; mediaBtn.className = "sceneCardActionBtn"; mediaBtn.textContent = "▣";
   mediaBtn.title = t("threebox.sceneCard.mediaExport", "时间线 / 图片 / 视频"); mediaBtn.setAttribute("aria-label", mediaBtn.title);
-  mediaBtn.addEventListener("click", async () => {
-    try { const source = cardSession.export(); const { openSceneMediaStudio } = await import("../../shared/js/mediaStudio.js"); await openSceneMediaStudio(source, { name: currentLabel }); }
-    catch (error) { showToast(String(error.message || error), "error"); }
-  });
+  mediaBtn.addEventListener("click", () => void handleMediaExport());
   actionBar.appendChild(mediaBtn);
   const diagnosticsView = createSceneResourceDiagnosticsView();
   el.appendChild(diagnosticsView.element);
-  const [downloadBtn, exportBtn, exportMeshBtn, openEditorBtn, openPlayerBtn, refreshBtn, fullscreenBtn] =
+  const [downloadBtn, openEditorBtn, openPlayerBtn, refreshBtn, fullscreenBtn] =
     actionBar.querySelectorAll(".sceneCardActionBtn");
+  downloadBtn.classList.add("sceneCardDownloadBtn");
+  downloadBtn.textContent = `⇩ ${t("threebox.sceneCard.download", "下载")} ▾`;
 
   let runtime = null;
   let liveResizeObserver = null;
   let currentSceneJson = null;
   let renderSeq = 0;
   let currentLabel = t("threebox.sceneCard.defaultLabel", "ThreeBox 场景");
+  const downloadMenu = createSceneCardDownloadMenu({
+    button: downloadBtn,
+    getItems: () => getSceneCardDownloadActions(requireSceneJson()).map(id => ({ id, label: {
+      json: t("threebox.sceneCard.downloadJson", "下载 JSON"),
+      tjz: t("threebox.sceneCard.downloadTjz", "下载 .tjz 场景包"),
+      mesh: t("threebox.sceneCard.downloadMesh", "下载三方模型"),
+      video: t("threebox.sceneCard.downloadVideo", "下载视频")
+    }[id] })),
+    onSelect: async (id) => {
+      downloadBtn.disabled = true;
+      try { await ({ json: handleDownloadJson, tjz: handleExportTjz, mesh: handleExportMesh, video: () => handleMediaExport("mp4") })[id](); }
+      finally { downloadBtn.disabled = false; }
+    },
+    onError: error => showToast(String(error?.message || error), "error")
+  });
   const renderActivity = createCanvasRenderActivity({
     element: canvasWrap,
     getRuntime: () => runtime
@@ -360,7 +373,7 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
       } else { liveResizeObserver?.disconnect(); liveResizeObserver = null; }
       renderActivity.sync({ forceFrame: true });
     },
-    onDocumentChanged: (document) => { currentSceneJson = document; }
+    onDocumentChanged: (document) => { currentSceneJson = document; downloadMenu.close(); }
   });
 
   async function activate() {
@@ -428,6 +441,7 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
 
   function dispose() {
     renderSeq++;
+    downloadMenu.dispose();
     clearTimeout(textureBadgeTimer); textureBadgeTimer = null;
     liveResizeObserver?.disconnect(); liveResizeObserver = null;
     renderActivity.dispose(); cardSession.dispose(); diagnosticsView.dispose(); runtime = null; canvas = null;
@@ -443,21 +457,20 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
     return currentSceneJson;
   }
 
-  downloadBtn.addEventListener("click", () => {
+  function handleDownloadJson() {
     const sceneJson = requireSceneJson();
     if (!sceneJson) {
       return;
     }
     const blob = new Blob([JSON.stringify(sceneJson, null, 2)], { type: "application/json" });
     downloadBlob(blob, `${currentLabel}.json`);
-  });
+  }
 
-  exportBtn.addEventListener("click", async () => {
+  async function handleExportTjz() {
     const sceneJson = requireSceneJson();
     if (!sceneJson) {
       return;
     }
-    exportBtn.disabled = true;
     try {
       if (sceneJson.documentType === "composition") {
         const { packMediaDocument } = await import("../../shared/js/mediaStudio.js");
@@ -471,12 +484,10 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
       downloadBlob(blob, `${currentLabel}.tjz`);
     } catch (error) {
       showToast(t("threebox.sceneCard.exportFailed", "导出失败：{error}", { error: error?.message || error }), "error");
-    } finally {
-      exportBtn.disabled = false;
     }
-  });
+  }
 
-  exportMeshBtn.addEventListener("click", async () => {
+  async function handleExportMesh() {
     const sceneJson = requireSceneJson();
     if (!sceneJson) {
       return;
@@ -485,7 +496,6 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
     if (!format) {
       return;
     }
-    exportMeshBtn.disabled = true;
     const formatLabel = format.toUpperCase();
     showToast(t("threebox.sceneCard.exportMeshStarted", "正在导出 {format}…", { format: formatLabel }), "info");
     try {
@@ -517,10 +527,18 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
         t("threebox.sceneCard.exportMeshFailed", "导出三方模型失败：{error}", { error: error?.message || error }),
         "error"
       );
-    } finally {
-      exportMeshBtn.disabled = false;
     }
-  });
+  }
+
+  async function handleMediaExport(initialFormat) {
+    const source = requireSceneJson(); if (!source) return;
+    try {
+      const { openSceneMediaStudio } = await import("../../shared/js/mediaStudio.js");
+      const runtimeOptions = { assetsBase: sceneHostAssetUrl("assets/"), resolveResourceUrl: cardOptions.resolveResourceUrl,
+        assetGateway: typeof cardOptions.assetGateway === "function" ? cardOptions.assetGateway() : cardOptions.assetGateway };
+      await openSceneMediaStudio(source, { name: currentLabel, initialFormat, projectOptions: { runtimeOptions }, exportOptions: { runtimeOptions } });
+    } catch (error) { showToast(String(error.message || error), "error"); }
+  }
 
   openEditorBtn.addEventListener("click", async () => {
     let sceneJson = requireSceneJson();

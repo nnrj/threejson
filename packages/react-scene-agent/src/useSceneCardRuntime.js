@@ -8,6 +8,7 @@ import { createSceneCardSession, createSceneCardViewport } from "@threejson/host
 import { captureMeshReviewViews } from "@threejson/host-kit/js/meshViewCapture.js";
 import { sharedSceneViewportPool } from "@threejson/host-kit/js/sceneViewportPool.js";
 import { ensureSceneHostSceneCapabilitiesForPayload } from "@threejson/host-kit/js/sceneCapabilities.js";
+import { getSceneCardDownloadActions } from "@threejson/host-kit/js/sceneCardDownloadMenu.js";
 
 function interpolate(text, params) {
   let result = String(text || "");
@@ -478,13 +479,23 @@ export function useSceneCardRuntime(options = {}) {
     }
   }, [requireSceneJson, toast]);
 
+  const handleMediaExport = useCallback(async (initialFormat) => {
+    const source = requireSceneJson(); if (!source) return;
+    try {
+      const { openSceneMediaStudio } = await import("@threejson/host-kit/js/mediaStudio.js");
+      const runtimeOptions = { assetsBase: optionsRef.current.assetsBase || sceneHostAssetUrl("assets/"), resolveResourceUrl: optionsRef.current.resolveResourceUrl,
+        assetGateway: typeof optionsRef.current.assetGateway === "function" ? optionsRef.current.assetGateway() : optionsRef.current.assetGateway };
+      await openSceneMediaStudio(source, { name: currentLabelRef.current, initialFormat, projectOptions: { runtimeOptions }, exportOptions: { runtimeOptions } });
+    } catch (error) { toast(String(error.message || error), "error"); }
+  }, [requireSceneJson, toast]);
+
   const handleOpenPlayer = useCallback(async () => {
     const sceneJson = requireSceneJson();
     if (!sceneJson) {
       return;
     }
     try {
-      if (sceneJson.documentType === "composition") { const { openSceneMediaStudio } = await import("@threejson/host-kit/js/mediaStudio.js"); await openSceneMediaStudio(sceneJson, { name: currentLabelRef.current }); return; }
+      if (sceneJson.documentType === "composition") { await handleMediaExport(); return; }
       if (!optionsRef.current.openInPlayer) throw new Error("Player navigation is not configured.");
       await optionsRef.current.openInPlayer(sceneJson, currentLabelRef.current);
       toast(translate(optionsRef.current, "sceneAgent.sceneCard.openInPlayerSuccess", "已将场景发送到播放器。"), "success");
@@ -495,7 +506,7 @@ export function useSceneCardRuntime(options = {}) {
         "error"
       );
     }
-  }, [requireSceneJson, toast]);
+  }, [requireSceneJson, toast, handleMediaExport]);
 
   const handleRefresh = useCallback(async () => {
     const sceneJson = requireSceneJson();
@@ -549,12 +560,9 @@ export function useSceneCardRuntime(options = {}) {
     setPreviewAuxiliaryLightsEnabled,
     dispose,
     getRuntime: () => runtimeRef.current,
+    getDownloadActions: () => getSceneCardDownloadActions(requireSceneJson()),
     handleDownloadJson,
-    handleMediaExport: async () => {
-      const source = requireSceneJson(); if (!source) return;
-      try { const { openSceneMediaStudio } = await import("@threejson/host-kit/js/mediaStudio.js"); await openSceneMediaStudio(source, { name: currentLabelRef.current }); }
-      catch (error) { toast(String(error.message || error), "error"); }
-    },
+    handleMediaExport,
     handleExportTjz,
     handleExportMesh,
     handleOpenEditor,

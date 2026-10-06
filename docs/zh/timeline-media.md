@@ -43,6 +43,8 @@ Particle V2 的 `render.opacity`（默认 1）与 `material.opacity` 绑定同�
 
 ThreeBox 自动模式在现有 AI 协商中返回 `outputKind:"scene"|"video"`，不再通过提示词关键词进行二次路由。生成前显示将制作的类型，用户可停止；判定失败不默认为场景。重试保留类型，继续已有 composition 时保持视频类型；显式输出设置优先。
 
+画布下方统一使用「下载」菜单：普通场景提供 JSON、.tjz 和三方模型；composition 或带有效时间线的单场景提供视频、.tjz 和 JSON。下载视频打开本地媒体导出窗口，选择 MP4/WebM、尺寸、帧率及音轨后逐帧导出，不调用 AI；浏览器须支持所选编码器。进度条右侧的媒体导出入口保留，JSON/.tjz 保存可编辑真源而非录制后的帧。
+
 createJsonScene 按需安装 runtime.timeline：play/pause/seek/renderAt/reset。timelineAutoPlay:false 禁止自动推进。同步 createJsonSceneSimple 不安装异步时间线，改用异步加载或显式 attachSceneTimeline。编辑 `/timeline` 仍走 JSON Patch / SceneSession；帧求值不写回真源，也不产生逐帧撤销记录。元数据随标准/友好 JSON 转换、导出保留。
 
 只有包含有效相机轨道时，时间线接管相机；仅有对象动画的场景继续允许交互转动视角。字幕的 x/y 为相对画布比例，显式 fontSize/outlineWidth 以 `output.height`（缺省 1080）为设计分辨率，预览与导出按比例缩放。
@@ -130,6 +132,8 @@ audio-kit 主入口提供 compileScore/createScoreRenderer/synthesizeScore、PCM
 模型 manifest 包含 id/version/adapter/license/files；文件包含 role/bytes/sha256、可选 path/url。用户选择后才调用 download 或 import。模型和运行库必须配套，许可分别记录。模型不自动随作品分享，生成的 WAV 等才是作品资源。
 
 `/models` 的 getBuiltinAudioModels/createLocalSpeechProducer 提供固定版本 MeloTTS + Sherpa-ONNX 单线程 WASM，约 71 MiB，SHA-256/大小/许可固定；权重不随 npm 包下载。已在本机 Edge 用真实模型合成中文 PCM，不要求跨源隔离；CSP 需允许其 Worker/WASM/blob 模块。单音色，中英混读受词典影响，内存成本明显高于电子合成；未做手机实机或专业配音音质验收。Kokoro 仍为后续适配，speechSynthesis 只可试听。
+
+导出窗口的“带音轨”只包含已有声音，模型下拉项也只是查看待安装模型；两者均不会自动给字幕配音。“本地 TTS 旁白”提供独立的“生成本地旁白”按钮：先在“管理语音模型”中下载/导入并启用模型，再选择时间线字幕、分镜台词或自填文本，调整语速后生成。自动模式优先字幕，无字幕时使用 `production.shots[id].narration`；不会把所有 3D 标签当作台词。生成结果是 PCM/WAV 音频，可试听并混入 MP4/WebM，保留原配乐。已标记为旁白的段落不会重复配音；字幕/镜头的裁剪、速率映射会计入时间定位。朗读超出可用时段时明确报错，要求调整语速、文本或时间线，不静默截断。支持取消。生成的旁白仅用于本次导出窗口，不改聊天中的原 JSON；关闭后须重新生成。无音轨时明确显示“导出将无声”。模型不会因打开窗口或选择下拉项而下载。
 
 已启用本地旁白后，Agent 可调用 media.shot.narrate。按句合成、按实测 PCM 时长编排并缓存；captions 参数可独立于口播，例如公式显示与读法不同。音频超出镜头会报冲突，显式 extend:true 才延长并移动后续镜头。仅有句级对齐，不声称词/字级精确。
 

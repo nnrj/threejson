@@ -39,7 +39,11 @@ export function createPcmMixer(clips, options = {}) {
     if (!(Number.isFinite(clip.rate ?? 1) && (clip.rate ?? 1) > 0) || !Number.isFinite(clip.start ?? 0) || (clip.start ?? 0) < 0 || !Number.isFinite(clip.sourceStart ?? 0) || (clip.sourceStart ?? 0) < 0) throw new Error("Invalid audio clip timing.");
     if (clip.sourceStart >= source.duration) throw new Error("Audio trim begins beyond the source.");
     const available = (source.duration - (clip.sourceStart || 0)) / (clip.rate ?? 1);
-    if (clip.duration > available + 1e-6 && !clip.loop && clip.padSilence !== true) throw new Error(`Audio clip ${clip.id || ""} exceeds source duration; enable loop or explicit silence padding.`);
+    // Browser decoding may resample 44.1 kHz TTS WAV to 48 kHz and round its
+    // frame count. A duration measured before encoding can differ by one sample.
+    // Tolerate only that quantization, not genuinely missing/truncated audio.
+    const tolerance = Math.max(1e-6, 1 / (source.sampleRate * (clip.rate ?? 1)));
+    if (clip.duration > available + tolerance && !clip.loop && clip.padSilence !== true) throw new Error(`Audio clip ${clip.id || ""} exceeds source duration; enable loop or explicit silence padding.`);
   }
   return {
     sampleRate, channels,

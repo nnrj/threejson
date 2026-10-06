@@ -26,7 +26,7 @@ try {
       await page.locator("#sample").selectOption(sample); await page.locator("#open").click();
       await page.waitForFunction(() => [...document.querySelectorAll(".threejsonMediaStudio button")].some((button) => button.textContent === "播放" && !button.disabled), { timeout: 45000 });
       item.initialStatus = await page.locator(".mediaStatus").innerText();
-      if (!/可播放/.test(item.initialStatus)) throw new Error(item.initialStatus);
+      if (!/可播放|当前没有音轨/.test(item.initialStatus)) throw new Error(item.initialStatus);
       const slider = page.locator(".threejsonMediaStudio input[type=range]");
       const sampleTime = sample === "composition" ? 13 : sample === "particle-morph" ? 6 : 4;
       await slider.fill(String(sampleTime)); await slider.dispatchEvent("input");
@@ -53,7 +53,7 @@ try {
   // Mirror the tested deploy allowlist: no unrelated workspace package is served.
   await page.route("**/packages/**", route => {
     const name = new URL(route.request().url()).pathname;
-    if (/\/packages\/(?:audio-kit|media-kit)\/js\//.test(name) && !name.includes("/nodeModels") || /\/packages\/host-kit\/js\/(?:mediaStudio|audioModelPanel|localSpeech)\.js$/.test(name)) return route.continue();
+    if (/\/packages\/(?:audio-kit|media-kit)\/js\//.test(name) && !name.includes("/nodeModels") || /\/packages\/host-kit\/js\/(?:mediaStudio|mediaNarrationPanel|mediaNarrationExport|audioModelPanel|localSpeech)\.js$/.test(name)) return route.continue();
     return route.abort("blockedbyclient");
   });
   try {
@@ -67,7 +67,7 @@ try {
     await page.locator("#menuExportMedia").click();
     await page.waitForFunction(() => [...document.querySelectorAll(".threejsonMediaStudio button")].some(button => button.textContent === "播放" && !button.disabled), { timeout: 45000 });
     native.status = await page.locator(".mediaStatus").innerText();
-    if (!/可播放/.test(native.status)) throw new Error(native.status);
+    if (!/可播放|当前没有音轨/.test(native.status)) throw new Error(native.status);
     native.palette = await page.locator(".threejsonMediaStudio").evaluate(node => ({ background: getComputedStyle(node).backgroundColor, text: getComputedStyle(node).color }));
     await page.screenshot({ path: path.join(output, "native-editor.png") });
     await page.getByRole("button", { name: "关闭", exact: true }).click();

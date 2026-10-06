@@ -97,6 +97,12 @@
   opacity: 0.5;
   cursor: default;
 }
+:where(.sceneAgentSceneCard) .sceneCardActionBtn.sceneCardDownloadBtn {
+  width: auto;
+  padding-inline: 9px;
+  gap: 4px;
+  white-space: nowrap;
+}
 .sceneAgentProgress {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);

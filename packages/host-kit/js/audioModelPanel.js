@@ -8,8 +8,8 @@ export function createAudioModelPanel(container, options = {}) {
     parent.append(node); return node;
   };
   element("p", text(
-    "本地语音为可选能力。导入或下载模型后，仍需匹配的语音运行库；缓存成功不等于音色已经通过验证。模型不会随场景分享。",
-    "Local speech is optional. Installed models still need a matching speech runtime; cached does not mean voice quality has been verified. Models are not included when sharing scenes."
+    "选择下拉项仅查看模型，不会下载或生成声音。内置模型下载/导入后可启用，再到上方点击“生成本地旁白”；自定义模型仍需匹配的运行库。模型不会随场景分享。",
+    "Selecting a model only displays its details; it does not download or generate speech. Install and enable a built-in model, then click Generate local narration above. Custom models still need a matching runtime. Models are not included when sharing scenes."
   ));
   const status = element("p"); status.setAttribute("role", "status");
   const controls = element("div"); controls.className = "mediaRow";
@@ -27,13 +27,14 @@ export function createAudioModelPanel(container, options = {}) {
   const local = element("button", text("导入所选文件", "Import selected files"), actions);
   const cancel = element("button", text("取消", "Cancel"), actions); cancel.hidden = true;
   const list = element("ul");
-  let manager, manifest, operation, disposed = false, busy = false, availableCatalog = options.catalog || [];
+  let manager, manifest, operation, disposed = false, busy = false, disabled = false, availableCatalog = options.catalog || [];
   const imports = new Map();
   const error = (value) => { if (!disposed) status.textContent = value.name === "AbortError" ? text("操作已取消。", "Cancelled.") : value.message; };
   function updateButtons() {
-    choose.disabled = catalog.disabled = persist.disabled = busy;
-    download.disabled = busy || !manifest || manifest.files.some((file) => !file.url);
-    local.disabled = busy || !manifest || manifest.files.some((file) => !imports.get(file.role)?.files[0]);
+    choose.disabled = catalog.disabled = persist.disabled = busy || disabled;
+    download.disabled = busy || disabled || !manifest || manifest.files.some((file) => !file.url);
+    local.disabled = busy || disabled || !manifest || manifest.files.some((file) => !imports.get(file.role)?.files[0]);
+    for (const button of list.querySelectorAll("button")) button.disabled = busy || disabled;
     cancel.hidden = !busy;
   }
   async function refresh() {
@@ -46,13 +47,13 @@ export function createAudioModelPanel(container, options = {}) {
       if (availableCatalog.some(model => model.id === item.id && model.adapter === "threejson-melo-wasm-v1")) {
         const enabled = getLocalSpeechPreference() === item.id;
         const activate = element("button", enabled ? text("停用本地旁白", "Disable local narration") : text("启用本地旁白", "Enable local narration"), row);
-        activate.onclick = async () => { try { setLocalSpeechPreference(enabled ? null : item.id); await refresh(); } catch (failure) { error(failure); } };
+        activate.onclick = async () => { if(busy||disabled)return;try { setLocalSpeechPreference(enabled ? null : item.id); await refresh(); } catch (failure) { error(failure); } };
       }
       const remove = element("button", text("删除缓存", "Remove cache"), row);
       remove.onclick = async () => {
-        if (busy) return;
+        if (busy || disabled) return;
         if (remove.dataset.confirm !== "yes") { remove.dataset.confirm = "yes"; remove.textContent = text("确认删除缓存", "Confirm removal"); return; }
-        try { await manager.remove(item); await refresh(); } catch (failure) { error(failure); }
+        try { await manager.remove(item); if(getLocalSpeechPreference()===item.id)setLocalSpeechPreference(null);await refresh(); } catch (failure) { error(failure); }
       };
     }
     if (!saved.length) element("li", text("没有已缓存的模型。", "No cached models."), list);
@@ -60,6 +61,7 @@ export function createAudioModelPanel(container, options = {}) {
       `站点存储已用 ${(estimate.usage / 1048576).toFixed(1)} MiB / ${(estimate.quota / 1048576).toFixed(1)} MiB；浏览器仍可能清理缓存。`,
       `Site storage: ${(estimate.usage / 1048576).toFixed(1)} / ${(estimate.quota / 1048576).toFixed(1)} MiB. Browsers may still evict data.`
     );
+    updateButtons();options.onChange?.();
   }
   async function select(input) {
     const { validateAudioModelManifest } = await import("@threejson/audio-kit/models");
@@ -75,7 +77,7 @@ export function createAudioModelPanel(container, options = {}) {
     updateButtons();
   }
   async function install(fromFiles) {
-    if (!manager || !manifest || busy) return;
+    if (!manager || !manifest || busy || disabled) return;
     busy = true; operation = new AbortController(); updateButtons();
     const request = { signal: AbortSignal.any([operation.signal, abort.signal]), onProgress: (value) => { status.textContent = `${value.role}: ${Math.round(value.loaded / value.total * 100)}%`; } };
     try {
@@ -103,5 +105,5 @@ export function createAudioModelPanel(container, options = {}) {
     if (disposed) { storage.close?.(); return; }
     manager = sdk.createAudioModelManager(storage); await refresh();
   })().catch(error);
-  return { ready, dispose() { disposed = true; abort.abort(); if (!busy) manager?.close(); } };
+  return { ready, setDisabled(value) { disabled=Boolean(value);updateButtons(); }, dispose() { disposed = true; abort.abort(); if (!busy) manager?.close(); } };
 }

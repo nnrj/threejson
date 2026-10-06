@@ -27,6 +27,16 @@ test("audio and model omissions are explicit, not fake generated speech", async 
   await assert.rejects(produceAudio({ kind: "tts", producer: "missing" }), { code: "AUDIO_PRODUCER_UNAVAILABLE" });
   assert.throws(() => createPcmMixer([{ pcm: { sampleRate: 100, channels: [new Float32Array(100)] }, duration: 10 }]));
 });
+
+test("measured TTS duration survives a one-sample browser resampling rounding", () => {
+  const duration = 240001 / 44100;
+  const pcm = { sampleRate: 48000, channels: [new Float32Array(Math.floor(duration * 48000)).fill(.1)] };
+  for (const rate of [1, 2]) {
+    const mixer = createPcmMixer([{ id: "voice", pcm, duration: duration / rate, rate }]);
+    assert.ok(mixer.render(0, 100).channels[0].some(value => value > 0));
+    assert.throws(() => createPcmMixer([{ id: "voice", pcm, duration: duration / rate + .002, rate }]), /exceeds source duration/);
+  }
+});
 test("lazy score mixing is sample-identical without allocating the whole soundtrack", () => {
   const renderer=createScoreRenderer(score,{sampleRate:8000}),pcm=renderer.render(0,Math.ceil(renderer.duration*8000));
   const settings={start:.2,sourceStart:.1,rate:1.2,duration:.8,loop:true,fadeOut:.1};
