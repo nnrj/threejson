@@ -45,3 +45,13 @@ test("export TTS is measured PCM audio, aligned with source cues and atomic on f
   let count = 0;
   await assert.rejects(synthesizeExportNarration(plan, { available: true, async narrate() { if (++count === 2) throw new Error("fixture failed"); return voice(1).narrate(); } }), /fixture failed/);
 });
+
+test("export narration can fit cue timing with bounded resynthesis, never truncate or overlap", async () => {
+  const speeds = [], plan = { cues: [caption("a", "一句", 1, 2), caption("b", "二句", 4, 2)] };
+  const host = { available: true, async narrate({ speed }) { speeds.push(speed); return voice(2.5 / speed).narrate(); } };
+  const clips = await synthesizeExportNarration(plan, host, { speed: 1, maxSpeed: 1.5 });
+  assert.deepEqual(clips.map(clip => clip.start), [1, 4]);
+  assert.ok(clips.every(clip => clip.duration <= 2));
+  assert.equal(speeds.length, 4); assert.ok(speeds.every(speed => speed <= 1.5));
+  await assert.rejects(synthesizeExportNarration(plan, voice(5), { speed: 1, maxSpeed: 1.5 }), { code: "NARRATION_EXCEEDS_CUE" });
+});

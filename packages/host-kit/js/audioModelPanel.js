@@ -8,8 +8,8 @@ export function createAudioModelPanel(container, options = {}) {
     parent.append(node); return node;
   };
   element("p", text(
-    "选择下拉项仅查看模型，不会下载或生成声音。内置模型下载/导入后可启用，再到上方点击“生成本地旁白”；自定义模型仍需匹配的运行库。模型不会随场景分享。",
-    "Selecting a model only displays its details; it does not download or generate speech. Install and enable a built-in model, then click Generate local narration above. Custom models still need a matching runtime. Models are not included when sharing scenes."
+    "通常无需操作这里：播放或导出时会自动准备默认配音资源。这里仅用于离线导入、清理缓存或选择高级运行库。AI 创作配音开关仅控制 Agent 创作阶段，不影响本次导出的自动旁白。资源不会随场景分享。",
+    "Normally no action is needed here: play/export prepares the default voice automatically. These advanced controls support offline import, cache cleanup and custom runtimes. The AI-creation switch affects Agent generation only, not automatic export narration. Resources are not shared with scenes."
   ));
   const status = element("p"); status.setAttribute("role", "status");
   const controls = element("div"); controls.className = "mediaRow";
@@ -22,10 +22,11 @@ export function createAudioModelPanel(container, options = {}) {
   element("option", text("选择宿主提供的模型…", "Select a host-provided model…"), catalog).value = "";
   (options.catalog || []).forEach((manifest, index) => { element("option", `${manifest.id} / ${manifest.version}`, catalog).value = String(index); });
   catalog.hidden = !options.catalog?.length;
-  const description = element("p"), files = element("div"), actions = element("div"); actions.className = "mediaRow";
+  const description = element("p"), actions = element("div"); actions.className = "mediaRow";
   const download = element("button", text("下载并缓存", "Download and cache"), actions);
-  const local = element("button", text("导入所选文件", "Import selected files"), actions);
   const cancel = element("button", text("取消", "Cancel"), actions); cancel.hidden = true;
+  const offline=element("details");element("summary",text("从本地文件离线导入","Offline import from local files"),offline);
+  const files=element("div",undefined,offline),local=element("button",text("导入所选文件","Import selected files"),offline);
   const list = element("ul");
   let manager, manifest, operation, disposed = false, busy = false, disabled = false, availableCatalog = options.catalog || [];
   const imports = new Map();
@@ -46,7 +47,7 @@ export function createAudioModelPanel(container, options = {}) {
       const row = element("li", `${item.id} / ${item.version} · ${item.adapter} `, list);
       if (availableCatalog.some(model => model.id === item.id && model.adapter === "threejson-melo-wasm-v1")) {
         const enabled = getLocalSpeechPreference() === item.id;
-        const activate = element("button", enabled ? text("停用本地旁白", "Disable local narration") : text("启用本地旁白", "Enable local narration"), row);
+        const activate = element("button", enabled ? text("停用 AI 创作配音", "Disable voice during AI creation") : text("用于 AI 创作配音", "Enable voice during AI creation"), row);
         activate.onclick = async () => { if(busy||disabled)return;try { setLocalSpeechPreference(enabled ? null : item.id); await refresh(); } catch (failure) { error(failure); } };
       }
       const remove = element("button", text("删除缓存", "Remove cache"), row);
@@ -103,7 +104,9 @@ export function createAudioModelPanel(container, options = {}) {
     }
     const storage = await sdk.createBrowserAudioModelStorage();
     if (disposed) { storage.close?.(); return; }
-    manager = sdk.createAudioModelManager(storage); await refresh();
+    manager = sdk.createAudioModelManager(storage);
+    if(availableCatalog.length){catalog.value="0";await select(availableCatalog[0]);}
+    await refresh();
   })().catch(error);
   return { ready, setDisabled(value) { disabled=Boolean(value);updateButtons(); }, dispose() { disposed = true; abort.abort(); if (!busy) manager?.close(); } };
 }

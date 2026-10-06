@@ -32,7 +32,9 @@ try {
       await slider.fill(String(sampleTime)); await slider.dispatchEvent("input");
       await page.waitForFunction((time) => document.querySelector(".threejsonMediaStudio output").textContent === `${time}.00 s`, sampleTime);
       await page.screenshot({ path: path.join(output, `${sample}.png`) });
-      await page.getByText("可选语音模型与缓存", { exact: true }).click();
+      await page.getByLabel("声音", { exact: true }).selectOption("existing");
+      await page.getByText("更多设置", { exact: true }).click();
+      await page.getByText("高级：语音资源与缓存", { exact: true }).click();
       await page.getByText("没有已缓存的模型。", { exact: true }).waitFor();
       item.overflow = await page.locator(".threejsonMediaStudio").evaluate((node) => node.scrollWidth > node.clientWidth + 2);
       if (item.overflow) throw new Error("Dialog overflows horizontally.");

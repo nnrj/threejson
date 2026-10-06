@@ -5,7 +5,7 @@ const file = (role, path, bytes, sha256, runtime = false) => ({ role, path, byte
 const melo = {
   id: "melo-zh-en", version: "a0d5c6a-int8-sherpa-a118980", adapter: "threejson-melo-wasm-v1", license: "MIT (MeloTTS); Apache-2.0 (sherpa-onnx)",
   title: "MeloTTS 中文 · 本地配音（预览）", languages: ["zh-CN", "en"], output: "pcm", sampleRate: 44100,
-  description: "单音色，中英混读受词典覆盖影响。首次需约 71 MiB 下载；运行需要较多内存。不会自动下载，不等同于专业配音质量。",
+  description: "单音色，中英混读受词典覆盖影响。首次配音需约 71 MiB 资源并缓存；运行需要较多内存。仅在主动播放/导出配音或手动下载时获取，不等同于专业配音质量。",
   source: "https://github.com/myshell-ai/MeloTTS", runtimeSource: "https://github.com/k2-fsa/sherpa-onnx",
   files: [
     file("model", "model.int8.onnx", 53517430, "f085f5079e05f039b800aeb542f5253c26a303211b0c6465d0d9387977855a63"),

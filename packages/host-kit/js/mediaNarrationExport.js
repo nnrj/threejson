@@ -50,16 +50,24 @@ export async function collectExportNarration(document, options = {}) {
  * overlap adjacent subtitles. The user can shorten text or raise speech speed.
  */
 export async function synthesizeExportNarration(plan, host, options = {}) {
-  if (!host?.available || typeof host.narrate !== "function") throw Object.assign(new Error("Install and enable a local speech model first."), { code: "LOCAL_NARRATION_UNAVAILABLE" });
+  if (!host?.available || typeof host.narrate !== "function") throw Object.assign(new Error("No exportable speech engine is available."), { code: "LOCAL_NARRATION_UNAVAILABLE" });
   const clips = [];
   for (const [index, cue] of plan.cues.entries()) {
     options.signal?.throwIfAborted();
     const available = Math.min(cue.duration, (plan.cues[index + 1]?.start ?? Infinity) - cue.start);
     if (!(available > 0)) throw Object.assign(new Error(`Narration cue ${index + 1} overlaps another cue.`), { code: "NARRATION_CUES_OVERLAP", cue: index + 1 });
     options.onProgress?.({ stage: "narration", cue: index + 1, cues: plan.cues.length });
-    const result = await host.narrate({ text: cue.text, speed: options.speed ?? 1 }, { signal: options.signal });
-    options.signal?.throwIfAborted();
-    if (!(Number.isFinite(result?.duration) && result.duration > 0 && result.cues?.length)) throw new Error("Local narration returned no audio.");
+    let speed = options.speed ?? 1, result;
+    // Resynthesize at a bounded faster rate, rather than chopping audio or
+    // shifting subsequent cues. The caller owns the quality/speed limit.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      options.signal?.throwIfAborted();
+      result = await host.narrate({ text: cue.text, speed }, { signal: options.signal });
+      options.signal?.throwIfAborted();
+      if (!(Number.isFinite(result?.duration) && result.duration > 0 && result.cues?.length)) throw new Error("Local narration returned no audio.");
+      if (result.duration <= available + 1e-6 || !(options.maxSpeed > speed)) break;
+      speed = Math.min(options.maxSpeed, speed * result.duration / available * 1.03);
+    }
     if (result.duration > available + 1e-6) throw Object.assign(new Error(`Narration cue ${index + 1} needs ${result.duration.toFixed(2)}s, but only ${available.toFixed(2)}s is available.`), { code: "NARRATION_EXCEEDS_CUE", cue: index + 1, required: result.duration, available });
     for (const [part, value] of result.cues.entries()) {
       if (!(Number.isFinite(value.start) && value.start >= 0 && Number.isFinite(value.duration) && value.duration > 0 && value.start + value.duration <= result.duration + 1e-6) || !/^data:audio\//.test(value.url)) throw new Error("Local narration needs measured timing and encoded PCM audio.");

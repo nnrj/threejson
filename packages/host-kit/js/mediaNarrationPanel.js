@@ -1,102 +1,81 @@
-import { createLocalNarrationHost } from "./localSpeech.js";
+import { prepareDefaultLocalNarrationHost } from "./localSpeech.js";
 import { collectExportNarration, synthesizeExportNarration } from "./mediaNarrationExport.js";
 
-/** Explicit export-time PCM narration, shared by native and React media studio. */
+/** Advanced settings only. Export/preview owns the single cancellable operation;
+ * there is deliberately no separate Generate/Install/Enable workflow here.
+ */
 export function createMediaNarrationPanel(container, options) {
   const text = options.text, node = (tag, content, owner = container) => {
     const item = document.createElement(tag); if (content !== undefined) item.textContent = content;
     owner.append(item); return item;
   };
-  node("strong", text("本地 TTS 旁白", "Local TTS narration"));
-  const help = node("p", text("“带音轨”只导出已有声音，不会自动朗读字幕。先安装并启用模型，再点击生成旁白；保留原配乐，仅用于本次预览和导出，不修改聊天中的 JSON。", "Include audio exports existing sound; it does not read captions. Install and enable a model, then generate narration. Original music is kept. Generated speech is used in this preview/export only; the chat JSON stays unchanged."));
-  help.style.fontSize = "12px";
   const controls = node("div"); controls.className = "mediaRow";
   const sourceLabel = node("label", text("朗读来源", "Speech source"), controls), source = node("select", undefined, sourceLabel);
   source.setAttribute("aria-label", text("朗读来源", "Speech source"));
-  sourceLabel.style.cssText = "flex:1 1 100%;align-items:flex-start;flex-direction:column;min-width:0";
   for (const [value, label] of [["auto", text("自动：字幕优先，其次分镜台词", "Auto: captions, then shot narration")], ["captions", text("时间线字幕", "Timeline captions")], ["shots", text("分镜台词", "Shot narration")], ["custom", text("自填文本", "Custom text")]]) node("option", label, source).value = value;
-  source.style.maxWidth = "100%";
   const speedLabel = node("label", text("语速", "Speech speed"), controls), speed = node("input", undefined, speedLabel);
-  speed.setAttribute("aria-label", text("语速", "Speech speed"));
-  speed.type = "number"; speed.min = "0.1"; speed.step = "0.1"; speed.value = "1";
+  speed.type = "number"; speed.min = "0.5"; speed.max = "2"; speed.step = "0.1"; speed.value = "1";
+  const fitLabel = node("label", text("自动适应字幕时长", "Fit speech to cue timing"), controls), fit = node("input", undefined, fitLabel);
+  fit.type = "checkbox"; fit.checked = true;
   const custom = node("textarea"); custom.rows = 3; custom.hidden = true;
-  custom.setAttribute("aria-label", text("旁白文本", "Narration text")); custom.style.cssText = "width:100%;resize:vertical;min-height:80px;font:inherit;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--panel2);color:var(--text)";
+  custom.setAttribute("aria-label", text("旁白文本", "Narration text"));
   const script = node("details"), summary = node("summary", text("待朗读文本", "Narration script"), script), preview = node("pre", "", script);
   preview.style.cssText = "white-space:pre-wrap;overflow-wrap:anywhere;max-height:160px;overflow:auto;font:inherit";
-  const actions = node("div"); actions.className = "mediaRow";
-  const generate = node("button", text("生成本地旁白", "Generate local narration"), actions);
-  const cancel = node("button", text("取消生成", "Cancel narration"), actions); cancel.hidden = true;
-  const manage = node("button", text("管理语音模型", "Manage speech models"), actions);
-  const useLabel = node("label", text("使用生成的旁白", "Use generated narration"), actions), use = node("input", undefined, useLabel);
-  use.type = "checkbox"; use.checked = true; useLabel.hidden = true;
-  const availability = node("p"), status = node("p"); status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite");
-  let clips = [], busy = false, ready = false, disposed = false, operation, planSequence = 0;
-  function buttons() { generate.disabled = !ready || busy; source.disabled = speed.disabled = custom.disabled = manage.disabled = use.disabled = busy; }
+  node("p", text("导出或播放时自动合成，保留原有配乐，不修改聊天中的 JSON。自动适时只会适度加速，不截断台词。网页无法录出浏览器/Windows 内置朗读的音频，因此使用可写入视频的本地配音引擎，不调用付费接口。", "Speech is generated automatically on export or play. Existing music and the chat JSON are preserved. Timing adjustment uses moderate acceleration, never truncated speech. Web pages cannot capture browser/Windows speech output, so this uses a local engine with exportable audio, not a paid API."));
+  let clips = [], cacheKey = null, disposed = false, planSequence = 0;
+
   async function readPlan(signal) {
     const kit = await options.loadMediaKit(), opened = await kit.openMediaDocument(options.getSource(), { ...options.projectOptions, signal });
     try { return await collectExportNarration(opened.document, { duration: options.getDuration(), mode: source.value, text: custom.value, loadScene: opened.loadScene, audioClips: await options.getAudioClips(), signal }); }
     finally { opened.dispose(); }
   }
-  const report = error => {
-    if (disposed) return;
-    status.textContent = error.name === "AbortError" ? text("已取消生成旁白。", "Narration cancelled.")
-      : error.code === "LOCAL_NARRATION_UNAVAILABLE" ? text("尚未安装并启用本地语音模型。请打开“管理语音模型”。", "Install and enable a local speech model under Manage speech models.")
-        : error.code === "NARRATION_EXCEEDS_CUE" ? text(`第 ${error.cue} 段旁白需 ${error.required.toFixed(2)} 秒，可用 ${error.available.toFixed(2)} 秒。请提高语速、缩短文字或延长对应字幕/分镜，再重新生成；未截断旁白。`, `Cue ${error.cue} needs ${error.required.toFixed(2)}s, but has ${error.available.toFixed(2)}s. Increase speech speed, shorten the text or extend its caption/shot. Speech was not truncated.`)
-          : error.code === "NARRATION_CUES_OVERLAP" ? text("字幕时间重叠，无法同时朗读。请改用分镜台词或自填文本。", "Overlapping captions cannot be narrated simultaneously. Use shot narration or custom text.") : String(error.message || error);
-  };
+  function describe(plan) {
+    preview.textContent = plan.cues.map(c => `${c.start.toFixed(2)}s · ${c.text}`).join("\n") || text("没有可朗读的字幕/台词，可选择“自填文本”。", "No narration text found. Select Custom text.");
+    summary.textContent = text(`待朗读文本 · ${plan.cues.length} 段${plan.skipped ? `（跳过 ${plan.skipped} 段已有旁白）` : ""}`, `Narration script · ${plan.cues.length} cues${plan.skipped ? ` (${plan.skipped} with existing narration skipped)` : ""}`);
+    options.onSummary?.({ cues: plan.cues.length, skipped: plan.skipped, prepared: clips.length > 0 });
+  }
   async function refreshScript() {
     const sequence = ++planSequence;
-    try {
-      const plan = await readPlan(options.signal);
-      if (disposed || sequence !== planSequence) return;
-      preview.textContent = plan.cues.map(c => `${c.start.toFixed(2)}s · ${c.text}`).join("\n") || text("没有可朗读的字幕/台词，可选择“自填文本”。", "No narration text found. Select Custom text.");
-      summary.textContent = text(`待朗读文本 · ${plan.cues.length} 段${plan.skipped ? `（跳过 ${plan.skipped} 段已有旁白）` : ""}`, `Narration script · ${plan.cues.length} cues${plan.skipped ? ` (${plan.skipped} with existing narration skipped)` : ""}`);
-    } catch (error) { report(error); }
+    try { const plan = await readPlan(options.signal); if (!disposed && sequence === planSequence) describe(plan); }
+    catch (error) { if (!disposed && error.name !== "AbortError") options.onError?.(error); }
   }
-  async function refreshAvailability() {
-    let host;
-    try {
-      host = await (options.createNarrationHost || createLocalNarrationHost)();
-      if (!disposed) availability.textContent = host.available ? text(`本地模型已就绪：${host.model}。可在本机生成或更新旁白。`, `Local model ready: ${host.model}. Narration can be generated or updated on this device.`)
-        : text("本地旁白未就绪：仅选择模型不等于已下载或启用。", "Local narration is not ready: selecting a model does not install or enable it.");
-    } catch (error) { report(error); } finally { host?.dispose(); }
+  function friendlyError(error) {
+    if (error.code === "LOCAL_NARRATION_DOWNLOAD_FAILED") error.message = text("配音资源下载失败，未导出无声视频。请检查网络后重新导出；也可在高级设置中离线导入，或主动选择“仅原有音轨”。", "Speech resource download failed; no silent video was exported. Check the connection and retry, import resources in advanced settings, or explicitly select Existing audio only.");
+    else if (error.code === "LOCAL_NARRATION_UNAVAILABLE") error.message = text("本地配音引擎不可用，未导出无声视频。请重试，或主动选择“仅原有音轨”。", "The local speech engine is unavailable; no silent video was exported. Retry, or explicitly select Existing audio only.");
+    else if (error.code === "NARRATION_EXCEEDS_CUE") error.message = text(`第 ${error.cue} 段旁白需 ${error.required.toFixed(1)} 秒，可用 ${error.available.toFixed(1)} 秒，未截断台词。请在更多设置中调整语速/文本，或延长对应字幕。`, `Cue ${error.cue} needs ${error.required.toFixed(1)}s, but has ${error.available.toFixed(1)}s; speech was not truncated. Adjust the text/speed in More settings or extend the caption.`);
+    else if (error.code === "NARRATION_CUES_OVERLAP") error.message = text("字幕时间重叠，无法同时朗读。请在更多设置中选择分镜台词或自填文本。", "Overlapping captions cannot be narrated simultaneously. Choose shot narration or custom text in More settings.");
+    return error;
   }
-  async function invalidate() {
+  const invalidate = () => {
     custom.hidden = source.value !== "custom";
-    const hadAudio = clips.length > 0; clips = []; useLabel.hidden = true; status.textContent = "";
-    if (hadAudio) await options.onChange();
-    await refreshScript();
-  }
-  source.onchange = speed.onchange = custom.oninput = () => void invalidate().catch(report);
-  manage.onclick = () => options.openModels();
-  use.onchange = () => {
-    status.textContent = use.checked ? text("本次预览与导出已启用生成的旁白。", "Generated narration is enabled for this preview/export.") : text("已停用生成的旁白，原有音轨不受影响。", "Generated narration is disabled; original audio is unchanged.");
-    void options.onChange({enableAudio:use.checked}).catch(report);
+    clips = []; cacheKey = null;
+    void Promise.resolve(options.onChange?.()).then(refreshScript).catch(error => options.onError?.(error));
   };
-  cancel.onclick = () => operation?.abort();
-  generate.onclick = async () => {
-    if (!ready || busy) return;
-    if (!(Number.isFinite(Number(speed.value)) && Number(speed.value) > 0)) { report(new Error(text("语速必须为正数。", "Speech speed must be positive."))); return; }
-    busy = true; options.onBusy(true); buttons(); cancel.hidden = false; operation = new AbortController();
-    const signal = AbortSignal.any([operation.signal, options.signal]);
-    let host;
-    try {
-      status.textContent = text("正在准备本地旁白…", "Preparing local narration…");
-      const plan = await readPlan(signal);
-      if (!plan.cues.length) throw new Error(plan.skipped ? text("对应段落已有旁白，无需重复合成。", "These cues already have narration; no synthesis is needed.") : text("没有可朗读的字幕或台词。请选择“自填文本”并填写旁白。", "No captions or narration found. Select Custom text and enter narration."));
-      host = await (options.createNarrationHost || createLocalNarrationHost)();
-      const generated = await synthesizeExportNarration(plan, host, { speed: Number(speed.value), signal, onProgress: p => { status.textContent = text(`正在本地合成旁白 ${p.cue}/${p.cues}…`, `Synthesizing local narration ${p.cue}/${p.cues}…`); } });
-      signal.throwIfAborted(); clips = generated; use.checked = true; useLabel.hidden = false;
-      await options.onChange({enableAudio:true});
-      status.textContent = text(`已生成 ${plan.cues.length} 段旁白，将随“带音轨”一起导出。点击播放可试听。`, `Generated ${plan.cues.length} narration cues. Include audio will export them. Press Play to preview.`);
-    } catch (error) { report(error); }
-    finally { host?.dispose(); busy = false; if (!disposed) { cancel.hidden = true; options.onBusy(false); buttons(); } }
-  };
-  buttons(); void refreshAvailability();
+  source.onchange = speed.onchange = fit.onchange = custom.onchange = invalidate;
   return {
-    getAudioClips: () => use.checked ? clips : [],
-    setState(value) { ready = value.ready; busy = value.busy; buttons(); },
-    refreshScript, refreshAvailability,
-    dispose() { disposed = true; operation?.abort(); clips = []; }
+    getAudioClips: () => clips,
+    setState({ busy }) { for (const input of [source, speed, fit, custom]) input.disabled = busy; },
+    refreshScript,
+    async prepare({ signal, onProgress } = {}) {
+      signal?.throwIfAborted();
+      const speechSpeed = Number(speed.value);
+      if (!Number.isFinite(speechSpeed) || speechSpeed < .5 || speechSpeed > 2) throw new Error(text("语速应为 0.5～2。", "Speech speed must be between 0.5 and 2."));
+      const plan = await readPlan(signal), key = JSON.stringify([plan, speechSpeed, fit.checked]);
+      if (key === cacheKey) return clips;
+      // No text (or already-narrated cues) must never trigger a model download.
+      if (!plan.cues.length) { clips = []; cacheKey = key; describe(plan); return clips; }
+      let host;
+      try {
+        onProgress?.({ stage: "narration-prepare" });
+        host = await (options.createNarrationHost || prepareDefaultLocalNarrationHost)({ signal, onProgress });
+        const generated = await synthesizeExportNarration(plan, host, { speed: speechSpeed, maxSpeed: fit.checked ? Math.min(2, speechSpeed * 1.5) : speechSpeed, signal, onProgress });
+        signal?.throwIfAborted();
+        if (disposed) throw new DOMException("Narration disposed", "AbortError");
+        clips = generated; cacheKey = key; describe(plan);
+        return clips;
+      } catch (error) { throw friendlyError(error); }
+      finally { host?.dispose(); }
+    },
+    dispose() { disposed = true; clips = []; cacheKey = null; }
   };
 }
