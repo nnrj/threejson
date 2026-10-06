@@ -1000,3 +1000,10 @@ details[open] > .sidebarSectionTitle::before { transform: rotate(90deg); }
     min-height: 38px;
   }
 }
+.aiOutputRouteNotice {
+  margin: 4px 0 10px;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  opacity: 0.85;
+}

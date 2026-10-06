@@ -48,6 +48,7 @@ import {
   isBuiltinPrivacyAccepted
 } from "../../shared/js/builtinProviderPrivacy.js";
 import { getAiErrorFeedback } from "../../shared/js/aiErrorFeedback.js";
+import { getDocumentOutputKind } from "../../shared/js/aiMediaRouting.js";
 import { probeEndpoint } from "../../shared/js/endpointProbe.js";
 import { formatAgentProgressLabel } from "../../shared/js/aiAgentProgressLabels.js";
 import {
@@ -475,6 +476,7 @@ async function main() {
     turnId,
     userPrompt,
     mode,
+    outputKind,
     targetTurnId = null,
     error
   }) {
@@ -486,6 +488,7 @@ async function main() {
           conversationId,
           userPrompt,
           mode,
+          outputKind,
           targetTurnId,
           stopped,
           errorMessage: friendlyAiErrorMessage(error),
@@ -709,7 +712,8 @@ async function main() {
     selectedCapabilityIds,
     complexModelStrategy,
     modelQuality,
-    requiresAnimation
+    requiresAnimation,
+    outputKind
   }) {
     const rendererBackend = await resolveActiveAiRendererBackend(text, selectedCapabilityIds);
     const settings = settingsModal.getSettings();
@@ -793,6 +797,16 @@ async function main() {
 
     try {
       const { sceneJson, agentResult } = await runThreeBoxGenerateTurn({
+        outputKind,
+        onOutputKind: async ({ outputKind: kind, message }) => {
+          outputKind = kind;
+          const notice = document.createElement("p");
+          notice.className = "aiOutputRouteNotice";
+          notice.setAttribute("role", "status");
+          notice.textContent = message;
+          streaming.el.before(notice);
+          await waitForStatusPaint();
+        },
         videoOptions: { outputKind: settings.ai?.mediaOutputKind || "auto", duration: Number(settings.ai?.videoDuration) || undefined, quality: settings.ai?.videoQuality || "balanced", confirmStoryboard: settings.ai?.videoConfirmStoryboard === true, visualReview: settings.ai?.videoVisualReview },
         runtimeOptions: getMediaRuntimeOptions(),
         userPrompt: text,
@@ -952,6 +966,7 @@ async function main() {
         seq: Date.now(),
         userPrompt: text,
         mode: "generate",
+        outputKind,
         targetTurnId: null,
         stage: "generate",
         sceneJson: outputSceneJsonString,
@@ -1032,6 +1047,7 @@ async function main() {
             seq: Date.now(),
             userPrompt: text,
             mode: "generate",
+            outputKind,
             targetTurnId: null,
             stage: "draft-paused",
             sceneJson: pausedOutputJsonString,
@@ -1057,6 +1073,7 @@ async function main() {
         turnId,
         userPrompt: text,
         mode: "generate",
+        outputKind,
         error
       });
       if (isAbortError(error)) {
@@ -1081,7 +1098,8 @@ async function main() {
         selectedCapabilityIds,
         complexModelStrategy,
         modelQuality,
-        requiresAnimation
+        requiresAnimation,
+        outputKind
       }));
       api.finishTurnScroll();
     }
@@ -1098,6 +1116,7 @@ async function main() {
     complexModelStrategy,
     modelQuality,
     requiresAnimation,
+    outputKind,
     generationStrategy = "single",
     estimatedSegments = 1
   }) {
@@ -1118,6 +1137,7 @@ async function main() {
         turnContext,
         turnDeadlineAt,
         abortController: providedAbortController,
+        outputKind,
         selectedCapabilityIds,
         complexModelStrategy,
         modelQuality,
@@ -1135,6 +1155,7 @@ async function main() {
         turnContext,
         turnDeadlineAt,
         abortController: providedAbortController,
+        outputKind,
         selectedCapabilityIds,
         complexModelStrategy,
         modelQuality,
@@ -1244,6 +1265,16 @@ async function main() {
       });
 
       const result = await runThreeBoxAdjustTurn({
+        outputKind: outputKind || (targetSceneJson.documentType === "composition" ? "video" : "scene"),
+        onOutputKind: async ({ outputKind: kind, message }) => {
+          outputKind = kind;
+          const notice = document.createElement("p");
+          notice.className = "aiOutputRouteNotice";
+          notice.setAttribute("role", "status");
+          notice.textContent = message;
+          streaming.el.before(notice);
+          await waitForStatusPaint();
+        },
         videoOptions: { duration: Number(settings.ai?.videoDuration) || undefined, quality: settings.ai?.videoQuality || "balanced", visualReview: settings.ai?.videoVisualReview },
         runtimeOptions: getMediaRuntimeOptions(),
         userPrompt: text,
@@ -1382,6 +1413,7 @@ async function main() {
         seq: Date.now(),
         userPrompt: text,
         mode: "adjust",
+        outputKind,
         targetTurnId,
         stage: result.stage,
         sceneJson: useDiffCache ? null : outputSceneJsonString,
@@ -1445,6 +1477,7 @@ async function main() {
             seq: Date.now(),
             userPrompt: text,
             mode: "adjust",
+            outputKind,
             targetTurnId,
             stage: "adjust-paused",
             sceneJson: pausedOutputJsonString,
@@ -1471,6 +1504,7 @@ async function main() {
         turnId,
         userPrompt: text,
         mode: "adjust",
+        outputKind,
         targetTurnId,
         error
       });
@@ -1491,6 +1525,7 @@ async function main() {
         turnContext,
         selectedCapabilityIds,
         requiresAnimation,
+        outputKind,
         generationStrategy,
         estimatedSegments
       }));
@@ -1651,7 +1686,8 @@ async function main() {
       userPrompt: t.userPrompt,
       mode: t.mode,
       targetTurnId: t.targetTurnId,
-      sceneTitle: t.sceneTitle
+      sceneTitle: t.sceneTitle,
+      outputKind: t.outputKind || getDocumentOutputKind(t.sceneJson)
     }));
     const animationCapabilityMode = settings.ai?.animationCapabilityMode || "auto";
     const sceneGenerationMode = settings.ai?.sceneGenerationMode || "auto";
@@ -1662,6 +1698,8 @@ async function main() {
         requestContext: turnContext,
         signal: turnAbortController.signal,
         animationCapabilityMode,
+        negotiateOutputKind: true,
+        outputKind: settings.ai?.mediaOutputKind || "auto",
         sceneGenerationMode,
         complexModelStrategy: settings.ai?.complexModelStrategy || "auto",
         modelQuality: settings.ai?.modelQuality || "balanced",
@@ -1682,6 +1720,7 @@ async function main() {
         targetTurnId: route.targetTurnId,
         turnContext,
         abortController: turnAbortController,
+        outputKind: classified.outputKind,
         selectedCapabilityIds: classified.selectedCapabilityIds,
         complexModelStrategy: classified.complexModelStrategy,
         modelQuality: classified.modelQuality,
@@ -1697,6 +1736,7 @@ async function main() {
         turnId,
         turnContext,
         abortController: turnAbortController,
+        outputKind: classified.outputKind,
         generationStrategy: classified.generationStrategy,
         executionMode: classified.executionMode,
         refinementGoals: classified.refinementGoals,
@@ -1780,11 +1820,13 @@ async function main() {
             ? handleAdjustTurn(turn.userPrompt, chatPanel, {
                 conversationId,
                 turnId: turn.id,
-                targetTurnId: turn.targetTurnId
+                targetTurnId: turn.targetTurnId,
+                outputKind: turn.outputKind
               })
             : handleGenerateTurn(turn.userPrompt, chatPanel, {
                 conversationId,
-                turnId: turn.id
+                turnId: turn.id,
+                outputKind: turn.outputKind
               })
         );
         continue;

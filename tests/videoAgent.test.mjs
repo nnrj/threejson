@@ -12,10 +12,11 @@ import { buildResultDigest, runAiTurnSummary } from "../packages/host-kit/js/aiT
 const scene = id => ({ objectList: [{ objType: "sphere", threeJsonId: id }], timeline: { duration: 2, tracks: [{ id: "spin", target: id, property: "rotation.y", keyframes: [{ time: 0, value: 0 }, { time: 2, value: 1 }] }] } });
 const message = command => ({ message: { role: "assistant", content: typeof command === "string" ? command : JSON.stringify(command) } });
 test("video routing keeps ordinary scenes and explicit host choices intact", () => {
-  assert.equal(resolveMediaOutputKind("生成一段介绍双缝干涉的视频"), "video");
-  assert.equal(resolveMediaOutputKind("生成一个播放视频的电视"), "scene");
-  assert.equal(resolveMediaOutputKind("create a room with video texture"), "scene");
-  assert.equal(resolveMediaOutputKind("生成汽车，不要视频"), "scene");
+  assert.equal(resolveMediaOutputKind("用视频科普一下双缝干涉实验", "auto", "video"), "video");
+  assert.equal(resolveMediaOutputKind("生成一个播放视频的电视", "auto", "scene"), "scene");
+  assert.equal(resolveMediaOutputKind("create a room with video texture", "auto", "scene"), "scene");
+  assert.equal(resolveMediaOutputKind("生成汽车，不要视频", "scene", "video"), "scene");
+  assert.throws(() => resolveMediaOutputKind("生成一段视频"), { code: "AI_OUTPUT_KIND_REQUIRED" });
   assert.equal(resolveMediaOutputKind("生成汽车", "video"), "video");
   const prompt = buildVideoAgentInstructions({ duration: 300 });
   assert.match(prompt, /300 seconds/); assert.match(prompt, /mode:sdf/); assert.match(prompt, /selectivebloom/); assert.match(prompt, /No fixed quality round count/);

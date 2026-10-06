@@ -57,3 +57,7 @@ test("applyControlsConfig fly does not call update without delta", () => {
   assert.equal(controls.movementSpeed, 12);
   assert.equal(controls.rollSpeed, 0.25);
 });
+test("controls type none explicitly disables interactive controls for authored video cameras", () => {
+  assert.equal(createControlsFromDescriptor(null, null, { type: "none" }), null);
+  assert.equal(createControlsFromDescriptor(null, null, { type: "None", enabled: true }), null);
+});

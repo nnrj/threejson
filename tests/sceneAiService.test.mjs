@@ -28,6 +28,35 @@ import {
 import { listMaterialTextureSlots } from "../core/texture/index.js";
 import { classifyTurnIntent } from "../core/ai/sceneChatSession.js";
 
+test("short truncated scene prefixes recover even when the provider reports stop or omits its finish reason", async () => {
+  for (const finishReason of ["stop", undefined]) {
+    let calls = 0;
+    const outputs = ['{"version":"next","threeJsonId":"test","name":"双缝干涉实验', '{"version":"next","threeJsonId":"test","name":"双缝', '干涉实验","objectList":[{"objType":"sphere"}]}'];
+    globalThis.fetch = async () => ({ ok: true, json: async () => ({ choices: [{ message: { content: outputs[calls++] }, finish_reason: finishReason }] }) });
+    const result = await generateSceneJsonString("a demonstration", { provider: "chatgpt", apiKey: "test", capabilityReview: false });
+    assert.equal(JSON.parse(result).name, "双缝干涉实验"); assert.equal(calls, 3);
+  }
+});
+
+test("invalid middle syntax is not retried as truncation, and an explicit recovery opt-out is honored", async () => {
+  for (const [text, code] of [['{"objectList":[}', "SCENE_JSON_INVALID"], ['{"objectList":[', "SCENE_OUTPUT_LIMIT"]]) {
+    let calls = 0;
+    globalThis.fetch = async () => { calls++; return { ok: true, json: async () => ({ choices: [{ message: { content: text }, finish_reason: "stop" }] }) }; };
+    await assert.rejects(generateSceneJsonString("a demonstration", { provider: "chatgpt", apiKey: "test", compactRetryOnTruncation: false, capabilityReview: false }), { code });
+    assert.equal(calls, 1);
+  }
+});
+
+test("an empty continuation preserves the accepted prefix and provider diagnostic without endless retries", async () => {
+  let calls = 0; const prefix = '{"objectList":[';
+  globalThis.fetch = async () => ({ ok: true, json: async () => ({ choices: [{ message: { content: ++calls === 1 ? prefix : "" }, finish_reason: "stop" }] }) });
+  await assert.rejects(generateSceneJsonString("a scene", { provider: "chatgpt", apiKey: "test", segmentedOutput: true, capabilityReview: false }), error => {
+    assert.equal(error.code, "UPSTREAM_EMPTY_COMPLETION"); assert.equal(error.isAiTransportError, true);
+    assert.equal(error.rawContent, prefix); assert.match(error.message, /finish_reason=stop/); return true;
+  });
+  assert.equal(calls, 2);
+});
+
 test("the host adapter sends the original prompt once, then uses the signed moderation receipt", () => {
   const context = createBuiltinAiTurnContext("turn-1", "raw user prompt");
   assert.deepEqual(buildBuiltinAiRequestContext(context), {
@@ -1004,7 +1033,7 @@ test("generateSceneJsonString exposes a validated draft before final post-proces
   assert.equal(JSON.parse(output).threeJsonId, "draft-scene");
 });
 
-test("generateSceneJsonString does not silently turn a malformed ordinary response into 16 requests", async () => {
+test("short incomplete scene output attempts recovery but stops on repeated prefixes without progress", async () => {
   let requestCount = 0;
   globalThis.fetch = async () => {
     requestCount += 1;
@@ -1024,7 +1053,7 @@ test("generateSceneJsonString does not silently turn a malformed ordinary respon
       estimatedSegments: 1
     })
   );
-  assert.equal(requestCount, 1);
+  assert.equal(requestCount, 4);
 });
 
 test("generateSceneJsonString recovers a truncated one-shot forest with compact segmented output", async () => {
@@ -1384,7 +1413,7 @@ test("classifyTurnIntent negotiates a compact strategy even when there are no pr
   assert.deepEqual(JSON.parse(requestBody.messages[1].content).priorSceneTurns, []);
   assert.doesNotMatch(requestBody.messages[0].content, /"intent"\s*:/);
   assert.doesNotMatch(requestBody.messages[0].content, /"targetTurnId"\s*:/);
-  assert.match(requestBody.messages[0].content, /route is already fixed as a brand-new scene generation/);
+  assert.match(requestBody.messages[0].content, /route is already fixed as brand-new generation/);
   assert.match(requestBody.messages[0].content, /If you are not confident that strict segmented output is supported, choose "compact"/);
   assert.equal(result.intent, "generate");
   assert.equal(result.targetTurnId, null);

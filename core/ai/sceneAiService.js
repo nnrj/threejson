@@ -306,6 +306,7 @@ function createEmptyChatCompletionError({ finishReason = null, reasoningChars = 
   }
   const error = new Error(message);
   error.code = code;
+  error.isAiTransportError = true;
   return error;
 }
 
@@ -788,17 +789,8 @@ async function dryRunUpdateCommands(commands, sceneJsonString) {
   finally { session.dispose(); }
 }
 
-const DEFAULT_AUTO_CONTINUE_MIN_CHARS = 8000;
 const SCENE_SEGMENT_CONTINUE_MARKER = "<<<THREEJSON_CONTINUE>>>";
 const SCENE_SEGMENT_COMPLETE_MARKER = "<<<THREEJSON_COMPLETE>>>";
-
-function clampInteger(value, fallback, min, max) {
-  const number = Number(value);
-  if (!Number.isFinite(number)) {
-    return fallback;
-  }
-  return Math.min(max, Math.max(min, Math.round(number)));
-}
 
 function buildSegmentedSceneProtocolPrompt(estimatedSegments) {
   return [
@@ -895,20 +887,10 @@ function isLengthFinishReason(value) {
   return reason === "length" || reason === "max_tokens" || reason === "max_output_tokens";
 }
 
-function isSceneOutputCutoff(content, completionMetadata, options) {
-  if (!isIncompleteJsonDocument(content)) {
-    return false;
-  }
-  if (isLengthFinishReason(completionMetadata?.finishReason)) {
-    return true;
-  }
-  const minChars = clampInteger(
-    options.compactRetryMinChars,
-    DEFAULT_AUTO_CONTINUE_MIN_CHARS,
-    1000,
-    1000000
-  );
-  return String(content || "").length >= minChars;
+function isSceneOutputCutoff(content) {
+  // Some gateways report stop (or no reason) even for a 100-character prefix.
+  // Structural incompleteness, not a length heuristic, decides recovery.
+  return isIncompleteJsonDocument(content);
 }
 
 function normalizeOptionalPositiveInteger(value) {
@@ -922,12 +904,13 @@ function normalizeAdvisorySegmentEstimate(value, fallback = 1) {
 
 function shouldRetryCompactSceneOutput(content, completionMetadata, options) {
   return options.compactRetryOnTruncation !== false &&
-    isSceneOutputCutoff(content, completionMetadata, options);
+    isSceneOutputCutoff(content);
 }
 
-function createSceneOutputLimitError(message) {
+function createSceneOutputLimitError(message, rawContent) {
   const error = new Error(message);
   error.code = "SCENE_OUTPUT_LIMIT";
+  if (rawContent !== undefined) error.rawContent = rawContent;
   return error;
 }
 
@@ -966,13 +949,21 @@ async function requestSegmentedSceneJsonContent(messages, options, maxTokens) {
         ...(maxSegments === undefined ? {} : { maxSegments })
     });
     const deltaForwarder = createSceneSegmentDeltaForwarder(options.onDelta);
-    const rawContent = await requestChatCompletion({
-      ...options,
-      maxTokens,
-      taskKind: options.taskKind || "scene_generate",
-      messages: conversation,
-      onDelta: (delta) => deltaForwarder.push(delta)
-    });
+    let rawContent;
+    try {
+      rawContent = await requestChatCompletion({
+        ...options,
+        maxTokens,
+        taskKind: options.taskKind || "scene_generate",
+        messages: conversation,
+        onDelta: (delta) => deltaForwarder.push(delta)
+      });
+    } catch (error) {
+      // Preserve the valid prefix without manufacturing a completed document or
+      // retrying authentication, balance, cancellation or empty-provider errors.
+      if (assembled) error.rawContent = assembled;
+      throw error;
+    }
     const { fragment, control } = splitSceneSegmentControl(rawContent);
     deltaForwarder.finish(fragment);
     const candidate = assembled + fragment;
@@ -1038,7 +1029,7 @@ async function requestSegmentedSceneJsonContent(messages, options, maxTokens) {
     );
   }
 
-  throw createSceneOutputLimitError(`Scene JSON was not completed after the configured ${maxSegments} response segments.`);
+  throw createSceneOutputLimitError(`Scene JSON was not completed after the configured ${maxSegments} response segments.`, assembled);
 }
 
 function addSegmentedProtocolToMessages(messages, estimatedSegments) {
@@ -1086,12 +1077,12 @@ async function requestJsonCompletionWithSegmentedRecovery(messages, options = {}
       }
     }
   });
-  if (!isSceneOutputCutoff(content, completionMetadata, options) && !isIncompleteJsonDocument(content)) {
+  if (!isSceneOutputCutoff(content)) {
     return content;
   }
   if (options.compactRetryOnTruncation === false) {
     throw createSceneOutputLimitError(
-      "The provider returned incomplete JSON before the document was complete."
+      "The provider returned incomplete JSON before the document was complete.", content
     );
   }
   await emitSceneGenerationPhase(options, {
@@ -1340,16 +1331,16 @@ async function generateSceneJsonString(prompt, options = {}) {
     });
     if (
       capabilityOptions.compactRetryOnTruncation === false &&
-      isSceneOutputCutoff(content, completionMetadata, capabilityOptions)
+      isSceneOutputCutoff(content)
     ) {
       throw createSceneOutputLimitError(
-        "Scene JSON exceeded the provider output limit. Switch to planned incremental construction."
+        "The provider returned incomplete JSON before the document was complete.", content
       );
     }
     if (shouldRetryCompactSceneOutput(content, completionMetadata, capabilityOptions)) {
       await emitSceneGenerationPhase(capabilityOptions, {
         phase: "segmented-recovery",
-        reason: "provider-output-limit"
+        reason: isLengthFinishReason(completionMetadata.finishReason) ? "provider-output-limit" : "incomplete-json"
       });
       // A genuine finish_reason=length is a transport boundary, not proof that the requested
       // scene is impossible. Restart once under the explicit continuation protocol, then keep

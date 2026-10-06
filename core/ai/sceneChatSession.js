@@ -116,7 +116,8 @@ function normalizeHistoryEntries(history) {
       userPrompt: typeof entry?.userPrompt === "string" ? entry.userPrompt.slice(0, 800) : "",
       mode: entry?.mode === "adjust" ? "adjust" : entry?.mode === "template" ? "template" : "generate",
       targetTurnId: typeof entry?.targetTurnId === "string" ? entry.targetTurnId.trim() : null,
-      sceneTitle: typeof entry?.sceneTitle === "string" ? entry.sceneTitle.slice(0, 160) : ""
+      sceneTitle: typeof entry?.sceneTitle === "string" ? entry.sceneTitle.slice(0, 160) : "",
+      outputKind: ["scene", "video"].includes(entry?.outputKind) ? entry.outputKind : undefined
     });
   }
   return out;
@@ -166,9 +167,9 @@ function buildClassifyIntentSystemPrompt(
   const normalizedGenerationMode = normalizeSceneGenerationMode(sceneGenerationMode);
   const configuredComplexModelStrategy = normalizeComplexModelStrategy(capabilityOptions.complexModelStrategy);
   return [
-    "You are the pre-generation negotiation model for a ThreeJSON 3D-scene app.",
+    "You are the pre-generation negotiation model for a ThreeJSON 3D-scene and procedural-video app.",
     generationOnly
-      ? "This is the first scene-producing message in a new conversation. Its route is already fixed as a brand-new scene generation. Do NOT classify it as generate versus adjust; negotiate only how to generate it."
+      ? "This is the first content-producing message in a new conversation. Its route is already fixed as brand-new generation. Do NOT classify it as generate versus adjust; decide the output medium (scene or video) and how to generate it."
       : "Given the user's newest message and a list of prior conversation turns (each with a short summary), decide whether it generates a new scene or adjusts a prior scene.",
     ...(generationOnly
       ? []
@@ -179,12 +180,15 @@ function buildClassifyIntentSystemPrompt(
     "",
     "Output shape (strict):",
     generationOnly
-      ? '{ "note": string, "generationStrategy": "single"|"segmented"|"compact", "estimatedSegments": integer, "estimatedOutputTokens": {"min": integer, "max": integer}, "executionMode": "direct"|"draft_refine", "complexModelStrategy": "full-coordinates"|"progressive", "refinementGoals": string[], "selectedCapabilityIds": string[], "requiresAnimation": boolean }'
-      : '{ "intent": "generate"|"adjust", "targetTurnId": string|null, "note": string, "generationStrategy": "single"|"segmented"|"compact", "estimatedSegments": integer, "estimatedOutputTokens": {"min": integer, "max": integer}, "executionMode": "direct"|"draft_refine", "complexModelStrategy": "full-coordinates"|"progressive", "refinementGoals": string[], "selectedCapabilityIds": string[], "requiresAnimation": boolean }',
+      ? '{ "outputKind": "scene"|"video", "note": string, "generationStrategy": "single"|"segmented"|"compact", "estimatedSegments": integer, "estimatedOutputTokens": {"min": integer, "max": integer}, "executionMode": "direct"|"draft_refine", "complexModelStrategy": "full-coordinates"|"progressive", "refinementGoals": string[], "selectedCapabilityIds": string[], "requiresAnimation": boolean }'
+      : '{ "intent": "generate"|"adjust", "targetTurnId": string|null, "outputKind": "scene"|"video", "note": string, "generationStrategy": "single"|"segmented"|"compact", "estimatedSegments": integer, "estimatedOutputTokens": {"min": integer, "max": integer}, "executionMode": "direct"|"draft_refine", "complexModelStrategy": "full-coordinates"|"progressive", "refinementGoals": string[], "selectedCapabilityIds": string[], "requiresAnimation": boolean }',
     "",
     "Rules:",
+    '- Also return outputKind:"scene"|"video" in the top-level JSON. Decide semantically from the requested deliverable, not a keyword list. "用视频科普一下双缝干涉实验", "以短片形式解释…", and "explain this through a video" request a video, even without the word generate. An interactive 3D world, a model, a rotating object demo, or a TV displaying a video texture is still a scene unless a film is the deliverable. Animations inside a scene do not by themselves make it a video.',
+    '- For adjustments, use the target turn outputKind as context. Continue an existing film as video unless the user explicitly requests a different deliverable. A video may reuse a previous scene as one shot. For video output the film agent will author shots incrementally; do not plan to emit one huge scene JSON. Scene construction settings do not override the requested medium.',
+    ...(["scene", "video"].includes(capabilityOptions.outputKind) ? [`- The host explicitly selected outputKind="${capabilityOptions.outputKind}". Honor this output type.`] : []),
     ...(generationOnly
-      ? ['- The operation is unconditionally a new scene generation. Do not output or infer intent or targetTurnId.']
+      ? ['- The operation is unconditionally new generation; this does NOT fix outputKind to scene. Do not output or infer intent or targetTurnId.']
       : [
           '- "targetTurnId" MUST be one of the provided turn ids, or null. Never invent an id.',
           '- If intent is "generate", "targetTurnId" MUST be null.',
@@ -256,6 +260,7 @@ function buildClassifyIntentUserMessage(userPrompt, historyEntries, explicitRout
       mode: entry.mode,
       targetTurnId: entry.targetTurnId,
       sceneTitle: entry.sceneTitle,
+      outputKind: entry.outputKind,
       originalRequest: entry.userPrompt,
       resultSummary: entry.summary
     }))
@@ -295,6 +300,7 @@ async function classifyTurnIntent(input = {}, options = {}) {
   const fallbackExecutionMode = sceneGenerationMode === "draft_refine" ? "draft_refine" : "direct";
   const fallback = {
     intent: "generate",
+    outputKind: ["scene", "video"].includes(options.outputKind) ? options.outputKind : undefined,
     targetTurnId: null,
     note: "",
     classificationFailed: true,
@@ -358,6 +364,11 @@ async function classifyTurnIntent(input = {}, options = {}) {
           : null;
     if (!intent) {
       return { ...fallback, note: "fallback: model returned an unrecognized intent" };
+    }
+    const outputKind = ["scene", "video"].includes(options.outputKind) ? options.outputKind
+      : ["scene", "video"].includes(parsed?.outputKind) ? parsed.outputKind : undefined;
+    if (options.negotiateOutputKind === true && !outputKind) {
+      return { ...fallback, note: "The model did not return a valid outputKind (scene or video). Generation was not started." };
     }
     const validIds = new Set(historyEntries.map((entry) => entry.turnId));
     const rawTargetId = typeof parsed?.targetTurnId === "string" ? parsed.targetTurnId.trim() : "";
@@ -432,6 +443,7 @@ async function classifyTurnIntent(input = {}, options = {}) {
     }
     return {
       intent,
+      outputKind,
       targetTurnId,
       note,
       classificationFailed: false,
@@ -448,7 +460,7 @@ async function classifyTurnIntent(input = {}, options = {}) {
   } catch (error) {
     // Transport/API failures already carry structured metadata for the host UI. Do not turn them
     // into an intent fallback; provider-specific error codes belong to the injected adapter.
-    if (Number.isFinite(Number(error?.httpStatus)) || error?.isAiTransportError === true) {
+    if (options.signal?.aborted || Number.isFinite(Number(error?.httpStatus)) || error?.isAiTransportError === true) {
       throw error;
     }
     return {

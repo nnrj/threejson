@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { bindParticleSpriteResource } from "./particleSpriteResource.js";
+import { bindParticleRenderState } from "./particleRenderState.js";
 import { trackDisposableResource } from "../../handler/trackedResourceRegistry.js";
 import { registerObject, getObjectByThreeJsonId } from "../../handler/objectRegistry.js";
 import { setUserDataObjJson } from "../../handler/objectDescriptorAttach.js";
@@ -30,6 +31,7 @@ void main(){
   gl_PointSize=sizeAttenuation?particleSize*(300.0/max(-mvPosition.z,1.0)):particleSize;
 }`;
 const FRAGMENT = /* glsl */`
+uniform float opacity;
 uniform sampler2D spriteMap;
 uniform bool useSpriteMap;
 uniform vec2 atlasGrid;
@@ -49,13 +51,12 @@ void main(){
   vec2 cell=vec2(mod(frame,atlasGrid.x),atlasGrid.y-1.0-floor(frame/atlasGrid.x));
   sampleUv=(sampleUv+cell)/atlasGrid;
   vec4 sampleColor=useSpriteMap?texture2D(spriteMap,sampleUv):vec4(1.0);
-  gl_FragColor=vec4(vParticleColor,vParticleOpacity)*sampleColor;
+  gl_FragColor=vec4(vParticleColor,vParticleOpacity*opacity)*sampleColor;
   if(gl_FragColor.a<=0.001) discard;
 }`;
 
 const BILLBOARD_VERTEX = /* glsl */`
 attribute vec3 particlePosition;
-attribute vec3 color;
 attribute float particleSize;
 attribute float particleOpacity;
 attribute float particleRotation;
@@ -79,6 +80,7 @@ void main(){
   gl_Position=projectionMatrix*mvPosition;
 }`;
 const BILLBOARD_FRAGMENT = /* glsl */`
+uniform float opacity;
 uniform sampler2D spriteMap;
 uniform bool useSpriteMap;
 uniform vec2 atlasGrid;
@@ -95,7 +97,7 @@ void main(){
   vec2 cell=vec2(mod(frame,atlasGrid.x),atlasGrid.y-1.0-floor(frame/atlasGrid.x));
   vec2 sampleUv=(vParticleUv+cell)/atlasGrid;
   vec4 sampleColor=useSpriteMap?texture2D(spriteMap,sampleUv):vec4(1.0);
-  gl_FragColor=vec4(vParticleColor,vParticleOpacity)*sampleColor;
+  gl_FragColor=vec4(vParticleColor,vParticleOpacity*opacity)*sampleColor;
   if(gl_FragColor.a<=0.001)discard;
 }`;
 
@@ -241,7 +243,7 @@ function updateAttributes(state) {
   // than sorting/allocating them for every particle frame.
   const colorFrames = state.colorFrames ??= normalizeParticleLifecycleFrames(descriptor.particle.colorOverLife ?? descriptor.render.colorOverLife, descriptor.render.color);
   const sizeFrames = state.sizeFrames ??= normalizeParticleLifecycleFrames(descriptor.particle.sizeOverLife ?? descriptor.render.sizeOverLife, descriptor.render.size);
-  const opacityFrames = state.opacityFrames ??= normalizeParticleLifecycleFrames(descriptor.particle.opacityOverLife ?? descriptor.render.opacityOverLife, descriptor.render.opacity);
+  const opacityFrames = state.opacityFrames ??= normalizeParticleLifecycleFrames(descriptor.particle.opacityOverLife ?? descriptor.render.opacityOverLife, 1);
   const colorAttr = points.geometry.getAttribute("color"); const sizeAttr = points.geometry.getAttribute("particleSize"); const opacityAttr = points.geometry.getAttribute("particleOpacity");
   const progressAttr = points.geometry.getAttribute("particleProgress");
   for (let i = 0; i < state.count; i++) {
@@ -350,7 +352,7 @@ export function updateParticleCpuSimulation(delta, scope) { return resolveStore(
 export function disposeParticleCpuSimulation(points, scope) { return resolveStore(scope ?? points).disposeParticleCpuSimulation(points); }
 
 function finishCpuEmitter(descriptor, scene, ctx, positions, random) {
-  const state = buildState(descriptor, positions, random); const points = buildRenderable(descriptor, state);
+  const state = buildState(descriptor, positions, random); const points = bindParticleRenderState(buildRenderable(descriptor, state), descriptor);
   points.name = descriptor.name || "particle-emitter-cpu"; setUserDataObjJson(points, descriptor); applyTransform(points, descriptor); scene.add(points); state.points = points; updateAttributes(state);
   const spriteUrl = descriptor.render.sprite?.url ?? descriptor.render.sprite ?? descriptor.render.map;
   bindParticleSpriteResource(points, spriteUrl, scene);

@@ -15,7 +15,7 @@ import {
   buildStructuredTurnEnvelope,
   projectSceneJsonString
 } from "threejson/ai";
-import { resolveMediaOutputKind } from "threejson/ai";
+import { prepareAiMediaTurn } from "@threejson/host-kit/js/aiMediaRouting.js";
 import { resolveSceneAgentRoute } from "./turnState.js";
 
 export {
@@ -26,17 +26,23 @@ export {
   runAiTurnSummary as runSceneAgentSummary
 };
 
-export const runSceneAgentGenerateTurn = (input) => resolveMediaOutputKind(input.userPrompt, input.outputKind || input.videoOptions?.outputKind) === "video"
-  ? import("@threejson/host-kit/js/videoTurn.js").then(({ runAiVideoTurn }) => runAiVideoTurn(input)) : runAiGenerateTurn(input);
-export const runSceneAgentAdjustTurn = (input) => JSON.parse(input.targetSceneJsonString || "{}").documentType === "composition" || resolveMediaOutputKind(input.userPrompt, input.outputKind || input.videoOptions?.outputKind) === "video"
-  ? import("@threejson/host-kit/js/videoTurn.js").then(({ runAiVideoTurn }) => runAiVideoTurn(input)) : runAiAdjustTurn(input);
+export async function runSceneAgentGenerateTurn(input) {
+  const routed = await prepareAiMediaTurn(input, "generate");
+  return routed.outputKind === "video"
+    ? (await import("@threejson/host-kit/js/videoTurn.js")).runAiVideoTurn(routed) : runAiGenerateTurn(routed);
+}
+export async function runSceneAgentAdjustTurn(input) {
+  const routed = await prepareAiMediaTurn(input, "adjust");
+  return routed.outputKind === "video"
+    ? (await import("@threejson/host-kit/js/videoTurn.js")).runAiVideoTurn(routed) : runAiAdjustTurn(routed);
+}
 export const buildSceneAgentTurnEnvelope = (input) => buildStructuredTurnEnvelope(input);
 export const createSceneAgentTurnContext = (turnId, userPrompt) =>
   ({ turnId: String(turnId || "").trim(), originalPrompt: String(userPrompt || "") });
 export const projectSceneAgentJsonString = (sceneJsonString, outputFormat = "standard", options = {}) =>
   projectSceneJsonString(sceneJsonString, outputFormat, options);
 
-/** Empty history is always generation; the model negotiates only construction and capabilities. */
+/** Empty history is always generation; the model negotiates medium, construction and capabilities. */
 export async function negotiateSceneAgentTurn(input, providerOptions) {
   const history = Array.isArray(input?.history) ? input.history : [];
   const classified = await classifyAiTurnIntent({ ...input, history }, providerOptions);

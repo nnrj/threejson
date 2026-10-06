@@ -1,4 +1,10 @@
 export const THREEBOX_SHELL_LABELS_EN = {
+  "ai.output.generateVideo": "Will generate a video. You can stop if this is not what you intended.",
+  "ai.output.generateScene": "Will generate a 3D scene. You can stop if this is not what you intended.",
+  "ai.output.adjustVideo": "Will adjust the video. You can stop if this is not what you intended.",
+  "ai.output.adjustScene": "Will adjust the 3D scene. You can stop if this is not what you intended.",
+  "ai.error.incompleteScene": "The provider did not complete valid scene JSON. Partial output was not loaded; retry or check the provider output limits.",
+  "ai.error.invalidTimeline": "The generated animation references an unavailable object or property. See the error details for the track and target.",
   "threebox.settings.section.sync": "Sync",
   "threebox.settings.field.sync_enabled": "Enable self-hosted conversation sync",
   "threebox.settings.field.sync_endpoint": "Sync server URL",

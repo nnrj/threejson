@@ -1,4 +1,5 @@
 import { executeCommands, createCommandContext } from "threejson";
+import { prepareAiMediaTurn } from "../../shared/js/aiMediaRouting.js";
 import {
   buildResultDigest as buildAiResultDigest,
   classifyAiTurnIntent,
@@ -95,11 +96,10 @@ export function buildResultDigest(sceneJson) {
   return buildAiResultDigest(sceneJson);
 }
 
-export function runThreeBoxGenerateTurn(input) {
-  return import("threejson/ai").then(async ({ resolveMediaOutputKind }) => {
-    if (resolveMediaOutputKind(input.userPrompt, input.outputKind || input.videoOptions?.outputKind) === "video") return (await import("../../shared/js/videoTurn.js")).runAiVideoTurn(input);
-    return runAiGenerateTurn(input);
-  });
+export async function runThreeBoxGenerateTurn(input) {
+  const routed = await prepareAiMediaTurn(input, "generate");
+  if (routed.outputKind === "video") return (await import("../../shared/js/videoTurn.js")).runAiVideoTurn(routed);
+  return runAiGenerateTurn(routed);
 }
 
 export function classifyThreeBoxTurnIntent(input, providerOptions) {
@@ -118,11 +118,10 @@ export function resolveAdjustContextPayload(targetSceneJson, settings = {}) {
   return resolveAiAdjustContextPayload(targetSceneJson, settings);
 }
 
-export function runThreeBoxAdjustTurn(input) {
-  return import("threejson/ai").then(async ({ resolveMediaOutputKind }) => {
-    if (JSON.parse(input.targetSceneJsonString || "{}").documentType === "composition" || resolveMediaOutputKind(input.userPrompt, input.outputKind || input.videoOptions?.outputKind) === "video") return (await import("../../shared/js/videoTurn.js")).runAiVideoTurn(input);
-    return runAiAdjustTurn(input);
-  });
+export async function runThreeBoxAdjustTurn(input) {
+  const routed = await prepareAiMediaTurn(input, "adjust");
+  if (routed.outputKind === "video") return (await import("../../shared/js/videoTurn.js")).runAiVideoTurn(routed);
+  return runAiAdjustTurn(routed);
 }
 
 /**

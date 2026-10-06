@@ -7,6 +7,7 @@ import {
   float,
   instanceIndex,
   mix,
+  materialOpacity,
   select,
   storage,
   texture,
@@ -22,6 +23,7 @@ import { registerParticleSimulationBackend, registerParticleSimulationLifecycle 
 import { buildParticleEmitterWorldMatrix, createSeededRandom, sampleParticleSourcePositions } from "../core/builder/particle/particleSourceSampler.js";
 import { PARTICLE_ATTRACTOR_LIMIT, assertParticleCountWithinBudget, normalizeParticleEmitterV2, sampleRange } from "../core/builder/particle/particleV2Descriptor.js";
 import { normalizeParticleLifecycleFrames } from "../core/builder/particle/particleLifecycle.js";
+import { bindParticleRenderState } from "../core/builder/particle/particleRenderState.js";
 import { resolvePosition, resolveRotation, resolveScale } from "../core/util/vectorValue.js";
 import { applyVisibilityFromDescriptor } from "../core/util/util.js";
 import { loadingManager } from "../core/cache/loading.js";
@@ -269,9 +271,9 @@ function buildMaterial(descriptor, buffers) {
   );
   const particleOpacityNode = numberCurveNode(
     descriptor.particle.opacityOverLife ?? descriptor.render.opacityOverLife,
-    descriptor.render.opacity,
+    1,
     progress
-  ).mul(visibility);
+  ).mul(visibility).mul(materialOpacity);
   const MaterialClass = descriptor.render.type === "points" ? THREE.PointsNodeMaterial : THREE.SpriteNodeMaterial;
   const material = new MaterialClass({
     transparent: descriptor.render.transparent,
@@ -335,6 +337,7 @@ function finishWebgpuEmitter(descriptor, scene, ctx, sampledPositions, random) {
   const materialState = buildMaterial(descriptor, buffers);
   const material = materialState.material;
   const particles = new THREE.InstancedMesh(geometry, material, descriptor.emission.count);
+  bindParticleRenderState(particles, descriptor);
   const identity = new THREE.Matrix4();
   for (let index = 0; index < descriptor.emission.count; index++) particles.setMatrixAt(index, identity);
   particles.instanceMatrix.needsUpdate = true;

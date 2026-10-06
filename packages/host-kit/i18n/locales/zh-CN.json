@@ -208,5 +208,11 @@
   "settings.options.ai.texturePersistenceMode.archive-selected": "归档已选择",
   "settings.options.ai.texturePersistenceMode.archive-all": "归档全部",
   "settings.fields.ai.textureAllowUnknownLicense": "允许自动使用许可未知的纹理",
-  "settings.provider.quotaValue": "已用 {used} 轮 / 剩余 {remaining} 轮"
+  "settings.provider.quotaValue": "已用 {used} 轮 / 剩余 {remaining} 轮",
+  "ai.output.generateVideo": "将生成视频。如判断有误，可点击停止。",
+  "ai.output.generateScene": "将生成 3D 场景。如判断有误，可点击停止。",
+  "ai.output.adjustVideo": "将调整视频。如判断有误，可点击停止。",
+  "ai.output.adjustScene": "将调整 3D 场景。如判断有误，可点击停止。",
+  "ai.error.incompleteScene": "供应商未完成有效的场景 JSON，未加载残缺内容。请重试或检查供应商的输出限制。",
+  "ai.error.invalidTimeline": "生成的动画引用了不存在的对象或不可用的属性。请在错误详情中查看轨道和目标。"
 }

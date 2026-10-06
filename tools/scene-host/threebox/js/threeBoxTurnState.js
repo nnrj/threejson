@@ -25,7 +25,7 @@ export function resolveThreeBoxNegotiatedRoute(classified, priorTurns = []) {
   const sceneTurns = Array.isArray(priorTurns) ? priorTurns.filter(isSceneContextTurn) : [];
   const latestTurn = sceneTurns.length ? sceneTurns[sceneTurns.length - 1] : null;
 
-  if (classified?.classificationFailed === true && latestTurn) {
+  if (classified?.classificationFailed === true) {
     const error = new Error(classified.note || "AI intent negotiation failed.");
     error.code = "THREEBOX_INTENT_CLASSIFICATION_FAILED";
     throw error;
@@ -47,6 +47,7 @@ export function createUnsuccessfulTurnRecord({
   conversationId,
   userPrompt,
   mode,
+  outputKind,
   targetTurnId = null,
   stopped = false,
   errorMessage = "",
@@ -59,6 +60,7 @@ export function createUnsuccessfulTurnRecord({
     seq: createdAt,
     userPrompt: String(userPrompt || ""),
     mode: mode === "adjust" ? "adjust" : "generate",
+    outputKind,
     targetTurnId: mode === "adjust" ? targetTurnId : null,
     stage: "error",
     status: stopped ? "stopped" : "failed",

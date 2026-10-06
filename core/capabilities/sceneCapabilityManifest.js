@@ -204,6 +204,7 @@ const BUILTIN_CAPABILITIES = Object.freeze({
     imageMask: Object.freeze({ status: "stable", lazy: true, asyncRuntime: true, activation: "descriptor", entry: "threejson/particles-raster", browser: true })
   }),
   controlsTypes: Object.freeze({
+    none: Object.freeze({ status: "stable" }),
     orbit: Object.freeze({ status: "stable" }),
     firstPerson: Object.freeze({ status: "stable" }),
     fly: Object.freeze({ status: "stable" }),

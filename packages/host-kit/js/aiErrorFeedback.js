@@ -32,6 +32,9 @@ function safeTechnicalDetail(error, payload, providerCode) {
     ? payload.message
     : typeof payload?.error?.message === "string" ? payload.error.message : "";
   if (providerMessage.trim()) lines.push(`message: ${providerMessage.trim()}`);
+  else if (!payload && error?.isAiTransportError === true && typeof error.message === "string") {
+    lines.push(`message: ${error.message}`);
+  }
   const turnId = payload?.threebox_moderation?.turn_id;
   if (typeof turnId === "string" && turnId.trim()) lines.push(`turn_id: ${turnId.trim()}`);
   if (lines.length) return lines.join("\n");
@@ -75,7 +78,7 @@ export function getAiErrorFeedback(error) {
     message = t("ai.error.revokedApiKey", "访问凭证已失效，请刷新后重试。");
   } else if (error?.code === "INVALID_API_KEY_HEADER_VALUE") {
     message = t("ai.error.invalidApiKeyHeader", "API Key 包含无法用于请求头的字符，请检查配置后重试。");
-  } else if (["THREEBOX_INTENT_CLASSIFICATION_FAILED", "SCENE_AGENT_INTENT_CLASSIFICATION_FAILED"].includes(error?.code)) {
+  } else if (["THREEBOX_INTENT_CLASSIFICATION_FAILED", "SCENE_AGENT_INTENT_CLASSIFICATION_FAILED", "AI_OUTPUT_KIND_REQUIRED"].includes(error?.code)) {
     message = t("ai.error.intentClassificationFailed", "未能可靠判断本次请求的操作类型，已停止本轮操作以避免错误修改场景，请重试。");
   } else if (providerCode === "UPSTREAM_REASONING_EXHAUSTED") {
     message = t("ai.error.reasoningExhausted", "供应商的思考过程耗尽了输出额度，尚未生成场景内容。请关闭或降低思考模式后重试。");
@@ -87,6 +90,10 @@ export function getAiErrorFeedback(error) {
     message = t("ai.error.upstreamResourceUnavailable", "供应商当前推理资源不足，请稍后重试或切换供应商。");
   } else if (providerCode === "UPSTREAM_EMPTY_COMPLETION") {
     message = t("ai.error.upstreamEmptyCompletion", "供应商结束了响应，但没有返回可用内容。请重试或切换供应商。");
+  } else if (["SCENE_JSON_TRUNCATED", "SCENE_OUTPUT_LIMIT", "SCENE_JSON_SEGMENT_INVALID"].includes(error?.code)) {
+    message = t("ai.error.incompleteScene", "The provider did not complete valid scene JSON. Partial output was not loaded; retry or check the provider output limits.");
+  } else if (["TIMELINE_PROPERTY_MISSING", "TIMELINE_TARGET_MISSING"].includes(error?.code)) {
+    message = t("ai.error.invalidTimeline", "The generated animation references an unavailable object or property. See the error details for the track and target.");
   } else if (providerCode || Number.isFinite(Number(error?.httpStatus))) {
     message = t("ai.error.failed", "处理失败，发生错误。");
   } else if (error?.code) {

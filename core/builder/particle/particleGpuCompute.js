@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { GPUComputationRenderer } from "three/examples/jsm/misc/GPUComputationRenderer.js";
 import { log } from "../../util/logger.js";
 import { bindParticleSpriteResource } from "./particleSpriteResource.js";
+import { bindParticleRenderState } from "./particleRenderState.js";
 import { trackDisposableResource } from "../../handler/trackedResourceRegistry.js";
 import { registerObject, getObjectByThreeJsonId } from "../../handler/objectRegistry.js";
 import { setUserDataObjJson } from "../../handler/objectDescriptorAttach.js";
@@ -136,6 +137,7 @@ void main(){
 }`;
 
 const RENDER_FRAGMENT = /* glsl */`
+uniform float opacity;
 uniform int colorKeyCount;
 uniform vec4 colorKeys[PARTICLE_KEYFRAMES];
 uniform int opacityKeyCount;
@@ -179,7 +181,7 @@ void main(){
   vec2 cell=vec2(mod(frame,atlasGrid.x),atlasGrid.y-1.0-floor(frame/atlasGrid.x));
   vec2 sampleUv=(center+vec2(0.5)+cell)/atlasGrid;
   vec4 sampled=useSpriteMap?texture2D(spriteMap,sampleUv):vec4(1.0,1.0,1.0,edge);
-  gl_FragColor=vec4(sampleColorCurve(vLifeProgress),sampleOpacityCurve(vLifeProgress))*sampled;
+  gl_FragColor=vec4(sampleColorCurve(vLifeProgress),sampleOpacityCurve(vLifeProgress)*opacity)*sampled;
 }`;
 
 const BILLBOARD_RENDER_VERTEX = /* glsl */`
@@ -223,6 +225,7 @@ void main(){
 }`;
 
 const BILLBOARD_RENDER_FRAGMENT = /* glsl */`
+uniform float opacity;
 uniform int colorKeyCount;
 uniform vec4 colorKeys[PARTICLE_KEYFRAMES];
 uniform int opacityKeyCount;
@@ -264,7 +267,7 @@ void main(){
   vec2 cell=vec2(mod(frame,atlasGrid.x),atlasGrid.y-1.0-floor(frame/atlasGrid.x));
   vec2 sampleUv=(vParticleUv+cell)/atlasGrid;
   vec4 sampled=useSpriteMap?texture2D(spriteMap,sampleUv):vec4(1.0,1.0,1.0,edge);
-  gl_FragColor=vec4(sampleColorCurve(vLifeProgress),sampleOpacityCurve(vLifeProgress))*sampled;
+  gl_FragColor=vec4(sampleColorCurve(vLifeProgress),sampleOpacityCurve(vLifeProgress)*opacity)*sampled;
 }`;
 
 function finite(value, fallback) { const n = Number(value); return Number.isFinite(n) ? n : fallback; }
@@ -364,7 +367,7 @@ function billboardReferenceGeometry(count, width, height) {
 
 function renderMaterial(descriptor, billboard = false, renderer) {
   const size=numberKeyUniforms(descriptor.particle.sizeOverLife??descriptor.render.sizeOverLife,descriptor.render.size);
-  const opacity=numberKeyUniforms(descriptor.particle.opacityOverLife??descriptor.render.opacityOverLife,descriptor.render.opacity);
+  const opacity=numberKeyUniforms(descriptor.particle.opacityOverLife??descriptor.render.opacityOverLife,1);
   const colorCurve=colorKeyUniforms(descriptor.particle.colorOverLife??descriptor.render.colorOverLife,descriptor.render.color);
   const atlas=atlasInfo(descriptor);
   const capacity = Math.max(size.count, opacity.count, colorCurve.count);
@@ -395,6 +398,7 @@ function finishGpuEmitter(descriptor, scene, renderer, positions, random) {
   try { material=renderMaterial(descriptor,billboard,renderer); } catch(error) { geometry.dispose();gpu.dispose();throw error; }
   material.uniforms.texturePosition.value=gpu.getCurrentRenderTarget(positionVariable).texture;material.uniforms.textureVelocity.value=gpu.getCurrentRenderTarget(velocityVariable).texture;
   const points=billboard?new THREE.Mesh(geometry,material):new THREE.Points(geometry,material);trackDisposableResource(points);points.frustumCulled=false;points.name=descriptor.name||"particle-emitter-gpu";setUserDataObjJson(points,descriptor);applyTransform(points,descriptor);scene.add(points);
+  bindParticleRenderState(points, descriptor);
   bindParticleSpriteResource(points,descriptor.render.sprite?.url??descriptor.render.sprite??descriptor.render.map,scene);
   const state={gpuCompute:gpu,positionVariable,velocityVariable,elapsed:0,onRemoved:()=>disposeParticleGpuCompute(points)};points.addEventListener("removed",state.onRemoved);resolveStore(scene).registerEmitter(points,state);return registerObject(points,descriptor);
 }

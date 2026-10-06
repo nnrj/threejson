@@ -32,6 +32,7 @@ export function resolveControlsType(config = {}) {
     return "orbit";
   }
   if (lower === "firstperson") return "firstPerson";
+  if (lower === "none") return "none";
   if (lower === "fly") return "fly";
   if (lower === "map" || lower === "mapcontrols") return "map";
   if (lower === "trackball" || lower === "trackballcontrols") return "trackball";
@@ -101,6 +102,7 @@ export function createControlsFromDescriptor(camera, domElement, controlsConfig 
     return null;
   }
   const type = resolveControlsType(controlsConfig);
+  if (type === "none") return null;
   let controls = null;
   if (type === "orbit") controls = createOrbitControls(camera, domElement, controlsConfig);
   if (type === "firstPerson") controls = createFirstPersonControls(camera, domElement, controlsConfig, ctx);

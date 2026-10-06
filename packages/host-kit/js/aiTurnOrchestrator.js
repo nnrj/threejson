@@ -298,7 +298,7 @@ export async function runAiImageGenerateTurn({
  * @param {object} providerOptions
  */
 export async function classifyAiTurnIntent({ userPrompt, history }, providerOptions) {
-  const immediate = resolveImmediateDirectGeneration({ userPrompt, history }, providerOptions);
+  const immediate = providerOptions?.negotiateOutputKind === true ? null : resolveImmediateDirectGeneration({ userPrompt, history }, providerOptions);
   if (immediate) {
     return immediate;
   }

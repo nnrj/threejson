@@ -3,6 +3,13 @@ import {
   sanitizeAiJsonText
 } from "../util/sceneJsonSanitize.js";
 import { isLoadableScenePayload } from "./sceneFriendlyNormalizer.js";
+import { classifyJsonPrefix } from "../util/jsonPrefix.js";
+
+function sceneParseError(text, cause) {
+  return Object.assign(new SyntaxError(buildSanitizedJsonParseErrorMessage(text, cause), { cause }), {
+    code: classifyJsonPrefix(text).status === "incomplete" ? "SCENE_JSON_TRUNCATED" : "SCENE_JSON_INVALID"
+  });
+}
 
 function isObject(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -44,7 +51,7 @@ function parseSceneJsonString(sceneJsonString) {
   try {
     parsed = JSON.parse(sanitized);
   } catch (error) {
-    throw new SyntaxError(buildSanitizedJsonParseErrorMessage(sanitized, error));
+    throw sceneParseError(sanitized, error);
   }
   return normalizeSceneJsonObject(parsed);
 }
@@ -56,7 +63,7 @@ function parseJsonObjectWithoutSceneValidation(sceneJsonString) {
   try {
     parsed = JSON.parse(sanitized);
   } catch (error) {
-    throw new SyntaxError(buildSanitizedJsonParseErrorMessage(sanitized, error));
+    throw sceneParseError(sanitized, error);
   }
   if (!isObject(parsed)) {
     throw new Error("Generated scene JSON must be an object.");

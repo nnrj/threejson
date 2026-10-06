@@ -30,6 +30,7 @@ import { resolveSceneAgentOptions, resolveSceneAgentTokenOptions } from "@threej
 import { createUnsuccessfulTurnRecord, isUnsuccessfulTurn } from "@threejson/scene-agent-kit/turn-state";
 import { buildStructuredTurnEnvelope } from "threejson/ai";
 import { getAiErrorFeedback } from "@threejson/host-kit/js/aiErrorFeedback.js";
+import { getDocumentOutputKind } from "@threejson/host-kit/js/aiMediaRouting.js";
 import { getMediaProductionSummary, formatMediaProductionSummary, getMediaContinuation } from "@threejson/host-kit/js/mediaProductionFeedback.js";
 import { resolveSceneHostUrl, sceneHostAssetUrl } from "@threejson/host-kit/js/sceneHostPaths.js";
 import {
@@ -912,6 +913,7 @@ export function App() {
               conversationId: id,
               turnId: turn.id,
               userPrompt: turn.userPrompt || "",
+              outputKind: turn.outputKind,
               mode: turn.mode || "generate",
               targetTurnId: turn.targetTurnId || null
             }
@@ -1305,6 +1307,12 @@ export function App() {
       const requestedMode = retryOptions?.mode || modeOverride;
       let adjusting = requestedMode === "adjust" || (requestedMode !== "generate" && Boolean(adjustTargetString));
       let negotiation = null;
+      let outputKind = retryOptions?.outputKind;
+      const onOutputKind = async ({ outputKind: kind, message }) => {
+        outputKind = kind;
+        updateMessage(assistantId, { routeNotice: message });
+        await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+      };
 
       // Direct generation is the default. This budget is only a runaway guard when core/ai
       // escalates a genuinely complex/output-limited scene to incremental construction.
@@ -1369,13 +1377,18 @@ export function App() {
         });
       };
       updateMessage(assistantId, {
-        text: L("正在生成…", "Generating…"),
+        text: L("正在判断输出类型与生成方式…", "Determining the output type and generation approach…"),
         renderSceneCard: true,
         mode: adjusting ? "adjust" : "generate"
       });
 
       try {
         const allPriorTurns = await history.loadTurns(conversationId);
+        // Resolve the explicitly selected card before deriving its medium;
+        // the newest card may be an unrelated scene or film.
+        if (!seedSceneJson && requestedMode === "adjust" && adjustTargetTurnId && adjustTargetTurnId !== shownTurnId) {
+          adjustTargetString = await reconstructSceneAgentTurn(allPriorTurns, adjustTargetTurnId);
+        }
         const priorSceneTurns = allPriorTurns.filter((turn) => (
           !["failed", "stopped"].includes(String(turn?.status || "").toLowerCase()) &&
           (Boolean(turn?.sceneJson) || (Array.isArray(turn?.commands) && turn.commands.length > 0))
@@ -1386,9 +1399,12 @@ export function App() {
           userPrompt: turn.userPrompt || "",
           mode: turn.mode,
           targetTurnId: turn.targetTurnId,
-          sceneTitle: turn.sceneTitle || ""
+          sceneTitle: turn.sceneTitle || "",
+          outputKind: turn.outputKind || getDocumentOutputKind(turn.sceneJson)
         }));
-        negotiation = await negotiateSceneAgentTurn(
+        negotiation = (requestedMode === "adjust" || seedSceneJson) && adjustTargetString
+          ? { intent: "adjust", outputKind: getDocumentOutputKind(adjustTargetString), route: { intent: "adjust", targetTurnId: adjustTargetTurnId } }
+          : await negotiateSceneAgentTurn(
           {
             userPrompt,
             history: requestedMode === "generate" ? [] : negotiationHistory,
@@ -1397,6 +1413,8 @@ export function App() {
           {
             ...sceneProviderOptions,
             signal: controller.signal,
+            negotiateOutputKind: true,
+            outputKind: outputKind || settings.ai?.mediaOutputKind || "auto",
             animationCapabilityMode: settings.ai.animationCapabilityMode || "auto",
             sceneGenerationMode: settings.ai.sceneGenerationMode || "auto",
             complexModelStrategy: settings.ai.complexModelStrategy || "auto",
@@ -1410,10 +1428,6 @@ export function App() {
           adjusting = false;
         } else if (requestedMode === "adjust") {
           adjusting = Boolean(adjustTargetString);
-          if (adjustTargetTurnId && adjustTargetTurnId !== shownTurnId) {
-            adjustTargetString = await reconstructSceneAgentTurn(allPriorTurns, adjustTargetTurnId);
-            adjusting = Boolean(adjustTargetString);
-          }
         } else {
           adjusting = negotiation.route?.intent === "adjust";
           adjustTargetTurnId = negotiation.route?.targetTurnId || shownTurnId;
@@ -1422,6 +1436,7 @@ export function App() {
           }
         }
         if (adjusting && !adjustTargetString) adjusting = false;
+        outputKind = negotiation.outputKind;
         updateMessage(assistantId, { mode: adjusting ? "adjust" : "generate" });
 
         let sceneJson;
@@ -1458,6 +1473,8 @@ export function App() {
             modelQuality: negotiation.modelQuality || settings.ai.modelQuality || "balanced"
           });
           const result = await runAiAdjustTurn({
+            outputKind,
+            onOutputKind,
             videoOptions: { duration: Number(settings.ai?.videoDuration) || undefined, quality: settings.ai?.videoQuality || "balanced", visualReview: settings.ai?.videoVisualReview },
             runtimeOptions: { assetsBase: sceneHostAssetUrl("assets/"), resolveResourceUrl: sceneCardOptions.resolveResourceUrl, assetGateway: sceneCardOptions.assetGateway() },
             userPrompt,
@@ -1515,6 +1532,8 @@ export function App() {
           }
         } else {
           const result = await runAiGenerateTurn({
+            outputKind,
+            onOutputKind,
             videoOptions: { outputKind: settings.ai?.mediaOutputKind || "auto", duration: Number(settings.ai?.videoDuration) || undefined, quality: settings.ai?.videoQuality || "balanced", confirmStoryboard: settings.ai?.videoConfirmStoryboard === true, visualReview: settings.ai?.videoVisualReview },
             runtimeOptions: { assetsBase: sceneHostAssetUrl("assets/"), resolveResourceUrl: sceneCardOptions.resolveResourceUrl, assetGateway: sceneCardOptions.assetGateway() },
             userPrompt,
@@ -1597,6 +1616,7 @@ export function App() {
         const turnRecord = await history.appendTurn(conversationId, {
           id: currentTurnId,
           userPrompt,
+          outputKind,
           mode: adjusting ? "adjust" : "generate",
           targetTurnId: adjusting ? adjustTargetTurnId : undefined,
           stage,
@@ -1741,6 +1761,7 @@ export function App() {
           conversationId,
           turnId: currentTurnId,
           userPrompt,
+          outputKind,
           mode: adjusting ? "adjust" : "generate",
           targetTurnId: adjusting ? adjustTargetTurnId : null
         };
@@ -1761,6 +1782,7 @@ export function App() {
           id: currentTurnId,
           conversationId,
           userPrompt,
+          outputKind,
           mode: adjusting ? "adjust" : "generate",
           targetTurnId: adjusting ? adjustTargetTurnId : null,
           stopped,
@@ -2199,6 +2221,7 @@ export function App() {
                   {role === "user" ? "U" : <img src={LOGO_URL} alt="ThreeBox" />}
                 </div>
                 <div className="chatMessageBody">
+                  {m.routeNotice && <p className="aiOutputRouteNotice" role="status">{m.routeNotice}</p>}
                   {m.role === "error" ? (
                     <AiErrorFeedback
                       feedback={m.errorFeedback}

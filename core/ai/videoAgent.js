@@ -1,15 +1,14 @@
 import { runSceneOperationAgent } from "./sceneOperationAgent.js";
 import { buildAgentCapabilityIndex } from "./sceneCapabilityIndex.js";
 
-export function resolveMediaOutputKind(prompt, requested = "auto") {
+/** Resolve an explicit host choice or an AI-negotiated choice. Natural language
+ * classification belongs to classifyTurnIntent, not a second keyword router.
+ * The first argument is retained for callers but is deliberately not inspected.
+ */
+export function resolveMediaOutputKind(_prompt, requested = "auto", negotiated) {
   if (["scene", "video", "image", "gif"].includes(requested)) return requested;
-  const text = String(prompt || "");
-  if (/不要.{0,5}(?:视频|动画)|\b(?:not a video|no video)\b/i.test(text)) return "scene";
-  if (/(?:一台|一个).{0,24}(?:电视机?|显示器|屏幕)|视频(?:贴图|纹理)|\bvideo\s+texture\b|\b(?:TV|television|monitor|screen)\b.{0,24}\b(?:playing|showing)\b/i.test(text) && !/视频(?:[。！，,]|$)|\b(?:make|create|generate)\s+(?:a\s+)?video\b/i.test(text)) return "scene";
-  // Explicit output requests only. A TV with a video texture is still a scene.
-  if (/(?:生成|制作|做|创作|输出|导出).{0,40}(?:视频|短片|影片|科普片|MV)|\b(?:make|create|generate|produce|export)\b.{0,60}\b(?:video|film|movie|explainer)\b/i.test(text)) return "video";
-  if (/(?:生成|制作|输出|导出).{0,30}GIF|\b(?:make|create|generate|export)\b.{0,40}\bGIF\b/i.test(text)) return "gif";
-  return "scene";
+  if (["scene", "video"].includes(negotiated)) return negotiated;
+  throw Object.assign(new Error("AI output-kind negotiation is required before generation (scene or video)."), { code: "AI_OUTPUT_KIND_REQUIRED" });
 }
 
 export function buildVideoAgentInstructions(options = {}) {

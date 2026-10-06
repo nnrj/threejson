@@ -11,6 +11,50 @@ import { normalizeScenePayload } from "../core/handler/sceneFriendlyNormalizer.j
 import { convertStandardJsonToFriendlyJson, convertFriendlyJsonToStandardJson } from "../core/util/util.js";
 import { extractRootMetadataFromBase } from "../core/util/scenePayloadMerge.js";
 import { registerObjectReadiness } from "../core/resource/objectReadiness.js";
+import { readFileSync } from "node:fs";
+
+test("particle render.opacity and material.opacity share runtime shader state across seeks without touching JSON", () => {
+  for (const type of ["points", "billboard"]) for (const initialOpacity of [0, 0.4, 1]) {
+    const scene = new THREE.Scene(), ctx = createRuntimeContext(); attachRuntimeContext(scene, ctx);
+    const descriptor = { objType: "particleEmitter", threeJsonId: "emitter", source: { type: "positions", positions: [0, 0, 0] },
+      emission: { count: 1, mode: "burst", seed: 1 }, particle: { lifetime: 4, opacityOverLife: [0, 1, 0] },
+      simulation: { backend: "cpu" }, render: { type, opacity: initialOpacity, transparent: false } };
+    const original = JSON.stringify(descriptor), particles = deployParticleCpuEmitter(descriptor, scene);
+    for (const property of ["render.opacity", "material.opacity"]) {
+      const player = createSceneTimelineController({ scene, runtimeContext: ctx }, { duration: 4, tracks: [
+        { id: "fade", target: "emitter", property, keyframes: [{ time: 1, value: 0 }, { time: 3, value: 1 }] }
+      ] });
+      for (const time of [3, 1, 2, 0, 2]) {
+        player.evaluateAt(time);
+        const expected = time < 1 ? initialOpacity : (time - 1) / 2;
+        assert.equal(particles.render.opacity, expected);
+        assert.equal(particles.material.uniforms.opacity.value, expected);
+        if (expected < 1 && time >= 1) assert.equal(particles.material.transparent, true);
+      }
+      // Global opacity multiplies (does not replace or square) lifetime opacity.
+      assert.ok(Math.abs(particles.geometry.getAttribute("particleOpacity").getX(0) - 1) < 1e-6);
+      assert.match(particles.material.fragmentShader, /vParticleOpacity\*opacity/);
+      player.dispose(); assert.equal(particles.material.opacity, initialOpacity);
+      assert.equal(particles.material.transparent, false);
+    }
+    assert.equal(JSON.stringify(descriptor), original); ctx.dispose();
+  }
+});
+
+test("the reported double-slit video beam track binds including its omitted render.opacity default", () => {
+  const film = JSON.parse(readFileSync(new URL("./fixtures/double-slit-video-particle-opacity.json", import.meta.url)));
+  const scene = new THREE.Scene(), ctx = createRuntimeContext(); attachRuntimeContext(scene, ctx);
+  const descriptor = film.objectList.find(object => object.threeJsonId === "electron-beam");
+  const original = JSON.stringify(descriptor);
+  const emitter = deployParticleCpuEmitter(descriptor, scene);
+  const track = film.timeline.tracks.find(track => track.id === "beam-intensity");
+  const player = createSceneTimelineController({ scene, runtimeContext: ctx }, { duration: film.timeline.duration, tracks: [track] });
+  for (const time of [0, 6, 12, 18, 24, 6]) {
+    player.evaluateAt(time);
+    assert.equal(emitter.material.uniforms.opacity.value, sampleTimelineTrack(track, time) ?? 1);
+  }
+  assert.equal(JSON.stringify(descriptor), original); player.dispose(); ctx.dispose();
+});
 
 test("timeline clock pause, seek, end and looping are explicit", () => {
   const clock = createSceneClock({ duration: 3 });

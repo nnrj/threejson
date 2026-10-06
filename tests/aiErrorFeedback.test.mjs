@@ -50,9 +50,19 @@ test("AI error feedback gives unknown failures a friendly message", () => {
 test("AI error feedback explains direct upstream reasoning exhaustion", () => {
   const feedback = getAiErrorFeedback({
     code: "UPSTREAM_REASONING_EXHAUSTED",
+    isAiTransportError: true,
     message: "finish_reason=length, reasoning_tokens=800"
   });
   assert.equal(feedback.code, "UPSTREAM_REASONING_EXHAUSTED");
   assert.match(feedback.message, /思考|reasoning/i);
   assert.doesNotMatch(feedback.detail, /private/);
+  assert.match(feedback.detail, /reasoning_tokens=800/);
+});
+
+test("truncated JSON and invalid timeline bindings are not presented as unknown failures", () => {
+  for (const code of ["SCENE_JSON_TRUNCATED", "TIMELINE_PROPERTY_MISSING"]) {
+    const feedback = getAiErrorFeedback({ code, message: "diagnostic" });
+    assert.doesNotMatch(feedback.message, /未知|Unknown/i);
+    assert.equal(feedback.detail, "diagnostic");
+  }
 });

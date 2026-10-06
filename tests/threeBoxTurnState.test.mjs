@@ -74,11 +74,11 @@ test("ThreeBox never silently converts a failed negotiation into a new scene", (
     ),
     (error) => error?.code === "THREEBOX_INTENT_CLASSIFICATION_FAILED"
   );
-  assert.deepEqual(
-    resolveThreeBoxNegotiatedRoute(
+  assert.throws(
+    () => resolveThreeBoxNegotiatedRoute(
       { intent: "generate", classificationFailed: true },
       []
     ),
-    { intent: "generate", targetTurnId: null }
+    { code: "THREEBOX_INTENT_CLASSIFICATION_FAILED" }
   );
 });

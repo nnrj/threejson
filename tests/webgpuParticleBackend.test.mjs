@@ -52,6 +52,9 @@ test("WebGPU particles build full lifecycle curves for points and billboards", (
       }
     });
     assert.equal(particles.isInstancedMesh, true);
+    assert.equal(particles.render, particles.material);
+    particles.render.opacity = 0.25;
+    assert.equal(particles.material.opacity, 0.25);
     assert.equal(particles.material.isPointsNodeMaterial === true, renderType === "points");
     scene.remove(particles);
   }
