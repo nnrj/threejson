@@ -21,7 +21,7 @@ export interface SceneAgentSceneCardProps {
   /** Serialized history is decoded on demand when defer is true. */
   sceneJson: Record<string, unknown> | string | null;
   label?: string;
-  options?: Record<string, unknown>;
+  options?: Record<string, unknown> & { openInVideoEditor?: (document: Record<string, unknown>, label?: string) => void | Promise<unknown> };
   showToast?: (message: string, kind?: string) => void;
   onReady?: (card: SceneCardRuntime | null) => void;
   managed?: boolean;

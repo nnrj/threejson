@@ -1,4 +1,5 @@
 import { validateTimeline } from "threejson/timeline";
+import { validateMediaEditing } from "./editing.js";
 
 const mime = (path) => ({ png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", gif: "image/gif", mp3: "audio/mpeg", wav: "audio/wav", ogg: "audio/ogg", mp4: "video/mp4", webm: "video/webm", glb: "model/gltf-binary", json: "application/json" })[path.split(".").pop().toLowerCase()] || "application/octet-stream";
 function packPath(value) { return value.replace(/^pack:(\/\/)?/, "").replace(/^\/+/, ""); }
@@ -9,7 +10,7 @@ export function validateMediaDocument(input) {
   if (document.documentType === "composition") {
     if (document.compositionVersion !== 1) throw new Error("Unsupported composition version.");
     document.timeline = validateTimeline(document.timeline);
-    if (!document.timeline.clips.length) throw new Error("Composition needs scene clips.");
+    validateMediaEditing(document);
   } else if (!document.sceneConfig && !Array.isArray(document.objectList) && !document.worldInfo) throw new Error("Input is not a ThreeJSON scene.");
   if (document.timeline) document.timeline = validateTimeline(document.timeline);
   return document;
@@ -51,6 +52,8 @@ export async function openMediaDocument(input, options = {}) {
   };
   const api = {
     document, baseUrl, resolveAsset,
+    // Hosts persist/import archive resources without keeping temporary blob URLs.
+    getPackedAssets() { return Object.fromEntries([...(archive?.fileMap || [])].map(([path, bytes]) => [`pack://${path}`, new Blob([bytes], { type: mime(path) })])); },
     ownerOf(scene) { return owners.get(scene) || api; },
     async materialize(value) {
       const rewrite = async (item) => {

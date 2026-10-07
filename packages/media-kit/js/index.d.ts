@@ -20,6 +20,7 @@ export interface OpenMediaDocument {
   document: MediaDocument; baseUrl?: string;
   resolveAsset(url: string): Promise<string>; loadScene(source: string | MediaDocument): Promise<MediaDocument>;
   materialize<T>(value: T): Promise<T>; ownerOf(scene: MediaDocument): OpenMediaDocument; dispose(): void;
+  getPackedAssets(): Record<string, Blob>;
 }
 export interface MediaProject {
   canvas: HTMLCanvasElement | OffscreenCanvas; document: MediaDocument; duration: number; width: number; height: number;
@@ -43,6 +44,7 @@ export interface MediaCommand { op: string; args?: Record<string, unknown> }
 export interface MediaTransactionOptions { baseRevision?: number; requestId?: string; sessionId?: string; label?: string; signal?: AbortSignal }
 export interface MediaProjectSession {
   readonly document: MediaDocument; readonly revision: number; readonly disposed: boolean;
+  readonly canUndo: boolean; readonly canRedo: boolean;
   snapshot(): MediaDocument; inspect(): Record<string, unknown>;
   subscribe(listener: (event: { document: MediaDocument; previousDocument: MediaDocument; revision: number; label: string }) => void): () => void;
   dispatch(commands: MediaCommand | MediaCommand[], options?: MediaTransactionOptions): Promise<unknown>;
@@ -58,3 +60,10 @@ export function createMediaOperationService(options: { session: MediaProjectSess
 export interface Narration { duration: number; cues: { id: string; text: string; start: number; duration: number; url: string }[]; model?: string; modelVersion?: string }
 export function synthesizeNarration(text: string, producer: import("@threejson/audio-kit").AudioProducer, options?: { signal?: AbortSignal; speed?: number; captionSentences?: string[]; cache?: Map<string, unknown>; onProgress?: (progress: unknown) => void }): Promise<Narration>;
 export function createNarrationCommands(document: MediaDocument, shotId: string, narration: Narration, options?: { extend?: boolean }): MediaCommand[];
+export interface MediaAsset { kind: "image" | "video" | "audio"; url: string; name?: string; duration?: number; width?: number; height?: number; hasAudio?: boolean; audioUrl?: string }
+export function isMediaSource(source: unknown): source is { type: "media"; assetId: string };
+export function mediaAssetOf(document: MediaDocument, clip: import("threejson/timeline").TimelineClip): MediaAsset | null;
+export function laneEnabled(timeline: Timeline, item: { enabled?: boolean; laneId?: string }): boolean;
+export function snapMediaTime(time: number, timeline: Timeline, options?: { fps?: number; threshold?: number; excludeId?: string; playhead?: number }): number;
+export function probeMediaAsset(blob: Blob, options?: { signal?: AbortSignal }): Promise<Omit<MediaAsset, "url">>;
+export function extractMediaAudio(blob: Blob, options?: { signal?: AbortSignal; maxPcmBytes?: number }): Promise<{ blob: Blob; duration: number } | null>;

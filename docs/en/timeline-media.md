@@ -6,6 +6,22 @@ A normal ThreeJSON scene can be a still, animation or complete film. Multiple dy
 
 ## Applications and authoring
 
+The [dedicated video editor](../../tools/scene-host/video-editor/index.html) owns a persistent media session shared by visual editing, explicitly applied JSON drafts and the video Agent. The website Tools menu and ThreeBox video edit actions open it; the lightweight export studio remains available.
+
+It supports procedural scenes plus imported images/video/audio, trim/split/move/duplicate/delete, ripple deletion, contiguous reordering, adjacent rolling edits, snapping, rates, fades and reveal transitions. Overlapping/locked ripple targets reject atomically. Scene sources and occurrences are separate: split preserves source time; shot editing uses copy-on-write. `timeline.lanes` (visual/audio/caption with lock/mute) is distinct from property-animation `timeline.tracks`. Linked captions/audio use `linkedClipId`.
+
+Linked root keyframe automation follows edits and duplication; removing a target removes its automation. Signal-rate changes or negative-time mappings that cannot be preserved exactly reject atomically: use in-shot animation or explicitly edit the tracks in JSON. NLE `timeline.edit` calls opt in with `retimeAutomation:true`; ordinary JSON upserts remain exact. Original sound uses `linkedRange:"source"` and `sourceDuration` to retain trim handles; narration is never stretched to invent missing speech. `media.item.duplicate` shares these rules for clips, audio and captions.
+
+Imported assets use `mediaAssets[id]:{kind,url,...}`; visual clips use `source:{type:"media",assetId}`. Timestamped decoding supports arbitrary-time seeking/export; original video audio becomes a durable linked WAV asset. This is not reverse video-to-3D reconstruction.
+
+The scene editor returns individual shots through a revision-checked bridge. JSON drafts apply explicitly; UI/AI/JSON share atomic undo. IndexedDB autosaves documents/local blobs, not ephemeral URLs. Undo history is session-local. Download `.tjz` for portability; JSON embeds local resources and may be large. Remote dependencies are not fetched/packed automatically; browser storage may be evicted.
+
+Storage revisions also prevent stale tabs from overwriting newer saves. On a conflict, download the current in-memory project before reopening the saved version.
+
+Automatic narration commits measured local WAV audio to the project; its first explicit synthesis action prepares the existing optional voice. Electronic music uses the score engine. AI configuration is shared with the scene editor or an independent compatible endpoint; secrets never enter projects. Storyboard approval, cancellation, request/time budgets and selected-shot enforcement are supported. Opening the editor never calls a provider or downloads a voice model.
+
+Multicam, grading, plugins, arbitrary nesting, long-source proxies and streaming audio editing remain future work. Decoded import audio is bounded to 256 MiB; use shorter sources if exceeded. Browser codecs/CORS still apply. Narrow screens switch media/AI, preview and inspector while retaining a scrollable timeline.
+
 Use Timeline / Media export on native/React ThreeBox cards, Shower, or Editor/Player file menus. The shared studio offers playback, seeking, JSON/.tjz import, temporary local music/voice import, dimensions/duration/fps and export. Its isolated runtime does not change history, authoring JSON or undo. Temporary audio and export settings are not automatically persisted into the scene.
 
 See the website Timeline & Procedural Media gallery and [HTML studio](../../examples/html-demo/track-08-media/08-01-media-studio.html). Captions and soundtracks play in the studio. Ordinary scene canvases animate 3D tracks without automatically importing audio production SDKs; existing ambient/positional audio remains unchanged.

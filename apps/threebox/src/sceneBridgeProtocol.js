@@ -40,6 +40,7 @@ function configuredUrl(key, developmentDefault, productionDefault) {
 }
 
 export const THREEBOX_PEER_URLS = Object.freeze({
+  videoEditor: configuredUrl("VIDEO_EDITOR", "https://threejson.org/tools/scene-host/video-editor/index.html", "https://threejson.org/tools/scene-host/video-editor/index.html"),
   editor: configuredUrl("EDITOR", "http://localhost:5183/", "https://editor.threejson.org/"),
   player: configuredUrl("PLAYER", "http://localhost:5180/", "https://player.threejson.org/"),
   shower: configuredUrl("SHOWER", "http://localhost:5181/", "https://shower.threejson.org/"),
@@ -141,7 +142,7 @@ function openSceneWithHandshake({ peer, channel, modeParam, sceneJson, label, bi
         resolve({ peer, session });
       }
     };
-    const timeoutId = window.setTimeout(() => fail(new Error("Scene peer handshake timed out.")), HANDSHAKE_TIMEOUT_MS);
+    const timeoutId = window.setTimeout(() => fail(new Error("Scene peer handshake timed out.")), peer === "videoEditor" ? 60000 : HANDSHAKE_TIMEOUT_MS);
     window.addEventListener("message", onMessage);
   });
 }
@@ -154,6 +155,10 @@ export function openSceneInEditor(sceneJson, label) {
     sceneJson,
     label
   });
+}
+
+export function openSceneInVideoEditor(sceneJson, label) {
+  return openSceneWithHandshake({ peer: "videoEditor", channel: SCENE_TRANSFER_CHANNEL, modeParam: "sceneTransfer", sceneJson, label });
 }
 
 export function openSceneInPlayer(sceneJson, label) {

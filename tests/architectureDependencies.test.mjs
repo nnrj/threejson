@@ -17,7 +17,7 @@ const SOURCE_EXTENSIONS = new Set([
   ".html",
   ".css"
 ]);
-const SCENE_HOST_APPS = new Set(["editor", "player", "shower", "threebox"]);
+const SCENE_HOST_APPS = new Set(["editor", "player", "shower", "threebox", "video-editor"]);
 
 const SKIP_DIRS = new Set(["node_modules", "dist", "build", ".vite", ".wrangler", "coverage"]);
 
@@ -378,6 +378,9 @@ test("ordinary browser scene-host remains deployable without optional media pack
     // Desktop is a separate Node distribution and explicitly consumes scene-tools.
     // It is never part of the browser hosts' deployable module graph.
     if (file.startsWith(path.join(sceneHostRoot, "desktop") + path.sep)) continue;
+    // This dedicated opt-in application requires media/audio kits, unlike the
+    // ordinary scene hosts whose baseline module graphs remain independent.
+    if (file.startsWith(path.join(sceneHostRoot, "video-editor") + path.sep)) continue;
     for (const reference of collectModuleReferences(file)) {
       // The new media workbench is a deliberately optional application module,
       // loaded only by an explicit menu/card action, not a baseline migration.

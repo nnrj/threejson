@@ -5,17 +5,17 @@
  * by scene, not by tab) and share identical provider/credential resolution. This module holds
  * exactly that overlap; anything that differs between the two tabs (the actual generate/adjust AI
  * call, tab-specific composer controls) stays in each panel's own file. */
-import { BUILTIN_PROVIDER_TYPE, ensureEditorBuiltinApiKey, getDisplayDeviceId } from "./editorBuiltinAiProvider.js";
+import { BUILTIN_PROVIDER_TYPE, ensureEditorBuiltinApiKey } from "./editorBuiltinAiProvider.js";
+import { getSelectedProvider } from "../../shared/js/editorAiCredentials.js";
+export { getSelectedProvider, getCredentials, ensureUsableCredentials } from "../../shared/js/editorAiCredentials.js";
 import { appendAiChatTurn, getAiChatHistory, resolveSceneKeyFromLabel } from "./editorAiChatStore.js";
 import { parseSceneJsonString } from "threejson/ai";
 import {
-  createBuiltinAiTurnContext,
-  withBuiltinAiProviderAdapter
+  createBuiltinAiTurnContext
 } from "../../shared/js/builtinAiProvider.js";
 import { t } from "../../shared/i18n/index.js";
 import { getAiErrorFeedback, renderAiErrorFeedback } from "../../shared/js/aiErrorFeedback.js";
 import {
-  BUILTIN_PRIVACY_ACCEPTED,
   isBuiltinPrivacyAccepted
 } from "../../shared/js/builtinProviderPrivacy.js";
 
@@ -181,36 +181,6 @@ export function waitForAiActivityPaint() {
 /** Finds the ai.providers[] entry the quick-select currently points at, falling back to
  * ai.defaultProviderId and then the first configured provider. Both AI-edit tabs read/write the
  * SAME ai.defaultProviderId — there's one "current provider" for the editor, not one per tab. */
-export function getSelectedProvider(host) {
-  const ai = host.getEditorSettings()?.ai || {};
-  const providers = (Array.isArray(ai.providers) ? ai.providers : [])
-    .filter((provider) => provider.provider !== BUILTIN_PROVIDER_TYPE || isBuiltinPrivacyAccepted("editor"));
-  if (!providers.length) {
-    return null;
-  }
-  return providers.find((p) => p.id === ai.defaultProviderId) || providers[0];
-}
-
-export function getCredentials(host) {
-  const provider = getSelectedProvider(host);
-  if (!provider) {
-    return { provider: "", apiKey: "", model: undefined, baseUrl: undefined };
-  }
-  const creds = {
-    provider: provider.provider || "chatgpt",
-    apiKey: String(provider.apiKey || "").trim(),
-    model: String(provider.model || "").trim() || undefined,
-    baseUrl: undefined
-  };
-  if (provider.provider === "custom") {
-    creds.baseUrl = String(provider.baseUrl || "").trim() || undefined;
-  } else if (provider.provider === BUILTIN_PROVIDER_TYPE) {
-    creds.baseUrl = String(host.getEditorSettings()?.ai?.builtinBackendUrl || "").trim() || undefined;
-    return withBuiltinAiProviderAdapter(creds);
-  }
-  return creds;
-}
-
 /** Resolve optional user budgets. Zero means the model-driven loop has no quality-round limit. */
 export function getAgentOptions(host) {
   const ai = host.getEditorSettings()?.ai || {};
@@ -228,28 +198,6 @@ export function getAgentOptions(host) {
     },
     fitViewEachRound: ai.agentFitViewEachRound === true
   };
-}
-
-export async function ensureUsableCredentials(host) {
-  const privacyDecision = await host.promptBuiltinPrivacyAgreement?.();
-  if (privacyDecision && privacyDecision !== BUILTIN_PRIVACY_ACCEPTED) {
-    const declinedCreds = getCredentials(host);
-    if (declinedCreds.provider === "deepseek") declinedCreds.userId = await getDisplayDeviceId();
-    return declinedCreds;
-  }
-  let creds = getCredentials(host);
-  if (!creds.apiKey && creds.provider === BUILTIN_PROVIDER_TYPE) {
-    await ensureEditorBuiltinApiKey({
-      getEditorSettings: () => host.getEditorSettings(),
-      persistSettings: () => host.persistSettingsRememberingAiKey?.(),
-      onIssued: () => {}
-    });
-    creds = getCredentials(host);
-  }
-  if (creds.provider === "deepseek") {
-    creds.userId = await getDisplayDeviceId();
-  }
-  return creds;
 }
 
 /** Populates a provider quick-select + wires its change handler and the adjacent settings-jump

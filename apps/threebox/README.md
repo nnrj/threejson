@@ -32,6 +32,11 @@ never by reaching into that application's source.
   local caching and optional server search/generation, and never makes scene generation fail.
 - Conversation, turn, project and resource data use an app-specific IndexedDB repository created
   by `@threejson/scene-agent-kit`.
+- Video cards open the dedicated video editor through an origin/session-bound bridge.
+  `VITE_THREEJSON_VIDEO_EDITOR_URL` overrides its URL; production defaults to
+  `https://threejson.org/tools/scene-host/video-editor/index.html`. During React-only development,
+  point this variable at a repository-root static server: the native video editor is not served
+  by the React scene-editor Vite app. Custom ThreeBox origins must also be allowed by the receiver.
 
 ## Run
 

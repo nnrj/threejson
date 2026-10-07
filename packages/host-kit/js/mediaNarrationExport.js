@@ -6,13 +6,15 @@ export async function collectExportNarration(document, options = {}) {
   const duration = options.duration, mode = options.mode || "auto";
   if (!(Number.isFinite(duration) && duration > 0)) throw new RangeError("Narration requires a finite video duration.");
   const captions = [], shots = [];
+  const enabled = (timeline, item) => item.enabled !== false && !timeline?.lanes?.some(l => l.id === item.laneId && l.muted);
+  const audible = (timeline, item) => enabled(timeline, item) && (!item.linkedClipId || enabled(timeline, timeline?.clips?.find(c => c.id === item.linkedClipId) || {}));
   const append = (list, text, start, end, id) => {
     start = Math.max(0, start); end = Math.min(duration, end);
     if (typeof text === "string" && text.trim() && Number.isFinite(start) && Number.isFinite(end) && end > start) list.push({ id, text: text.trim(), start, duration: end - start });
   };
   const readCaptions = (timeline, offset = 0, sourceStart = 0, rate = 1, length = duration, prefix = "") => {
     for (const caption of timeline?.captions || []) {
-      if (caption.enabled === false || caption.narration === false) continue;
+      if (!audible(timeline, caption) || caption.narration === false) continue;
       const begin = caption.start || 0, end = begin + caption.duration;
       append(captions, caption.text, offset + Math.max(0, (begin - sourceStart) / rate),
         offset + Math.min(length, (end - sourceStart) / rate), `${prefix}${caption.id}`);
@@ -21,10 +23,10 @@ export async function collectExportNarration(document, options = {}) {
   readCaptions(document.timeline);
   if (document.documentType === "composition") for (const clip of document.timeline?.clips || []) {
     options.signal?.throwIfAborted();
-    if (clip.enabled === false) continue;
+    if (!enabled(document.timeline, clip)) continue;
     const offset = clip.start || 0;
     append(shots, document.production?.shots?.[clip.id]?.narration, offset, offset + clip.duration, clip.id);
-    const scene = typeof clip.source === "object" ? clip.source : document.scenes?.[clip.source] || await options.loadScene?.(clip.source);
+    const scene = clip.source?.type === "media" ? null : typeof clip.source === "object" ? clip.source : document.scenes?.[clip.source] || await options.loadScene?.(clip.source);
     if (scene) readCaptions(scene.timeline, offset, clip.sourceStart || 0, clip.rate ?? 1, clip.duration, `${clip.id}/`);
   }
   let cues = mode === "custom" ? [{ id: "custom", text: String(options.text || "").trim(), start: 0, duration }]

@@ -51,7 +51,7 @@ test("root deployment ignore list excludes non-runtime projects and credentials"
 });
 
 test("deployment includes opt-in media modules without exposing other packages or secrets", () => {
-  const included = ["packages/audio-kit/js/index.js", "packages/audio-kit/js/models.js", "packages/media-kit/js/index.js", "packages/media-kit/js/gifWorkerRuntime.js", "packages/host-kit/js/mediaStudio.js", "packages/host-kit/js/mediaNarrationPanel.js", "packages/host-kit/js/mediaNarrationExport.js", "packages/host-kit/js/audioModelPanel.js", "packages/host-kit/js/localSpeech.js"];
+  const included = ["packages/audio-kit/js/index.js", "packages/audio-kit/js/models.js", "packages/media-kit/js/index.js", "packages/media-kit/js/gifWorkerRuntime.js", "packages/media-kit/js/editing.js", "packages/media-kit/js/mediaSources.js", "packages/host-kit/js/mediaStudio.js", "packages/host-kit/js/mediaNarrationPanel.js", "packages/host-kit/js/mediaNarrationExport.js", "packages/host-kit/js/audioModelPanel.js", "packages/host-kit/js/localSpeech.js", "tools/scene-host/video-editor/index.html", "tools/scene-host/video-editor/js/app.js", "tools/scene-host/shared/js/videoProjectStorage.js", "tools/scene-host/shared/js/editorAiCredentials.js"];
   const excluded = ["packages/scene-tools/js/index.js", "packages/host-kit/js/aiTurnOrchestrator.js", "packages/audio-kit/js/nodeModels.js", "packages/audio-kit/package.json", "packages/media-kit/.env", "packages/audio-kit/js/.dev.vars", "servertmp/threebox-server/.dev.vars"];
   // Cloudflare documents .assetsignore as gitignore syntax. Use the actual Git
   // matcher, including parent-directory exclusion rules, not regex approximations.

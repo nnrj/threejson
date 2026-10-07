@@ -44,7 +44,7 @@ test("built-in privacy decisions are persisted independently for ThreeBox and Ed
 test("both hosts gate built-in key issuance and expose an agreement reopening path", async () => {
   const [threeboxProvider, editorProvider, threeboxSettings, editorSettings] = await Promise.all([
     readFile(new URL("../tools/scene-host/threebox/js/threeBoxBuiltinProvider.js", import.meta.url), "utf8"),
-    readFile(new URL("../tools/scene-host/editor/js/editorBuiltinAiProvider.js", import.meta.url), "utf8"),
+    readFile(new URL("../tools/scene-host/shared/js/editorBuiltinAiProvider.js", import.meta.url), "utf8"),
     readFile(new URL("../tools/scene-host/threebox/js/threeBoxSettingsModal.js", import.meta.url), "utf8"),
     readFile(new URL("../tools/scene-host/editor/js/settingsModal.js", import.meta.url), "utf8")
   ]);

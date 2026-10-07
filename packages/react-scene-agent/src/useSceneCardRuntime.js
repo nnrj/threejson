@@ -466,6 +466,10 @@ export function useSceneCardRuntime(options = {}) {
       return;
     }
     try {
+      if ((sceneJson.documentType === "composition" || sceneJson.timeline) && optionsRef.current.openInVideoEditor) {
+        await optionsRef.current.openInVideoEditor(sceneJson, currentLabelRef.current);
+        return;
+      }
       if (sceneJson.documentType === "composition") { const { chooseMediaShot } = await import("@threejson/host-kit/js/mediaStudio.js"); sceneJson = await chooseMediaShot(sceneJson); if (!sceneJson) return; }
       if (!optionsRef.current.openInEditor) throw new Error("Editor navigation is not configured.");
       await optionsRef.current.openInEditor(sceneJson, currentLabelRef.current);

@@ -104,6 +104,7 @@ test("native scene-host import maps cover every bare specifier in their applicat
     ["editor", "tools/scene-host/editor/js/main.js", "tools/scene-host/editor/index.html"],
     ["player", "tools/scene-host/player/js/main.js", "tools/scene-host/player/index.html"],
     ["shower", "tools/scene-host/shower/js/main.js", "tools/scene-host/shower/index.html"],
+    ["video-editor", "tools/scene-host/video-editor/js/app.js", "tools/scene-host/video-editor/index.html"],
     ["threebox", "tools/scene-host/threebox/js/threeBoxApp.js", "tools/scene-host/threebox/index.html"]
   ];
 

@@ -78,7 +78,7 @@ import { PrivacyDialog } from "./PrivacyDialog.jsx";
 import { SettingsModal } from "./SettingsModal.jsx";
 import { SceneAgentSceneCard } from "@threejson/react-scene-agent/scene-card";
 import { openThreeBoxMeshExportDialog, showThreeBoxMeshExportWarningDialog } from "./lib/threeBoxMeshExportDialog.js";
-import { openSceneInEditor, openSceneInPlayer, THREEBOX_PEER_URLS } from "./sceneBridgeProtocol.js";
+import { openSceneInEditor, openSceneInVideoEditor, openSceneInPlayer, THREEBOX_PEER_URLS } from "./sceneBridgeProtocol.js";
 import { JsonCollapse, SceneJsonCollapse, AdjustDiffCollapse } from "./JsonCollapse.jsx";
 import { useAttachedContext } from "./useAttachedContext.js";
 import { AttachedContextRow } from "./AttachedContextRow.jsx";
@@ -739,6 +739,7 @@ export function App() {
       selectMeshFormat: openThreeBoxMeshExportDialog,
       showMeshWarnings: showThreeBoxMeshExportWarningDialog,
       openInEditor: openSceneInEditor,
+      openInVideoEditor: openSceneInVideoEditor,
       openInPlayer: openSceneInPlayer,
       assetGateway: () => {
         const bundle = getThreeBoxSettings();

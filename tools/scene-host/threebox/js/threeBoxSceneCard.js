@@ -541,12 +541,28 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
   }
 
   openEditorBtn.addEventListener("click", async () => {
-    let sceneJson = requireSceneJson();
+    const sceneJson = requireSceneJson();
     if (!sceneJson) {
       return;
     }
     try {
-      if (sceneJson.documentType === "composition") { const { chooseMediaShot } = await import("../../shared/js/mediaStudio.js"); sceneJson = await chooseMediaShot(sceneJson); if (!sceneJson) return; }
+      if (sceneJson.documentType === "composition" || sceneJson.timeline) {
+        // Speech/media payloads readily exceed localStorage's small quota.
+        // Open on the user gesture, then deliver through same-origin IndexedDB.
+        const popup = window.open("about:blank", "_blank");
+        if (!popup) throw new Error(t("threebox.sceneCard.popupBlocked", "无法打开新窗口，请检查浏览器弹窗拦截设置。"));
+        popup.opener = null;
+        let storage;
+        try {
+          const { createEditorStorage } = await import("../../shared/js/videoProjectStorage.js");
+          storage = await createEditorStorage();
+          const projectKey = crypto.randomUUID();
+          await storage.saveHandoff(projectKey, { type: "video-project", document: sceneJson, createdAt: Date.now() });
+          popup.location.href = `../video-editor/index.html?openFrom=threebox&projectKey=${encodeURIComponent(projectKey)}`;
+        } catch (error) { popup.close(); throw error; }
+        finally { storage?.close(); }
+        return;
+      }
       const bridgeId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       localStorage.setItem(
         `${EDITOR_OPEN_SCENE_BRIDGE_PREFIX}${bridgeId}`,

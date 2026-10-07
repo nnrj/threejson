@@ -2247,11 +2247,22 @@ export async function bootstrapSceneHostEditor() {
     const pageParams = new URLSearchParams(window.location.search);
     const sceneKey = pageParams.get("sceneKey");
     const openFromSource = pageParams.get("openFrom");
-    if (!sceneKey || !["shower", "threebox"].includes(openFromSource)) {
+    if (!sceneKey || !["shower", "threebox", "video-editor"].includes(openFromSource)) {
       return false;
     }
     const storageKey = `${EDITOR_OPEN_SCENE_BRIDGE_PREFIX}${sceneKey}`;
     try {
+      if (openFromSource === "video-editor") {
+        const bridge = await import("../../shared/js/videoShotBridge.js");
+        const record = await bridge.readVideoShotHandoff(sceneKey);
+        const loaded = await ingestScenePayload(record.sceneJson, record.label || "视频镜头");
+        if (loaded) {
+          editorDocumentState?.markSaved?.();
+          bridge.mountVideoShotReturn({ token: sceneKey, capture: () => editorHelpAndSceneJson.captureSceneJsonTextForView(), showMessage: ui.showMessage });
+          ui.showMessage("已打开视频镜头；完成后点击“应用到视频工程”。", "success");
+        }
+        return loaded;
+      }
       const raw = localStorage.getItem(storageKey);
       if (!raw) {
         ui.showMessage("未找到外部传入的场景 JSON。", "error");

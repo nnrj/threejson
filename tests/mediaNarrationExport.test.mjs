@@ -31,6 +31,14 @@ test("existing authored narration is not doubled; music alone never suppresses s
   assert.equal(plan.skipped, 1);assert.equal(plan.cues.length, 1);assert.equal(plan.cues[0].text, "二句");
 });
 
+test("muted lanes and linked hidden clips do not create narration; imported media is not parsed as 3D", async () => {
+  const document = { documentType: "composition", timeline: { lanes: [{ id: "hidden", kind: "visual", muted: true }, { id: "captions", kind: "caption", muted: true }],
+    clips: [{ id: "hidden", laneId: "hidden", source: "never-load", duration: 4 }, { id: "video", source: { type: "media", assetId: "v" }, start: 4, duration: 4 }],
+    captions: [{ ...caption("hidden-caption", "不要读", 0, 4), linkedClipId: "hidden" }, { ...caption("muted-caption", "不要读", 0, 4), laneId: "captions" }, caption("good", "正常字幕", 4, 4)] }, production: { shots: { hidden: { narration: "也不要读" } } } };
+  const plan = await collectExportNarration(document, { duration: 8, loadScene() { throw new Error("Must not request hidden or ordinary-media scene"); } });
+  assert.deepEqual(plan.cues.map(c => c.text), ["正常字幕"]);
+});
+
 const voice = duration => ({ available: true, async narrate() { return { duration, cues: [{ start: 0, duration, url: "data:audio/wav;base64,fixture" }] }; } });
 test("export TTS is measured PCM audio, aligned with source cues and atomic on failure", async () => {
   const plan = { cues: [caption("a", "一句", 1, 2), caption("b", "二句", 4, 2)] };

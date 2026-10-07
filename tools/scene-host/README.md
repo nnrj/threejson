@@ -19,6 +19,9 @@ Phase 5 切换已完成：**`editor/` / `player/` 现为推荐 / 稳定入口**�
 |------|-----|
 | 编辑器 | `/tools/scene-host/editor/index.html` |
 | 播放器 | `/tools/scene-host/player/index.html` |
+| 视频编辑器（alpha） | `/tools/scene-host/video-editor/index.html` |
+
+视频编辑器以 `media-kit` 长期工程会话为真源，支持 AI 视频生成/调整、镜头剪辑、外部媒体、字幕/声音、JSON、恢复与导出。与场景编辑器通过版本校验的镜头交接协作，不互相导入应用内部模块。详见[时间线与媒体](../../docs/zh/timeline-media.md)。普通场景宿主不在启动时加载其媒体/编解码依赖。
 
 **Desktop（Electron）**：见 [`desktop/README.md`](desktop/README.md) — `npm start`（统一入口）/ `npm run start:editor` / `npm run start:player` / `npm run pack:win`。
 
