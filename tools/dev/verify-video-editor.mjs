@@ -58,6 +58,34 @@ try {
     await page.locator("#menubar").getByRole("menuitem", { name: menu, exact: true }).click();
     await page.locator(`#menuPopup [data-action="${action}"]`).click();
   };
+  const checkTitleBar = async (desktop = false) => {
+    const layout = await page.evaluate(() => {
+      const bounds = selector => { const rect = document.querySelector(selector).getBoundingClientRect(); return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, right: rect.right }; };
+      return {
+        brand: bounds(".brand"), menus: bounds("#menubar"), name: bounds("#projectName"), modes: bounds(".viewModes"), header: bounds(".topbar"), export: bounds("#exportMedia"),
+        buttons: [...document.querySelectorAll(".viewModes button")].map(node => ({ mode: node.dataset.mode, bounds: { x: node.getBoundingClientRect().x, width: node.getBoundingClientRect().width }, radius: getComputedStyle(node).borderRadius })),
+        iconLoaded: document.querySelector(".brand img").complete && document.querySelector(".brand img").naturalWidth > 0,
+        viewport: innerWidth,
+      };
+    });
+    assert.ok(layout.iconLoaded, "Vector application icon loads from the local asset");
+    assert.ok(layout.menus.x >= layout.brand.right && layout.menus.x - layout.brand.right <= 12, "Menus immediately follow the app icon");
+    assert.ok(Math.abs(layout.brand.y + layout.brand.height / 2 - layout.menus.y - layout.menus.height / 2) <= 2, "Icon and menus share the top row");
+    assert.ok(layout.menus.y < 20, "Menus stay at the top, not on a second toolbar");
+    assert.deepEqual(layout.buttons.map(button => button.mode), ["video", "mixed", "code"]);
+    for (let i = 1; i < layout.buttons.length; i++) assert.ok(Math.abs(layout.buttons[i].bounds.x - layout.buttons[i - 1].bounds.x - layout.buttons[i - 1].bounds.width) < 1, "View buttons are contiguous segments");
+    assert.ok(layout.buttons.every(button => button.radius === "0px"));
+    if (desktop) {
+      assert.ok(Math.abs(layout.name.x + layout.name.width / 2 - layout.viewport / 2) < 1, "Project name is centered in the window");
+      assert.ok(layout.menus.right <= layout.name.x && layout.name.right <= layout.modes.x, "Menus, title and view controls do not overlap");
+      assert.ok(Math.abs(layout.name.y + layout.name.height / 2 - layout.menus.y - layout.menus.height / 2) <= 2, "Desktop title and menus share one row");
+      assert.ok(layout.header.height <= 52, "No second desktop menu row");
+    }
+    assert.ok(layout.export.right <= layout.viewport, "Export remains reachable");
+  };
+  for (const width of [1910, 1440, 1024, 844]) { await page.setViewportSize({ width, height: 1000 }); await checkTitleBar(true); }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  results.push("Single-row desktop title bar, centered filename, top-left vector icon/menu and contiguous Video/Mixed/Code segments");
   await page.locator("#emptyDemo").click();
   await page.waitForFunction(() => document.getElementById("projectInfo").textContent.includes("2 个片段"));
   await page.waitForFunction(() => document.getElementById("previewStatus").textContent === "预览已更新");
@@ -156,7 +184,8 @@ try {
   assert.equal(await page.locator("#projectName").inputValue(), "已编辑的视频工程");
   const dirtyDraft = cleanJson.replace("已编辑的视频工程", "只在草稿中的标题");
   await page.locator("#jsonDraft").fill(dirtyDraft);
-  await page.keyboard.press("Alt+1"); await page.keyboard.press("Alt+3");
+  await page.keyboard.press("Alt+1"); await page.keyboard.press("Alt+2");
+  assert.equal(await page.locator(".workspace").getAttribute("data-mode"), "mixed");
   assert.equal(await page.locator("#jsonDraft").inputValue(), dirtyDraft);
   assert.equal(await page.locator("#draftBadge").isVisible(), true);
   await menuAction("文件", "saveJson");
@@ -202,6 +231,7 @@ try {
   await page.evaluate(() => { document.getElementById("toast").hidden = true; });
   for (const width of [390, 320]) {
     await page.setViewportSize({ width, height: 844 });
+    await checkTitleBar();
     await page.locator('button[data-mode="mixed"]').click();
     await page.screenshot({ path: path.join(out, `mobile-${width}.png`) });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false);

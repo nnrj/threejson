@@ -428,11 +428,11 @@ bind("fitTimeline", () => {
 bind("editorHelp", () => {
   const body = element("div");
   for (const [title, text] of [
-    ["视频 / 代码 / 混合", "视频视图专注剪辑；代码视图展开 JSON；混合视图并排查看，窄屏上下排列。拖动分隔条调整比例。“视图”菜单可显示面板、恢复默认布局，各视图分别记住布局。"],
+    ["视频 / 混合 / 代码", "视频视图专注剪辑；混合视图并排查看画面与 JSON，窄屏上下排列；代码视图展开 JSON。拖动分隔条调整比例。“视图”菜单可显示面板、恢复默认布局，各视图分别记住布局。"],
     ["同一份工程，显式应用", "未编辑的 JSON 自动跟随剪辑更新；已编辑草稿不会被覆盖。应用前会校验工程并检查版本。视频只播放已应用版本。可编辑整个 composition，也可选择一个原生 3D 镜头单独编辑。"],
     ["撤销与草稿", "时间线、AI 和已应用 JSON 共用工程撤销。输入框内 Ctrl+Z 是文本撤销；要撤销工程，可用“编辑”菜单。工程发生新修改时，旧草稿需备份并重新读取，不会悄悄覆盖。"],
     ["保存与导出", "已应用工程自动保存在此浏览器；未应用草稿不会自动保存。跨设备请下载 .tjz（含本地素材）或 JSON。文件菜单导出的是已应用版本；“备份 JSON 草稿”只下载草稿文本，不打包素材。"],
-    ["快捷键", "Alt+1 / 2 / 3：视频 / 代码 / 混合；Ctrl / Cmd+Enter：应用 JSON；Ctrl / Cmd+O：导入；Ctrl / Cmd+S：下载工程包；Ctrl / Cmd+Z / Shift+Z：工程撤销 / 重做；Ctrl / Cmd+B：分割；Delete：删除；Home：回到开头；空格：播放 / 暂停。文本输入时不触发剪辑快捷键。"],
+    ["快捷键", "Alt+1 / 2 / 3：视频 / 混合 / 代码；Ctrl / Cmd+Enter：应用 JSON；Ctrl / Cmd+O：导入；Ctrl / Cmd+S：下载工程包；Ctrl / Cmd+Z / Shift+Z：工程撤销 / 重做；Ctrl / Cmd+B：分割；Delete：删除；Home：回到开头；空格：播放 / 暂停。文本输入时不触发剪辑快捷键。"],
   ]) body.append(element("h2", {}, title), element("p", { class: "hint" }, text));
   return modal("视频编辑器 · 使用说明", body, [{ label: "关闭", value: "ok" }]);
 });
@@ -440,7 +440,7 @@ workbench = createWorkbench({ run: id => runAction(id).catch(report), enabled: a
 
 document.addEventListener("keydown", wrap(async event => {
   if (event.defaultPrevented || event.isComposing || [...document.querySelectorAll("dialog[open], [role=dialog][aria-modal=true]")].some(node => node.getClientRects().length)) return;
-  if (event.altKey && !event.ctrlKey && !event.metaKey && ["1", "2", "3"].includes(event.key)) { event.preventDefault(); workbench.setMode({ 1: "video", 2: "code", 3: "mixed" }[event.key]); return; }
+  if (event.altKey && !event.ctrlKey && !event.metaKey && ["1", "2", "3"].includes(event.key)) { event.preventDefault(); workbench.setMode({ 1: "video", 2: "mixed", 3: "code" }[event.key]); return; }
   const modifier = event.ctrlKey || event.metaKey, key = event.key.toLowerCase();
   const globalAction = modifier && (key === "enter" ? "applyJson" : key === "s" ? "savePack" : key === "o" ? "importFiles" : null);
   if (globalAction) { event.preventDefault(); await runAction(globalAction); return; }

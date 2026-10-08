@@ -30,21 +30,27 @@ label>input, label>select { display: block; margin-top: 4px; }
 .eyebrow { font-size: 10px; letter-spacing: 1px; color: var(--muted); }
 h1, h2, p { margin-top: 0; }
 h2 { font-size: 13px; font-weight: 600; margin-bottom: 0; }
-.topbar { display: flex; align-items: center; gap: 12px; padding: 8px 16px; min-height: 56px; flex-shrink: 0; }
-.brand { font-size: 23px; font-weight: 800; letter-spacing: -3px; text-decoration: none; color: var(--text); line-height: 1; }
-.brand span { color: var(--accent); }
-.brand small { display: block; font-size: 7px; letter-spacing: 1.5px; margin-top: 5px; white-space: nowrap; }
-#projectName { max-width: 250px; background: transparent; border-color: transparent; font-weight: 600; }
-#saveStatus { font-size: 11px; margin-right: auto; }
-#exportMedia { margin-left: auto; }
+.topbar { display: grid; grid-template-columns: minmax(0, 1fr) minmax(120px, 22vw) minmax(0, 1fr); align-items: center; gap: 12px; padding: 5px 10px; min-height: 48px; flex-shrink: 0; border-bottom: 1px solid var(--border); }
+.topbarLeading, .topbarTrailing { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.topbarTrailing { justify-content: flex-end; }
+.brand { display: flex; flex-direction: column; align-items: center; flex: 0 0 56px; text-decoration: none; color: var(--text); line-height: 1; }
+.brand img { display: block; width: 32px; height: 28px; }
+.brand small { display: block; font-size: 6px; font-weight: 650; letter-spacing: .7px; margin-top: 2px; white-space: nowrap; }
+.projectTitle { min-width: 0; }
+#projectName { background: transparent; border-color: transparent; font-weight: 600; text-align: center; text-overflow: ellipsis; }
+#projectName:hover, #projectName:focus { border-color: var(--border); }
+#saveStatus { font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#exportMedia { flex-shrink: 0; font-size: 12px; padding: 5px 10px; }
 .draftBadge { border-color: #705c30; color: #f3d79a; background: #312c21; font-size: 11px; }
-.commandbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 4px 16px 7px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.menubar { display: flex; align-items: center; min-width: 0; overflow: auto; gap: 2px; scrollbar-width: thin; }
-.menubar>button { border: 0; background: transparent; padding: 6px 12px; }
+.menubar { display: flex; align-items: center; min-width: 0; overflow: auto; gap: 1px; scrollbar-width: thin; }
+.menubar>button { flex-shrink: 0; border: 0; background: transparent; padding: 5px 8px; }
 .menubar>button[aria-expanded=true] { background: #303946; color: var(--accent); }
-.viewModes { display: flex; background: #080c10; padding: 3px; border-radius: 7px; flex-shrink: 0; }
-.viewModes button { background: transparent; border: 0; border-radius: 4px; color: var(--muted); padding: 4px 15px; }
-.viewModes button[aria-pressed=true] { color: var(--accent); background: #263b37; }
+.viewModes { display: inline-flex; align-items: center; height: 28px; border: 1px solid #ffffff3d; border-radius: 4px; overflow: hidden; flex-shrink: 0; }
+.viewModes button { height: 100%; padding: 0 12px; border: 0; border-radius: 0; background: #3a3d42; color: #c9c9c9; font-size: 12px; line-height: 26px; }
+.viewModes button + button { border-left: 1px solid #ffffff2e; }
+.viewModes button:hover { background: #4a4e54; color: #fff; }
+.viewModes button[aria-pressed=true] { background: #409eff; color: #fff; }
+.viewModes button:focus-visible { outline-offset: -2px; }
 .menuPopup { position: fixed; z-index: 60; min-width: 245px; max-width: calc(100vw - 16px); overflow: auto; padding: 6px; background: #222831; border: 1px solid #46515e; border-radius: 8px; box-shadow: 0 12px 40px #0009; }
 .menuPopup button { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: transparent; border: 0; padding: 7px 9px; }
 .menuPopup button:hover, .menuPopup button:focus-visible { background: #33404b; }
@@ -146,6 +152,9 @@ dialog::backdrop { background: #000a; }
 .busy { opacity: .6; }
 @media (min-width: 1600px) { .workspace { --library-width: 275px; --inspector-width: 300px; } }
 @media (max-width: 1250px) {
+  #saveStatus { display: none; }
+  .topbar { gap: 8px; }
+  .draftBadge { position: fixed; bottom: 5px; right: 8px; z-index: 10; padding: 3px 7px; }
   .workspace[data-mode=mixed] .centerWorkspace { overflow: auto; }
   .workspace[data-mode=mixed] .previewPanel { min-height: 190px; }
   .workspace[data-mode=mixed] .codePanel { min-height: 260px; }
@@ -157,18 +166,16 @@ dialog::backdrop { background: #000a; }
   .panel { padding: 10px; }
 }
 @media (max-width: 800px) {
-  .topbar { gap: 7px; padding: 9px 10px; min-height: 52px; }
-  .brand { font-size: 19px; }
-  .brand small { font-size: 6px; }
-  #projectName { flex: 1; max-width: none; padding: 5px; font-size: 12px; }
-  #saveStatus { display: none; }
-  #exportMedia { font-size: 11px; padding: 6px 8px; }
-  .draftBadge { position: fixed; bottom: 5px; right: 8px; z-index: 10; padding: 3px 7px; }
-  .commandbar { flex-wrap: wrap; padding: 0 8px 6px; gap: 5px; }
-  .menubar { width: 100%; justify-content: space-between; }
-  .menubar>button { padding: 6px 9px; font-size: 12px; }
-  .viewModes { width: 100%; }
-  .viewModes button { flex: 1; padding: 4px; font-size: 12px; }
+  .topbar { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "leading leading" "title trailing"; column-gap: 8px; row-gap: 5px; padding: 5px 8px 7px; }
+  .topbarLeading { grid-area: leading; gap: 6px; }
+  .projectTitle { grid-area: title; }
+  .topbarTrailing { grid-area: trailing; gap: 6px; }
+  .brand img { width: 28px; height: 25px; }
+  .menubar { flex: 1; justify-content: space-between; }
+  .menubar>button { padding: 6px; font-size: 11px; }
+  #projectName { padding: 5px; font-size: 12px; }
+  #exportMedia { font-size: 11px; padding: 5px 7px; }
+  .viewModes button { padding: 0 7px; font-size: 11px; }
   .mobileTabs { display: flex; border-bottom: 1px solid var(--border); padding: 0 8px 5px; gap: 5px; }
   .mobileTabs button { flex: 1; border: 0; background: none; color: var(--muted); font-size: 11px; padding: 5px; }
   .mobileTabs button[aria-pressed=true] { color: var(--accent); background: #243732; }

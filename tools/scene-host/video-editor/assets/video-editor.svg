@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="42" viewBox="0 0 48 42" fill="none">
+  <title>ThreeJSON Video Editor</title>
+  <!-- Layered frames and a play mark: editable scenes composed into a film. -->
+  <path d="M14 4h26a4 4 0 0 1 4 4v22" stroke="#63B8AC" stroke-width="2.5" stroke-linecap="round"/>
+  <rect x="4" y="11" width="33" height="26" rx="5" fill="#173C38" stroke="#85E4D0" stroke-width="2.5"/>
+  <path d="m17 18 10 6-10 6V18Z" fill="#DFFFF6" stroke="#DFFFF6" stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M11 6h13M40 33v3" stroke="#85E4D0" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

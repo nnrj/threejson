@@ -1,6 +1,6 @@
 import { $, element } from "./ui.js";
 
-const modes = ["video", "code", "mixed"];
+const modes = ["video", "mixed", "code"];
 const preferenceKey = "threejson.videoEditor.workspace.v1";
 const defaultLayouts = {
   video: { library: true, inspector: true, timeline: true },
@@ -61,8 +61,8 @@ export function createWorkbench({ run, enabled, onModeChange }) {
     ] },
     { label: "视图", items: [
       item("viewVideo", "视频视图", "Alt+1", () => state.mode === "video"),
-      item("viewCode", "代码视图", "Alt+2", () => state.mode === "code"),
-      item("viewMixed", "混合视图", "Alt+3", () => state.mode === "mixed"), null,
+      item("viewMixed", "混合视图", "Alt+2", () => state.mode === "mixed"),
+      item("viewCode", "代码视图", "Alt+3", () => state.mode === "code"), null,
       item("toggleLibrary", "素材与 AI 面板", undefined, () => panelVisible("library")),
       item("toggleInspector", "片段属性面板", undefined, () => panelVisible("inspector")),
       item("toggleTimeline", "时间线面板", undefined, () => panelVisible("timeline")), null,
