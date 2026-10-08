@@ -54,6 +54,10 @@ try {
   try { await page.waitForFunction(() => document.documentElement.dataset.ready === "true"); }
   catch (error) { console.log("startup", await page.evaluate(() => ({ title: document.title, scripts: [...document.scripts].map(s => s.src), text: document.body.innerText })), errors, external); throw error; }
   console.log("Editor ready");
+  const menuAction = async (menu, action) => {
+    await page.locator("#menubar").getByRole("menuitem", { name: menu, exact: true }).click();
+    await page.locator(`#menuPopup [data-action="${action}"]`).click();
+  };
   await page.locator("#emptyDemo").click();
   await page.waitForFunction(() => document.getElementById("projectInfo").textContent.includes("2 个片段"));
   await page.waitForFunction(() => document.getElementById("previewStatus").textContent === "预览已更新");
@@ -70,7 +74,7 @@ try {
   await page.locator("#redo").click(); await page.waitForFunction(() => document.getElementById("projectInfo").textContent.includes("3 个片段"));
   results.push("Split/undo/redo share project history");
   console.log(results.at(-1));
-  await page.locator(".jsonPanel summary").click(); await page.locator("#loadJson").click();
+  await page.locator('[data-mode="mixed"]').click(); await page.locator("#loadJson").click();
   const original = await page.locator("#jsonDraft").inputValue();
   await page.locator("#jsonDraft").fill('{"broken":'); await page.locator("#applyJson").click();
   assert.match(await page.locator("#jsonStatus").textContent(), /格式错误/);
@@ -80,6 +84,7 @@ try {
   await page.reload(); await page.waitForFunction(() => document.documentElement.dataset.ready === "true");
   assert.equal(await page.locator("#projectName").inputValue(), "已编辑的视频工程");
   results.push("Invalid JSON does not commit; valid edit/autosave survives reload");
+  await page.locator('[data-mode="video"]').click();
   // Exercise the real scene editor, not a mock return event.
   await page.evaluate(() => localStorage.setItem('sceneEditor_settings_v1', JSON.stringify({general:{defaultSceneUrl:'data:application/json,'+encodeURIComponent(JSON.stringify({version:'next',sceneConfig:{},objectList:[]})),newSceneIncludeFloor:false},session:{promptOnBootRestore:false,openLastSceneOnStartup:false},ai:{providers:[{id:'fixture',provider:'custom',apiKey:'',model:'fixture'}],defaultProviderId:'fixture'}})));
   await page.locator('[data-id="intro"]').click();
@@ -94,18 +99,145 @@ try {
   });
   await popup.getByRole('button',{name:'应用到视频工程',exact:true}).click();
   await page.waitForFunction(()=>document.getElementById('toast').textContent.includes('镜头修改已应用'));
-  await page.locator('.jsonPanel summary').click(); await page.locator('#loadJson').click();
+  await page.locator('[data-mode="mixed"]').click(); await page.locator('#loadJson').click();
   const returned=JSON.parse(await page.locator('#jsonDraft').inputValue()),returnedClip=returned.timeline.clips.find(c=>c.id==='intro');
   assert.equal(returned.scenes[returnedClip.source].objectList.find(o=>o.threeJsonId==='subject').position.x,1);
   assert.ok(returned.scenes[returnedClip.source].timeline.tracks.length,'Shot timeline must survive deep editing');
   await popup.close(); results.push('Actual scene-editor roundtrip preserves timeline and commits one reversible shot change');
+  // Workbench modes share one canvas/session; changing layout must not apply drafts.
+  const unchanged = await page.locator("#jsonDraft").inputValue();
+  for (const mode of ["code", "video", "mixed"]) {
+    await page.locator(`button[data-mode="${mode}"]`).click();
+    assert.equal(await page.locator(".previewPanel").isVisible(), mode !== "code");
+    assert.equal(await page.locator(".codePanel").isVisible(), mode !== "video");
+    assert.equal(await page.locator("#jsonDraft").inputValue(), unchanged);
+  }
+  await page.locator("#workspaceDivider").focus(); await page.keyboard.press("ArrowRight");
+  assert.equal(await page.locator("#workspaceDivider").getAttribute("aria-valuenow"), "55");
+  await page.screenshot({ path: path.join(out, "mixed.png") });
+  await page.locator('button[data-mode="code"]').click();
+  await page.screenshot({ path: path.join(out, "code.png") });
+  await page.locator('button[data-mode="mixed"]').click();
+  // Keyboard navigation, disabled-state dispatch and outside-click dismissal.
+  await page.locator("#menubar").getByRole("menuitem", { name: "文件", exact: true }).click();
+  assert.equal(await page.locator("#menuPopup").getAttribute("aria-label"), "文件菜单");
+  await page.keyboard.press("ArrowRight");
+  assert.equal(await page.locator("#menuPopup").getAttribute("aria-label"), "编辑菜单");
+  await page.keyboard.press("Escape");
+  assert.equal(await page.locator("#menuPopup").isVisible(), false);
+  assert.equal(await page.evaluate(() => document.activeElement.textContent), "编辑");
+  await page.locator("#menubar").getByRole("menuitem", { name: "AI", exact: true }).click();
+  assert.equal(await page.locator('#menuPopup [data-action="cancelJob"]').isDisabled(), true);
+  await page.locator(".codeHeading").click();
+  assert.equal(await page.locator("#menuPopup").isVisible(), false);
+  // Sequence settings commit through the same undo stack and sync pristine JSON.
+  await menuAction("序列", "outputSettings");
+  await page.getByLabel("帧率（FPS）", { exact: true }).fill("24");
+  await page.locator("#modalActions button").click();
+  await page.waitForFunction(() => JSON.parse(document.getElementById("jsonDraft").value).output.fps === 24);
+  assert.equal(JSON.parse(await page.locator("#jsonDraft").inputValue()).output.fps, 24);
+  await menuAction("编辑", "undo");
+  await page.waitForFunction(() => JSON.parse(document.getElementById("jsonDraft").value).output.fps === 30);
+  assert.equal(JSON.parse(await page.locator("#jsonDraft").inputValue()).output.fps, 30);
+  await menuAction("视图", "toggleInspector");
+  assert.equal(await page.locator(".inspector").isVisible(), false);
+  await page.reload(); await page.waitForFunction(() => document.documentElement.dataset.ready === "true");
+  assert.equal(await page.locator(".workspace").getAttribute("data-mode"), "mixed");
+  assert.equal(await page.locator(".inspector").isVisible(), false);
+  assert.equal(await page.locator("#workspaceDivider").getAttribute("aria-valuenow"), "55");
+  await menuAction("视图", "toggleInspector");
+  results.push("Menus support keyboard, dismissal, disabled commands; modes and splitter persist without project mutations");
+
+  const cleanJson = await page.locator("#jsonDraft").inputValue();
+  const brokenDocument = JSON.parse(cleanJson); brokenDocument.timeline.clips[0].duration = -2;
+  await page.locator("#jsonDraft").fill(JSON.stringify(brokenDocument)); await page.locator("#applyJson").click();
+  await page.waitForFunction(() => document.getElementById("jsonStatus").textContent.includes("校验未通过"));
+  assert.match(await page.locator("#jsonStatus").textContent(), /校验未通过/);
+  assert.equal(await page.locator("#projectName").inputValue(), "已编辑的视频工程");
+  const dirtyDraft = cleanJson.replace("已编辑的视频工程", "只在草稿中的标题");
+  await page.locator("#jsonDraft").fill(dirtyDraft);
+  await page.keyboard.press("Alt+1"); await page.keyboard.press("Alt+3");
+  assert.equal(await page.locator("#jsonDraft").inputValue(), dirtyDraft);
+  assert.equal(await page.locator("#draftBadge").isVisible(), true);
+  await menuAction("文件", "saveJson");
+  assert.equal(await page.locator("#modalTitle").textContent(), "JSON 草稿尚未应用");
+  await page.locator("#modalActions button[value=cancel]").click();
+  assert.equal(await page.locator("#jsonDraft").inputValue(), dirtyDraft);
+  await page.locator("#addCaption").click();
+  await page.waitForFunction(() => document.getElementById("jsonStatus").dataset.state === "stale");
+  assert.equal(await page.locator("#applyJson").isDisabled(), true);
+  assert.match(await page.locator("#jsonStatus").textContent(), /工程已发生改变/);
+  await page.locator("#jsonScope").selectOption("shot");
+  await page.locator("#modalActions button[value=cancel]").click();
+  assert.equal(await page.locator("#jsonScope").inputValue(), "project");
+  assert.equal(await page.locator("#jsonDraft").inputValue(), dirtyDraft);
+  const [draftDownload] = await Promise.all([page.waitForEvent("download"), menuAction("编辑", "downloadDraft")]);
+  assert.match(draftDownload.suggestedFilename(), /-draft\.json$/);
+  await page.locator("#loadJson").click(); await page.locator("#modalActions button[value=ok]").click();
+  await page.waitForFunction(() => document.getElementById("draftBadge").hidden);
+  assert.equal(await page.locator("#draftBadge").isVisible(), false);
+  assert.ok(JSON.parse(await page.locator("#jsonDraft").inputValue()).timeline.captions.length);
+  await menuAction("编辑", "undo");
+  await page.waitForFunction(value => document.getElementById("jsonDraft").value === value, cleanJson);
+  assert.equal(await page.locator("#jsonDraft").inputValue(), cleanJson);
+  // Dirty per-shot drafts stay bound to the original clip after selection moves.
+  await page.locator('[data-id="intro"]').click();
+  await menuAction("片段", "editShotJson");
+  await page.waitForFunction(() => document.getElementById("jsonScope").value === "shot");
+  const shot = JSON.parse(await page.locator("#jsonDraft").inputValue()); shot.name = "只改原镜头";
+  await page.locator("#jsonDraft").fill(JSON.stringify(shot));
+  await page.locator('[data-id="final"]').click();
+  assert.match(await page.locator("#jsonTarget").textContent(), /intro.*已固定/);
+  await page.locator("#jsonDraft").focus(); await page.keyboard.press("Control+Enter");
+  await page.waitForFunction(() => document.getElementById("jsonStatus").textContent.includes("已应用版本"));
+  await page.locator("#jsonScope").selectOption("project");
+  await page.waitForFunction(() => JSON.parse(document.getElementById("jsonDraft").value).documentType === "composition");
+  const applied = JSON.parse(await page.locator("#jsonDraft").inputValue());
+  assert.equal(applied.scenes[applied.timeline.clips.find(c => c.id === "intro").source].name, "只改原镜头");
+  assert.notEqual(applied.scenes[applied.timeline.clips.find(c => c.id === "final").source].name, "只改原镜头");
+  await menuAction("编辑", "undo");
+  await page.waitForFunction(value => document.getElementById("jsonDraft").value === value, cleanJson);
+  assert.equal(await page.locator("#jsonDraft").inputValue(), cleanJson);
+  results.push("JSON atomic validation, scope ownership, stale drafts, export warning, backup and shared undo verified");
+  await page.evaluate(() => { document.getElementById("toast").hidden = true; });
   for (const width of [390, 320]) {
-    await page.setViewportSize({ width, height: 844 }); await page.screenshot({ path: path.join(out, `mobile-${width}.png`) });
+    await page.setViewportSize({ width, height: 844 });
+    await page.locator('button[data-mode="mixed"]').click();
+    await page.screenshot({ path: path.join(out, `mobile-${width}.png`) });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false);
-    await page.getByRole("button", { name: "属性与 JSON", exact: true }).click(); assert.equal(await page.locator(".inspector").isVisible(), true);
-    await page.getByRole("button", { name: "预览", exact: true }).click();
+    for (const mode of ["video", "code", "mixed"]) {
+      await page.locator(`button[data-mode="${mode}"]`).click();
+      assert.equal(await page.locator(".codePanel").isVisible(), mode !== "video");
+      assert.equal(await page.locator(".previewPanel").isVisible(), mode !== "code");
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false);
+    }
+    await page.locator("#menubar").getByRole("menuitem", { name: "帮助", exact: true }).click();
+    const bounds = await page.locator("#menuPopup").boundingBox();
+    assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= width);
+    await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: "片段属性", exact: true }).click(); assert.equal(await page.locator(".inspector").isVisible(), true);
+    await page.getByRole("button", { name: "工作区", exact: true }).click();
+    await page.locator("#fitTimeline").click();
+    assert.equal(await page.locator(".centerWorkspace").isVisible(), true);
   }
   results.push("320/390px workspaces do not overflow");
+  for (const size of [{ width: 1024, height: 700 }, { width: 844, height: 390 }, { width: 320, height: 568 }]) {
+    await page.setViewportSize(size);
+    await page.locator('button[data-mode="mixed"]').click();
+    await page.locator("#jsonStatus").scrollIntoViewIfNeeded();
+    const status = await page.locator("#jsonStatus").boundingBox(), timelineBounds = await page.locator(".timelinePanel").boundingBox();
+    assert.ok(status.y >= 0 && status.y + status.height <= timelineBounds.y + 1, "Code status remains reachable in stacked/short mixed layouts");
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false);
+    await page.locator('button[data-mode="code"]').click();
+    assert.equal(await page.locator(".codePanel").isVisible(), true);
+    await page.locator('button[data-mode="video"]').click();
+    assert.equal(await page.locator(".previewPanel").isVisible(), true);
+  }
+  await page.getByRole("button", { name: "片段属性", exact: true }).click();
+  await menuAction("视图", "resetLayout");
+  assert.equal(await page.locator(".workspace").getAttribute("data-panel"), "center");
+  assert.equal(await page.locator(".workspace").getAttribute("data-mode"), "video");
+  results.push("Tablet, short landscape and 320x568 layouts retain reachable code/status; reset restores the workspace");
   await page.setViewportSize({ width: 1440, height: 1000 });
   // Produce an actual encoded video with red/blue halves and a sine audio track.
   const video = await page.evaluate(async () => {
@@ -154,9 +286,9 @@ try {
   assert.equal(conflict.code,'MEDIA_STORAGE_CONFLICT'); assert.equal(conflict.name,'newer'); results.push('Concurrent-tab storage version conflict preserves newer save');
   if (installed) {
     const document = {documentType:'composition',compositionVersion:1,name:'真实旁白验证',output:{width:320,height:180,fps:8},scenes:{scene:{version:'next',sceneConfig:{scene:{background:'#071422'},camera:{position:{x:0,y:0,z:8}},controls:{type:'none'}},objectList:[{objType:'box',threeJsonId:'actor',geometry:{width:2,height:2,depth:2},material:{type:'basic',color:'#3adaff'}}]}},timeline:{version:1,clips:[{id:'speech',source:'scene',duration:6}],captions:[{id:'narration',linkedClipId:'speech',text:'你好，这是双缝实验。',start:.5,duration:5.5}]}};
-    await page.locator('.jsonPanel').evaluate(node=>{node.open=true;});await page.locator('#loadJson').click();await page.locator('#jsonDraft').fill(JSON.stringify(document));await page.locator('#applyJson').click();
+    await page.locator('button[data-mode="mixed"]').click();await page.locator('#loadJson').click();await page.locator('#jsonDraft').fill(JSON.stringify(document));await page.locator('#applyJson').click();
     assert.equal(localModelRequests.length,0,'No voice resources loaded on opening/import/editing');
-    await page.locator('#narration').click();
+    await menuAction("序列", "narration");
     await page.waitForFunction(()=>document.getElementById('toast').textContent.includes('旁白已加入工程音轨'),null,{timeout:180000});
     await page.waitForFunction(()=>document.getElementById('saveStatus').textContent.includes('已保存'));
     const voice = await page.evaluate(async()=>{

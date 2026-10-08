@@ -23,18 +23,23 @@
     <a class="brand" href="../threebox/index.html" title="返回 ThreeBox">T<span>J</span><small>VIDEO EDITOR</small></a>
     <input id="projectName" aria-label="工程名称" value="未命名工程" maxlength="120">
     <span id="saveStatus" class="muted">正在打开…</span>
-    <nav aria-label="工程操作">
-      <button id="newProject">新建</button><button id="recentProjects">最近工程</button><button id="importFiles">导入</button>
-      <details class="menu"><summary>保存 ▾</summary><div><button id="savePack">下载 .tjz 工程包</button><button id="saveJson">下载 JSON（内含本地素材）</button></div></details>
-      <button id="exportMedia" class="accent">导出视频</button>
-    </nav>
+    <button id="draftBadge" class="draftBadge" hidden title="JSON 草稿尚未应用到视频工程">JSON 未应用</button>
+    <button id="exportMedia" class="accent">导出视频</button>
     <input id="fileInput" type="file" hidden multiple accept=".json,.tj,.tjz,video/*,audio/*,image/*">
   </header>
-  <nav class="mobileTabs" aria-label="工作区"><button data-view="media">素材与 AI</button><button data-view="preview" class="active">预览</button><button data-view="inspector">属性与 JSON</button></nav>
-  <main class="workspace" data-view="preview">
+  <div class="commandbar">
+    <nav id="menubar" class="menubar" role="menubar" aria-label="视频编辑器主菜单"></nav>
+    <div class="viewModes" role="group" aria-label="编辑视图">
+      <button data-mode="video" aria-pressed="true" title="视频视图（Alt+1）">视频</button>
+      <button data-mode="code" aria-pressed="false" title="JSON 代码视图（Alt+2）">代码</button>
+      <button data-mode="mixed" aria-pressed="false" title="视频与 JSON 混合视图（Alt+3）">混合</button>
+    </div>
+  </div>
+  <nav class="mobileTabs" aria-label="工作区面板"><button data-panel="library" aria-pressed="false">素材与 AI</button><button data-panel="center" aria-pressed="true">工作区</button><button data-panel="inspector" aria-pressed="false">片段属性</button></nav>
+  <main class="workspace" data-panel="center" data-mode="video">
     <aside class="panel library" aria-label="素材与 AI">
       <div class="panelHeading"><h2>素材与镜头</h2><span class="eyebrow">PROJECT</span></div>
-      <div class="row"><button id="addScene">＋ 3D 镜头</button><button id="demoProject">示例工程</button></div>
+      <div class="row"><button id="importFiles">导入素材</button><button id="addScene">＋ 3D 镜头</button></div>
       <p class="hint">导入 JSON / .tjz、图片、视频或音频。文件保存在此浏览器；跨设备请下载工程包。</p>
       <div id="assetList" class="assetList"></div>
       <section class="aiPanel" aria-label="视频 AI 助手">
@@ -47,28 +52,39 @@
         <div id="aiLog" role="log" aria-live="polite"></div>
       </section>
     </aside>
+    <div class="centerWorkspace">
     <section class="previewPanel" aria-label="视频预览">
-      <div class="previewHeading"><span>工程预览</span><span id="previewStatus" class="muted">导入素材或创建第一个镜头</span></div>
+      <div class="previewHeading"><h2>工程预览</h2><button id="outputSettings" class="subtle" title="序列设置">1920 × 1080 · 30 fps</button></div>
       <div class="stage"><canvas id="preview" width="960" height="540" aria-label="视频画面"></canvas><div id="emptyState"><span class="emptyMark">▷</span><h1>从一个镜头开始</h1><p>用 AI 编排故事，也可以导入素材亲手剪辑。</p><button id="emptyDemo">打开示例工程</button></div></div>
       <div class="transport"><button id="play" aria-label="播放">▶</button><input id="seek" type="range" min="0" max="10" step="0.001" value="0" aria-label="播放位置"><output id="timeLabel">00:00 / 00:00</output><label class="check"><input id="previewSound" type="checkbox" checked>声音</label></div>
-      <div class="row outputSettings"><label>宽<input id="width" type="number" min="16" max="7680" value="1920"></label><label>高<input id="height" type="number" min="16" max="4320" value="1080"></label><label>FPS<input id="fps" type="number" min="1" max="120" value="30"></label><button id="applyOutput">应用</button><span class="hint">预览降采样；导出使用原始分辨率</span></div>
+      <p id="previewStatus" class="hint previewStatus" role="status">导入素材或创建第一个镜头</p>
     </section>
-    <aside class="panel inspector" aria-label="属性与 JSON">
+    <div id="workspaceDivider" class="workspaceDivider" role="separator" tabindex="0" aria-label="调整视频与代码区域比例" aria-orientation="vertical" aria-valuemin="25" aria-valuemax="75" aria-valuenow="50"></div>
+    <section class="codePanel" aria-label="JSON 代码编辑">
+      <div class="codeHeading"><h2>JSON · 精确编辑</h2><span id="jsonRevision" class="eyebrow"></span></div>
+      <div class="codeTools">
+        <label class="scopeLabel">范围<select id="jsonScope"><option value="project">整个视频工程</option><option value="shot">原生 3D 镜头</option></select></label>
+        <button id="loadJson" title="重新读取工程；有草稿时会先确认">重新读取</button>
+        <button id="formatJson" title="只整理草稿缩进，不修改工程">格式化</button>
+        <button id="applyJson" class="accent" title="校验并应用到工程（Ctrl / Cmd+Enter）">校验并应用</button>
+      </div>
+      <div id="jsonTarget" class="hint jsonTarget"></div>
+      <div class="codeSurface"><pre id="jsonLines" aria-hidden="true">1</pre><textarea id="jsonDraft" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="JSON 草稿" aria-describedby="jsonStatus" wrap="off"></textarea></div>
+      <div class="codeFooter"><p id="jsonStatus" class="hint" role="status">校验并应用后更新视频；与时间线共用撤销记录。</p><output id="jsonCursor" class="muted">1:1</output></div>
+    </section>
+    </div>
+    <aside class="panel inspector" aria-label="片段属性">
       <div class="panelHeading"><h2>编辑片段</h2><span id="selectionKind" class="eyebrow">INSPECTOR</span></div>
       <div id="inspectorFields"><p class="hint">在时间线上选择片段、字幕或音轨。</p></div>
-      <details class="jsonPanel"><summary>JSON · 精确编辑</summary>
-        <label>编辑对象<select id="jsonScope"><option value="project">整个工程</option><option value="shot">选中 3D 镜头</option></select></label>
-        <div class="row"><button id="loadJson">读取当前版本</button><button id="applyJson">校验并应用</button></div>
-        <textarea id="jsonDraft" spellcheck="false" aria-label="JSON 草稿" rows="16"></textarea>
-        <p id="jsonStatus" class="hint">草稿不会自动覆盖工程。应用成功后支持撤销。</p>
-      </details>
+      <p class="hint">需要精确修改？切换“代码 / 混合”视图，或从“片段”菜单编辑当前 3D 镜头。</p>
     </aside>
   </main>
   <section class="timelinePanel" aria-label="剪辑时间线">
-    <div class="timelineToolbar"><div class="row"><button id="undo" title="Ctrl+Z">撤销</button><button id="redo" title="Ctrl+Shift+Z">重做</button><span class="divider"></span><button id="split">分割</button><button id="duplicate">复制</button><button id="deleteClip">删除</button><button id="rippleDelete">波纹删除</button></div><div class="row"><button id="addCaption">＋ 字幕</button><button id="addMusic">＋ 合成配乐</button><button id="narration">自动旁白</button><label class="check"><input id="snap" type="checkbox" checked>吸附</label><label class="zoom">缩放<input id="zoom" type="range" min="6" max="100" value="32" aria-label="时间线缩放"></label></div></div>
+    <div class="timelineToolbar"><div class="row"><h2>时间线</h2><button id="undo" title="撤销工程操作（Ctrl+Z）">撤销</button><button id="redo" title="重做工程操作（Ctrl+Shift+Z）">重做</button><span class="divider"></span><button id="split" title="在播放头处分割（Ctrl+B）">分割</button><button id="deleteClip" title="删除选中片段（Delete）">删除</button><button id="addCaption">＋ 字幕</button></div><div class="row"><button id="fitTimeline">适配</button><label class="check"><input id="snap" type="checkbox" checked>吸附</label><label class="zoom">缩放<input id="zoom" type="range" min="1" max="100" value="32" aria-label="时间线缩放"></label></div></div>
     <div id="timeline" class="timelineScroller"><div id="timelineInner"></div></div>
     <div class="timelineFooter"><span>拖动片段移动 · 拖动左右端裁切 · 点击标尺定位 · 空格播放</span><span id="projectInfo"></span></div>
   </section>
+  <div id="menuPopup" class="menuPopup" role="menu" hidden></div>
   <div id="toast" role="status" aria-live="polite" hidden></div>
   <dialog id="modal"><form method="dialog"><div class="panelHeading"><h2 id="modalTitle"></h2><button value="cancel" aria-label="关闭">×</button></div><div id="modalBody"></div><div id="modalActions" class="row"></div></form></dialog>
   <script type="module" src="./js/app.js"></script>

@@ -5,8 +5,9 @@ import { ingestMediaDocument } from "./documents.js";
 import { createEditorPreview } from "./preview.js";
 import { createTimelineView, defaultLanes } from "./timeline.js";
 import { $, element, field, toast, modal, confirm, download, timecode, uid } from "./ui.js";
+import { createWorkbench } from "./workbench.js";
 
-let storage, session, service, adapters, projectId, selection, unsubscribe, changeCounter = 0, saveQueue = Promise.resolve(), savedRevision = -1, job, jsonBase = -1, jsonOwner, jsonDirty = false, shotFacts = [];
+let storage, session, service, adapters, projectId, selection, unsubscribe, workbench, changeCounter = 0, saveQueue = Promise.resolve(), savedRevision = -1, job, jsonBase = -1, jsonOwner, jsonDirty = false, jsonScope = "project", shotFacts = [];
 const handoffs = new Map(), channel = typeof BroadcastChannel === "function" ? new BroadcastChannel("threejson-video-editor") : null;
 const report = error => { console.error("[video-editor]", error); toast(error.message || String(error), true); };
 const selected = () => session?.document.timeline[selection?.section]?.find(item => item.id === selection.id);
@@ -16,7 +17,36 @@ const endOf = item => (item.start || 0) + item.duration;
 const laneId = kind => session.document.timeline.lanes?.find(lane => lane.kind === kind)?.id;
 const command = (op, args) => ({ op, args });
 const wrap = fn => async event => { try { await fn(event); } catch (error) { report(error); } };
-const bind = (id, fn, type = "click") => $(id).addEventListener(type, wrap(fn));
+const actions = new Map();
+const busyActions = new Set(["newProject", "recentProjects", "demoProject", "emptyDemo", "importFiles", "addScene", "applyJson", "addCaption", "addMusic", "narration", "runAi", "split", "duplicate", "deleteClip", "rippleDelete", "outputSettings", "exportMedia", "openShotEditor", "editTransition", "undo", "redo"]);
+const bind = (id, fn, type = "click") => {
+  if (type === "click") { actions.set(id, fn); $(id)?.addEventListener(type, wrap(event => runAction(id, event))); }
+  else $(id).addEventListener(type, wrap(fn));
+};
+async function runAction(id, event) {
+  if (actionEnabled(id)) return actions.get(id)?.(event);
+}
+function actionEnabled(id) {
+  if (!session) return false;
+  if (job && busyActions.has(id)) return false;
+  if (id === "cancelJob") return Boolean(job);
+  if (id === "undo") return session.canUndo;
+  if (id === "redo") return session.canRedo;
+  if (id === "applyJson") return jsonDirty && Boolean(jsonOwner) && jsonBase === session.revision && jsonOwner.projectId === projectId;
+  if (id === "formatJson" || id === "downloadDraft") return Boolean($("jsonDraft").value);
+  const item = selected(), clip = selectedClip();
+  const locked = item && session.document.timeline.lanes?.some(l => l.id === item.laneId && l.locked);
+  if (["split", "duplicate", "deleteClip", "rippleDelete", "editTransition", "openShotEditor"].includes(id) && locked) return false;
+  if (id === "split") return Boolean(clip && preview.time > (clip.start || 0) && preview.time < endOf(clip));
+  if (["duplicate", "deleteClip"].includes(id)) return Boolean(item);
+  if (["rippleDelete", "editTransition"].includes(id)) return Boolean(clip);
+  if (["openShotEditor", "editShotJson"].includes(id)) return Boolean(shotScene(clip));
+  return true;
+}
+function updateActions() {
+  for (const id of actions.keys()) if ($(id)) $(id).disabled = !actionEnabled(id);
+  workbench?.refresh();
+}
 const emptyProject = () => ({ documentType: "composition", compositionVersion: 1, name: "未命名工程", output: { width: 1920, height: 1080, fps: 30 }, scenes: {}, timeline: { version: 1, clips: [], lanes: structuredClone(defaultLanes) }, production: { version: 1, state: "planning", shots: {} } });
 const basicScene = (color = "#77dbc9") => ({ version: "next", sceneConfig: { scene: { background: "#0b1321" }, camera: { position: { x: 0, y: 1, z: 8 }, lookAt: { x: 0, y: 0, z: 0 } }, controls: { type: "none" } }, objectList: [{ threeJsonId: "subject", objType: "torus", geometry: { radius: 1.2, tube: .32, tubularSegments: 96, radialSegments: 24 }, material: { type: "normal" } }], timeline: { version: 1, duration: 8, tracks: [{ id: "spin", target: "subject", property: "rotation.y", keyframes: [{ time: 0, value: 0 }, { time: 8, value: Math.PI * 2 }] }], captions: [{ id: "title", text: "ThreeJSON · 每一帧都可以编辑", start: .5, duration: 6.5, fontSize: 40, color }] } });
 
@@ -24,6 +54,7 @@ const preview = createEditorPreview({ canvas: $("preview"), resolveDocument: val
   $("seek").value = time; $("timeLabel").textContent = `${timecode(time)} / ${timecode(session ? getTimelineDuration(session.document.timeline) : 0)}`;
   $("play").textContent = playing ? "Ⅱ" : "▶"; $("play").setAttribute("aria-label", playing ? "暂停" : "播放"); timeline.updateTime(time);
   updateEmptyState(time);
+  updateActions();
 }, onError: report });
 const timeline = createTimelineView({ getDocument: () => session?.document || emptyProject(), getSelection: () => selection, getTime: () => preview.time, seek: time => preview.seek(Math.min(time, getTimelineDuration(session.document.timeline))), execute: (...args) => execute(...args), select, onError: report });
 
@@ -47,7 +78,7 @@ async function openProject(document, id = crypto.randomUUID()) {
   if (job) throw new Error("请先停止正在执行的任务。");
   // Validate before closing the current session.
   const next = createMediaProjectSession(document, { duration: document?.timeline ? Math.max(8, getTimelineDuration(document.timeline)) : 8, historyLimit: 100 });
-  unsubscribe?.(); session?.dispose(); preview.pause(); session = next; projectId = id; savedRevision = -1; selection = undefined; jsonBase = -1; jsonDirty = false; $("jsonDraft").value = "";
+  unsubscribe?.(); session?.dispose(); preview.pause(); session = next; projectId = id; savedRevision = -1; selection = undefined; jsonBase = -1; jsonDirty = false; jsonOwner = undefined; jsonScope = "project"; $("jsonScope").value = jsonScope; $("jsonDraft").value = "";
   adapters = { captureFrames: async (document, args, context) => {
     if (args.times.length > 12) throw new Error("每次最多捕获 12 帧，请分批检查。");
     const project = await createMediaProject(await storage.resolveDocument(document), { width: Math.min(1280, args.width || 640), height: Math.min(720, args.height || 360), signal: context.signal, preloadNext: false });
@@ -63,12 +94,11 @@ function refresh() {
   shotFacts = session.inspect().shots;
   if (selection && !selected()) selection = undefined;
   $("projectName").value = document.name || "未命名工程";
-  for (const name of ["width", "height", "fps"]) $(name).value = document.output?.[name] || { width: 1920, height: 1080, fps: 30 }[name];
-  $("undo").disabled = !session.canUndo || Boolean(job); $("redo").disabled = !session.canRedo || Boolean(job);
+  $("outputSettings").textContent = `${document.output?.width || 1920} × ${document.output?.height || 1080} · ${document.output?.fps || 30} fps`;
   $("seek").max = Math.max(.001, duration); $("emptyState").hidden = document.timeline.clips.length > 0 || (document.timeline.captions || []).length > 0;
   $("projectInfo").textContent = `${document.timeline.clips.length} 个片段 · ${duration.toFixed(1)} 秒`;
   timeline.draw(); drawInspector(); drawAssets();
-  if (jsonDirty && jsonBase !== session.revision) $("jsonStatus").textContent = "工程已发生改变。草稿已保留；请备份草稿并重新读取，避免覆盖新修改。";
+  syncJsonDraft(); updateActions();
   preview.setDocument(document, ++changeCounter).catch(report);
 }
 function updateEmptyState(time) {
@@ -79,7 +109,7 @@ function updateEmptyState(time) {
   $("emptyState").querySelector("h1").textContent = planned ? "分镜已规划，画面尚未制作" : "从一个镜头开始";
   $("emptyState").querySelector("p").textContent = planned ? `${visible[0].title || visible[0].id} · 确认分镜后，让 AI 继续制作。` : "用 AI 编排故事，也可以导入素材亲手剪辑。";
 }
-function select(section, id) { selection = { section, id }; drawInspector(); timeline.draw(); }
+function select(section, id) { selection = { section, id }; drawInspector(); timeline.draw(); syncJsonDraft(); updateActions(); }
 function drawAssets() {
   $("assetList").replaceChildren();
   for (const [id, asset] of Object.entries(session.document.mediaAssets || {})) $("assetList").append(element("button", { class: "assetItem", title: "再次添加到播放头位置", onclick: wrap(() => insertAsset(id, preview.time)) }, `${{ video: "▣", image: "▧", audio: "♫" }[asset.kind]} ${asset.name || id}`));
@@ -193,6 +223,7 @@ channel?.addEventListener("message", wrap(event => { if (event.data?.action === 
 window.addEventListener("focus", wrap(async () => { for (const token of handoffs.keys()) await applyShotReply(token); }));
 
 async function savePack() {
+  if (!await confirmAppliedExport()) return;
   await save(); const document = session.snapshot();
   const data = await packMediaDocument(document, { assets: await storage.assetsFor(document), outputType: "bytes" });
   download(new Blob([data], { type: "application/zip" }), `${document.name || "video-project"}.tjz`);
@@ -200,8 +231,7 @@ async function savePack() {
 }
 function setJob(value) {
   job = value; $("cancelJob").hidden = !job;
-  for (const id of ["runAi", "narration", "newProject", "importFiles", "demoProject", "recentProjects", "addScene", "applyJson", "addCaption", "addMusic", "split", "duplicate", "deleteClip", "rippleDelete", "applyOutput", "exportMedia"]) $(id).disabled = Boolean(job);
-  $("undo").disabled = Boolean(job) || !session.canUndo; $("redo").disabled = Boolean(job) || !session.canRedo;
+  updateActions();
 }
 function log(text) { $("aiLog").textContent = `${$("aiLog").textContent}\n${text}`.slice(-9000); $("aiLog").scrollTop = $("aiLog").scrollHeight; }
 async function generate() {
@@ -258,8 +288,8 @@ bind("importFiles", () => $("fileInput").click());
 bind("fileInput", async event => { const files = [...event.target.files]; event.target.value = ""; for (const file of files) await importFile(file); }, "change");
 bind("projectName", () => execute(command("media.project.set", { name: $("projectName").value })), "change");
 bind("savePack", savePack);
-bind("saveJson", async () => { const value = await storage.portableJson(session.snapshot()); download(new Blob([JSON.stringify(value, null, 2)], { type: "application/json" }), `${session.document.name || "video-project"}.json`); });
-bind("exportMedia", async () => { preview.pause(); const { openSceneMediaStudio } = await import("../../shared/js/mediaStudio.js"); await openSceneMediaStudio(await storage.resolveDocument(session.snapshot()), { name: session.document.name || "video", initialFormat: "mp4" }); });
+bind("saveJson", async () => { if (!await confirmAppliedExport()) return; const value = await storage.portableJson(session.snapshot()); download(new Blob([JSON.stringify(value, null, 2)], { type: "application/json" }), `${session.document.name || "video-project"}.json`); });
+bind("exportMedia", async () => { if (!await confirmAppliedExport()) return; preview.pause(); const { openSceneMediaStudio } = await import("../../shared/js/mediaStudio.js"); await openSceneMediaStudio(await storage.resolveDocument(session.snapshot()), { name: session.document.name || "video", initialFormat: "mp4" }); });
 bind("addScene", async () => { const id = uid("shot"); await execute(command("media.shot.put", { id, scene: basicScene(), clip: { start: preview.time, duration: 8, laneId: laneId("visual") }, metadata: { title: "新镜头" } })); select("clips", id); });
 async function demo() {
   if ((session.document.timeline.clips.length || jsonDirty) && !await confirm("打开示例工程", `当前工程会保留在最近工程中。${jsonDirty ? "尚未应用的 JSON 草稿会丢弃，请先备份。" : ""}是否打开示例？`)) return;
@@ -273,7 +303,18 @@ async function demo() {
 }
 bind("demoProject", demo); bind("emptyDemo", demo);
 bind("play", () => preview.play($("previewSound").checked)); bind("seek", event => preview.seek(Number(event.target.value)), "input"); bind("previewSound", () => preview.pause(), "change");
-bind("applyOutput", () => { const output = Object.fromEntries(["width", "height", "fps"].map(name => [name, Number($(name).value)])); if (!Number.isInteger(output.width) || !Number.isInteger(output.height) || output.width < 16 || output.height < 16 || output.width > 7680 || output.height > 4320 || output.fps < 1 || output.fps > 120) throw new Error("输出尺寸需在 16～7680 × 16～4320 范围内，帧率为 1～120。"); return execute(command("media.project.set", { output })); });
+bind("outputSettings", async () => {
+  const revision = session.revision, owner = projectId, body = element("div"), inputs = {};
+  for (const [key, label] of [["width", "宽度（像素）"], ["height", "高度（像素）"], ["fps", "帧率（FPS）"]]) {
+    const f = field(label, session.document.output?.[key] || { width: 1920, height: 1080, fps: 30 }[key], { min: 1 }); inputs[key] = f.input; body.append(f.wrapper);
+  }
+  body.append(element("p", { class: "hint" }, "预览使用降采样。尺寸与帧率保存到工程，导出默认沿用；修改不会缩放镜头时间或重排字幕。"));
+  if (await modal("序列设置", body) !== "ok") return;
+  const output = Object.fromEntries(Object.entries(inputs).map(([key, input]) => [key, Number(input.value)]));
+  if (!Number.isInteger(output.width) || !Number.isInteger(output.height) || output.width < 16 || output.height < 16 || output.width > 7680 || output.height > 4320 || !Number.isFinite(output.fps) || output.fps < 1 || output.fps > 120) throw new Error("输出尺寸需在 16～7680 × 16～4320 范围内，帧率为 1～120。");
+  if (projectId !== owner) throw new Error("工程已切换，请重新打开序列设置。");
+  await execute(command("media.project.set", { output }), { baseRevision: revision });
+});
 bind("undo", () => { if (!job) return session.undo(); }); bind("redo", () => { if (!job) return session.redo(); });
 bind("split", async () => { const clip = selectedClip(); if (!clip) throw new Error("请选择画面片段，并把播放头放到要分割的位置。"); await execute(command("media.clip.split", { id: clip.id, time: preview.time })); });
 bind("duplicate", async () => {
@@ -291,23 +332,121 @@ async function addMusic() {
 }
 bind("addMusic", addMusic); bind("narration", synthesizeNarration);
 bind("aiSettings", async () => { const { editVideoAiSettings } = await import("./agent.js"); await editVideoAiSettings(); }); bind("runAi", generate); bind("cancelJob", () => job?.abort());
-bind("loadJson", async () => { if (jsonDirty && !await confirm("重新读取 JSON", "这会覆盖尚未应用的 JSON 草稿，是否继续？")) return; const value = $("jsonScope").value === "shot" ? shotScene(selectedClip()) : session.snapshot(); if (!value) throw new Error("请选择原生 3D 镜头。"); $("jsonDraft").value = JSON.stringify(value, null, 2); jsonBase = session.revision; jsonOwner = { projectId, shotId: $("jsonScope").value === "shot" ? selectedClip().id : null }; jsonDirty = false; $("jsonStatus").textContent = `读取版本 ${jsonBase}。修改后点击“校验并应用”。`; });
-bind("jsonDraft", () => { jsonDirty = true; }, "input");
+let jsonOriginal = "";
+function jsonStatus(text, state = "") {
+  $("jsonStatus").textContent = text; $("jsonStatus").dataset.state = state;
+}
+function updateJsonChrome() {
+  $("draftBadge").hidden = !jsonDirty;
+  $("draftBadge").textContent = jsonBase !== session?.revision ? "JSON 待处理" : "JSON 未应用";
+  $("jsonRevision").textContent = jsonOwner ? `r${jsonBase}${jsonDirty ? " · 草稿" : " · 已同步"}` : "";
+  $("jsonTarget").textContent = jsonOwner?.shotId
+    ? `编辑镜头：${jsonOwner.shotId}${jsonDirty && selectedClip()?.id !== jsonOwner.shotId ? "（已固定到此镜头，不随时间线选择改变）" : ""}`
+    : jsonOwner ? "编辑整个视频工程：镜头、时间线、字幕与音轨。" : "请在时间线上选中一个原生 3D 镜头。普通视频文件没有内部场景 JSON。";
+  updateActions();
+}
+function updateJsonCursor() {
+  const input = $("jsonDraft"), before = input.value.slice(0, input.selectionStart), lines = before.split("\n");
+  $("jsonCursor").textContent = lines.length + ":" + (lines.at(-1).length + 1);
+}
+function updateJsonLines() {
+  const input = $("jsonDraft");
+  $("jsonLines").textContent = Array.from({ length: input.value.split("\n").length }, (_, index) => index + 1).join("\n");
+  $("jsonLines").scrollTop = input.scrollTop; updateJsonCursor();
+}
+function readJsonSnapshot() {
+  const value = jsonScope === "shot" ? shotScene(selectedClip()) : session.snapshot(), input = $("jsonDraft");
+  jsonDirty = false;
+  jsonOwner = value ? { projectId, shotId: jsonScope === "shot" ? selectedClip().id : null } : undefined;
+  jsonBase = session.revision; jsonOriginal = value ? JSON.stringify(value, null, 2) : "";
+  // Preserve scroll/caret when a refresh yields exactly the same document.
+  if (input.value !== jsonOriginal) input.value = jsonOriginal;
+  input.readOnly = !value;
+  jsonStatus(value ? "已同步工程。修改草稿后，校验并应用才会更新视频；支持工程撤销。" : "选择原生 3D 镜头，或把范围切换为整个视频工程。");
+  updateJsonLines(); updateJsonChrome();
+}
+function syncJsonDraft() {
+  if (!session) return;
+  if (!jsonDirty) { readJsonSnapshot(); return; }
+  if (jsonBase !== session.revision) jsonStatus("工程已发生改变，草稿已保留且不会自动覆盖。请先从“编辑”菜单备份草稿，再重新读取并合并修改。", "stale");
+  updateJsonChrome();
+}
+async function changeJsonScope(next, reread = false) {
+  if ((next !== jsonScope || reread) && jsonDirty && !await confirm("保留还是丢弃 JSON 草稿", "当前 JSON 草稿尚未应用。继续将丢弃草稿并读取当前工程；如需保留，请取消并从“编辑”菜单备份草稿。")) return false;
+  jsonScope = next; $("jsonScope").value = next; readJsonSnapshot(); return true;
+}
+async function confirmAppliedExport() {
+  if (!jsonDirty) return true;
+  const result = await modal("JSON 草稿尚未应用", "下载 / 导出只使用已经应用的工程版本，不包含当前 JSON 草稿。可返回代码视图校验并应用，或明确导出已应用版本。", [
+    { label: "返回编辑", value: "cancel" }, { label: "导出已应用版本", value: "export", accent: true },
+  ]);
+  if (result === "export") return true;
+  workbench.setMode("mixed"); $("jsonDraft").focus(); return false;
+}
+bind("loadJson", () => changeJsonScope(jsonScope, true));
+bind("jsonScope", async event => { const next = event.target.value; event.target.value = jsonScope; await changeJsonScope(next); }, "change");
+bind("jsonDraft", () => {
+  jsonDirty = $("jsonDraft").value !== jsonOriginal;
+  if (!jsonDirty && jsonBase !== session.revision) { readJsonSnapshot(); return; }
+  jsonStatus(jsonDirty ? "草稿尚未应用；视频仍是已应用版本。按 Ctrl / Cmd+Enter 校验并应用。" : "草稿与已读取版本一致。");
+  if (jsonBase !== session.revision) jsonStatus("工程已改变；请备份草稿后重新读取，避免覆盖新修改。", "stale");
+  updateJsonLines(); updateJsonChrome();
+}, "input");
+bind("formatJson", () => {
+  try { $("jsonDraft").value = JSON.stringify(JSON.parse($("jsonDraft").value), null, 2); $("jsonDraft").dispatchEvent(new Event("input")); }
+  catch (error) { jsonStatus("JSON 格式错误：" + error.message, "error"); throw error; }
+});
+bind("downloadDraft", () => download(new Blob([$("jsonDraft").value], { type: "application/json" }), (jsonOwner?.shotId || session.document.name || "video") + "-draft.json"));
+$("jsonDraft").addEventListener("scroll", () => { $("jsonLines").scrollTop = $("jsonDraft").scrollTop; });
+$("jsonDraft").addEventListener("keyup", updateJsonCursor);
+$("jsonDraft").addEventListener("click", updateJsonCursor);
 bind("applyJson", async () => {
   if (!jsonOwner || jsonOwner.projectId !== projectId || jsonBase !== session.revision) throw new Error("工程版本已改变或未读取，请先备份草稿，再读取当前 JSON。");
-  let value; try { value = JSON.parse($("jsonDraft").value); } catch (error) { $("jsonStatus").textContent = `JSON 格式错误：${error.message}`; throw error; }
-  if (($("jsonScope").value === "shot") !== Boolean(jsonOwner.shotId)) throw new Error("编辑对象已切换，请先重新读取 JSON。");
-  // Session validation is atomic; preview retains the last successful frame if a
-  // resource cannot be loaded. No on-keystroke parse/load/overwrite loop.
-  await execute(jsonOwner.shotId ? command("media.shot.put", { id: jsonOwner.shotId, scene: value }) : command("media.document.replace", { document: value }), { baseRevision: jsonBase });
-  jsonBase = session.revision; jsonDirty = false; $("jsonStatus").textContent = `已应用版本 ${jsonBase}，可撤销。`;
+  const submittedText = $("jsonDraft").value, owner = jsonOwner;
+  let value; try { value = JSON.parse(submittedText); } catch (error) { jsonStatus("JSON 格式错误：" + error.message, "error"); throw error; }
+  // Atomic validation and revision guard. There is no on-keystroke load loop.
+  try { await execute(jsonOwner.shotId ? command("media.shot.put", { id: jsonOwner.shotId, scene: value }) : command("media.document.replace", { document: value }), { baseRevision: jsonBase }); }
+  catch (error) { jsonStatus("校验未通过，工程未修改：" + error.message, "error"); throw error; }
+  if ($("jsonDraft").value === submittedText && jsonOwner === owner) {
+    readJsonSnapshot(); jsonStatus("已应用版本 " + jsonBase + "，可从“编辑”菜单撤销工程操作。");
+  } else syncJsonDraft(); // Do not discard text typed while an async commit was in flight.
 });
-document.querySelectorAll("[data-view]").forEach(node => { if (node.tagName !== "BUTTON") return; node.addEventListener("click", () => { document.querySelector(".workspace").dataset.view = node.dataset.view; document.querySelectorAll(".mobileTabs button").forEach(button => button.classList.toggle("active", button === node)); }); });
+bind("editShotJson", async () => { if (await changeJsonScope("shot", true)) { workbench.setMode("mixed"); $("jsonDraft").focus(); } });
+bind("openShotEditor", () => openShotEditor(selectedClip()));
+bind("editTransition", () => transitionDialog(selectedClip()));
+bind("draftBadge", () => { workbench.setMode("mixed"); $("jsonDraft").focus(); });
+bind("showAi", () => { workbench.showPanel("library"); $("aiPrompt").focus(); });
+bind("seekStart", () => preview.seek(0));
+bind("toggleSnap", () => { $("snap").checked = !$("snap").checked; });
+bind("toggleSound", () => { $("previewSound").checked = !$("previewSound").checked; preview.pause(); });
+bind("fitTimeline", () => {
+  workbench.showPanel("timeline");
+  const available = $("timeline").clientWidth - (innerWidth <= 800 ? 88 : 120) - 60;
+  $("zoom").value = Math.min(100, Math.max(1, available / Math.max(10, getTimelineDuration(session.document.timeline))));
+  $("zoom").dispatchEvent(new Event("input")); $("timeline").scrollLeft = 0;
+});
+bind("editorHelp", () => {
+  const body = element("div");
+  for (const [title, text] of [
+    ["视频 / 代码 / 混合", "视频视图专注剪辑；代码视图展开 JSON；混合视图并排查看，窄屏上下排列。拖动分隔条调整比例。“视图”菜单可显示面板、恢复默认布局，各视图分别记住布局。"],
+    ["同一份工程，显式应用", "未编辑的 JSON 自动跟随剪辑更新；已编辑草稿不会被覆盖。应用前会校验工程并检查版本。视频只播放已应用版本。可编辑整个 composition，也可选择一个原生 3D 镜头单独编辑。"],
+    ["撤销与草稿", "时间线、AI 和已应用 JSON 共用工程撤销。输入框内 Ctrl+Z 是文本撤销；要撤销工程，可用“编辑”菜单。工程发生新修改时，旧草稿需备份并重新读取，不会悄悄覆盖。"],
+    ["保存与导出", "已应用工程自动保存在此浏览器；未应用草稿不会自动保存。跨设备请下载 .tjz（含本地素材）或 JSON。文件菜单导出的是已应用版本；“备份 JSON 草稿”只下载草稿文本，不打包素材。"],
+    ["快捷键", "Alt+1 / 2 / 3：视频 / 代码 / 混合；Ctrl / Cmd+Enter：应用 JSON；Ctrl / Cmd+O：导入；Ctrl / Cmd+S：下载工程包；Ctrl / Cmd+Z / Shift+Z：工程撤销 / 重做；Ctrl / Cmd+B：分割；Delete：删除；Home：回到开头；空格：播放 / 暂停。文本输入时不触发剪辑快捷键。"],
+  ]) body.append(element("h2", {}, title), element("p", { class: "hint" }, text));
+  return modal("视频编辑器 · 使用说明", body, [{ label: "关闭", value: "ok" }]);
+});
+workbench = createWorkbench({ run: id => runAction(id).catch(report), enabled: actionEnabled, onModeChange: mode => { if (mode === "code") preview.pause(); syncJsonDraft(); } });
+
 document.addEventListener("keydown", wrap(async event => {
-  if (event.target.closest("input,textarea,select,[contenteditable=true]") || $("modal").open) return;
-  if (event.code === "Space") { event.preventDefault(); await preview.play($("previewSound").checked); }
-  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z" && !job) { event.preventDefault(); await (event.shiftKey ? session.redo() : session.undo()); }
-  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") { event.preventDefault(); await savePack(); }
+  if (event.defaultPrevented || event.isComposing || [...document.querySelectorAll("dialog[open], [role=dialog][aria-modal=true]")].some(node => node.getClientRects().length)) return;
+  if (event.altKey && !event.ctrlKey && !event.metaKey && ["1", "2", "3"].includes(event.key)) { event.preventDefault(); workbench.setMode({ 1: "video", 2: "code", 3: "mixed" }[event.key]); return; }
+  const modifier = event.ctrlKey || event.metaKey, key = event.key.toLowerCase();
+  const globalAction = modifier && (key === "enter" ? "applyJson" : key === "s" ? "savePack" : key === "o" ? "importFiles" : null);
+  if (globalAction) { event.preventDefault(); await runAction(globalAction); return; }
+  if (event.target.closest("input,textarea,select,[contenteditable=true],[role=menu],[role=menubar]")) return;
+  const action = modifier && key === "z" ? event.shiftKey ? "redo" : "undo" : modifier && key === "b" ? "split" : key === "delete" ? "deleteClip" : key === "home" ? "seekStart" : event.code === "Space" && !event.target.closest("button,a,summary") ? "play" : null;
+  if (action) { event.preventDefault(); await runAction(action); }
 }));
 window.addEventListener("beforeunload", event => { if (job || jsonDirty || session && savedRevision !== session.revision) { event.preventDefault(); event.returnValue = ""; } });
 document.addEventListener("visibilitychange", () => { if (document.hidden) preview.pause(); });
