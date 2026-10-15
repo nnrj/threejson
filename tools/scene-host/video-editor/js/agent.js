@@ -1,21 +1,22 @@
 import { element, field, modal } from "./ui.js";
 const key = "threejson.videoEditor.ai";
 let config;
-export function getVideoAiConfig() { if (!config) { try { config = JSON.parse(localStorage.getItem(key)) || {}; } catch { config = {}; } } return { mode: "shared", maxRequests: 0, maxMinutes: 0, ...config }; }
+export function getVideoAiConfig() { if (!config) { try { config = JSON.parse(localStorage.getItem(key)) || {}; } catch { config = {}; } } return { mode: "shared", maxRequests: 0, maxMinutes: 0, creationQuality: "quick", ...config }; }
 export async function editVideoAiSettings() {
   const value = getVideoAiConfig(), body = element("div");
   const mode = field("供应商配置", value.mode, { options: [["shared", "使用场景编辑器中的默认供应商"], ["custom", "独立 OpenAI 兼容接口"]] });
   const url = field("API Base URL", value.baseUrl || "", {}), model = field("模型名称", value.model || ""), apiKey = field("API Key", value.apiKey || "", { type: "password" });
   const requests = field("本轮最多请求次数（0 = 不限制）", value.maxRequests, { min: 0, step: 1 }), minutes = field("本轮最长分钟数（0 = 不限制）", value.maxMinutes, { min: 0 });
+  const quality = field("生成质量（独立于预览分辨率）", value.creationQuality, { options: [["quick", "快速 · 本地检查"], ["standard", "标准 · 最多 1 轮精修"], ["fine", "精细 · 最多 2 轮精修"], ["ultimate", "极致 · 最多 3 轮精修"]] });
   const remember = field("", "", { type: "checkbox" }); remember.input.checked = value.remember === true; remember.wrapper.className = "check"; remember.wrapper.append(document.createTextNode("在此浏览器记住 API Key（明文存于本地）"));
   const vision = field("", "", { type: "checkbox" }); vision.input.checked = value.vision === true; vision.wrapper.className = "check"; vision.wrapper.append(document.createTextNode("此模型支持图片输入（允许查看实际帧）"));
-  body.append(element("p", { class: "hint" }, "配置不进入工程 JSON 或工程包。共享模式沿用场景编辑器的供应商、隐私许可和密钥；可以到场景编辑器的 AI 配置中修改。"), ...[mode, url, model, apiKey, requests, minutes, remember, vision].map(f => f.wrapper));
+  body.append(element("p", { class: "hint" }, "配置不进入工程 JSON 或工程包。共享模式沿用场景编辑器的供应商、隐私许可和密钥。标准以上会在预算内调用所选供应商查看采样帧；没有图片输入能力时仅做本地检查。"), ...[mode, url, model, apiKey, quality, requests, minutes, remember, vision].map(f => f.wrapper));
   body.append(element("a", { href: "../editor/index.html", target: "_blank", rel: "noopener" }, "打开场景编辑器配置共享供应商"));
-  const update = () => { for (const f of [url, model, apiKey, remember]) f.wrapper.hidden = mode.input.value === "shared"; }; mode.input.onchange = update; update();
+  const update = () => { for (const f of [url, model, apiKey, remember, vision]) f.wrapper.hidden = mode.input.value === "shared"; }; mode.input.onchange = update; update();
   const action = await modal("视频 AI 设置", body, [{ label: "内置供应商条款", value: "privacy" }, { label: "取消", value: "cancel" }, { label: "保存", value: "ok", accent: true }]);
   if (action === "privacy") { const privacy = await import("../../shared/js/builtinProviderPrivacy.js"); await privacy.createBuiltinProviderPrivacyController({ scope: "editor" }).open(); return; }
   if (action !== "ok") return;
-  config = { mode: mode.input.value, baseUrl: url.input.value.trim(), model: model.input.value.trim(), apiKey: apiKey.input.value.trim(), maxRequests: Math.max(0, Math.round(Number(requests.input.value))), maxMinutes: Math.max(0, Number(minutes.input.value)), remember: remember.input.checked, vision: vision.input.checked };
+  config = { mode: mode.input.value, creationQuality: quality.input.value, baseUrl: url.input.value.trim(), model: model.input.value.trim(), apiKey: apiKey.input.value.trim(), maxRequests: Math.max(0, Math.round(Number(requests.input.value))), maxMinutes: Math.max(0, Number(minutes.input.value)), remember: remember.input.checked, vision: vision.input.checked };
   localStorage.setItem(key, JSON.stringify({ ...config, apiKey: config.remember ? config.apiKey : "" }));
 }
 
@@ -67,10 +68,49 @@ export function scopedVideoService(service, shotId) {
   };
 }
 
-export async function runEditorVideoAgent({ service, prompt, shotId, signal, confirmStoryboard, onProgress, request, providerOptions }) {
+export async function runEditorVideoAgent({ service, prompt, shotId, signal, confirmStoryboard, onProgress, request, providerOptions, getDocument, resolveDocument = value => value, adapters }) {
   const { runVideoAgent } = await import("threejson/ai"), config = getVideoAiConfig();
   const provider = providerOptions || await credentials(); signal?.throwIfAborted();
   const { createBuiltinAiTurnContext } = await import("../../shared/js/builtinAiProvider.js");
-  return runVideoAgent({ ...provider, service: scopedVideoService(service, shotId), prompt: `${shotId ? `Approved scope: only shot ${JSON.stringify(shotId)}. Other shots are read-only. Preserve composition timing.\n` : "Edit the existing project incrementally; never replace it wholesale.\n"}${prompt}`, signal, request, requestContext: createBuiltinAiTurnContext(`video-editor-${crypto.randomUUID()}`, prompt), confirmStoryboard, visionAvailable: config.vision,
-    modelBudget: { ...(config.maxRequests > 0 ? { maxRequests: config.maxRequests } : {}), ...(config.maxMinutes > 0 ? { maxTimeMs: config.maxMinutes * 60000 } : {}) }, onProgress });
+  const { prepareCreationTurn } = await import("../../shared/js/creationTurnPolicy.js");
+  const { reviewSceneResult, inspectMediaQuality } = await import("../../shared/js/sceneQualityReview.js");
+  const prepared = await prepareCreationTurn({ project: getDocument?.(), signal, userPrompt: prompt,
+    providerOptions: { ...provider, capabilities: provider.capabilities || { inputModalities: config.vision ? ["text", "image"] : ["text"] } },
+    agentOptions: { creationQuality: config.creationQuality },
+    modelBudget: { ...(config.maxRequests > 0 ? { maxRequests: config.maxRequests } : {}), ...(config.maxMinutes > 0 ? { maxTimeMs: config.maxMinutes * 60000 } : {}) } });
+  const scope = shotId ? `Approved scope: only shot ${JSON.stringify(shotId)}. Other shots are read-only. Preserve composition timing.\n` : "Edit the existing project incrementally; never replace it wholesale.\n";
+  const run = (target, text, transport = prepared.providerOptions, approval = false) => {
+    const scoped = scopedVideoService(target, shotId);
+    const guarded = { ...scoped, get revision() { return scoped.revision; }, execute: async (commands, options) => {
+      try { return await scoped.execute(await prepared.creationPolicy.prepare(commands), options); }
+      catch (error) { return { ok: false, status: "failed", error: error.message, revision: scoped.revision, results: [], diagnostics: [] }; }
+    } };
+    return runVideoAgent({ ...transport, service: guarded, prompt: `${scope}${prepared.globalPromptPrefix || ""}\n${text}`, signal, request, requestContext: createBuiltinAiTurnContext(`video-editor-${crypto.randomUUID()}`, prompt), confirmStoryboard: approval, visionAvailable: transport.capabilities?.vision === true || transport.capabilities?.inputModalities?.includes("image"), qualityProfile: prepared.agentOptions.qualityProfile,
+      modelBudget: prepared.modelBudget, onProgress });
+  };
+  const result = await run(service, prompt, prepared.providerOptions, confirmStoryboard);
+  if (!getDocument || signal?.aborted || result.stopReason === "storyboard_approval_required") return result;
+  const initial = getDocument(), baseRevision = service.revision;
+  const checked = await reviewSceneResult({ sceneJson: initial, sceneJsonString: JSON.stringify(initial), agentResult: result }, { ...prepared,
+    inspectSceneQuality: async (document, options) => inspectMediaQuality(await resolveDocument(document), { ...options, shotId }),
+    validateQualityDocument: async document => {
+      const { diagnoseMediaDocument } = await import("@threejson/media-kit");
+      return !diagnoseMediaDocument(document).diagnostics.some(d => d.severity === "error" && (!shotId || d.shotId === shotId));
+    },
+    repairMediaDocument: async (document, { issues, providerOptions }) => {
+      // Refine an isolated session. Failed/cancelled quality work must not replace
+      // the user's accepted project or pollute its undo history.
+      const { createMediaProjectSession, createMediaOperationService } = await import("@threejson/media-kit");
+      const candidate = createMediaProjectSession(document);
+      try {
+        const refined = await run(createMediaOperationService({ session: candidate, adapters }), `Fix only these verified issues within the approved scope: ${JSON.stringify(issues)}. Original request: ${prompt}`, providerOptions);
+        if (!refined.completed) throw new Error(refined.message || refined.stopReason);
+        return candidate.snapshot();
+      } finally { candidate.dispose(); }
+    } });
+  if (checked.qualityReport?.repairs) {
+    const commit = await service.execute({ op: "media.document.replace", args: { document: checked.sceneJson } }, { baseRevision, signal });
+    if (!commit.ok) throw new Error(commit.error || "Quality result could not be committed; current project preserved.");
+  }
+  return { ...checked.agentResult, qualityReport: checked.qualityReport };
 }

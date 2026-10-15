@@ -30,6 +30,25 @@ import { EDITOR_SETTINGS_DEFAULTS } from "@threejson/host-kit/js/editorSettingsS
 import { t, initHostI18n } from "@threejson/host-kit/i18n/index.js";
 ```
 
+## Optional preview and creation-quality policies
+
+Core supplies numeric budgets, structured diagnostics and revision-bound reports, not product
+tiers or device heuristics. This package supplies replaceable reference policies:
+
+```js
+import { createHostPreviewPerformance } from "@threejson/host-kit/js/previewPerformancePolicy.js";
+import { resolveCreationQuality, formatQualityReport } from "@threejson/host-kit/js/creationQualityPolicy.js";
+
+const previewPerformance = createHostPreviewPerformance("auto"); // inject into createJsonScene options
+const profile = resolveCreationQuality("standard", { repairRounds: 2 }); // inject into quality review
+```
+
+Automatic preview adaptation uses continuous frame timing with hysteresis and recovery; device
+hints only choose the starting level. Points sampling and LOD bias require separate opt-ins.
+Use `"full"` to disable adaptation. Core/reusable card sessions do not enable this policy themselves.
+Reports are formatted/localized here; missing requested visual checks never become visual approval.
+See the [quality contract](../../docs/en/visual-quality.md) for budgets, export isolation and migration.
+
 ## Mesh export
 
 `js/meshExport.js` holds the third-party model export catalog (GLB / GLTF / OBJ / STL / PLY / USDZ)

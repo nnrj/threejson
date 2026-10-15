@@ -1,6 +1,7 @@
 import { BUILTIN_PROVIDER_TYPE, ensureEditorBuiltinApiKey, getDisplayDeviceId } from "./editorBuiltinAiProvider.js";
 import { withBuiltinAiProviderAdapter } from "./builtinAiProvider.js";
 import { BUILTIN_PRIVACY_ACCEPTED, isBuiltinPrivacyAccepted } from "./builtinProviderPrivacy.js";
+import { getDeclaredProviderCapabilities, fetchCreationCapabilities } from "./creationTurnPolicy.js";
 
 export function getSelectedProvider(host) {
   const ai = host.getEditorSettings()?.ai || {};
@@ -11,9 +12,11 @@ export function getCredentials(host) {
   const provider = getSelectedProvider(host);
   if (!provider) return { provider: "", apiKey: "", model: undefined, baseUrl: undefined };
   const creds = { provider: provider.provider || "chatgpt", apiKey: String(provider.apiKey || "").trim(), model: String(provider.model || "").trim() || undefined, baseUrl: undefined };
+  creds.capabilities = provider.capabilities || { inputModalities: ["text"] };
   if (provider.provider === "custom") creds.baseUrl = String(provider.baseUrl || "").trim() || undefined;
   else if (provider.provider === BUILTIN_PROVIDER_TYPE) {
     creds.baseUrl = String(host.getEditorSettings()?.ai?.builtinBackendUrl || "").trim() || undefined;
+    creds.capabilities = getDeclaredProviderCapabilities(creds.baseUrl);
     return withBuiltinAiProviderAdapter(creds);
   }
   return creds;
@@ -31,5 +34,6 @@ export async function ensureUsableCredentials(host) {
     creds = getCredentials(host);
   }
   if (creds.provider === "deepseek") creds.userId = await getDisplayDeviceId();
+  if (creds.provider === BUILTIN_PROVIDER_TYPE) creds.capabilities = (await fetchCreationCapabilities(creds.baseUrl)).provider;
   return creds;
 }

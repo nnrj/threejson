@@ -146,13 +146,14 @@ function assembleSceneRuntime(options, prepared){
 		controls,
 		composer: activeComposer,
 		config: buildRenderLoopConfig(config),
+		previewPerformance: options.previewPerformance,
 		beforeFrame: options.beforeFrame,
 		beforeRender: options.beforeRender,
 		afterRender: options.afterRender
 	});
 
 	const innerDispose = () => {
-		renderLoop.stop();
+		renderLoop.dispose();
 		controls?.dispose?.();
 		activeComposer?.dispose?.();
 		if (ownsRenderer) renderer?.dispose?.();

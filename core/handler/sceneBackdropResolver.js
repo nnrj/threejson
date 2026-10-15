@@ -1,3 +1,4 @@
+import { applySceneAppearance } from "../util/sceneAppearance.js";
 /**
  * Declarative scene.background / scene.environment resolution (LDR equirect, cube maps, HDR+PMREM).
  * Resources created and managed by ThreeJSON are tagged for dispose.
@@ -298,6 +299,16 @@ export async function resolveSceneEnvironmentValue(value, renderer, deps = {}) {
   const t = String(value.type || "").trim().toLowerCase();
   const url = typeof value.url === "string" ? value.url.trim() : "";
 
+  if (t === "studio") {
+    const { RoomEnvironment } = await import("three/examples/jsm/environments/RoomEnvironment.js");
+    const environment = new RoomEnvironment(), generator = new PMREMGenerator(renderer);
+    try {
+      const target = generator.fromScene(environment, 0.04);
+      markOwnedTexture(target.texture);
+      return { texture: target.texture, disposeFn: () => target.dispose() };
+    } finally { environment.dispose(); generator.dispose(); }
+  }
+
   if (t === "equirect") {
     if (!url) {
       log.warn("sceneBackdropResolver: environment equirect missing url");
@@ -365,6 +376,7 @@ function pmremEnvironmentFromEquirectTexture(equirectTexture, renderer, opts = {
  * @param {object} [deps] path / resourcePath / crossOrigin / loadingManager
  */
 export async function applySceneBackdropFromHints(scene, sceneHints = {}, renderer = null, deps = {}) {
+  applySceneAppearance(scene, sceneHints);
   const mergedDeps = {
     path: deps.path ?? sceneHints.path,
     resourcePath: deps.resourcePath ?? sceneHints.resourcePath,
@@ -441,6 +453,7 @@ export async function applySceneBackdropFromHints(scene, sceneHints = {}, render
  * @param {{ strict?: boolean }} [options]
  */
 export function applySceneBackdropSimpleFromHints(scene, sceneHints = {}, options = {}) {
+  applySceneAppearance(scene, sceneHints);
   const strict = options.strict === true;
   if (hasOwn(sceneHints, "background")) {
     const bg = sceneHints.background;

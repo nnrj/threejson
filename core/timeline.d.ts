@@ -1,6 +1,6 @@
 import type { Scene, Camera, Color, Quaternion } from "three";
 export type TimelineValue = number | string | boolean | TimelineValue[] | { [key: string]: TimelineValue };
-export interface TimelineSignal { type: "constant" | "sine" | "pulse" | "noise" | "envelope" | "orbit" | "path" | string; duration?: number; points?: number[][]; [key: string]: unknown }
+export interface TimelineSignal { type: "constant" | "sine" | "pulse" | "noise" | "envelope" | "orbit" | "path" | string; duration?: number; points?: number[][]; parameterization?: "parameter" | "arcLength"; easing?: "linear" | "smoothstep" | "smootherstep"; speedCurve?: [number, number][]; [key: string]: unknown }
 export interface TimelineTrack { id: string; target: string; property: string; enabled?: boolean; easing?: string; start?: number; duration?: number; extrapolation?: "hold" | "none" | "loop"; signal?: TimelineSignal; keyframes?: { time: number; value: TimelineValue; easing?: string }[] }
 export interface TimelineClip { id: string; source: string | Record<string, unknown>; name?: string; laneId?: string; fit?: "contain" | "cover" | "stretch"; opacity?: number; start?: number; duration: number; sourceStart?: number; rate?: number; fadeIn?: number; fadeOut?: number; enabled?: boolean; transitionIn?: { type: "wipe" | "dissolve"; duration: number; direction?: "left" | "right" | "up" | "down"; seed?: number; softness?: number } }
 export interface TimelineItem { id: string; start?: number; duration?: number; enabled?: boolean; [key: string]: unknown }

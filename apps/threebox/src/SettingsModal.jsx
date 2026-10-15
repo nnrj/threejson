@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import { t } from "@threejson/host-kit/i18n/index.js";
 import { probeEndpoint } from "@threejson/host-kit/js/endpointProbe.js";
 import { getDisplayDeviceId } from "@threejson/host-kit/js/builtinAiProvider.js";
+import { fetchCreationCapabilities } from "@threejson/host-kit/js/creationTurnPolicy.js";
 import { clearThumbnailCache, rebuildAllTemplateThumbnails } from "./lib/threeBoxTemplateThumbnails.js";
 import { refreshBuiltinQuota } from "./lib/threeBoxBuiltinProvider.js";
 import { threeBoxSettingsController } from "./useThreeBoxSettings.js";
@@ -50,6 +51,13 @@ function GenericField({ field, draft, onChange, onTestEndpoint }) {
   const value = getSettingsByPath(draft, field.path);
   const [testState, setTestState] = useState("idle");
   const [testMessage, setTestMessage] = useState("");
+  const [models, setModels] = useState(null);
+  useEffect(() => {
+    if (field.path !== "ai.externalModelsEnabled") return;
+    const controller = new AbortController();
+    fetchCreationCapabilities(draft.ai.builtinBackendUrl, { signal: controller.signal }).then(value => setModels(value.models)).catch(() => {});
+    return () => controller.abort();
+  }, [field.path, draft.ai.builtinBackendUrl]);
 
   async function runTest(currentValue) {
     if (!field.testEndpoint) {
@@ -72,7 +80,7 @@ function GenericField({ field, draft, onChange, onTestEndpoint }) {
 
   let control;
   if (field.type === "checkbox") {
-    control = <input type="checkbox" checked={Boolean(value)} onChange={(e) => onChange(field.path, e.target.checked)} />;
+    control = <input type="checkbox" disabled={field.path === "ai.externalModelsEnabled" && models?.enabled === false} checked={Boolean(value)} onChange={(e) => onChange(field.path, e.target.checked)} />;
   } else if (field.type === "select") {
     control = (
       <select value={value ?? ""} onChange={(e) => onChange(field.path, e.target.value)}>
@@ -127,6 +135,7 @@ function GenericField({ field, draft, onChange, onTestEndpoint }) {
       <label className="settingsFieldLabel">{t(fieldLabelKey(field), field.label)}</label>
       <div className="settingsFieldControl">
         {control}
+        {field.path === "ai.externalModelsEnabled" && <small>{models?.enabled === false ? "服务器已关闭此能力（保留你的个人偏好）" : models?.available ? "来源：Poly Haven / 自托管目录。仅影响新获取的模型。" : "模型服务当前不可用，不会自动获取模型。"}</small>}
         {field.testEndpoint && (
           <button
             type="button"
@@ -257,6 +266,7 @@ function ProviderCard({ provider, onChange, onDelete }) {
           />
         </div>
       )}
+      <label className="providerCardRow"><input type="checkbox" checked={provider.capabilities?.vision === true || provider.capabilities?.inputModalities?.includes("image") === true} onChange={e => onChange({ ...provider, capabilities: { inputModalities: e.target.checked ? ["text", "image"] : ["text"] } })}/>支持图像输入（请确认模型支持）</label>
       <div className="providerCardRow">
         <label>{t("threebox.settings.provider.apiKeyLabel", "API Key")}</label>
         <div className="providerSecretControl">

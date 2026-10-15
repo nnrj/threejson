@@ -171,7 +171,8 @@ test("the attached lowercase modeledmesh is inspected and adjusted locally after
     assert.match(requests[0].messages[0].content, /Computable modeling \(modelingGraph\)/);
     assert.match(requests[1].messages[1].content, /Previous error:.*model.inspect/);
     assert.equal(result.stage, "commands");
-    assert.equal(result.agentResult.completed, true);
+    assert.equal(result.agentResult.completed, false); // No browser/quality adapter in this Node fixture.
+    assert.equal(result.qualityReport.stopReason, "quality_inspection_unavailable");
     assert.equal(session.document.root.objectList[0].modelRevision, 1);
     assert.deepEqual(session.document.root.objectList[0].modeling.nodes[0].params.points, hollowProfile);
     assert.ok(getObjectByThreeJsonId("vase-body", session.runtime.scene).geometry.attributes.position.count > 1000);

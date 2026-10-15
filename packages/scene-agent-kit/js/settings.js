@@ -1,6 +1,8 @@
 export const SCENE_AGENT_SETTINGS_DEFAULTS = Object.freeze({
   ai: {
     thinkingPreference: "disabled",
+    creationQuality: "quick",
+    externalModelsEnabled: true,
     sceneGenerationMode: "auto",
     mediaOutputKind: "auto",
     videoQuality: "balanced",
@@ -46,6 +48,7 @@ export const SCENE_AGENT_SETTINGS_DEFAULTS = Object.freeze({
 });
 
 const ENUMS = {
+  "ai.creationQuality": new Set(["quick", "standard", "fine", "ultimate"]),
   "ai.mediaOutputKind": new Set(["auto", "scene", "video"]),
   "ai.videoQuality": new Set(["draft", "balanced", "high"]),
   "ai.videoVisualReview": new Set(["auto", "enabled", "disabled"]),
@@ -84,6 +87,7 @@ export function normalizeSceneAgentSettings(input = {}) {
     ai: selectKnown(defaults.ai, input.ai),
     io: selectKnown(defaults.io, input.io)
   };
+  if (!input.ai?.creationQuality && input.ai?.modelQuality === "high") result.ai.creationQuality = "fine";
   for (const [path, allowed] of Object.entries(ENUMS)) {
     const [section, key] = path.split(".");
     if (!allowed.has(result[section][key])) result[section][key] = defaults[section][key];
@@ -118,6 +122,8 @@ export function resolveSceneAgentOptions(settings = {}) {
       ? { maxRefineRounds: normalized.ai.maxAutoRefineRounds }
       : {}),
     complexModelStrategy: normalized.ai.complexModelStrategy,
+    creationQuality: normalized.ai.creationQuality,
+    externalModelsEnabled: normalized.ai.externalModelsEnabled !== false,
     modelQuality: normalized.ai.modelQuality,
     modelBudget: {
       maxTokens: normalized.ai.modelBudget.maxTokens || undefined,

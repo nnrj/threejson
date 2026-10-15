@@ -5,12 +5,15 @@ import { createMediaTransitions } from "./transitions.js";
 import { resolveAssetUrl } from "threejson/assets";
 import { isMediaSource, mediaAssetOf, laneEnabled, itemEnabled } from "./editing.js";
 import { createMediaAssetRenderer, drawMediaAsset } from "./mediaSources.js";
+import { resolvePreviewBudget } from "threejson/visual-quality";
 
 const makeCanvas = (options) => options.createCanvas?.() || globalThis.document?.createElement("canvas");
 const dimensions = (value, label) => { if (!Number.isInteger(value) || value <= 0) throw new RangeError(`${label} must be a positive integer.`); return value; };
 
 /** One deterministic frame producer shared by still, GIF and video output. */
 export async function createMediaProject(input, options = {}) {
+  const previewOptions = options.previewPerformance ?? options.runtimeOptions?.previewPerformance;
+  const previewPerformance = typeof previewOptions?.getBudget === "function" ? "limited" : resolvePreviewBudget(previewOptions).mode;
   const source = await openMediaDocument(input, options), document = source.document;
   const width = dimensions(options.width ?? document.output?.width ?? 1920, "width"), height = dimensions(options.height ?? document.output?.height ?? 1080, "height");
   const canvas = options.canvas || makeCanvas(options);
@@ -67,6 +70,7 @@ export async function createMediaProject(input, options = {}) {
     const factory = options.createScene || (await import("threejson/runtime")).createJsonScene;
     const runtime = await factory(descriptor, {
       ...options.runtimeOptions, canvas: sceneCanvas, viewportSize: { width, height }, timeline: false,
+      previewPerformance: previewOptions,
       signal: options.signal ?? options.runtimeOptions?.signal,
       audioPlaybackPolicy: { paused: true, masterVolume: 0 },
       renderer: backend === "webgl" ? pooled : undefined, ownsRenderer: !pooled || backend !== "webgl",
@@ -142,7 +146,12 @@ export async function createMediaProject(input, options = {}) {
       return canvas;
   }
   const api = {
-    canvas, document, duration, width, height, resolveAsset: (url, context) => resolveAsset(source, url, context),
+    canvas, document, duration, width, height, previewPerformance, resolveAsset: (url, context) => resolveAsset(source, url, context),
+    /** Read-only authoring diagnostics for the currently materialized shots, not playback state. */
+    async observeCurrentFrame(options = {}) {
+      const { observeSceneRuntime } = await import("threejson/visual-quality");
+      return [...instances].filter(([, entry]) => entry.runtime).map(([clipId, entry]) => ({ clipId, ...observeSceneRuntime(entry.runtime, options) }));
+    },
     get resourceDiagnostics() {
       return [...instances].flatMap(([clipId, { runtime }]) => (runtime?.runtimeContext?.resourceDiagnostics || []).map(entry => ({ ...entry, clipId })));
     },

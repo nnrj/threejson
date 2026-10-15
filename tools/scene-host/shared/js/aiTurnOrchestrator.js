@@ -31,12 +31,28 @@ import {
 } from "threejson/ai";
 import {
   executeCommands,
-  createCommandContext,
-  sceneToStandardJsonSimple,
-  createJsonScene
-} from "threejson";
+  createCommandContext
+} from "threejson/commands";
+import { sceneToStandardJsonSimple } from "threejson/scene-export";
+import { createJsonScene } from "threejson/runtime";
 import { resolveSceneHostUrl, sceneHostAssetUrl } from "./sceneHostPaths.js";
 import { captureMeshReviewViews } from "./meshViewCapture.js";
+import { providerSupportsVision } from "threejson/visual-quality";
+import { reviewSceneResult } from "./sceneQualityReview.js";
+import { prepareCreationTurn } from "./creationTurnPolicy.js";
+
+async function runCheckedTurn(run, input) {
+  const prepared = await prepareCreationTurn(input);
+  try {
+    const result = await run(prepared);
+    await prepared.drainCreationPreviews();
+    const sceneJson = await prepared.creationPolicy.prepare(parseSceneJsonString(result.sceneJsonString));
+    return await reviewSceneResult({ ...result, sceneJson, sceneJsonString: JSON.stringify(sceneJson), referencedAssets: prepared.creationPolicy.assets() }, prepared);
+  } finally { await prepared.drainCreationPreviews(); }
+}
+export async function runAiGenerateTurn(input) { return runCheckedTurn(runAiGenerateTurnInternal, input); }
+export async function runAiImageGenerateTurn(input) { return runCheckedTurn(runAiImageGenerateTurnInternal, input); }
+export async function runAiAdjustTurn(input) { return runCheckedTurn(runAiAdjustTurnInternal, input); }
 
 /** Resolves a repo-relative path (docs/zh/event-mechanism.md, assets/json/demo-show/...) to a
  * fetchable URL for core/ai/sceneReferenceCatalog.js's local doc/example retrieval — passed as
@@ -47,22 +63,19 @@ export function resolveSceneAiReferenceUrl(repoRelativePath) {
 }
 
 /**
- * Heuristic vision-capability gate for image/file attachments: DeepSeek's mainline chat models
- * don't accept image inputs; a "custom" OpenAI-compatible gateway's capability is unknowable
- * client-side, so it's allowed through (server-side will reject if unsupported). Deliberately
- * conservative (only hard-blocks the one provider known NOT to support vision) rather than trying
- * to enumerate which specific model names do.
+ * Explicit vision-capability declaration. Never guess from a supplier or model name.
  * @param {{provider?: string, model?: string}|null} provider a resolved provider config or a raw saved provider entry
  * @returns {boolean}
  */
 export function isProviderVisionCapable(provider) {
-  if (!provider) {
-    return false;
-  }
-  return provider.provider !== "deepseek";
+  return providerSupportsVision(provider || {});
 }
 
-async function applyAiDraftCommands(commands, { sceneJsonString, visualReviewAvailable = false }) {
+async function applyAiDraftCommands(commands, { sceneJsonString, visualReviewAvailable = false, prepareModelAssets }) {
+  if (prepareModelAssets) {
+    sceneJsonString = JSON.stringify(await prepareModelAssets(parseSceneJsonString(sceneJsonString)));
+    commands = await prepareModelAssets(commands);
+  }
   const baseSceneJson = parseSceneJsonString(sceneJsonString);
   const runtime = await createOffscreenRuntimeFromSceneJsonString(sceneJsonString);
   try {
@@ -123,7 +136,7 @@ export function buildResultDigest(sceneJson) {
  * safely inside core/ai. Raw deltas are forwarded only for the direct generation call.
  * @param {{ userPrompt: string, providerOptions: object, onDelta?: (delta:string, metadata?:object)=>void, onGenerationPhase?: (phase:object)=>void|Promise<void>, onSceneDraft?: (sceneJsonString:string)=>void|Promise<void>, signal?: AbortSignal, globalPromptPrefix?: string, agentOptions?: {maxRefineRounds?: number}, onAgentProgress?: (p: object)=>void, includeReferenceLinks?: boolean, locale?: string, generationStrategy?: "single"|"segmented"|"compact", executionMode?: "direct"|"draft_refine", refinementGoals?: string[], estimatedSegments?: number, estimatedOutputTokens?: {min:number,max:number}, maxSceneSegments?: number, maxTokens?: number }} input
  */
-export async function runAiGenerateTurn({
+async function runAiGenerateTurnInternal({
   userPrompt,
   providerOptions,
   onDelta,
@@ -147,9 +160,9 @@ export async function runAiGenerateTurn({
   complexModelStrategy = "auto",
   modelQuality = "balanced",
   modelBudget,
+  requiresAnimation,
   rendererBackend,
-  includePreviewCapabilities,
-  requiresAnimation
+  includePreviewCapabilities
 }) {
   const visualReviewAvailable = isProviderVisionCapable(providerOptions);
   const animationCapabilities = typeof requiresAnimation === "boolean"
@@ -184,6 +197,7 @@ export async function runAiGenerateTurn({
       onDelta,
       agent: {
         maxRefineRounds: agentOptions?.maxRefineRounds,
+        ...agentOptions,
         complexModelStrategy,
         modelQuality,
         modelBudget
@@ -209,6 +223,7 @@ export async function runAiGenerateTurn({
       onSceneDraft,
       applyDraftCommands: (commands, context) => applyAiDraftCommands(commands, {
         ...context,
+        prepareModelAssets: agentOptions?.prepareModelAssets,
         visualReviewAvailable
       }),
       locale,
@@ -226,7 +241,7 @@ export async function runAiGenerateTurn({
  * same way `runAiGenerateTurn` above is.
  * @param {{ prompt?: string, image: string|{base64:string, mimeType?:string}, providerOptions: object, agentOptions?: object, imageDetail?: "auto"|"low"|"high", maxTokens?: number, executionMode?: "direct"|"draft_refine", refinementGoals?: string[], selectedCapabilityIds?: string[], requiresAnimation?: boolean, onAgentProgress?: (p:object)=>void, onGenerationPhase?: (phase:object)=>void|Promise<void>, onSceneDraft?: (sceneJsonString:string, meta?:object)=>void|Promise<void>, signal?: AbortSignal, locale?: string, capabilityLookup?: boolean }} input
  */
-export async function runAiImageGenerateTurn({
+async function runAiImageGenerateTurnInternal({
   prompt = "",
   image,
   providerOptions,
@@ -239,9 +254,9 @@ export async function runAiImageGenerateTurn({
   complexModelStrategy = "auto",
   modelQuality = "balanced",
   modelBudget,
+  requiresAnimation,
   rendererBackend,
   includePreviewCapabilities,
-  requiresAnimation,
   onAgentProgress,
   onGenerationPhase,
   onSceneDraft,
@@ -272,6 +287,7 @@ export async function runAiImageGenerateTurn({
       agent: {
         maxRefineRounds: agentOptions?.maxRefineRounds,
         complexModelStrategy,
+        ...agentOptions,
         modelQuality,
         modelBudget
       },
@@ -289,6 +305,7 @@ export async function runAiImageGenerateTurn({
       onSceneDraft,
       applyDraftCommands: (commands, context) => applyAiDraftCommands(commands, {
         ...context,
+        prepareModelAssets: agentOptions?.prepareModelAssets,
         visualReviewAvailable
       }),
       locale,
@@ -560,6 +577,7 @@ async function runAiAgentAdjustTurn({
         agent: {
           maxRefineRounds: agentOptions?.maxRefineRounds,
           complexModelStrategy,
+          ...agentOptions,
           modelQuality,
           modelBudget
         },
@@ -637,6 +655,7 @@ async function runAiAgentAdjustTurn({
       return latestRefreshContext;
     };
     const applyCommands = usesHostRuntime ? hostApplyCommands : async (commands) => {
+      if (agentOptions?.prepareModelAssets) commands = await agentOptions.prepareModelAssets(commands);
       await getOffscreenRuntime();
       const execResult = await executeCommands(offscreenCommandContext, commands);
       const results = Array.isArray(execResult.results) ? execResult.results : [];
@@ -678,6 +697,7 @@ async function runAiAgentAdjustTurn({
         agent: {
           maxRefineRounds: agentOptions?.maxRefineRounds,
           complexModelStrategy,
+          ...agentOptions,
           modelQuality,
           modelBudget
         },
@@ -780,7 +800,7 @@ async function runAiAgentAdjustTurn({
  *   | { stage: "json-full", sceneJson: object, sceneJsonString: string }
  * >}
  */
-export async function runAiAdjustTurn({
+async function runAiAdjustTurnInternal({
   userPrompt,
   envelope,
   targetSceneJsonString,
@@ -813,6 +833,7 @@ export async function runAiAdjustTurn({
     return createScopedOutputDelta(onDelta, metadata, `adjust-turn-${outputStreamSequence}`);
   };
   const verifyFallbackScene = async (candidate) => {
+    if (agentOptions?.prepareModelAssets) candidate = JSON.stringify(await agentOptions.prepareModelAssets(parseSceneJsonString(candidate)));
     const sceneJson = parseSceneJsonString(candidate);
     if (typeof applyCommands === "function" && typeof refreshContext === "function") {
       // The host owns a transactional scene session. Compile before commit; an invalid tube,
@@ -908,6 +929,7 @@ export async function runAiAdjustTurn({
     if (!cmdResult.commands?.length) {
       throw new Error("AI 未返回可执行的命令。");
     }
+    if (agentOptions?.prepareModelAssets) cmdResult.commands = await agentOptions.prepareModelAssets(cmdResult.commands);
     const offscreenRuntime = await createOffscreenRuntimeFromSceneJsonString(targetSceneJsonString);
     try {
       const ctx = createCommandContextForRuntime(

@@ -3,6 +3,7 @@
  */
 import { loadMediaKit, createMediaAudioPlayback } from "./mediaStudio.js";
 import { getMediaProductionSummary, formatMediaProductionSummary } from "./mediaProductionFeedback.js";
+import { createHostPreviewPerformance } from "./previewPerformancePolicy.js";
 export function createMediaCardSession(options = {}) {
   let document = null, project = null, viewport = null, preview = null, disposed = false, time = 0, frame = 0, playing = false;
   let queue = Promise.resolve(), controller = new AbortController(), transport = null;
@@ -21,7 +22,7 @@ export function createMediaCardSession(options = {}) {
   const stop = () => { playing = false; cancelAnimationFrame(frame); audioPlayback?.pause(); };
   const hidden = () => { if (globalThis.document?.hidden) stop(); };
   globalThis.document?.addEventListener("visibilitychange", hidden);
-  const release = () => { stop(); audioPlayback?.dispose(); audioPlayback = null; mixerPrepared = false; project?.dispose(); project = null; transport?.remove(); transport = null; productionNotice?.remove(); productionNotice = null; viewport?.dispose(); viewport = null; };
+  const release = () => { stop(); audioPlayback?.dispose(); audioPlayback = null; mixerPrepared = false; project?.dispose(); project = null; transport?.remove(); transport = null; productionNotice?.remove(); productionNotice = null; viewport?.dispose(); viewport = null; options.onPreviewPerformanceChanged?.(null); };
   const suspend = () => enqueue(() => { try { preview = project?.canvas.toDataURL("image/png") || preview; } catch { /* tainted canvas has no snapshot */ } release(); emit(true); });
   const unregister = pool?.register(key, suspend);
   const run = fn => pool ? pool.run(key, () => enqueue(fn), options.getViewportLimit?.() ?? 1) : enqueue(fn);
@@ -64,14 +65,21 @@ export function createMediaCardSession(options = {}) {
         }
         if (time === 0 && summary.shots[0]?.produced === false) time = summary.shots.find(shot => shot.produced)?.start || 0;
       }
-      project = await kit.createMediaProject(source, { canvas: viewport.canvas, width: viewport.canvas.width, height: viewport.canvas.height, signal: lifetime.signal,
-        createScene: options.createRuntime, runtimeOptions: options.getRuntimeOptions?.({ authoritative: true }) });
+      const runtimeOptions = options.getRuntimeOptions?.({ authoritative: true });
+      const performancePolicy = createHostPreviewPerformance(options.getPreviewPerformance?.() ?? options.previewPerformance ?? runtimeOptions?.previewPerformance ?? "full", {
+        ...options.previewPolicyOptions,
+        onChange: event => { options.previewPolicyOptions?.onChange?.(event); options.onPreviewPerformanceChanged?.(event.mode); }
+      });
+      project = await kit.createMediaProject(source, { canvas: viewport.canvas, width: Math.max(1, viewport.canvas.width), height: Math.max(1, viewport.canvas.height), signal: lifetime.signal,
+        previewPerformance: performancePolicy,
+        createScene: options.createRuntime, runtimeOptions });
       await project.renderAt(Math.min(time, Math.max(0, project.duration - .001))); check(); publishDiagnostics();
       viewport.commit({ resize() {}, renderOnce() {} });
       // A composition is a fixed-aspect movie, not an interactive perspective
       // camera. Scale the compositor when a chat/mobile viewport changes size.
       Object.assign(viewport.canvas.style, { width: "100%", height: "100%", objectFit: "contain" });
       options.onRuntimeChanged?.(null, null); emit(false);
+      options.onPreviewPerformanceChanged?.(performancePolicy?.mode || project.previewPerformance);
       if (owner) {
         transport = globalThis.document.createElement("div");
         Object.assign(transport.style, { position: "absolute", left: "8px", right: "8px", bottom: "8px", display: "flex", gap: "8px", alignItems: "center", background: "#111b", color: "white", padding: "6px", borderRadius: "6px" });
@@ -80,7 +88,11 @@ export function createMediaCardSession(options = {}) {
         slider.type = "range"; slider.min = "0"; slider.max = String(project.duration); slider.step = ".01"; slider.value = String(time); slider.setAttribute("aria-label", "Video time"); slider.style.flex = "1"; slider.style.minWidth = "35px";
         label.style.fontSize = "11px"; label.style.whiteSpace = "nowrap";
         label.textContent = `${time.toFixed(1)} / ${project.duration.toFixed(1)}s`;
-        const paint = async value => { if (!project) return; time = value; await project.renderAt(Math.min(value, Math.max(0, project.duration - .000001))); publishDiagnostics(); slider.value = String(value); label.textContent = `${value.toFixed(1)} / ${project.duration.toFixed(1)}s`;
+        let lastPreviewFrame = null;
+        const paint = async value => { if (!project) return; const started = performance.now(); time = value; await project.renderAt(Math.min(value, Math.max(0, project.duration - .000001)));
+          if (playing) { performancePolicy?.onFrame?.({ workTimeMs: performance.now() - started, frameIntervalMs: lastPreviewFrame === null ? null : started - lastPreviewFrame, realtime: true }); lastPreviewFrame = started; }
+          else { lastPreviewFrame = null; performancePolicy?.resetFeedback?.(); }
+          publishDiagnostics(); slider.value = String(value); label.textContent = `${value.toFixed(1)} / ${project.duration.toFixed(1)}s`;
           if (productionNotice) {
             const active = summary.shots.filter(shot => value >= shot.start && value < shot.start + shot.duration);
             productionNotice.dataset.unbuiltShot = String(active.length > 0 && active.every(shot => !shot.produced));

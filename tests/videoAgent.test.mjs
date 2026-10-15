@@ -90,8 +90,9 @@ test("the reported 90-second empty film gets factual feedback and can resume wit
     if (++round <= 4) return message({ op: "media.shot.put", args: { id: `shot${round}`, scene: scene(`actor${round}`), metadata: { stage: "complete" } } });
     return message("# done");
   } });
-  assert.equal(result.agentResult.completed, true); assert.equal(result.sceneJson.timeline.clips.length, 4); assert.equal(result.mediaProject.duration, 90);
-  assert.equal(result.sceneJson.production.lastError, ""); assert.equal(getMediaProductionSummary(result.sceneJson).producedShots, 4);
+  assert.equal(result.agentResult.completed, false); assert.equal(result.qualityReport.stopReason, "quality_inspection_unavailable");
+  assert.equal(result.sceneJson.timeline.clips.length, 4); assert.equal(result.mediaProject.duration, 90);
+  assert.equal(result.sceneJson.production.state, "paused"); assert.equal(getMediaProductionSummary(result.sceneJson).producedShots, 4);
   assert.deepEqual(result.sceneJson.timeline.clips, project.timeline.clips);
 });
 

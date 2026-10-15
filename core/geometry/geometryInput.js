@@ -8,7 +8,8 @@ const PROCEDURAL_FIELDS = ["type", "uSegments", "vSegments", "uRange", "vRange",
   "parameters", "controlPoints", "uDegree", "vDegree", "uKnots", "vKnots", "degreeU", "degreeV",
   "knotsU", "knotsV", "points", "segments", "phiStart", "phiLength", "sections", "closed",
   "path", "profile", "steps", "shape", "radius", "radialSegments", "twist", "scale",
-  "resolution", "bounds", "sdf", "isoLevel", "expression", "expressions", "field", "values", "closedProfile", "center", "size"];
+  "resolution", "bounds", "sdf", "isoLevel", "expression", "expressions", "field", "values", "closedProfile", "center", "size",
+  "tessellation", "closedU", "closedV", "smoothSeams", "smoothNormals", "caps", "capStart", "capEnd", "orientation"];
 
 export function geometryInputRecord(record) {
   const objType = String(record.objType || "").toLowerCase();

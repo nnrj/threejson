@@ -13,6 +13,7 @@ export interface SceneCardRuntime {
   activate(): Promise<unknown>;
   setViewportLimit(value: number): Promise<void> | undefined;
   setTextureProgress(event?: Record<string, unknown>): void;
+  setQualityReport(report?: Record<string, any> | null): void;
   setPreviewAuxiliaryLightsEnabled(enabled: boolean): void;
   dispose(): void;
 }
@@ -21,7 +22,7 @@ export interface SceneAgentSceneCardProps {
   /** Serialized history is decoded on demand when defer is true. */
   sceneJson: Record<string, unknown> | string | null;
   label?: string;
-  options?: Record<string, unknown> & { openInVideoEditor?: (document: Record<string, unknown>, label?: string) => void | Promise<unknown> };
+  options?: Record<string, unknown> & { previewPerformance?: import("@threejson/host-kit/js/previewPerformancePolicy.js").HostPreviewMode | import("threejson/visual-quality").PreviewPerformance; openInVideoEditor?: (document: Record<string, unknown>, label?: string) => void | Promise<unknown> };
   showToast?: (message: string, kind?: string) => void;
   onReady?: (card: SceneCardRuntime | null) => void;
   managed?: boolean;

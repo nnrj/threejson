@@ -57,6 +57,7 @@ export function createWorkbench({ run, enabled, onModeChange }) {
       item("seekStart", "回到开头", "Home"), item("fitTimeline", "时间线适配工程"), null,
       item("toggleSnap", "片段吸附", undefined, () => $("snap").checked),
       item("toggleSound", "预览声音", undefined, () => $("previewSound").checked), null,
+      item("inspectPreview", "检查当前画面 / 资源（不调用 AI）"),
       item("addMusic", "添加电子合成配乐"), item("narration", "从字幕 / 台词合成本地旁白"),
     ] },
     { label: "视图", items: [
@@ -71,6 +72,7 @@ export function createWorkbench({ run, enabled, onModeChange }) {
     { label: "AI", items: [
       item("showAi", "打开视频 AI 助手"), item("aiSettings", "AI 供应商与生成设置…"), null,
       item("runAi", "按输入要求生成 / 调整视频"), item("cancelJob", "停止当前任务"),
+      item("repairShot", "检查并修正选中镜头…"),
     ] },
     { label: "帮助", items: [item("editorHelp", "编辑工作流与快捷键…")] },
   ];

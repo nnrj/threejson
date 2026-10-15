@@ -2,6 +2,7 @@ import { compileAuthoring, formatAuthoring, isSceneDocument, createSceneDocument
 import { createRuntimeSceneSession, createSceneOperationService, defaultSceneOperationRegistry, captureSceneSession, executeSceneSessionCommands, diffSceneDocuments, applySceneSessionTextureAssignment } from "threejson/session";
 import { captureSceneCardPreview } from "./sceneViewportPool.js";
 import { sceneHostGeometryCompiler } from "./sceneGeometryCompiler.js";
+import { createHostPreviewPerformance } from "./previewPerformancePolicy.js";
 
 // Route serialized history without parsing/copying every dormant dense scene.
 // Only a root-level key counts; a label, nested scene or quoted example cannot
@@ -49,6 +50,8 @@ function createSceneOnlyCardSession(options = {}) {
   let session = null, queue = Promise.resolve(), active = null, disposed = false;
   let renderOptions = {}, loadController = null, preview = null, playback = null;
   let unsubscribeDiagnostics = null;
+  const previewMode = () => options.getPreviewPerformance?.() ?? options.previewPerformance;
+  let performancePolicy;
   let deferredInput, deferredDocument = null;
   const compileInput = (value) => compileAuthoring(typeof value === "string" ? JSON.parse(value) : value);
   const getDocument = () => session?.document || (deferredInput === undefined ? null : (deferredDocument ||= compileInput(deferredInput)));
@@ -85,7 +88,11 @@ function createSceneOnlyCardSession(options = {}) {
       await options.ensureCapabilities?.(document);
       runtimeOptions.signal?.throwIfAborted();
       const create = options.createRuntime || (await import("threejson")).createJsonScene;
-      return create(document, { ...runtimeOptions, ...configuration, canvas: runtimeOptions.canvas, signal: runtimeOptions.signal });
+      performancePolicy = createHostPreviewPerformance(previewMode() ?? configuration.previewPerformance ?? runtimeOptions.previewPerformance ?? "full", {
+        ...options.previewPolicyOptions,
+        onChange: event => { options.previewPolicyOptions?.onChange?.(event); options.onPreviewPerformanceChanged?.(event.mode); }
+      });
+      return create(document, { ...runtimeOptions, ...configuration, previewPerformance: performancePolicy, canvas: runtimeOptions.canvas, signal: runtimeOptions.signal });
     },
     onRuntimeChanged: (next, previous) => {
       unsubscribeDiagnostics?.(); unsubscribeDiagnostics = null;
@@ -102,6 +109,7 @@ function createSceneOnlyCardSession(options = {}) {
         next.controls?.update?.(); playback = null;
       }
       options.onRuntimeChanged?.(next, previous);
+      options.onPreviewPerformanceChanged?.(next ? performancePolicy?.mode || next.renderLoop?.previewPerformance?.mode || "full" : null);
       // During initial creation session is not assigned yet; use the committed runtime.
       options.onViewportStateChanged?.({ dormant: !next, preview });
     }

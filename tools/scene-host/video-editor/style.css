@@ -69,7 +69,8 @@ h2 { font-size: 13px; font-weight: 600; margin-bottom: 0; }
 .panelHeading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
 .previewPanel, .codePanel { display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 0; overflow: hidden; }
 .previewPanel { padding: 12px 14px; gap: 10px; }
-.previewHeading { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; }
+.previewHeading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; }
+.previewHeading select { max-width: 130px; font-size: 11px; padding: 4px; }
 .previewHeading h2 { white-space: nowrap; }
 .previewStatus { font-size: 10px; margin: 0; min-height: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .stage { position: relative; flex: 1; min-height: 50px; min-width: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #080b10; border: 1px solid #252c35; border-radius: 7px; }

@@ -88,12 +88,21 @@ try {
   results.push("Single-row desktop title bar, centered filename, top-left vector icon/menu and contiguous Video/Mixed/Code segments");
   await page.locator("#emptyDemo").click();
   await page.waitForFunction(() => document.getElementById("projectInfo").textContent.includes("2 个片段"));
-  await page.waitForFunction(() => document.getElementById("previewStatus").textContent === "预览已更新");
+  await page.waitForFunction(() => document.getElementById("previewStatus").textContent.startsWith("预览已更新 · 正式照明"));
   await page.screenshot({ path: path.join(out, "desktop.png") });
   assert.equal(await page.evaluate(() => { const c=document.getElementById('preview'),d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let bright=0;for(let i=0;i<d.length;i+=4)if(d[i]+d[i+1]+d[i+2]>160)bright++;return bright>1000; }), true);
   results.push("Real 3D preview contains visible pixels");
   console.log(results.at(-1));
   // Actual playback mixes the procedural score; no TTS download/AI on open.
+  const authoredOutput = await page.locator("#outputSettings").textContent();
+  await page.locator("#previewPerformance").selectOption("economy");
+  // The compositor/captions keep their preview viewport; only the 3D renderer
+  // is reduced, so a live adaptive policy can restore it without a reload.
+  await page.waitForFunction(() => document.getElementById("previewStatus").textContent.includes("节能预览") && document.getElementById("preview").width === 960);
+  assert.equal(await page.locator("#outputSettings").textContent(), authoredOutput);
+  await page.locator("#previewPerformance").selectOption("full");
+  await page.waitForFunction(() => document.getElementById("preview").width === 960 && !document.getElementById("previewStatus").textContent.includes("节能预览"));
+  results.push("Preview performance switches independently of source/output dimensions");
   await page.locator("#play").click(); await page.waitForFunction(() => Number(document.getElementById("seek").value) > .2); await page.locator("#play").click();
   await page.locator('[data-id="intro"]').click();
   await page.locator("#seek").evaluate(node => { node.value=3;node.dispatchEvent(new Event('input',{bubbles:true})); });

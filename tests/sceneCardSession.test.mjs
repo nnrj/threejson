@@ -7,6 +7,18 @@ import * as THREE from "three";
 
 const scene = (name = "box") => ({ name, objectList: [{ objType: "box", threeJsonId: "one", position: { x: 0 }, material: { color: "#336699" } }] });
 
+test("reusable cards leave preview policy opt-in and honor an explicit false override", async () => {
+  for (const options of [{}, { getRuntimeOptions: () => ({ previewPerformance: { maxPixels: 4000 } }) }, { previewPerformance: "auto", getPreviewPerformance: () => false }]) {
+    let received;
+    const card = createSceneCardSession({ ...options, createRuntime: (document, settings) => { received = settings.previewPerformance; return createJsonScene(document, settings); } });
+    try {
+      await card.render(scene());
+      if (options.getRuntimeOptions) assert.equal(received.maxPixels, 4000);
+      else assert.equal(received, undefined);
+    } finally { card.dispose(); }
+  }
+});
+
 test("Agent discovery and compact queries never wake a dormant historical viewport", async () => {
   let loads = 0;
   const card = createSceneCardSession({ createRuntime: (...args) => { loads++; return createJsonScene(...args); } });

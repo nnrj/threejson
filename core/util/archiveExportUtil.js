@@ -245,14 +245,23 @@ async function collectAssetsFromPayload(payload, options = {}) {
   const assets = Object.fromEntries(embedded.assets);
   const rewriteMap = new Map();
   const refs = [];
+  // Requiredness is an explicit caller policy, never inferred from a service URL.
+  const required = new Set(options.requiredAssets || []);
   const packOptions = { ...options, payload };
-  walkPayloadForAssetRefs(payload, ({ ref }) => refs.push(ref));
+  walkPayloadForAssetRefs(payload, (entry) => {
+    const { ref } = entry;
+    refs.push(ref);
+    if (options.strictAssets === true || options.isAssetRequired?.(entry) === true) required.add(ref);
+  });
   const uniqueRefs = Array.from(new Set(refs));
   for (let i = 0; i < uniqueRefs.length; i++) {
     const ref = uniqueRefs[i];
     if (ref.startsWith("pack://")) continue;
-    const bytes = await tryResolveAssetBytes(ref, packOptions);
+    let bytes, failure;
+    try { bytes = await tryResolveAssetBytes(ref, packOptions); }
+    catch (error) { if (!required.has(ref)) throw error; failure = error; }
     if (!bytes) {
+      if (required.has(ref)) throw Object.assign(new Error(`Required resource could not be packaged: ${ref}. Restore resource access and retry; no incomplete archive was created.`, { cause: failure }), { code: "ARCHIVE_REQUIRED_ASSET_UNAVAILABLE", ref });
       continue;
     }
     const ext = guessAssetExt(ref);

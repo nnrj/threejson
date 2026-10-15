@@ -2,6 +2,7 @@ import { packJsonSceneArchive } from "threejson";
 import { getCachedTextureBlob, putCachedTextureBlob } from "../../shared/js/browserTextureCache.js";
 import { createTextureProxyUrl } from "../../shared/js/textureProviderClient.js";
 import { resolveEditorTextureService } from "./editorTexturePipeline.js";
+import { fetchPersistedModelBlob, isRequiredModelAsset } from "../../shared/js/modelAssetResources.js";
 
 export function createEditorTjzExportModal(host) {
   const modal = document.getElementById("tjzExportModal");
@@ -101,9 +102,12 @@ export function createEditorTjzExportModal(host) {
         const archiveBlob = await packJsonSceneArchive(sceneRuntime || scene, {
           format: exportOptions.format,
           assetPolicy: exportOptions.assetPolicy,
+          isAssetRequired: isRequiredModelAsset,
           fetchExternalUrls: exportOptions.fetchExternalUrls,
           resolveAsset: exportOptions.assetPolicy === "tryPack"
             ? async (sourceUrl) => {
+                const model = await fetchPersistedModelBlob(sourceUrl);
+                if (model) return model;
                 const cached = await getCachedTextureBlob(sourceUrl);
                 if (cached) return cached;
                 if (!/^https?:\/\//i.test(String(sourceUrl || ""))) return null;

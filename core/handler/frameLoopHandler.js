@@ -6,6 +6,7 @@ import { updateRegisteredAnimationMixers } from './animationMixerRegistry.js';
 import { updateAnimationStateMachines } from './animationStateMachine.js';
 import { syncViewModelsToCamera } from './controls/viewModelFollowCamera.js';
 import { resizeOrthographicCameraToAspect } from '../util/cameraFactory.js';
+import { createPreviewPerformance, FULL_PREVIEW_BUDGET } from '../runtime/previewPerformance.js';
 
 const DEFAULT_FPS = 60;
 
@@ -118,6 +119,9 @@ function resolveScheduleMode(config){
  */
 function createRenderLoop(options = {}){
 	const { scene, camera, renderer, controls, composer, config = {}, beforeFrame, beforeRender, afterRender } = options;
+	const preview = options.previewPerformance && options.previewPerformance !== 'full' ? createPreviewPerformance(options.previewPerformance) : null;
+	const draw = (settings) => preview ? preview.draw(scene, camera, renderer, activeComposer, () => renderFrame(renderer, scene, camera, activeComposer, settings)) : renderFrame(renderer, scene, camera, activeComposer, settings);
+	let lastPreviewTime = null;
 	const requestFrame = resolveRequestFrame(options.requestFrame);
 	const cancelFrame = resolveCancelFrame(options.cancelFrame);
 	let activeComposer = composer;
@@ -134,7 +138,7 @@ function createRenderLoop(options = {}){
 	function renderCurrentFrame(frame = {}){
 		if (frame.autoResize === true) autoResize();
 		if (scene && camera) syncViewModelsToCamera(scene, camera);
-		renderFrame(renderer, scene, camera, activeComposer, { ...config, frameDeltaSeconds: frame.deltaSeconds ?? 0 });
+		draw({ ...config, frameDeltaSeconds: frame.deltaSeconds ?? 0 });
 		return true;
 	}
 
@@ -169,6 +173,7 @@ function createRenderLoop(options = {}){
 		if(!running){
 			return false;
 		}
+		const previewStart = preview ? performance.now() : 0;
 		beforeFrame?.(now);
 		if (timeDriver) {
 			const delta = lastDriverTime === null ? 0 : Math.max(0, (now - lastDriverTime) / 1000);
@@ -204,9 +209,13 @@ function createRenderLoop(options = {}){
 			return false;
 		}
 		beforeRender?.(now);
-		renderFrame(renderer, scene, camera, activeComposer, config);
+		draw(config);
 		autoResize();
 		afterRender?.(now);
+		if (preview) {
+			preview.reportFrame({ workTimeMs: performance.now() - previewStart, frameIntervalMs: lastPreviewTime === null ? null : now - lastPreviewTime, realtime: resolveScheduleMode(config) === 'continuous', targetFrameMs: getConfigValue(config, 'lowFps', false) ? fpsInterval : undefined });
+			lastPreviewTime = now;
+		}
 		return true;
 	}
 
@@ -243,6 +252,10 @@ function createRenderLoop(options = {}){
 		// Set DPR first so this resize produces the final drawing-buffer dimensions.
 		renderer.setPixelRatio(pixelRatio);
 		renderer.setSize(width, height, updateStyle);
+		if (preview) {
+			activeComposer?.setPixelRatio?.(pixelRatio);
+			preview.constrainResolution(renderer, activeComposer);
+		}
 		if(activeComposer && typeof activeComposer.setSize === 'function'){
 			activeComposer.setSize(width, height);
 		}
@@ -292,6 +305,7 @@ function createRenderLoop(options = {}){
 			return;
 		}
 		running = true;
+		lastPreviewTime = null; preview?.resetFeedback();
 		lastDriverTime = null;
 		lastRenderTime = typeof performance !== 'undefined' ? performance.now() : Date.now();
 		bindDemandControls();
@@ -300,6 +314,7 @@ function createRenderLoop(options = {}){
 
 	function stop(){
 		running = false;
+		lastPreviewTime = null; preview?.resetFeedback();
 		lastDriverTime = null;
 		unbindDemandControls();
 		if(animationFrameId !== null){
@@ -317,6 +332,8 @@ function createRenderLoop(options = {}){
 		renderOnce,
 		renderCurrentFrame,
 		setTimeDriver(driver) { timeDriver = driver; lastDriverTime = null; },
+		get previewPerformance() { return preview?.profile || FULL_PREVIEW_BUDGET; },
+		dispose() { stop(); preview?.dispose(); },
 		isRunning: () => running,
 		getAnimationFrameId: () => animationFrameId
 	};

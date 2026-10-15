@@ -1,4 +1,6 @@
 import { sceneHostAssetUrl } from "../../shared/js/sceneHostPaths.js";
+import { verifyStoredQualityReport } from "threejson/visual-quality";
+import { formatQualityReport } from "../../shared/js/creationQualityPolicy.js";
 import {
   isScenePreviewMessageEvent,
   postScenePreviewMessage,
@@ -79,6 +81,32 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
   draftBadge.textContent = t("threebox.sceneCard.draftBadge", "草稿 · 自动细化中…");
   draftBadge.hidden = true;
   canvasWrap.appendChild(draftBadge);
+
+  const inspectionBadge = document.createElement("div");
+  inspectionBadge.textContent = "检查照明 · 不导出";
+  Object.assign(inspectionBadge.style, { position: "absolute", top: "8px", right: "8px", padding: "4px 8px", background: "#282119e6", color: "#ffdc91", fontSize: "12px", borderRadius: "5px", pointerEvents: "none" });
+  inspectionBadge.hidden = true;
+  canvasWrap.appendChild(inspectionBadge);
+  const performanceBadge = document.createElement("div");
+  performanceBadge.textContent = "节能预览 · 不影响导出质量"; performanceBadge.hidden = true;
+  Object.assign(performanceBadge.style, { position: "absolute", top: "40px", right: "8px", padding: "3px 6px", background: "#151e27df", color: "#b8d5ea", fontSize: "11px", borderRadius: "5px", pointerEvents: "none" });
+  canvasWrap.appendChild(performanceBadge);
+  const qualityDetails = document.createElement("details"), qualityTitle = document.createElement("summary"), qualityBody = document.createElement("pre");
+  Object.assign(qualityDetails.style, { padding: "8px 12px", fontSize: "12px", maxHeight: "220px", overflow: "auto", overflowWrap: "anywhere" });
+  Object.assign(qualityBody.style, { whiteSpace: "pre-wrap", fontFamily: "inherit" });
+  qualityDetails.hidden = true; qualityDetails.append(qualityTitle, qualityBody); el.appendChild(qualityDetails);
+  let currentQualityReport = null;
+  function setQualityReport(report) {
+    currentQualityReport = report;
+    qualityDetails.hidden = !report;
+    qualityTitle.textContent = report ? `质量检查 · ${report.stale ? "已修改，需复查" : report.completed === false ? "仍有待改进项" : report.visual === "passed" ? "采样画面已检查" : "视觉未验证"}` : "";
+    qualityBody.textContent = formatQualityReport(report);
+  }
+  function setPreviewAuxiliaryLightsEnabled(enabled) {
+    const active = enabled === true && Boolean(runtime?.scene);
+    syncThreeBoxPreviewAuxiliaryLights(runtime?.scene, active);
+    inspectionBadge.hidden = !active;
+  }
 
   const textureBadge = document.createElement("div");
   textureBadge.className = "sceneCardTextureBadge";
@@ -325,6 +353,9 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
   }
 
   const cardSession = createSceneCardSession({
+    previewPerformance: cardOptions.previewPerformance,
+    getPreviewPerformance: cardOptions.getPreviewPerformance,
+    onPreviewPerformanceChanged: mode => { performanceBadge.hidden = !mode || mode === "full"; },
     onDiagnosticsChanged: diagnosticsView.update,
     viewportPool: sharedSceneViewportPool,
     getViewportLimit: cardOptions.getViewportLimit,
@@ -367,13 +398,19 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
     onRuntimeChanged: (next) => {
       runtime = next;
       if (runtime) {
-        syncThreeBoxPreviewAuxiliaryLights(runtime.scene, typeof cardOptions.shouldUsePreviewAuxiliaryLights === "function"
-          ? cardOptions.shouldUsePreviewAuxiliaryLights() !== false : cardOptions.previewAuxiliaryLights !== false);
+        setPreviewAuxiliaryLightsEnabled(typeof cardOptions.shouldUsePreviewAuxiliaryLights === "function"
+          ? cardOptions.shouldUsePreviewAuxiliaryLights() === true : cardOptions.previewAuxiliaryLights === true);
         watchLiveResize();
-      } else { liveResizeObserver?.disconnect(); liveResizeObserver = null; }
+      } else { inspectionBadge.hidden = true; liveResizeObserver?.disconnect(); liveResizeObserver = null; }
       renderActivity.sync({ forceFrame: true });
     },
-    onDocumentChanged: (document) => { currentSceneJson = document; downloadMenu.close(); }
+    onDocumentChanged: (document) => {
+      currentSceneJson = document; downloadMenu.close();
+      const checked = currentQualityReport;
+      if (checked) void verifyStoredQualityReport(checked, document).then(next => {
+        if (currentQualityReport === checked && currentSceneJson === document) setQualityReport(next);
+      });
+    }
   });
 
   async function activate() {
@@ -683,8 +720,8 @@ export function createThreeBoxSceneCard(cardOptions = {}) {
     activate,
     setViewportLimit: (value) => cardSession.setViewportLimit(value),
     applyTextureAssignment: (assignment, options) => cardSession.applyTextureAssignment(assignment, options),
-    setPreviewAuxiliaryLightsEnabled: (enabled) =>
-      syncThreeBoxPreviewAuxiliaryLights(runtime?.scene, enabled !== false),
+    setPreviewAuxiliaryLightsEnabled,
+    setQualityReport,
     getRuntime: () => runtime
   };
 }

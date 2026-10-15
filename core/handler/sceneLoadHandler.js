@@ -26,6 +26,7 @@ import {
 } from "../capabilities/optionalCapabilityLoader.js";
 import { runSceneCapabilityPreparers } from "../capabilities/scenePreparationRegistry.js";
 import { applyRendererDescriptor } from "./rendererConfig.js";
+import { applySceneAppearance } from "../util/sceneAppearance.js";
 import {
   applySceneBackdropFromHints,
   applySceneBackdropSimpleFromHints,
@@ -785,9 +786,7 @@ async function applySceneStateAsync(scene, normalized, nativeSceneState = {}, re
   scene.background = nativeSceneState.background ?? null;
   scene.environment = nativeSceneState.environment ?? null;
   scene.fog = nativeSceneState.fog ?? null;
-  if (hasOwn(sceneHints, "background") || hasOwn(sceneHints, "environment")) {
-    await applySceneBackdropFromHints(scene, sceneHints, renderer, {});
-  }
+  await applySceneBackdropFromHints(scene, sceneHints, renderer, {});
 }
 
 function applyCameraConfig(camera, config = {}, renderer = null) {
@@ -858,7 +857,7 @@ function createManagedLight(entry, runtimeScope) {
   if (type !== "ambient" || position.x !== 0 || position.y !== 0 || position.z !== 0) {
     light.position.set(position.x, position.y, position.z);
   }
-  if (type !== "ambient" && light.shadow && entry.shadow !== false) {
+  if (type !== "ambient" && light.shadow && entry.shadow !== false && entry.castShadow !== false) {
     light.castShadow = true;
     const shadowHints = entry.shadow && typeof entry.shadow === "object" ? entry.shadow : {};
     const shadowNear = isFiniteNumber(shadowHints.cameraNear) ? shadowHints.cameraNear : entry.shadowCameraNear;
@@ -870,6 +869,7 @@ function createManagedLight(entry, runtimeScope) {
       light.shadow.camera.far = shadowFar;
     }
   }
+  if (entry.shadow === false || entry.castShadow === false) light.castShadow = false;
   light.userData = {
     ...light.userData,
     objJson: {
@@ -1193,6 +1193,7 @@ function deployIntoTargetSimple(target, normalized, options = {}) {
 
   const sceneHints = normalized.sceneHints || {};
   const sceneCfg = sceneHints && typeof sceneHints === "object" ? sceneHints : {};
+  applySceneAppearance(scene, sceneCfg);
   if (sceneConfigNeedsAsyncBackdrop(sceneCfg)) {
     if (strict) {
       throw new Error(
@@ -1339,6 +1340,7 @@ function buildRuntimeCreationOptions(normalized, options, lifecycleBus, runtimeF
       canvas: options.canvas,
       renderer: options.renderer,
       ownsRenderer: options.ownsRenderer,
+      previewPerformance: options.previewPerformance,
       config: {
         canvasWidth: sizeHint.width,
         canvasHeight: sizeHint.height,

@@ -16,6 +16,7 @@ import { showToast } from "./threeBoxUiFeedback.js";
 import { getDisplayDeviceId, refreshBuiltinQuota } from "./threeBoxBuiltinProvider.js";
 import { t } from "../../shared/i18n/index.js";
 import { isBuiltinPrivacyAccepted } from "../../shared/js/builtinProviderPrivacy.js";
+import { fetchCreationCapabilities } from "../../shared/js/creationTurnPolicy.js";
 
 function createProviderId() {
   return `provider-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
@@ -124,6 +125,14 @@ export function createThreeBoxSettingsModal(host = {}) {
       input.addEventListener("change", () => setSettingsByPath(draft, field.path, input.value));
     }
     controlWrap.appendChild(input);
+    if (field.path === "ai.externalModelsEnabled") {
+      const hint = document.createElement("small");
+      hint.textContent = "正在查询服务器能力…"; controlWrap.appendChild(hint);
+      void fetchCreationCapabilities(draft.ai.builtinBackendUrl).then(({ models }) => {
+        input.disabled = models.enabled === false;
+        hint.textContent = models.enabled === false ? "服务器已关闭此能力（保留你的个人偏好）" : models.available ? "与服务器开关同时开启才生效。模型来源：Poly Haven / 自托管目录；引用资产会保留署名。" : "模型服务当前不可用；不会自动获取模型。";
+      });
+    }
     if (field.testEndpoint) {
       const testBtn = document.createElement("button");
       testBtn.type = "button";
@@ -376,6 +385,11 @@ export function createThreeBoxSettingsModal(host = {}) {
     keyRow.appendChild(keyControl);
     card.appendChild(keyRow);
     card.insertBefore(keyRow, modelRow);
+    const visionRow = document.createElement("label"); visionRow.className = "providerCardRow";
+    const visionInput = document.createElement("input"); visionInput.type = "checkbox";
+    visionInput.checked = provider.capabilities?.vision === true || provider.capabilities?.inputModalities?.includes("image") === true;
+    visionInput.addEventListener("change", () => { provider.capabilities = { inputModalities: visionInput.checked ? ["text", "image"] : ["text"] }; });
+    visionRow.append(visionInput, "支持图像输入（画面评审 / 看图生成；请确认该模型支持）"); card.appendChild(visionRow);
 
     const deleteBtn = document.createElement("button");
     deleteBtn.type = "button";

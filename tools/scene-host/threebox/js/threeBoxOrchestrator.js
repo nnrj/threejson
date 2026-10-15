@@ -1,5 +1,7 @@
 import { executeCommands, createCommandContext } from "threejson";
 import { prepareAiMediaTurn } from "../../shared/js/aiMediaRouting.js";
+import { getDeclaredProviderCapabilities } from "../../shared/js/creationTurnPolicy.js";
+import { isBuiltinPrivacyAccepted } from "../../shared/js/builtinProviderPrivacy.js";
 import {
   buildResultDigest as buildAiResultDigest,
   classifyAiTurnIntent,
@@ -47,6 +49,7 @@ export function resolveProviderOptions(settings, providerId) {
     provider: provider.provider || "chatgpt",
     apiKey: provider.apiKey || "",
     model: provider.model || undefined,
+    capabilities: provider.provider === BUILTIN_PROVIDER_TYPE ? getDeclaredProviderCapabilities(settings?.ai?.builtinBackendUrl) : provider.capabilities || { inputModalities: ["text"] },
     thinkingPreference: settings?.ai?.thinkingPreference || "disabled",
     baseUrl:
       provider.provider === "custom"
@@ -74,6 +77,10 @@ export function resolveThreeBoxAgentOptions(settings = {}) {
       : {}),
     complexModelStrategy: settings?.ai?.complexModelStrategy || "auto",
     modelQuality: settings?.ai?.modelQuality || "balanced",
+    creationQuality: settings?.ai?.creationQuality || "quick",
+    externalModelsEnabled: settings?.ai?.externalModelsEnabled !== false,
+    modelServiceUrl: settings?.ai?.builtinBackendUrl,
+    modelServiceApiKey: isBuiltinPrivacyAccepted("threebox") ? settings?.ai?.providers?.find(p => p.provider === BUILTIN_PROVIDER_TYPE)?.apiKey : undefined,
     modelBudget: {
       maxTokens: Number(modelBudget.maxTokens) > 0 ? Number(modelBudget.maxTokens) : undefined,
       maxCost: Number(modelBudget.maxCost) > 0 ? Number(modelBudget.maxCost) : undefined,

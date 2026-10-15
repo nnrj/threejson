@@ -190,6 +190,7 @@ export function getAgentOptions(host) {
       ? { maxRefineRounds: Math.round(Number(ai.maxAutoRefineRounds)) }
       : {}),
     complexModelStrategy: ai.complexModelStrategy || "auto",
+    creationQuality: ai.creationQuality || "quick",
     modelQuality: ai.modelQuality || "balanced",
     modelBudget: {
       maxTokens: Number(modelBudget.maxTokens) > 0 ? Number(modelBudget.maxTokens) : undefined,

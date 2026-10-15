@@ -48,7 +48,10 @@ test("ThreeBox defaults remember API keys locally", () => {
   assert.equal(THREEBOX_SETTINGS_DEFAULTS.ai.texturePersistenceMode, "remote");
   assert.equal(THREEBOX_SETTINGS_DEFAULTS.ai.texturePbr, true);
   assert.equal(THREEBOX_SETTINGS_DEFAULTS.ai.maxSceneSegments, 0);
-  assert.equal(THREEBOX_SETTINGS_DEFAULTS.general.previewAuxiliaryLights, true);
+  assert.equal(THREEBOX_SETTINGS_DEFAULTS.general.previewAuxiliaryLights, false);
+  assert.equal(THREEBOX_SETTINGS_DEFAULTS.general.previewPerformance, "auto");
+  assert.equal(THREEBOX_SETTINGS_DEFAULTS.ai.creationQuality, "quick");
+  assert.equal(THREEBOX_SETTINGS_DEFAULTS.ai.externalModelsEnabled, true);
   assert.equal(THREEBOX_SETTINGS_DEFAULTS.io.sceneJsonFormat, "standard");
   assert.equal(THREEBOX_SETTINGS_DEFAULTS.io.showMeshExportWarnings, true);
   assert.equal(THREEBOX_SETTINGS_DEFAULTS.io.turnDiffCheckpointInterval, 12);
@@ -81,7 +84,7 @@ test("ThreeBox defaults remember API keys locally", () => {
   assert.equal(settings.ai.texturePipelineEnabled, true);
   assert.equal(settings.ai.textureStrategy, "semantic-hybrid");
   assert.equal(settings.ai.maxSceneSegments, 0);
-  assert.equal(settings.general.previewAuxiliaryLights, true);
+  assert.equal(settings.general.previewAuxiliaryLights, false);
   assert.equal(settings.io.sceneJsonFormat, "standard");
   assert.equal(settings.io.showMeshExportWarnings, true);
   assert.equal(settings.io.turnDiffCheckpointInterval, 12);

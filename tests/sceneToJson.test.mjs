@@ -201,7 +201,8 @@ test("working standard payload passes load validation shape", async () => {
   assert.ok(payload.sceneConfig);
   assert.ok(Array.isArray(payload.objectList) && payload.objectList.length > 0);
   const normalized = normalizeScenePayload(payload);
-  assert.equal(normalized.objectList.length, payload.objectList.length);
+  assert.equal(normalized.objectList.filter(object => object.objType !== "scene").length, payload.objectList.length);
+  assert.equal(normalized.objectList.find(object => object.objType === "scene").environmentIntensity, 1);
 });
 
 test("normalize merges sceneConfig camera when objectList has duplicate camera", () => {

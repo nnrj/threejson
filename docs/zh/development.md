@@ -44,6 +44,8 @@ CLI/MCP 已统一到 [`@threejson/scene-tools`](../../packages/scene-tools/READM
 
 ## AI 验证
 
+生成质量、真实画面与外部模型策略回归见 [生成质量实施与验收](../dev/visual-quality-verification.md)。
+
 - 自动化（无需 API Key）：`npm test`、`npm run verify:ai-static`
 - 手动矩阵：[`tests/ai-manual-verification.md`](../../tests/ai-manual-verification.md)
 - 可选 live（需显式设置 `THREEJSON_LIVE_SETTINGS` 指向私有配置，可能计费）：`npm run verify:ai-live`

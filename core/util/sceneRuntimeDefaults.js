@@ -417,33 +417,35 @@ function buildRuntimeCameraControlsFromPayload(payload, extentGuess, options = {
  * @returns {object[]}
  */
 function buildDeclarativeLightsFromExtent(extentGuess, options = {}) {
-  const scale = extentGuess ? Math.max(extentGuess.maxDim / 140, 0.54) : 1;
-  const shadowFarHint = extentGuess ? Math.max(extentGuess.maxDim * 40, 520) : 500;
+  const scale = Math.max(0.01, extentGuess?.maxDim || 10);
+  const center = extentGuess?.center || { x: 0, y: 0, z: 0 };
+  const position = (x, y, z) => ({ x: center.x + x * scale, y: center.y + y * scale, z: center.z + z * scale });
   return [
     {
       type: "directional",
       color: "#ffffff",
-      intensity: 0.41,
-      position: { x: -64 * scale, y: 10.6 * scale, z: 35 * scale },
-      shadow: true,
-      shadowCameraNear: Math.max(0.08, extentGuess?.maxDim / 18000 || 0.09),
-      shadowCameraFar: shadowFarHint * 2.35
+      intensity: 2.5,
+      position: position(-1, 1.5, 1.5),
+      target: { ...center },
+      shadow: { normalBias: scale * 0.0005, mapSize: { width: 1024, height: 1024 }, camera: { near: scale * .01, far: scale * 6, left: -scale, right: scale, top: scale, bottom: -scale } },
+      castShadow: true
     },
     {
-      type: "ambient",
-      color: "#cccccc",
-      intensity: 0.58,
-      position: { x: 0, y: 0, z: 0 },
+      type: "hemisphere",
+      skyColor: "#dceaff",
+      groundColor: "#817567",
+      intensity: 1.2,
+      position: position(0, 1, 0),
       shadow: false
     },
     {
-      type: "point",
-      color: "#cccccc",
-      intensity: 0.54,
-      position: { x: 0, y: 35 * scale, z: 0 },
-      shadow: true,
-      shadowCameraNear: 0.095,
-      shadowCameraFar: Math.max(shadowFarHint * 2.05, shadowFarHint)
+      type: "directional",
+      color: "#dceaff",
+      intensity: 0.8,
+      position: position(1, .6, -1),
+      target: { ...center },
+      shadow: false,
+      castShadow: false
     }
   ];
 }

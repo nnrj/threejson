@@ -112,6 +112,9 @@ function ensureBuiltinProviderSeeded(merged) {
 export function loadThreeBoxSettingsBundle() {
   const cached = readThreeBoxSettingsCache();
   const merged = deepMergeThreeBoxSettings(THREEBOX_SETTINGS_DEFAULTS, cached || {});
+  if (!["auto", "full", "balanced", "economy"].includes(merged.general.previewPerformance)) merged.general.previewPerformance = "auto";
+  if (!cached?.ai?.creationQuality && cached?.ai?.modelQuality === "high") merged.ai.creationQuality = "fine";
+  if (!["quick", "standard", "fine", "ultimate"].includes(merged.ai.creationQuality)) merged.ai.creationQuality = "quick";
   if (!["auto", "scene", "video"].includes(merged.ai?.mediaOutputKind)) merged.ai.mediaOutputKind = "auto";
   if (!["draft", "balanced", "high"].includes(merged.ai?.videoQuality)) merged.ai.videoQuality = "balanced";
   if (!["auto", "enabled", "disabled"].includes(merged.ai?.videoVisualReview)) merged.ai.videoVisualReview = "auto";

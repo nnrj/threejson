@@ -40,6 +40,7 @@ import {
   resolveThreeBoxNegotiatedRoute
 } from "./threeBoxTurnState.js";
 import { buildStructuredTurnEnvelope, matchIntentSignals, projectSceneJsonString } from "threejson/ai";
+import { bindStoredQualityReport, invalidateQualityReport, verifyStoredQualityReport } from "threejson/visual-quality";
 import { createBuiltinAiTurnContext } from "../../shared/js/builtinAiProvider.js";
 import { initHostI18n, applyShellI18n, getHostLocale, normalizeLocale, t } from "../../shared/i18n/index.js";
 import {
@@ -56,6 +57,7 @@ import {
   runHostSceneTexturePipeline
 } from "../../shared/js/sceneTextureOrchestrator.js";
 import { createTextureProxyUrl } from "../../shared/js/textureProviderClient.js";
+import { fetchPersistedModelBlob, isRequiredModelAsset } from "../../shared/js/modelAssetResources.js";
 import { getCachedTextureBlob, putCachedTextureBlob, createTextureResourceResolver } from "../../shared/js/browserTextureCache.js";
 import { sceneHostAssetUrl } from "../../shared/js/sceneHostPaths.js";
 import {
@@ -252,8 +254,9 @@ async function main() {
 
   const attachedContext = createThreeBoxAttachedContext({
     sceneCardOptions: {
+      getPreviewPerformance: () => settingsModal.getSettings()?.general?.previewPerformance || "auto",
       shouldUsePreviewAuxiliaryLights: () =>
-        settingsModal.getSettings()?.general?.previewAuxiliaryLights !== false,
+        settingsModal.getSettings()?.general?.previewAuxiliaryLights === true,
       shouldProvideMeshVisionFeedback: getVisionCapable
     }
   });
@@ -297,12 +300,13 @@ async function main() {
   }
   const getMediaRuntimeOptions = () => ({ assetsBase: sceneHostAssetUrl("assets/"), resolveResourceUrl: resolveCardResourceUrl, assetGateway: getCardAssetGateway() });
   const createConfiguredSceneCard = () => createThreeBoxSceneCard({
+    getPreviewPerformance: () => settingsModal.getSettings()?.general?.previewPerformance || "auto",
     getViewportLimit: () => { const general = settingsModal.getSettings()?.general; return general?.multipleActiveViewports ? general.maxActiveViewports : 1; },
     resolveResourceUrl: resolveCardResourceUrl,
     shouldShowMeshExportWarnings: () =>
       settingsModal.getSettings()?.io?.showMeshExportWarnings !== false,
     shouldUsePreviewAuxiliaryLights: () =>
-      settingsModal.getSettings()?.general?.previewAuxiliaryLights !== false,
+      settingsModal.getSettings()?.general?.previewAuxiliaryLights === true,
     shouldProvideMeshVisionFeedback: getVisionCapable,
     assetGateway: getCardAssetGateway,
     archiveOptions: () => {
@@ -311,9 +315,11 @@ async function main() {
       if (assetPolicy !== "tryPack") return { assetPolicy };
       const service = resolveTextureServiceSettings(settings);
       return {
-        assetPolicy,
+        assetPolicy, isAssetRequired: isRequiredModelAsset,
         fetchExternalUrls: false,
         resolveAsset: async (sourceUrl) => {
+          const model = await fetchPersistedModelBlob(sourceUrl);
+          if (model) return model;
           const cached = await getCachedTextureBlob(sourceUrl);
           if (cached) return cached;
           if (!/^https?:\/\//i.test(String(sourceUrl || ""))) return null;
@@ -409,7 +415,9 @@ async function main() {
         onSceneUpdated?.(updatedScene);
         await updateStoredTurn(turnId, (turn) => {
           if (textureJobsByTurnId.get(turnId) !== controller) return null;
-          return { ...turn, sceneJson };
+          const qualityReport = invalidateQualityReport(turn.qualityReport, "贴图已更新，之前的画面检查已失效；需重新检查最终画面");
+          sceneCard.setQualityReport?.(qualityReport);
+          return { ...turn, sceneJson, qualityReport };
         });
       }
     }).catch((error) => {
@@ -420,7 +428,7 @@ async function main() {
   }
 
   function syncPreviewAuxiliaryLightsFromSettings(settings = settingsModal.getSettings()) {
-    const enabled = settings?.general?.previewAuxiliaryLights !== false;
+    const enabled = settings?.general?.previewAuxiliaryLights === true;
     attachedContext?.setPreviewAuxiliaryLightsEnabled?.(enabled);
     for (const sceneCard of sceneCardsByTurnId.values()) {
       sceneCard?.setPreviewAuxiliaryLightsEnabled?.(enabled);
@@ -943,7 +951,9 @@ async function main() {
       // ThreeJSON may have materialized omitted lighting/camera defaults and normalized material
       // or texture descriptors while building the card. Saving the live snapshot makes reopening
       // a conversation a lossless round trip; host-only preview helpers are excluded by export.
-      const runtimeSceneJsonString = await sceneCard.exportSceneJsonString({ label: text });
+      // A checked source is authoritative. Do not replace it with the current
+      // playback camera/animation pose after reviewing a different document.
+      const runtimeSceneJsonString = agentResult?.qualityReport ? null : await sceneCard.exportSceneJsonString({ label: text });
       if (runtimeSceneJsonString) {
         outputSceneJsonString = projectSceneForUser(runtimeSceneJsonString, settings);
         outputSceneJson = JSON.parse(outputSceneJsonString);
@@ -951,6 +961,9 @@ async function main() {
         jsonCollapse.updateJson?.(outputSceneJsonString);
       }
       sceneCardsByTurnId.set(turnId, sceneCard);
+
+      const qualityReport = await bindStoredQualityReport(agentResult?.qualityReport, outputSceneJson);
+      sceneCard.setQualityReport?.(qualityReport);
 
       // Texture assignments must target the same descriptor shape that the card rendered and
       // later exports. In friendly-output mode this intentionally differs from the Agent's
@@ -975,6 +988,7 @@ async function main() {
         recapSummary: "",
         sceneTitle: "",
         refinementIncomplete,
+        qualityReport,
         refinementStopReason: refinementIncomplete ? String(agentResult?.stopReason || "incomplete") : "",
         createdAt: Date.now()
       });
@@ -1367,7 +1381,7 @@ async function main() {
         console.warn("[threebox] superseded adjustment preview render failed:", error);
       });
       await sceneCard.finalize(outputSceneJson, { label: text });
-      const runtimeSceneJsonString = await sceneCard.exportSceneJsonString({ label: text });
+      const runtimeSceneJsonString = result.qualityReport ? null : await sceneCard.exportSceneJsonString({ label: text });
       if (runtimeSceneJsonString) {
         outputSceneJsonString = projectSceneForUser(runtimeSceneJsonString, settings);
         outputSceneJson = JSON.parse(outputSceneJsonString);
@@ -1375,6 +1389,9 @@ async function main() {
         jsonCollapse.updateJson?.(outputSceneJsonString);
       }
       sceneCardsByTurnId.set(turnId, sceneCard);
+
+      const qualityReport = await bindStoredQualityReport(result.qualityReport, outputSceneJson);
+      sceneCard.setQualityReport?.(qualityReport);
 
       // Keep the texture document aligned with the scene-card descriptor shape. This matters
       // when the user selected friendly JSON output instead of canonical standard JSON.
@@ -1400,7 +1417,7 @@ async function main() {
       // replayable delta; json-incremental/json-full always keep the full JSON since there's no
       // cheaper way to reconstruct them). Diff mode periodically stores one full checkpoint so
       // a long progressive-modeling history never needs to replay an unbounded command chain.
-      const diffCacheEligible = result.stage === "commands" && result.commands?.length;
+      const diffCacheEligible = result.stage === "commands" && result.commands?.length && !result.qualityReport?.repairs;
       const diffMode = settings.io?.turnCacheMode === "diff" && diffCacheEligible;
       const writeDiffCheckpoint = diffMode && shouldCreateTurnDiffCheckpoint(
         await getTurnsForConversation(conversationId),
@@ -1424,6 +1441,7 @@ async function main() {
         recapSummary: recap,
         sceneTitle,
         refinementIncomplete,
+        qualityReport,
         refinementStopReason: refinementIncomplete ? String(result.agentResult?.stopReason || "incomplete") : "",
         createdAt: Date.now()
       });
@@ -1862,6 +1880,7 @@ async function main() {
         continue;
       }
       latestCard = sceneCard;
+      if (turn.qualityReport) sceneCard.setQualityReport(await verifyStoredQualityReport(turn.qualityReport, JSON.parse(sceneJsonString)));
       if (turn.refinementIncomplete === true) {
         sceneCard.setDraftStatus?.("paused");
       }

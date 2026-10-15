@@ -17,7 +17,8 @@ export const THREEBOX_SETTINGS_DEFAULTS = {
     locale: "auto",
     theme: "dark",
     templateThumbnailsEnabled: true,
-    previewAuxiliaryLights: true,
+    previewAuxiliaryLights: false,
+    previewPerformance: "auto",
     multipleActiveViewports: false,
     maxActiveViewports: 2,
     assetGatewayUrl: "",
@@ -36,6 +37,8 @@ export const THREEBOX_SETTINGS_DEFAULTS = {
     // DeepSeek V4 enables high-effort hidden reasoning by default. Scene generation needs the
     // output budget for usable JSON, so keep thinking off unless the user deliberately opts in.
     thinkingPreference: "disabled",
+    creationQuality: "quick",
+    externalModelsEnabled: true,
     sceneGenerationMode: "auto",
     mediaOutputKind: "auto",
     videoQuality: "balanced",
@@ -114,7 +117,10 @@ export const THREEBOX_SETTINGS_FIELDS = [
   { section: "general", path: "general.locale", type: "select", label: "界面语言", options: [["auto", "跟随浏览器"], ["zh-CN", "简体中文"], ["en-US", "English"]] },
   { section: "general", path: "general.theme", type: "select", label: "主题", options: [["dark", "深色"], ["light", "浅色"]] },
   { section: "general", path: "general.templateThumbnailsEnabled", type: "checkbox", label: "自动生成并缓存模板库缩略图" },
-  { section: "general", path: "general.previewAuxiliaryLights", type: "checkbox", label: "ThreeBox 画布启用辅助光源" },
+  { section: "general", path: "general.previewAuxiliaryLights", type: "checkbox", label: "检查照明（仅辅助观察，不进入导出）" },
+  { section: "general", path: "general.previewPerformance", type: "select", label: "预览性能（重新载入画布后生效，不影响导出）", options: [["auto", "按设备自动"], ["full", "完整质量"], ["balanced", "均衡"], ["economy", "节能"]] },
+  { section: "ai", path: "ai.creationQuality", type: "select", label: "生成质量", options: [["quick", "快速（默认）"], ["standard", "标准"], ["fine", "精细"], ["ultimate", "极致"]] },
+  { section: "ai", path: "ai.externalModelsEnabled", type: "checkbox", label: "允许 AI 使用外部模型（需服务器允许）" },
   { section: "general", path: "general.multipleActiveViewports", type: "checkbox", label: "允许多个画布同时交互（增加显存占用）" },
   { section: "general", path: "general.maxActiveViewports", type: "number", label: "最多同时活动的画布数", min: 1, step: 1 },
 

@@ -4,6 +4,8 @@ export interface SceneAgentSettings {
     sceneGenerationMode: "auto" | "direct" | "draft_refine";
     complexModelStrategy: "auto" | "full-coordinates" | "progressive";
     modelQuality: "draft" | "balanced" | "high" | "custom";
+    creationQuality: "quick" | "standard" | "fine" | "ultimate";
+    externalModelsEnabled: boolean;
     modelBudget: { maxTokens: number; maxCost: number; maxTimeMs: number };
     updateOutputMode: "commands" | "json-incremental" | "json-full";
     maxAutoRefineRounds: number;

@@ -16,7 +16,7 @@ function removeThreeBoxPreviewAuxiliaryLights(scene) {
 }
 
 /** Adds host-only fill lights. The tagged top-level group is excluded by existing export rules. */
-function syncThreeBoxPreviewAuxiliaryLights(scene, enabled = true) {
+function syncThreeBoxPreviewAuxiliaryLights(scene, enabled = false) {
   removeThreeBoxPreviewAuxiliaryLights(scene);
   if (!enabled || !scene?.isScene) {
     return null;

@@ -1,5 +1,6 @@
 import { packJsonSceneArchive, sceneToJson } from "threejson";
 import { strToU8, unzipSync, zipSync } from "fflate";
+import { fetchPersistedModelBlob, isRequiredModelAsset } from "../../shared/js/modelAssetResources.js";
 import {
   jsonStringForScript,
   buildHtmlTemplate,
@@ -94,6 +95,8 @@ export function createEditorTemplateExportModal(host) {
     const bytes = await packJsonSceneArchive(sceneRuntime || scene, {
       format,
       assetPolicy: "tryPack",
+      isAssetRequired: isRequiredModelAsset,
+      resolveAsset: fetchPersistedModelBlob,
       fetchExternalUrls,
       includeRuntimeRecords: true,
       outputType: "bytes"

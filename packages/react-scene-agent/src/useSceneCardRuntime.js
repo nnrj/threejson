@@ -9,6 +9,7 @@ import { captureMeshReviewViews } from "@threejson/host-kit/js/meshViewCapture.j
 import { sharedSceneViewportPool } from "@threejson/host-kit/js/sceneViewportPool.js";
 import { ensureSceneHostSceneCapabilitiesForPayload } from "@threejson/host-kit/js/sceneCapabilities.js";
 import { getSceneCardDownloadActions } from "@threejson/host-kit/js/sceneCardDownloadMenu.js";
+import { verifyStoredQualityReport } from "threejson/visual-quality";
 
 function interpolate(text, params) {
   let result = String(text || "");
@@ -107,6 +108,11 @@ export function useSceneCardRuntime(options = {}) {
 
   const [loadingText, setLoadingText] = useState(translate(options, "sceneAgent.sceneCard.waitingForDraft", "等待场景草稿…"));
   const [loadingCompact, setLoadingCompact] = useState(false);
+  const [inspectionLighting, setInspectionLighting] = useState(false);
+  const [previewPerformance, setPreviewPerformance] = useState(null);
+  const [qualityReport, setQualityReport] = useState(null);
+  const qualityReportRef = useRef(null);
+  qualityReportRef.current = qualityReport;
   const [exporting, setExporting] = useState(null);
   const [draft, setDraft] = useState(false);
   const [textureProgress, setTextureProgressState] = useState(null);
@@ -186,6 +192,9 @@ export function useSceneCardRuntime(options = {}) {
 
   const getCardSession = useCallback(() => {
     if (!sessionRef.current) sessionRef.current = createSceneCardSession({
+      previewPerformance: optionsRef.current.previewPerformance,
+      getPreviewPerformance: () => optionsRef.current.getPreviewPerformance?.() ?? optionsRef.current.previewPerformance,
+      onPreviewPerformanceChanged: setPreviewPerformance,
       onDiagnosticsChanged: setResourceDiagnostics,
       viewportPool: sharedSceneViewportPool,
       getViewportLimit: () => optionsRef.current.getViewportLimit?.() ?? optionsRef.current.maxActiveViewports ?? 1,
@@ -224,13 +233,21 @@ export function useSceneCardRuntime(options = {}) {
       onRuntimeChanged: (next) => {
         runtimeRef.current = next;
         if (next) {
-          syncSceneAgentPreviewLights(next.scene, typeof optionsRef.current.shouldUsePreviewAuxiliaryLights === "function"
-            ? optionsRef.current.shouldUsePreviewAuxiliaryLights() !== false : optionsRef.current.previewAuxiliaryLights !== false);
+          const auxiliary = typeof optionsRef.current.shouldUsePreviewAuxiliaryLights === "function"
+            ? optionsRef.current.shouldUsePreviewAuxiliaryLights() === true : optionsRef.current.previewAuxiliaryLights === true;
+          syncSceneAgentPreviewLights(next.scene, auxiliary);
+          setInspectionLighting(auxiliary);
           watchLiveResize();
-        } else { liveResizeObserverRef.current?.disconnect(); liveResizeObserverRef.current = null; }
+        } else { setInspectionLighting(false); liveResizeObserverRef.current?.disconnect(); liveResizeObserverRef.current = null; }
         syncRuntimeActivity(true);
       },
-      onDocumentChanged: (document) => { currentSceneJsonRef.current = document; }
+      onDocumentChanged: (document) => {
+        currentSceneJsonRef.current = document;
+        const checked = qualityReportRef.current;
+        if (checked) void verifyStoredQualityReport(checked, document).then(next => {
+          if (qualityReportRef.current === checked && currentSceneJsonRef.current === document) setQualityReport(next);
+        });
+      }
     });
     return sessionRef.current;
   }, [showCompactLoadingProgress, syncRuntimeActivity, watchLiveResize]);
@@ -357,7 +374,9 @@ export function useSceneCardRuntime(options = {}) {
   }, []);
 
   const setPreviewAuxiliaryLightsEnabled = useCallback((enabled) => {
-    syncSceneAgentPreviewLights(runtimeRef.current?.scene, enabled !== false);
+    const active = enabled === true && Boolean(runtimeRef.current?.scene);
+    syncSceneAgentPreviewLights(runtimeRef.current?.scene, active);
+    setInspectionLighting(active);
   }, []);
 
   const dispose = useCallback(() => {
@@ -545,6 +564,10 @@ export function useSceneCardRuntime(options = {}) {
     canvasWrapRef,
     loadingText,
     loadingCompact,
+    inspectionLighting,
+    previewPerformance,
+    qualityReport,
+    setQualityReport,
     exporting,
     draft,
     textureProgress,

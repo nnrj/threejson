@@ -313,6 +313,13 @@ export function createSettingsModalController({ host, onSave, onReset, onTestEnd
     modelRow.appendChild(modelInput);
     card.appendChild(modelRow);
 
+    const visionLabel = document.createElement("label"), visionInput = document.createElement("input");
+    visionInput.type = "checkbox";
+    visionInput.checked = provider.capabilities?.vision === true || provider.capabilities?.inputModalities?.includes("image") === true;
+    visionInput.addEventListener("change", () => { provider.capabilities = { inputModalities: visionInput.checked ? ["text", "image"] : ["text"] }; });
+    visionLabel.append(visionInput, document.createTextNode("支持图像输入（画面评审 / 看图生成；请确认模型支持）"));
+    card.appendChild(visionLabel);
+
     const deleteBtn = document.createElement("button");
     deleteBtn.type = "button";
     deleteBtn.className = "editorProviderCardDeleteBtn";

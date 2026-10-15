@@ -3,6 +3,7 @@ import { createElement as h, useEffect, useRef, useState } from "react";
 import { useSceneCardRuntime } from "./useSceneCardRuntime.js";
 import { describeSceneDiagnostic, sceneDiagnosticTitle, subscribeSceneDiagnosticLanguage } from "@threejson/host-kit/js/sceneResourceDiagnostics.js";
 import { createSceneCardDownloadMenu } from "@threejson/host-kit/js/sceneCardDownloadMenu.js";
+import { formatQualityReport } from "@threejson/host-kit/js/creationQualityPolicy.js";
 
 function text(options, key, fallback) {
   return options?.translate?.(key, fallback) || fallback;
@@ -84,6 +85,8 @@ export function SceneAgentSceneCard({ sceneJson, label, showToast, options, onRe
       card.draft
         ? h("div", { className: "sceneCardDraftBadge" }, text(mergedOptions, "sceneAgent.sceneCard.draftBadge", "草稿 · 自动细化中…"))
         : null,
+      card.inspectionLighting ? h("span", { style: { position: "absolute", top: "8px", right: "8px", padding: "4px 8px", background: "#282119e6", color: "#ffdc91", fontSize: "12px", borderRadius: "5px", pointerEvents: "none" } }, "检查照明 · 不导出") : null,
+      card.previewPerformance && card.previewPerformance !== "full" ? h("span", { style: { position: "absolute", top: "40px", right: "8px", padding: "3px 6px", background: "#151e27df", color: "#b8d5ea", fontSize: "11px", borderRadius: "5px", pointerEvents: "none" } }, "节能预览 · 不影响导出质量") : null,
       card.textureProgress
         ? h(
             "div",
@@ -110,6 +113,9 @@ export function SceneAgentSceneCard({ sceneJson, label, showToast, options, onRe
       action(text(mergedOptions, "sceneAgent.sceneCard.refresh", "刷新画布"), "&#8635;", () => void card.handleRefresh(), card.exporting === "refresh"),
       action(text(mergedOptions, "sceneAgent.sceneCard.fullscreen", "全屏"), "&#10021;", card.handleFullscreen)
     ),
+    card.qualityReport ? h("details", { style: { padding: "8px 12px", fontSize: "12px", maxHeight: "220px", overflow: "auto", overflowWrap: "anywhere" } },
+      h("summary", null, `质量检查 · ${card.qualityReport.stale ? "已修改，需复查" : card.qualityReport.completed === false ? "仍有待改进项" : card.qualityReport.visual === "passed" ? "采样画面已检查" : "视觉未验证"}`),
+      h("pre", { style: { whiteSpace: "pre-wrap", fontFamily: "inherit" } }, formatQualityReport(card.qualityReport))) : null,
     card.resourceDiagnostics.length ? h("details", { className: "sceneResourceDiagnostics", style: { padding: "6px 10px", fontSize: "12px", lineHeight: 1.5, maxHeight: "180px", overflow: "auto", overflowWrap: "anywhere" } },
       h("summary", { style: { cursor: "pointer" } }, text(mergedOptions, "sceneAgent.sceneCard.notices", sceneDiagnosticTitle()) + ` · ${card.resourceDiagnostics.length}`),
       h("ul", null, card.resourceDiagnostics.map((item, index) => h("li", { key: index }, describeSceneDiagnostic(item))))) : null

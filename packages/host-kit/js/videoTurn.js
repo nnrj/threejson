@@ -1,13 +1,30 @@
 import { runVideoAgent } from "threejson/ai";
 import { loadMediaKit, createLocalNarrationHost } from "./mediaStudio.js";
+import { prepareCreationTurn } from "./creationTurnPolicy.js";
+import { reviewSceneResult } from "./sceneQualityReview.js";
+import { providerSupportsVision } from "threejson/visual-quality";
 
 /** Optional host bridge; no media/codecs/model downloads in the ordinary scene path. */
 export async function runAiVideoTurn(input = {}) {
+  const prepared = await prepareCreationTurn(input);
+  try {
+    const result = await runAiVideoTurnInternal(prepared);
+    await prepared.drainCreationPreviews();
+    return await reviewSceneResult(result, { ...prepared, repairMediaDocument: async (document, { issues, signal, providerOptions }) => {
+      const repaired = await runAiVideoTurnInternal({ ...prepared, signal, providerOptions, maxTokens: providerOptions.maxTokens, targetSceneJsonString: JSON.stringify(document), videoOptions: { ...prepared.videoOptions, confirmStoryboard: false },
+        userPrompt: `Preserve all accepted shots, duration, audio and edits. Fix only these verified visual issues: ${JSON.stringify(issues)}. Original request: ${input.userPrompt}` });
+      if (repaired.agentResult?.completed === false) throw new Error(repaired.agentResult.message || repaired.agentResult.stopReason);
+      return repaired.sceneJson;
+    } });
+  } finally { await prepared.drainCreationPreviews(); }
+}
+
+async function runAiVideoTurnInternal(input = {}) {
   const kit = await loadMediaKit();
   const { providerOptions = {}, userPrompt, signal, onAgentProgress, onSceneDraft, videoOptions = {} } = input;
   const initial = input.targetSceneJsonString ? JSON.parse(input.targetSceneJsonString) : input.project;
   const session = kit.createMediaProjectSession(initial, { duration: videoOptions.duration || initial?.timeline?.duration || 120 });
-  const visionAvailable = videoOptions.visionAvailable ?? (videoOptions.visualReview === "enabled" || videoOptions.visualReview !== "disabled" && providerOptions.capabilities?.vision === true);
+  const visionAvailable = videoOptions.visualReview !== "disabled" && providerSupportsVision(providerOptions);
   const runtimeOptions = input.runtimeOptions || {};
   const captureFrames = async (document, args, context) => {
     const project = await kit.createMediaProject(document, { width: args.width || 640, height: args.height || 360, runtimeOptions, signal: context.signal });
@@ -20,12 +37,17 @@ export async function runAiVideoTurn(input = {}) {
   let narration;
   try { narration = await createLocalNarrationHost(); }
   catch (error) { narration = { available: false, dispose() {} }; onAgentProgress?.({ type: "video", stage: "audio_unavailable", stageLabel: `本地配音不可用：${error.message}；继续生成画面。` }); }
-  const service = kit.createMediaOperationService({ session, adapters: { captureFrames: input.captureFrames || captureFrames, ...(narration.available ? { narrate: narration.narrate } : {}) } });
+  const rawService = kit.createMediaOperationService({ session, adapters: { captureFrames: input.captureFrames || captureFrames, ...(narration.available ? { narrate: narration.narrate } : {}) } });
+  const service = { ...rawService, get revision() { return rawService.revision; }, execute: async (commands, options) => {
+    try { return await rawService.execute(input.creationPolicy ? await input.creationPolicy.prepare(commands) : commands, options); }
+    catch (error) { return { ok: false, status: "failed", revision: rawService.revision, results: [], error: error.message, diagnostics: [{ code: error.code || "MODEL_POLICY_REJECTED", message: error.message }] }; }
+  } };
   let draftPublished = false;
   try {
     const result = await runVideoAgent({ ...providerOptions, service, prompt: [input.globalPromptPrefix, userPrompt].filter(Boolean).join("\n\n"), signal, request: input.request,
-      maxTokens: input.maxTokens ?? providerOptions.maxTokens, modelBudget: Object.fromEntries(Object.entries(videoOptions.budget || input.modelBudget || {}).filter(([, value]) => value != null && value !== 0)),
+      maxTokens: input.maxTokens ?? providerOptions.maxTokens, modelBudget: Object.fromEntries(Object.entries(videoOptions.budget || input.modelBudget || input.agentOptions?.modelBudget || {}).filter(([key, value]) => key !== "maxCost" && value != null && value !== 0)),
       duration: videoOptions.duration, quality: videoOptions.quality || "balanced", confirmStoryboard: videoOptions.confirmStoryboard === true,
+      qualityProfile: input.agentOptions?.qualityProfile,
       visionAvailable, selectedCapabilityIds: input.selectedCapabilityIds,
       onProgress: progress => onAgentProgress?.({ ...progress, type: "video", stageLabel: progress.stage === "reasoning" ? "正在编排或细化镜头" : progress.operations?.join(", ") || progress.stage }),
       onReceipt: async receipt => {

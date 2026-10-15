@@ -41,6 +41,7 @@ import {
   buildCapabilityFixPrompt
 } from "./agentTools.js";
 import { matchIntentSignals } from "./sceneCapability.js";
+import { buildCreationQualityInstructions } from "./creationQuality.js";
 import { fetchReferenceMaterial } from "./sceneReferenceCatalog.js";
 import {
   buildObjectSpatialCardsFromSceneJson,
@@ -382,7 +383,7 @@ async function runSceneAgentCommandsUpdate(params) {
 
   // Resolved once for the whole turn (not per round) — same material is relevant across repair
   // attempts, and this avoids refetching on every round.
-  const referenceMaterial = await resolveAgentReferenceMaterial(userPrompt, chatOptions);
+  const referenceMaterial = await resolveAgentReferenceMaterial(params.referencePrompt ?? userPrompt, chatOptions);
 
   while (round < maxCommandAttempts) {
     round += 1;
@@ -623,7 +624,7 @@ async function runSceneAgentCommandsUpdateIterative(params) {
   let explicitBudgetExhausted = false;
 
   // Resolved once for the whole turn — see runSceneAgentCommandsUpdate's matching comment.
-  const referenceMaterial = await resolveAgentReferenceMaterial(userPrompt, chatOptions);
+  const referenceMaterial = await resolveAgentReferenceMaterial(params.referencePrompt ?? userPrompt, chatOptions);
 
   while (true) {
     if (maxRefineRounds && refineRound >= maxRefineRounds) {
@@ -1329,8 +1330,14 @@ async function requestOptionalOutline({ prompt, mode }, chatOptions, maxTokens) 
  */
 async function runSceneAgent(input = {}, options = {}) {
   const mode = input.mode || "generate";
-  const prompt = String(input.prompt || "").trim();
-  const userRequest = extractUserRequest(prompt);
+  const userRequest = extractUserRequest(String(input.prompt || "").trim());
+  const qualityInstructions = buildCreationQualityInstructions(options.qualityProfile ?? options.agent?.qualityProfile);
+  let globalInstructions = "";
+  try { globalInstructions = JSON.parse(input.prompt).globalInstructions || ""; } catch { /* Plain prompts remain valid. */ }
+  // Guidance belongs to authoring, not intent/capability classification. Keep it
+  // when the compact command path extracts userRequest from a structured envelope.
+  const authoringRequest = [userRequest, globalInstructions, qualityInstructions].filter(Boolean).join("\n\n");
+  const prompt = [input.prompt, qualityInstructions].filter(Boolean).join("\n\n");
   const { maxRefineRounds } = normalizeAgentOptions(options.agent);
   const complexModelStrategy = normalizeComplexModelStrategy(
     options.complexModelStrategy ?? options.agent?.complexModelStrategy
@@ -1536,7 +1543,8 @@ async function runSceneAgent(input = {}, options = {}) {
       ? runSceneAgentCommandsUpdateIterative
       : runSceneAgentCommandsUpdate;
     const commandResult = await commandRunner({
-      userPrompt: userRequest,
+      userPrompt: authoringRequest,
+      referencePrompt: userRequest,
       currentSceneJsonString: input.currentSceneJsonString,
       updateContext: input.updateContext || {},
       updateOutputMode,

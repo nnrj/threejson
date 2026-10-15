@@ -33,6 +33,8 @@ test("scene-agent defaults use automatic construction and no engine-owned token 
     maxRefineRounds: 4,
     complexModelStrategy: "auto",
     modelQuality: "balanced",
+    creationQuality: "quick",
+    externalModelsEnabled: true,
     modelBudget: { maxTokens: undefined, maxCost: undefined, maxTimeMs: undefined }
   });
 });

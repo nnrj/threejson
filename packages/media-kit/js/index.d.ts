@@ -12,6 +12,8 @@ export interface MediaOptions {
   baseUrl?: string; fetch?: typeof fetch; canvas?: HTMLCanvasElement | OffscreenCanvas;
   createCanvas?: () => HTMLCanvasElement | OffscreenCanvas;
   runtimeOptions?: Record<string, unknown>;
+  /** Preview only. Export always uses full quality; reduced projects cannot be exported directly. */
+  previewPerformance?: import("threejson/visual-quality").PreviewPerformance;
   preloadNext?: boolean; preloadSeconds?: number;
   writable?: WritableStream<{ type: "write"; position: number; data: Uint8Array }>;
   videoBitrate?: number; audioBitrate?: number; [key: string]: unknown;
@@ -24,7 +26,9 @@ export interface OpenMediaDocument {
 }
 export interface MediaProject {
   canvas: HTMLCanvasElement | OffscreenCanvas; document: MediaDocument; duration: number; width: number; height: number;
+  readonly previewPerformance: "full" | "limited";
   readonly resourceDiagnostics: Array<{ code: string; clipId: string; severity?: string; message?: string; source?: string; objectId?: string }>;
+  observeCurrentFrame(options?: { maxObjects?: number; maxTriangles?: number; maxVertices?: number; occlusion?: boolean }): Promise<Array<import("threejson/visual-quality").QualityObservation & { clipId: string }>>;
   resolveAsset(url: string, context?: { kind?: string }): Promise<string>; renderAt(time: number): Promise<HTMLCanvasElement | OffscreenCanvas>;
   getAudioClips(): Promise<MediaAudioClip[]>; dispose(): void;
 }

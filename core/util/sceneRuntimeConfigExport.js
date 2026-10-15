@@ -1,4 +1,5 @@
 import { JSON_ORIGIN_CONFIG } from "./sceneJsonOrigin.js";
+import { captureSceneAppearance } from "./sceneAppearance.js";
 import { Vector3, Quaternion } from "three";
 import { detectRendererBackend } from "../handler/rendererBackendRegistry.js";
 
@@ -223,6 +224,7 @@ export function applyRuntimeSceneConfigToPayload(payload, target, scene) {
   payload.sceneConfig = payload.sceneConfig && typeof payload.sceneConfig === "object"
     ? payload.sceneConfig
     : {};
+  if (scene) payload.sceneConfig.scene = { ...payload.sceneConfig.scene, ...captureSceneAppearance(scene) };
   if (cameraConfig) {
     payload.sceneConfig.camera = {
       ...cameraConfig,

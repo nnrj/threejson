@@ -12,7 +12,9 @@ export function resolveFrameRange(project, options = {}) {
 }
 async function withProject(input, options, run) {
   abort(options);
-  const provided = typeof input?.renderAt === "function", project = provided ? input : await createMediaProject(input, options);
+  const provided = typeof input?.renderAt === "function";
+  if (provided && input.previewPerformance && input.previewPerformance !== "full") throw Object.assign(new Error("Export requires the source document or a full-quality media project, not a reduced preview."), { code: "PREVIEW_PROJECT_NOT_EXPORTABLE" });
+  const project = provided ? input : await createMediaProject(input, { ...options, previewPerformance: false });
   try { return await run(project); } finally { if (!provided) project.dispose(); }
 }
 export async function renderImage(input, options = {}) {

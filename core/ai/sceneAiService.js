@@ -549,6 +549,7 @@ async function requestChatCompletion({
   turnDeadlineAt,
   onDelta,
   onCompletionMetadata,
+  beforeRequest,
   extraHeaders,
   credentials,
   providerAdapter,
@@ -560,6 +561,13 @@ async function requestChatCompletion({
   thinkingPreference = "disabled",
   taskKind = ""
 }) {
+  // Host-wide budgets cover creation and subsequent quality work. This hook is
+  // local policy, never serialized into the provider request.
+  if (beforeRequest) {
+    const limits = await beforeRequest({ maxTokens, turnDeadlineAt });
+    if (limits?.maxTokens != null) maxTokens = limits.maxTokens;
+    if (limits?.turnDeadlineAt != null) turnDeadlineAt = limits.turnDeadlineAt;
+  }
   const resolvedProvider = resolveProviderConfig(provider, providerAdapter);
   const normalizedProvider = resolvedProvider.provider;
   const providerConfig = resolvedProvider.config;

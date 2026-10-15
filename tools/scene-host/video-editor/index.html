@@ -9,6 +9,7 @@
   <script type="importmap">{"imports":{
     "threejson":"../../../builtins/full.js","threejson/runtime":"../../../core/runtime.js","threejson/ai":"../../../core/ai/index.js",
     "threejson/core":"../../../core/index.js","threejson/runtime-config":"../../../core/runtimeConfig.js",
+    "threejson/visual-quality":"../../../core/visualQuality.js","@threejson/host-kit/js/":"../../../packages/host-kit/js/",
     "threejson/timeline":"../../../core/timeline.js","threejson/session":"../../../core/session.js","threejson/assets":"../../../core/assets.js","threejson/archive":"../../../core/archive/index.js",
     "@threejson/media-kit":"../../../packages/media-kit/js/index.js","@threejson/audio-kit":"../../../packages/audio-kit/js/index.js","@threejson/audio-kit/models":"../../../packages/audio-kit/js/models.js",
     "@threejson/host-kit/js/mediaStudio.js":"../../../packages/host-kit/js/mediaStudio.js",
@@ -57,7 +58,7 @@
     </aside>
     <div class="centerWorkspace">
     <section class="previewPanel" aria-label="视频预览">
-      <div class="previewHeading"><h2>工程预览</h2><button id="outputSettings" class="subtle" title="序列设置">1920 × 1080 · 30 fps</button></div>
+      <div class="previewHeading"><h2>工程预览</h2><select id="previewPerformance" aria-label="预览性能（不影响导出）" title="预览性能，不影响导出"><option value="auto">自动预览</option><option value="full">完整质量</option><option value="balanced">均衡预览</option><option value="economy">节能预览</option></select><button id="outputSettings" class="subtle" title="序列设置">1920 × 1080 · 30 fps</button></div>
       <div class="stage"><canvas id="preview" width="960" height="540" aria-label="视频画面"></canvas><div id="emptyState"><span class="emptyMark">▷</span><h1>从一个镜头开始</h1><p>用 AI 编排故事，也可以导入素材亲手剪辑。</p><button id="emptyDemo">打开示例工程</button></div></div>
       <div class="transport"><button id="play" aria-label="播放">▶</button><input id="seek" type="range" min="0" max="10" step="0.001" value="0" aria-label="播放位置"><output id="timeLabel">00:00 / 00:00</output><label class="check"><input id="previewSound" type="checkbox" checked>声音</label></div>
       <p id="previewStatus" class="hint previewStatus" role="status">导入素材或创建第一个镜头</p>

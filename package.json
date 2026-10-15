@@ -48,6 +48,7 @@
     "./session": "./core/session.js",
     "./query": "./core/query.js",
     "./visual-defaults": "./core/theme/runtimeVisualDefaults.js",
+    "./visual-quality": "./core/visualQuality.js",
     "./archive": "./core/archive/index.js",
     "./csg": "./core/handler/csgBrushOps.js",
     "./builtins": "./builtins/register.js",

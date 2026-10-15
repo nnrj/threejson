@@ -6,6 +6,8 @@
 
 ## 视频编辑器
 
+视频生成质量档位、正式照明检查及弧长运镜见 [生成质量与视觉创作](./visual-quality.md)。生成质量、预览分辨率和最终导出尺寸分别设置。
+
 [视频编辑器](../../tools/scene-host/video-editor/index.html)使用长期存活的 `createMediaProjectSession`。界面、显式应用的 JSON 草稿与 `runVideoAgent` 都通过同一个操作服务提交。官网“工具 → 视频编辑器”和 ThreeBox 视频卡片的编辑按钮可进入；轻量导出窗口仍保留。
 
 ### 工作区与菜单

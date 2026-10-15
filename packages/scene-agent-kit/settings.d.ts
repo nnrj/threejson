@@ -6,6 +6,8 @@ export function resolveSceneAgentOptions(settings?: Record<string, unknown>): {
   maxRefineRounds?: number;
   complexModelStrategy: "auto" | "full-coordinates" | "progressive";
   modelQuality: "draft" | "balanced" | "high" | "custom";
+  creationQuality: "quick" | "standard" | "fine" | "ultimate";
+  externalModelsEnabled: boolean;
   modelBudget: { maxTokens?: number; maxCost?: number; maxTimeMs?: number };
 };
 export function resolveSceneAgentTokenOptions(settings?: Record<string, unknown>): { maxTokens?: number };

@@ -1,6 +1,7 @@
 // Pure, absolute-time signals shared by camera/property tracks and host media tools.
 // Custom evaluators are registered by the application, never evaluated from JSON.
 const evaluators = new Map();
+const pathTables = new WeakMap();
 const fail = (message) => { throw Object.assign(new TypeError(message), { code: "INVALID_TIMELINE_SIGNAL" }); };
 const clamp = (x) => Math.max(0, Math.min(1, x));
 const smooth = (x) => x * x * (3 - 2 * x);
@@ -35,10 +36,55 @@ export function validateTimelineSignal(signal) {
   if (signal.type === "path") {
     if (!Array.isArray(signal.points) || signal.points.length < 2 || !signal.points.every(p => Array.isArray(p) && p.length === 3 && p.every(Number.isFinite))) fail("Path needs at least two finite 3D points.");
     if (signal.interpolation !== undefined && !["linear", "catmullRom"].includes(signal.interpolation)) fail("Unknown path interpolation.");
+    if (signal.parameterization !== undefined && !["parameter", "arcLength"].includes(signal.parameterization)) fail("Unknown path parameterization.");
+    if (signal.easing !== undefined && !["linear", "smoothstep", "smootherstep"].includes(signal.easing)) fail("Unknown path easing.");
+    if (signal.speedCurve !== undefined) {
+      const c = signal.speedCurve;
+      if (!Array.isArray(c) || c.length < 2 || c.length > 64 || !c.every((p, i) => Array.isArray(p) && p.length === 2 && p.every(Number.isFinite) && p[0] >= 0 && p[0] <= 1 && p[1] >= 0 && (!i || p[0] > c[i - 1][0])) || c[0][0] !== 0 || c.at(-1)[0] !== 1 || !c.some(p => p[1] > 0)) fail("Path speedCurve needs increasing [time, nonnegative speed] pairs spanning 0..1.");
+    }
   }
   if (signal.type === "beat" && (!(signal.bpm > 0) || signal.decay !== undefined && !(signal.decay > 0))) fail("Beat needs positive bpm and decay.");
   if (signal.type === "samples" && (!(signal.interval > 0) || !Array.isArray(signal.values) || !signal.values.length || !signal.values.every(Number.isFinite))) fail("Sampled signal needs finite values and a positive interval in seconds.");
   return signal;
+}
+
+function pathPoint(signal, progress) {
+  const points = signal.points, segments = signal.closed ? points.length : points.length - 1;
+  const x = clamp(progress) * segments, i = Math.min(segments - 1, Math.floor(x)), t = x - i;
+  const at = index => points[signal.closed ? (index + points.length) % points.length : Math.max(0, Math.min(points.length - 1, index))];
+  if (signal.interpolation === "linear") return mix(at(i), at(i + 1), t);
+  const [a, b, c, d] = [at(i - 1), at(i), at(i + 1), at(i + 2)];
+  return b.map((v, j) => .5 * ((2 * v) + (-a[j] + c[j]) * t + (2 * a[j] - 5 * v + 4 * c[j] - d[j]) * t * t + (-a[j] + 3 * v - 3 * c[j] + d[j]) * t * t * t));
+}
+
+function pathProgress(signal, time) {
+  let progress = clamp(time / signal.duration);
+  if (signal.speedCurve) {
+    let total = 0, traveled = 0;
+    for (let i = 1; i < signal.speedCurve.length; i++) {
+      const [a, va] = signal.speedCurve[i - 1], [b, vb] = signal.speedCurve[i];
+      const dt = Math.max(0, Math.min(b, progress) - a);
+      total += (va + vb) * .5 * (b - a);
+      traveled += va * dt + .5 * (vb - va) * dt * dt / (b - a);
+    }
+    progress = total > 0 ? traveled / total : progress;
+  } else if (signal.easing === "smoothstep") progress = smooth(progress);
+  else if (signal.easing === "smootherstep") progress = progress ** 3 * (progress * (progress * 6 - 15) + 10);
+  if (signal.parameterization !== "arcLength" || progress <= 0 || progress >= 1) return progress;
+  const key = JSON.stringify([signal.points, signal.closed, signal.interpolation]);
+  let table = pathTables.get(signal);
+  if (table?.key !== key) {
+    const segments = signal.closed ? signal.points.length : signal.points.length - 1;
+    const count = signal.interpolation === "linear" ? segments : Math.min(4096, Math.max(256, segments * 64));
+    const lengths = [0]; let previous = pathPoint(signal, 0);
+    for (let i = 1; i <= count; i++) { const next = pathPoint(signal, i / count); lengths.push(lengths.at(-1) + Math.hypot(...next.map((v, j) => v - previous[j]))); previous = next; }
+    table = { key, lengths, count }; pathTables.set(signal, table);
+  }
+  const { lengths, count } = table, distance = progress * lengths.at(-1);
+  if (!lengths.at(-1)) return 0;
+  let lo = 0, hi = count;
+  while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (lengths[mid] < distance) lo = mid; else hi = mid; }
+  return (lo + (distance - lengths[lo]) / (lengths[hi] - lengths[lo] || 1)) / count;
 }
 
 /** Shared begin/end semantics. No integration or wall-clock dependence. */
@@ -86,12 +132,7 @@ export function sampleTimelineSignal(signal, time) {
       p[axes[plane[0]]] += radius * Math.cos(a); p[axes[plane[1]]] += radius * Math.sin(a); return p;
     }
     case "path": {
-      const points = signal.points, segments = signal.closed ? points.length : points.length - 1;
-      const x = clamp(time / signal.duration) * segments, i = Math.min(segments - 1, Math.floor(x)), t = x - i;
-      const at = (index) => points[signal.closed ? (index + points.length) % points.length : Math.max(0, Math.min(points.length - 1, index))];
-      if (signal.interpolation === "linear") return mix(at(i), at(i + 1), t);
-      const [a, b, c, d] = [at(i - 1), at(i), at(i + 1), at(i + 2)];
-      return b.map((v, j) => .5 * ((2 * v) + (-a[j] + c[j]) * t + (2 * a[j] - 5 * v + 4 * c[j] - d[j]) * t * t + (-a[j] + 3 * v - 3 * c[j] + d[j]) * t * t * t));
+      return pathPoint(signal, pathProgress(signal, time));
     }
     default: fail(`Unknown timeline signal: ${signal.type}`);
   }

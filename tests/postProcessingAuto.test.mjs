@@ -24,3 +24,9 @@ test("an unregistered pass type produces a structured error", () => {
     (error) => error?.code === "E_POST_PROCESS_PASS_UNAVAILABLE"
   );
 });
+
+test("duplicate final color conversions are rejected instead of silently washing out the image", () => {
+  assert.throws(() => deployPassRecordsFromObjectList({ objectList: [
+    { objType: "pass", passType: "output", id: "a" }, { objType: "pass", passType: "output", id: "b" }
+  ] }, {}), error => error.code === "E_DUPLICATE_OUTPUT_PASS");
+});

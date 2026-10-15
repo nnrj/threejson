@@ -15,6 +15,7 @@ export function buildSceneHostRuntimeConfig(sysConfig, hostSettings, baseSceneCo
   const renderLoopConfig = existing.renderLoop && typeof existing.renderLoop === "object" ? existing.renderLoop : {};
   const sceneHints = existing.scene && typeof existing.scene === "object" ? existing.scene : {};
   const cameraBlock = {
+    ...cameraConfig,
     fov: valueOr(cameraConfig.fov, 50),
     near: valueOr(cameraConfig.near, 0.15),
     far: valueOr(cameraConfig.far, 3500)
@@ -30,6 +31,7 @@ export function buildSceneHostRuntimeConfig(sysConfig, hostSettings, baseSceneCo
     scene: { ...sceneHints },
     camera: cameraBlock,
     renderer: {
+      ...rendererConfig,
       antialias: valueOr(rendererConfig.antialias, sysConfig.antialias),
       ratioRate: valueOr(rendererConfig.ratioRate, sysConfig.ratioRate),
       precision: valueOr(rendererConfig.precision, "highp"),
@@ -73,6 +75,7 @@ export function buildSceneHostRuntimeConfig(sysConfig, hostSettings, baseSceneCo
         overrideSceneRenderLoop: hostSettings?.render?.overrideSceneRenderLoop === true
       });
       const loop = {
+        ...renderLoopConfig,
         autoResize: valueOr(renderLoopConfig.autoResize, sysConfig.autoResize),
         firstAutoResize: valueOr(renderLoopConfig.firstAutoResize, sysConfig.firstAutoResize),
         fps: fpsPolicy.fps,

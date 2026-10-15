@@ -1,6 +1,7 @@
 /**
  * Scene AI client entry: generate / update scene JSON (mounts `window.ThreeJsonAI` in the browser).
  */
+export { requestChatCompletion } from "./sceneAiService.js";
 import {
   generateSceneJsonString,
   generateSceneJsonFromImage,
@@ -177,4 +178,5 @@ export {
   buildStructuredTurnEnvelope
 };
 export { createSceneAgentTools, runSceneOperationAgent } from "./sceneOperationAgent.js";
+export { resolveQualityReviewProfile, providerSupportsVision, buildCreationQualityInstructions, runCreationQualityReview } from "./creationQuality.js";
 export { resolveMediaOutputKind, buildVideoAgentInstructions, runVideoAgent } from "./videoAgent.js";

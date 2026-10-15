@@ -154,6 +154,7 @@ export const EDITOR_SETTINGS_DEFAULTS = {
       sceneGenerationMode: "auto",
       complexModelStrategy: "auto",
       modelQuality: "balanced",
+      creationQuality: "quick",
       modelBudget: { maxTokens: 0, maxCost: 0, maxTimeMs: 0 },
       // 0 keeps the engine neutral: max_tokens is omitted and the provider/server decides.
       sceneMaxOutputTokens: 0,
@@ -860,14 +861,14 @@ export const EDITOR_SETTINGS_FIELDS = [
     },
     {
       section: "ai",
-      path: "ai.modelQuality",
+      path: "ai.creationQuality",
       type: "select",
-      label: "复杂模型质量",
+      label: "生成质量",
       options: [
-        { value: "draft", label: "草稿" },
-        { value: "balanced", label: "平衡（推荐）" },
-        { value: "high", label: "高质量" },
-        { value: "custom", label: "自定义" }
+        { value: "quick", label: "快速（默认）" },
+        { value: "standard", label: "标准" },
+        { value: "fine", label: "精细" },
+        { value: "ultimate", label: "极致" }
       ]
     },
     { section: "ai", path: "ai.modelBudget.maxTokens", type: "number", label: "复杂模型 Token 预算（0 = 不限制）", min: 0 },

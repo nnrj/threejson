@@ -15,11 +15,11 @@ export async function runSceneOperationAgent({ service, prompt, protocol = "json
   for (const [name, value] of Object.entries(modelBudget)) if (value != null && (!Number.isFinite(value) || value <= 0)) throw new TypeError(`Invalid explicit budget ${name}.`);
   for (const name of Object.keys(modelBudget)) if (!["maxRequests", "maxTokens", "maxTimeMs"].includes(name)) throw new TypeError(`This operation agent cannot account for budget ${name}; configure provider-side billing or a supported budget instead.`);
   const discovery = service.discover(), catalog = createSceneAgentTools(service), startedAt = Date.now(), turnId = globalThis.crypto.randomUUID();
-  const deadline = modelBudget.maxTimeMs ? startedAt + modelBudget.maxTimeMs : undefined;
+  const deadline = Math.min(modelBudget.maxTimeMs ? startedAt + modelBudget.maxTimeMs : Infinity, transport.turnDeadlineAt || Infinity);
   const receipts = [], steps = [], seen = new Set(); let requests = 0, tokens = 0;
   const controller = new AbortController(), abort = () => controller.abort(signal.reason);
   if (signal?.aborted) abort(); else signal?.addEventListener("abort", abort, { once: true });
-  const timer = deadline ? setTimeout(() => controller.abort(Object.assign(new Error("Explicit time budget exhausted."), { code: "AI_BUDGET_EXCEEDED" })), modelBudget.maxTimeMs) : null;
+  const timer = Number.isFinite(deadline) ? setTimeout(() => controller.abort(Object.assign(new Error("Explicit time budget exhausted."), { code: "AI_BUDGET_EXCEEDED" })), Math.max(0, deadline - Date.now())) : null;
   const messages = [{ role: "system", content: `You operate a versioned ThreeJSON scene through tools, not by guessing runtime state. Start with compact scene.query/scene.observe. Read controls before edits. Use model.inspect for modeledMesh, mesh.getTopology only for editableMesh. No geometry data is needed for object placement. Regular primitives remain appropriate for regular shapes; use control meshes, graphs or surfaces where the shape requires them. Prefer parameter/operator edits and deterministic local refinement over rewriting dense geometry. Use preconditions/revisions and verify scene.check/scene.capture when available. A diagnostic relit view is not evidence that actual scene lighting works. Unchecked is not passed. Never invent resources or claim visual verification without rendering. Each response is one atomic authoring batch; runtime-only actions must be separate. Stop after fulfilling the request, without a fixed quality-round count. ${protocol === "native" ? "Use the supplied functions; finish with a concise result once verified." : `Return only JSONL commands {"op":"...","args":{...}}; after completion return # done. Contracts: ${JSON.stringify(discovery.commands)}`}\nSession: ${JSON.stringify({ sessionId: discovery.sessionId, revision: discovery.revision, capabilities: discovery.capabilities })}` }, { role: "user", content: prompt }];
   const finish = (completed, stopReason, message = "") => ({ agentUsed: true, completed, stopReason, message, receipts, steps, requests, tokens, revision: service.revision });
   if (systemInstructions) messages[0].content = `${systemInstructions}\n${protocol === "native" ? "Use supplied functions. After verified completion return a concise result." : `Return only JSONL commands {"op":"...","args":{...}}; finish with # done. Contracts: ${JSON.stringify(discovery.commands)}`}\nSession: ${JSON.stringify({ sessionId: discovery.sessionId, revision: discovery.revision, capabilities: discovery.capabilities })}`;
@@ -29,8 +29,8 @@ export async function runSceneOperationAgent({ service, prompt, protocol = "json
       if (modelBudget.maxRequests && requests >= modelBudget.maxRequests || modelBudget.maxTokens && tokens >= modelBudget.maxTokens) return finish(false, "budget_exhausted");
       const baseRevision = service.revision;
       onProgress?.({ stage: "reasoning", requests, revision: baseRevision });
-      const response = await (request || requestChatCompletion)({ ...transport, messages, tools: protocol === "native" ? catalog.tools : undefined, returnMessage: true, stream: false, signal: controller.signal, turnDeadlineAt: deadline,
-        ...(modelBudget.maxTokens ? { maxTokens: Math.max(1, modelBudget.maxTokens - tokens) } : {}) });
+      const response = await (request || requestChatCompletion)({ ...transport, messages, tools: protocol === "native" ? catalog.tools : undefined, returnMessage: true, stream: false, signal: controller.signal, turnDeadlineAt: Number.isFinite(deadline) ? deadline : undefined,
+        ...(modelBudget.maxTokens ? { maxTokens: Math.min(transport.maxTokens || Infinity, Math.max(1, modelBudget.maxTokens - tokens)) } : {}) });
       requests++;
       const usage = response.usage?.total_tokens;
       if (modelBudget.maxTokens && !Number.isFinite(usage)) return finish(false, "budget_usage_unavailable");

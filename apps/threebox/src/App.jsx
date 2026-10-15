@@ -29,6 +29,9 @@ import {
 import { resolveSceneAgentOptions, resolveSceneAgentTokenOptions } from "@threejson/scene-agent-kit/settings";
 import { createUnsuccessfulTurnRecord, isUnsuccessfulTurn } from "@threejson/scene-agent-kit/turn-state";
 import { buildStructuredTurnEnvelope } from "threejson/ai";
+import { bindStoredQualityReport, invalidateQualityReport, verifyStoredQualityReport } from "threejson/visual-quality";
+import { formatQualityReport } from "@threejson/host-kit/js/creationQualityPolicy.js";
+import { fetchCreationCapabilities } from "@threejson/host-kit/js/creationTurnPolicy.js";
 import { getAiErrorFeedback } from "@threejson/host-kit/js/aiErrorFeedback.js";
 import { getDocumentOutputKind } from "@threejson/host-kit/js/aiMediaRouting.js";
 import { getMediaProductionSummary, formatMediaProductionSummary, getMediaContinuation } from "@threejson/host-kit/js/mediaProductionFeedback.js";
@@ -53,6 +56,7 @@ import {
 import { formatAgentProgressLabel } from "@threejson/host-kit/js/aiAgentProgressLabels.js";
 import { findChangedTextureObjectIds, runHostSceneTexturePipeline } from "@threejson/host-kit/js/sceneTextureOrchestrator.js";
 import { createTextureProxyUrl } from "@threejson/host-kit/js/textureProviderClient.js";
+import { fetchPersistedModelBlob, isRequiredModelAsset } from "@threejson/host-kit/js/modelAssetResources.js";
 import { getCachedTextureBlob, putCachedTextureBlob, createTextureResourceResolver } from "@threejson/host-kit/js/browserTextureCache.js";
 import { renderMarkdownToSafeHtml } from "./lib/markdown.js";
 import { useAiProvider } from "./useAiProvider.js";
@@ -734,6 +738,7 @@ export function App() {
       getViewportLimit: () => { const general = getThreeBoxSettings()?.general; return general?.multipleActiveViewports ? general.maxActiveViewports : 1; },
       resolveResourceUrl: createTextureResourceResolver({ enabled: () => getThreeBoxSettings()?.ai?.textureLocalCache !== false, dbName: "threejson-threebox-textures" }),
       previewAuxiliaryLights: settings.general.previewAuxiliaryLights,
+      getPreviewPerformance: () => getThreeBoxSettings().general.previewPerformance || "auto",
       showMeshExportWarnings: settings.io.showMeshExportWarnings,
       exportJsonIndent: settings.io.exportJsonIndent,
       selectMeshFormat: openThreeBoxMeshExportDialog,
@@ -758,9 +763,11 @@ export function App() {
         if (assetPolicy !== "tryPack") return { assetPolicy };
         const service = resolveTextureServiceSettings(bundle);
         return {
-          assetPolicy,
+          assetPolicy, isAssetRequired: isRequiredModelAsset,
           fetchExternalUrls: false,
           resolveAsset: async (sourceUrl) => {
+            const model = await fetchPersistedModelBlob(sourceUrl);
+            if (model) return model;
             const cached = await getCachedTextureBlob(sourceUrl, { dbName: "threejson-threebox-textures" });
             if (cached) return cached;
             if (!/^https?:\/\//i.test(String(sourceUrl || ""))) return null;
@@ -860,7 +867,7 @@ export function App() {
         if (shownTurnIdRef.current === turnId) setShownSceneJson(updatedJson);
         await updateStoredTurn(turnId, (turn) => (
           textureJobsByTurnIdRef.current.get(turnId) === controller
-            ? { ...turn, sceneJson: updatedJson }
+            ? { ...turn, sceneJson: updatedJson, qualityReport: invalidateQualityReport(turn.qualityReport) }
             : null
         ));
       }
@@ -934,10 +941,12 @@ export function App() {
             replaySceneJson = null;
           }
           const mediaSummary = getMediaProductionSummary(replaySceneJson);
+          const qualityReport = replaySceneJson ? await verifyStoredQualityReport(turn.qualityReport, JSON.parse(replaySceneJson)) : null;
           replayed.push({
             id: `${turn.id}-a`,
             role: "assistant",
-            text: mediaSummary ? formatMediaProductionSummary(mediaSummary, locale) : turn.sceneTitle || L("场景已生成。", "Scene generated."),
+            text: [mediaSummary ? formatMediaProductionSummary(mediaSummary, locale) : turn.sceneTitle || L("场景已生成。", "Scene generated."), formatQualityReport(qualityReport)].filter(Boolean).join("\n\n"),
+            qualityReport,
             sceneObj,
             sceneJson: replaySceneJson,
             label: turn.sceneTitle || turn.userPrompt || "",
@@ -1142,6 +1151,7 @@ export function App() {
       const builtinOptions = withBuiltinAiProviderAdapter({
         apiKey: key,
         baseUrl: settings.ai.builtinBackendUrl || undefined,
+        capabilities: (await fetchCreationCapabilities(settings.ai.builtinBackendUrl)).provider,
         thinkingPreference: settings.ai.thinkingPreference || "disabled"
       });
       return {
@@ -1157,6 +1167,7 @@ export function App() {
       apiKey: String(active.apiKey).trim(),
       baseUrl: String(active.baseUrl || "").trim() || undefined,
       model: String(active.model || "").trim() || undefined,
+      capabilities: active.capabilities || { inputModalities: ["text"] },
       thinkingPreference: settings.ai.thinkingPreference || "disabled"
     };
     if (options.provider === "deepseek") {
@@ -1318,6 +1329,8 @@ export function App() {
       // Direct generation is the default. This budget is only a runaway guard when core/ai
       // escalates a genuinely complex/output-limited scene to incremental construction.
       const agentOptions = resolveSceneAgentOptions(settings);
+      agentOptions.modelServiceUrl = settings.ai.builtinBackendUrl;
+      agentOptions.modelServiceApiKey = provider.privacyAccepted ? settings.ai.providers.find(p => p.provider === BUILTIN_PROVIDER_TYPE)?.apiKey : "";
       // The assistant card is always appended up-front now (so drafts can stream into it) and
       // finalized in place after the turn — there is no more "append once at the end" path.
       let previewRenderQueue = Promise.resolve();
@@ -1598,7 +1611,7 @@ export function App() {
         });
         const finalSceneCard = await waitForSceneCard(assistantId);
         await finalSceneCard?.finalize(sceneJson, { label: userPrompt });
-        const runtimeSnapshot = await finalSceneCard?.exportSceneJsonString({ label: userPrompt });
+        const runtimeSnapshot = agentResult?.qualityReport ? null : await finalSceneCard?.exportSceneJsonString({ label: userPrompt });
         if (runtimeSnapshot) {
           snapshot = projectSceneAgentJsonString(
             runtimeSnapshot,
@@ -1613,7 +1626,9 @@ export function App() {
         const verifiedAdjustSummary = mediaRecap || (adjusting && settings.ai.includeTurnSummary
           ? L(`已通过 ${stage} 调整了场景。`, `Adjusted the scene via ${stage}.`)
           : "");
-        const useDiffCache = adjusting && settings.io.turnCacheMode === "diff" && stage === "commands" && commands?.length;
+        const qualityReport = await bindStoredQualityReport(agentResult?.qualityReport, sceneJson);
+        finalSceneCard?.setQualityReport?.(qualityReport);
+        const useDiffCache = !qualityReport?.repairs && adjusting && settings.io.turnCacheMode === "diff" && stage === "commands" && commands?.length;
         const turnRecord = await history.appendTurn(conversationId, {
           id: currentTurnId,
           userPrompt,
@@ -1626,6 +1641,7 @@ export function App() {
           patch,
           sceneTitle: "",
           recapSummary: verifiedAdjustSummary,
+          qualityReport,
           refinementIncomplete: agentResult?.completed === false,
           refinementStopReason: agentResult?.completed === false ? agentResult.stopReason : ""
         });
@@ -1642,7 +1658,7 @@ export function App() {
             "Refinement paused; existing results are preserved, but completion has not been confirmed. Continue refining or revise the request.")
         );
         const finalFields = {
-          text: agentProcess ? `${baseText}\n\n${agentProcess}` : baseText,
+          text: [baseText, agentProcess, formatQualityReport(qualityReport)].filter(Boolean).join("\n\n"),
           // The orchestrator already handed us the parsed scene object; the message's own SceneCard
           // renders it into its own live canvas (there is no shared viewport).
           sceneJson: snapshot,
@@ -2265,7 +2281,7 @@ export function App() {
                       options={sceneCardOptions}
                       managed={m.managedSceneCard === true}
                       defer={m.deferSceneCard === true}
-                      onReady={(card) => registerSceneCard(m.id ?? `message-${i}`, card)}
+                      onReady={(card) => { registerSceneCard(m.id ?? `message-${i}`, card); if (m.qualityReport) card?.setQualityReport?.(m.qualityReport); }}
                     />
                   )}
                   {/* Diff collapse (adjust turns) sits above the final-JSON collapse, per the original. */}

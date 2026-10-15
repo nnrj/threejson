@@ -122,6 +122,19 @@ export async function planSceneCommands(document, input, options = {}) {
         const { prepareScenePlacement } = await import("./scenePlacementOperations.js");
         const prepared = await prepareScenePlacement(working, op, args, options);
         apply(prepared.operations); data = prepared.data;
+      } else if (["look.apply", "material.recipe", "camera.frame"].includes(op)) {
+        const { createLightingRecipe, createMaterialRecipe, createFramingCamera } = await import("../theme/visualRecipes.js");
+        if (op === "material.recipe") {
+          const entry = requireObject(working, args.id);
+          const material = createMaterialRecipe(args.preset, args.overrides);
+          if (entry.record.materials?.length || entry.record.materialArr?.length) throw documentError("MATERIAL_SLOT_REQUIRED", "Use material.patch with a slot for multi-material objects; a recipe must not overwrite unrelated slots.");
+          apply([{ op: "object.patch", id: entry.id, patch: { material } }]); data = { id: entry.id, material };
+        } else {
+          const config = working.root.sceneConfig || {};
+          const recipe = op === "look.apply" ? createLightingRecipe(args.preset, args) : { camera: createFramingCamera(args) };
+          const next = mergeFields(config, recipe);
+          apply([{ op: working.root.sceneConfig ? "replace" : "add", path: "/sceneConfig", value: next }]); data = { sceneConfig: recipe };
+        }
       } else if (op.startsWith("model.")) {
         const entry = op === "model.operators" ? null : requireObject(working, args.id);
         const { prepareModelingCommand } = await import("../modeling/commands.js");

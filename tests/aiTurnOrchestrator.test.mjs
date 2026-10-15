@@ -134,11 +134,15 @@ test("runAiAdjustTurn applies automatic rounds through host live-runtime callbac
     });
 
     assert.equal(result.liveApplied, true);
-    assert.equal(result.agentResult.completed, true);
-    assert.equal(result.agentResult.stopReason, "implicit_complete");
+    // Commands converged, but this Node unit test has no actual host renderer.
+    assert.equal(result.agentResult.completed, false);
+    assert.equal(result.agentResult.generationStopReason, "implicit_complete");
+    assert.equal(result.agentResult.stopReason, "quality_inspection_unavailable");
     assert.equal(applied.length, 1);
     assert.equal(result.commands.length, 1);
-    assert.equal(fetchMock.mock.calls.length, 2);
+    // Reference documentation may be retrieved read-only; only completions are
+    // generation calls and must not gain an independent quick-tier review.
+    assert.equal(requestBodies.length, 2);
     assert.ok(requestBodies.every((body) => !Object.hasOwn(body, "max_tokens")));
     assert.ok(requestBodies.every((body) => body.messages[1].content.includes('"floor"')));
     assert.ok(requestBodies.every((body) => !body.messages[1].content.includes('"geometry"')));
@@ -269,7 +273,8 @@ test("runAiAdjustTurn rejects a false command success and falls back to a verifi
 
     assert.equal(result.stage, "json-incremental");
     assert.equal(result.sceneJson.objectList[0].material.color, "#ff0000");
-    assert.equal(result.agentResult.stopReason, "json_patch_fallback");
+    assert.equal(result.agentResult.generationStopReason, "json_patch_fallback");
+    assert.equal(result.qualityReport.structural, "unchecked");
     assert.equal(fetchMock.mock.calls.filter((call) => call.arguments[0].endsWith("/chat/completions")).length, 2);
   } finally {
     globalThis.fetch = originalFetch;

@@ -137,6 +137,7 @@ export async function loadEditorSettingsBundle() {
   const fileDefaults = await fetchEditorSettingsFileDefaults();
   const cached = readEditorSettingsCache();
   const merged = deepMergeEditorSettings(fileDefaults, cached || {});
+  if (!["quick", "standard", "fine", "ultimate"].includes(merged.ai?.creationQuality)) merged.ai.creationQuality = "quick";
   if (!["auto", "direct", "draft_refine"].includes(merged.ai?.sceneGenerationMode)) {
     merged.ai.sceneGenerationMode = "auto";
   }

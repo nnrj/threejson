@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { applyEulerDescriptor } from "../../util/sceneAppearance.js";
 
 const factories = new Map();
 
@@ -126,13 +127,17 @@ function buildCommonParams(descriptor = {}, options = {}) {
   }
   copyDefined(params, descriptor, [], [
     "aoMapIntensity", "lightMapIntensity", "emissiveIntensity", "bumpScale",
-    "displacementScale", "displacementBias", "envMapRotation"
+    "displacementScale", "displacementBias"
   ]);
   return params;
 }
 
 function buildStandardParams(descriptor, options) {
   const params = buildCommonParams(descriptor, options);
+  if (descriptor.envMapRotation !== undefined) {
+    params.envMapRotation = new THREE.Euler();
+    applyEulerDescriptor(params.envMapRotation, descriptor.envMapRotation, "material.envMapRotation");
+  }
   copyDefined(params, descriptor, [], ["metalness", "roughness", "envMapIntensity"]);
   for (const field of ["roughnessMap", "metalnessMap"]) {
     const texture = textureOrNull(descriptor[field]);
@@ -239,6 +244,7 @@ export function createMaterialFromDescriptor(descriptor = {}, options = {}) {
  */
 export function applyMaterialDescriptorProperties(material, descriptor = {}) {
   if (!material?.isMaterial || !descriptor || typeof descriptor !== "object") return material;
+  if (descriptor.envMapRotation !== undefined && material.envMapRotation?.isEuler) applyEulerDescriptor(material.envMapRotation, descriptor.envMapRotation, "material.envMapRotation");
   for (const field of RUNTIME_BOOLEAN_FIELDS) {
     if (hasOwn(descriptor, field) && field in material) material[field] = Boolean(descriptor[field]);
   }

@@ -1,5 +1,6 @@
 import { runSceneOperationAgent } from "./sceneOperationAgent.js";
 import { buildAgentCapabilityIndex } from "./sceneCapabilityIndex.js";
+import { buildCreationQualityInstructions } from "./creationQuality.js";
 
 /** Resolve an explicit host choice or an AI-negotiated choice. Natural language
  * classification belongs to classifyTurnIntent, not a second keyword router.
@@ -13,7 +14,7 @@ export function resolveMediaOutputKind(_prompt, requested = "auto", negotiated) 
 
 export function buildVideoAgentInstructions(options = {}) {
   const capabilities = buildAgentCapabilityIndex({ selectedCapabilityIds: ["timeline", "particles", "particleRaster", "sceneText", "postProcessing", ...(options.selectedCapabilityIds || [])] });
-  return `You direct and produce an editable ThreeJSON film through a versioned media operation service. This is NOT an ordinary single-scene completion task.
+  return `${buildCreationQualityInstructions(options.qualityProfile)}\nYou direct and produce an editable ThreeJSON film through a versioned media operation service. This is NOT an ordinary single-scene completion task.
 Preserve ordinary scene/model capabilities inside each shot. A film has a deliberate opening, development, visual explanations and a conclusion, not a single rotating object stretched over the entire duration.
 Duration: ${options.duration ? `${options.duration} seconds, explicitly requested; honor this.` : "Content-driven. A substantive explainer normally merits 90–180 seconds. A simple visual effect may be shorter; a requested five-minute film must have five minutes of distinct developed content. This is a planning heuristic, NOT a limit."}
 Quality: ${options.quality || "balanced"}. No fixed quality round count; stop when the requested content and visual quality are met. Explicit host budgets/cancel are authoritative.

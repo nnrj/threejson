@@ -167,6 +167,9 @@ export function deployPassRecord(record, ctx, state = {}) {
 export function deployPassRecordsFromObjectList(normalizedPayload, ctx) {
   clearPassRuntimeRegistry(ctx?.scene);
   const records = filterPassRecords(normalizedPayload?.objectList);
+  if (records.filter(record => normalizePassType(record.passType) === "output" && record.enabled !== false).length > 1) {
+    throw Object.assign(new Error("A post-processing chain may contain only one active OutputPass (tone mapping/output color conversion)."), { code: "E_DUPLICATE_OUTPUT_PASS" });
+  }
   records.sort(comparePassOrder);
 
   const state = { renderPassCount: { value: 0 }, deployIndex: 0 };

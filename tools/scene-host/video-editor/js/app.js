@@ -41,6 +41,8 @@ function actionEnabled(id) {
   if (["duplicate", "deleteClip"].includes(id)) return Boolean(item);
   if (["rippleDelete", "editTransition"].includes(id)) return Boolean(clip);
   if (["openShotEditor", "editShotJson"].includes(id)) return Boolean(shotScene(clip));
+  if (id === "repairShot") return !job && Boolean(shotScene(clip));
+  if (id === "inspectPreview") return !job && session.document.timeline.clips.length > 0;
   return true;
 }
 function updateActions() {
@@ -56,6 +58,7 @@ const preview = createEditorPreview({ canvas: $("preview"), resolveDocument: val
   updateEmptyState(time);
   updateActions();
 }, onError: report });
+$("previewPerformance").addEventListener("change", () => preview.setPerformance($("previewPerformance").value).catch(report));
 const timeline = createTimelineView({ getDocument: () => session?.document || emptyProject(), getSelection: () => selection, getTime: () => preview.time, seek: time => preview.seek(Math.min(time, getTimelineDuration(session.document.timeline))), execute: (...args) => execute(...args), select, onError: report });
 
 async function execute(input, options = {}) {
@@ -246,7 +249,8 @@ async function generate() {
     const { createLocalNarrationHost } = await import("../../../../packages/host-kit/js/localSpeech.js");
     narration = await createLocalNarrationHost();
     if (narration.available) adapters.narrate = narration.narrate;
-    const result = await runEditorVideoAgent({ service, prompt, shotId: scoped ? clip.id : undefined, signal: controller.signal, confirmStoryboard: $("storyApproval").checked && !session.document.timeline.clips.length, onProgress: value => log(value.operations?.join("、") || ({ reasoning: "正在编排或细化镜头…", invalid_output: "响应格式无效，正在请求修正…" }[value.stage] || value.stage)) });
+    const result = await runEditorVideoAgent({ service, prompt, shotId: scoped ? clip.id : undefined, signal: controller.signal, confirmStoryboard: $("storyApproval").checked && !session.document.timeline.clips.length, getDocument: () => session.snapshot(), resolveDocument: value => storage.resolveDocument(value), adapters, onProgress: value => log(value.message || value.operations?.join("、") || ({ reasoning: "正在编排或细化镜头…", invalid_output: "响应格式无效，正在请求修正…" }[value.stage] || value.stage)) });
+    if (result.qualityReport) { const { formatQualityReport } = await import("../../shared/js/creationQualityPolicy.js"); log(formatQualityReport(result.qualityReport)); }
     if (result.stopReason === "storyboard_approval_required") {
       log("分镜已保存。请检查下方镜头；确认后再次点击“生成 / 调整视频”继续制作。场景仍为空的分镜不是成片。");
       const shots = session.inspect().shots;
@@ -332,6 +336,19 @@ async function addMusic() {
 }
 bind("addMusic", addMusic); bind("narration", synthesizeNarration);
 bind("aiSettings", async () => { const { editVideoAiSettings } = await import("./agent.js"); await editVideoAiSettings(); }); bind("runAi", generate); bind("cancelJob", () => job?.abort());
+bind("inspectPreview", async () => {
+  const inspection = await preview.inspect();
+  const body = element("div");
+  body.append(element("p", { class: "hint" }, `正式照明 · 当前 ${inspection.time.toFixed(2)}s · 预览 ${inspection.width}×${inspection.height}。以下是局部数值与资源检查，不代表人工视觉验收。`), element("pre", { style: "white-space:pre-wrap;overflow-wrap:anywhere;max-height:50vh;overflow:auto" }, JSON.stringify(inspection, null, 2)));
+  await modal("当前画面诊断", body, [{ label: "关闭", value: "ok" }]);
+});
+bind("repairShot", async () => {
+  const inspection = await preview.inspect();
+  $("aiScope").value = "shot";
+  $("aiPrompt").value = `检查并修正选中镜头的形体、主体可见性、照明、材质和构图，保留已有主题、时长、字幕和声音。尊重原有夜景/剪影意图，不添加地板。当前帧数值观察（并非图像验收）：${JSON.stringify(inspection)}`;
+  workbench?.setMode?.("video");
+  await generate();
+});
 let jsonOriginal = "";
 function jsonStatus(text, state = "") {
   $("jsonStatus").textContent = text; $("jsonStatus").dataset.state = state;

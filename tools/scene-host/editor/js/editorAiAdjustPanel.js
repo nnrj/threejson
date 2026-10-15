@@ -7,6 +7,8 @@ import {
   parseSceneJsonString
 } from "threejson/ai";
 import { sceneToStandardJsonSimple } from "threejson";
+import { invalidateQualityReport } from "threejson/visual-quality";
+import { formatQualityReport } from "../../shared/js/creationQualityPolicy.js";
 import {
   isProviderVisionCapable,
   resolveAiAdjustContextPayload,
@@ -472,7 +474,7 @@ export function createEditorAiAdjustPanel(host) {
         host.showMessage(resultText, "warning");
       }
 
-      await runEditorSceneTexturePipeline(host, {
+      const textures = await runEditorSceneTexturePipeline(host, {
         prompt: effectivePrompt,
         providerOptions,
         previousScene: targetSceneJson,
@@ -482,6 +484,8 @@ export function createEditorAiAdjustPanel(host) {
           historyCtl.scrollToBottom();
         }
       });
+      const report = textures?.assignments?.length ? invalidateQualityReport(result.qualityReport, "纹理已更新，调整阶段的检查已失效；请复查最终画面") : result.qualityReport;
+      if (report) resultText += `\n\n${formatQualityReport(report)}`;
 
       historyCtl.updateMessage(assistantBody, resultText);
       void historyCtl.persistTurn("assistant", resultText);
