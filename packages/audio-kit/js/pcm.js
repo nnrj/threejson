@@ -43,7 +43,10 @@ export function createPcmMixer(clips, options = {}) {
     // frame count. A duration measured before encoding can differ by one sample.
     // Tolerate only that quantization, not genuinely missing/truncated audio.
     const tolerance = Math.max(1e-6, 1 / (source.sampleRate * (clip.rate ?? 1)));
-    if (clip.duration > available + tolerance && !clip.loop && clip.padSilence !== true) throw new Error(`Audio clip ${clip.id || ""} exceeds source duration; enable loop or explicit silence padding.`);
+    if (clip.duration > available + tolerance && !clip.loop && clip.padSilence !== true) throw Object.assign(new Error(`Audio clip ${clip.id || ""} exceeds source duration; enable loop or explicit silence padding.`), {
+      code: "AUDIO_CLIP_EXCEEDS_SOURCE", clipId: clip.id, availableDuration: available,
+      requestedDuration: clip.duration, narration: clip.narration === true || clip.recipe?.kind === "tts"
+    });
   }
   return {
     sampleRate, channels,

@@ -141,11 +141,21 @@ const portable = await packMediaDocument(scene, { assets: { 'voice.wav': wavByte
 
 返回真实 MIME 的 blob。也可传 Mediabunny target / writable（支持文件偏移和背压）流式输出。编码交错提交音视频，不保留整段未压缩帧；默认电子配乐按块合成。GIF 优先 Worker，不支持模块解析时通过 onWarning 报告主线程后备；gifModuleUrl 可显式指定编码模块。原 MediaRecorder 保留为实时录制用途。
 
+文件保存优先用 `openWritable: () => fileHandle.createWritable()` 延迟打开写入流；与 `writable`、自定义 `target` 三选一。视频先检查编码器、音轨和导出范围内各镜头首帧，再编码。文件流由 media-kit 在封装成功且非空后提交；失败/取消调用 abort，不把编码器的清理 close 当作保存成功。标准文件系统流可保留原有文件；新建文件的选择器仍可能留下空占位文件，不会因此显示“已导出”。自定义 target 的提交/回滚由调用方负责。流式返回 `blob:null`、`bytesWritten`；空输出报 `MEDIA_EMPTY_OUTPUT`。
+
+`onProgress.stage` 区分 `preparing`、`audio`、`rendering`、`encoding`、`finalizing`、`saving`（文件流）和 `complete`；只有 encoding 的 progress/帧数表示逐帧进度，编码 100% 尚不代表写入完成。镜头准备/渲染错误包含 `clipId` 和原始 cause。`production.state:"paused"` 不禁止导出可执行草稿；首帧检查不是全片视觉验收，也不把草稿标为完成。
+
 导出前等待纹理、文字与视频帧就绪；CORS、解码或上下文失败会报错。隐藏场景禁用音频 autoplay，只有显式 timeline.audio 进入离线混音，不推测交互音效/空间声场。DOM/CSS 叠加不进入 WebGL 输出，请使用场景文字或 captions。屏幕字幕字体由浏览器提供，需要跨设备一致时由宿主预加载。
 
 ## 音频与本地模型
 
 timeline.audio 使用 id、url 或 recipe，以及 start/duration/sourceStart/rate/loop/gain/pan/fadeIn/fadeOut。rate 同时改变速度和音高。超出源音频时长需要 loop 或 padSilence:true；长于作品时需延长时间线，或明确 end/trimAudio 裁剪。
+
+音频不足报 `AUDIO_CLIP_EXCEEDS_SOURCE`，带 `clipId`、`availableDuration`、`requestedDuration`。共享导出窗口提供明确的循环配乐/末尾补静音选择，不自动猜测。SDK 可传 `audioClipOverrides:{ music:{loop:true} }`（或 padSilence:true）；仅作用于本次混音，不改源 JSON，预览与导出应使用相同选项。旁白不提供循环按钮。
+
+旧式 `objType:"points"` 用 `bounds`/`positions` 控制分布，`material.size` 控制点大小，`material.color` 控制颜色；顶层 size/color 仅是简写后备，材质字段优先，未设置时仍保留历史默认。不要把 Particle V2 的 source/particle/render 字段混入 points。过大的点会以方块遮住文字，不等于汉字编码损坏；真正缺字应检查 SDF 字体覆盖及资源诊断。字体准备失败仍采用现有的本地 canvas 文字后备，不把整段中文强制改成位图。
+
+组内 SDF 文字从部署暂存容器同步移入正式父对象不视为销毁；真正的 dispose/移除/取消仍终止等待。资源内部产生的 AbortError 不等于用户取消：没有调用方取消信号时，媒体运行时会报告对应镜头失败。
 
 ```json
 { "id": "music", "recipe": { "kind": "score", "score": {

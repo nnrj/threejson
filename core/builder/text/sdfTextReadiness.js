@@ -12,7 +12,7 @@ export function waitForSdfText(text, { signals = [], root = text, timeoutMs = DE
     const cleanup = () => {
       clearTimeout(timer);
       for (const signal of active) signal.removeEventListener("abort", onAbort);
-      root.removeEventListener?.("removed", onDispose);
+      root.removeEventListener?.("removed", onRemoved);
       if (text.dispose === dispose) text.dispose = originalDispose;
     };
     const finish = (error) => {
@@ -22,12 +22,15 @@ export function waitForSdfText(text, { signals = [], root = text, timeoutMs = DE
     };
     const onAbort = () => finish(active.find(signal => signal.aborted)?.reason || new DOMException("Text preparation cancelled.", "AbortError"));
     const onDispose = () => finish(new DOMException("Text disposed during preparation.", "AbortError"));
+    // THREE.Object3D.add first removes an object from its previous parent. A
+    // synchronous move out of a deployment holder is not a destroyed text mesh.
+    const onRemoved = () => queueMicrotask(() => { if (!root.parent) onDispose(); });
     if (active.some(signal => signal.aborted)) { onAbort(); return; }
     for (const signal of active) signal.addEventListener("abort", onAbort, { once: true });
     // Troika itself disposes/reallocates geometry during a successful sync;
     // only object removal/disposal, not geometry's event, means cancellation.
     text.dispose = dispose;
-    root.addEventListener?.("removed", onDispose);
+    root.addEventListener?.("removed", onRemoved);
     // A host may extend the deadline, or opt out with 0/Infinity. This is an
     // I/O liveness policy, not a limit on text length or scene complexity.
     if (Number.isFinite(timeoutMs) && timeoutMs > 0) timer = setTimeout(() => finish(Object.assign(

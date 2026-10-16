@@ -140,3 +140,27 @@ test("already-generated inline narration packs as deduplicated binary, without i
     assert.equal(document.timeline.audio[0].url, url);
   } finally { opened.dispose(); }
 });
+
+test("scene preparation failures identify the composition shot without masking abort", async () => {
+  const document = { documentType: "composition", compositionVersion: 1, timeline: { clips: [{ id: "broken-shot", duration: 1, source: { objectList: [] } }] } };
+  for (const error of [new Error("Timeline target not found: actor"), new DOMException("cancelled", "AbortError")]) {
+    const controller = new AbortController();
+    const project = await createMediaProject(document, {
+      width: 32, height: 32, signal: controller.signal, createCanvas: () => ({ getContext: () => ({ clearRect() {}, fillRect() {} }) }),
+      createScene: async () => { if (error.name === "AbortError") controller.abort(); throw error; }
+    });
+    try {
+      await assert.rejects(project.renderAt(0), result => error.name === "AbortError" ? result === error :
+        result.clipId === "broken-shot" && result.cause === error && /actor/.test(result.message));
+    } finally { project.dispose(); }
+  }
+});
+
+test("unexpected resource AbortError is reported as a shot failure, not user cancellation", async () => {
+  const project = await createMediaProject({ objectList: [], timeline: { duration: 1 } }, {
+    width: 32, height: 32, createCanvas: () => ({ getContext: () => ({ clearRect() {}, fillRect() {} }) }),
+    createScene: async () => { throw new DOMException("Text disposed during preparation.", "AbortError"); }
+  });
+  try { await assert.rejects(project.renderAt(0), error => error.name === "Error" && error.clipId === "$scene" && error.cause.name === "AbortError"); }
+  finally { project.dispose(); }
+});

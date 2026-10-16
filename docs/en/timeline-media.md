@@ -110,6 +110,16 @@ MP4 uses H.264/AAC; WebM VP9/Opus, subject to actual browser codecs. Unsupported
 
 Pass a Mediabunny target or position-aware writable for streaming output instead of a final in-memory Blob. Audio/video submission is interleaved with backpressure; default scores synthesize bounded blocks. GIF uses a Worker when module resolution permits, otherwise reports a main-thread fallback through onWarning. gifModuleUrl can point to an installed codec. Existing MediaRecorder stays a separate real-time tool.
 
+Prefer `openWritable: () => fileHandle.createWritable()` to defer opening the destination until codecs, audio and the first frame of each included shot pass preflight. Choose only one of openWritable, writable or target. media-kit commits a writable only after successful nonempty finalization, and aborts on failure/cancellation rather than treating muxer cleanup as a commit. Standard filesystem streams preserve existing files on abort; a picker may still leave a new empty placeholder, which is not reported as success. Custom targets own their commit/rollback. Streaming returns `blob:null` and `bytesWritten`; empty output raises `MEDIA_EMPTY_OUTPUT`.
+
+Progress stages are preparing, audio, rendering, encoding, finalizing, saving (file stream) and complete. Encoding progress/frame counts are not an overall completion percentage: 100% encoded still needs finalization/commit. Shot preparation/render errors include clipId and the original cause. Executable `production.state:"paused"` drafts remain exportable; first-frame preflight is not whole-film visual approval and does not mark production complete.
+
+An undersized audio source raises `AUDIO_CLIP_EXCEEDS_SOURCE` with clipId, availableDuration and requestedDuration. The shared dialog offers explicit music looping or silence padding; it never guesses. SDK callers can pass `audioClipOverrides:{music:{loop:true}}` (or padSilence:true) consistently to preview/export without changing the document. Narration does not offer looping.
+
+Legacy `objType:"points"` uses bounds/positions and material.size/material.color, with top-level size/color accepted only as fallbacks; explicit material settings and historical defaults retain priority. Do not mix Particle V2 source/particle/render fields into points. Oversized square points may obscure text without any encoding failure. Check font coverage/resource diagnostics for actual missing glyphs; existing failed-font canvas fallback remains in place without forcing all Chinese SDF text into bitmaps.
+
+Synchronous reparenting of pending SDF text from a deployment holder is not disposal. Actual removal, disposal and cancellation still stop waiting. An internal resource AbortError without a cancelled caller signal is reported as a shot failure, not silently treated as user cancellation.
+
 Used textures, fonts and video frames must be ready before capture. CORS/decode/context failures are reported. Hidden scene autoplay is disabled; only explicit timeline.audio enters offline mixing, not inferred spatial/interactive sounds. DOM overlays are excluded; use scene text or captions. Host-preloaded fonts are needed for identical glyphs across machines.
 
 ## Audio and optional models

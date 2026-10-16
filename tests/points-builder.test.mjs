@@ -4,7 +4,8 @@ import {
   buildPositionsFloat32Array,
   buildPositionsFromExplicitArray,
   resolvePointsCount,
-  resolvePointsBlending
+  resolvePointsBlending,
+  buildPointsMaterial
 } from "../core/builder/pointsBuilder.js";
 
 test("resolvePointsCount prefers explicit positions length", () => {
@@ -54,4 +55,25 @@ test("resolvePointsBlending maps additive", async () => {
   const THREE = await import("three");
   assert.equal(resolvePointsBlending("additive"), THREE.AdditiveBlending);
   assert.equal(resolvePointsBlending(""), THREE.NormalBlending);
+});
+
+test("compact point size/color do not turn tiny stars into default-size squares", () => {
+  const record = { size: .09, color: "#cfe2ff", material: { transparent: true, opacity: .9 } };
+  const before = JSON.stringify(record), material = buildPointsMaterial(record);
+  try {
+    assert.equal(material.size, .09);
+    assert.equal(material.color.getHexString(), "cfe2ff");
+    assert.equal(material.opacity, .9);
+    assert.equal(JSON.stringify(record), before);
+  } finally { material.dispose(); }
+});
+
+test("explicit point material settings and legacy defaults retain priority", () => {
+  const explicit = buildPointsMaterial({ size: 3, color: "red", material: { size: 0, color: "blue" } });
+  const legacy = buildPointsMaterial({});
+  try {
+    assert.equal(explicit.size, 0);
+    assert.equal(explicit.color.getHexString(), "0000ff");
+    assert.equal(legacy.size, 4);
+  } finally { explicit.dispose(); legacy.dispose(); }
 });

@@ -2,12 +2,14 @@ import type { Timeline } from "threejson/timeline";
 import type { BlockRenderer, AudioRecipe, Pcm } from "@threejson/audio-kit";
 export interface MediaDocument { documentType?: "scene" | "composition"; compositionVersion?: 1; timeline?: Timeline; output?: { width?: number; height?: number; fps?: number; background?: string }; [key: string]: unknown }
 export type MediaInput = MediaDocument | string | Blob | ArrayBuffer | Uint8Array;
-export interface MediaProgress { stage: string; frame: number; frames: number; progress: number; time?: number }
+export interface MediaProgress { stage: string; frame: number; frames: number; progress: number; time?: number; bytesWritten?: number }
 export interface MediaAudioClip { id: string; url?: string; pcm?: Pcm; recipe?: AudioRecipe; start?: number; duration?: number; [key: string]: unknown }
 export interface MediaOptions {
   width?: number; height?: number; fps?: number; duration?: number; start?: number; end?: number; time?: number; alpha?: boolean;
   format?: "mp4" | "webm"; type?: "image/png" | "image/jpeg" | "image/webp"; quality?: number; repeat?: number;
   audio?: boolean; sampleRate?: number; trimAudio?: boolean; audioClips?: MediaAudioClip[];
+  /** Explicit, export-only choices. Does not change the source document. */
+  audioClipOverrides?: Record<string, { loop?: boolean; padSilence?: boolean }>;
   signal?: AbortSignal; onProgress?: (progress: MediaProgress) => void;
   baseUrl?: string; fetch?: typeof fetch; canvas?: HTMLCanvasElement | OffscreenCanvas;
   createCanvas?: () => HTMLCanvasElement | OffscreenCanvas;
@@ -16,6 +18,8 @@ export interface MediaOptions {
   previewPerformance?: import("threejson/visual-quality").PreviewPerformance;
   preloadNext?: boolean; preloadSeconds?: number;
   writable?: WritableStream<{ type: "write"; position: number; data: Uint8Array }>;
+  /** Open after preflight. Mutually exclusive with writable and target. */
+  openWritable?: () => WritableStream<{ type: "write"; position: number; data: Uint8Array }> | Promise<WritableStream<{ type: "write"; position: number; data: Uint8Array }>>;
   videoBitrate?: number; audioBitrate?: number; [key: string]: unknown;
 }
 export interface OpenMediaDocument {
@@ -32,7 +36,7 @@ export interface MediaProject {
   resolveAsset(url: string, context?: { kind?: string }): Promise<string>; renderAt(time: number): Promise<HTMLCanvasElement | OffscreenCanvas>;
   getAudioClips(): Promise<MediaAudioClip[]>; dispose(): void;
 }
-export interface MediaResult { blob: Blob | null; mimeType: string; width?: number; height?: number; duration?: number; frames?: number; time?: number; audio?: boolean }
+export interface MediaResult { blob: Blob | null; mimeType: string; width?: number; height?: number; duration?: number; frames?: number; time?: number; audio?: boolean; bytesWritten?: number }
 export function validateMediaDocument(input: MediaDocument): MediaDocument;
 export function openMediaDocument(input: MediaInput, options?: MediaOptions): Promise<OpenMediaDocument>;
 export function packMediaDocument(document: MediaDocument, options?: { assets?: Record<string, Blob | ArrayBuffer | Uint8Array>; outputType?: "bytes" }): Promise<Uint8Array>;

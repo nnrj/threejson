@@ -313,15 +313,18 @@ export function resolvePointsBlending(mode) {
 export function buildPointsMaterial(record, map) {
   const materialInfo = record?.material && typeof record.material === "object" ? record.material : {};
   const params = {
-    size: Number(valueOr(materialInfo.size, 4)),
+    // Accept the compact authoring form without overriding explicit material
+    // settings or changing the historical default for existing point clouds.
+    size: Number(valueOr(materialInfo.size, valueOr(record?.size, 4))),
     sizeAttenuation: valueOr(materialInfo.sizeAttenuation, true) !== false,
     transparent: Boolean(valueOr(materialInfo.transparent, Boolean(map))),
     opacity: Number(valueOr(materialInfo.opacity, 1)),
     depthWrite: valueOr(materialInfo.depthWrite, !materialInfo.transparent && !map),
     blending: resolvePointsBlending(materialInfo.blending)
   };
-  if (hasValue(materialInfo.color)) {
-    params.color = new THREE.Color(materialInfo.color);
+  const color = valueOr(materialInfo.color, record?.color);
+  if (hasValue(color)) {
+    params.color = new THREE.Color(color);
   }
   if (map) {
     params.map = map;

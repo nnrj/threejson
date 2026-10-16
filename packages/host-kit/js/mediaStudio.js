@@ -6,7 +6,7 @@ export const packMediaDocument = async (...args) => (await loadMediaKit()).packM
 export const createLocalNarrationHost = async () => (await import("./localSpeech.js")).createLocalNarrationHost();
 export const createMediaAudioPlayback = async (...args) => (await import("@threejson/audio-kit")).createPcmPlayback(...args);
 const documentDuration = (source) => (source.timeline?.duration ?? Math.max(0, ...(source.timeline?.clips || []).map(c => (c.start || 0) + c.duration), ...(source.timeline?.tracks || []).flatMap(t => (t.keyframes || []).map(k => k.time)))) || 8;
-const save = (blob, name) => { const url=URL.createObjectURL(blob), a=document.createElement("a"); a.href=url; a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000); };
+const save = (blob, name) => { if (!blob?.size) throw Object.assign(new Error("Empty media output; no file was downloaded."), {code:"MEDIA_EMPTY_OUTPUT"}); const url=URL.createObjectURL(blob), a=document.createElement("a"); a.href=url; a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000); };
 
 /** Shared native/React media dialog. Preview/export own an isolated runtime. */
 export async function openSceneMediaStudio(source, options = {}) {
@@ -35,6 +35,7 @@ export async function openSceneMediaStudio(source, options = {}) {
     .threejsonMediaStudio canvas{width:100%;height:auto;max-height:35dvh;object-fit:contain;display:block;background:#080b13;aspect-ratio:16/9;border-radius:8px;margin-bottom:10px}.threejsonMediaStudio input[type=range]{flex:1;min-width:80px;padding:0}
     .threejsonMediaStudio .mediaStatus{min-height:24px;overflow-wrap:anywhere}.threejsonMediaStudio details{margin:12px 0}.threejsonMediaStudio summary{cursor:pointer}.threejsonMediaStudio p{font-size:12px;overflow-wrap:anywhere;opacity:.85}.threejsonMediaStudio textarea{width:100%;resize:vertical}
     .threejsonMediaStudio progress{width:100%;accent-color:#5679d5}.threejsonMediaStudio footer{position:sticky;bottom:-18px;background:var(--panel);padding:12px 0 4px;border-top:1px solid var(--line);z-index:1}.threejsonMediaStudio footer .mediaRow{justify-content:flex-end;margin:8px 0 0}
+    .threejsonMediaStudio .mediaStatus[data-state=error]{border-left:3px solid #e97979;padding-left:8px}.threejsonMediaStudio .mediaAudioRepair{justify-content:flex-start!important}
     @media(max-width:520px){.threejsonMediaStudio{padding:12px}.threejsonMediaStudio label{flex-basis:100%}.threejsonMediaStudio .mediaChoices label:first-child{flex:1 1 100%}.threejsonMediaStudio button,.threejsonMediaStudio select{min-height:42px}.threejsonMediaStudio footer{bottom:-12px}.threejsonMediaStudio canvas{max-height:28dvh}}
   `;
   dialog.append(style);
@@ -76,27 +77,44 @@ export async function openSceneMediaStudio(source, options = {}) {
   models.addEventListener("toggle",async()=>{if(!models.open||models.dataset.loaded)return;models.dataset.loaded="yes";try{const {createAudioModelPanel}=await import("./audioModelPanel.js");if(!closed){modelPanel=createAudioModelPanel(models,{text,catalog:options.modelCatalog});modelPanel.setDisabled(busy);}}catch(error){delete models.dataset.loaded;fail(error);}});
   const footer=node("footer"),progress=node("progress",undefined,footer);progress.max=1;progress.value=0;progress.hidden=true;
   const status=node("div",text("准备场景…","Preparing scene…"),footer);status.className="mediaStatus";status.setAttribute("role","status");status.setAttribute("aria-live","polite");
+  const audioRepair=row(footer);audioRepair.classList.add("mediaAudioRepair");audioRepair.hidden=true;
+  const loopAudio=node("button",text("循环此配乐","Loop this music"),audioRepair),padAudio=node("button",text("末尾补静音","Pad with silence"),audioRepair);
   const actions=row(footer),exportButton=node("button",text("导出","Export"),actions),cancel=node("button",text("取消","Cancel"),actions);cancel.hidden=true;exportButton.className="primary";
   const lifecycle=new AbortController();let exportController, project, kit, playing=false, frame, closed=false, audioPlayback, playbackContext, mixer, previewNarrationClips, previewAudioError, startTime=0, offset=0, busy=false, ready=false, paintQueue=Promise.resolve(), paintId=0, narrationSummary={cues:0};
+  const audioClipOverrides=structuredClone(options.exportOptions?.audioClipOverrides||{});let audioRepairError;
   play.disabled=true;exportButton.disabled=true;
   const stopAudio=()=>audioPlayback?.pause();
   const pause=()=>{playing=false;cancelAnimationFrame(frame);stopAudio();play.textContent=text("播放","Play");};
   const closeStudio=()=>{if(closed)return;closed=true;pause();lifecycle.abort();exportController?.abort();narrationPanel?.dispose();project?.dispose();audioPlayback?.dispose();void playbackContext?.close();modelPanel?.dispose();if(localAudioUrl)URL.revokeObjectURL(localAudioUrl);dialog.close();dialog.remove();if(currentClose===closeStudio)currentClose=null;previousFocus?.focus?.();};
   currentClose=closeStudio;close.onclick=closeStudio;dialog.addEventListener("cancel",event=>{event.preventDefault();closeStudio();});
   document.body.append(dialog);dialog.showModal();close.focus();
-  const fail=(error)=>{if(!closed&&error?.name!=="AbortError")status.textContent=String(error.message||error);};
+  const fail=(error)=>{
+    if(closed||error?.name==="AbortError")return;
+    status.dataset.state="error";status.setAttribute("role","alert");
+    audioRepairError=error.code==="AUDIO_CLIP_EXCEEDS_SOURCE"&&error.clipId?error:null;
+    audioRepair.hidden=!audioRepairError;loopAudio.hidden=error.narration===true;
+    status.textContent=audioRepairError?text(`音轨“${error.clipId}”只有 ${error.availableDuration.toFixed(2)} 秒，却要求播放 ${error.requestedDuration.toFixed(2)} 秒。请选择处理方式后再导出；只用于本次预览/导出，不修改原始 JSON。`,`Audio “${error.clipId}” has ${error.availableDuration.toFixed(2)}s but requests ${error.requestedDuration.toFixed(2)}s. Choose how to handle it, then export. The original JSON is unchanged.`):text("操作失败：","Failed: ")+String(error.message||error);
+  };
+  const clearError=()=>{delete status.dataset.state;status.setAttribute("role","status");audioRepair.hidden=true;audioRepairError=null;};
+  const repairAudio=async(mode)=>{
+    if(busy||!audioRepairError)return;
+    audioClipOverrides[audioRepairError.clipId]={loop:mode==="loop",padSilence:mode==="silence"};
+    try{await preparePreview();}catch(error){fail(error);}
+  };
+  loopAudio.onclick=()=>void repairAudio("loop");padAudio.onclick=()=>void repairAudio("silence");
   const isVideo=()=>["mp4","webm"].includes(format.value);
   const extraAudio=()=>[...(localAudioUrl?[{id:"$imported-audio",url:localAudioUrl}]:[]),...(audio.value==="auto"?narrationPanel?.getAudioClips()||[]:[])];
   const updateAudioHint=()=>{
     if(!isVideo())audioHint.textContent=text("此格式不含声音。","This format has no audio.");
     else if(audio.value==="mute")audioHint.textContent=text("将导出无声视频。","The exported video will be silent.");
+    else if(previewAudioError)audioHint.textContent=text("音轨尚未就绪，请处理下方错误后导出。","Audio is not ready. Resolve the error below before exporting.");
     else if(audio.value==="existing")audioHint.textContent=mixer?text("保留已有配乐和旁白，不自动朗读字幕。","Keep existing music and speech; do not read captions."):text("当前没有原有音轨，此选项将导出无声视频。","No existing audio: this option will export a silent video.");
     else if(narrationSummary.cues)audioHint.textContent=narrationSummary.prepared?text(`已准备 ${narrationSummary.cues} 段旁白，导出时保留原有音轨。`,`${narrationSummary.cues} narration cues ready; existing audio will be kept.`):text(`将自动朗读 ${narrationSummary.cues} 段字幕/台词。`,`Automatically read ${narrationSummary.cues} captions/narration cues. `)+(options.createNarrationHost?text("播放或导出时自动调用宿主配音引擎。","Play/export automatically uses the host speech engine."):text("首次播放或导出需下载约 71 MiB 配音资源，之后使用缓存，无需安装或手动生成。","First play/export downloads about 71 MiB of cached speech resources. No installation or separate generation step."));
     else audioHint.textContent=narrationSummary.skipped?text("已有旁白，不重复合成；保留原有音轨。","Narration already exists; keep audio without doubling it."):mixer?text("未发现可朗读文本，保留原有音轨。","No narration text found; keep existing audio."):text("未发现字幕、台词或音轨，导出将无声；可在更多设置中填写旁白或导入配音。","No captions, narration or audio found; export will be silent. Add narration text or import audio in More settings.");
   };
   const syncBusy=()=>{
     play.disabled=exportButton.disabled=busy||!ready;
-    for(const input of [openFile,duration,width,height,fps,format,audio,audioFileButton,seek])input.disabled=busy||!ready;
+    for(const input of [openFile,duration,width,height,fps,format,audio,audioFileButton,seek,loopAudio,padAudio])input.disabled=busy||!ready;
     modelPanel?.setDisabled(busy);
     narrationPanel?.setState({ready,busy:busy||!ready});
   };
@@ -107,7 +125,7 @@ export async function openSceneMediaStudio(source, options = {}) {
     if(playing&&!closed)await audioPlayback.play(at,{duration:Number(duration.value)});
   }
   const tick=async()=>{if(!playing||closed)return;const value=Math.min(Number(duration.value),audioPlayback?.playing?audioPlayback.time:offset+(performance.now()-startTime)/1000);try{await paint(value);}catch(error){pause();fail(error);return;}if(value>=Number(duration.value)){pause();return;}if(playing&&!closed)frame=requestAnimationFrame(tick);};
-  const beginOperation=()=>{exportController=new AbortController();busy=true;syncBusy();cancel.hidden=false;progress.hidden=false;progress.removeAttribute("value");return AbortSignal.any([exportController.signal,lifecycle.signal]);};
+  const beginOperation=()=>{clearError();exportController=new AbortController();busy=true;syncBusy();cancel.hidden=false;progress.hidden=false;progress.removeAttribute("value");return AbortSignal.any([exportController.signal,lifecycle.signal]);};
   const finishOperation=()=>{busy=false;if(!closed){syncBusy();cancel.hidden=true;progress.hidden=true;}};
   const narrationProgress=value=>{
     if(closed)return;
@@ -122,6 +140,7 @@ export async function openSceneMediaStudio(source, options = {}) {
   const prepareNarration=signal=>isVideo()&&audio.value==="auto"?narrationPanel.prepare({signal,onProgress:narrationProgress}):Promise.resolve();
   play.onclick=async()=>{
     if(!ready||busy)return;if(playing){pause();return;}
+    if(isVideo()&&audio.value!=="mute"&&previewAudioError){fail(previewAudioError);return;}
     const at=Number(seek.value)>=Number(duration.value)?0:Number(seek.value),signal=beginOperation();
     try{
       // Resume in the click gesture, before potentially lengthy speech synthesis.
@@ -136,7 +155,7 @@ export async function openSceneMediaStudio(source, options = {}) {
       if(isVideo()&&audio.value!=="mute"&&(!mixer||audio.value==="auto"&&currentClips!==previewNarrationClips&&(currentClips.length||previewNarrationClips?.length))){
         audioPlayback?.dispose();audioPlayback=null;mixer=null;
         const clips=[...(await project.getAudioClips()).filter(clip=>clip.id!=="$imported-audio"&&!clip.id?.startsWith("$export-narration-")),...extraAudio()];
-        mixer=await kit.prepareProjectAudio({resolveAsset:project.resolveAsset,getAudioClips:async()=>clips},{signal});
+        mixer=await kit.prepareProjectAudio({resolveAsset:project.resolveAsset,getAudioClips:async()=>clips},{signal,audioClipOverrides});
         previewNarrationClips=currentClips;previewAudioError=null;
         listing.replaceChildren();for(const clip of[...(project.document.timeline?.clips||[]),...clips])node("li",`${clip.id}: ${clip.start||0}s → ${clip.duration??"auto"}s`,listing);
       }
@@ -147,35 +166,50 @@ export async function openSceneMediaStudio(source, options = {}) {
   };
   seek.oninput=()=>{pause();if(ready&&!busy)void paint(Number(seek.value)).catch(fail);};
   duration.onchange=()=>{if(ready&&!busy)void preparePreview().catch(fail);};
-  format.onchange=()=>{pause();audioLabel.hidden=!isVideo();narrationSection.hidden=!isVideo()||audio.value!=="auto";updateAudioHint();};format.onchange();
+  format.onchange=()=>{pause();audioLabel.hidden=!isVideo();narrationSection.hidden=!isVideo()||audio.value!=="auto";updateAudioHint();if(ready&&!busy)void preparePreview().catch(fail);};format.onchange();
   audio.onchange=()=>{pause();narrationSection.hidden=audio.value!=="auto";updateAudioHint();if(ready&&!busy)void preparePreview().catch(fail);};
   cancel.onclick=()=>exportController?.abort();
   exportButton.onclick=async()=>{
-    if(busy||!ready)return;pause();const signal=beginOperation();
-    let writable;
+    if(busy||!ready)return;
+    // Preview already checked authored audio. Do not ask for/create a file,
+    // download speech or start an expensive render for a known invalid track.
+    if(isVideo()&&audio.value!=="mute"&&previewAudioError){fail(previewAudioError);return;}
+    for(const field of[duration,width,height,fps])if(!field.checkValidity()){fail(new Error(text("请检查时长、尺寸和帧率。","Check duration, dimensions and frame rate.")));return;}
+    pause();const signal=beginOperation();let handle;
     try{
       // A file-backed target keeps long films out of a single in-memory Blob.
       // Unsupported browsers retain the explicit download fallback.
-      if (["mp4","webm"].includes(format.value) && typeof showSaveFilePicker === "function") {
-        const handle = await showSaveFilePicker({ suggestedName: `${options.name||"threejson-media"}.${format.value}`, types: [{ description: "Video", accept: { [`video/${format.value}`]: [`.${format.value}`] } }] });
-        writable = await handle.createWritable();
+      if (isVideo() && typeof showSaveFilePicker === "function" && !options.exportOptions?.target && !options.exportOptions?.writable && !options.exportOptions?.openWritable) {
+        status.textContent=text("请选择保存位置…","Choose where to save…");
+        handle = await showSaveFilePicker({ suggestedName: `${options.name||"threejson-media"}.${format.value}`, types: [{ description: "Video", accept: { [`video/${format.value}`]: [`.${format.value}`] } }] });
       }
       signal.throwIfAborted();
-      for(const field of[duration,width,height,fps])if(!field.checkValidity())throw new Error(text("请检查时长、尺寸和帧率。","Check duration, dimensions and frame rate."));
       await prepareNarration(signal);signal.throwIfAborted();
       progress.value=0;status.textContent=text("正在渲染并封装视频…","Rendering and encoding…");
-      const config={...options.exportOptions,width:Number(width.value),height:Number(height.value),fps:Number(fps.value),end:Number(duration.value),audio:audio.value!=="mute",audioClips:[...(options.exportOptions?.audioClips||[]),...extraAudio()],time:Number(seek.value),signal,onProgress:(value)=>{if(!closed){progress.value=value.progress;status.textContent=text(`正在导出 ${Math.round(value.progress*100)}%`,`Exporting ${Math.round(value.progress*100)}%`);}}};
-      if (writable) config.writable = writable;
+      const config={...options.exportOptions,width:Number(width.value),height:Number(height.value),fps:Number(fps.value),end:Number(duration.value),audio:audio.value!=="mute",audioClipOverrides,audioClips:[...(options.exportOptions?.audioClips||[]),...extraAudio()],time:Number(seek.value),signal,onProgress:(value)=>{
+        if(closed)return;
+        if(value.stage==="encoding"){
+          progress.value=Number.isFinite(value.progress)?value.progress:0;
+          status.textContent=text(`正在导出 ${Math.round(progress.value*100)}% · ${value.frame}/${value.frames} 帧`,`Exporting ${Math.round(progress.value*100)}% · ${value.frame}/${value.frames} frames`);
+        }else{
+          progress.removeAttribute("value");
+          const stages={preparing:text("正在准备导出…","Preparing export…"),audio:text("正在检查与准备音轨…","Checking and preparing audio…"),rendering:text("正在准备画面与资源…","Preparing frames and resources…"),finalizing:text("画面编码完成，正在封装视频…","Frames encoded; finalizing video…"),saving:text("正在完成文件写入，请勿关闭…","Committing the file; please keep this window open…"),complete:text("文件写入完成。","File committed.")};
+          status.textContent=stages[value.stage]||text("正在准备导出…","Preparing export…");
+        }
+        options.exportOptions?.onProgress?.(value);
+      }};
+      if (handle) config.openWritable = () => handle.createWritable();
       let result;
       if(["png","jpeg","webp"].includes(format.value))result=await kit.renderImage(source,{...config,type:`image/${format.value}`});
       else if(format.value==="gif")result=await kit.renderGif(source,config);
       else result=await kit.renderVideo(source,{...config,format:format.value});
+      if(handle&&(await handle.getFile()).size===0)throw Object.assign(new Error(text("文件仍为空，未成功保存。请重试或更换保存位置。","The saved file is empty. Retry or choose another location.")),{code:"MEDIA_EMPTY_OUTPUT"});
       if(!closed){if(result.blob)save(result.blob,`${options.name||"threejson-media"}.${format.value}`);status.textContent=text("已导出。","Export complete.");}
-    }catch(error){await writable?.abort().catch(()=>{});if(error.name==="AbortError")status.textContent=text("导出已取消。","Export cancelled.");else fail(error);}
+    }catch(error){if(error.name==="AbortError"){if(!closed)status.textContent=text("导出已取消。","Export cancelled.");}else fail(error);}
     finally{finishOperation();}
   };
   async function preparePreview(signal=lifecycle.signal) {
-    pause();ready=false;syncBusy();
+    pause();clearError();ready=false;syncBusy();
     audioPlayback?.dispose();audioPlayback=null;
     await paintQueue.catch(()=>{});project?.dispose();
     const snapshot=structuredClone(source);seek.max=duration.value;
@@ -188,7 +222,7 @@ export async function openSceneMediaStudio(source, options = {}) {
     await paint(0);
     // A missing optional voice must not prevent viewing/exporting the picture.
     let audioError;
-    try { mixer=audio.value==="mute"||!isVideo()?null:await kit.prepareProjectAudio(project,{signal});status.textContent=mixer?.duration>Number(duration.value)+.1?text(`音轨长 ${mixer.duration.toFixed(2)} 秒，当前导出范围将裁剪结尾；可增加时长。`,`Audio is ${mixer.duration.toFixed(2)} seconds; the selected range trims its end. Increase duration to keep it.`):text("可播放、拖动时间或直接导出。","Ready to play, seek or export."); }
+    try { mixer=audio.value==="mute"||!isVideo()?null:await kit.prepareProjectAudio(project,{signal,audioClipOverrides});status.textContent=mixer?.duration>Number(duration.value)+.1?text(`音轨长 ${mixer.duration.toFixed(2)} 秒，当前导出范围将裁剪结尾；可增加时长。`,`Audio is ${mixer.duration.toFixed(2)} seconds; the selected range trims its end. Increase duration to keep it.`):text("可播放、拖动时间或直接导出。","Ready to play, seek or export."); }
     catch(error){mixer=null;audioError=error;fail(error);}
     if(closed)return;
     previewNarrationClips=narrationPanel?.getAudioClips();previewAudioError=audioError;

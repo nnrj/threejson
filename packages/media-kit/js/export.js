@@ -1,5 +1,7 @@
 import { createMediaProject } from "./project.js";
 import { sampleTimelineTrack } from "threejson/timeline";
+import { createOutputTransaction, emptyOutput } from "./outputTransaction.js";
+import { laneEnabled } from "./editing.js";
 
 const abort = (options) => options.signal?.throwIfAborted();
 const yieldTask = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -14,7 +16,7 @@ async function withProject(input, options, run) {
   abort(options);
   const provided = typeof input?.renderAt === "function";
   if (provided && input.previewPerformance && input.previewPerformance !== "full") throw Object.assign(new Error("Export requires the source document or a full-quality media project, not a reduced preview."), { code: "PREVIEW_PROJECT_NOT_EXPORTABLE" });
-  const project = provided ? input : await createMediaProject(input, { ...options, previewPerformance: false });
+  const project = provided ? input : await createMediaProject(input, { ...options, preloadNext: false, previewPerformance: false });
   try { return await run(project); } finally { if (!provided) project.dispose(); }
 }
 export async function renderImage(input, options = {}) {
@@ -39,7 +41,13 @@ export async function prepareProjectAudio(project, options = {}) {
   if (!audio.length || options.audio === false) return null;
   const kit = await import("@threejson/audio-kit"), cache = new Map();
   const clips = [];
-  for (const clip of audio) {
+  for (const authored of audio) {
+    const override = options.audioClipOverrides?.[authored.id];
+    const clip = { ...authored };
+    for (const key of ["loop", "padSilence"]) if (override?.[key] !== undefined) {
+      if (typeof override[key] !== "boolean") throw new TypeError(`Audio override ${key} must be boolean.`);
+      clip[key] = override[key];
+    }
     abort(options);
     const key = clip.url || JSON.stringify(clip.recipe);
     if (!clip.pcm && !clip.recipe && !clip.url) throw new Error(`Audio clip ${clip.id} needs url, pcm or recipe.`);
@@ -70,48 +78,86 @@ export async function prepareProjectAudio(project, options = {}) {
 }
 
 export async function renderVideo(input, options = {}) {
-  return withProject(input, options, async (project) => {
+  const notify = (stage, data = {}) => options.onProgress?.({ stage, frame: 0, frames: 0, progress: 0, ...data });
+  notify("preparing");
+  let transaction, output, completed = false;
+  try { return await withProject(input, options, async (project) => {
     const m = options.codecs || await import("mediabunny"), format = options.format ?? "mp4";
     if (!["mp4", "webm"].includes(format)) throw new Error("Video format must be mp4 or webm.");
     const range = resolveFrameRange(project, options), videoCodec = format === "mp4" ? "avc" : "vp9", audioCodec = format === "mp4" ? "aac" : "opus";
     const hasAudio = options.audio !== false && (await project.getAudioClips?.() || []).length > 0;
     if (!await m.canEncodeVideo(videoCodec, { width: project.width, height: project.height }) || hasAudio && !await m.canEncodeAudio(audioCodec, { sampleRate: options.sampleRate ?? 48000, numberOfChannels: 2 })) throw Object.assign(new Error(`Required ${format} codecs are unavailable. Explicitly select another supported format.`), { code: "MEDIA_CODEC_UNAVAILABLE" });
-    const target = options.target || (options.writable ? new m.StreamTarget(options.writable) : new m.BufferTarget());
-    const output = new m.Output({ format: format === "mp4" ? new m.Mp4OutputFormat({ fastStart: "reserve" }) : new m.WebMOutputFormat(), target });
+    if ([options.target, options.writable, options.openWritable].filter(Boolean).length > 1) throw new TypeError("Choose only one media output destination.");
+    notify("audio", { frames: range.frames });
+    const mixer = hasAudio ? await prepareProjectAudio(project, options) : null;
+    if (mixer && options.end === undefined && mixer.duration > project.duration + 1e-6 && options.trimAudio !== true) throw new Error("Audio exceeds the timeline duration. Extend the timeline or explicitly set trimAudio/end.");
+    // Prepare each included shot before touching the output file. This detects
+    // invalid late shots without retaining all their runtimes or encoding minutes
+    // of video first. It is an executability check, not visual quality approval.
+    const timeline = project.document.timeline || {};
+    const times = new Set([range.start]);
+    if (project.document.documentType === "composition") for (const clip of timeline.clips || []) {
+      const start = clip.start || 0;
+      if (laneEnabled(timeline, clip) && start < range.end && start + clip.duration > range.start) times.add(Math.max(range.start, start));
+    }
+    for (const time of [...times].sort((a, b) => a - b)) {
+      abort(options); notify("rendering", { frames: range.frames, time });
+      await project.renderAt(time); abort(options);
+    }
+    if (times.size > 1) { await project.renderAt(range.start); abort(options); }
+    // File selection is a host concern. Defer opening/truncating its writable
+    // until audio, codecs, and shot resources have passed preflight.
+    const writable = options.writable || await options.openWritable?.();
+    if (writable) transaction = createOutputTransaction(writable);
+    abort(options);
+    const target = options.target || (transaction ? new m.StreamTarget(transaction.stream) : new m.BufferTarget());
+    output = new m.Output({ format: format === "mp4" ? new m.Mp4OutputFormat({ fastStart: "reserve" }) : new m.WebMOutputFormat(), target });
     const video = new m.CanvasSource(project.canvas, { codec: videoCodec, bitrate: options.videoBitrate ?? 6_000_000 });
     const sound = hasAudio ? new m.AudioBufferSource({ codec: audioCodec, bitrate: options.audioBitrate ?? 192_000 }) : null;
     output.addVideoTrack(video, { frameRate: range.fps, maximumPacketCount: range.frames + 2 });
     if (sound) output.addAudioTrack(sound, { maximumPacketCount: Math.ceil(range.duration * 200) + 16 });
-    let completed = false;
-    try {
-      const mixer = hasAudio ? await prepareProjectAudio(project, options) : null;
-      if (mixer && options.end === undefined && mixer.duration > project.duration + 1e-6 && options.trimAudio !== true) throw new Error("Audio exceeds the timeline duration. Extend the timeline or explicitly set trimAudio/end.");
-      await output.start();
-      let audioFrame = 0;
-      for (let index = 0; index < range.frames; index++) {
-        abort(options);
-        const time = range.start + index/range.fps, frameDuration = Math.min(1/range.fps, range.end-time);
-        await project.renderAt(time); abort(options);
-        // Interleave bounded audio blocks with video; await encoder backpressure.
-        if (mixer) {
-          const endFrame = Math.round(Math.min((index+1)/range.fps, range.duration)*mixer.sampleRate);
-          const count = endFrame-audioFrame;
-          if (count > 0) {
-            const pcm = mixer.render(Math.round(range.start*mixer.sampleRate)+audioFrame, count);
-            const buffer = new AudioBuffer({ length: count, sampleRate: mixer.sampleRate, numberOfChannels: pcm.channels.length });
-            pcm.channels.forEach((channel,i) => buffer.copyToChannel(channel,i));
-            await sound.add(buffer); audioFrame = endFrame;
-          }
+    await output.start();
+    let audioFrame = 0;
+    for (let index = 0; index < range.frames; index++) {
+      abort(options);
+      const time = range.start + index/range.fps, frameDuration = Math.min(1/range.fps, range.end-time);
+      if (index > 0) await project.renderAt(time); abort(options);
+      // Interleave bounded audio blocks with video; await encoder backpressure.
+      if (mixer) {
+        const endFrame = Math.round(Math.min((index+1)/range.fps, range.duration)*mixer.sampleRate);
+        const count = endFrame-audioFrame;
+        if (count > 0) {
+          const pcm = mixer.render(Math.round(range.start*mixer.sampleRate)+audioFrame, count);
+          const buffer = new AudioBuffer({ length: count, sampleRate: mixer.sampleRate, numberOfChannels: pcm.channels.length });
+          pcm.channels.forEach((channel,i) => buffer.copyToChannel(channel,i));
+          await sound.add(buffer); audioFrame = endFrame;
         }
-        await video.add(index/range.fps, frameDuration);
-        options.onProgress?.({ stage: "encoding", frame: index+1, frames: range.frames, progress: (index+1)/range.frames, time });
-        if (index % 8 === 0) await yieldTask();
       }
-      video.close(); sound?.close(); abort(options); await output.finalize(); completed = true;
-      const mimeType = format === "mp4" ? "video/mp4" : "video/webm";
-      return { blob: target.buffer ? new Blob([target.buffer], { type: mimeType }) : null, mimeType, duration: range.duration, frames: range.frames, width: project.width, height: project.height };
-    } finally { if (!completed) await output.cancel().catch(() => {}); }
-  });
+      await video.add(index/range.fps, frameDuration);
+      options.onProgress?.({ stage: "encoding", frame: index+1, frames: range.frames, progress: (index+1)/range.frames, time });
+      if (index % 8 === 0) await yieldTask();
+    }
+    video.close(); sound?.close(); abort(options);
+    notify("finalizing", { frame: range.frames, frames: range.frames, progress: 1 });
+    await output.finalize(); abort(options);
+    const mimeType = format === "mp4" ? "video/mp4" : "video/webm";
+    const blob = target.buffer ? new Blob([target.buffer], { type: mimeType }) : null;
+    if ((!transaction && !options.target && !blob?.size) || blob?.size === 0) throw emptyOutput();
+    if (transaction) {
+      notify("saving", { frame: range.frames, frames: range.frames, progress: 1, bytesWritten: transaction.bytesWritten });
+      abort(options); await transaction.commit();
+    }
+    completed = true;
+    notify("complete", { frame: range.frames, frames: range.frames, progress: 1, bytesWritten: transaction?.bytesWritten ?? blob?.size });
+    return { blob, bytesWritten: transaction?.bytesWritten ?? blob?.size, mimeType, duration: range.duration, frames: range.frames, width: project.width, height: project.height };
+  }); } catch (error) {
+    if (!completed) {
+      await output?.cancel().catch(() => {});
+      if (transaction) await transaction.abort(error).catch(() => {});
+      else if (options.writable) await options.writable.abort(error).catch(() => {});
+    }
+    throw error;
+  }
 }
 
 /** GIF is quantized/no-audio. Quantization can be supplied by a worker encoder. */

@@ -1,0 +1,4668 @@
+{
+  "documentType": "composition",
+  "compositionVersion": 1,
+  "output": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30
+  },
+  "scenes": {
+    "intro": {
+      "version": "next",
+      "timeline": {
+        "version": 1,
+        "duration": 16,
+        "tracks": [
+          {
+            "id": "camIntro",
+            "target": "$camera",
+            "property": "position",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": [
+                  0,
+                  1.2,
+                  20
+                ]
+              },
+              {
+                "time": 16,
+                "value": [
+                  0,
+                  1.2,
+                  9
+                ]
+              }
+            ],
+            "easing": "easeOut"
+          },
+          {
+            "id": "beamGrow",
+            "target": "beam",
+            "property": "scale.x",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": [
+                  0.02,
+                  1,
+                  1
+                ]
+              },
+              {
+                "time": 3,
+                "value": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            ],
+            "easing": "easeOut"
+          },
+          {
+            "id": "photonRun",
+            "target": "photon",
+            "property": "position.x",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": -13
+              },
+              {
+                "time": 9,
+                "value": 13
+              }
+            ],
+            "easing": "linear"
+          },
+          {
+            "id": "photonFade",
+            "target": "photon",
+            "property": "material.opacity",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": 0
+              },
+              {
+                "time": 0.6,
+                "value": 1
+              },
+              {
+                "time": 8.6,
+                "value": 1
+              },
+              {
+                "time": 9.4,
+                "value": 0
+              }
+            ]
+          },
+          {
+            "id": "titleIn",
+            "target": "title",
+            "property": "material.opacity",
+            "keyframes": [
+              {
+                "time": 1.2,
+                "value": 0
+              },
+              {
+                "time": 2.6,
+                "value": 1
+              },
+              {
+                "time": 14.4,
+                "value": 1
+              },
+              {
+                "time": 16,
+                "value": 0
+              }
+            ]
+          },
+          {
+            "id": "subIn",
+            "target": "subtitle",
+            "property": "material.opacity",
+            "keyframes": [
+              {
+                "time": 2.4,
+                "value": 0
+              },
+              {
+                "time": 3.6,
+                "value": 1
+              },
+              {
+                "time": 14.4,
+                "value": 1
+              },
+              {
+                "time": 16,
+                "value": 0
+              }
+            ]
+          },
+          {
+            "id": "starDrift",
+            "target": "starfield",
+            "property": "rotation.y",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": 0
+              },
+              {
+                "time": 16,
+                "value": 0.35
+              }
+            ],
+            "easing": "linear"
+          },
+          {
+            "id": "nearDrift",
+            "target": "starfieldNear",
+            "property": "position.x",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": -2
+              },
+              {
+                "time": 16,
+                "value": 2
+              }
+            ],
+            "easing": "easeInOut"
+          }
+        ],
+        "audio": [],
+        "captions": [],
+        "clips": [],
+        "effects": []
+      },
+      "timelineEffects": [
+        {
+          "id": "starTwinkle",
+          "target": "starfieldNear",
+          "operator": "wave",
+          "start": 0,
+          "duration": 16,
+          "backend": "cpu",
+          "params": {
+            "amplitude": 0.12,
+            "frequency": 1.4,
+            "speed": 0.6
+          },
+          "extrapolation": "loop"
+        }
+      ],
+      "sceneConfig": {
+        "scene": {
+          "background": "#03040c",
+          "fog": {
+            "color": "#03040c",
+            "near": 18,
+            "far": 60
+          },
+          "threeJsonId": "6dea3d40-3212-4ac4-a220-d4ef8d8b43fd"
+        },
+        "camera": {
+          "position": {
+            "x": 0,
+            "y": 1.2,
+            "z": 14
+          },
+          "lookAt": {
+            "x": 0,
+            "y": 0.6,
+            "z": 0
+          },
+          "fov": 50,
+          "threeJsonId": "4ab78b26-f361-4917-b978-f1894200c24a"
+        },
+        "controls": {
+          "type": "none",
+          "target": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "threeJsonId": "6f39da1a-eaee-49a7-82e3-3edcf5f10ffa"
+        },
+        "lights": [
+          {
+            "type": "ambient",
+            "color": "#2a3a6a",
+            "intensity": 0.7,
+            "threeJsonId": "383c02e3-c690-471e-845b-829a435d73bf"
+          },
+          {
+            "type": "directional",
+            "color": "#9fc4ff",
+            "intensity": 1.1,
+            "position": {
+              "x": 6,
+              "y": 10,
+              "z": 8
+            },
+            "threeJsonId": "4ad4f519-f873-4e62-acee-3f252d1ed6f1"
+          }
+        ],
+        "renderLoop": {
+          "enabled": true,
+          "threeJsonId": "efc9fd99-c7a3-420a-b934-2968ae006e97"
+        },
+        "passList": [
+          {
+            "threeJsonId": "bloom",
+            "passType": "unrealBloom",
+            "strength": 0.55,
+            "radius": 0.5,
+            "threshold": 0.72,
+            "subScene": []
+          }
+        ]
+      },
+      "objectList": [
+        {
+          "objType": "points",
+          "threeJsonId": "starfield",
+          "source": {
+            "type": "box",
+            "width": 60,
+            "height": 34,
+            "depth": 60
+          },
+          "count": 1400,
+          "seed": 11,
+          "size": 0.09,
+          "color": "#cfe2ff",
+          "material": {
+            "type": "basic",
+            "color": "#cfe2ff",
+            "transparent": true,
+            "opacity": 0.9,
+            "depthWrite": false
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "z": -6
+          },
+          "subScene": []
+        },
+        {
+          "objType": "points",
+          "threeJsonId": "starfieldNear",
+          "source": {
+            "type": "box",
+            "width": 40,
+            "height": 22,
+            "depth": 30
+          },
+          "count": 420,
+          "seed": 29,
+          "size": 0.16,
+          "color": "#ffffff",
+          "material": {
+            "type": "basic",
+            "color": "#ffffff",
+            "transparent": true,
+            "opacity": 0.75,
+            "depthWrite": false
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "z": 2
+          },
+          "subScene": []
+        },
+        {
+          "objType": "cylinder",
+          "threeJsonId": "beam",
+          "radius": 0.055,
+          "height": 26,
+          "radialSegments": 24,
+          "material": {
+            "type": "basic",
+            "color": "#8fd8ff",
+            "transparent": true,
+            "opacity": 0.55,
+            "emissive": "#4fb8ff"
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 1.5708
+          },
+          "position": {
+            "x": -13,
+            "y": 0.6,
+            "z": 0
+          },
+          "subScene": []
+        },
+        {
+          "objType": "sphere",
+          "threeJsonId": "photon",
+          "radius": 0.16,
+          "material": {
+            "type": "basic",
+            "color": "#ffffff",
+            "emissive": "#bfe9ff"
+          },
+          "position": {
+            "x": -13,
+            "y": 0.6,
+            "z": 0
+          },
+          "subScene": []
+        },
+        {
+          "objType": "text",
+          "threeJsonId": "title",
+          "mode": "sdf",
+          "content": "光速之谜",
+          "fontSize": 1.15,
+          "color": "#ffffff",
+          "position": {
+            "x": 0,
+            "y": 3.4,
+            "z": 0
+          },
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "subScene": []
+        },
+        {
+          "objType": "text",
+          "threeJsonId": "subtitle",
+          "mode": "sdf",
+          "content": "如果我追着一束光跑，会看到什么？",
+          "fontSize": 0.42,
+          "color": "#9fc4ff",
+          "position": {
+            "x": 0,
+            "y": 2.5,
+            "z": 0
+          },
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "subScene": []
+        }
+      ],
+      "schemaVersion": 2
+    },
+    "postulate": {
+      "version": "next",
+      "timeline": {
+        "version": 1,
+        "duration": 20,
+        "tracks": [
+          {
+            "id": "camPost",
+            "target": "$camera",
+            "property": "position",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": [
+                  0,
+                  2.2,
+                  16
+                ]
+              },
+              {
+                "time": 20,
+                "value": [
+                  0,
+                  1.6,
+                  11
+                ]
+              }
+            ],
+            "easing": "easeOut"
+          },
+          {
+            "id": "titleIn",
+            "target": "title",
+            "property": "material.opacity",
+            "keyframes": [
+              {
+                "time": 0.4,
+                "value": 0
+              },
+              {
+                "time": 1.6,
+                "value": 1
+              },
+              {
+                "time": 18.4,
+                "value": 1
+              },
+              {
+                "time": 20,
+                "value": 0
+              }
+            ]
+          },
+          {
+            "id": "cLabelIn",
+            "target": "cLabel",
+            "property": "material.opacity",
+            "keyframes": [
+              {
+                "time": 1.4,
+                "value": 0
+              },
+              {
+                "time": 2.6,
+                "value": 1
+              },
+              {
+                "time": 18.4,
+                "value": 1
+              },
+              {
+                "time": 20,
+                "value": 0
+              }
+            ]
+          },
+          {
+            "id": "frameAIn",
+            "target": "frameA",
+            "property": "position.x",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": -9
+              },
+              {
+                "time": 2.2,
+                "value": -4.6
+              }
+            ],
+            "easing": "easeOut"
+          },
+          {
+            "id": "frameBIn",
+            "target": "frameB",
+            "property": "position.x",
+            "keyframes": [
+              {
+                "time": 0.6,
+                "value": 9
+              },
+              {
+                "time": 2.8,
+                "value": 4.6
+              }
+            ],
+            "easing": "easeOut"
+          },
+          {
+            "id": "rayAGrow",
+            "target": "rayA",
+            "property": "scale.x",
+            "keyframes": [
+              {
+                "time": 2.4,
+                "value": [
+                  0.02,
+                  1,
+                  1
+                ]
+              },
+              {
+                "time": 4.4,
+                "value": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            ],
+            "easing": "easeOut"
+          },
+          {
+            "id": "rayBGrow",
+            "target": "rayB",
+            "property": "scale.x",
+            "keyframes": [
+              {
+                "time": 2.8,
+                "value": [
+                  0.02,
+                  1,
+                  1
+                ]
+              },
+              {
+                "time": 4.8,
+                "value": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            ],
+            "easing": "easeOut"
+          },
+          {
+            "id": "pulseARun",
+            "target": "pulseA",
+            "property": "position.x",
+            "keyframes": [
+              {
+                "time": 4.4,
+                "value": -9.1
+              },
+              {
+                "time": 9.4,
+                "value": -0.1
+              }
+            ],
+            "easing": "linear"
+          },
+          {
+            "id": "pulseBRun",
+            "target": "pulseB",
+            "property": "position.x",
+            "keyframes": [
+              {
+                "time": 4.8,
+                "value": 0.1
+              },
+              {
+                "time": 9.8,
+                "value": 9.1
+              }
+            ],
+            "easing": "linear"
+          },
+          {
+            "id": "pulseALoop",
+            "target": "pulseA",
+            "property": "position.x",
+            "keyframes": [
+              {
+                "time": 9.4,
+                "value": -9.1
+              },
+              {
+                "time": 14.4,
+                "value": -0.1
+              }
+            ],
+            "easing": "linear"
+          },
+          {
+            "id": "pulseBLoop",
+            "target": "pulseB",
+            "property": "position.x",
+            "keyframes": [
+              {
+                "time": 9.8,
+                "value": 0.1
+              },
+              {
+                "time": 14.8,
+                "value": 9.1
+              }
+            ],
+            "easing": "linear"
+          },
+          {
+            "id": "conclusionIn",
+            "target": "conclusion",
+            "property": "material.opacity",
+            "keyframes": [
+              {
+                "time": 10.4,
+                "value": 0
+              },
+              {
+                "time": 12,
+                "value": 1
+              },
+              {
+                "time": 18.4,
+                "value": 1
+              },
+              {
+                "time": 20,
+                "value": 0
+              }
+            ]
+          },
+          {
+            "id": "starsDrift",
+            "target": "stars",
+            "property": "rotation.y",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": 0
+              },
+              {
+                "time": 20,
+                "value": 0.3
+              }
+            ],
+            "easing": "linear"
+          }
+        ],
+        "audio": [],
+        "captions": [],
+        "clips": [],
+        "effects": []
+      },
+      "timelineEffects": [
+        {
+          "id": "rayPulse",
+          "target": "rayA",
+          "operator": "wave",
+          "start": 0,
+          "duration": 20,
+          "backend": "cpu",
+          "params": {
+            "amplitude": 0.05,
+            "frequency": 2,
+            "speed": 1.2
+          },
+          "extrapolation": "loop"
+        }
+      ],
+      "sceneConfig": {
+        "scene": {
+          "background": "#03040c",
+          "fog": {
+            "color": "#03040c",
+            "near": 22,
+            "far": 70
+          },
+          "threeJsonId": "7757a12c-e00a-4b81-b3ed-e773d379f321"
+        },
+        "camera": {
+          "position": {
+            "x": 0,
+            "y": 2.2,
+            "z": 16
+          },
+          "lookAt": {
+            "x": 0,
+            "y": 0.4,
+            "z": 0
+          },
+          "fov": 50,
+          "threeJsonId": "1574bc53-b9af-45b5-9607-1d453f52c3ab"
+        },
+        "controls": {
+          "type": "none",
+          "target": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "threeJsonId": "b3b5ad8b-712a-4f53-b892-7352a9c39499"
+        },
+        "lights": [
+          {
+            "type": "ambient",
+            "color": "#2a3a6a",
+            "intensity": 0.75,
+            "threeJsonId": "74a880ce-39ed-4db9-9565-a38b13c98333"
+          },
+          {
+            "type": "directional",
+            "color": "#9fc4ff",
+            "intensity": 1,
+            "position": {
+              "x": 5,
+              "y": 9,
+              "z": 8
+            },
+            "threeJsonId": "c2fb2d2b-bfc6-4713-91d5-9761e0bb8b19"
+          }
+        ],
+        "renderLoop": {
+          "enabled": true,
+          "threeJsonId": "a630d6e6-db74-478e-ba01-4103fddb6b68"
+        },
+        "passList": [
+          {
+            "threeJsonId": "bloom",
+            "passType": "unrealBloom",
+            "strength": 0.5,
+            "radius": 0.5,
+            "threshold": 0.75
+          }
+        ]
+      },
+      "objectList": [
+        {
+          "objType": "points",
+          "threeJsonId": "stars",
+          "source": {
+            "type": "box",
+            "width": 70,
+            "height": 40,
+            "depth": 60
+          },
+          "count": 1100,
+          "seed": 7,
+          "size": 0.08,
+          "color": "#cfe2ff",
+          "material": {
+            "type": "basic",
+            "color": "#cfe2ff",
+            "transparent": true,
+            "opacity": 0.85,
+            "depthWrite": false
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "z": -8
+          },
+          "subScene": []
+        },
+        {
+          "objType": "text",
+          "threeJsonId": "title",
+          "mode": "sdf",
+          "content": "光速不变原理",
+          "fontSize": 1,
+          "color": "#ffffff",
+          "position": {
+            "x": 0,
+            "y": 4.4,
+            "z": 0
+          },
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "subScene": []
+        },
+        {
+          "objType": "text",
+          "threeJsonId": "cLabel",
+          "mode": "sdf",
+          "content": "c = 299,792,458 m/s",
+          "fontSize": 0.5,
+          "color": "#ffdf88",
+          "position": {
+            "x": 0,
+            "y": 3.5,
+            "z": 0
+          },
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "subScene": []
+        },
+        {
+          "objType": "group",
+          "threeJsonId": "frameA",
+          "position": {
+            "x": -4.6,
+            "y": 0.4,
+            "z": 0
+          },
+          "children": [
+            {
+              "objType": "box",
+              "threeJsonId": "frameABody",
+              "geometry": {
+                "width": 3.4,
+                "height": 2.2,
+                "depth": 0.12
+              },
+              "material": {
+                "type": "standard",
+                "color": "#1b2a4a",
+                "metalness": 0.4,
+                "roughness": 0.5,
+                "emissive": "#0a1730"
+              }
+            },
+            {
+              "objType": "text",
+              "threeJsonId": "frameALabel",
+              "mode": "sdf",
+              "content": "静止观察者",
+              "fontSize": 0.34,
+              "color": "#9fc4ff",
+              "position": {
+                "x": 0,
+                "y": 1.5,
+                "z": 0
+              },
+              "anchor": {
+                "x": 0.5,
+                "y": 0.5
+              }
+            },
+            {
+              "objType": "sphere",
+              "threeJsonId": "emitA",
+              "radius": 0.14,
+              "material": {
+                "type": "basic",
+                "color": "#ffffff",
+                "emissive": "#bfe9ff"
+              },
+              "position": {
+                "x": -1.4,
+                "y": 0,
+                "z": 0.2
+              }
+            }
+          ],
+          "subScene": []
+        },
+        {
+          "objType": "group",
+          "threeJsonId": "frameB",
+          "position": {
+            "x": 4.6,
+            "y": 0.4,
+            "z": 0
+          },
+          "children": [
+            {
+              "objType": "box",
+              "threeJsonId": "frameBBody",
+              "geometry": {
+                "width": 3.4,
+                "height": 2.2,
+                "depth": 0.12
+              },
+              "material": {
+                "type": "standard",
+                "color": "#2a1b3a",
+                "metalness": 0.4,
+                "roughness": 0.5,
+                "emissive": "#170a2a"
+              }
+            },
+            {
+              "objType": "text",
+              "threeJsonId": "frameBLabel",
+              "mode": "sdf",
+              "content": "0.5c 运动观察者",
+              "fontSize": 0.34,
+              "color": "#e0a8ff",
+              "position": {
+                "x": 0,
+                "y": 1.5,
+                "z": 0
+              },
+              "anchor": {
+                "x": 0.5,
+                "y": 0.5
+              }
+            },
+            {
+              "objType": "sphere",
+              "threeJsonId": "emitB",
+              "radius": 0.14,
+              "material": {
+                "type": "basic",
+                "color": "#ffffff",
+                "emissive": "#e6c8ff"
+              },
+              "position": {
+                "x": -1.4,
+                "y": 0,
+                "z": 0.2
+              }
+            }
+          ],
+          "subScene": []
+        },
+        {
+          "objType": "cylinder",
+          "threeJsonId": "rayA",
+          "radius": 0.04,
+          "height": 9,
+          "radialSegments": 20,
+          "material": {
+            "type": "basic",
+            "color": "#8fd8ff",
+            "transparent": true,
+            "opacity": 0.6,
+            "emissive": "#4fb8ff"
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 1.5708
+          },
+          "position": {
+            "x": -4.6,
+            "y": 0.4,
+            "z": 0.2
+          },
+          "subScene": []
+        },
+        {
+          "objType": "cylinder",
+          "threeJsonId": "rayB",
+          "radius": 0.04,
+          "height": 9,
+          "radialSegments": 20,
+          "material": {
+            "type": "basic",
+            "color": "#d9a8ff",
+            "transparent": true,
+            "opacity": 0.6,
+            "emissive": "#a04fff"
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 1.5708
+          },
+          "position": {
+            "x": 4.6,
+            "y": 0.4,
+            "z": 0.2
+          },
+          "subScene": []
+        },
+        {
+          "objType": "sphere",
+          "threeJsonId": "pulseA",
+          "radius": 0.15,
+          "material": {
+            "type": "basic",
+            "color": "#ffffff",
+            "emissive": "#bfe9ff"
+          },
+          "position": {
+            "x": -4.6,
+            "y": 0.4,
+            "z": 0.2
+          },
+          "subScene": []
+        },
+        {
+          "objType": "sphere",
+          "threeJsonId": "pulseB",
+          "radius": 0.15,
+          "material": {
+            "type": "basic",
+            "color": "#ffffff",
+            "emissive": "#e6c8ff"
+          },
+          "position": {
+            "x": 4.6,
+            "y": 0.4,
+            "z": 0.2
+          },
+          "subScene": []
+        },
+        {
+          "objType": "text",
+          "threeJsonId": "conclusion",
+          "mode": "sdf",
+          "content": "测得的光速完全相同",
+          "fontSize": 0.62,
+          "color": "#ffffff",
+          "position": {
+            "x": 0,
+            "y": -2.6,
+            "z": 0
+          },
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "subScene": []
+        }
+      ],
+      "schemaVersion": 2
+    },
+    "dilation": {
+      "version": "next",
+      "timeline": {
+        "version": 1,
+        "duration": 22,
+        "tracks": [
+          {
+            "id": "camPush",
+            "target": "$camera",
+            "property": "position",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": [
+                  0,
+                  2.2,
+                  14
+                ]
+              },
+              {
+                "time": 11,
+                "value": [
+                  0,
+                  1.4,
+                  10
+                ]
+              },
+              {
+                "time": 22,
+                "value": [
+                  0,
+                  2,
+                  13
+                ]
+              }
+            ],
+            "easing": "easeInOut"
+          },
+          {
+            "id": "restPhotonY",
+            "target": "restPhoton",
+            "property": "position.y",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": -1.5
+              },
+              {
+                "time": 1.6,
+                "value": 1.5
+              },
+              {
+                "time": 3.2,
+                "value": -1.5
+              },
+              {
+                "time": 4.8,
+                "value": 1.5
+              },
+              {
+                "time": 6.4,
+                "value": -1.5
+              },
+              {
+                "time": 8,
+                "value": 1.5
+              },
+              {
+                "time": 9.6,
+                "value": -1.5
+              },
+              {
+                "time": 11.2,
+                "value": 1.5
+              },
+              {
+                "time": 12.8,
+                "value": -1.5
+              },
+              {
+                "time": 14.4,
+                "value": 1.5
+              },
+              {
+                "time": 16,
+                "value": -1.5
+              },
+              {
+                "time": 17.6,
+                "value": 1.5
+              },
+              {
+                "time": 19.2,
+                "value": -1.5
+              },
+              {
+                "time": 20.8,
+                "value": 1.5
+              },
+              {
+                "time": 22,
+                "value": -1.5
+              }
+            ],
+            "easing": "linear"
+          },
+          {
+            "id": "movePhotonY",
+            "target": "movePhoton",
+            "property": "position.y",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": -1.5
+              },
+              {
+                "time": 2.6,
+                "value": 1.5
+              },
+              {
+                "time": 5.2,
+                "value": -1.5
+              },
+              {
+                "time": 7.8,
+                "value": 1.5
+              },
+              {
+                "time": 10.4,
+                "value": -1.5
+              },
+              {
+                "time": 13,
+                "value": 1.5
+              },
+              {
+                "time": 15.6,
+                "value": -1.5
+              },
+              {
+                "time": 18.2,
+                "value": 1.5
+              },
+              {
+                "time": 20.8,
+                "value": -1.5
+              },
+              {
+                "time": 22,
+                "value": -1.5
+              }
+            ],
+            "easing": "linear"
+          },
+          {
+            "id": "moveDrift",
+            "target": "clockMoving",
+            "property": "position.x",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": 3.6
+              },
+              {
+                "time": 22,
+                "value": 4.4
+              }
+            ],
+            "easing": "easeInOut"
+          },
+          {
+            "id": "titleIn",
+            "target": "title",
+            "property": "material.opacity",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": 0
+              },
+              {
+                "time": 1.2,
+                "value": 1
+              },
+              {
+                "time": 20.5,
+                "value": 1
+              },
+              {
+                "time": 22,
+                "value": 0.9
+              }
+            ],
+            "easing": "easeOut"
+          },
+          {
+            "id": "formulaIn",
+            "target": "formula",
+            "property": "material.opacity",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": 0
+              },
+              {
+                "time": 8,
+                "value": 0
+              },
+              {
+                "time": 10,
+                "value": 1
+              },
+              {
+                "time": 22,
+                "value": 1
+              }
+            ],
+            "easing": "easeInOut"
+          }
+        ],
+        "captions": [
+          {
+            "id": "d1",
+            "text": "如果光速必须保持不变，时间和空间就必须做出让步。",
+            "start": 0.5,
+            "duration": 7,
+            "x": 0.5,
+            "y": 0.9,
+            "fontSize": 34,
+            "color": "#ffffff",
+            "fadeIn": 0.4,
+            "fadeOut": 0.4
+          },
+          {
+            "id": "d2",
+            "text": "运动的时钟会走得更慢，这叫做时间膨胀。",
+            "start": 8,
+            "duration": 7,
+            "x": 0.5,
+            "y": 0.9,
+            "fontSize": 34,
+            "color": "#ffffff",
+            "fadeIn": 0.4,
+            "fadeOut": 0.4
+          },
+          {
+            "id": "d3",
+            "text": "速度越接近光速，时间流逝得越慢。",
+            "start": 15.5,
+            "duration": 6,
+            "x": 0.5,
+            "y": 0.9,
+            "fontSize": 34,
+            "color": "#ffffff",
+            "fadeIn": 0.4,
+            "fadeOut": 0.4
+          }
+        ],
+        "audio": [],
+        "clips": [],
+        "effects": []
+      },
+      "sceneConfig": {
+        "scene": {
+          "background": "#04060f",
+          "fog": {
+            "color": "#04060f",
+            "near": 18,
+            "far": 60
+          },
+          "threeJsonId": "ba8092ea-c15e-4247-9197-1ef3a618065a"
+        },
+        "camera": {
+          "position": {
+            "x": 0,
+            "y": 2.2,
+            "z": 14
+          },
+          "lookAt": {
+            "x": 0,
+            "y": 0.6,
+            "z": 0
+          },
+          "fov": 45,
+          "threeJsonId": "83cc1c4c-4379-46b6-b4e8-4e5f23c09ebe"
+        },
+        "controls": {
+          "type": "none",
+          "target": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "threeJsonId": "5aa549ea-5d06-4068-99cf-fe86e876af68"
+        },
+        "lights": [
+          {
+            "type": "ambient",
+            "color": "#3a4a7a",
+            "intensity": 0.7,
+            "threeJsonId": "03fe0bdb-543a-4378-b9d7-c866883e177d"
+          },
+          {
+            "type": "directional",
+            "color": "#cfe4ff",
+            "intensity": 1.1,
+            "position": {
+              "x": 6,
+              "y": 10,
+              "z": 8
+            },
+            "threeJsonId": "a95befff-a543-4a2a-af7e-25a2da1b9c9f"
+          },
+          {
+            "type": "point",
+            "color": "#58caff",
+            "intensity": 40,
+            "distance": 30,
+            "position": {
+              "x": -6,
+              "y": 1,
+              "z": 4
+            },
+            "threeJsonId": "934cd5ba-e77e-43d3-b100-8519ae9e6f6e"
+          }
+        ]
+      },
+      "objectList": [
+        {
+          "objType": "text",
+          "threeJsonId": "title",
+          "mode": "sdf",
+          "content": "时间膨胀",
+          "fontSize": 0.85,
+          "color": "#ffffff",
+          "position": {
+            "x": -5.2,
+            "y": 3.4,
+            "z": 0
+          },
+          "anchor": "left",
+          "subScene": []
+        },
+        {
+          "objType": "text",
+          "threeJsonId": "subtitle",
+          "mode": "sdf",
+          "content": "运动的时钟走得更慢",
+          "fontSize": 0.34,
+          "color": "#8fb6ff",
+          "position": {
+            "x": -5.2,
+            "y": 2.7,
+            "z": 0
+          },
+          "anchor": "left",
+          "subScene": []
+        },
+        {
+          "objType": "group",
+          "threeJsonId": "clockRest",
+          "position": {
+            "x": -3.6,
+            "y": 0.4,
+            "z": 0
+          },
+          "children": [
+            {
+              "objType": "box",
+              "threeJsonId": "restFrame",
+              "geometry": {
+                "width": 2.6,
+                "height": 3.4,
+                "depth": 0.18
+              },
+              "material": {
+                "type": "standard",
+                "color": "#16203a",
+                "metalness": 0.5,
+                "roughness": 0.4,
+                "emissive": "#0a1226",
+                "emissiveIntensity": 0.6
+              },
+              "position": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            {
+              "objType": "sphere",
+              "threeJsonId": "restEmitterTop",
+              "material": {
+                "type": "basic",
+                "color": "#7fe3ff"
+              },
+              "position": {
+                "x": 0,
+                "y": 1.5,
+                "z": 0.2
+              }
+            },
+            {
+              "objType": "sphere",
+              "threeJsonId": "restEmitterBottom",
+              "material": {
+                "type": "basic",
+                "color": "#7fe3ff"
+              },
+              "position": {
+                "x": 0,
+                "y": -1.5,
+                "z": 0.2
+              }
+            },
+            {
+              "objType": "sphere",
+              "threeJsonId": "restPhoton",
+              "material": {
+                "type": "basic",
+                "color": "#ffe98a"
+              },
+              "position": {
+                "x": 0,
+                "y": -1.5,
+                "z": 0.2
+              }
+            },
+            {
+              "objType": "text",
+              "threeJsonId": "restLabel",
+              "mode": "sdf",
+              "content": "静止参考系",
+              "fontSize": 0.28,
+              "color": "#9fd0ff",
+              "position": {
+                "x": 0,
+                "y": -2.15,
+                "z": 0
+              }
+            }
+          ],
+          "subScene": []
+        },
+        {
+          "objType": "group",
+          "threeJsonId": "clockMoving",
+          "position": {
+            "x": 3.6,
+            "y": 0.4,
+            "z": 0
+          },
+          "children": [
+            {
+              "objType": "box",
+              "threeJsonId": "moveFrame",
+              "geometry": {
+                "width": 2.6,
+                "height": 3.4,
+                "depth": 0.18
+              },
+              "material": {
+                "type": "standard",
+                "color": "#2a1636",
+                "metalness": 0.5,
+                "roughness": 0.4,
+                "emissive": "#1a0a26",
+                "emissiveIntensity": 0.6
+              },
+              "position": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            {
+              "objType": "sphere",
+              "threeJsonId": "moveEmitterTop",
+              "material": {
+                "type": "basic",
+                "color": "#ff9ad5"
+              },
+              "position": {
+                "x": 0,
+                "y": 1.5,
+                "z": 0.2
+              }
+            },
+            {
+              "objType": "sphere",
+              "threeJsonId": "moveEmitterBottom",
+              "material": {
+                "type": "basic",
+                "color": "#ff9ad5"
+              },
+              "position": {
+                "x": 0,
+                "y": -1.5,
+                "z": 0.2
+              }
+            },
+            {
+              "objType": "sphere",
+              "threeJsonId": "movePhoton",
+              "material": {
+                "type": "basic",
+                "color": "#ffe98a"
+              },
+              "position": {
+                "x": 0,
+                "y": -1.5,
+                "z": 0.2
+              }
+            },
+            {
+              "objType": "text",
+              "threeJsonId": "moveLabel",
+              "mode": "sdf",
+              "content": "运动参考系 v = 0.8c",
+              "fontSize": 0.28,
+              "color": "#ffb8e0",
+              "position": {
+                "x": 0,
+                "y": -2.15,
+                "z": 0
+              }
+            }
+          ],
+          "subScene": []
+        },
+        {
+          "objType": "text",
+          "threeJsonId": "formula",
+          "mode": "sdf",
+          "content": "Δt = Δt₀ / √(1 − v²/c²)",
+          "fontSize": 0.42,
+          "color": "#ffe98a",
+          "position": {
+            "x": 0,
+            "y": -3.2,
+            "z": 0
+          },
+          "subScene": []
+        }
+      ],
+      "schemaVersion": 2
+    },
+    "emc2": {
+      "version": "next",
+      "timeline": {
+        "version": 1,
+        "duration": 18,
+        "tracks": [
+          {
+            "id": "camOrbit",
+            "target": "$camera",
+            "property": "position",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": [
+                  0,
+                  1.2,
+                  14
+                ]
+              },
+              {
+                "time": 9,
+                "value": [
+                  5,
+                  2.4,
+                  11
+                ]
+              },
+              {
+                "time": 18,
+                "value": [
+                  0,
+                  1.2,
+                  14
+                ]
+              }
+            ],
+            "easing": "easeInOut"
+          },
+          {
+            "id": "corePulse",
+            "target": "core",
+            "property": "scale",
+            "signal": {
+              "type": "sine",
+              "frequency": 0.6,
+              "amplitude": 0.12,
+              "offset": 1
+            }
+          },
+          {
+            "id": "glowPulse",
+            "target": "glow",
+            "property": "scale",
+            "signal": {
+              "type": "sine",
+              "frequency": 0.6,
+              "amplitude": 0.18,
+              "offset": 1,
+              "phase": 0.4
+            }
+          },
+          {
+            "id": "ringArot",
+            "target": "ringA",
+            "property": "rotation.z",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": 0
+              },
+              {
+                "time": 18,
+                "value": 6.28
+              }
+            ],
+            "easing": "linear"
+          },
+          {
+            "id": "ringBrot",
+            "target": "ringB",
+            "property": "rotation.z",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": 0
+              },
+              {
+                "time": 18,
+                "value": -6.28
+              }
+            ],
+            "easing": "linear"
+          },
+          {
+            "id": "eqIn",
+            "target": "eq",
+            "property": "material.opacity",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": 0
+              },
+              {
+                "time": 1.2,
+                "value": 1
+              },
+              {
+                "time": 16.5,
+                "value": 1
+              },
+              {
+                "time": 18,
+                "value": 0
+              }
+            ],
+            "easing": "smoothstep"
+          },
+          {
+            "id": "eqsubIn",
+            "target": "eqsub",
+            "property": "material.opacity",
+            "keyframes": [
+              {
+                "time": 0.6,
+                "value": 0
+              },
+              {
+                "time": 2,
+                "value": 1
+              },
+              {
+                "time": 16.5,
+                "value": 1
+              },
+              {
+                "time": 18,
+                "value": 0
+              }
+            ],
+            "easing": "smoothstep"
+          },
+          {
+            "id": "burstOp",
+            "target": "burst",
+            "property": "render.opacity",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": 0
+              },
+              {
+                "time": 0.3,
+                "value": 1
+              },
+              {
+                "time": 4,
+                "value": 0.9
+              },
+              {
+                "time": 6,
+                "value": 0
+              }
+            ],
+            "easing": "easeOut"
+          }
+        ],
+        "effects": [
+          {
+            "id": "coreSwirl",
+            "target": "burst",
+            "operator": "swirl",
+            "start": 0,
+            "duration": 4,
+            "backend": "cpu",
+            "params": {
+              "speed": 1.4,
+              "twist": 0.8
+            }
+          }
+        ],
+        "captions": [
+          {
+            "id": "c1",
+            "text": "质量和能量，其实是同一件事的两种形式",
+            "start": 1.5,
+            "duration": 6,
+            "x": 0.5,
+            "y": 0.9,
+            "fontSize": 34,
+            "color": "#ffffff",
+            "fadeIn": 0.4,
+            "fadeOut": 0.4
+          },
+          {
+            "id": "c2",
+            "text": "它们之间只差一个光速的平方",
+            "start": 8,
+            "duration": 5,
+            "x": 0.5,
+            "y": 0.9,
+            "fontSize": 34,
+            "color": "#ffffff",
+            "fadeIn": 0.4,
+            "fadeOut": 0.4,
+            "highlights": [
+              {
+                "text": "光速的平方",
+                "color": "#ffdf88"
+              }
+            ]
+          },
+          {
+            "id": "c3",
+            "text": "E = mc² 解释了太阳为什么会发光",
+            "start": 13.5,
+            "duration": 4,
+            "x": 0.5,
+            "y": 0.9,
+            "fontSize": 34,
+            "color": "#ffffff",
+            "fadeIn": 0.4,
+            "fadeOut": 0.4
+          }
+        ],
+        "audio": [],
+        "clips": []
+      },
+      "sceneConfig": {
+        "scene": {
+          "background": "#05060f",
+          "fog": {
+            "color": "#05060f",
+            "near": 18,
+            "far": 60
+          },
+          "threeJsonId": "3525a91e-8c71-4381-99ff-34489ca5ded0"
+        },
+        "camera": {
+          "position": {
+            "x": 0,
+            "y": 1.2,
+            "z": 14
+          },
+          "lookAt": {
+            "x": 0,
+            "y": 0.6,
+            "z": 0
+          },
+          "fov": 45,
+          "threeJsonId": "70623a56-211f-4386-ae75-c8d7d0ee9225"
+        },
+        "controls": {
+          "type": "none",
+          "target": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "threeJsonId": "47b28a23-b330-453b-9bc5-f6b20ee4769c"
+        },
+        "lights": [
+          {
+            "type": "ambient",
+            "color": "#3a4a7a",
+            "intensity": 0.7,
+            "threeJsonId": "51d57b1c-e65a-4ebd-bddb-8cb07c7584b5"
+          },
+          {
+            "type": "directional",
+            "color": "#cfe0ff",
+            "intensity": 1.1,
+            "position": {
+              "x": 6,
+              "y": 10,
+              "z": 8
+            },
+            "threeJsonId": "43b3f9db-33ea-4f88-bd80-249ae4a7a8fa"
+          },
+          {
+            "type": "point",
+            "color": "#ffd27a",
+            "intensity": 60,
+            "distance": 30,
+            "position": {
+              "x": 0,
+              "y": 0.6,
+              "z": 0
+            },
+            "threeJsonId": "c8fcd697-0418-4ee0-9033-8db2d2608055"
+          }
+        ],
+        "renderer": {
+          "toneMapping": "ACESFilmic",
+          "exposure": 1.05,
+          "threeJsonId": "9747c9ac-2d50-4091-96e2-26d6ea52ea99"
+        }
+      },
+      "objectList": [
+        {
+          "objType": "text",
+          "threeJsonId": "eq",
+          "mode": "sdf",
+          "content": "E = m c²",
+          "fontSize": 1.1,
+          "color": "#ffffff",
+          "position": {
+            "x": 0,
+            "y": 2.6,
+            "z": 0
+          },
+          "anchor": "center",
+          "subScene": []
+        },
+        {
+          "objType": "text",
+          "threeJsonId": "eqsub",
+          "mode": "sdf",
+          "content": "质量与能量，只差一个光速的平方",
+          "fontSize": 0.34,
+          "color": "#9fb6e8",
+          "position": {
+            "x": 0,
+            "y": 1.7,
+            "z": 0
+          },
+          "anchor": "center",
+          "subScene": []
+        },
+        {
+          "objType": "sphere",
+          "threeJsonId": "core",
+          "material": {
+            "type": "standard",
+            "color": "#ffcf6a",
+            "emissive": "#ff9a2e",
+            "emissiveIntensity": 2.2,
+            "roughness": 0.35,
+            "metalness": 0.1
+          },
+          "geometry": {
+            "radius": 0.55,
+            "widthSegments": 48,
+            "heightSegments": 32
+          },
+          "position": {
+            "x": 0,
+            "y": 0.6,
+            "z": 0
+          },
+          "subScene": []
+        },
+        {
+          "objType": "sphere",
+          "threeJsonId": "glow",
+          "material": {
+            "type": "basic",
+            "color": "#ffb347",
+            "transparent": true,
+            "opacity": 0.18
+          },
+          "geometry": {
+            "radius": 1.05,
+            "widthSegments": 32,
+            "heightSegments": 24
+          },
+          "position": {
+            "x": 0,
+            "y": 0.6,
+            "z": 0
+          },
+          "subScene": []
+        },
+        {
+          "objType": "ring",
+          "threeJsonId": "ringA",
+          "material": {
+            "type": "basic",
+            "color": "#7fd0ff",
+            "transparent": true,
+            "opacity": 0.55
+          },
+          "geometry": {
+            "innerRadius": 1.6,
+            "outerRadius": 1.66,
+            "thetaSegments": 96
+          },
+          "rotation": {
+            "x": 1.2,
+            "y": 0.3,
+            "z": 0
+          },
+          "position": {
+            "x": 0,
+            "y": 0.6,
+            "z": 0
+          },
+          "subScene": []
+        },
+        {
+          "objType": "ring",
+          "threeJsonId": "ringB",
+          "material": {
+            "type": "basic",
+            "color": "#ff9ad0",
+            "transparent": true,
+            "opacity": 0.45
+          },
+          "geometry": {
+            "innerRadius": 2.1,
+            "outerRadius": 2.15,
+            "thetaSegments": 96
+          },
+          "rotation": {
+            "x": -0.9,
+            "y": 0.6,
+            "z": 0.4
+          },
+          "position": {
+            "x": 0,
+            "y": 0.6,
+            "z": 0
+          },
+          "subScene": []
+        },
+        {
+          "objType": "particleemitter",
+          "threeJsonId": "burst",
+          "source": {
+            "type": "sphere",
+            "radius": 0.6
+          },
+          "emission": {
+            "mode": "burst",
+            "count": 900,
+            "duration": 0.4,
+            "seed": 11
+          },
+          "particle": {
+            "lifetime": 3.2,
+            "size": 0.05,
+            "velocity": {
+              "min": 1.2,
+              "max": 4.2
+            },
+            "colorOverLife": [
+              {
+                "t": 0,
+                "color": "#fff3c4"
+              },
+              {
+                "t": 0.5,
+                "color": "#ffb347"
+              },
+              {
+                "t": 1,
+                "color": "#ff5a2e"
+              }
+            ],
+            "opacityOverLife": [
+              {
+                "t": 0,
+                "value": 1
+              },
+              {
+                "t": 1,
+                "value": 0
+              }
+            ]
+          },
+          "simulation": {
+            "backend": "cpu",
+            "gravity": {
+              "x": 0,
+              "y": -0.4,
+              "z": 0
+            },
+            "drag": 0.6,
+            "boundaries": "kill"
+          },
+          "render": {
+            "mode": "billboard",
+            "blending": "additive"
+          },
+          "position": {
+            "x": 0,
+            "y": 0.6,
+            "z": 0
+          },
+          "subScene": []
+        },
+        {
+          "objType": "particleemitter",
+          "threeJsonId": "dust",
+          "source": {
+            "type": "box",
+            "width": 26,
+            "height": 12,
+            "depth": 16
+          },
+          "emission": {
+            "mode": "continuous",
+            "rate": 40,
+            "seed": 5
+          },
+          "particle": {
+            "lifetime": 6,
+            "size": 0.03,
+            "velocity": {
+              "min": 0.02,
+              "max": 0.12
+            },
+            "colorOverLife": [
+              {
+                "t": 0,
+                "color": "#8fb6ff"
+              },
+              {
+                "t": 1,
+                "color": "#3a5a9a"
+              }
+            ],
+            "opacityOverLife": [
+              {
+                "t": 0,
+                "value": 0.5
+              },
+              {
+                "t": 1,
+                "value": 0
+              }
+            ]
+          },
+          "simulation": {
+            "backend": "cpu",
+            "drag": 0.2,
+            "boundaries": "wrap"
+          },
+          "render": {
+            "mode": "points",
+            "blending": "additive"
+          },
+          "position": {
+            "x": 0,
+            "y": 0.6,
+            "z": 0
+          },
+          "subScene": []
+        }
+      ],
+      "schemaVersion": 2
+    },
+    "curvature": {
+      "version": "next",
+      "timeline": {
+        "version": 1,
+        "duration": 22,
+        "tracks": [
+          {
+            "id": "camOrbit",
+            "target": "$camera",
+            "property": "position",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": [
+                  0,
+                  7.5,
+                  16
+                ]
+              },
+              {
+                "time": 11,
+                "value": [
+                  9,
+                  5.5,
+                  11
+                ]
+              },
+              {
+                "time": 22,
+                "value": [
+                  0,
+                  4.2,
+                  -15
+                ]
+              }
+            ]
+          },
+          {
+            "id": "camLook",
+            "target": "$camera",
+            "property": "lookAt",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "time": 11,
+                "value": [
+                  0,
+                  -0.6,
+                  0
+                ]
+              },
+              {
+                "time": 22,
+                "value": [
+                  0,
+                  -0.4,
+                  0
+                ]
+              }
+            ]
+          },
+          {
+            "id": "wellDeepen",
+            "target": "spacetimeGrid",
+            "property": "scale.y",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": 0.15
+              },
+              {
+                "time": 6,
+                "value": 1
+              },
+              {
+                "time": 22,
+                "value": 1
+              }
+            ]
+          },
+          {
+            "id": "massDrop",
+            "target": "massBody",
+            "property": "position.y",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": 5.5
+              },
+              {
+                "time": 5,
+                "value": -1.9
+              },
+              {
+                "time": 22,
+                "value": -1.9
+              }
+            ],
+            "easing": "easeIn"
+          },
+          {
+            "id": "ringPulse",
+            "target": "massRing",
+            "property": "scale",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": [
+                  0.4,
+                  0.4,
+                  0.4
+                ]
+              },
+              {
+                "time": 5,
+                "value": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              {
+                "time": 22,
+                "value": [
+                  1.25,
+                  1.25,
+                  1.25
+                ]
+              }
+            ]
+          },
+          {
+            "id": "ringSpin",
+            "target": "massRing",
+            "property": "rotation.z",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": 0
+              },
+              {
+                "time": 22,
+                "value": 6.283
+              }
+            ]
+          },
+          {
+            "id": "planetOrbit",
+            "target": "planet",
+            "property": "position",
+            "signal": {
+              "type": "path",
+              "points": [
+                [
+                  7.5,
+                  -0.55,
+                  0
+                ],
+                [
+                  5.6,
+                  -0.75,
+                  3.2
+                ],
+                [
+                  2.6,
+                  -1.15,
+                  4.6
+                ],
+                [
+                  -0.6,
+                  -1.6,
+                  4.2
+                ],
+                [
+                  -3.4,
+                  -1.35,
+                  2.4
+                ],
+                [
+                  -5.2,
+                  -0.95,
+                  -0.6
+                ],
+                [
+                  -4.4,
+                  -0.8,
+                  -3.4
+                ],
+                [
+                  -1.6,
+                  -0.7,
+                  -5
+                ],
+                [
+                  1.8,
+                  -0.6,
+                  -4.4
+                ],
+                [
+                  4.6,
+                  -0.55,
+                  -2.4
+                ],
+                [
+                  7.5,
+                  -0.55,
+                  0
+                ]
+              ],
+              "duration": 22,
+              "interpolation": "catmullRom"
+            }
+          },
+          {
+            "id": "titleIn",
+            "target": "titleCurv",
+            "property": "material.opacity",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": 0
+              },
+              {
+                "time": 1.2,
+                "value": 1
+              },
+              {
+                "time": 20,
+                "value": 1
+              },
+              {
+                "time": 22,
+                "value": 0
+              }
+            ]
+          },
+          {
+            "id": "subIn",
+            "target": "subCurv",
+            "property": "material.opacity",
+            "keyframes": [
+              {
+                "time": 1.5,
+                "value": 0
+              },
+              {
+                "time": 3,
+                "value": 1
+              },
+              {
+                "time": 20,
+                "value": 1
+              },
+              {
+                "time": 22,
+                "value": 0
+              }
+            ]
+          },
+          {
+            "id": "gridGlow",
+            "target": "spacetimeGrid",
+            "property": "material.emissiveIntensity",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": 0.2
+              },
+              {
+                "time": 6,
+                "value": 0.9
+              },
+              {
+                "time": 22,
+                "value": 0.5
+              }
+            ]
+          }
+        ],
+        "audio": [],
+        "captions": [],
+        "clips": [],
+        "effects": []
+      },
+      "captions": [
+        {
+          "id": "c1",
+          "text": "引力不是一种力，而是质量让时空弯曲",
+          "start": 1.5,
+          "duration": 6,
+          "x": 0.5,
+          "y": 0.9,
+          "fontSize": 34,
+          "color": "#ffffff",
+          "fadeIn": 0.4,
+          "fadeOut": 0.4
+        },
+        {
+          "id": "c2",
+          "text": "行星沿着弯曲时空中的最直路径前进",
+          "start": 9,
+          "duration": 6,
+          "x": 0.5,
+          "y": 0.9,
+          "fontSize": 34,
+          "color": "#ffffff",
+          "fadeIn": 0.4,
+          "fadeOut": 0.4
+        },
+        {
+          "id": "c3",
+          "text": "广义相对论 · 1915",
+          "start": 16,
+          "duration": 5,
+          "x": 0.5,
+          "y": 0.9,
+          "fontSize": 34,
+          "color": "#ffdf88",
+          "fadeIn": 0.4,
+          "fadeOut": 0.4
+        }
+      ],
+      "sceneConfig": {
+        "scene": {
+          "background": "#04060f",
+          "fog": {
+            "color": "#04060f",
+            "near": 18,
+            "far": 60
+          },
+          "threeJsonId": "4066527b-ab6e-4910-9a24-c8474cb284f1"
+        },
+        "camera": {
+          "position": {
+            "x": 0,
+            "y": 7.5,
+            "z": 16
+          },
+          "lookAt": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "fov": 50,
+          "threeJsonId": "146dec9f-c708-497c-a237-04edf8cd3d03"
+        },
+        "controls": {
+          "type": "none",
+          "target": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "threeJsonId": "7ebdc7df-04ce-400b-bd52-d54d29f612d6"
+        },
+        "lights": [
+          {
+            "type": "ambient",
+            "color": "#3a4a7a",
+            "intensity": 0.55,
+            "threeJsonId": "01707928-c3ea-4564-9541-129605302b51"
+          },
+          {
+            "type": "directional",
+            "color": "#cfe0ff",
+            "intensity": 1.1,
+            "position": {
+              "x": 8,
+              "y": 14,
+              "z": 10
+            },
+            "threeJsonId": "3397c7bc-e239-419b-9548-fd08405e0150"
+          },
+          {
+            "type": "point",
+            "color": "#ffd27a",
+            "intensity": 60,
+            "distance": 30,
+            "position": {
+              "x": 0,
+              "y": 0.6,
+              "z": 0
+            },
+            "threeJsonId": "544f0988-77cb-48fe-bb7c-ec9a37db677a"
+          }
+        ]
+      },
+      "objectList": [
+        {
+          "objType": "parametricsurface",
+          "threeJsonId": "spacetimeGrid",
+          "geometry": {
+            "type": "parametric",
+            "uSegments": 48,
+            "vSegments": 48,
+            "uRange": [
+              0,
+              1
+            ],
+            "vRange": [
+              0,
+              1
+            ],
+            "func": "(u,v)=>{const x=(u-0.5)*24;const z=(v-0.5)*24;const r=Math.sqrt(x*x+z*z)+0.001;const y=-6.0/(r+1.6);return [x,y,z];}"
+          },
+          "material": {
+            "type": "standard",
+            "color": "#2b6fd6",
+            "metalness": 0.35,
+            "roughness": 0.45,
+            "emissive": "#0a1c3a",
+            "emissiveIntensity": 0.6,
+            "wireframe": true,
+            "transparent": true,
+            "opacity": 0.85
+          },
+          "subScene": []
+        },
+        {
+          "objType": "sphere",
+          "threeJsonId": "massBody",
+          "geometry": {
+            "radius": 1.15,
+            "widthSegments": 48,
+            "heightSegments": 48
+          },
+          "material": {
+            "type": "standard",
+            "color": "#ffb347",
+            "emissive": "#ff8a1e",
+            "emissiveIntensity": 1.4,
+            "metalness": 0.2,
+            "roughness": 0.35
+          },
+          "position": {
+            "x": 0,
+            "y": -1.9,
+            "z": 0
+          },
+          "subScene": []
+        },
+        {
+          "objType": "torus",
+          "threeJsonId": "massRing",
+          "geometry": {
+            "radius": 1.7,
+            "tube": 0.05,
+            "radialSegments": 16,
+            "tubularSegments": 96
+          },
+          "material": {
+            "type": "basic",
+            "color": "#ffd27a",
+            "transparent": true,
+            "opacity": 0.5
+          },
+          "position": {
+            "x": 0,
+            "y": -1.9,
+            "z": 0
+          },
+          "rotation": {
+            "x": 1.5708,
+            "y": 0,
+            "z": 0
+          },
+          "subScene": []
+        },
+        {
+          "objType": "sphere",
+          "threeJsonId": "planet",
+          "geometry": {
+            "radius": 0.32,
+            "widthSegments": 32,
+            "heightSegments": 32
+          },
+          "material": {
+            "type": "standard",
+            "color": "#7fe3ff",
+            "emissive": "#2ea8d8",
+            "emissiveIntensity": 0.9,
+            "metalness": 0.3,
+            "roughness": 0.3
+          },
+          "position": {
+            "x": 7.5,
+            "y": -0.55,
+            "z": 0
+          },
+          "subScene": []
+        },
+        {
+          "objType": "line",
+          "threeJsonId": "planetPath",
+          "geometry": {
+            "points": [
+              [
+                7.5,
+                -0.55,
+                0
+              ],
+              [
+                5.6,
+                -0.75,
+                3.2
+              ],
+              [
+                2.6,
+                -1.15,
+                4.6
+              ],
+              [
+                -0.6,
+                -1.6,
+                4.2
+              ],
+              [
+                -3.4,
+                -1.35,
+                2.4
+              ],
+              [
+                -5.2,
+                -0.95,
+                -0.6
+              ],
+              [
+                -4.4,
+                -0.8,
+                -3.4
+              ],
+              [
+                -1.6,
+                -0.7,
+                -5
+              ],
+              [
+                1.8,
+                -0.6,
+                -4.4
+              ],
+              [
+                4.6,
+                -0.55,
+                -2.4
+              ],
+              [
+                7.5,
+                -0.55,
+                0
+              ]
+            ]
+          },
+          "material": {
+            "type": "basic",
+            "color": "#5fd0ff",
+            "transparent": true,
+            "opacity": 0.55
+          },
+          "subScene": []
+        },
+        {
+          "objType": "text",
+          "threeJsonId": "titleCurv",
+          "mode": "sdf",
+          "content": "时空弯曲",
+          "fontSize": 0.95,
+          "color": "#ffffff",
+          "position": {
+            "x": -8.2,
+            "y": 6.4,
+            "z": 0
+          },
+          "anchor": "left",
+          "subScene": []
+        },
+        {
+          "objType": "text",
+          "threeJsonId": "subCurv",
+          "mode": "sdf",
+          "content": "质量告诉时空如何弯曲",
+          "fontSize": 0.42,
+          "color": "#9fc4ff",
+          "position": {
+            "x": -8.2,
+            "y": 5.4,
+            "z": 0
+          },
+          "anchor": "left",
+          "subScene": []
+        }
+      ],
+      "schemaVersion": 2
+    },
+    "lensing": {
+      "version": "next",
+      "timeline": {
+        "version": 1,
+        "duration": 20,
+        "tracks": [
+          {
+            "id": "cam-orbit",
+            "target": "$camera",
+            "property": "position",
+            "signal": {
+              "type": "orbit",
+              "center": [
+                0,
+                0,
+                0
+              ],
+              "radius": 26,
+              "duration": 20,
+              "plane": "xz"
+            }
+          },
+          {
+            "id": "ring-spin",
+            "target": "lens-ring",
+            "property": "rotation.z",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": 0
+              },
+              {
+                "time": 20,
+                "value": 6.28
+              }
+            ]
+          },
+          {
+            "id": "ring2-spin",
+            "target": "lens-ring2",
+            "property": "rotation.z",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": 0
+              },
+              {
+                "time": 20,
+                "value": -4.2
+              }
+            ]
+          },
+          {
+            "id": "star-pulse",
+            "target": "lens-star",
+            "property": "scale",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              {
+                "time": 10,
+                "value": [
+                  1.08,
+                  1.08,
+                  1.08
+                ]
+              },
+              {
+                "time": 20,
+                "value": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            ]
+          },
+          {
+            "id": "ray-in-draw",
+            "target": "ray-in",
+            "property": "material.opacity",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": 0
+              },
+              {
+                "time": 3,
+                "value": 0.9
+              },
+              {
+                "time": 20,
+                "value": 0.9
+              }
+            ]
+          },
+          {
+            "id": "ray-out-draw",
+            "target": "ray-out",
+            "property": "material.opacity",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": 0
+              },
+              {
+                "time": 4,
+                "value": 0
+              },
+              {
+                "time": 7,
+                "value": 0.9
+              },
+              {
+                "time": 20,
+                "value": 0.9
+              }
+            ]
+          },
+          {
+            "id": "title-in",
+            "target": "lens-title",
+            "property": "material.opacity",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": 0
+              },
+              {
+                "time": 1.5,
+                "value": 1
+              },
+              {
+                "time": 18.5,
+                "value": 1
+              },
+              {
+                "time": 20,
+                "value": 0
+              }
+            ]
+          },
+          {
+            "id": "sub-in",
+            "target": "lens-sub",
+            "property": "material.opacity",
+            "keyframes": [
+              {
+                "time": 0.8,
+                "value": 0
+              },
+              {
+                "time": 2.3,
+                "value": 1
+              },
+              {
+                "time": 18.5,
+                "value": 1
+              },
+              {
+                "time": 20,
+                "value": 0
+              }
+            ]
+          }
+        ],
+        "captions": [
+          {
+            "id": "lens-c1",
+            "text": "光线也会沿着弯曲的时空前进。",
+            "start": 1,
+            "duration": 5,
+            "x": 0.5,
+            "y": 0.9,
+            "fontSize": 34,
+            "color": "#ffffff",
+            "fadeIn": 0.4,
+            "fadeOut": 0.4
+          },
+          {
+            "id": "lens-c2",
+            "text": "当星光经过太阳或星系时，路径会被弯折，形成引力透镜。",
+            "start": 6.5,
+            "duration": 7,
+            "x": 0.5,
+            "y": 0.9,
+            "fontSize": 34,
+            "color": "#ffffff",
+            "fadeIn": 0.4,
+            "fadeOut": 0.4,
+            "highlights": [
+              {
+                "text": "引力透镜",
+                "color": "#ffdf88"
+              }
+            ]
+          },
+          {
+            "id": "lens-c3",
+            "text": "一九一九年的日食观测，第一次证实了这个预言。",
+            "start": 14,
+            "duration": 5.5,
+            "x": 0.5,
+            "y": 0.9,
+            "fontSize": 34,
+            "color": "#ffffff",
+            "fadeIn": 0.4,
+            "fadeOut": 0.4
+          }
+        ],
+        "audio": [],
+        "clips": [],
+        "effects": []
+      },
+      "sceneConfig": {
+        "scene": {
+          "background": "#03040c",
+          "fog": {
+            "color": "#03040c",
+            "near": 30,
+            "far": 90
+          },
+          "threeJsonId": "aea0e604-33bc-429a-96fd-cbad9d7297d5"
+        },
+        "camera": {
+          "position": {
+            "x": 0,
+            "y": 6,
+            "z": 26
+          },
+          "lookAt": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "fov": 50,
+          "threeJsonId": "829b6421-40d9-4368-bb81-119392770622"
+        },
+        "controls": {
+          "type": "none",
+          "target": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "threeJsonId": "82c6f969-bf9d-4bcf-a0dd-9c7b2be56810"
+        },
+        "lights": [
+          {
+            "type": "ambient",
+            "color": "#223055",
+            "intensity": 0.5,
+            "threeJsonId": "486faccb-e07e-41b2-9e74-f22251999969"
+          },
+          {
+            "type": "directional",
+            "color": "#9fc4ff",
+            "intensity": 0.9,
+            "position": {
+              "x": 12,
+              "y": 18,
+              "z": 10
+            },
+            "threeJsonId": "30023ba3-d9df-4f5a-8914-4d6dd13b29d0"
+          }
+        ]
+      },
+      "objectList": [
+        {
+          "objType": "sphere",
+          "threeJsonId": "lens-star",
+          "material": {
+            "type": "standard",
+            "color": "#ffd27a",
+            "emissive": "#ffb347",
+            "emissiveIntensity": 1.6,
+            "roughness": 0.4,
+            "metalness": 0.1
+          },
+          "geometry": {
+            "radius": 2.2,
+            "widthSegments": 48,
+            "heightSegments": 32
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "subScene": []
+        },
+        {
+          "objType": "ring",
+          "threeJsonId": "lens-ring",
+          "material": {
+            "type": "basic",
+            "color": "#8fd0ff",
+            "transparent": true,
+            "opacity": 0.55,
+            "side": "double"
+          },
+          "geometry": {
+            "innerRadius": 3.4,
+            "outerRadius": 3.7,
+            "thetaSegments": 96
+          },
+          "rotation": {
+            "x": -1.5708,
+            "y": 0,
+            "z": 0
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "subScene": []
+        },
+        {
+          "objType": "ring",
+          "threeJsonId": "lens-ring2",
+          "material": {
+            "type": "basic",
+            "color": "#c9a6ff",
+            "transparent": true,
+            "opacity": 0.4,
+            "side": "double"
+          },
+          "geometry": {
+            "innerRadius": 4.6,
+            "outerRadius": 4.85,
+            "thetaSegments": 96
+          },
+          "rotation": {
+            "x": -1.5708,
+            "y": 0,
+            "z": 0
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "subScene": []
+        },
+        {
+          "objType": "line",
+          "threeJsonId": "ray-in",
+          "material": {
+            "type": "basic",
+            "color": "#ffffff",
+            "transparent": true,
+            "opacity": 0.9
+          },
+          "points": [
+            [
+              -16,
+              7,
+              0
+            ],
+            [
+              -6,
+              3.2,
+              0
+            ],
+            [
+              -3.6,
+              1.4,
+              0
+            ]
+          ],
+          "linewidth": 2,
+          "subScene": []
+        },
+        {
+          "objType": "line",
+          "threeJsonId": "ray-out",
+          "material": {
+            "type": "basic",
+            "color": "#ffffff",
+            "transparent": true,
+            "opacity": 0.9
+          },
+          "points": [
+            [
+              -3.6,
+              1.4,
+              0
+            ],
+            [
+              0,
+              -2.6,
+              0
+            ],
+            [
+              6,
+              -5.4,
+              0
+            ],
+            [
+              16,
+              -7,
+              0
+            ]
+          ],
+          "linewidth": 2,
+          "subScene": []
+        },
+        {
+          "objType": "line",
+          "threeJsonId": "ray-straight",
+          "material": {
+            "type": "basic",
+            "color": "#5a6a8a",
+            "transparent": true,
+            "opacity": 0.5
+          },
+          "points": [
+            [
+              -16,
+              7,
+              0
+            ],
+            [
+              16,
+              -7,
+              0
+            ]
+          ],
+          "linewidth": 1,
+          "subScene": []
+        },
+        {
+          "objType": "text",
+          "threeJsonId": "lens-title",
+          "mode": "sdf",
+          "content": "引力透镜",
+          "fontSize": 1.1,
+          "color": "#ffffff",
+          "position": {
+            "x": 0,
+            "y": 9.5,
+            "z": 0
+          },
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "subScene": []
+        },
+        {
+          "objType": "text",
+          "threeJsonId": "lens-sub",
+          "mode": "sdf",
+          "content": "光线沿弯曲时空前进",
+          "fontSize": 0.55,
+          "color": "#9fc4ff",
+          "position": {
+            "x": 0,
+            "y": 8.2,
+            "z": 0
+          },
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "subScene": []
+        },
+        {
+          "objType": "particleemitter",
+          "threeJsonId": "starfield",
+          "source": {
+            "type": "box",
+            "size": [
+              60,
+              34,
+              40
+            ]
+          },
+          "emission": {
+            "type": "static",
+            "count": 420,
+            "seed": 11
+          },
+          "particle": {
+            "lifetime": 100,
+            "size": {
+              "min": 0.05,
+              "max": 0.16
+            },
+            "color": "#cfe4ff",
+            "opacityOverLife": [
+              1,
+              1
+            ]
+          },
+          "simulation": {
+            "backend": "cpu",
+            "gravity": [
+              0,
+              0,
+              0
+            ],
+            "drag": 0
+          },
+          "render": {
+            "mode": "points",
+            "blending": "additive"
+          },
+          "subScene": []
+        }
+      ],
+      "schemaVersion": 2
+    },
+    "gps": {
+      "version": "next",
+      "timeline": {
+        "version": 1,
+        "duration": 18,
+        "tracks": [
+          {
+            "id": "earthSpin",
+            "target": "earth",
+            "property": "rotation.y",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": 0
+              },
+              {
+                "time": 18,
+                "value": 1.2,
+                "easing": "linear"
+              }
+            ]
+          },
+          {
+            "id": "satOrbit",
+            "target": "satBody",
+            "property": "position",
+            "signal": {
+              "type": "orbit",
+              "center": [
+                0,
+                0,
+                0
+              ],
+              "radius": 5.2,
+              "duration": 9,
+              "plane": "xz"
+            }
+          },
+          {
+            "id": "panelLOrbit",
+            "target": "satPanelL",
+            "property": "position",
+            "signal": {
+              "type": "orbit",
+              "center": [
+                0,
+                0,
+                0
+              ],
+              "radius": 5.2,
+              "duration": 9,
+              "plane": "xz",
+              "phase": 0
+            }
+          },
+          {
+            "id": "panelROrbit",
+            "target": "satPanelR",
+            "property": "position",
+            "signal": {
+              "type": "orbit",
+              "center": [
+                0,
+                0,
+                0
+              ],
+              "radius": 5.2,
+              "duration": 9,
+              "plane": "xz",
+              "phase": 0
+            }
+          },
+          {
+            "id": "sigAOrbit",
+            "target": "signalA",
+            "property": "position",
+            "signal": {
+              "type": "orbit",
+              "center": [
+                0,
+                0,
+                0
+              ],
+              "radius": 5.2,
+              "duration": 9,
+              "plane": "xz",
+              "phase": 0
+            }
+          },
+          {
+            "id": "sigBOrbit",
+            "target": "signalB",
+            "property": "position",
+            "signal": {
+              "type": "orbit",
+              "center": [
+                0,
+                0,
+                0
+              ],
+              "radius": 5.2,
+              "duration": 9,
+              "plane": "xz",
+              "phase": 0
+            }
+          },
+          {
+            "id": "sigAOpacity",
+            "target": "signalA",
+            "property": "material.opacity",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": 0
+              },
+              {
+                "time": 1,
+                "value": 1
+              },
+              {
+                "time": 3,
+                "value": 0
+              },
+              {
+                "time": 18,
+                "value": 0
+              }
+            ]
+          },
+          {
+            "id": "sigBOpacity",
+            "target": "signalB",
+            "property": "material.opacity",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": 0
+              },
+              {
+                "time": 2,
+                "value": 1
+              },
+              {
+                "time": 4,
+                "value": 0
+              },
+              {
+                "time": 18,
+                "value": 0
+              }
+            ]
+          },
+          {
+            "id": "camPush",
+            "target": "$camera",
+            "property": "position",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": [
+                  0,
+                  6,
+                  16
+                ]
+              },
+              {
+                "time": 18,
+                "value": [
+                  3,
+                  4,
+                  13
+                ],
+                "easing": "easeInOut"
+              }
+            ]
+          },
+          {
+            "id": "camLook",
+            "target": "$camera",
+            "property": "lookAt",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "time": 18,
+                "value": [
+                  1,
+                  0,
+                  0
+                ]
+              }
+            ]
+          },
+          {
+            "id": "starDrift",
+            "target": "starfield",
+            "property": "rotation.y",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": 0
+              },
+              {
+                "time": 18,
+                "value": 0.35,
+                "easing": "linear"
+              }
+            ]
+          }
+        ],
+        "captions": [
+          {
+            "id": "gpsC1",
+            "text": "相对论并不遥远。",
+            "start": 0.4,
+            "duration": 4.2,
+            "x": 0.5,
+            "y": 0.9,
+            "fontSize": 34,
+            "color": "#ffffff",
+            "fadeIn": 0.4,
+            "fadeOut": 0.4
+          },
+          {
+            "id": "gpsC2",
+            "text": "你手机里的GPS，每天都要同时修正狭义相对论和广义相对论带来的时间偏差。",
+            "start": 4.8,
+            "duration": 8,
+            "x": 0.5,
+            "y": 0.9,
+            "fontSize": 34,
+            "color": "#ffffff",
+            "fadeIn": 0.4,
+            "fadeOut": 0.4,
+            "highlights": [
+              {
+                "text": "狭义相对论",
+                "color": "#ffd166"
+              },
+              {
+                "text": "广义相对论",
+                "color": "#66e0ff"
+              }
+            ]
+          },
+          {
+            "id": "gpsC3",
+            "text": "否则定位误差每天会累积十几公里。",
+            "start": 13,
+            "duration": 4.6,
+            "x": 0.5,
+            "y": 0.9,
+            "fontSize": 34,
+            "color": "#ffffff",
+            "fadeIn": 0.4,
+            "fadeOut": 0.4
+          }
+        ],
+        "audio": [],
+        "clips": [],
+        "effects": []
+      },
+      "sceneConfig": {
+        "scene": {
+          "background": "#03060f",
+          "threeJsonId": "58aa5d16-6f2f-4f7a-9cff-6b6105006b24"
+        },
+        "camera": {
+          "position": {
+            "x": 0,
+            "y": 6,
+            "z": 16
+          },
+          "lookAt": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "fov": 45,
+          "threeJsonId": "9b25f0fe-4833-49ec-839a-97c54996ee13"
+        },
+        "controls": {
+          "type": "none",
+          "target": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "threeJsonId": "21091541-9798-4e8d-a374-f8506e063185"
+        },
+        "lights": [
+          {
+            "type": "ambient",
+            "intensity": 0.35,
+            "color": "#8899cc",
+            "threeJsonId": "98f2c8c2-1462-4eff-a8c7-1bfd25368f08"
+          },
+          {
+            "type": "directional",
+            "intensity": 1.1,
+            "color": "#ffffff",
+            "position": {
+              "x": 8,
+              "y": 12,
+              "z": 6
+            },
+            "threeJsonId": "f0408e2d-69cb-4f53-9211-3f4bccb9f91e"
+          }
+        ]
+      },
+      "objectList": [
+        {
+          "objType": "sphere",
+          "threeJsonId": "earth",
+          "geometry": {
+            "radius": 3.2,
+            "widthSegments": 64,
+            "heightSegments": 48
+          },
+          "material": {
+            "type": "standard",
+            "color": "#1b4f8a",
+            "roughness": 0.75,
+            "metalness": 0.1,
+            "emissive": "#0a1c33",
+            "emissiveIntensity": 0.4
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "subScene": []
+        },
+        {
+          "objType": "torus",
+          "threeJsonId": "orbitRing",
+          "geometry": {
+            "radius": 5.2,
+            "tube": 0.03,
+            "radialSegments": 8,
+            "tubularSegments": 128
+          },
+          "material": {
+            "type": "basic",
+            "color": "#3d6fa8",
+            "transparent": true,
+            "opacity": 0.5
+          },
+          "rotation": {
+            "x": 1.5708,
+            "y": 0,
+            "z": 0
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "subScene": []
+        },
+        {
+          "objType": "box",
+          "threeJsonId": "satBody",
+          "geometry": {
+            "width": 0.5,
+            "height": 0.5,
+            "depth": 0.9
+          },
+          "material": {
+            "type": "standard",
+            "color": "#d8dde6",
+            "roughness": 0.4,
+            "metalness": 0.7
+          },
+          "position": {
+            "x": 5.2,
+            "y": 0,
+            "z": 0
+          },
+          "subScene": []
+        },
+        {
+          "objType": "box",
+          "threeJsonId": "satPanelL",
+          "geometry": {
+            "width": 1.4,
+            "height": 0.05,
+            "depth": 0.7
+          },
+          "material": {
+            "type": "standard",
+            "color": "#2a4a8a",
+            "roughness": 0.3,
+            "metalness": 0.5,
+            "emissive": "#0d1f45",
+            "emissiveIntensity": 0.5
+          },
+          "position": {
+            "x": 4.2,
+            "y": 0,
+            "z": 0
+          },
+          "subScene": []
+        },
+        {
+          "objType": "box",
+          "threeJsonId": "satPanelR",
+          "geometry": {
+            "width": 1.4,
+            "height": 0.05,
+            "depth": 0.7
+          },
+          "material": {
+            "type": "standard",
+            "color": "#2a4a8a",
+            "roughness": 0.3,
+            "metalness": 0.5,
+            "emissive": "#0d1f45",
+            "emissiveIntensity": 0.5
+          },
+          "position": {
+            "x": 6.2,
+            "y": 0,
+            "z": 0
+          },
+          "subScene": []
+        },
+        {
+          "objType": "sphere",
+          "threeJsonId": "signalA",
+          "geometry": {
+            "radius": 0.09,
+            "widthSegments": 12,
+            "heightSegments": 8
+          },
+          "material": {
+            "type": "basic",
+            "color": "#ffd166"
+          },
+          "position": {
+            "x": 5.2,
+            "y": 0,
+            "z": 0
+          },
+          "subScene": []
+        },
+        {
+          "objType": "sphere",
+          "threeJsonId": "signalB",
+          "geometry": {
+            "radius": 0.09,
+            "widthSegments": 12,
+            "heightSegments": 8
+          },
+          "material": {
+            "type": "basic",
+            "color": "#66e0ff"
+          },
+          "position": {
+            "x": 5.2,
+            "y": 0,
+            "z": 0
+          },
+          "subScene": []
+        },
+        {
+          "objType": "text",
+          "threeJsonId": "titleGps",
+          "mode": "sdf",
+          "content": "相对论就在身边",
+          "fontSize": 0.62,
+          "color": "#ffffff",
+          "position": {
+            "x": 0,
+            "y": 5.6,
+            "z": 0
+          },
+          "anchor": "center",
+          "subScene": []
+        },
+        {
+          "objType": "text",
+          "threeJsonId": "labelSat",
+          "mode": "sdf",
+          "content": "GPS 卫星",
+          "fontSize": 0.34,
+          "color": "#ffd166",
+          "position": {
+            "x": 5.2,
+            "y": 1.4,
+            "z": 0
+          },
+          "anchor": "center",
+          "subScene": []
+        },
+        {
+          "objType": "text",
+          "threeJsonId": "labelEarth",
+          "mode": "sdf",
+          "content": "地球",
+          "fontSize": 0.34,
+          "color": "#8fc7ff",
+          "position": {
+            "x": 0,
+            "y": -3.9,
+            "z": 0
+          },
+          "anchor": "center",
+          "subScene": []
+        },
+        {
+          "objType": "text",
+          "threeJsonId": "formulaS",
+          "mode": "sdf",
+          "content": "狭义：时钟变慢",
+          "fontSize": 0.3,
+          "color": "#ffd166",
+          "position": {
+            "x": -6.5,
+            "y": 2.6,
+            "z": 0
+          },
+          "anchor": "center",
+          "subScene": []
+        },
+        {
+          "objType": "text",
+          "threeJsonId": "formulaG",
+          "mode": "sdf",
+          "content": "广义：引力势差",
+          "fontSize": 0.3,
+          "color": "#66e0ff",
+          "position": {
+            "x": -6.5,
+            "y": 1.9,
+            "z": 0
+          },
+          "anchor": "center",
+          "subScene": []
+        },
+        {
+          "objType": "text",
+          "threeJsonId": "formulaSum",
+          "mode": "sdf",
+          "content": "合计 ≈ +38 微秒/天",
+          "fontSize": 0.3,
+          "color": "#ffffff",
+          "position": {
+            "x": -6.5,
+            "y": 1.2,
+            "z": 0
+          },
+          "anchor": "center",
+          "subScene": []
+        },
+        {
+          "objType": "particleemitter",
+          "threeJsonId": "starfield",
+          "source": {
+            "type": "box",
+            "size": [
+              40,
+              24,
+              30
+            ]
+          },
+          "emission": {
+            "mode": "static",
+            "count": 420,
+            "seed": 11
+          },
+          "particle": {
+            "lifetime": 9,
+            "size": {
+              "min": 0.02,
+              "max": 0.06
+            },
+            "color": {
+              "start": "#ffffff",
+              "end": "#9fc4ff"
+            },
+            "opacityOverLife": [
+              1,
+              0.7,
+              0.2
+            ]
+          },
+          "simulation": {
+            "backend": "cpu",
+            "gravity": [
+              0,
+              0,
+              0
+            ],
+            "drag": 0
+          },
+          "render": {
+            "mode": "points"
+          },
+          "subScene": []
+        }
+      ],
+      "schemaVersion": 2
+    },
+    "outro": {
+      "version": "next",
+      "timeline": {
+        "version": 1,
+        "duration": 14,
+        "tracks": [
+          {
+            "id": "camPush",
+            "target": "$camera",
+            "property": "position",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": [
+                  0,
+                  1.2,
+                  14
+                ]
+              },
+              {
+                "time": 14,
+                "value": [
+                  0,
+                  1,
+                  9.5
+                ]
+              }
+            ],
+            "easing": "easeInOut"
+          },
+          {
+            "id": "coreSpin",
+            "target": "core",
+            "property": "rotation.y",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": 0
+              },
+              {
+                "time": 14,
+                "value": 2.2
+              }
+            ],
+            "easing": "linear"
+          },
+          {
+            "id": "corePulse",
+            "target": "core",
+            "property": "scale",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              {
+                "time": 7,
+                "value": [
+                  1.06,
+                  1.06,
+                  1.06
+                ]
+              },
+              {
+                "time": 14,
+                "value": [
+                  1,
+                  1,
+                  1
+                ]
+              }
+            ],
+            "easing": "easeInOut"
+          },
+          {
+            "id": "ringASpin",
+            "target": "ringA",
+            "property": "rotation.z",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": 0
+              },
+              {
+                "time": 14,
+                "value": 1.6
+              }
+            ],
+            "easing": "linear"
+          },
+          {
+            "id": "ringBSpin",
+            "target": "ringB",
+            "property": "rotation.z",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": 0
+              },
+              {
+                "time": 14,
+                "value": -1.2
+              }
+            ],
+            "easing": "linear"
+          },
+          {
+            "id": "titleIn",
+            "target": "title",
+            "property": "material.opacity",
+            "keyframes": [
+              {
+                "time": 0.4,
+                "value": 0
+              },
+              {
+                "time": 2.2,
+                "value": 1
+              },
+              {
+                "time": 14,
+                "value": 1
+              }
+            ],
+            "easing": "easeOut"
+          },
+          {
+            "id": "subIn",
+            "target": "subtitle",
+            "property": "material.opacity",
+            "keyframes": [
+              {
+                "time": 1.6,
+                "value": 0
+              },
+              {
+                "time": 3.4,
+                "value": 1
+              },
+              {
+                "time": 14,
+                "value": 1
+              }
+            ],
+            "easing": "easeOut"
+          },
+          {
+            "id": "creditIn",
+            "target": "credit",
+            "property": "material.opacity",
+            "keyframes": [
+              {
+                "time": 3,
+                "value": 0
+              },
+              {
+                "time": 4.6,
+                "value": 1
+              },
+              {
+                "time": 14,
+                "value": 1
+              }
+            ],
+            "easing": "easeOut"
+          },
+          {
+            "id": "starDrift",
+            "target": "starfield",
+            "property": "rotation.y",
+            "keyframes": [
+              {
+                "time": 0,
+                "value": 0
+              },
+              {
+                "time": 14,
+                "value": 0.35
+              }
+            ],
+            "easing": "linear"
+          }
+        ],
+        "captions": [
+          {
+            "id": "c1",
+            "text": "从光速不变到时空弯曲，",
+            "start": 0.6,
+            "duration": 4.4,
+            "x": 0.5,
+            "y": 0.88,
+            "fontSize": 34,
+            "color": "#ffffff",
+            "fadeIn": 0.4,
+            "fadeOut": 0.4
+          },
+          {
+            "id": "c2",
+            "text": "相对论告诉我们：宇宙的规律，往往比直觉更加奇妙。",
+            "start": 5.2,
+            "duration": 5,
+            "x": 0.5,
+            "y": 0.88,
+            "fontSize": 34,
+            "color": "#ffffff",
+            "fadeIn": 0.4,
+            "fadeOut": 0.4,
+            "highlights": [
+              {
+                "text": "比直觉更加奇妙",
+                "color": "#ffdf88"
+              }
+            ]
+          },
+          {
+            "id": "c3",
+            "text": "而理解它，正是人类最了不起的冒险之一。",
+            "start": 10.4,
+            "duration": 3.4,
+            "x": 0.5,
+            "y": 0.88,
+            "fontSize": 34,
+            "color": "#ffffff",
+            "fadeIn": 0.4,
+            "fadeOut": 0.4
+          }
+        ],
+        "audio": [],
+        "clips": [],
+        "effects": []
+      },
+      "sceneConfig": {
+        "scene": {
+          "background": "#03040c",
+          "fog": {
+            "color": "#03040c",
+            "near": 18,
+            "far": 60
+          },
+          "threeJsonId": "b57f15d3-5ed4-4dec-8bd7-a163c6d69ba6"
+        },
+        "camera": {
+          "position": {
+            "x": 0,
+            "y": 1.2,
+            "z": 14
+          },
+          "lookAt": {
+            "x": 0,
+            "y": 0.6,
+            "z": 0
+          },
+          "fov": 50,
+          "threeJsonId": "188b6364-80f4-458e-a253-e46087079a58"
+        },
+        "controls": {
+          "type": "none",
+          "target": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "threeJsonId": "eeaea951-09fd-4b16-8479-2d5fe796756e"
+        },
+        "lights": [
+          {
+            "type": "ambient",
+            "color": "#2a3a66",
+            "intensity": 0.7,
+            "threeJsonId": "ff2009e3-30cb-4acf-a6cd-ec120262ad9d"
+          },
+          {
+            "type": "directional",
+            "color": "#9fc4ff",
+            "intensity": 1.1,
+            "position": {
+              "x": 6,
+              "y": 9,
+              "z": 8
+            },
+            "threeJsonId": "b5cb3394-7825-47f4-bbfe-45f6a2952bd7"
+          },
+          {
+            "type": "point",
+            "color": "#ffd9a0",
+            "intensity": 60,
+            "distance": 40,
+            "position": {
+              "x": -5,
+              "y": 2,
+              "z": 4
+            },
+            "threeJsonId": "8724c444-06c8-47ec-8aeb-7c1d1bdada40"
+          }
+        ],
+        "renderLoop": {
+          "enabled": true,
+          "threeJsonId": "2a0a8278-1f16-4eee-af10-17ab14d02a28"
+        }
+      },
+      "objectList": [
+        {
+          "objType": "particleemitter",
+          "threeJsonId": "starfield",
+          "source": {
+            "type": "box",
+            "size": [
+              40,
+              22,
+              30
+            ],
+            "center": [
+              0,
+              0,
+              -6
+            ]
+          },
+          "emission": {
+            "mode": "static",
+            "count": 1400,
+            "seed": 41
+          },
+          "particle": {
+            "lifetime": 30,
+            "sizeRange": [
+              0.02,
+              0.09
+            ],
+            "colorRange": [
+              "#ffffff",
+              "#bcd4ff",
+              "#ffe6b8"
+            ],
+            "opacityOverLife": {
+              "keys": [
+                {
+                  "t": 0,
+                  "v": 0
+                },
+                {
+                  "t": 0.15,
+                  "v": 0.9
+                },
+                {
+                  "t": 1,
+                  "v": 0.7
+                }
+              ]
+            }
+          },
+          "simulation": {
+            "backend": "cpu",
+            "gravity": [
+              0,
+              0,
+              0
+            ],
+            "drag": 0
+          },
+          "render": {
+            "mode": "points",
+            "blending": "additive",
+            "depthWrite": false
+          },
+          "subScene": []
+        },
+        {
+          "objType": "sphere",
+          "threeJsonId": "core",
+          "material": {
+            "type": "standard",
+            "color": "#0a1230",
+            "emissive": "#2b6cff",
+            "emissiveIntensity": 1.4,
+            "roughness": 0.35,
+            "metalness": 0.2
+          },
+          "geometry": {
+            "radius": 1.5,
+            "widthSegments": 48,
+            "heightSegments": 32
+          },
+          "position": {
+            "x": 0,
+            "y": 0.6,
+            "z": 0
+          },
+          "subScene": []
+        },
+        {
+          "objType": "torus",
+          "threeJsonId": "ringA",
+          "material": {
+            "type": "basic",
+            "color": "#6fb2ff",
+            "transparent": true,
+            "opacity": 0.55
+          },
+          "geometry": {
+            "radius": 2.6,
+            "tube": 0.02,
+            "radialSegments": 8,
+            "tubularSegments": 160
+          },
+          "rotation": {
+            "x": 1.35,
+            "y": 0.2,
+            "z": 0
+          },
+          "position": {
+            "x": 0,
+            "y": 0.6,
+            "z": 0
+          },
+          "subScene": []
+        },
+        {
+          "objType": "torus",
+          "threeJsonId": "ringB",
+          "material": {
+            "type": "basic",
+            "color": "#ffd9a0",
+            "transparent": true,
+            "opacity": 0.45
+          },
+          "geometry": {
+            "radius": 3.4,
+            "tube": 0.015,
+            "radialSegments": 8,
+            "tubularSegments": 160
+          },
+          "rotation": {
+            "x": 1.1,
+            "y": -0.5,
+            "z": 0.4
+          },
+          "position": {
+            "x": 0,
+            "y": 0.6,
+            "z": 0
+          },
+          "subScene": []
+        },
+        {
+          "objType": "text",
+          "threeJsonId": "title",
+          "mode": "sdf",
+          "content": "宇宙的规律",
+          "fontSize": 0.95,
+          "color": "#ffffff",
+          "position": {
+            "x": 0,
+            "y": 3.4,
+            "z": 0
+          },
+          "anchor": "center",
+          "subScene": []
+        },
+        {
+          "objType": "text",
+          "threeJsonId": "subtitle",
+          "mode": "sdf",
+          "content": "比直觉更加奇妙",
+          "fontSize": 0.5,
+          "color": "#9fc4ff",
+          "position": {
+            "x": 0,
+            "y": 2.5,
+            "z": 0
+          },
+          "anchor": "center",
+          "subScene": []
+        },
+        {
+          "objType": "text",
+          "threeJsonId": "credit",
+          "mode": "sdf",
+          "content": "广义相对论 · 1915",
+          "fontSize": 0.34,
+          "color": "#ffd9a0",
+          "position": {
+            "x": 0,
+            "y": -2.4,
+            "z": 0
+          },
+          "anchor": "center",
+          "subScene": []
+        }
+      ],
+      "schemaVersion": 2
+    }
+  },
+  "timeline": {
+    "version": 1,
+    "clips": [
+      {
+        "id": "intro",
+        "source": "intro",
+        "start": 0,
+        "duration": 16
+      },
+      {
+        "id": "postulate",
+        "source": "postulate",
+        "start": 16,
+        "duration": 20
+      },
+      {
+        "id": "dilation",
+        "source": "dilation",
+        "start": 36,
+        "duration": 22
+      },
+      {
+        "id": "emc2",
+        "source": "emc2",
+        "start": 58,
+        "duration": 18
+      },
+      {
+        "id": "curvature",
+        "source": "curvature",
+        "start": 76,
+        "duration": 22
+      },
+      {
+        "id": "lensing",
+        "source": "lensing",
+        "start": 98,
+        "duration": 20
+      },
+      {
+        "id": "gps",
+        "source": "gps",
+        "start": 118,
+        "duration": 18
+      },
+      {
+        "id": "outro",
+        "source": "outro",
+        "start": 136,
+        "duration": 14
+      }
+    ],
+    "tracks": [],
+    "audio": [
+      {
+        "id": "score",
+        "start": 0,
+        "duration": 150,
+        "gain": 0.16,
+        "fadeIn": 2,
+        "fadeOut": 4,
+        "recipe": {
+          "kind": "score",
+          "score": {
+            "version": 1,
+            "ppq": 480,
+            "tempos": [
+              {
+                "tick": 0,
+                "bpm": 72
+              }
+            ],
+            "tracks": [
+              {
+                "id": "pad",
+                "instrument": "soft-piano",
+                "notes": [
+                  {
+                    "id": "p1",
+                    "tick": 0,
+                    "duration": 1920,
+                    "pitch": 48,
+                    "velocity": 0.3
+                  },
+                  {
+                    "id": "p2",
+                    "tick": 0,
+                    "duration": 1920,
+                    "pitch": 55,
+                    "velocity": 0.24
+                  },
+                  {
+                    "id": "p3",
+                    "tick": 1920,
+                    "duration": 1920,
+                    "pitch": 50,
+                    "velocity": 0.3
+                  },
+                  {
+                    "id": "p4",
+                    "tick": 1920,
+                    "duration": 1920,
+                    "pitch": 57,
+                    "velocity": 0.24
+                  },
+                  {
+                    "id": "p5",
+                    "tick": 3840,
+                    "duration": 1920,
+                    "pitch": 45,
+                    "velocity": 0.3
+                  },
+                  {
+                    "id": "p6",
+                    "tick": 3840,
+                    "duration": 1920,
+                    "pitch": 52,
+                    "velocity": 0.24
+                  },
+                  {
+                    "id": "p7",
+                    "tick": 5760,
+                    "duration": 1920,
+                    "pitch": 43,
+                    "velocity": 0.3
+                  },
+                  {
+                    "id": "p8",
+                    "tick": 5760,
+                    "duration": 1920,
+                    "pitch": 50,
+                    "velocity": 0.24
+                  }
+                ]
+              },
+              {
+                "id": "melody",
+                "instrument": "bell",
+                "notes": [
+                  {
+                    "id": "m1",
+                    "tick": 0,
+                    "duration": 960,
+                    "pitch": 72,
+                    "velocity": 0.34
+                  },
+                  {
+                    "id": "m2",
+                    "tick": 960,
+                    "duration": 960,
+                    "pitch": 76,
+                    "velocity": 0.3
+                  },
+                  {
+                    "id": "m3",
+                    "tick": 1920,
+                    "duration": 960,
+                    "pitch": 79,
+                    "velocity": 0.32
+                  },
+                  {
+                    "id": "m4",
+                    "tick": 2880,
+                    "duration": 960,
+                    "pitch": 76,
+                    "velocity": 0.28
+                  },
+                  {
+                    "id": "m5",
+                    "tick": 3840,
+                    "duration": 960,
+                    "pitch": 74,
+                    "velocity": 0.32
+                  },
+                  {
+                    "id": "m6",
+                    "tick": 4800,
+                    "duration": 960,
+                    "pitch": 77,
+                    "velocity": 0.3
+                  },
+                  {
+                    "id": "m7",
+                    "tick": 5760,
+                    "duration": 960,
+                    "pitch": 81,
+                    "velocity": 0.34
+                  },
+                  {
+                    "id": "m8",
+                    "tick": 6720,
+                    "duration": 960,
+                    "pitch": 79,
+                    "velocity": 0.28
+                  }
+                ]
+              },
+              {
+                "id": "bass",
+                "instrument": "sine",
+                "notes": [
+                  {
+                    "id": "b1",
+                    "tick": 0,
+                    "duration": 1920,
+                    "pitch": 36,
+                    "velocity": 0.26
+                  },
+                  {
+                    "id": "b2",
+                    "tick": 1920,
+                    "duration": 1920,
+                    "pitch": 38,
+                    "velocity": 0.26
+                  },
+                  {
+                    "id": "b3",
+                    "tick": 3840,
+                    "duration": 1920,
+                    "pitch": 33,
+                    "velocity": 0.26
+                  },
+                  {
+                    "id": "b4",
+                    "tick": 5760,
+                    "duration": 1920,
+                    "pitch": 31,
+                    "velocity": 0.26
+                  }
+                ]
+              }
+            ],
+            "repeats": [
+              {
+                "startTick": 0,
+                "endTick": 7680,
+                "count": 5
+              }
+            ]
+          }
+        },
+        "pan": 0
+      }
+    ],
+    "captions": [],
+    "effects": []
+  },
+  "production": {
+    "version": 1,
+    "state": "paused",
+    "shots": {
+      "intro": {
+        "title": "光速之谜",
+        "intent": "以光束穿越星空的画面开场，提出核心疑问：为什么光速对所有人都一样？",
+        "narration": "一百多年前，爱因斯坦问了自己一个问题：如果我追着一束光跑，会看到什么？这个问题的答案，彻底改写了我们对时间和空间的理解。",
+        "stage": "draft"
+      },
+      "postulate": {
+        "title": "光速不变原理",
+        "intent": "用两束从不同参考系发出的光，展示无论观察者如何运动，测得的光速始终相同。",
+        "narration": "爱因斯坦的答案是：真空中的光速，对任何观察者来说都是同一个常数，每秒约三十万公里。无论你站着不动，还是以一半光速飞行，你测到的光速都一样。",
+        "stage": "draft"
+      },
+      "dilation": {
+        "title": "时间膨胀",
+        "intent": "用光钟模型演示运动参考系中时间流逝变慢，配合时钟对比。",
+        "narration": "如果光速必须保持不变，那么时间和空间就必须做出让步。运动的时钟会走得更慢，这叫做时间膨胀。速度越接近光速，时间流逝得越慢。",
+        "stage": "draft"
+      },
+      "emc2": {
+        "title": "质能等价",
+        "intent": "用公式与能量释放的粒子效果展示 E=mc² 的含义。",
+        "narration": "爱因斯坦还发现，质量和能量其实是同一件事的两种形式，它们之间只差一个光速的平方。这就是著名的质能方程，它解释了太阳为什么会发光。",
+        "stage": "draft"
+      },
+      "curvature": {
+        "title": "时空弯曲",
+        "intent": "用网格平面被质量压弯的动画，展示广义相对论的核心图像。",
+        "narration": "十年之后，爱因斯坦更进一步。他提出，引力并不是一种力，而是质量让时空发生了弯曲。行星并不是被拉着走，而是在弯曲的时空中沿着最直的路径前进。",
+        "stage": "draft"
+      },
+      "lensing": {
+        "title": "引力透镜与验证",
+        "intent": "展示光线经过大质量天体时发生偏折，形成引力透镜环。",
+        "narration": "光线也会沿着弯曲的时空前进。当遥远的星光经过太阳或星系时，路径会被弯折，形成引力透镜。一九一九年的日食观测，第一次证实了这个预言。",
+        "stage": "draft"
+      },
+      "gps": {
+        "title": "相对论就在身边",
+        "intent": "用卫星与地球的示意，说明GPS必须同时修正狭义与广义相对论效应。",
+        "narration": "相对论并不遥远。你手机里的GPS，每天都要同时修正狭义相对论和广义相对论带来的时间偏差，否则定位误差每天会累积十几公里。",
+        "stage": "draft"
+      },
+      "outro": {
+        "title": "结语",
+        "intent": "回到星空，总结相对论对现代物理的意义。",
+        "narration": "从光速不变到时空弯曲，相对论告诉我们：宇宙的规律，往往比直觉更加奇妙。而理解它，正是人类最了不起的冒险之一。",
+        "stage": "draft"
+      }
+    },
+    "brief": "相对论科普短片：从光速不变出发，解释狭义相对论的时间膨胀与质能方程，再引入广义相对论的时空弯曲与引力透镜，最后回到GPS等现实应用。",
+    "stopReason": "repeated_operations",
+    "lastError": "args: missing descriptor"
+  }
+}

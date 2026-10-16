@@ -20,6 +20,8 @@ test("video routing keeps ordinary scenes and explicit host choices intact", () 
   assert.equal(resolveMediaOutputKind("生成汽车", "video"), "video");
   const prompt = buildVideoAgentInstructions({ duration: 300 });
   assert.match(prompt, /300 seconds/); assert.match(prompt, /mode:sdf/); assert.match(prompt, /selectivebloom/); assert.match(prompt, /No fixed quality round count/);
+  assert.match(prompt, /subScene, not children/); assert.match(prompt, /never geometry.func/);
+  assert.match(prompt, /material.size/); assert.match(prompt, /duration does not stretch/);
 });
 test("storyboard confirmation pauses after a durable plan; resuming uses existing shots", async () => {
   const session = createMediaProjectSession(), service = createMediaOperationService({ session });

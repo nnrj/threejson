@@ -43,7 +43,17 @@ export async function createMediaProject(input, options = {}) {
     if (!sceneCache.has(key)) sceneCache.set(key, composition ? await source.loadScene(clip.source) : document);
     return sceneCache.get(key);
   }
+  // Only an actual caller cancellation is an AbortError at the media boundary.
+  // Internal resource disposal must not look like a successful user cancellation.
+  const clipError = (error, clip) => options.signal?.aborted || options.runtimeOptions?.signal?.aborted || error?.clipId ? error : Object.assign(
+    new Error(`Clip "${clip.id}": ${error?.message || error}`, { cause: error }),
+    { code: typeof error?.code === "string" ? error.code : "MEDIA_CLIP_FAILED", clipId: clip.id }
+  );
   async function instantiate(clip) {
+    try { return await materializeClip(clip); }
+    catch (error) { throw clipError(error, clip); }
+  }
+  async function materializeClip(clip) {
     if (composition && isMediaSource(clip.source)) {
       const asset = mediaAssetOf(document, clip);
       const media = await createMediaAssetRenderer(asset, { ...options, width, height, fit: clip.fit, resolveAsset: (url, request) => resolveAsset(source, url, request) });
@@ -118,7 +128,8 @@ export async function createMediaProject(input, options = {}) {
           } else drawMediaAsset(context, frame, width, height, clip.fit);
           context.restore(); continue;
         }
-        await instance.runtime.timeline.renderAt(clip.sourceTime);
+        try { await instance.runtime.timeline.renderAt(clip.sourceTime); }
+        catch (error) { throw clipError(error, clip); }
         options.signal?.throwIfAborted();
         if (instance.runtime.renderer.getContext?.().isContextLost?.()) throw Object.assign(new Error("Rendering context was lost."), { code: "MEDIA_CONTEXT_LOST" });
         context.save(); context.globalAlpha = alphas[index] * (timeline.clips?.find(c => c.id === clip.id)?.opacity ?? 1);
