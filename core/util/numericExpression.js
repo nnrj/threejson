@@ -29,7 +29,7 @@ const FUNCTIONS = Object.freeze({
   tan: Math.tan
 });
 
-function tokenizeNumericExpression(source) {
+export function tokenizeNumericExpression(source) {
   const text = String(source ?? "");
   const tokens = [];
   let i = 0;

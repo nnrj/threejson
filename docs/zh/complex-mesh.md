@@ -119,6 +119,8 @@ const options = {
 
 这些描述是 `bufferMesh` 的补充而不是替代。需要最终完整坐标时，可以 bake；用户也始终可以直接提供原始顶点和索引。
 
+参数曲面规范字段为 `geometry.expressions:{x,y,z}`。输入适配器也接受受限算术 `geometry.func`，如 `(u,v)=>{const x=(u-0.5)*24;return [x,Math.sin(v),0];}`：只允许两个参数、顺序 const 数值表达式及返回三维数组，使用现有安全数值表达式函数/常数，不执行 JavaScript。规范表达式优先；无规范表达式时转换为 expressions 并移除 func，不修改调用方输入。属性读取、未知函数、随机数、赋值、分支、循环、闭包等不支持，报 `PARAMETRIC_FUNCTION_UNSUPPORTED`；输入/展开长度有解析安全限制。几何编译器与 worker 仍只消费规范数值表达式，不新增脚本解释器。新 AI 输出应直接使用 expressions。
+
 ## 网格运行时命令
 
 命令通过 `threejson/commands` 的统一执行器调用：

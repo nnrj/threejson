@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { renderVideo, prepareProjectAudio } from "../packages/media-kit/js/export.js";
+import { renderVideo, prepareProjectAudio, preflightMediaExport } from "../packages/media-kit/js/export.js";
 
 const film = JSON.parse(fs.readFileSync(new URL("./fixtures/media-export-relativity.json", import.meta.url), "utf8"));
 const audioProject = { getAudioClips: () => film.timeline.audio };
@@ -101,6 +101,31 @@ test("a broken later draft shot fails before opening a writable or encoding fram
   ] } };
   await assert.rejects(renderVideo(f.project, { ...f.options, openWritable: () => { opened = true; return f.writable; } }), /Scene resource failed/);
   assert.equal(opened, false); assert.equal(f.state.samples, 0);
+});
+
+test("reusable preflight checks late shots before a host starts narration or picks a file", async () => {
+  const f = fixture({ failFrame: 1 }); let narrated = false, opened = false;
+  f.project.duration = 2;
+  f.project.document = { documentType: "composition", timeline: { clips: [{ id: "first", duration: 1 }, { id: "broken", start: 1, duration: 1 }] } };
+  await assert.rejects((async () => {
+    await preflightMediaExport(f.project, { ...f.options, openWritable: () => { opened = true; return f.writable; } });
+    narrated = true;
+  })(), /Scene resource failed/);
+  assert.equal(narrated, false); assert.equal(opened, false); assert.equal(f.state.samples, 0);
+});
+test("preflight reports checks but never writes or emits a misleading completion", async () => {
+  const f = fixture(); let opened = false;
+  const result = await preflightMediaExport(f.project, { ...f.options, openWritable: () => { opened = true; return f.writable; } });
+  assert.equal(result.checks, 1); assert.equal(result.frames, 2); assert.equal(opened, false);
+  assert.equal(f.state.samples, 0); assert.ok(!f.state.events.some(e => e.stage === "complete"));
+  assert.equal(f.state.events.find(e => e.stage === "rendering").checks, 1);
+});
+test("preflight checks future narration codec availability without generating speech", async () => {
+  const f = fixture();f.options.codecs.canEncodeAudio=async()=>false;
+  await assert.rejects(preflightMediaExport(f.project,{...f.options,expectAudio:true}), {code:"MEDIA_CODEC_UNAVAILABLE"});
+  assert.equal(f.state.samples,0);
+  const controller=new AbortController();controller.abort();
+  await assert.rejects(preflightMediaExport(f.project,{...f.options,signal:controller.signal}), {name:"AbortError"});
 });
 
 test("valid paused drafts and trimmed/disabled shots remain exportable", async () => {

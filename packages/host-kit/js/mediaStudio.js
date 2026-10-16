@@ -1,4 +1,5 @@
 import { createMediaNarrationPanel } from "./mediaNarrationPanel.js";
+import { createStagedMediaFile, saveCompletedMediaFile } from "./mediaExportFile.js";
 
 let currentClose = null;
 export const loadMediaKit = () => import("@threejson/media-kit");
@@ -6,7 +7,7 @@ export const packMediaDocument = async (...args) => (await loadMediaKit()).packM
 export const createLocalNarrationHost = async () => (await import("./localSpeech.js")).createLocalNarrationHost();
 export const createMediaAudioPlayback = async (...args) => (await import("@threejson/audio-kit")).createPcmPlayback(...args);
 const documentDuration = (source) => (source.timeline?.duration ?? Math.max(0, ...(source.timeline?.clips || []).map(c => (c.start || 0) + c.duration), ...(source.timeline?.tracks || []).flatMap(t => (t.keyframes || []).map(k => k.time)))) || 8;
-const save = (blob, name) => { if (!blob?.size) throw Object.assign(new Error("Empty media output; no file was downloaded."), {code:"MEDIA_EMPTY_OUTPUT"}); const url=URL.createObjectURL(blob), a=document.createElement("a"); a.href=url; a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000); };
+const save = (blob, name) => { if (!blob?.size) throw Object.assign(new Error("Empty media output; no file was downloaded."), {code:"MEDIA_EMPTY_OUTPUT"}); const url=URL.createObjectURL(blob), a=document.createElement("a"); a.href=url; a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(url),60000); };
 
 /** Shared native/React media dialog. Preview/export own an isolated runtime. */
 export async function openSceneMediaStudio(source, options = {}) {
@@ -79,13 +80,15 @@ export async function openSceneMediaStudio(source, options = {}) {
   const status=node("div",text("准备场景…","Preparing scene…"),footer);status.className="mediaStatus";status.setAttribute("role","status");status.setAttribute("aria-live","polite");
   const audioRepair=row(footer);audioRepair.classList.add("mediaAudioRepair");audioRepair.hidden=true;
   const loopAudio=node("button",text("循环此配乐","Loop this music"),audioRepair),padAudio=node("button",text("末尾补静音","Pad with silence"),audioRepair);
-  const actions=row(footer),exportButton=node("button",text("导出","Export"),actions),cancel=node("button",text("取消","Cancel"),actions);cancel.hidden=true;exportButton.className="primary";
+  const actions=row(footer),exportButton=node("button",text("导出","Export"),actions),saveButton=node("button",text("保存视频","Save video"),actions),cancel=node("button",text("取消","Cancel"),actions);cancel.hidden=true;saveButton.hidden=true;exportButton.className=saveButton.className="primary";
+  let completedExport;
+  const releaseCompleted=()=>{const previous=completedExport;completedExport=null;saveButton.hidden=true;void previous?.staging?.dispose().catch(()=>{});};
   const lifecycle=new AbortController();let exportController, project, kit, playing=false, frame, closed=false, audioPlayback, playbackContext, mixer, previewNarrationClips, previewAudioError, startTime=0, offset=0, busy=false, ready=false, paintQueue=Promise.resolve(), paintId=0, narrationSummary={cues:0};
   const audioClipOverrides=structuredClone(options.exportOptions?.audioClipOverrides||{});let audioRepairError;
   play.disabled=true;exportButton.disabled=true;
   const stopAudio=()=>audioPlayback?.pause();
   const pause=()=>{playing=false;cancelAnimationFrame(frame);stopAudio();play.textContent=text("播放","Play");};
-  const closeStudio=()=>{if(closed)return;closed=true;pause();lifecycle.abort();exportController?.abort();narrationPanel?.dispose();project?.dispose();audioPlayback?.dispose();void playbackContext?.close();modelPanel?.dispose();if(localAudioUrl)URL.revokeObjectURL(localAudioUrl);dialog.close();dialog.remove();if(currentClose===closeStudio)currentClose=null;previousFocus?.focus?.();};
+  const closeStudio=()=>{if(closed)return;closed=true;pause();lifecycle.abort();exportController?.abort();releaseCompleted();narrationPanel?.dispose();project?.dispose();audioPlayback?.dispose();void playbackContext?.close();modelPanel?.dispose();if(localAudioUrl)URL.revokeObjectURL(localAudioUrl);dialog.close();dialog.remove();if(currentClose===closeStudio)currentClose=null;previousFocus?.focus?.();};
   currentClose=closeStudio;close.onclick=closeStudio;dialog.addEventListener("cancel",event=>{event.preventDefault();closeStudio();});
   document.body.append(dialog);dialog.showModal();close.focus();
   const fail=(error)=>{
@@ -114,6 +117,7 @@ export async function openSceneMediaStudio(source, options = {}) {
   };
   const syncBusy=()=>{
     play.disabled=exportButton.disabled=busy||!ready;
+    saveButton.disabled=busy;
     for(const input of [openFile,duration,width,height,fps,format,audio,audioFileButton,seek,loopAudio,padAudio])input.disabled=busy||!ready;
     modelPanel?.setDisabled(busy);
     narrationPanel?.setState({ready,busy:busy||!ready});
@@ -169,23 +173,26 @@ export async function openSceneMediaStudio(source, options = {}) {
   format.onchange=()=>{pause();audioLabel.hidden=!isVideo();narrationSection.hidden=!isVideo()||audio.value!=="auto";updateAudioHint();if(ready&&!busy)void preparePreview().catch(fail);};format.onchange();
   audio.onchange=()=>{pause();narrationSection.hidden=audio.value!=="auto";updateAudioHint();if(ready&&!busy)void preparePreview().catch(fail);};
   cancel.onclick=()=>exportController?.abort();
+  saveButton.onclick=async()=>{
+    if(busy||!completedExport)return;
+    const artifact=completedExport,signal=beginOperation();
+    try{
+      // The picker runs in this fresh click gesture, after all expensive work.
+      const handle=await showSaveFilePicker({suggestedName:artifact.name,types:[{description:"Video",accept:{[artifact.mimeType]:[`.${artifact.format}`]}}]});
+      status.textContent=text("视频已生成，正在保存文件…","Video is ready; saving the file…");
+      await saveCompletedMediaFile(artifact.file,handle,{signal});
+      if(!closed)status.textContent=text("已保存。可再次保存，无需重新渲染。","Saved. You can save again without rendering.");
+    }catch(error){if(!closed){if(error.name==="AbortError")status.textContent=text("已取消保存，视频仍保留，可点击保存视频重试。","Save cancelled. The completed video is kept; retry Save video.");else{fail(error);status.textContent+=text(" 视频已生成，可点击保存视频重试，无需重新渲染。"," The completed video is kept; retry Save video without rendering.");}}}
+    finally{finishOperation();}
+  };
   exportButton.onclick=async()=>{
     if(busy||!ready)return;
     // Preview already checked authored audio. Do not ask for/create a file,
     // download speech or start an expensive render for a known invalid track.
     if(isVideo()&&audio.value!=="mute"&&previewAudioError){fail(previewAudioError);return;}
     for(const field of[duration,width,height,fps])if(!field.checkValidity()){fail(new Error(text("请检查时长、尺寸和帧率。","Check duration, dimensions and frame rate.")));return;}
-    pause();const signal=beginOperation();let handle;
+    pause();const signal=beginOperation();let staging;
     try{
-      // A file-backed target keeps long films out of a single in-memory Blob.
-      // Unsupported browsers retain the explicit download fallback.
-      if (isVideo() && typeof showSaveFilePicker === "function" && !options.exportOptions?.target && !options.exportOptions?.writable && !options.exportOptions?.openWritable) {
-        status.textContent=text("请选择保存位置…","Choose where to save…");
-        handle = await showSaveFilePicker({ suggestedName: `${options.name||"threejson-media"}.${format.value}`, types: [{ description: "Video", accept: { [`video/${format.value}`]: [`.${format.value}`] } }] });
-      }
-      signal.throwIfAborted();
-      await prepareNarration(signal);signal.throwIfAborted();
-      progress.value=0;status.textContent=text("正在渲染并封装视频…","Rendering and encoding…");
       const config={...options.exportOptions,width:Number(width.value),height:Number(height.value),fps:Number(fps.value),end:Number(duration.value),audio:audio.value!=="mute",audioClipOverrides,audioClips:[...(options.exportOptions?.audioClips||[]),...extraAudio()],time:Number(seek.value),signal,onProgress:(value)=>{
         if(closed)return;
         if(value.stage==="encoding"){
@@ -194,19 +201,34 @@ export async function openSceneMediaStudio(source, options = {}) {
         }else{
           progress.removeAttribute("value");
           const stages={preparing:text("正在准备导出…","Preparing export…"),audio:text("正在检查与准备音轨…","Checking and preparing audio…"),rendering:text("正在准备画面与资源…","Preparing frames and resources…"),finalizing:text("画面编码完成，正在封装视频…","Frames encoded; finalizing video…"),saving:text("正在完成文件写入，请勿关闭…","Committing the file; please keep this window open…"),complete:text("文件写入完成。","File committed.")};
-          status.textContent=stages[value.stage]||text("正在准备导出…","Preparing export…");
+          status.textContent=value.stage==="rendering"&&value.checks?text(`正在检查镜头与资源 ${value.checked+1}/${value.checks}（尚未编码）…`,`Checking shots and resources ${value.checked+1}/${value.checks} (not encoding yet)…`):stages[value.stage]||text("正在准备导出…","Preparing export…");
         }
         options.exportOptions?.onProgress?.(value);
       }};
-      if (handle) config.openWritable = () => handle.createWritable();
+      if(isVideo())await kit.preflightMediaExport(source,{...config,format:format.value,expectAudio:audio.value==="auto"&&narrationSummary.cues>0});
+      signal.throwIfAborted();
+      const ownDestination=isVideo()&&!config.target&&!config.writable&&!config.openWritable;
+      if(ownDestination){staging=await createStagedMediaFile();if(staging)config.openWritable=staging.openWritable;}
+      await prepareNarration(signal);signal.throwIfAborted();
+      config.audioClips=[...(options.exportOptions?.audioClips||[]),...extraAudio()];
+      signal.throwIfAborted();progress.value=0;status.textContent=text("正在渲染并封装视频…","Rendering and encoding…");
       let result;
       if(["png","jpeg","webp"].includes(format.value))result=await kit.renderImage(source,{...config,type:`image/${format.value}`});
       else if(format.value==="gif")result=await kit.renderGif(source,config);
       else result=await kit.renderVideo(source,{...config,format:format.value});
-      if(handle&&(await handle.getFile()).size===0)throw Object.assign(new Error(text("文件仍为空，未成功保存。请重试或更换保存位置。","The saved file is empty. Retry or choose another location.")),{code:"MEDIA_EMPTY_OUTPUT"});
-      if(!closed){if(result.blob)save(result.blob,`${options.name||"threejson-media"}.${format.value}`);status.textContent=text("已导出。","Export complete.");}
+      const file=staging?await staging.getFile():result.blob;signal.throwIfAborted();
+      if(!closed){
+        releaseCompleted();
+        if(file){
+          const name=`${options.name||"threejson-media"}.${format.value}`;
+          completedExport={file,staging,name,format:format.value,mimeType:result.mimeType};staging=null;
+          if(ownDestination&&typeof showSaveFilePicker==="function"){
+            saveButton.hidden=false;status.textContent=text("视频已生成，请点击保存视频。保存失败可重试，无需重新渲染。","Video is ready. Click Save video; saving can be retried without rendering.");
+          }else{save(file,name);status.textContent=text("已导出。","Export complete.");}
+        }else status.textContent=text("已导出。","Export complete.");
+      }
     }catch(error){if(error.name==="AbortError"){if(!closed)status.textContent=text("导出已取消。","Export cancelled.");}else fail(error);}
-    finally{finishOperation();}
+    finally{await staging?.dispose().catch(()=>{});finishOperation();}
   };
   async function preparePreview(signal=lifecycle.signal) {
     pause();clearError();ready=false;syncBusy();

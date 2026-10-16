@@ -22,6 +22,7 @@ packages/host-kit/*
 !packages/host-kit/js/
 packages/host-kit/js/*
 !packages/host-kit/js/mediaStudio.js
+!packages/host-kit/js/mediaExportFile.js
 !packages/host-kit/js/mediaNarrationPanel.js
 !packages/host-kit/js/mediaNarrationExport.js
 !packages/host-kit/js/audioModelPanel.js

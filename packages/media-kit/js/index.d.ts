@@ -2,12 +2,14 @@ import type { Timeline } from "threejson/timeline";
 import type { BlockRenderer, AudioRecipe, Pcm } from "@threejson/audio-kit";
 export interface MediaDocument { documentType?: "scene" | "composition"; compositionVersion?: 1; timeline?: Timeline; output?: { width?: number; height?: number; fps?: number; background?: string }; [key: string]: unknown }
 export type MediaInput = MediaDocument | string | Blob | ArrayBuffer | Uint8Array;
-export interface MediaProgress { stage: string; frame: number; frames: number; progress: number; time?: number; bytesWritten?: number }
+export interface MediaProgress { stage: string; frame: number; frames: number; progress: number; time?: number; bytesWritten?: number; checked?: number; checks?: number }
 export interface MediaAudioClip { id: string; url?: string; pcm?: Pcm; recipe?: AudioRecipe; start?: number; duration?: number; [key: string]: unknown }
 export interface MediaOptions {
   width?: number; height?: number; fps?: number; duration?: number; start?: number; end?: number; time?: number; alpha?: boolean;
   format?: "mp4" | "webm"; type?: "image/png" | "image/jpeg" | "image/webp"; quality?: number; repeat?: number;
   audio?: boolean; sampleRate?: number; trimAudio?: boolean; audioClips?: MediaAudioClip[];
+  /** Preflight an audio codec even when the host will supply audio only later. */
+  expectAudio?: boolean;
   /** Explicit, export-only choices. Does not change the source document. */
   audioClipOverrides?: Record<string, { loop?: boolean; padSilence?: boolean }>;
   signal?: AbortSignal; onProgress?: (progress: MediaProgress) => void;
@@ -44,6 +46,8 @@ export function packMediaDocument(document: MediaDocument, options: { assets?: R
 export function createMediaProject(input: MediaInput, options?: MediaOptions): Promise<MediaProject>;
 export function resolveFrameRange(project: MediaProject, options?: MediaOptions): { start: number; end: number; duration: number; fps: number; frames: number };
 export function prepareProjectAudio(project: MediaProject, options?: MediaOptions): Promise<(BlockRenderer & { duration: number }) | null>;
+/** No file selection, output writes, automatic narration or encoding. Rechecks every included shot. */
+export function preflightMediaExport(input: MediaInput | MediaProject, options?: MediaOptions): Promise<{ start: number; end: number; duration: number; fps: number; frames: number; checks: number }>;
 export function getMediaCapabilities(options?: MediaOptions): Promise<{ images: string[]; gif: boolean; video: Record<string, { video: boolean; audio: boolean }>; localSpeech: boolean; note: string }>;
 export function renderImage(input: MediaInput | MediaProject, options?: MediaOptions): Promise<MediaResult>;
 export function renderGif(input: MediaInput | MediaProject, options?: MediaOptions): Promise<MediaResult>;

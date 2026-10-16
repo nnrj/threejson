@@ -288,7 +288,8 @@ ThreeJSON 支持两种等价写法：
 | `rotation` | Vector3 | 旋转。 |
 | `scale` | Vector3 或 number | 缩放。 |
 | `parent` / `parentId` | string | 父对象引用。 |
-| `children` | array | 子对象列表，常用于 `group`。 |
+| `subScene` | array | 规范的嵌套子对象列表。 |
+| `children` | array | `group` 的输入兼容别名，详见下文。 |
 | `geometry` | object | 几何参数。 |
 | `material` | object/array | 材质参数。 |
 | `animations` | array/object | 动画配置。 |
@@ -371,11 +372,13 @@ Vector3 可写完整对象：
   "threeJsonId": "group-1",
   "objType": "group",
   "position": { "x": 0, "y": 0, "z": 0 },
-  "children": [
+  "subScene": [
     { "threeJsonId": "child-box", "objType": "box", "geometry": { "width": 1, "height": 1, "depth": 1 } }
   ]
 }
 ```
+
+分组兼容读取 `children`：当 `subScene` 缺省或为空时，将其中的 ThreeJSON 对象描述符递归规范化为 `subScene`；两者都有内容且不相同时报 `OBJECT_CHILDREN_CONFLICT`，不静默丢失或重复对象。完全相同的两个列表只保留一份。`native`/`parseMode:"native"` 的原生 children、几何算子内部 children 不参与此转换。输入对象不原地修改，标准输出使用 subScene；新文档应直接编写规范字段。
 
 ## 8. 材质与纹理
 

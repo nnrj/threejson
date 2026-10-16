@@ -21,7 +21,7 @@ const bundle = await build({ stdin: { resolveDir: root, contents: `
     objectList:[{objType:'box',threeJsonId:'actor',material:{type:'basic',color:'#39caff'}}],timeline:{version:1,duration:1}};
   window.events=[];window.pickerCalls=0;window.openedStreams=0;
   window.showSaveFilePicker=async()=>{window.pickerCalls++;const dir=await navigator.storage.getDirectory();
-    window.file=await dir.getFileHandle('test-export.mp4',{create:true});return{getFile:()=>file.getFile(),createWritable:()=>{openedStreams++;return file.createWritable();}};};
+    window.file=await dir.getFileHandle('test-export.mp4',{create:true});return{getFile:()=>file.getFile(),createWritable:()=>{openedStreams++;if(window.failNextSave){window.failNextSave=false;throw new Error('fixture disk unavailable');}return file.createWritable();}};};
   window.openStudio=(source=simple,extra={})=>openSceneMediaStudio(source,{language:'zh-CN',
     projectOptions:{runtimeOptions:{textLoadTimeoutMs:300}},
     exportOptions:{runtimeOptions:{textLoadTimeoutMs:300},onProgress:p=>events.push(p)},...extra});
@@ -54,30 +54,6 @@ const bundle = await build({ stdin: { resolveDir: root, contents: `
     }
     return captures;
   };
-  // A fixture-specific repaired COPY, never a runtime sanitizer/eval path.
-  window.repairedDraft=()=>{
-    const doc=structuredClone(reported);
-    doc.timeline.audio[0].loop=true;
-    for(const scene of Object.values(doc.scenes)){
-      const visit=item=>{
-        if(item.objType==='group' && item.children?.length){item.subScene=item.children;delete item.children;}
-        if(item.objType==='points'){
-          item.material.size=item.size;item.bounds={width:item.source.width,height:item.source.height,depth:item.source.depth};delete item.source;
-        }
-        (item.subScene||[]).forEach(visit);
-      };
-      scene.objectList.forEach(visit);
-      for(const track of scene.timeline.tracks||[]){
-        const component=/^(?:position|rotation|scale)\\.([xyz])$/.exec(track.property)?.[1];
-        if(component)for(const key of track.keyframes||[])if(Array.isArray(key.value))key.value=key.value['xyz'.indexOf(component)];
-      }
-    }
-    const grid=doc.scenes.curvature.objectList.find(o=>o.threeJsonId==='spacetimeGrid');
-    delete grid.geometry.func;
-    grid.geometry.expressions={x:'(u-0.5)*24',z:'(v-0.5)*24',y:'-6/(sqrt(((u-0.5)*24)^2+((v-0.5)*24)^2)+0.001+1.6)'};
-    doc.scenes.curvature.timeline.captions=doc.scenes.curvature.captions;delete doc.scenes.curvature.captions;
-    return doc;
-  };
 ` }, bundle: true, format: "esm", write: false, logLevel: "silent" });
 const { server, port } = await startStaticServer(root);
 let browser; const results = [], errors = [];
@@ -97,6 +73,7 @@ try {
   await page.goto(`http://127.0.0.1:${port}/__file-export`);
   await page.waitForFunction(() => typeof window.openStudio === "function");
   const shots = await page.evaluate(() => checkShots()); results.push({ shots });console.log(JSON.stringify({ shots }));
+  assert.ok(shots.every(shot=>shot.ok), "The original, unrepaired scene descriptors must all render");
   if (process.argv.includes("--text")) {
     for (const capture of await page.evaluate(() => textComparison())) {
       await writeFile(path.join(out, `${capture.variant}.png`), Buffer.from(capture.png.split(",")[1], "base64"));
@@ -115,28 +92,77 @@ try {
     await dialog.locator(".mediaStatus").filter({ hasText: "可播放" }).waitFor();
     assert.equal(await page.evaluate(() => JSON.stringify(reported) === sourceBefore), true);
     await page.screenshot({ path: path.join(out, "repaired-audio.png") });
+    if (process.argv.includes("--film")) {
+      // Exercise the actual dialog with the ORIGINAL JSON. Only export settings
+      // and the explicit music-loop choice change; no fixture sanitization.
+      await dialog.getByLabel("声音",{exact:true}).selectOption("existing");
+      await dialog.locator(".mediaStatus").filter({hasText:"可播放"}).waitFor();
+      await dialog.locator(".mediaAdvanced").evaluate(node=>node.open=true);
+      const sizes=dialog.locator(".mediaAdvanced input[type=number]");
+      await sizes.nth(1).fill("320");await sizes.nth(2).fill("180");await sizes.nth(3).fill("10");
+      const pickerBefore=await page.evaluate(()=>pickerCalls);
+      await dialog.getByRole("button",{name:"导出",exact:true}).click();
+      await dialog.locator(".mediaStatus").filter({hasText:"视频已生成，请点击保存视频"}).waitFor({timeout:300000});
+      assert.equal(await page.evaluate(()=>pickerCalls),pickerBefore);
+      await dialog.getByRole("button",{name:"保存视频",exact:true}).click();
+      await dialog.locator(".mediaStatus").filter({hasText:"已保存"}).waitFor();
+      const film=await page.evaluate(async()=>({...await inspect(await file.getFile()),frames:events.filter(e=>e.stage==='encoding').at(-1)?.frame,productionState:reported.production.state,unchanged:JSON.stringify(reported)===sourceBefore}));
+      assert.equal(film.frames,1500);assert.equal(film.productionState,"paused");assert.equal(film.unchanged,true);
+      assert.ok(film.video&&film.audio&&film.bytes>0&&Math.abs(film.duration-150)<.1);
+      results.push({originalFilmViaDialog:film});console.log(JSON.stringify({originalFilmViaDialog:film}));
+      await page.screenshot({path:path.join(out,"original-film-saved.png")});
+    }
     await dialog.getByRole("button", { name: "关闭", exact: true }).click();
     results.push({ audioPreflight: "blocked before picker; explicit loop repairs preview without changing JSON" });
 
     const draft = await page.evaluate(async () => {
       let opened=false,error,clipId;
-      try{await kit.renderVideo(reported,{width:320,height:180,fps:5,runtimeOptions:{textLoadTimeoutMs:300},
+      const broken=structuredClone(reported);broken.scenes.dilation.timeline.tracks[0].target='missing-target';
+      try{await kit.renderVideo(broken,{width:320,height:180,fps:5,runtimeOptions:{textLoadTimeoutMs:300},
         audioClipOverrides:{score:{loop:true}},openWritable:()=>{opened=true;throw new Error('should not open');}});}catch(e){error=e.message;clipId=e.clipId;}
       return{opened,error,clipId};
     });
-    assert.equal(draft.opened,false);assert.equal(draft.clipId,"dilation");assert.match(draft.error,/restPhoton/);results.push({draft});
+    assert.equal(draft.opened,false);assert.equal(draft.clipId,"dilation");assert.match(draft.error,/missing-target/);results.push({draft});
+    // The same late error must be caught BEFORE expensive automatic narration,
+    // not merely before frame encoding. No user-visible output file is selected.
+    const pickerBeforeBroken=await page.evaluate(()=>{
+      window.narrationCalls=0;const broken=structuredClone(reported);broken.scenes.dilation.timeline.tracks[0].target='missing-target';
+      window.broken=broken;return pickerCalls;
+    });
+    await page.evaluate(()=>openStudio(broken,{createNarrationHost:async()=>{window.narrationCalls++;throw new Error('Must not synthesize invalid film');}}));
+    await dialog.getByRole("button",{name:"循环此配乐",exact:true}).click();
+    await dialog.locator(".mediaStatus").filter({hasText:"可播放"}).waitFor();
+    await dialog.getByRole("button",{name:"导出",exact:true}).click();
+    await dialog.locator(".mediaStatus").filter({hasText:"missing-target"}).waitFor();
+    assert.equal(await page.evaluate(()=>narrationCalls),0);assert.equal(await page.evaluate(()=>pickerCalls),pickerBeforeBroken);
+    await page.screenshot({path:path.join(out,"late-shot-before-narration.png")});
+    results.push({lateShotPreflight:"no narration calls, no file selection"});
+    await dialog.getByRole("button", { name: "关闭", exact: true }).click();
 
     for (const format of ["mp4", "webm"]) {
       await page.evaluate(() => openStudio());
       await dialog.getByLabel("导出格式", { exact: true }).selectOption(format);
+      await dialog.locator(".mediaStatus").filter({hasText:"可播放"}).waitFor();
+      const picks=await page.evaluate(()=>pickerCalls);
       await dialog.getByRole("button", { name: "导出", exact: true }).click();
-      await dialog.locator(".mediaStatus").filter({ hasText: /^已导出。$/ }).waitFor();
+      await dialog.locator(".mediaStatus").filter({hasText:"视频已生成，请点击保存视频"}).waitFor();
+      assert.equal(await page.evaluate(()=>pickerCalls),picks);
+      const encoded=await page.evaluate(()=>events.filter(p=>p.stage==='encoding').length);
+      if(format==="mp4"){
+        await page.evaluate(()=>window.failNextSave=true);
+        await dialog.getByRole("button",{name:"保存视频",exact:true}).click();
+        await dialog.locator(".mediaStatus").filter({hasText:"fixture disk unavailable"}).waitFor();
+      }
+      await dialog.getByRole("button",{name:"保存视频",exact:true}).click();
+      await dialog.locator(".mediaStatus").filter({hasText:"已保存"}).waitFor();
+      assert.equal(await page.evaluate(()=>events.filter(p=>p.stage==='encoding').length),encoded,"Save retries must not encode again");
       const result = await page.evaluate(async () => inspect(await file.getFile()));
       assert.ok(result.bytes > 100 && result.video); assert.ok(Math.abs(result.duration - 1) < .1);
       const phases = await page.evaluate(() => events.map(p => p.stage));
       for (const stage of ["preparing", "audio", "rendering", "encoding", "finalizing", "saving", "complete"]) assert.ok(phases.includes(stage), stage);
       results.push({ format, ...result });console.log(JSON.stringify(results.at(-1)));
       await dialog.getByRole("button", { name: "关闭", exact: true }).click();
+      await page.waitForFunction(async()=>{const dir=await(await navigator.storage.getDirectory()).getDirectoryHandle('threejson-media-exports');for await(const _ of dir.keys())return false;return true;});
     }
     // Real FileSystemWritableFileStream rolls back on mid-encode cancellation.
     const cancellation = await page.evaluate(async () => {
@@ -158,18 +184,15 @@ try {
       return{...await inspect(await file.getFile()),bytesWritten:result.bytesWritten};
     });
     assert.ok(withSound.bytes>0 && withSound.video && withSound.audio);assert.equal(withSound.bytes,withSound.bytesWritten);results.push({withSound});
-    if (process.argv.includes("--film")) {
-      const repaired = await page.evaluate(() => repairedDraft());
-      await writeFile(path.join(out,"relativity-export-draft.json"),JSON.stringify(repaired,null,2));
-      const film = await page.evaluate(async () => {
-        const doc=repairedDraft();let frames=0;
-        const result=await kit.renderVideo(doc,{width:320,height:180,fps:10,runtimeOptions:{textLoadTimeoutMs:300},
-          openWritable:()=>file.createWritable(),onProgress:p=>{window.filmProgress=p;if(p.stage==='encoding')frames=p.frame;}});
-        return{...await inspect(await file.getFile()),frames,bytesWritten:result.bytesWritten,productionState:doc.production.state};
+    if(process.argv.includes("--hd")){
+      const hd=await page.evaluate(async()=>{
+        const result=await kit.renderVideo(reported,{width:1920,height:1080,fps:30,start:34,end:40,
+          audioClipOverrides:{score:{loop:true}},runtimeOptions:{textLoadTimeoutMs:300},openWritable:()=>file.createWritable()});
+        return {...await inspect(await file.getFile()),frames:result.frames,width:result.width,height:result.height};
       });
-      assert.equal(film.frames,1500);assert.equal(film.productionState,"paused");
-      assert.ok(film.video && film.audio && Math.abs(film.duration-150)<.1);assert.equal(film.bytes,film.bytesWritten);
-      results.push({film});console.log(JSON.stringify({film}));
+      assert.equal(hd.frames,180);assert.equal(hd.width,1920);assert.equal(hd.height,1080);
+      assert.ok(hd.video&&hd.audio&&hd.bytes>0&&Math.abs(hd.duration-6)<.1);
+      results.push({hdAcrossReportedFailure:hd});console.log(JSON.stringify({hdAcrossReportedFailure:hd}));
     }
     // Buffered download remains available when the browser has no picker.
     await page.evaluate(() => {window.showSaveFilePicker=undefined;return openStudio();});

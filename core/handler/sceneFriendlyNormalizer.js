@@ -10,6 +10,7 @@ import {
 } from "./sceneFriendlyMap.js";
 import { ensureThreeJsonIdsOnScenePayload, hasValue, listOr } from "../util/util.js";
 import { normalizeSubSceneHierarchy } from "./subSceneHierarchy.js";
+import { normalizeDescriptorCompatibility } from "./descriptorCompatibility.js";
 import { applyLegacyGeometryObjTypeAlias } from "./legacyGeometryAlias.js";
 import { normalizeLightsConfigWithMeta } from "../util/sceneRuntimeDefaults.js";
 import { mergeExtensionMaps } from "../util/extensionsUtil.js";
@@ -497,6 +498,7 @@ function normalizeCanonicalObjectRecord(record, options = {}) {
   }
   record = applyLegacyGeometryObjTypeAlias(record) ?? record;
   record = cloneRecord(record) ?? record;
+  normalizeDescriptorCompatibility(record);
   const isNativeRecord = normalizeSceneObjType(record.objType) === "native" || record.parseMode === "native";
   if (!isNativeRecord && hasOwn(record, "material")) {
     record.material = Array.isArray(record.material)

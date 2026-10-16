@@ -77,16 +77,14 @@ export async function prepareProjectAudio(project, options = {}) {
   return { ...mixer, duration: Math.max(...clips.map((clip) => (clip.start || 0) + clip.duration)) };
 }
 
-export async function renderVideo(input, options = {}) {
-  const notify = (stage, data = {}) => options.onProgress?.({ stage, frame: 0, frames: 0, progress: 0, ...data });
-  notify("preparing");
-  let transaction, output, completed = false;
-  try { return await withProject(input, options, async (project) => {
+const progressNotifier = options => (stage, data = {}) => options.onProgress?.({ stage, frame: 0, frames: 0, progress: 0, ...data });
+
+async function prepareVideoProject(project, options, notify) {
     const m = options.codecs || await import("mediabunny"), format = options.format ?? "mp4";
     if (!["mp4", "webm"].includes(format)) throw new Error("Video format must be mp4 or webm.");
     const range = resolveFrameRange(project, options), videoCodec = format === "mp4" ? "avc" : "vp9", audioCodec = format === "mp4" ? "aac" : "opus";
     const hasAudio = options.audio !== false && (await project.getAudioClips?.() || []).length > 0;
-    if (!await m.canEncodeVideo(videoCodec, { width: project.width, height: project.height }) || hasAudio && !await m.canEncodeAudio(audioCodec, { sampleRate: options.sampleRate ?? 48000, numberOfChannels: 2 })) throw Object.assign(new Error(`Required ${format} codecs are unavailable. Explicitly select another supported format.`), { code: "MEDIA_CODEC_UNAVAILABLE" });
+    if (!await m.canEncodeVideo(videoCodec, { width: project.width, height: project.height }) || (hasAudio || options.expectAudio) && !await m.canEncodeAudio(audioCodec, { sampleRate: options.sampleRate ?? 48000, numberOfChannels: 2 })) throw Object.assign(new Error(`Required ${format} codecs are unavailable. Explicitly select another supported format.`), { code: "MEDIA_CODEC_UNAVAILABLE" });
     if ([options.target, options.writable, options.openWritable].filter(Boolean).length > 1) throw new TypeError("Choose only one media output destination.");
     notify("audio", { frames: range.frames });
     const mixer = hasAudio ? await prepareProjectAudio(project, options) : null;
@@ -100,11 +98,33 @@ export async function renderVideo(input, options = {}) {
       const start = clip.start || 0;
       if (laneEnabled(timeline, clip) && start < range.end && start + clip.duration > range.start) times.add(Math.max(range.start, start));
     }
+    let checked = 0;
     for (const time of [...times].sort((a, b) => a - b)) {
-      abort(options); notify("rendering", { frames: range.frames, time });
+      abort(options); notify("rendering", { frames: range.frames, time, checked, checks: times.size });
       await project.renderAt(time); abort(options);
+      checked++;
     }
     if (times.size > 1) { await project.renderAt(range.start); abort(options); }
+    return { m, format, range, videoCodec, audioCodec, hasAudio, mixer, checks: times.size };
+}
+
+/** Validate the whole export range before a host starts costly speech or asks
+ * for a destination. Opens no output stream and never encodes video. Not a
+ * cacheable quality approval: renderVideo rechecks the actual export input. */
+export async function preflightMediaExport(input, options = {}) {
+  const notify = progressNotifier(options); notify("preparing");
+  return withProject(input, options, async project => {
+    const { range, checks } = await prepareVideoProject(project, options, notify);
+    return { ...range, checks };
+  });
+}
+
+export async function renderVideo(input, options = {}) {
+  const notify = progressNotifier(options);
+  notify("preparing");
+  let transaction, output, completed = false;
+  try { return await withProject(input, options, async (project) => {
+    const { m, format, range, videoCodec, audioCodec, hasAudio, mixer } = await prepareVideoProject(project, options, notify);
     // File selection is a host concern. Defer opening/truncating its writable
     // until audio, codecs, and shot resources have passed preflight.
     const writable = options.writable || await options.openWritable?.();

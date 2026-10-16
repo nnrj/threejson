@@ -273,7 +273,8 @@ Modes:
 | `rotation` | Vector3 | Rotation. |
 | `scale` | Vector3 or number | Scale. |
 | `parent` / `parentId` | string | Parent reference. |
-| `children` | array | Child records, commonly used by `group`. |
+| `subScene` | array | Canonical nested object descriptors. |
+| `children` | array | Input compatibility alias for `group`; see below. |
 | `geometry` | object | Geometry parameters. |
 | `material` | object/array | Material parameters. |
 | `animations` | array/object | Animation configuration. |
@@ -354,11 +355,13 @@ Some fields allow partial vectors:
   "threeJsonId": "group-1",
   "objType": "group",
   "position": { "x": 0, "y": 0, "z": 0 },
-  "children": [
+  "subScene": [
     { "threeJsonId": "child-box", "objType": "box", "geometry": { "width": 1, "height": 1, "depth": 1 } }
   ]
 }
 ```
+
+Groups accept `children` as an input alias when `subScene` is missing or empty. Its ThreeJSON descriptors are recursively normalized to subScene. Different nonempty lists reject with `OBJECT_CHILDREN_CONFLICT`, rather than dropping or duplicating objects; identical lists become one canonical list. Native records (`objType:"native"` or `parseMode:"native"`) and geometry-operation children are not converted. Caller input is not mutated; canonical output uses subScene. New documents should use the canonical field.
 
 ## 8. Materials And Textures
 

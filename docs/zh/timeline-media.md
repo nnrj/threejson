@@ -47,6 +47,10 @@
 
 工作台可播放、暂停、定位、打开 JSON/.tjz、设置时长/尺寸/fps、临时导入本地配乐或旁白。独立预览不改写聊天历史、编辑器文档或撤销栈；工作台参数及临时音频也不自动保存进原场景。
 
+点击导出后，**先检查整段导出范围内的镜头、资源、编码器和原有音轨，再合成自动旁白**。检查、配音、编码、封装是独立阶段；配音进度到头不表示视频已生成。能执行的未完成草稿仍允许导出，不会将 `production.state` 改成完成。
+
+共享窗口优先将视频写入浏览器私有临时文件（OPFS），完整封装且非空后才允许保存到用户路径。支持文件选择器时显示“保存视频”，点击后选择路径；保存失败或取消可以再次保存，不重新配音、渲染。无文件选择器时下载已完成的文件；OPFS 不可用时采用原有 Blob 后备。失败/取消清理本次临时文件，已完成结果保留到关闭窗口或下一次成功导出；浏览器崩溃后的孤立缓存不作为成功文件。配额/写入错误仍明确报告，不伪造成功。外部宿主自行提供的 target/writable/openWritable 保持原有保存契约。
+
 视频导出默认“自动旁白＋原有音轨”：点击一次导出即可完成配音、渲染和封装，也可选“仅原有音轨”或“静音”。首次主动播放/导出有台词的视频时会下载并缓存约 71 MiB 的 **MeloTTS 中文本地配音（预览）** 资源，界面提前说明大小，并显示下载、配音、导出进度，均可取消。不需要先安装、启用或手动生成。仅打开窗口、普通场景、无台词影片、GIF/静态图片或关闭自动旁白时不会下载语音模型。
 
 时长/尺寸/fps、旁白文本、离线资源导入与缓存管理放在“更多设置”中。高级面板仍可导入宿主清单；其他模型需匹配的生产器。“用于 AI 创作配音”开关只控制 Agent 创作阶段，导出自动配音不依赖这个开关，也不会改变它。
@@ -142,6 +146,8 @@ const portable = await packMediaDocument(scene, { assets: { 'voice.wav': wavByte
 返回真实 MIME 的 blob。也可传 Mediabunny target / writable（支持文件偏移和背压）流式输出。编码交错提交音视频，不保留整段未压缩帧；默认电子配乐按块合成。GIF 优先 Worker，不支持模块解析时通过 onWarning 报告主线程后备；gifModuleUrl 可显式指定编码模块。原 MediaRecorder 保留为实时录制用途。
 
 文件保存优先用 `openWritable: () => fileHandle.createWritable()` 延迟打开写入流；与 `writable`、自定义 `target` 三选一。视频先检查编码器、音轨和导出范围内各镜头首帧，再编码。文件流由 media-kit 在封装成功且非空后提交；失败/取消调用 abort，不把编码器的清理 close 当作保存成功。标准文件系统流可保留原有文件；新建文件的选择器仍可能留下空占位文件，不会因此显示“已导出”。自定义 target 的提交/回滚由调用方负责。流式返回 `blob:null`、`bytesWritten`；空输出报 `MEDIA_EMPTY_OUTPUT`。
+
+`await preflightMediaExport(source, options)` 提供相同的前置检查，返回范围、帧数和检查时间点数 `checks`，不编码、不调用输出目标。宿主应在自动配音/选择目标文件前调用；可传 `expectAudio:true` 预先确认之后新增配音所需的音频编码器。`rendering` 进度含 `checked/checks/time`。报告不是可缓存的视觉质量验收；真正导出会再次检查实际输入，检查时间点之外的运行时错误仍可能发生。Core 输入别名规则见 [JSON 格式](./json-format.md) 与 [紧凑曲面](./complex-mesh.md)。
 
 `onProgress.stage` 区分 `preparing`、`audio`、`rendering`、`encoding`、`finalizing`、`saving`（文件流）和 `complete`；只有 encoding 的 progress/帧数表示逐帧进度，编码 100% 尚不代表写入完成。镜头准备/渲染错误包含 `clipId` 和原始 cause。`production.state:"paused"` 不禁止导出可执行草稿；首帧检查不是全片视觉验收，也不把草稿标为完成。
 

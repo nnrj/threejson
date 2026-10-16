@@ -1,4 +1,5 @@
 import { log } from "../util/logger.js";
+import { normalizeDescriptorCompatibility } from "./descriptorCompatibility.js";
 /**
  * subScene hierarchy: pre-normalization (nested canonical) and layout conversion (nested | flat | subSceneList).
  */
@@ -75,6 +76,7 @@ function normalizeRecordTree(record, seenIds, policy, warnings, depth) {
     return;
   }
   stripLegacyGroupChildFields(record);
+  normalizeDescriptorCompatibility(record);
   const id = getThreeJsonId(record);
   if (id) {
     if (seenIds.has(id)) {

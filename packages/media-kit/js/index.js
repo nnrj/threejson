@@ -5,4 +5,4 @@ export { createMediaOperationService } from "./operationService.js";
 export { isMediaSource, mediaAssetOf, laneEnabled, snapMediaTime } from "./editing.js";
 export { probeMediaAsset, extractMediaAudio } from "./mediaSources.js";
 export { synthesizeNarration, createNarrationCommands } from "./narration.js";
-export { resolveFrameRange, getMediaCapabilities, prepareProjectAudio, renderImage, renderGif, renderVideo } from "./export.js";
+export { resolveFrameRange, getMediaCapabilities, prepareProjectAudio, preflightMediaExport, renderImage, renderGif, renderVideo } from "./export.js";

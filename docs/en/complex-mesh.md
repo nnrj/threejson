@@ -119,6 +119,8 @@ Choose an object type that matches the shape:
 
 These descriptors complement rather than replace `bufferMesh`. Evaluated output can be baked when complete coordinates are needed, and users can always provide raw vertices and indices directly.
 
+Canonical parametric geometry uses `geometry.expressions:{x,y,z}`. The input adapter can migrate restricted arithmetic `geometry.func`, e.g. `(u,v)=>{const x=(u-0.5)*24;return [x,Math.sin(v),0];}`. Only two parameters, sequential const arithmetic bindings and a three-coordinate array are supported, with the existing numeric evaluator's functions/constants. No JavaScript is executed. Explicit expressions take priority; otherwise func is converted and removed on the owned clone. Property access, unknown calls, randomness, assignments, branches, loops and closures reject with `PARAMETRIC_FUNCTION_UNSUPPORTED`. Input/expansion lengths are parser safety limits. Geometry evaluators/workers still consume canonical expressions, not scripts. New AI output should author expressions directly.
+
 ## Mesh runtime commands
 
 Use the unified executor from `threejson/commands`:

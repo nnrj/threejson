@@ -132,6 +132,8 @@ try {
     await studio.getByRole("button",{name:"关闭",exact:true}).click();
     results.push({mode,skippedSpeech:true});
   }
+  await page.waitForFunction(async()=>{const dir=await(await navigator.storage.getDirectory()).getDirectoryHandle('threejson-media-exports');for await(const _ of dir.keys())return false;return true;});
+  results.push({temporaryExportsCleaned:true});
   assert.deepEqual(errors, []);assert.deepEqual(requests, []);
 } finally {
   await browser?.close();await new Promise(resolve => server.close(resolve));
