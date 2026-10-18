@@ -17,6 +17,7 @@ import { getDisplayDeviceId, refreshBuiltinQuota } from "./threeBoxBuiltinProvid
 import { t } from "../../shared/i18n/index.js";
 import { isBuiltinPrivacyAccepted } from "../../shared/js/builtinProviderPrivacy.js";
 import { fetchCreationCapabilities } from "../../shared/js/creationTurnPolicy.js";
+import { builtinQuotaText, builtinQuotaStatusText } from "../../shared/js/builtinQuotaPresentation.js";
 
 function createProviderId() {
   return `provider-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
@@ -196,7 +197,7 @@ export function createThreeBoxSettingsModal(host = {}) {
       }
     });
     getDisplayDeviceId().then((id) => {
-      idValue.textContent = id;
+      idValue.textContent = settings.ai.providers.find((p) => p.id === provider.id)?.builtinShortId || provider.builtinShortId || id;
     });
     idControl.appendChild(idValue);
     idControl.appendChild(copyBtn);
@@ -217,16 +218,17 @@ export function createThreeBoxSettingsModal(host = {}) {
     const quotaLabel = document.createElement("label");
     quotaLabel.textContent = t("threebox.settings.provider.quotaLabel", "剩余额度");
     const quotaValue = document.createElement("span");
-    const formatQuota = (quota) => quota
-      ? t("threebox.settings.provider.quotaValue", "已用 {used} 轮 / 剩余 {remaining} 轮", {
-          used: Number(quota.roundsUsed) || 0,
-          remaining: Math.max(0, (Number(quota.roundsLimit) || 0) - (Number(quota.roundsUsed) || 0))
-        })
-      : t("threebox.settings.provider.quotaUnknown", "尚未获取（保存设置后自动申请）");
+    const formatQuota = (quota) => builtinQuotaText(quota, t);
+    quotaValue.style.whiteSpace = "pre-line";
+    quotaValue.style.minWidth = "0";
     quotaValue.textContent = formatQuota(provider.builtinQuota);
     quotaRow.appendChild(quotaLabel);
     quotaRow.appendChild(quotaValue);
     card.appendChild(quotaRow);
+    const quotaStatus = document.createElement("div");
+    quotaStatus.className = "settingsFieldHint";
+    quotaStatus.setAttribute("role", "status");
+    card.appendChild(quotaStatus);
 
     if (!isBuiltinPrivacyAccepted("threebox")) {
       const consent = document.createElement("div");
@@ -249,9 +251,12 @@ export function createThreeBoxSettingsModal(host = {}) {
       card.appendChild(consent);
     }
 
-    refreshBuiltinQuota({ getSettings: () => settings, updateSettings }).then((freshQuota) => {
+    refreshBuiltinQuota({ getSettings: () => settings, updateSettings }, {
+      onStatus: (status) => { quotaStatus.textContent = builtinQuotaStatusText(status, t); }
+    }).then((freshQuota) => {
       if (freshQuota) {
         quotaValue.textContent = formatQuota(freshQuota);
+        idValue.textContent = settings.ai.providers.find((p) => p.id === provider.id)?.builtinShortId || idValue.textContent;
       }
     });
 

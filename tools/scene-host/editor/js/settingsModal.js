@@ -11,6 +11,7 @@ import {
   setSettingsByPath
 } from "../../shared/js/editorSettingsStore.js";
 import { fetchBuiltinQuota } from "../../shared/js/builtinAiProvider.js";
+import { builtinQuotaText, builtinQuotaStatusText } from "../../shared/js/builtinQuotaPresentation.js";
 import { BUILTIN_PROVIDER_TYPE, getDisplayDeviceId } from "./editorBuiltinAiProvider.js";
 import { t } from "../../shared/i18n/index.js";
 import { isBuiltinPrivacyAccepted } from "../../shared/js/builtinProviderPrivacy.js";
@@ -117,7 +118,7 @@ export function createSettingsModalController({ host, onSave, onReset, onTestEnd
       }
     });
     getDisplayDeviceId().then((id) => {
-      idValue.textContent = id;
+      idValue.textContent = provider.builtinShortId || id;
     });
     idControl.appendChild(idValue);
     idControl.appendChild(copyBtn);
@@ -139,17 +140,19 @@ export function createSettingsModalController({ host, onSave, onReset, onTestEnd
     quotaLabel.textContent = settingsText("settings.provider.quotaLabel", "剩余额度");
     const quotaValue = document.createElement("span");
     function formatQuota(quota) {
-      return quota
-        ? settingsText("settings.provider.quotaValue", "已用 {used} 轮 / 剩余 {remaining} 轮", {
-            used: Number(quota.roundsUsed) || 0,
-            remaining: Math.max(0, (Number(quota.roundsLimit) || 0) - (Number(quota.roundsUsed) || 0))
-          })
-        : settingsText("settings.provider.quotaUnknown", "尚未获取（保存设置后自动申请）");
+      return builtinQuotaText(quota, t);
     }
+    quotaValue.style.whiteSpace = "pre-line";
+    quotaValue.style.minWidth = "0";
     quotaValue.textContent = formatQuota(provider.builtinQuota);
     quotaRow.appendChild(quotaLabel);
     quotaRow.appendChild(quotaValue);
     card.appendChild(quotaRow);
+    const quotaStatus = document.createElement("div");
+    quotaStatus.className = "editorSettingsHint";
+    quotaStatus.setAttribute("role", "status");
+    quotaStatus.textContent = builtinQuotaStatusText("unavailable", t);
+    card.appendChild(quotaStatus);
 
     if (!isBuiltinPrivacyAccepted("editor")) {
       const consent = document.createElement("div");
@@ -173,15 +176,18 @@ export function createSettingsModalController({ host, onSave, onReset, onTestEnd
     }
 
     if (provider.apiKey && isBuiltinPrivacyAccepted("editor")) {
+      quotaStatus.textContent = builtinQuotaStatusText("refreshing", t);
       const base = String(draft?.ai?.builtinBackendUrl || "").replace(/\/$/, "");
       fetchBuiltinQuota(base, provider.apiKey)
         .then((body) => {
           provider.builtinQuota = body.quota;
           provider.builtinShortId = body.shortId;
           quotaValue.textContent = formatQuota(body.quota);
+          idValue.textContent = body.shortId || idValue.textContent;
+          quotaStatus.textContent = "";
         })
         .catch(() => {
-          /* keep showing the cached quota on failure */
+          quotaStatus.textContent = builtinQuotaStatusText("stale", t);
         });
     }
 

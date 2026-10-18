@@ -87,13 +87,16 @@ export function ensureBuiltinApiKey(settingsController, options = {}) {
  * stale. Fails silently (returns the last-known cached quota). Only persists when the fetched values
  * actually differ, to avoid a re-render loop while the panel stays open.
  */
-export async function refreshBuiltinQuota(settingsController) {
+export async function refreshBuiltinQuota(settingsController, options = {}) {
+  options.onStatus?.("refreshing");
   if (!isBuiltinPrivacyAccepted()) {
+    options.onStatus?.("unavailable");
     return null;
   }
   const settings = settingsController.getSettings();
   const provider = findBuiltinProvider(settings);
   if (!provider?.apiKey) {
+    options.onStatus?.("unavailable");
     return provider?.builtinQuota || null;
   }
   try {
@@ -111,8 +114,10 @@ export async function refreshBuiltinQuota(settingsController) {
         draftProvider.builtinShortId = body.shortId;
       });
     }
+    options.onStatus?.("fresh");
     return body.quota;
   } catch {
+    options.onStatus?.("stale");
     return provider.builtinQuota || null;
   }
 }

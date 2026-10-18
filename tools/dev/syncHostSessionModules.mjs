@@ -1,7 +1,7 @@
 // The static baseline must work without packages/. Publish exact copies for npm hosts.
 // Keep new shared session modules canonical under scene-host/shared, and check for drift in CI.
 import { readFile, writeFile } from "node:fs/promises";
-export const HOST_SESSION_MODULES = ["sceneCardSession.js", "mediaCardSession.js", "videoTurn.js", "sceneViewportPool.js", "sceneCapabilities.js", "viewportGizmoOverlay.js", "sceneGeometryCompiler.js", "sceneResourceDiagnostics.js", "meshViewCapture.js", "sceneEditorBridge.js", "aiTurnOrchestrator.js", "buildSceneHostRuntimeConfig.js", "creationTurnPolicy.js", "creationBudget.js", "sceneQualityReview.js", "editorAiCredentials.js", "modelAssetResources.js", "creationQualityPolicy.js", "previewPerformancePolicy.js", "creationQualityPolicy.d.ts", "previewPerformancePolicy.d.ts"];
+export const HOST_SESSION_MODULES = ["sceneCardSession.js", "mediaCardSession.js", "videoTurn.js", "sceneViewportPool.js", "sceneCapabilities.js", "viewportGizmoOverlay.js", "sceneGeometryCompiler.js", "sceneResourceDiagnostics.js", "meshViewCapture.js", "sceneEditorBridge.js", "aiTurnOrchestrator.js", "buildSceneHostRuntimeConfig.js", "creationTurnPolicy.js", "creationBudget.js", "sceneQualityReview.js", "editorAiCredentials.js", "modelAssetResources.js", "creationQualityPolicy.js", "previewPerformancePolicy.js", "creationQualityPolicy.d.ts", "previewPerformancePolicy.d.ts", "builtinQuotaPresentation.js", "builtinQuotaPresentation.d.ts", "aiErrorFeedback.js"];
 export async function syncHostSessionModules({ check = false } = {}) {
   for (const name of HOST_SESSION_MODULES) {
     const source = new URL(`../scene-host/shared/js/${name}`, import.meta.url);

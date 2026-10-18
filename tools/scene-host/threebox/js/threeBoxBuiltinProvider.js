@@ -118,13 +118,16 @@ export function ensureBuiltinApiKey(settingsModal) {
  * stays open, so this only writes through on a real change (and a same-value refetch on the
  * resulting re-render then no-ops, ending the chain after at most one extra render).
  */
-export async function refreshBuiltinQuota(settingsModal) {
+export async function refreshBuiltinQuota(settingsModal, options = {}) {
+  options.onStatus?.("refreshing");
   if (!isBuiltinPrivacyAccepted("threebox")) {
+    options.onStatus?.("unavailable");
     return null;
   }
   const settings = settingsModal.getSettings();
   const provider = findBuiltinProvider(settings);
   if (!provider?.apiKey) {
+    options.onStatus?.("unavailable");
     return provider?.builtinQuota || null;
   }
   try {
@@ -143,8 +146,10 @@ export async function refreshBuiltinQuota(settingsModal) {
         { notify: false, toast: false, closeModal: false }
       );
     }
+    options.onStatus?.("fresh");
     return body.quota;
   } catch {
+    options.onStatus?.("stale");
     return provider.builtinQuota || null;
   }
 }

@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import { t } from "@threejson/host-kit/i18n/index.js";
 import { probeEndpoint } from "@threejson/host-kit/js/endpointProbe.js";
 import { getDisplayDeviceId } from "@threejson/host-kit/js/builtinAiProvider.js";
+import { builtinQuotaText, builtinQuotaStatusText } from "@threejson/host-kit/js/builtinQuotaPresentation.js";
 import { fetchCreationCapabilities } from "@threejson/host-kit/js/creationTurnPolicy.js";
 import { clearThumbnailCache, rebuildAllTemplateThumbnails } from "./lib/threeBoxTemplateThumbnails.js";
 import { refreshBuiltinQuota } from "./lib/threeBoxBuiltinProvider.js";
@@ -161,33 +162,28 @@ function GenericField({ field, draft, onChange, onTestEndpoint }) {
 function BuiltinProviderCard({ provider, privacyAccepted, onOpenPrivacy, showToast }) {
   const [deviceId, setDeviceId] = useState(t("threebox.settings.provider.deviceIdLoading", "获取中…"));
   const [quota, setQuota] = useState(provider?.builtinQuota);
+  const [quotaStatus, setQuotaStatus] = useState("refreshing");
 
   useEffect(() => {
     let cancelled = false;
     void getDisplayDeviceId().then((id) => {
       if (!cancelled) {
-        setDeviceId(id);
+        setDeviceId(threeBoxSettingsController.getSettings().ai.providers.find((p) => p.id === provider.id)?.builtinShortId || id);
       }
     });
-    void refreshBuiltinQuota(threeBoxSettingsController).then((fresh) => {
+    void refreshBuiltinQuota(threeBoxSettingsController, {
+      onStatus: (status) => { if (!cancelled) setQuotaStatus(status); }
+    }).then((fresh) => {
       if (!cancelled && fresh) {
         setQuota(fresh);
+        const serverId = threeBoxSettingsController.getSettings().ai.providers.find((p) => p.id === provider.id)?.builtinShortId;
+        if (serverId) setDeviceId(serverId);
       }
     });
     return () => {
       cancelled = true;
     };
-  }, []);
-
-  function formatQuota(q) {
-    const parsed = q || null;
-    if (!parsed) {
-      return t("threebox.settings.provider.quotaUnknown", "尚未获取（保存设置后自动申请）");
-    }
-    const used = Number(parsed.roundsUsed) || 0;
-    const remaining = Math.max(0, (Number(parsed.roundsLimit) || 0) - used);
-    return t("threebox.settings.provider.quotaValue", "已用 {used} 轮 / 剩余 {remaining} 轮", { used, remaining });
-  }
+  }, [privacyAccepted]);
 
   async function copyDeviceId() {
     try {
@@ -217,8 +213,9 @@ function BuiltinProviderCard({ provider, privacyAccepted, onOpenPrivacy, showToa
       </div>
       <div className="providerCardRow">
         <label>{t("threebox.settings.provider.quotaLabel", "剩余额度")}</label>
-        <span>{formatQuota(quota)}</span>
+        <span style={{ whiteSpace: "pre-line", minWidth: 0 }}>{builtinQuotaText(quota, t)}</span>
       </div>
+      <div className="settingsFieldHint" role="status">{builtinQuotaStatusText(quotaStatus, t)}</div>
       {!privacyAccepted && (
         <div className="providerBuiltinConsentNotice">
           <span>{t("builtinPrivacy.required", "您必须同意使用协议才能使用内置模型。")}</span>

@@ -1,4 +1,5 @@
 import { t } from "../i18n/index.js";
+import { builtinQuotaErrorMessage } from "./builtinQuotaPresentation.js";
 
 const PROVIDER_CODE_BY_CLIENT_CODE = {
   BUILTIN_SAFETY_WARNING: "SAFETY_POLICY_WARNING",
@@ -71,7 +72,7 @@ export function getAiErrorFeedback(error) {
     tone = "warning";
     message = t("ai.error.deviceMuted", "您已被暂时限制使用，请稍后再试。");
   } else if (providerCode === "QUOTA_EXCEEDED" || error?.code === "BUILTIN_QUOTA_EXCEEDED") {
-    message = t("ai.error.builtinQuotaExceeded", "内置供应商的体验额度已用完，请切换为自己的供应商。");
+    message = builtinQuotaErrorMessage(payload, t);
   } else if (["INVALID_API_KEY", "INVALID_OR_EXPIRED_API_KEY", "MISSING_API_KEY"].includes(providerCode)) {
     message = t("ai.error.invalidApiKey", "API 密钥无效或已过期，请检查配置后重试。");
   } else if (providerCode === "REVOKED_API_KEY") {
