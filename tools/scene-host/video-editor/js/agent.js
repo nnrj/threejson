@@ -46,7 +46,7 @@ export function scopedVideoService(service, shotId) {
   const allowed = command => {
     if (command.op === "media.document.replace") return false;
     if (!shotId) return true;
-    if (["media.inspect", "media.validate", "media.captureFrames"].includes(command.op)) return true;
+    if (["media.inspect", "media.validate", "media.captureFrames", "media.shot.discover"].includes(command.op)) return true;
     if (command.op === "media.shot.narrate" && command.args?.extend) return false;
     if (command.op === "media.clip.update" && Object.keys(command.args?.changes || {}).some(key => ["start", "duration", "sourceStart", "rate"].includes(key))) return false;
     if (["media.shot.put", "media.shot.edit", "media.shot.inspect", "media.shot.query", "media.shot.narrate", "media.clip.update"].includes(command.op)) return command.args?.id === shotId && !(command.op === "media.shot.put" && command.args?.clip);
@@ -54,7 +54,7 @@ export function scopedVideoService(service, shotId) {
   };
   return {
     get revision() { return service.revision; },
-    discover() { const value = service.discover(); return { ...value, commands: value.commands.filter(c => c.op !== "media.document.replace" && (!shotId || ["media.inspect", "media.validate", "media.captureFrames", "media.shot.put", "media.shot.edit", "media.shot.inspect", "media.shot.query", "media.shot.narrate", "media.clip.update", "timeline.edit", "timeline.inspect"].includes(c.op))) }; },
+    discover() { const value = service.discover(); return { ...value, commands: value.commands.filter(c => c.op !== "media.document.replace" && (!shotId || ["media.inspect", "media.validate", "media.captureFrames", "media.shot.discover", "media.shot.put", "media.shot.edit", "media.shot.inspect", "media.shot.query", "media.shot.narrate", "media.clip.update", "timeline.edit", "timeline.inspect"].includes(c.op))) }; },
     async execute(input, options) {
       const commands = Array.isArray(input) ? input : [input];
       if (!commands.every(allowed)) return { ok: false, code: "MEDIA_EDIT_SCOPE", error: "Operation is outside the approved editing scope. Edit only the selected shot; do not replace the project or retime other clips.", revision: service.revision, results: [], diagnostics: [] };

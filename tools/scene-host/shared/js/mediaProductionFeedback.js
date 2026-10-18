@@ -21,7 +21,7 @@ export function getMediaProductionSummary(document) {
     return { id: clip.id, title: metadata.title || clip.id, start: clip.start || 0, duration: clip.duration, stage: metadata.stage,
       produced: metadata.stage !== "planned" && Boolean(objects || shotCaptions || overlay || animatedBackground || metadata.intentionalBlank || !scene), objects };
   });
-  return { documentType: "composition", state: production.state, stopReason: production.stopReason, lastError: production.lastError || "",
+  return { documentType: "composition", state: production.state, stopReason: production.stopReason, lastError: production.lastError || "", lastErrorCode: production.lastErrorCode || "",
     duration: document.timeline?.duration ?? shots.reduce((end, shot) => Math.max(end, shot.start + shot.duration), 0),
     totalShots: shots.length, producedShots: shots.filter(shot => shot.produced).length, shots, audio, captions,
     awaitingApproval: production.stopReason === "storyboard_approval_required" };
@@ -39,9 +39,13 @@ export function formatMediaProductionSummary(summary, language = "zh-CN") {
         ? text(`视频内容已生成：${total} 个镜头，${summary.duration} 秒。`, `Video content generated: ${total} shots, ${summary.duration} seconds.`)
         : text(`视频尚未完成：已生成 ${produced}/${total} 个镜头的内容，已完成内容和分镜均已保留。`, `Video unfinished: content is available for ${produced}/${total} shots. Completed content and the storyboard are preserved.`);
   message += text(summary.audio ? ` 已写入 ${summary.audio} 条音轨。` : " 尚未生成音轨。", summary.audio ? ` ${summary.audio} audio track(s) authored.` : " No audio track has been generated.");
+  const shotCallError = ["MEDIA_QUERY_READ_ONLY", "UNKNOWN_SCENE_OPERATION", "MEDIA_SHOT_RUNTIME_UNAVAILABLE"].includes(summary.lastErrorCode)
+    || /Shot query accepts only read operations\.|^Shot .*, media\.shot\.(query|edit)/.test(summary.lastError);
   const reasons = {
     repeated_invalid_output: text("模型连续返回无法解析的操作命令", "The model repeatedly returned invalid operation commands"),
-    repeated_operations: text("模型重复相同操作，未能继续推进", "The model repeated the same operations without progress"),
+    repeated_operations: shotCallError
+      ? text("镜头操作调用有误，未能完成纠正；不是您的额度或账号权限问题", "A shot operation call could not be corrected; this is not an account quota or permission issue")
+      : text("模型重复相同操作，未能继续推进", "The model repeated the same operations without progress"),
     provider_output_truncated: text("供应商截断了镜头操作输出", "The provider truncated the shot operation output"),
     provider_or_execution_failed: text("供应商请求或操作执行失败", "A provider request or operation failed"),
     empty_provider_output: text("供应商返回了空内容", "The provider returned empty content"),

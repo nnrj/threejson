@@ -2,6 +2,7 @@ import { createSceneSession, createSceneOperationService } from "threejson/sessi
 import { inspectMediaDocument, diagnoseMediaDocument } from "./session.js";
 import { createNarrationCommands } from "./narration.js";
 import { isMediaSource } from "./editing.js";
+import { shotCommandsSchema, discoverShotOperations, assertShotCommands, assertShotReceipt } from "./shotOperations.js";
 
 const schema = (properties = {}, required = []) => ({ type: "object", properties, required, additionalProperties: false });
 const string = { type: "string" }, number = { type: "number" }, object = { type: "object", additionalProperties: true };
@@ -22,8 +23,9 @@ const specs = [
   ["media.shot.put", "authoring", "Add/replace one shot scene or change its timing/metadata; preserve other shots.", schema({ id: string, scene: object, clip: object, metadata: object }, ["id"])],
   ["media.shot.remove", "authoring", "Remove one shot by id (does not silently retime remaining shots).", schema({ id: string }, ["id"])],
   ["media.shot.inspect", "read", "Inspect one shot, optionally its full scene. Prefer compact query for large meshes.", schema({ id: string, includeScene: { type: "boolean" } }, ["id"])],
-  ["media.shot.query", "read", "Execute read-only SceneOperation commands in a shot. Runtime capture uses media.captureFrames.", schema({ id: string, commands: array(object) }, ["id", "commands"])],
-  ["media.shot.edit", "authoring", "Atomically apply existing SceneOperation authoring commands to one shot.", schema({ id: string, commands: array(object) }, ["id", "commands"])],
+  ["media.shot.discover", "read", "Discover nested shot operations. Omit ops for a compact index; pass ops:[name] for exact inputSchema. Does not read or change any shot.", schema({ ops: array(string) })],
+  ["media.shot.query", "read", "Execute read-only SceneOperations such as scene.query or object.get in a shot. Discover exact arguments with media.shot.discover. Use media.shot.edit for changes; media.captureFrames for actual frames.", schema({ id: string, commands: shotCommandsSchema("media.shot.query") }, ["id", "commands"])],
+  ["media.shot.edit", "authoring", "Atomically apply SceneOperations such as object.patch or material.patch to one shot. Discover exact arguments with media.shot.discover; nested commands are {op,args}, not raw JSON Patch.", schema({ id: string, commands: shotCommandsSchema("media.shot.edit") }, ["id", "commands"])],
   ["timeline.inspect", "read", "Read shot or composition timing, tracks, captions, effects and audio.", schema({ shotId: string })],
   ["timeline.edit", "authoring", "Upsert or remove timeline items by stable ID, atomically; no array index guessing. Set retimeAutomation:true for NLE timing edits to root audio/captions; deletion removes their automation.", schema({ shotId: string, section: { type: "string", enum: ["tracks", "effects", "captions", "audio"] }, upsert: array(object), remove: array(string), retimeAutomation: { type: "boolean" } }, ["section"])],
   ["media.project.set", "authoring", "Set name, output size/fps or production state. Complete is rejected while shots are unbuilt/invalid.", schema({ name: string, output: object, state: string })],
@@ -82,13 +84,14 @@ export function createMediaOperationService({ session, adapters = {} } = {}) {
             else if (op === "media.validate") data = diagnoseMediaDocument(session.document);
             else if (op === "timeline.inspect") data = args.shotId ? shot(args.shotId).scene.timeline || {} : session.document.timeline;
             else if (op === "media.shot.inspect") { const { clip, scene } = shot(args.id); data = { ...inspectMediaDocument(session.document, session.revision).shots.find(s => s.id === clip.id), ...(args.includeScene ? { scene } : {}) }; }
+            else if (op === "media.shot.discover") data = discoverShotOperations(args.ops);
             else if (op === "media.shot.query") {
+              assertShotCommands(args.commands, op, args.id);
               const { scene } = shot(args.id), local = createSceneSession(scene);
               try {
-                const service = createSceneOperationService({ session: local }), catalog = service.discover().commands;
-                if (!Array.isArray(args.commands) || args.commands.some(c => catalog.find(s => s.op === c.op)?.category !== "read")) fail("MEDIA_QUERY_READ_ONLY", "Shot query accepts only read operations.");
+                const service = createSceneOperationService({ session: local });
                 data = await service.execute(args.commands, { signal: options.signal });
-                if (!data.ok) fail(data.code || "MEDIA_QUERY_FAILED", data.error || "Shot query failed.");
+                assertShotReceipt(data, args.commands, op, args.id);
               } finally { local.dispose(); }
             } else if (op === "media.shot.narrate") {
               if (!adapters.narrate) fail("MEDIA_NARRATION_UNAVAILABLE", "No installed host narration producer. No model is downloaded automatically.");
@@ -115,8 +118,18 @@ export function createMediaOperationService({ session, adapters = {} } = {}) {
     if (options.requestId) requests.set(options.requestId, { fingerprint, promise: task });
     return task;
   };
-  function failure(e, beforeRevision = session.revision) { return { protocolVersion: 1, sessionId, ok: false, status: e.name === "AbortError" ? "cancelled" : "failed", beforeRevision, afterRevision: session.revision, revision: session.revision, results: [], code: e.code || "MEDIA_OPERATION_FAILED", error: e.message, diagnostics: [{ code: e.code || "MEDIA_OPERATION_FAILED", message: e.message }] }; }
+  function failure(e, beforeRevision = session.revision) {
+    const diagnostic = { code: e.code || "MEDIA_OPERATION_FAILED", message: e.message,
+      ...(e.path ? { path: e.path } : {}), ...(e.shotId ? { shotId: e.shotId } : {}),
+      ...(e.operation ? { operation: e.operation } : {}), ...(e.commandIndex != null ? { commandIndex: e.commandIndex } : {}) };
+    return { protocolVersion: 1, sessionId, ok: false, status: e.name === "AbortError" ? "cancelled" : "failed", beforeRevision, afterRevision: session.revision, revision: session.revision, results: [], code: diagnostic.code, error: e.message, diagnostics: [diagnostic], ...(e.recovery ? { recovery: e.recovery } : {}) };
+  }
   return { sessionId, get revision() { return session.revision; }, execute,
-    discover() { return { protocolVersion: 1, sessionId, revision: session.revision, commands: structuredClone(specs), capabilities: { media: true, capture: Boolean(adapters.captureFrames), render: Boolean(adapters.render), narration: Boolean(adapters.narrate) } }; }
+    discover() {
+      const commands = specs.map(spec => ["media.shot.query", "media.shot.edit"].includes(spec.op)
+        ? { ...spec, inputSchema: { ...spec.inputSchema, properties: { ...spec.inputSchema.properties, commands: shotCommandsSchema(spec.op) } } } : spec);
+      return { protocolVersion: 1, sessionId, revision: session.revision, commands: structuredClone(commands),
+        capabilities: { media: true, capture: Boolean(adapters.captureFrames), render: Boolean(adapters.render), narration: Boolean(adapters.narrate) } };
+    }
   };
 }

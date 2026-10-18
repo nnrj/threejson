@@ -67,6 +67,8 @@ test("project JSON applies through revision/history; empty project can be saved 
 
 test("editor agent cannot overwrite the whole project or escape selected-shot scope", async () => {
   const session = make(), service = createMediaOperationService({ session }), scoped = scopedVideoService(service, "a");
+  assert.ok(scoped.discover().commands.some(c => c.op === "media.shot.discover"));
+  assert.equal((await scoped.execute(op("media.shot.discover", { ops: ["object.patch"] }))).ok, true);
   assert.equal((await scoped.execute(op("media.shot.remove", { id: "a" }))).code, "MEDIA_EDIT_SCOPE");
   assert.equal((await scoped.execute(op("media.document.replace", { document: session.snapshot() }))).ok, false);
   assert.equal((await scoped.execute(op("timeline.edit", { section: "captions", upsert: [] }))).ok, false);

@@ -99,6 +99,15 @@ Visual review uses declared image-input capability; unknown models receive struc
 
 media-kit exposes createMediaProjectSession/createMediaOperationService; threejson/ai exposes runVideoAgent with an injected service, no reverse dependency. Operations include media.inspect/plan.set/shot.put/shot.edit/shot.query/shot.remove, timeline.inspect/edit, media.validate/captureFrames/render/shot.narrate. Commits are revision-checked and atomic with undo/redo. Explicit budgets, cancellation, provider failure or repeated non-progress stop work while preserving completed shots; there is no fixed total round ceiling. Runtime adapters are advertised only when supplied.
 
+Use `media.shot.discover` for nested command contracts: omit arguments for a compact index, or pass
+`args:{ops:["scene.query","object.patch"]}` for exact registered input schemas. `media.shot.query`
+is read-only; edits belong in `media.shot.edit`. Nested operations use `{op,args}`, not raw JSON Patch.
+Actual frames use top-level `media.captureFrames`. Failures distinguish unknown operations from writes
+sent to queries, and include the shot, child operation, argument path and `recovery`. The first Agent
+request receives the saved project summary and validation. Repeating an uncommitted failure with concrete
+recovery gets one corrective reminder without replaying the call; further repetition still pauses and
+preserves the draft. Queries never become writes automatically, and partial commits are never blindly retried.
+
 ## Export
 
 ```js

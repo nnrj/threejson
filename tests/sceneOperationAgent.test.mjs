@@ -50,3 +50,60 @@ test("provider failure returns earlier receipts instead of hiding a committed pa
   assert.equal(result.receipts.length, 1); assert.equal(result.revision, 1);
   assert.equal(session.document.root.objectList[0].position.x, 3); session.dispose();
 });
+
+test("a concrete failed-call recovery gets one reminder without re-executing or looping forever", async () => {
+  for (const protocol of ["jsonl", "native"]) {
+    let executions = 0;
+    const service = { revision: 0,
+      discover: () => ({ commands: [{ op: "test.query", summary: "Query", category: "read", targets: [], requirements: [], inputSchema: { type: "object" } }] }),
+      async execute() { executions++; return { ok: false, status: "failed", code: "INVALID_QUERY", error: "Fix the selector.", diagnostics: [], recovery: { message: "Use a valid selector." } }; }
+    };
+    const name = [...createSceneAgentTools(service).operations.keys()][0]; let requests = 0;
+    const result = await runSceneOperationAgent({ service, prompt: "inspect", protocol, request: async ({ messages }) => {
+      requests++;
+      if (requests === 3) {
+        const feedback = JSON.parse(messages.at(-1).content);
+        assert.equal(feedback.executed, false); assert.equal(feedback.repeated, true);
+        assert.match(feedback.instruction, /change the next operation/);
+      }
+      return { message: protocol === "native" ? { role: "assistant", tool_calls: [{ id: `call-${requests}`, type: "function", function: { name, arguments: "{}" } }] }
+        : { role: "assistant", content: '{"op":"test.query","args":{}}' } };
+    } });
+    assert.equal(result.stopReason, "repeated_operations"); assert.equal(result.error.code, "INVALID_QUERY");
+    assert.equal(requests, 3); assert.equal(executions, 1);
+  }
+});
+
+test("failed writes can be retried after a corrective commit, but successful writes cannot replay", async () => {
+  const session = scene(), service = createSceneOperationService({ session });
+  const patch = { op: "object.patch", args: { id: "missing", partial: { name: "Fixed" } } };
+  const commands = [patch, { op: "object.add", args: { descriptor: { objType: "box", threeJsonId: "missing" } } }, patch, "# done"];
+  let calls = 0;
+  const result = await runSceneOperationAgent({ service, prompt: "repair", request: async () => ({ message: { role: "assistant", content: typeof commands[calls] === "string" ? commands[calls++] : JSON.stringify(commands[calls++]) } }) });
+  assert.equal(result.completed, true); assert.equal(session.document.root.objectList[1].name, "Fixed");
+  assert.equal(session.revision, 2); session.dispose();
+});
+
+test("explicit budgets and cancellation still stop failed-call recovery", async () => {
+  for (const cancel of [false, true]) {
+    const controller = new AbortController(); let executions = 0;
+    const service = { revision: 0,
+      discover: () => ({ commands: [{ op: "test.query", summary: "Query", category: "read", targets: [], requirements: [], inputSchema: { type: "object" } }] }),
+      async execute() { executions++; return { ok: false, status: "failed", error: "Invalid", diagnostics: [], recovery: { message: "Fix it" } }; }
+    };
+    const result = await runSceneOperationAgent({ service, prompt: "inspect", signal: controller.signal, modelBudget: { maxRequests: 2 },
+      onProgress: event => { if (cancel && event.stage === "recovering") controller.abort(); },
+      request: async () => ({ message: { role: "assistant", content: '{"op":"test.query"}' } }) });
+    assert.equal(result.stopReason, cancel ? "cancelled" : "budget_exhausted"); assert.equal(result.requests, 2); assert.equal(executions, 1);
+  }
+});
+
+test("a partially committed write is never treated as an uncommitted failure eligible for replay", async () => {
+  let revision = 0, executions = 0;
+  const service = { get revision() { return revision; },
+    discover: () => ({ commands: [{ op: "test.edit", summary: "Edit", category: "authoring", targets: [], requirements: [], inputSchema: { type: "object" } }] }),
+    async execute() { executions++; revision++; return { ok: false, status: "partial", sceneMutated: true, revision, afterRevision: revision, error: "Viewport failed after commit", recovery: { message: "Inspect the committed document" } }; }
+  };
+  const result = await runSceneOperationAgent({ service, prompt: "edit", request: async () => ({ message: { role: "assistant", content: '{"op":"test.edit"}' } }) });
+  assert.equal(result.stopReason, "repeated_operations"); assert.equal(executions, 1); assert.equal(revision, 1);
+});

@@ -1,6 +1,7 @@
 import { validateTimeline, getTimelineDuration } from "threejson/timeline";
 import { createSceneSession, captureSceneSession, createSceneOperationService } from "threejson/session";
 import { validateMediaDocument } from "./documents.js";
+import { assertShotCommands, assertShotReceipt } from "./shotOperations.js";
 import { applyMediaEditing, editMediaRecordAutomation, isMediaSource, mediaAssetOf, putClipScene, validateMediaEditing, laneEnabled, itemEnabled } from "./editing.js";
 
 const error = (code, message) => Object.assign(new Error(message), { code });
@@ -41,6 +42,7 @@ function sceneContent(scene, metadata = {}) {
 
 export function inspectMediaDocument(document, revision = 0) {
   return { revision, duration: getTimelineDuration(document.timeline), output: document.output, state: document.production?.state,
+    brief: document.production?.brief || "", stopReason: document.production?.stopReason, lastError: document.production?.lastError || "", lastErrorCode: document.production?.lastErrorCode,
     shots: (document.timeline.clips || []).map(clip => {
       const scene = typeof clip.source === "string" ? document.scenes?.[clip.source] : clip.source;
       const asset = mediaAssetOf(document, clip);
@@ -171,10 +173,11 @@ export function createMediaProjectSession(input, options = {}) {
           } else if (op === "media.shot.remove") {
             applyMediaEditing(draft, "media.clip.remove", a);
           } else if (op === "media.shot.edit") {
+            assertShotCommands(a.commands, op, a.id);
             const { scene } = sceneOf(draft, a.id), session = createSceneSession(scene);
             try {
               const receipt = await createSceneOperationService({ session }).execute(a.commands, { signal: args.signal });
-              if (!receipt.ok) fail(receipt.code || "MEDIA_SCENE_EDIT_FAILED", receipt.error);
+              assertShotReceipt(receipt, a.commands, op, a.id);
               const edited = captureSceneSession(session);
               putClipScene(draft, sceneOf(draft, a.id).clip, edited);
               if (draft.production.shots[a.id]?.stage === "planned" && sceneContent(edited).hasContent) draft.production.shots[a.id] = { ...draft.production.shots[a.id], stage: "draft" };

@@ -49,7 +49,7 @@ async function runAiVideoTurnInternal(input = {}) {
       duration: videoOptions.duration, quality: videoOptions.quality || "balanced", confirmStoryboard: videoOptions.confirmStoryboard === true,
       qualityProfile: input.agentOptions?.qualityProfile,
       visionAvailable, selectedCapabilityIds: input.selectedCapabilityIds,
-      onProgress: progress => onAgentProgress?.({ ...progress, type: "video", stageLabel: progress.stage === "reasoning" ? "正在编排或细化镜头" : progress.operations?.join(", ") || progress.stage }),
+      onProgress: progress => onAgentProgress?.({ ...progress, type: "video", stageLabel: progress.stage === "reasoning" ? "正在编排或细化镜头" : progress.stage === "recovering" ? "正在纠正镜头操作调用" : progress.operations?.join(", ") || progress.stage }),
       onReceipt: async receipt => {
         if (!receipt.ok || receipt.status !== "committed") return;
         const project = session.inspect();
@@ -61,7 +61,7 @@ async function runAiVideoTurnInternal(input = {}) {
           return;
         }
         const snapshot = structuredClone(session.snapshot());
-        snapshot.production = { ...snapshot.production, state: "producing" };
+        snapshot.production = { ...snapshot.production, state: "producing", stopReason: "", lastError: "", lastErrorCode: "" };
         const sceneJsonString = JSON.stringify(snapshot, null, 2);
         // Both native and React already persist and preview these standard progress
         // snapshots. They contain authored shots, never camera playback state.
@@ -74,8 +74,11 @@ async function runAiVideoTurnInternal(input = {}) {
       const e = new Error(result.error?.message || result.message || "Video generation did not produce a storyboard."); e.agentResult = result; throw e;
     }
     const lastError = result.error?.message || result.message || result.steps?.findLast(step => step.ok === false)?.error || "";
+    // Do not attach an older failed command's code to a later, unrelated stop.
+    const lastErrorCode = result.error?.code || (!result.message ? result.receipts?.findLast(receipt => receipt.ok === false)?.code : "") || "";
     sceneJson.production = { ...sceneJson.production, state: result.completed ? "complete" : result.stopReason === "storyboard_approval_required" ? "storyboard" : "paused", stopReason: result.stopReason,
-      lastError: result.completed || result.stopReason === "storyboard_approval_required" ? "" : lastError };
+      lastError: result.completed || result.stopReason === "storyboard_approval_required" ? "" : lastError,
+      lastErrorCode: result.completed || result.stopReason === "storyboard_approval_required" ? "" : lastErrorCode };
     return { stage: "media", sceneJson, sceneJsonString: JSON.stringify(sceneJson, null, 2), agentResult: result, mediaProject: kit.inspectMediaDocument(sceneJson, session.revision) };
   } finally { narration.dispose(); session.dispose(); }
 }

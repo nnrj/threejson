@@ -8,6 +8,7 @@ import { compileScore } from "../packages/audio-kit/js/score.js";
 import { runAiVideoTurn } from "../packages/host-kit/js/videoTurn.js";
 import { getMediaProductionSummary, formatMediaProductionSummary, getMediaContinuation } from "../packages/host-kit/js/mediaProductionFeedback.js";
 import { buildResultDigest, runAiTurnSummary } from "../packages/host-kit/js/aiTurnOrchestrator.js";
+import { createSceneAgentTools } from "../core/ai/sceneOperationAgent.js";
 
 const scene = id => ({ objectList: [{ objType: "sphere", threeJsonId: id }], timeline: { duration: 2, tracks: [{ id: "spin", target: id, property: "rotation.y", keyframes: [{ time: 0, value: 0 }, { time: 2, value: 1 }] }] } });
 const message = command => ({ message: { role: "assistant", content: typeof command === "string" ? command : JSON.stringify(command) } });
@@ -113,4 +114,65 @@ test("audio and caption-only films have factual summaries, storyboard approval i
   assert.match(formatMediaProductionSummary(summary, "English"), /Video content generated/);
   film.production.stopReason = "storyboard_approval_required"; film.production.state = "storyboard";
   assert.match(formatMediaProductionSummary(getMediaProductionSummary(film)), /等待确认分镜/);
+});
+
+test("saved 150-second video resumes through discovered shot contracts without losing shots or audio", async () => {
+  for (const protocol of ["jsonl", "native"]) {
+    const document = JSON.parse(await readFile(new URL("./fixtures/media-export-relativity.json", import.meta.url), "utf8"));
+    document.production.state = "paused"; document.production.stopReason = "repeated_operations";
+    document.production.lastError = "Shot query accepts only read operations.";
+    const before = structuredClone(document), session = createMediaProjectSession(document), service = createMediaOperationService({ session });
+    const tools = createSceneAgentTools(service); let round = 0;
+    const invalid = { op: "media.shot.query", args: { id: "intro", commands: [{ op: "scene.inspect" }] } };
+    const commands = [invalid, invalid,
+      { op: "media.shot.discover", args: { ops: ["scene.query", "object.patch"] } },
+      { op: "media.shot.query", args: { id: "intro", commands: [{ op: "scene.query", args: { selector: { ids: ["title"] }, projection: ["identity"] } }] } },
+      { op: "media.shot.edit", args: { id: "intro", commands: [{ op: "object.patch", args: { id: "title", partial: { name: "Opening title" } } }] } },
+      { op: "media.validate" },
+      { op: "media.project.set", args: { state: "complete" } }, "# done"];
+    const result = await runVideoAgent({ service, protocol, prompt: "继续制作当前视频", request: async ({ messages }) => {
+      if (round === 0) {
+        const saved = JSON.parse(messages.at(-1).content.slice(messages.at(-1).content.indexOf("{")));
+        assert.equal(saved.project.shots.length, 8); assert.equal(saved.project.duration, 150);
+        assert.equal(saved.project.lastError, before.production.lastError);
+        assert.equal(saved.validation.satisfied, true);
+        assert.match(messages[0].content, /media.shot.discover/);
+      }
+      if (round === 2) {
+        const feedback = JSON.parse(messages.at(-1).content);
+        assert.equal(feedback.code, "UNKNOWN_SCENE_OPERATION"); assert.equal(feedback.executed, false);
+      }
+      if (protocol === "native") {
+        const callIds = new Set(messages.flatMap(message => (message.tool_calls || []).map(call => call.id)));
+        for (const message of messages.filter(message => message.role === "tool")) assert.ok(callIds.has(message.tool_call_id), "No orphaned native tool response after checkpoints");
+      }
+      const next = commands[round++]; assert.ok(next, "Must finish without an unbounded retry");
+      if (protocol === "jsonl" || typeof next === "string") return message(next);
+      const name = [...tools.operations].find(([, op]) => op === next.op)[0];
+      return { message: { role: "assistant", tool_calls: [{ id: `call-${round}`, type: "function", function: { name, arguments: JSON.stringify(next.args || {}) } }] } };
+    } });
+    assert.equal(result.completed, true, result.message); assert.equal(result.requests, 8);
+    assert.equal(result.receipts.filter(receipt => receipt.code === "UNKNOWN_SCENE_OPERATION").length, 1);
+    assert.deepEqual(session.document.timeline, before.timeline);
+    for (const id of Object.keys(before.scenes).filter(id => id !== "intro")) assert.deepEqual(session.document.scenes[id], before.scenes[id]);
+    assert.equal(session.document.scenes.intro.objectList.find(o => o.threeJsonId === "title").name, "Opening title");
+    session.dispose();
+  }
+});
+
+test("host records the actual shot error and explains legacy query failures as a tool problem", async () => {
+  const document = JSON.parse(await readFile(new URL("./fixtures/media-export-relativity.json", import.meta.url), "utf8"));
+  const result = await runAiVideoTurn({ project: document, userPrompt: "继续制作视频", request: async () => message({
+    op: "media.shot.query", args: { id: "intro", commands: [{ op: "scene.inspect" }] }
+  }) });
+  assert.equal(result.agentResult.stopReason, "repeated_operations");
+  assert.equal(result.sceneJson.production.lastErrorCode, "UNKNOWN_SCENE_OPERATION");
+  assert.match(result.sceneJson.production.lastError, /intro.*scene\.inspect/);
+  assert.deepEqual(result.sceneJson.timeline.clips, document.timeline.clips);
+  assert.deepEqual(result.sceneJson.timeline.audio, document.timeline.audio);
+  const summary = getMediaProductionSummary(result.sceneJson);
+  assert.match(formatMediaProductionSummary(summary), /镜头操作调用有误/);
+  assert.match(formatMediaProductionSummary(summary, "en"), /not an account quota/);
+  summary.lastErrorCode = ""; summary.lastError = "Shot query accepts only read operations.";
+  assert.match(formatMediaProductionSummary(summary), /不是您的额度/);
 });

@@ -130,6 +130,14 @@ clip.transitionIn 支持 `{type:"wipe",duration:1,direction:"left"}` 或 `{type:
 
 SDK：`createMediaProjectSession` 和 `createMediaOperationService` 属于 media-kit；`runVideoAgent` 属于 threejson/ai，只接收注入的服务，不依赖宿主或媒体包。操作有 media.inspect/plan.set/shot.put/shot.edit/shot.query/shot.remove、timeline.inspect/edit、media.validate/captureFrames/render/shot.narrate。编辑按 revision 原子提交，可 undo/redo；无固定 AI 总轮数。模型重复无进展、供应商失败、用户取消或显式预算会停止，保留已完成镜头。宿主注入的 capture/render/narration 能力与权限分开，不存在未实现命令假装成功。
 
+镜头内的命令契约通过 `media.shot.discover` 按需读取：不传参数返回轻量目录，
+`args:{ops:["scene.query","object.patch"]}` 返回注册表中的完整参数 schema。
+`media.shot.query` 只接受读取；`media.shot.edit` 才提交编辑。嵌套格式为
+`{op,args}`，不是裸 JSON Patch，渲染截图仍通过顶层 `media.captureFrames`。
+未知命令不再被误报为“只允许读取”；失败回执包含具体镜头、子命令、参数路径和 `recovery`。
+Agent 首轮读取存档摘要与验证结果；同一未提交失败有明确恢复指引时，重复调用会收到一次纠错提醒，
+不会被重新执行，再无进展仍会保存草稿并暂停。不会自动把查询转换为编辑，也不会重放已经部分提交的操作。
+
 ## SDK / 导出
 
 ```js
