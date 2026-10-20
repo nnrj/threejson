@@ -42,6 +42,53 @@ Bun 1.4.3，提示找不到 `wrangler`。Node 都是 24.22.0，中间两次提�
 [Workers 构建设置](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/)、
 [自定义依赖安装](https://developers.cloudflare.com/workers/ci-cd/builds/build-image/#skip-dependency-install)。
 
+## 独立发布目录优化备忘（暂不实施） — 2026-10-20
+
+**维护者决策（Asia/Shanghai）：仅留档，不实施。** 当前认为额外复制、发布清单维护和
+漏复制运行时资源的风险，大于尚未量化的部署速度收益。继续采用仓库根目录
+`assets.directory: "./"` 与现有 `.assetsignore`；不增加发布准备脚本或构建钩子，
+不改变 Push 自动部署流程，也不删除本地依赖联接。此备忘不是已批准的待实施任务；
+若以后重启方案，需重新评估并取得维护者同意。
+
+### 背景与证据边界
+
+- 子应用通过 `threejson: file:../..` 使用本仓库源码，可使 `node_modules/threejson`
+  指回仓库根目录。这是本地依赖机制，本身不表示 Core 反向依赖应用。
+- 已检查的 Wrangler 实现先递归枚举资源目录，再应用 `.assetsignore`。
+  因而排除上传不等于避免目录遍历。此前本地 Windows 检查确实出现扫描耗时异常，
+  但尚未严格确认无限循环，也未证明 Cloudflare Linux 构建受到同样影响。
+- Cloudflare 的[构建监视路径](https://developers.cloudflare.com/workers/ci-cd/builds/build-watch-paths/)
+  只控制 Git 变更是否触发构建；`.assetsignore` 控制静态资源上传范围。
+  两者均不等于禁止构建进程读取目录。依赖安装后仍会产生 `node_modules`。
+- 此问题与此前 `wrangler: not found` 的工具依赖问题独立；不要为优化扫描而撤销
+  已完成的根 Wrangler 依赖与锁文件修复。
+
+### 备选方案（未实施）
+
+1. 部署前按现有发布边界生成独立目录，例如 `.cache/site-assets/`。
+   在遍历前跳过依赖、Git、缓存、本地配置和输出目录，不跟随目录联接；
+   保留页面、引擎源码、编辑器、公开文档及动态加载资源的原有相对路径。
+   每次重新生成并检查输出，避免旧文件残留。生成物不提交 Git。
+2. 让 Wrangler 的 `assets.directory` 指向该输出目录；通过
+   [自定义构建命令](https://developers.cloudflare.com/workers/wrangler/custom-builds/)
+   自动准备并检查资源，失败即停止部署，不回退到上传仓库根目录。
+   这只是整理静态发布文件，不要求引擎改用 React/Vite/Webpack 构建。
+3. 预计流程为：Push → 原有监视路径判断 → 克隆与安装依赖 →
+   自动准备并检查发布目录 → Wrangler 扫描、上传、发布。
+   Cloudflare 项目根目录仍为仓库根目录，现有 `npx wrangler deploy` 可保留；
+   域名、Worker 名和公开 URL 不变。需确保准备脚本、发布规则和配置的变更可以触发构建。
+
+### 暂缓理由与重新评估条件
+
+该方案会增加复制、校验以及发布规则的持续维护成本。漏掉动态导入模块、字体、
+模型、运行时文档或媒体资源时，可能部署成功却在用户操作时才出现故障。
+它不减少仓库克隆和依赖安装时间，部署扫描的实际节省尚未测量。
+
+仅在实际部署反复出现可归因于扫描范围的超时或明显资源开销，并有测量证明收益值得时，
+再评估此方案。届时须先建立发布范围与 URL 对照、动态资源完整性检查，以及
+官网、编辑器、播放器、ThreeBox 和媒体导出的回归验证；同时覆盖 Windows 联接场景
+和 Linux 干净环境 dry-run。新增公开资源目录时也需要维护发布规则。
+
 ## 此前的部署评估
 
 > **媒体功能更新（2026-09-29）。** 主动打开的媒体工作台复用

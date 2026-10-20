@@ -50,6 +50,65 @@ References: [Wrangler installation](https://developers.cloudflare.com/workers/wr
 [Workers build settings](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/),
 [custom dependency installation](https://developers.cloudflare.com/workers/ci-cd/builds/build-image/#skip-dependency-install).
 
+## Separate deployment directory proposal (deferred) — 2026-10-20
+
+**Maintainer decision (Asia/Shanghai): document only; do not implement.** The extra
+copying, deployment-list maintenance, and risk of omitting runtime resources currently
+outweigh the unmeasured deployment-speed benefit. Keep `assets.directory: "./"` and
+the existing `.assetsignore`. Do not add a preparation script or build hook, change
+push-to-deploy, or delete local dependency junctions. This note is not an approved
+implementation task; reopening the proposal requires reassessment and maintainer approval.
+
+### Context and evidence limits
+
+- Child applications use the repository through `threejson: file:../..`, which can
+  produce a `node_modules/threejson` link back to the repository root. This local
+  dependency mechanism does not itself mean Core depends on an application.
+- The inspected Wrangler implementation recursively enumerates the assets directory
+  before applying `.assetsignore`. Excluding uploads therefore does not necessarily
+  avoid directory traversal. A local Windows check was abnormally slow, but an
+  infinite loop has not been established, nor has the same impact been demonstrated
+  in Cloudflare's Linux build environment.
+- Cloudflare [build watch paths](https://developers.cloudflare.com/workers/ci-cd/builds/build-watch-paths/)
+  decide whether Git changes trigger a build; `.assetsignore` controls static uploads.
+  Neither prevents the build process from reading directories. Dependency installation
+  still creates `node_modules`.
+- This concern is separate from the earlier `wrangler: not found` dependency failure.
+  Do not undo the root Wrangler dependency and lockfile fixes to optimize scanning.
+
+### Candidate approach (not implemented)
+
+1. Generate a separate deployment directory, such as `.cache/site-assets/`, within
+   the existing deployment boundaries. Skip dependencies, Git, caches, local settings,
+   and the output directory before traversal; do not follow directory junctions.
+   Preserve relative paths for pages, engine sources, editors, public documentation,
+   and dynamically loaded resources. Recreate and validate the output each time to
+   prevent stale files. Do not commit generated files.
+2. Point Wrangler's `assets.directory` at that output and use a
+   [custom build command](https://developers.cloudflare.com/workers/wrangler/custom-builds/)
+   to prepare and validate it automatically. Fail before deployment rather than
+   falling back to uploading the repository root. This only stages static files;
+   it does not require a React/Vite/Webpack build for the engine.
+3. The intended sequence would be: push → existing watch-path decision → clone and
+   install dependencies → prepare and validate deployment files → Wrangler scan,
+   upload, and deploy. Keep the Cloudflare project root at the repository root and
+   retain `npx wrangler deploy`. Domains, Worker name, and public URLs stay unchanged.
+   Ensure preparation-script, deployment-rule, and configuration changes can trigger builds.
+
+### Reasons to defer and conditions for reconsideration
+
+This adds copying, validation, and ongoing deployment-rule maintenance. Missing dynamic
+imports, fonts, models, runtime documentation, or media resources could allow deployment
+to succeed while breaking a feature only when a user opens it. The proposal does not
+reduce cloning or dependency-installation time; actual scan-time savings remain unmeasured.
+
+Reconsider only if real deployments repeatedly encounter timeouts or material resource
+costs attributable to scanning scope, with measurements supporting the trade-off.
+First establish deployment-surface and URL comparisons, dynamic-resource completeness
+checks, and regression coverage for the site, editors, player, ThreeBox, and media export.
+Cover Windows junctions and clean Linux dry-runs as well. New public resource directories
+would also require deployment-rule maintenance.
+
 ## Earlier deployment assessment
 
 > **Media update — 2026-09-29.** The explicitly opened media workbench now shares
