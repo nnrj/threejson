@@ -19,7 +19,12 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: Install
-        run: npm ci
+        run: npm ci --include=dev
+
+      - name: Check static site deployment (no upload)
+        run: npm run check:site
+        env:
+          WRANGLER_SEND_METRICS: "false"
 
       - name: Verify builtin domain manifest
         run: |

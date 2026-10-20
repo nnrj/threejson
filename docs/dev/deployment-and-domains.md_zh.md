@@ -1,5 +1,49 @@
 # 部署范围与域名策略
 
+## 官网根目录部署工具链 — 2026-10-20
+
+官网继续使用根 `wrangler.jsonc` 发布仓库中的静态文件，不需要增加 React/Vite 构建。
+Wrangler 现在是根目录直接声明、固定版本的开发依赖，根 `package-lock.json` 纳入版本控制。
+即使是生产 CI，也应安装开发依赖：
+
+```sh
+npm ci --include=dev
+npm run check:site
+```
+
+`check:site` 只执行 Wrangler `--dry-run`，不会上传或部署。正式部署仍需显式执行
+`npm run deploy:site` 或 `npx wrangler deploy`。原来的 Cloudflare Push 自动部署和部署命令
+可以保留；不要把根目录改为 `website/` 或某个 `apps/*`。
+
+本地 Windows 检查时，npm 工作区的目录联接可能让 Wrangler 在应用忽略规则前的递归扫描
+耗时很长。此时可用不含 `node_modules` 的干净源码快照作为资源目录，从快照外调用已安装的
+Wrangler 检查；不要为此删除正在使用的工作目录依赖。CI 的 dry-run 在 Linux 上运行。
+
+若 Workers Builds 仍自动选择 Bun，而希望显式使用锁定的 npm 安装，可设置：
+
+| 设置 | 值 |
+| --- | --- |
+| 根目录 | 仓库根目录 |
+| 构建变量 | `SKIP_DEPENDENCY_INSTALL=1` |
+| 构建命令 | `npm ci --include=dev && npm run check:site` |
+| 部署命令 | `npm run deploy:site`（原来的 `npx wrangler deploy` 也可保留） |
+
+10 月 16 日成功日志使用 Bun 1.2.15、Wrangler 4.151.1；10 月 18 日失败日志使用
+Bun 1.4.3，提示找不到 `wrangler`。Node 都是 24.22.0，中间两次提交没有更改部署依赖或配置。
+此前只有子应用声明 Wrangler，根锁文件也未提交。
+[Bun 从 1.3.2 起对新工作区默认隔离安装](https://bun.sh/docs/pm/isolated-installs)，
+暴露了根目录借用子应用提升后的工具这一隐式依赖。现固定成功日志中的 Wrangler 4.151.1，
+不再依赖子应用的安装布局。
+
+成功日志还显示临时生成的 Bun 锁文件被公开上传。本次 `.assetsignore` 明确排除 npm/Bun
+锁文件和本地验证缓存；它们是安装产物，不是网站资源。原有运行时资源放行范围保持不变。
+
+参考：[Wrangler 安装](https://developers.cloudflare.com/workers/wrangler/install-and-update/)、
+[Workers 构建设置](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/)、
+[自定义依赖安装](https://developers.cloudflare.com/workers/ci-cd/builds/build-image/#skip-dependency-install)。
+
+## 此前的部署评估
+
 > **媒体功能更新（2026-09-29）。** 主动打开的媒体工作台复用
 > `packages/audio-kit/js`、`packages/media-kit/js`，以及 host-kit 中的
 > `mediaStudio.js` / `audioModelPanel.js` 两个浏览器模块。`.assetsignore` 仅放行这些

@@ -133,6 +133,8 @@
     }
   },
   "scripts": {
+    "deploy:site": "wrangler deploy --config wrangler.jsonc",
+    "check:site": "wrangler deploy --config wrangler.jsonc --dry-run",
     "generate:business-domain-manifest": "node tools/dev/build/generate-business-domain-manifest.mjs",
     "generate:subdomain": "node tools/dev/build/generate-subdomain.mjs",
     "generate:preset-manifest": "node tools/dev/build/generate-preset-manifest.mjs",
@@ -186,6 +188,7 @@
     "three-bvh-csg": "^0.0.18",
     "three-mesh-bvh": "^0.9.10",
     "troika-three-text": "^0.52.4",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "wrangler": "4.151.1"
   }
 }

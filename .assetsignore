@@ -52,10 +52,13 @@ Thumbs.db
 *.test.json
 tmp/
 temp/
+.cache/
 
 # Logs
 *.log
 package-lock.json
+bun.lock
+bun.lockb
 
 # Internal planning and local research material. Public docs/en and docs/zh remain deployable
 # because the runtime AI reference catalog fetches them.

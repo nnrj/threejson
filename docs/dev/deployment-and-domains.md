@@ -1,5 +1,57 @@
 # Deployment surface and domain strategy
 
+## Root site deployment toolchain — 2026-10-20
+
+The official site still serves the repository's static files with the root
+`wrangler.jsonc`; it does not require a React/Vite build. Wrangler is now a direct,
+exact-version root development dependency, and the root `package-lock.json` is
+version-controlled. Install development dependencies even in production CI:
+
+```sh
+npm ci --include=dev
+npm run check:site
+```
+
+`check:site` runs Wrangler with `--dry-run` and does not upload or deploy. Actual
+deployment remains an explicit `npm run deploy:site` or `npx wrangler deploy`.
+The existing Cloudflare push-to-deploy integration and deploy command can stay.
+Do not change the root directory to `website/` or an `apps/*` directory.
+
+For a local Windows check, npm workspace junctions can make Wrangler's recursive
+asset scan very slow before ignore rules are applied. In that case, check a clean
+source snapshot without `node_modules` in the assets directory, invoking the
+installed Wrangler from outside that snapshot. Do not delete an active working
+directory's dependencies just to run the check. The CI dry-run runs on Linux.
+
+For deterministic npm installation in Workers Builds, use these build settings
+if automatic installation still chooses Bun:
+
+| Setting | Value |
+| --- | --- |
+| Root directory | Repository root |
+| Build variable | `SKIP_DEPENDENCY_INSTALL=1` |
+| Build command | `npm ci --include=dev && npm run check:site` |
+| Deploy command | `npm run deploy:site` (existing `npx wrangler deploy` also works) |
+
+The October 16 successful build used Bun 1.2.15 and Wrangler 4.151.1; the October 18
+failure used Bun 1.4.3 and could not find `wrangler`. Node stayed at 24.22.0, and the
+two intervening commits changed no deployment dependencies/configuration. Previously,
+only the child applications declared Wrangler and no root lockfile was committed.
+[New Bun workspaces default to isolated installs](https://bun.sh/docs/pm/isolated-installs)
+since 1.3.2, exposing that undeclared root-tool dependency. The root now pins the
+known-successful Wrangler 4.151.1 rather than relying on a child's hoisted binary.
+
+The generated Bun lockfile was also visible in the successful upload log. npm/Bun
+lockfiles and local verification caches are explicitly excluded by `.assetsignore`.
+They are installation artifacts, not public website resources. The existing
+runtime asset allowlist is unchanged.
+
+References: [Wrangler installation](https://developers.cloudflare.com/workers/wrangler/install-and-update/),
+[Workers build settings](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/),
+[custom dependency installation](https://developers.cloudflare.com/workers/ci-cd/builds/build-image/#skip-dependency-install).
+
+## Earlier deployment assessment
+
 > **Media update — 2026-09-29.** The explicitly opened media workbench now shares
 > browser modules from `packages/audio-kit/js`, `packages/media-kit/js` and exactly
 > `host-kit/js/mediaStudio.js` / `audioModelPanel.js`. `.assetsignore` includes only

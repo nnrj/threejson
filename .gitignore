@@ -86,6 +86,8 @@ tools/threejson-agent/shell/py/tmp
 !.env.example
 *.local
 package-lock.json
+# The root workspace/deployment install must be reproducible in clean CI.
+!/package-lock.json
 setting.json
 
 # 配置文件白名单（允许提交特定编辑器的配置）
