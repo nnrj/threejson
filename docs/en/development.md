@@ -20,7 +20,7 @@ npm test
 
 ## npm releases (maintainers)
 
-See [`docs/dev/npm-release.md`](../dev/npm-release.md) for the version-sync, test, ten-package
+See [`docs/dev/npm-release.md`](../dev/npm-release.md) for version sync, registry preflight, optional file comparison, tests, twelve-package
 packing, npm publishing, pinned-CDN verification, Git tag, and Shower deployment workflow. The
 downloaded template pins an exact ThreeJSON version; publish and verify that version's
 `threejson/runtime` on the CDN before deploying a new Shower build.

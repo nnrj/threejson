@@ -2,10 +2,12 @@
 
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import process from "node:process";
 import readline from "node:readline/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { comparePackageTarball, formatPackageDifferences } from "./packageContents.mjs";
 
 export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 
@@ -60,6 +62,8 @@ function readJson(relativePath) {
 }
 
 function writeJson(relativePath, value, dryRun) {
+  // Preserve formatting and modification times when the semantic value is unchanged.
+  if (JSON.stringify(readJson(relativePath)) === JSON.stringify(value)) return;
   if (!dryRun) fs.writeFileSync(absolute(relativePath), `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
@@ -184,21 +188,90 @@ export function assertThreejsonPackMetadata(metadata) {
   return true;
 }
 
-export function assertMatchingPackageIntegrity(item, localMetadata, publishedMetadata) {
-  const label = `${item.name}@${publishedMetadata?.version || localMetadata?.version || "unknown"}`;
+function matchingPackageIntegrity(localMetadata, publishedMetadata) {
   if (localMetadata?.integrity && publishedMetadata?.integrity) {
-    if (localMetadata.integrity !== publishedMetadata.integrity) {
-      throw new Error(`${label} 已存在，但 npm 上的内容与本地 tarball 不一致；必须升级版本号，不能使用 --resume。`);
-    }
-    return true;
+    return localMetadata.integrity === publishedMetadata.integrity;
   }
   if (localMetadata?.shasum && publishedMetadata?.shasum) {
-    if (localMetadata.shasum !== publishedMetadata.shasum) {
-      throw new Error(`${label} 已存在，但 npm 上的内容与本地 tarball 不一致；必须升级版本号，不能使用 --resume。`);
-    }
-    return true;
+    return localMetadata.shasum === publishedMetadata.shasum;
   }
-  throw new Error(`${label} 缺少可比较的 integrity/shasum，无法安全断点续发。`);
+  throw new Error("缺少可比较的 integrity/shasum，无法安全复用已发布包。");
+}
+
+export function assertMatchingPackageIntegrity(item, localMetadata, publishedMetadata) {
+  if (!matchingPackageIntegrity(localMetadata, publishedMetadata)) {
+    throw new Error(`${item.name}@${publishedMetadata.version} 归档摘要不同；尚不能判定是文件内容变化还是打包差异。`);
+  }
+  return true;
+}
+
+export async function resolveFileComparison(flags = {}, askImpl = ask) {
+  for (const key of ["compare-files", "no-compare-files"]) {
+    if (flags[key] !== undefined && typeof flags[key] !== "boolean") {
+      throw new Error(`--${key} 不接受值；请选择 --compare-files 或 --no-compare-files。`);
+    }
+  }
+  if (flags["compare-files"] && flags["no-compare-files"]) {
+    throw new Error("--compare-files 与 --no-compare-files 不能同时使用。");
+  }
+  if (flags["compare-files"]) return true;
+  if (flags["no-compare-files"]) return false;
+  const answer = await askImpl("归档摘要不同时，是否下载已发布包做逐文件对比并列出差异？可能较慢（y/n）", "n");
+  return /^(y|yes|是)$/i.test(answer);
+}
+
+async function compareLocalPackage(item, publishedMetadata) {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "threejson-release-compare-"));
+  try {
+    const result = runNpm(["pack", "--json", "--pack-destination", directory], {
+      cwd: absolute(item.dir), capture: true
+    });
+    const metadata = normalizePackMetadata(result.stdout, `${item.name} npm pack`);
+    if (!metadata.filename || path.basename(metadata.filename) !== metadata.filename) {
+      throw new Error("npm pack 返回了非法 tarball 文件名。");
+    }
+    const diff = await comparePackageTarball(path.join(directory, metadata.filename), metadata, publishedMetadata);
+    return { diff, metadata };
+  } finally {
+    // This exact, freshly created directory is owned by this invocation; never remove dist/release.
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+}
+
+export async function verifyExistingPackage(item, publishedMetadata, options = {}) {
+  const inspect = options.inspect || inspectLocalPackage;
+  const compare = options.compare || compareLocalPackage;
+  const log = options.log || console.log;
+  const local = await inspect(item);
+  if (item.key === "threejson") assertThreejsonPackMetadata(local);
+  const label = `${item.name}@${publishedMetadata.version}`;
+  if (local.version !== publishedMetadata.version) throw new Error(`${label} 与本地包版本不一致。`);
+  if (matchingPackageIntegrity(local, publishedMetadata)) {
+    log(`  ${label}：归档摘要一致，无需下载或逐文件对比。`);
+    return "archive-match";
+  }
+  const cacheKey = JSON.stringify([label, local.integrity || local.shasum, publishedMetadata.integrity || publishedMetadata.shasum]);
+  if (options.verifiedContents?.has(cacheKey)) {
+    log(`  ${label}：摘要未变，复用本次流程已完成的文件对比。`);
+    return "contents-match";
+  }
+  if (!options.compareFiles) {
+    throw new Error(
+      `${label} 归档摘要不同；已跳过逐文件对比，未下载远端 tarball，不能确认文件是否一致。\n` +
+      "需进一步确认时加 --compare-files；若已确认内容变化，请升级对应包版本。--resume 不能绕过内容检查。" +
+      (item.key === "assets" ? "\n仅升级 assets、保留主包/组件版本：npm run release:version -- --only-assets" : "")
+    );
+  }
+  log(`  ${label}：开始可选的逐文件对比（临时打包、下载、校验，不提取文件）…`);
+  const { diff, metadata } = await compare(item, publishedMetadata);
+  if (!diff.equal) {
+    throw new Error(`${label} 的文件确实有变化，必须升级版本号，不能使用 --resume。\n${formatPackageDifferences(diff)}` +
+      (item.key === "assets" ? "\n仅升级 assets：npm run release:version -- --only-assets" : ""));
+  }
+  // Cache only this invocation's exact archive pair; inspect again before publishing.
+  if (matchingPackageIntegrity(local, metadata)) options.verifiedContents?.add(cacheKey);
+  log(`  ${label}：仅归档容器不同，包内文件字节及可执行权限一致，复用 npm 已发布包。`);
+  return "contents-match";
 }
 
 export function resolveExistingPackageAction(item, publishedMetadata, { resume = false } = {}) {
@@ -453,12 +526,25 @@ async function ask(question, defaultValue = "") {
   }
 }
 
+export function releaseVersionDefaults(current, flags = {}) {
+  if (flags["only-assets"] && (flags.threejson || flags.packages)) {
+    throw new Error("--only-assets 不能与 --threejson / --packages 同时使用。");
+  }
+  return {
+    threejson: flags["only-assets"] ? current.threejson : nextPrerelease(current.threejson),
+    packages: flags["only-assets"] ? current.packages : nextPrerelease(current.packages),
+    assets: flags["bump-assets"] || flags["only-assets"] ? nextPatch(current.assets) : current.assets
+  };
+}
+
 async function commandVersion(flags = {}) {
   const current = currentVersions();
-  const proposedThreejson = String(flags.threejson || await ask("threejson 新版本", nextPrerelease(current.threejson)));
-  const proposedPackages = String(flags.packages || await ask("全部 @threejson/* packages 新版本", nextPrerelease(current.packages)));
-  const assetsDefault = flags["bump-assets"] ? nextPatch(current.assets) : current.assets;
-  const proposedAssets = String(flags.assets || await ask("@threejson/assets 新版本（无资源变化请保持）", assetsDefault));
+  const defaults = releaseVersionDefaults(current, flags);
+  const proposedThreejson = flags["only-assets"] ? current.threejson :
+    String(flags.threejson || await ask("threejson 新版本", defaults.threejson));
+  const proposedPackages = flags["only-assets"] ? current.packages :
+    String(flags.packages || await ask("全部 @threejson/* packages 新版本", defaults.packages));
+  const proposedAssets = String(flags.assets || await ask("@threejson/assets 新版本（无资源变化请保持）", defaults.assets));
   const result = applyVersions({
     threejson: proposedThreejson,
     packages: proposedPackages,
@@ -485,11 +571,18 @@ function releaseOutputDirectory() {
   return destination;
 }
 
-function commandPack() {
+export function packagesToPack(plan = null) {
+  return plan ? plan.filter((item) => item.action === "publish") : PACKAGE_PLAN;
+}
+
+function commandPack(plan = null) {
   requireValidReleaseState();
   runNpm(["run", "generate:business-domain-manifest"]);
   const destination = releaseOutputDirectory();
-  for (const item of PACKAGE_PLAN) {
+  for (const item of plan || []) {
+    if (item.action !== "publish") console.log(`跳过正式打包 ${item.name}@${item.version}（已验证复用已发布包）。`);
+  }
+  for (const item of packagesToPack(plan)) {
     console.log(`\n打包 ${item.name}`);
     const result = runNpm(["pack", "--json", "--pack-destination", destination], {
       cwd: absolute(item.dir),
@@ -499,7 +592,7 @@ function commandPack() {
     if (item.key === "threejson") assertThreejsonPackMetadata(metadata);
     console.log(`  ${metadata.filename} (${metadata.size} bytes, ${metadata.entryCount || metadata.files?.length || 0} files)`);
   }
-  console.log(`\n全部 tarball 已写入：${destination}`);
+  console.log(`\n${plan ? "待发布包的" : "全部"} tarball 已写入：${destination}`);
   return destination;
 }
 
@@ -510,6 +603,7 @@ function getPublishedPackageMetadata(name, version) {
     "version",
     "dist.integrity",
     "dist.shasum",
+    "dist.tarball",
     "--json",
     "--prefer-online"
   ], {
@@ -527,8 +621,45 @@ function getPublishedPackageMetadata(name, version) {
   return {
     version: parsed?.version || version,
     integrity: parsed?.["dist.integrity"] || parsed?.dist?.integrity,
-    shasum: parsed?.["dist.shasum"] || parsed?.dist?.shasum
+    shasum: parsed?.["dist.shasum"] || parsed?.dist?.shasum,
+    tarball: parsed?.["dist.tarball"] || parsed?.dist?.tarball
   };
+}
+
+export async function buildPublishPlan(versions, options = {}) {
+  const lookup = options.lookup || getPublishedPackageMetadata;
+  const verify = options.verify || verifyExistingPackage;
+  const plan = [];
+  for (const item of PACKAGE_PLAN) {
+    const version = versions[item.versionGroup];
+    const publishedMetadata = await lookup(item.name, version);
+    plan.push({ ...item, version, publishedMetadata,
+      action: resolveExistingPackageAction(item, publishedMetadata, { resume: Boolean(options.resume) }) });
+  }
+  const conflicts = plan.filter((item) => item.action === "conflict");
+  if (conflicts.length) {
+    throw new Error(
+      `以下版本已经存在于 npm，默认禁止覆盖或静默跳过：\n- ${conflicts.map((item) => `${item.name}@${item.version}`).join("\n- ")}\n` +
+      "正常发布请先升级版本号；仅在确认属于同一次部分发布时使用 --resume。"
+    );
+  }
+  for (const item of plan.filter((candidate) => candidate.action !== "publish")) {
+    await verify(item, item.publishedMetadata, options);
+  }
+  return plan;
+}
+
+async function comparisonOptions(flags) {
+  return { compareFiles: await resolveFileComparison(flags), verifiedContents: new Set() };
+}
+
+async function commandPreflight(flags = {}, comparison = null) {
+  const state = requireValidReleaseState();
+  const options = comparison || await comparisonOptions(flags);
+  console.log("\n预检 npm 目标版本与可复用包（不发布）…");
+  const plan = await buildPublishPlan(state.versions, { ...options, resume: flags.resume });
+  console.log(`预检通过：${plan.filter((item) => item.action === "publish").length} 个包待发布，${plan.filter((item) => item.action !== "publish").length} 个包已验证可复用。`);
+  return plan;
 }
 
 async function confirmPublish(flags, plan) {
@@ -585,43 +716,21 @@ async function requirePublishedRuntimeReady(version, flags = {}) {
   console.log(`固定 CDN runtime 已就绪（第 ${result.attempt} 次检查）。`);
 }
 
-async function commandPublish(flags = {}) {
+async function commandPublish(flags = {}, comparison = null) {
   const state = requireValidReleaseState();
   const dryRun = Boolean(flags["dry-run"]);
+  // Fail before builds, authentication prompts or any registry writes.
+  const plan = dryRun
+    ? PACKAGE_PLAN.map((item) => ({ ...item, version: state.versions[item.versionGroup], action: "publish" }))
+    : await buildPublishPlan(state.versions, {
+      ...(comparison || await comparisonOptions(flags)), resume: flags.resume
+    });
   if (!dryRun) runNpm(["whoami"]);
   runNpm(["run", "generate:business-domain-manifest"]);
 
   const rootItem = PACKAGE_PLAN.find((item) => item.key === "threejson");
   const rootLocalMetadata = inspectLocalPackage(rootItem);
   assertThreejsonPackMetadata(rootLocalMetadata);
-
-  const plan = PACKAGE_PLAN.map((item) => ({
-    ...item,
-    version: state.versions[item.versionGroup],
-    action: "publish",
-    publishedMetadata: null
-  }));
-
-  if (!dryRun) {
-    for (const item of plan) {
-      item.publishedMetadata = getPublishedPackageMetadata(item.name, item.version);
-      item.action = resolveExistingPackageAction(item, item.publishedMetadata, {
-        resume: Boolean(flags.resume)
-      });
-    }
-    const conflicts = plan.filter((item) => item.action === "conflict");
-    if (conflicts.length) {
-      throw new Error(
-        `以下版本已经存在于 npm，默认禁止覆盖或静默跳过：\n- ${conflicts.map((item) => `${item.name}@${item.version}`).join("\n- ")}\n` +
-        "正常发布请先升级版本号；仅在确认属于同一次部分发布时使用 --resume。"
-      );
-    }
-    for (const item of plan.filter((candidate) => candidate.action === "resume" || candidate.action === "reuse-assets")) {
-      const localMetadata = item.key === "threejson" ? rootLocalMetadata : inspectLocalPackage(item);
-      if (item.key === "threejson") assertThreejsonPackMetadata(localMetadata);
-      assertMatchingPackageIntegrity(item, localMetadata, item.publishedMetadata);
-    }
-  }
 
   await confirmPublish(flags, plan);
   for (const item of plan) {
@@ -666,7 +775,7 @@ function requireCleanReleaseCommit(expectedVersion) {
   return gitOutput(["rev-parse", "HEAD"]);
 }
 
-async function verifyPublishedReleaseMatchesWorkspace(state) {
+async function verifyPublishedReleaseMatchesWorkspace(state, comparison) {
   const plan = PACKAGE_PLAN.map((item) => ({
     ...item,
     version: state.versions[item.versionGroup]
@@ -674,16 +783,14 @@ async function verifyPublishedReleaseMatchesWorkspace(state) {
   for (const item of plan) {
     const publishedMetadata = getPublishedPackageMetadata(item.name, item.version);
     if (!publishedMetadata) throw new Error(`${item.name}@${item.version} 尚未发布，不能创建发布 tag。`);
-    const localMetadata = inspectLocalPackage(item);
-    if (item.key === "threejson") assertThreejsonPackMetadata(localMetadata);
-    assertMatchingPackageIntegrity(item, localMetadata, publishedMetadata);
+    await verifyExistingPackage(item, publishedMetadata, comparison);
   }
 }
 
 async function commandTag(flags = {}) {
   const state = requireValidReleaseState();
   const head = requireCleanReleaseCommit(state.versions.threejson);
-  await verifyPublishedReleaseMatchesWorkspace(state);
+  await verifyPublishedReleaseMatchesWorkspace(state, await comparisonOptions(flags));
   await requirePublishedRuntimeReady(state.versions.threejson, flags);
 
   const tagName = String(flags["tag-name"] || `v${state.versions.threejson}`);
@@ -720,14 +827,26 @@ async function commandTag(flags = {}) {
   }
 }
 
+export async function runReleaseAllSteps(steps) {
+  await steps.version();
+  const plan = await steps.preflight();
+  await steps.test();
+  await steps.pack(plan);
+  await steps.publish();
+}
+
 async function commandAll(flags = {}) {
   if (flags["dry-run"]) {
     throw new Error("一键执行不接受 --dry-run；请分别使用 release:version 和 release:publish 的 --dry-run。");
   }
-  await commandVersion(flags);
-  commandTest();
-  commandPack();
-  await commandPublish(flags);
+  const comparison = await comparisonOptions(flags);
+  await runReleaseAllSteps({
+    version: () => commandVersion(flags),
+    preflight: () => commandPreflight(flags, comparison),
+    test: commandTest,
+    pack: commandPack,
+    publish: () => commandPublish(flags, comparison)
+  });
   console.log("\n一键发布不自动提交或打 Git tag。提交当前版本变更后，请运行 npm run release:tag。 ");
 }
 
@@ -737,16 +856,23 @@ function printHelp() {
 用法：
   npm run release                 交互式菜单
   npm run release:version         同步升级 threejson、assets 和 packages 版本
+  npm run release:preflight       联网预检目标版本与可复用包（不发布）
   npm run release:test            发布前测试
   npm run release:pack            按发布清单生成 tarball
   npm run release:publish         按依赖顺序发布
   npm run release:tag             发布后创建可选 Git tag
-  npm run release:all             版本升级 + 测试 + 打包 + 发布
+  npm run release:all             版本升级 + 预检 + 测试 + 打包 + 发布
   npm run release:check           只检查版本与依赖一致性
 
 version 可选参数：
   --threejson <version> --packages <version> --assets <version>
-  --bump-assets --dry-run
+  --bump-assets --only-assets --dry-run
+
+preflight / publish / tag / all 的文件对比选项：
+  --compare-files                 摘要不同时下载并逐文件对比、输出差异
+  --no-compare-files              跳过文件对比；仍检查版本和归档摘要
+  未指定时执行前询问，默认跳过；非交互环境默认跳过。--yes 不启用文件对比。
+  摘要不同且跳过对比时停止，不能将未验证包静默标为一致。
 
 publish 可选参数：
   --tag alpha --cdn-timeout 180 --resume --dry-run --yes
@@ -762,20 +888,23 @@ async function interactiveMenu() {
   console.log("  2. 发布前测试");
   console.log("  3. 打包全部 npm 包");
   console.log("  4. 发布全部 npm 包");
-  console.log("  5. 一键执行（版本升级 → 测试 → 打包 → 发布）");
+  console.log("  5. 一键执行（版本升级 → 预检 → 测试 → 打包 → 发布）");
   console.log("  6. 验证发布并创建 Git tag");
+  console.log("  7. 联网预检版本与可复用包（不发布）");
   console.log("  0. 退出");
   const choice = await ask("请选择", "0");
-  return ({ "1": "version", "2": "test", "3": "pack", "4": "publish", "5": "all", "6": "tag", "0": "exit" })[choice] || choice;
+  return ({ "1": "version", "2": "test", "3": "pack", "4": "publish", "5": "all", "6": "tag", "7": "preflight", "0": "exit" })[choice] || choice;
 }
 
 export async function main(argv = process.argv.slice(2)) {
   const parsed = parseArgs(argv);
+  if (parsed.flags.help) return printHelp();
   const command = parsed.command || await interactiveMenu();
   if (command === "exit") return;
   if (command === "help" || command === "--help") return printHelp();
   if (command === "check") return requireValidReleaseState();
   if (command === "version") return commandVersion(parsed.flags);
+  if (command === "preflight") return commandPreflight(parsed.flags);
   if (command === "test") return commandTest();
   if (command === "pack") return commandPack();
   if (command === "publish") return commandPublish(parsed.flags);

@@ -20,7 +20,7 @@ npm test
 
 ## npm 发布（维护者）
 
-版本同步、完整测试、十包打包、npm 发布、固定 CDN 验证、Git tag 以及 Shower 部署顺序，统一见
+版本同步、联网预检、可选文件对比、完整测试、十二包打包、npm 发布、固定 CDN 验证、Git tag 以及 Shower 部署顺序，统一见
 [`docs/dev/npm-release.md`](../dev/npm-release.md)。下载模板固定使用精确的 ThreeJSON 版本；必须先
 发布并确认该版本的 `threejson/runtime` 已在 CDN 就绪，再部署新版 Shower。
 

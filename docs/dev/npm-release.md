@@ -23,14 +23,16 @@ AI 操作协议新增 `threejson/operations`、`threejson/query` 及 `@threejson
 
 1. `@threejson/assets`（仅资源发生变化并升级版本时发布）；
 2. `threejson`；
-3. `@threejson/scene-tools`（Node CLI/MCP，可选 AI/浏览器入口）；
-4. `@threejson/host-kit`；
-5. `@threejson/editor-kit`；
-6. `@threejson/player-kit`；
-7. `@threejson/scene-agent-kit`；
-8. `@threejson/react`；
-9. `@threejson/react-scene-agent`；
-10. `@threejson/react-ui`。
+3. `@threejson/audio-kit`；
+4. `@threejson/media-kit`；
+5. `@threejson/scene-tools`（Node CLI/MCP，可选 AI/浏览器入口）；
+6. `@threejson/host-kit`；
+7. `@threejson/editor-kit`；
+8. `@threejson/player-kit`；
+9. `@threejson/scene-agent-kit`；
+10. `@threejson/react`；
+11. `@threejson/react-scene-agent`；
+12. `@threejson/react-ui`。
 
 `threejson` 必须先于依赖它的 packages 发布。发布工具会在继续发布 packages 前确认固定版本的
 `threejson/runtime` 已经能从 jsDelivr 访问。只有工具输出“现在可以部署 Shower”后，才应部署
@@ -65,10 +67,11 @@ npm run release
 交互菜单提供：
 
 - 版本号升级；
+- 联网预检目标版本及可复用包；
 - 发布前测试；
 - 打包全部 npm 包；
 - 发布全部 npm 包；
-- 一键执行版本升级、测试、打包和发布；
+- 一键执行版本升级、预检、测试、打包和发布；
 - 验证发布并创建 Git tag。
 
 也可以分别运行：
@@ -76,6 +79,7 @@ npm run release
 ```powershell
 npm run release:check
 npm run release:version
+npm run release:preflight
 npm run release:test
 npm run release:pack
 npm run release:publish
@@ -98,7 +102,8 @@ npm whoami
 # 1. 升级并同步版本号
 npm run release:version
 
-# 2. 验证和打包
+# 2. 提前发现版本冲突，再测试和打包
+npm run release:preflight
 npm run release:test
 npm run release:pack
 
@@ -128,6 +133,18 @@ git push --follow-tags
 - 保持 `@threejson/assets` 版本不变。
 
 只有 assets 内容变化时才输入新的 assets 版本，或使用 `--bump-assets`。
+
+若主包和组件版本已经准备好，仅需要补升 assets，不要重新运行默认的 `release:all` 或
+`release:version`，否则会再次递增主包与组件版本。可以只升级 assets 并同步 CDN 引用：
+
+```powershell
+npm run release:version -- --only-assets
+# 或指定目标版本（以下仅为示例，需确认该版本尚未发布）
+npm run release:version -- --only-assets --assets 1.1.7
+```
+
+`--only-assets` 保留当前主包和组件版本，默认将 assets 补丁号加一，不接受同时指定
+`--threejson` / `--packages`。版本同步不会重写语义未变化的 JSON 文件。
 
 版本命令同步更新：
 
@@ -159,6 +176,42 @@ npm run release:version -- --dry-run
 - 缺少 `./runtime` 或 `./ai` 导出；
 - 下载模板重新出现旧 core 回退。
 
+## 联网预检与可选文件对比
+
+`release:check` 只检查仓库内部版本一致性；`release:preflight` 额外读取 npm 目标版本，
+在全量测试和正式打包之前检查版本冲突及可复用包，不登录、发布、打 tag 或升级版本。
+它可能运行本地 `npm pack --dry-run` 取得摘要（会执行该包的生命周期脚本），不生成
+`dist/release` 正式产物；不要把预检通过等同于 npm 发布或 CDN 验证成功。
+
+`preflight`、`publish`、`tag`、`all` 执行前会询问是否进行可选的逐文件对比，默认 **否**。
+也可以明确指定，避免交互：
+
+```powershell
+# 摘要不同时，下载并比较文件，输出新增/删除/修改清单
+npm run release:preflight -- --compare-files
+# 已了解资源状态，不下载远端 tarball、不做文件对比或差异报告
+npm run release:preflight -- --no-compare-files
+```
+
+- 无论选择哪项，都先检查目标版本及本地/远端 `integrity`（必要时用 `shasum`）。
+- 摘要一致直接复用，不下载远端 tarball，也不做逐文件对比。
+- 摘要不一致且选择跳过时，停止并说明“未做文件级对比，无法确认是否一致”；不会把
+  “打包摘要不同”直接说成“资源确实变化”，也不会据此静默跳过已变资源。
+- 允许文件对比时，临时打包本地包，流式读取本地与远端 tarball。远端字节须通过 npm 摘要
+  校验；不把远端文件解压到磁盘。比较文件路径、原始字节和可执行权限，忽略 tar 时间戳、
+  所有者、条目顺序及压缩差异。文本换行和二进制变化仍算内容变化。
+- 文件一致才复用 npm 已发布包（不重新发布）。真实差异会列出文件清单，要求升级版本；
+  下载、摘要验证或归档解析失败时不会假定一致。
+- `--yes` 只跳过发布/tag 确认，不启用文件对比；非交互环境未指定时默认跳过。
+  `--compare-files` 与 `--no-compare-files` 互斥。
+- 一键流程只询问一次；发布前重新检查本地和远端摘要。仅当两者都没变时，复用本次流程
+  已通过的文件比较结果，不跨运行缓存结论。
+
+目录“最后修改日期”不能证明包内资源未变。2026-10-27 的只读核查中，本地 assets 比 npm
+`1.1.6` 多了 13 个建模/视频示例 JSON，并修改了 `json/demo-show/manifest.json`；因此该次
+确实需要升级 assets，不是仅仅重新打包造成的误报。若已经确认资源变化，可直接使用
+`--only-assets` 升级，再用 `--no-compare-files` 预检，节省深度比较时间。
+
 ## 测试与打包
 
 ```powershell
@@ -168,7 +221,7 @@ npm run release:pack
 
 `release:test` 执行发布状态检查、示例目录校验和完整自动化验证。
 
-`release:pack` 按发布顺序对十个包执行 `npm pack`，并额外确认 `threejson` tarball 至少包含：
+独立的 `release:pack` 不查询 registry，按发布顺序对十二个包执行 `npm pack`，并额外确认 `threejson` tarball 至少包含：
 
 - `core/runtime.js`；
 - `core/ai/index.js`；
@@ -177,6 +230,8 @@ npm run release:pack
 - `package.json`。
 
 tarball 写入被 Git 忽略的 `dist/release/<timestamp>/`，不会覆盖之前的打包结果。
+在 `release:all` 中，已通过预检、可以复用的包不再生成正式 tarball；检查摘要和可选的
+文件比较仍可能临时打包，不能理解为完全不读取本地资源。
 
 ## npm 发布与 CDN 门禁
 
@@ -188,9 +243,9 @@ npm run release:publish
 
 发布前工具会：
 
-1. 检查 npm 登录身份；
-2. 生成并检查 ThreeJSON tarball 的关键入口；
-3. 查询所有目标版本是否已经存在；
+1. 询问是否启用文件对比，查询所有目标版本，验证需要复用的已发布包；
+2. 检查 npm 登录身份；
+3. 生成并检查 ThreeJSON tarball 的关键入口；
 4. 要求输入 `PUBLISH`；
 5. 按依赖顺序发布；
 6. 在 `threejson` 发布后检查 npm registry；
@@ -217,8 +272,8 @@ npm run release:publish -- --dry-run
 
 ### 已存在版本与断点续发
 
-- assets 版本未变化且已经存在时，只有本地 tarball 与 npm 完全一致才会复用；内容有变化但
-  版本未升级时会终止并要求升级 assets 版本。
+- assets 版本未变化且已经存在时，归档摘要一致或经可选文件对比确认完全一致才会复用；
+  确认文件变化但版本未升级时会终止并要求升级 assets 版本。
 - 其他任何目标版本已经存在时，默认在发布任何包之前终止。
 - 如果确实属于同一次发布在中途失败，可显式运行：
 
@@ -226,8 +281,8 @@ npm run release:publish -- --dry-run
   npm run release:publish -- --resume
   ```
 
-- `--resume` 会重新生成本地 tarball，并比较 npm 上的 integrity/shasum。只有内容完全相同时才
-  跳过已发布包；内容不同会要求升级版本号。
+- `--resume` 会重新检查本地 tarball 与 npm 摘要，摘要不一致时遵循上述可选文件对比规则。
+  只有验证内容相同才能跳过已发布包；该参数不能绕过差异检查。
 - 如果 `threejson` 已发布但 jsDelivr 尚未同步，命令会在 runtime 门禁处停止。稍后使用
   `--resume` 重试即可，不需要再次升级版本。
 
@@ -243,8 +298,8 @@ npm run release:tag
 
 - Git 工作区干净；
 - `HEAD` 中的根包版本等于当前版本；
-- 十个目标 npm 版本均已存在；
-- 全部本地 tarball 与 npm integrity/shasum 一致；
+- 十二个目标 npm 版本均已存在；
+- 全部本地 tarball 与 npm 摘要一致，或经可选的逐文件对比确认内容一致；
 - 固定版本的 jsDelivr runtime 已就绪。
 
 随后输入 `TAG`，工具会创建类似 `v0.1.0-alpha.10` 的本地 annotated tag。它默认不推送，
@@ -274,9 +329,23 @@ git push origin refs/tags/v0.1.0-alpha.10
 npm run release:all
 ```
 
-它会依次执行版本升级、测试、打包、npm 发布和 CDN 验证。为了避免脚本擅自创建提交或修改
+它会依次执行版本升级、联网预检、测试、打包、npm 发布和 CDN 验证。预检失败会在全量测试
+和打包前停止，保留已同步的版本文件；修正问题后可分步继续，不必再次递增版本。
+为了避免脚本擅自创建提交或修改
 Git 历史，一键流程不会自动 `git commit`、创建 tag 或推送 GitHub。完成后应检查并提交版本
 变更，再运行 `npm run release:tag`。
 
 如果需要 Git tag 与提交严格对应，推荐使用前面的分步正式发布流程，而不是在未提交工作区中
 直接执行一键发布。
+
+## English summary: optional content comparison
+
+`release:preflight` checks registry versions before full tests and packing, without publishing. Commands
+ask whether to run a file-level comparison; the default is **no**, including non-interactive runs.
+Use `--compare-files` or `--no-compare-files` explicitly; `--yes` does not authorize file comparison.
+Matching archive hashes need no download. A mismatch with comparison disabled stops as **unverified**,
+not as proof of changed files. Opted-in comparisons verify registry integrity and compare paths, raw
+bytes and executable permissions without extracting files; archive timestamps/order are ignored.
+`--resume` never bypasses a content mismatch. `release:version --only-assets` updates assets and its pins
+while preserving prepared root/component versions. Standalone `release:pack` still packs all twelve
+packages without registry lookups; `release:all` omits verified reused packages from formal pack output.

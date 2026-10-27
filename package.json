@@ -1,6 +1,6 @@
 {
   "name": "threejson",
-  "version": "0.1.0-alpha.11",
+  "version": "0.1.0-alpha.12",
   "description": "JSON-driven Three.js scene runtime: declarative 3D scenes, builders, and handlers.",
   "author": "nnrj <tianhehechu2017@gmail.com>",
   "repository": {
@@ -156,6 +156,7 @@
     "pack:all": "npm run build:pack && npm run build:pack-assets",
     "release": "node tools/dev/release/threejson-release.mjs",
     "release:check": "node tools/dev/release/threejson-release.mjs check",
+    "release:preflight": "node tools/dev/release/threejson-release.mjs preflight",
     "release:version": "node tools/dev/release/threejson-release.mjs version",
     "release:test": "node tools/dev/release/threejson-release.mjs test",
     "release:pack": "node tools/dev/release/threejson-release.mjs pack",
@@ -189,6 +190,7 @@
     "three-mesh-bvh": "^0.9.10",
     "troika-three-text": "^0.52.4",
     "typescript": "^5.9.3",
+    "tar": "7.5.22",
     "wrangler": "4.151.1"
   }
 }

@@ -5,12 +5,18 @@ import {
   PACKAGE_PLAN,
   assertMatchingPackageIntegrity,
   assertThreejsonPackMetadata,
+  buildPublishPlan,
   nextPatch,
   nextPrerelease,
   resolveNpmInvocation,
   resolveExistingPackageAction,
+  releaseVersionDefaults,
+  packagesToPack,
+  resolveFileComparison,
+  runReleaseAllSteps,
   threejsonRuntimeCdnUrl,
   validateReleaseState,
+  verifyExistingPackage,
   waitForThreejsonRuntimeCdn
 } from "../tools/dev/release/threejson-release.mjs";
 
@@ -71,7 +77,7 @@ test("resume integrity checks reject an already-published version with different
       { version: "0.1.0-alpha.10", integrity: "sha512-local" },
       { version: "0.1.0-alpha.10", integrity: "sha512-published" }
     ),
-    /必须升级版本号/
+    /归档摘要不同/
   );
   assert.throws(
     () => assertMatchingPackageIntegrity(
@@ -79,7 +85,7 @@ test("resume integrity checks reject an already-published version with different
       { version: "1.1.4", shasum: "local-assets" },
       { version: "1.1.4", shasum: "published-assets" }
     ),
-    /必须升级版本号/
+    /归档摘要不同/
   );
 });
 
@@ -140,4 +146,104 @@ test("release state keeps package versions, peer ranges and CDN pins aligned", (
 test("root package exposes the post-publish Git tag command", async () => {
   const { default: manifest } = await import("../package.json", { with: { type: "json" } });
   assert.equal(manifest.scripts["release:tag"], "node tools/dev/release/threejson-release.mjs tag");
+  assert.equal(manifest.scripts["release:preflight"], "node tools/dev/release/threejson-release.mjs preflight");
+});
+
+test("assets-only version defaults preserve the prepared root and component versions", () => {
+  const current = { threejson: "0.1.0-alpha.12", packages: "0.1.0-alpha.4", assets: "1.1.6" };
+  assert.deepEqual(releaseVersionDefaults(current, { "only-assets": true }), { ...current, assets: "1.1.7" });
+  assert.deepEqual(releaseVersionDefaults(current), { threejson: "0.1.0-alpha.13", packages: "0.1.0-alpha.5", assets: "1.1.6" });
+  assert.throws(() => releaseVersionDefaults(current, { "only-assets": true, packages: "2.0.0" }), /不能/);
+});
+
+test("file comparison is prompted before use and can be skipped independently of publish confirmation", async () => {
+  let asks = 0;
+  const prompt = async (_question, fallback) => { asks++; assert.equal(fallback, "n"); return "n"; };
+  assert.equal(await resolveFileComparison({}, prompt), false);
+  assert.equal(asks, 1);
+  assert.equal(await resolveFileComparison({ yes: true }, prompt), false);
+  assert.equal(asks, 2);
+  assert.equal(await resolveFileComparison({ "compare-files": true }, prompt), true);
+  assert.equal(await resolveFileComparison({ "no-compare-files": true }, prompt), false);
+  assert.equal(asks, 2);
+  assert.equal(await resolveFileComparison({}, async () => "y"), true);
+  await assert.rejects(resolveFileComparison({ "compare-files": true, "no-compare-files": true }, prompt), /不能同时/);
+  await assert.rejects(resolveFileComparison({ "compare-files": "false" }, prompt), /不接受值/);
+});
+
+const assets = PACKAGE_PLAN[0];
+const publishedAssets = { version: "1.1.6", integrity: "sha512-remote" };
+const localAssets = { version: "1.1.6", integrity: "sha512-local" };
+const noDifferences = { equal: true, added: [], removed: [], modified: [] };
+
+test("skipping the optional diff never downloads a tarball or falsely accepts a mismatch", async () => {
+  const compare = async () => assert.fail("must not download or unpack");
+  assert.equal(await verifyExistingPackage(assets, publishedAssets, {
+    inspect: async () => publishedAssets, compare, compareFiles: false, log: () => {}
+  }), "archive-match");
+  await assert.rejects(verifyExistingPackage(assets, publishedAssets, {
+    inspect: async () => localAssets, compare, compareFiles: false, log: () => {}
+  }), /已跳过逐文件对比.*不能确认/);
+});
+
+test("verified equal files allow reuse; cache invalidates when local or remote archive changes", async () => {
+  let comparisons = 0;
+  let local = { ...localAssets };
+  const options = {
+    inspect: async () => local, compareFiles: true, log: () => {}, verifiedContents: new Set(),
+    compare: async () => { comparisons++; return { diff: noDifferences, metadata: local }; }
+  };
+  assert.equal(await verifyExistingPackage(assets, publishedAssets, options), "contents-match");
+  assert.equal(await verifyExistingPackage(assets, publishedAssets, options), "contents-match");
+  assert.equal(comparisons, 1);
+  local = { ...local, integrity: "sha512-local-changed" };
+  await verifyExistingPackage(assets, publishedAssets, options);
+  assert.equal(comparisons, 2);
+  await verifyExistingPackage(assets, { ...publishedAssets, integrity: "sha512-remote-changed" }, options);
+  assert.equal(comparisons, 3);
+});
+
+test("real differences and comparison failures cannot be bypassed by resume", async () => {
+  const options = { inspect: async () => localAssets, compareFiles: true, resume: true, log: () => {} };
+  await assert.rejects(verifyExistingPackage(assets, publishedAssets, { ...options,
+    compare: async () => ({ metadata: localAssets, diff: { equal: false, added: ["new.bin"], removed: [], modified: ["package.json"] } })
+  }), /必须升级版本号[\s\S]*new\.bin[\s\S]*package\.json/);
+  await assert.rejects(verifyExistingPackage(assets, publishedAssets, { ...options,
+    compare: async () => { throw new Error("Network failed"); }
+  }), /Network failed/);
+});
+
+test("preflight validates reuse before preparing the release pack list", async () => {
+  const versions = { assets: "1.1.6", threejson: "0.1.0-alpha.12", packages: "0.1.0-alpha.4" };
+  const verified = [];
+  const plan = await buildPublishPlan(versions, {
+    lookup: async (name) => name === assets.name ? publishedAssets : null,
+    verify: async (item) => { verified.push(item.name); }
+  });
+  assert.deepEqual(verified, [assets.name]);
+  assert.equal(plan[0].action, "reuse-assets");
+  assert.equal(packagesToPack(plan).length, 11);
+  assert.equal(packagesToPack().length, 12);
+  assert.equal(packagesToPack(plan).some((item) => item.key === "assets"), false);
+  await assert.rejects(buildPublishPlan(versions, {
+    lookup: async (_name, version) => ({ version }), verify: async () => assert.fail("conflicts checked first")
+  }), /默认禁止/);
+});
+
+test("one-click preflight fails before tests, formal packing or publishing", async () => {
+  const calls = [];
+  await assert.rejects(runReleaseAllSteps({
+    version: () => calls.push("version"),
+    preflight: () => { calls.push("preflight"); throw new Error("changed assets"); },
+    test: () => calls.push("test"), pack: () => calls.push("pack"), publish: () => calls.push("publish")
+  }), /changed assets/);
+  assert.deepEqual(calls, ["version", "preflight"]);
+  calls.length = 0;
+  const plan = [];
+  await runReleaseAllSteps({
+    version: () => calls.push("version"), preflight: () => { calls.push("preflight"); return plan; },
+    test: () => calls.push("test"), pack: (value) => { assert.equal(value, plan); calls.push("pack"); },
+    publish: () => calls.push("publish")
+  });
+  assert.deepEqual(calls, ["version", "preflight", "test", "pack", "publish"]);
 });
